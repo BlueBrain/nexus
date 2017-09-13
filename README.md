@@ -92,31 +92,20 @@ This library contains all the code shared by nexus web applications in order to 
 **Source code**: https://github.com/BlueBrain/nexus-webapp-commons
 **Documentation**: coming soon
 
-<<<<<<< HEAD
+
 ## Domains (Schemas, Vocabularies)
-=======
-## Domains, Schemas, Ontologies
->>>>>>> 5cb0fb12cc42839cb7e68b498385350a9e3962ff
 
 ### Nexus Core Schemas
 
 #### nexus-schemaorg
-<<<<<<< HEAD
 [SHACL](https://www.w3.org/TR/shacl/) version of a subset of schemas defined by [schema.org](http://schema.org/docs/full.html) that are commonly used in Blue Brain Nexus.
-=======
-Collection of schemas defined by [schema.org](http://schema.org/docs/full.html) that are commonly used in Blue Brain Nexus.
->>>>>>> 5cb0fb12cc42839cb7e68b498385350a9e3962ff
 
 **Status**: active development
 **Source code**: https://github.com/BlueBrain/nexus-schemaorg
 **Documentation**: coming soon
 
 #### nexus-prov
-<<<<<<< HEAD
 Data management oriented [SHACL](https://www.w3.org/TR/shacl/) version of [W3C PROV-O](http://www.w3.org/ns/prov-o-20130430).
-=======
-Collection of schemas defined by [W3C-PROV](https://www.w3.org/TR/prov-overview/) that are commonly used in Blue Brain Nexus.
->>>>>>> 5cb0fb12cc42839cb7e68b498385350a9e3962ff
 
 **Status**: active development
 **Source code**: https://github.com/BlueBrain/nexus-prov
