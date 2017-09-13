@@ -1,0 +1,53 @@
+# Compiled source #
+###################
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Maven / SBT / Ant target #
+target/
+
+# IDE
+.settings
+.idea
+*.iml
+**/nbproject/
+**/logs/
+**/nbactions.xml
+
+
+# Packages #
+############
+# it's better to unpack these files and commit the raw source
+# git has its own built in compression methods
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Logs and databases #
+######################
+*.log.*
+*.sqlite
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Blazegraph generated files #
+##############################
+bigdata.jnl
+rules.log
