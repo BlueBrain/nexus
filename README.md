@@ -15,6 +15,10 @@ It is to be noted that many other scientific fields (Astronomy, Agriculture, Bio
 # Documentation
 The overall documentation of the platform is available [here](https://bbp-nexus.epfl.ch/dev/docs). In the following section of this document, we will also point to specific components documentation.
 
+## Tutorials
+Please check out our tutorials:
+ - [Nexus KG Schema Format](https://bbp-nexus.epfl.ch/dev/schema-documentation/documentation/shacl-schemas.html#nexus-kg-schemas)
+
 # Blue Brain Nexus components
 
 ## A broad overview of the components of the platform
