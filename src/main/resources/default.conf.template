@@ -1,0 +1,9 @@
+server {
+    listen 8080;
+    server_name ${SERVER_NAME};
+    port_in_redirect off;
+    location ${LOCATION} {
+        alias   /usr/share/nginx/html/;
+        index  index.html;
+    }
+}
