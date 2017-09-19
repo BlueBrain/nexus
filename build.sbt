@@ -7,6 +7,7 @@ lazy val root = project.in(file("."))
   .enablePlugins(ParadoxPlugin, com.typesafe.sbt.packager.docker.DockerPlugin)
   .settings(
     name                          := "docs",
+    moduleName                    := "docs",
     paradoxTheme                  := Some(builtinParadoxTheme("generic")),
     paradoxProperties in Compile ++= Map("extref.service.base_url" -> "../%s"),
     maintainer                    := "Nexus Team <noreply@epfl.ch>",
@@ -42,6 +43,7 @@ lazy val root = project.in(file("."))
     mappings in Docker ++=
       MappingsHelper.contentOf(sourceDirectory.value / "main" / "resources" / "nginx") ++
       MappingsHelper.directory((paradox in Compile).value),
+    packageName in Docker := "docs",
     publishLocal := {
       Def.taskDyn {
         if (!isSnapshot.value) Def.task { (publishLocal in Docker).value }
@@ -56,4 +58,4 @@ lazy val root = project.in(file("."))
     })
 
 addCommandAlias("review", ";clean;paradox")
-addCommandAlias("rel",    ";release with-defaults")
+addCommandAlias("rel",    ";release with-defaults skip-tests")
