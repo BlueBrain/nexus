@@ -5,7 +5,7 @@
 The diagram below describes the reference component view of the platform.  Some of the listed components may be in
 different implementation stages.
 
-![Component View](../../resources/components/component-view.png)
+![Component View](../assets/components/component-view.png)
 
 As depicted in the above diagram the platform follows a 4 tier architecture:
 
@@ -42,7 +42,7 @@ traffic.
 
 The diagram below describes the general integration framework for services within the platform.
 
-![Integration View](../../resources/components/integration-view.png)
+![Integration View](../assets/components/integration-view.png)
 
 While it may not immediately obvious, all services follow the same integration pattern north-bound in and south-bound
 out.  Services will always consume other services' APIs only, no exceptions.
