@@ -1,8 +1,0 @@
-{
-  "@context" : {
-    "name" : "http://schema.org/name",
-    "bbpcore": "http://localhost:8080/dev/v0/voc/core/"
-  },
-  "@type": "bbpcore:Entity",
-  "name":"test"
-}

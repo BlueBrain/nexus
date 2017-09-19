@@ -27,7 +27,7 @@ Please check out our tutorials:
 ## A broad overview of the components of the platform
 Given the current product roadmap, here are the components that make Blue Brain Nexus:
 
-![Blue Brain Nexus' components ](https://raw.githubusercontent.com/BlueBrain/nexus/initial_readme/images/nexus-components.png)
+![Blue Brain Nexus' components ](https://raw.githubusercontent.com/BlueBrain/nexus/master/images/nexus-components.png)
 
 Now let's take a look at these components individually.
 
