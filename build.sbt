@@ -1,7 +1,7 @@
 import java.util.regex.Pattern
 
 import com.typesafe.sbt.packager.MappingsHelper
-import com.typesafe.sbt.packager.docker.{Cmd, ExecCmd}
+import com.typesafe.sbt.packager.docker.Cmd
 
 lazy val root = project.in(file("."))
   .enablePlugins(ParadoxPlugin, com.typesafe.sbt.packager.docker.DockerPlugin)
@@ -40,7 +40,7 @@ lazy val root = project.in(file("."))
       Cmd("CMD",        "envsubst '$LOCATION $SERVER_NAME' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'")
     ),
     mappings in Docker ++=
-      MappingsHelper.contentOf(sourceDirectory.value / "main" / "resources") ++
+      MappingsHelper.contentOf(sourceDirectory.value / "main" / "resources" / "nginx") ++
       MappingsHelper.directory((paradox in Compile).value),
     publishLocal := {
       Def.taskDyn {
