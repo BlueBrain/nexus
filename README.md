@@ -2,7 +2,7 @@
 [![Build Status](https://bbpcode.epfl.ch/ci/buildStatus/icon?job=nexus.sbt.nexus)](https://bbpcode.epfl.ch/ci/job/nexus.sbt.nexus)
 [![GitHub Release](https://img.shields.io/github/release/BlueBrain/nexus.svg)]()
 
-# Blue Brain Nexus
+# Blue Brain Nexus - A knowledge graph for data-driven science
 
 The Blue Brain Nexus is a provenance based, semantic enabled data management platform enabling the definition of an arbitrary domain of application for which there is a need to create and manage entities as well as their relations (e.g. provenance). For example, the domain of application managed by the Nexus platform deployed at Blue Brain is to digitally reconstruct and simulate the brain.
 
