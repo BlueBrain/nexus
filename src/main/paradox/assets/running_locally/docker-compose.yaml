@@ -19,6 +19,14 @@ services:
   iam:
     image: "bluebrain/iam-nexus:latest"
     mem_limit: 512m
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+          echo Sleeping for 30 seconds
+          sleep 30
+          echo Starting IAM
+          ./bin/iam-service
     ports:
       - "8081:8080"
     links:
@@ -26,6 +34,7 @@ services:
     environment:
       - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
       - "BIND_INTERFACE=0.0.0.0"
+      - "PUBLIC_URI=http://localhost:8081"
       - "IAM_TESTMODE=true"
       - "KAFKA_BOOTSTRAP_SERVERS=kafka:9092"
       - 'JAVA_OPTS=-Xms256m -Xmx256m'
