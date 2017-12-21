@@ -50,14 +50,14 @@ This service is the heart of the BlueBrain Nexus platform. It allows users to de
 knowledge graph with data, attach files to data.  It also provides semantic search facilities to discover similar and
 relevant data in the platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-kg) | @extref[Documentation](service:kg)
+[Source Code](https://github.com/BlueBrain/nexus-kg) | [Documentation](./kg)
 
 ### Nexus IAM
 
 This service is managing the access to data within the platform.  It makes use of configurable downstream OpenID Connect
 compliant identity providers to authenticate clients, and manages the access controls for the entire platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-iam) | @extref[Documentation](service:iam)
+[Source Code](https://github.com/BlueBrain/nexus-iam) | [Documentation](./iam)
 
 
 ## Web Applications
@@ -88,7 +88,7 @@ through APIs.
 
 Generated documentation for the platform (this website).
 
-[Source Code](https://github.com/BlueBrain/nexus) | @extref[Website](service:.)
+[Source Code](https://github.com/BlueBrain/nexus) | [Website](./)
 
 
 ## Libraries and Tools
