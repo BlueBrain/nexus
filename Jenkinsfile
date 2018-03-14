@@ -21,6 +21,7 @@ pipeline {
             }
             steps {
                 node("slave-sbt") {
+                    checkout scm
                     sh "sbt clean paradox universal:packageZipTarball"
                     sh "mv target/universal/docs.tgz ."
                     sh "oc start-build docs-build --from-file=docs.tgz --follow"
