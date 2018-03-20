@@ -3,6 +3,7 @@
 * [Components](components/index.md)
 * [Platform API](api/index.md)
 * [Running locally](running_locally/index.md)
+* [Roadmap](roadmap/index.md)
 
 @@@
 
