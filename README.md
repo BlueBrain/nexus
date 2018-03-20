@@ -18,11 +18,18 @@ Data can be examined by species, contributing laboratory, methodology, brain reg
 It is to be noted that many other scientific fields (Astronomy, Agriculture, Bioinformatics, Pharmaceutical industry, ...) are in need of such a technology. Consequently, Blue Brain Nexus core technology is being developed to be **agnostic of the domain** it might be applied to.
 
 # Documentation
-The overall documentation of the platform is available [here](https://bbp-nexus.epfl.ch/dev/docs). In the following section of this document, we will also point to specific components documentation.
+
+The overall documentation of the platform is available [here](https://bbp-nexus.epfl.ch/staging/docs/). In the following section of this document, we will also point to specific components documentation.
 
 ## Tutorials
+
 Please check out our tutorials:
  - [Nexus KG Schema Format](https://bbp-nexus.epfl.ch/dev/schema-documentation/documentation/shacl-schemas.html#nexus-kg-schemas)
+
+## Technical Introduction
+
+Please take a look at [these slides](https://www.slideshare.net/BogdanRoman1/bluebrain-nexus-technical-introduction-91266871)
+for a short technical introduction to Nexus.
 
 # Blue Brain Nexus components
 
@@ -40,22 +47,34 @@ This service is the heart of the Blue Brain Nexus platform. It allows users to d
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-kg  
-**Documentation**: https://bbp-nexus.epfl.ch/dev/docs/kg/
+**Documentation**: https://bbp-nexus.epfl.ch/staging/docs/kg/
 
 ### Nexus IAM (Identity and Access Managment)
 This service is a relay to any OAUTH2 identity service the platform maintainers decide to configure authentication against. The purpose of this service is to provide a unified identity service for the nexus platform irrespective of which actual underlying service is being used. Furthermore, this service is managing the privileges granted on entities to users.
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-iam  
+**Documentation**: https://bbp-nexus.epfl.ch/staging/docs/iam/
+
+### Nexus Admin
+This service manages the main resource groupings used throughout the platform. 
+
+**Status**: active development  
+**Source code**: https://github.com/BlueBrain/nexus-admin  
 **Documentation**: coming soon
 
 ### Nexus Commons
-This library is meant to contain all shared utilities of the nexus platform.
-Amongst other things, this library contains commons-types, sourcing-core, sourcing-akka, sourcing-mem, commons-service, commons-http, shacl-validator, sparql-client.
+This library is meant to contain reusable utilities of the Nexus platform.
+Amongst other things, this library contains commons-types, commons-http, shacl-validator, sparql-client, elastic-client.
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-commons  
-**Documentation**: coming soon
+
+### Nexus Service
+A collection of small libraries / utilities commonly used in building Nexus services.
+
+**Status**: active development  
+**Source code**: https://github.com/BlueBrain/nexus-service  
 
 
 ### sbt-nexus
@@ -87,12 +106,6 @@ This web application will allow users to enter data into the knowledge graph usi
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-registration-webapp  
 **Documentation**: coming soon
-
-### Nexus WatchTower
-This web application will enable the close monitoring of an instance of Blue Brain Nexus and give vital information about its health and usage to its maintainers.
-
-**Status**: not started  
-**Source code**: https://github.com/BlueBrain/nexus-registration-webapp
 
 ### Nexus Webapp Commons
 This library contains all the code shared by nexus web applications in order to promote their reuse.

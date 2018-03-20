@@ -1,5 +1,8 @@
 # Platform Overview
 
+Please take a look at [these slides](https://www.slideshare.net/BogdanRoman1/bluebrain-nexus-technical-introduction-91266871)
+for a short technical introduction to Nexus.
+
 ## Component View
 
 The diagram below describes the reference component view of the platform.  Some of the listed components may be in
