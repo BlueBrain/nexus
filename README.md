@@ -135,11 +135,18 @@ Data management oriented [SHACL](https://www.w3.org/TR/shacl/) version of [W3C P
 
 ### Nexus domain specific components
 
-#### Nexus BBP Domains
-Domains that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.
+#### Nexus BBP Data models
+data models that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-bbp-domains  
+**Documentation**: coming soon
+
+#### Neuroshapes
+Open SHACL schemas for FAIR (Findable, Accessible, Interoperable, Reproducible) neuroscience data.
+
+**Status**: active development  
+**Source code**: https://github.com/INCF/neuroshapes  
 **Documentation**: coming soon
 
 ## Nexus SDK
