@@ -108,12 +108,6 @@ This library contains all the code shared by nexus web applications in order to 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-webapp-commons  
 
-### Nexus Navigator
-This prototypic web component allows users of the platform to navigate graphically the knowledge graph data. A user can select an entity in the knowledge graph and display its neighboring entities in the form of a graph.
-
-**Status**: currently inactive
-**Source code**: https://github.com/BlueBrain/nexus-navigator-webapp  
-
 ### Nexus Registration
 This prototypic web application will allow users to enter data into the knowledge graph using forms generated automatically from domain’s schemas. This application is meant for low scale data integration while large scale will be done programmatically through APIs.
 
