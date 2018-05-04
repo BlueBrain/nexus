@@ -76,43 +76,43 @@ A collection of small libraries / utilities commonly used in building Nexus serv
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-service  
 
-
 ### sbt-nexus
 This library contains all the code related to the management of our Scala projects using [SBT](http://www.scala-sbt.org/). Its purpose is to promote reuse of build code across all projects.
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/sbt-nexus  
-**Documentation**: coming soon
 
 ## Web applications
+
+### Nexus Dashboard
+This web application is the landing page of a Blue Brain Nexus deployment. It gives access to basic statistics about your instance and pointer to other web applications, documentation, tutorials...
+
+**Status**: active development
+**Source code**: https://github.com/BlueBrain/nexus-dashboard
 
 ### Nexus Search
 This web application allows users of the nexus platform to search in the knowledge graph. Beyond searching and inspecting data stored in the platform, its purpose is to enable the discovery of similar and related data.
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-search-webapp  
-**Documentation**: coming soon
 
-### Nexus Navigator
-This web component allows users of the platform to navigate graphically the knowledge graph data. A user can select an entity in the knowledge graph and display it neighboring entities in the form of a graph.
-
-**Status**: active development  
-**Source code**: https://github.com/BlueBrain/nexus-navigator-webapp  
-**Documentation**: coming soon
-
-### Nexus Registration
-This web application will allow users to enter data into the knowledge graph using forms generated automatically from domain’s schemas. This application is meant for low scale data integration while large scale will be done programmatically through APIs.
+### Nexus Explorer
+This web application enables users to securely browse entity and data stored in the knowledge graph by drilling down through organisations, domains, schemas and instances. Once an instance of interest has been found, you can navigate the knowledge graph following entity relations. 
 
 **Status**: active development  
-**Source code**: https://github.com/BlueBrain/nexus-registration-webapp  
-**Documentation**: coming soon
+**Source code**: https://github.com/BlueBrain/nexus-explorer  
 
 ### Nexus Webapp Commons
 This library contains all the code shared by nexus web applications in order to promote their reuse.
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-webapp-commons  
-**Documentation**: coming soon
+
+### Nexus Registration
+This prototypic web application will allow users to enter data into the knowledge graph using forms generated automatically from domain’s schemas. This application is meant for low scale data integration while large scale will be done programmatically through APIs.
+
+**Status**: currently inactive
+**Source code**: https://github.com/BlueBrain/nexus-registration-webapp  
 
 
 ## Domains (Schemas, Vocabularies)
@@ -124,35 +124,32 @@ This library contains all the code shared by nexus web applications in order to 
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-schemaorg  
-**Documentation**: coming soon
 
 #### nexus-prov
 Data management oriented [SHACL](https://www.w3.org/TR/shacl/) version of [W3C PROV-O](http://www.w3.org/ns/prov-o-20130430).
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-prov  
-**Documentation**: coming soon
 
 ### Nexus domain specific components
 
 #### Nexus BBP Data models
-data models that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.
+Data models that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.
 
 **Status**: active development  
 **Source code**: https://github.com/BlueBrain/nexus-bbp-domains  
-**Documentation**: coming soon
 
 #### Neuroshapes
-Open SHACL schemas for FAIR (Findable, Accessible, Interoperable, Reproducible) neuroscience data.
+A community effort to develop open SHACL schemas for FAIR (Findable, Accessible, Interoperable, Reproducible) neuroscience data.
 
 **Status**: active development  
 **Source code**: https://github.com/INCF/neuroshapes  
-**Documentation**: coming soon
 
 ## Nexus SDK
 
 ### Nexus Python SDK
+The Human Brain Project has developed an open source library called Pyxus to facilitate the use of Nexus with Python. 
 This library will help Python users to integrate their tools with the Blue Brain Nexus platform. Initially, it will mainly enable the interface with the Knowledge Graph service.
 
-**Status**: not started  
-**Source code**: https://github.com/BlueBrain/nexus-python-sdk
+**Status**: active development
+**Source code**: https://github.com/HumanBrainProject/pyxus
