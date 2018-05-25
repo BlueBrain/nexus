@@ -202,7 +202,7 @@ header {
   position: absolute;
   width: 100%;
   /* show header above canvas */
-  z-index: 1;
+  z-index: 2;
   padding: 0 2em;
 }
 .logo-block {
@@ -296,6 +296,7 @@ canvas.lines {
   height: 100%;
   left: 0;
   top: 0;
+  z-index: 1;
   animation: fadeInAlmost 1s ease-in;
   animation-fill-mode: forwards;
 }
@@ -1059,10 +1060,6 @@ ul.menu {
   font-weight: 400;
 }
 
-#features .section-title h2 {
-  /* color: white; */
-}
-
 #features .regular-box {
   padding: 2em;
 }
@@ -1070,9 +1067,9 @@ ul.menu {
 .emph {
   display: inline-block;
   position: relative;
-  width: 170px;
+  width: 190px;
   text-align: left;
-  padding: 0 4px;
+  padding: 0 8px;
 }
 .emph.in::before {
   transform: scale3d(1,1,1);
@@ -1093,16 +1090,6 @@ ul.menu {
   transform-origin: 0% 50%;
   transition: transform 0.5s;
   transition-timing-function: cubic-bezier(0.2,1,0.3,1);
-}
-
-.emph em {
-  opacity: 0;
-  transition: opacity 0.5s;
-  transition-timing-function: cubic-bezier(0.2,1,0.3,1);
-}
-
-.emph.in em {
-  opacity: 1;
 }
 
 @keyframes emphasis {

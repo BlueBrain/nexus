@@ -1,6 +1,7 @@
 import lines from "./lines";
 import svgify from "./libs/svg";
 import emailCatch from "./email-catch";
+import ScrollText from "./text-scrolling";
 
 svgify();
 lines(".lines");
@@ -18,20 +19,13 @@ const EMAIL_CATCH_API_URL =
 const CONTACT_FORM_API_URL =
   "https://script.google.com/macros/s/AKfycbyShA-fZV1b_eYb0UNAwr1FZGwGjTzeGa-QKlomEeVlrQSJhA4/exec";
 
-const EMPHASIS_WORDS = [
-  "science",
-  "industry",
-  "astronomy",
-  "research",
-  "companies",
-  "biotech"
-];
-
-const EMPHASIS_TEXT_DELAY_MS = 3500;
-
 $(function() {
+  const ScienceScroll = new ScrollText(document.querySelector('#emphasis'));
+  ScienceScroll.cycle();
+
   emailCatch(EMAIL_CATCH_API_URL, $("#email-catch"));
   emailCatch(CONTACT_FORM_API_URL, $("#contact-catch"));
+
   $(".tab-container").tabs();
 
   $(".tab-container .menu-item").on("click", function() {
@@ -62,22 +56,4 @@ const resetMenu = () => {
       $(".wee").css({ left: $left, width: $width });
     }
   );
-
-  const changeText = () => {
-    animateIn();
-    let $em = $("#emphasis");
-    let wordIndex = EMPHASIS_WORDS.indexOf($em.text()) + 1;
-    let newText =
-      EMPHASIS_WORDS[wordIndex === EMPHASIS_WORDS.length ? 0 : wordIndex];
-    $em.text(newText);
-  };
-  const animateIn = () => {
-    let $highlight = $(".emph");
-    $highlight.addClass("in");
-    setTimeout(() => {
-      $highlight.removeClass("in");
-    }, EMPHASIS_TEXT_DELAY_MS / 3 * 2);
-  };
-  animateIn();
-  setInterval(changeText, EMPHASIS_TEXT_DELAY_MS);
 };

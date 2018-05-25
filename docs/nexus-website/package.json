@@ -19,6 +19,7 @@
     "parcel-bundler": "latest"
   },
   "dependencies": {
+    "autoprefixer": "^8.5.0",
     "jquery": "^3.3.1",
     "jquery-modal": "^0.9.1",
     "jquery-ui-dist": "^1.12.1",
