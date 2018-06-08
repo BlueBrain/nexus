@@ -1,13 +1,10 @@
 version: '2'
 services:
   kg:
-    image: "bluebrain/kg-nexus:latest"
+    image: "bluebrain/kg-nexus:0.9.14"
     mem_limit: 512m
     ports:
       - "8080:8080"
-    links:
-      - cassandra
-      - iam
     environment:
       - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
       - "BIND_INTERFACE=0.0.0.0"
@@ -15,9 +12,11 @@ services:
       - "IAM_BASEURI=http://iam:8080/v0"
       - "SPARQL_BASE_URI=http://blazegraph:9999/bigdata"
       - "SPARQL_ENDPOINT=http://blazegraph:9999/bigdata/sparql"
-      - 'JAVA_OPTS=-Xms256m -Xmx256m'
+      - "ELASTIC_BASE_URI=http://elasticsearch:9200"
+      - "JAVA_OPTS=-Xms256m -Xmx256m"
+
   iam:
-    image: "bluebrain/iam-nexus:latest"
+    image: "bluebrain/iam-nexus:0.5.17"
     mem_limit: 512m
     entrypoint:
       - /bin/sh
@@ -29,21 +28,25 @@ services:
           ./bin/iam-service
     ports:
       - "8081:8080"
-    links:
-      - cassandra
     environment:
       - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
       - "BIND_INTERFACE=0.0.0.0"
       - "PUBLIC_URI=http://localhost:8081"
       - "IAM_TESTMODE=true"
+      - "ELASTIC_BASE_URI=http://elasticsearch:9200"
       - "KAFKA_BOOTSTRAP_SERVERS=kafka:9092"
-      - 'JAVA_OPTS=-Xms256m -Xmx256m'
+      - "JAVA_OPTS=-Xms256m -Xmx256m"
+
+  elasticsearch:
+    image: "elasticsearch:latest"
+
   cassandra:
     image: "cassandra:3.11"
     mem_limit: 512m
     environment:
       - "MAX_HEAP_SIZE=256m"
       - "HEAP_NEWSIZE=128m"
+
   kafka:
     image: "spotify/kafka:latest"
     mem_limit: 256m
@@ -51,6 +54,7 @@ services:
       - "ADVERTISED_HOST=kafka"
       - "ADVERTISED_PORT=9092"
       - "KAFKA_HEAP_OPTS=-Xmx256m -Xms256m"
+
   blazegraph:
     image: "bluebrain/blazegraph-nexus:latest"
     mem_limit: 256m
