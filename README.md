@@ -1,3 +1,4 @@
+[![View our technology page](https://img.shields.io/badge/technology-Nexus-03ABE9.svg)](https://bluebrain.github.io/nexus)
 [![Join the chat at https://gitter.im/BlueBrain/nexus](https://badges.gitter.im/BlueBrain/nexus.svg)](https://gitter.im/BlueBrain/nexus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://bbpcode.epfl.ch/ci/buildStatus/icon?job=nexus.sbt.nexus)](https://bbpcode.epfl.ch/ci/job/nexus.sbt.nexus)
 [![GitHub Release](https://img.shields.io/github/release/BlueBrain/nexus.svg)]()
