@@ -18,6 +18,24 @@ Data can be examined by species, contributing laboratory, methodology, brain reg
 
 It is to be noted that many other scientific fields (Astronomy, Agriculture, Bioinformatics, Pharmaceutical industry, ...) are in need of such a technology. Consequently, Blue Brain Nexus core technology is being developed to be **agnostic of the domain** it might be applied to.
 
+# Getting started
+Running locally
+The easiest way to run BlueBrain Nexus locally is to use docker-compose.
+
+*Prerequisites*
+In order to run Nexus on your local machine make sure that you have Docker and Docker Compose installed. Docker compose comes bundled together with docker which you can download from Docker website.
+
+*Running using docker-compose*
+Copy or download [docker-compose.yaml](https://bbp-nexus.epfl.ch/staging/docs/assets/running_locally/docker-compose.yaml) file.
+
+and then run docker-compose up in the folder where docker-compose.yaml file is located.
+
+If you’re running it for the first time it will take a few moments to download the required docker images.
+
+After all the containers have started you should be able to verify which version of Nexus KG and Nexus IAM are running by going to http://localhost:8080/ and http://localhost:8081/ respectively.
+
+Please visit [Nexus KG documentation](https://bbp-nexus.epfl.ch/staging/docs/) for more details.
+
 # Documentation
 
 The overall documentation of the platform is available [here](https://bbp-nexus.epfl.ch/staging/docs/). In the following section of this document, we will also point to specific components documentation.
