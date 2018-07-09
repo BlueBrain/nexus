@@ -28,7 +28,7 @@ In order to run Nexus on your local machine make sure that you have Docker and D
 ### Running using docker-compose
 Copy or download [docker-compose.yaml](https://bbp-nexus.epfl.ch/staging/docs/assets/running_locally/docker-compose.yaml) file.
 
-and then run docker-compose up in the folder where docker-compose.yaml file is located.
+and then run `docker-compose up` in the folder where docker-compose.yaml file is located.
 
 If you’re running it for the first time it will take a few moments to download the required docker images.
 
