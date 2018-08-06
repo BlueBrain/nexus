@@ -1,13 +1,8 @@
-# see https://weblogs.java.net/blog/kcpeppe/archive/2013/12/11/case-study-jvm-hotspot-flags
 -Dfile.encoding=UTF8
--Xms1G
+-Xms2G
 -Xmx6G
--XX:MaxMetaspaceSize=2G
 -XX:ReservedCodeCacheSize=350M
 -XX:+TieredCompilation
+-XX:+UseG1GC
+-XX:MaxMetaspaceSize=2G
 -XX:-UseGCOverheadLimit
-# effectively adds GC to Perm space
--XX:+CMSClassUnloadingEnabled
-# must be enabled for CMSClassUnloadingEnabled to work
--XX:+UseConcMarkSweepGC
-
