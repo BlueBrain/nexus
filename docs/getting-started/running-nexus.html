@@ -178,7 +178,7 @@ BlueBrain/nexus
   <li><a href="../../docs/getting-started/running-nexus.html#running-nexus" class="header">Running Nexus</a>
   <ul>
     <li><a href="../../docs/getting-started/running-nexus.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
-    <li><a href="../../docs/getting-started/running-nexus.html#running-nexus-locally" class="header">Running Nexus locally</a></li>
+    <li><a href="../../docs/getting-started/running-nexus.html#run-nexus-locally-with-minikube" class="header">Run Nexus locally with Minikube</a></li>
     <li><a href="../../docs/getting-started/running-nexus.html#on-premise-deployment" class="header">On premise deployment</a></li>
   </ul></li>
 </ul>
@@ -201,7 +201,7 @@ BlueBrain/nexus
   <li><a href="../../docs/getting-started/running-nexus.html#running-nexus" class="header">Running Nexus</a>
   <ul>
     <li><a href="../../docs/getting-started/running-nexus.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
-    <li><a href="../../docs/getting-started/running-nexus.html#running-nexus-locally" class="header">Running Nexus locally</a></li>
+    <li><a href="../../docs/getting-started/running-nexus.html#run-nexus-locally-with-minikube" class="header">Run Nexus locally with Minikube</a></li>
     <li><a href="../../docs/getting-started/running-nexus.html#on-premise-deployment" class="header">On premise deployment</a></li>
   </ul></li>
 </ul>
@@ -216,7 +216,106 @@ BlueBrain/nexus
 <h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
 <p>TBC.</p>
 <h2><a href="#using-the-public-sandbox" name="using-the-public-sandbox" class="anchor"><span class="anchor-link"></span></a>Using the public sandbox</h2>
-<h2><a href="#running-nexus-locally" name="running-nexus-locally" class="anchor"><span class="anchor-link"></span></a>Running Nexus locally</h2>
+<h2><a href="#run-nexus-locally-with-minikube" name="run-nexus-locally-with-minikube" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Minikube</h2>
+<p><a href="https://github.com/kubernetes/minikube">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.</p>
+<h3><a href="#install-minikube" name="install-minikube" class="anchor"><span class="anchor-link"></span></a>Install Minikube</h3>
+<p>Follow the <a href="https://github.com/kubernetes/minikube#installation">installation instructions</a> posted on the Minikube project page.</p>
+<h3><a href="#minikube-install-instructions-for-macos" name="minikube-install-instructions-for-macos" class="anchor"><span class="anchor-link"></span></a>Minikube install instructions for macOS</h3>
+<p>An example for installing and running Minikube on macOS using Hyperkit after installing <a href="https://docs.docker.com/docker-for-mac/install/">Docker for Mac</a>:</p>
+<pre><code>brew install kubectl
+brew cask install minikube
+curl -Lo docker-machine-driver-hyperkit https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
+    &amp;&amp; chmod +x docker-machine-driver-hyperkit \
+    &amp;&amp; sudo cp docker-machine-driver-hyperkit /usr/local/bin/ \
+    &amp;&amp; rm docker-machine-driver-hyperkit \
+    &amp;&amp; sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit \
+    &amp;&amp; sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
+
+minikube start --vm-driver=hyperkit
+</code></pre>
+<p>If the installation is successful you can run the following command to open the <a href="http://kubernetes.io/docs/user-guide/ui/">Kubernetes Dashboard</a>:</p>
+<pre><code>minikube dashboard
+</code></pre>
+<p>To stop Minikube, run:</p>
+<pre><code>minikube stop
+</code></pre><div class="callout note "><div class="callout-title">Note</div>
+<p>This section makes use of static assets hosted on this website; to remove the clutter please export the base of the documentation to <code>$MINI</code> env var:</p>
+<pre><code>export MINI=&quot;https://bluebrain.github.io/docs/getting-started/minikube/&quot;
+</code></pre></div>
+<h3><a href="#setup-a-separate-namespace" name="setup-a-separate-namespace" class="anchor"><span class="anchor-link"></span></a>Setup a separate namespace</h3>
+<p>Kubernetes namespaces are logical groupings of resources which allow segregating various deployments in &ldquo;virtual clusters&rdquo;.</p>
+<p>The default installation of Minikube creates three namespaces: <em>kube-system</em>, <em>kube-public</em> and <em>default</em>. This example uses a separate namespace to group Nexus specific resources.</p>
+<p>Get the list of available namespaces:</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>kubectl get namespaces
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ kubectl get namespaces
+NAME          STATUS    AGE
+default       Active    1h
+kube-public   Active    1h
+kube-system   Active    1h
+$
+</code></pre></dd>
+</dl>
+<p>Create the <em>nexus</em> namespace:</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>kubectl apply -f $MINI/namespace.yaml
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ kubectl apply -f $MINI/namespace.yaml
+namespace/nexus created
+$ kubectl get namespaces
+NAME          STATUS    AGE
+default       Active    1h
+kube-public   Active    1h
+kube-system   Active    1h
+nexus         Active    1m
+$
+</code></pre></dd>
+</dl>
+<p>Default the <code>kubectl</code> to the <em>nexus</em> namespace:</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>kubectl config set-context minikube --namespace=nexus
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ kubectl config set-context minikube --namespace=nexus
+Context &quot;minikube&quot; modified.
+$
+</code></pre></dd>
+</dl>
+<h3><a href="#install-dependent-services" name="install-dependent-services" class="anchor"><span class="anchor-link"></span></a>Install dependent services</h3>
+<p>Nexus uses numerous off the shelf services that need to be set-up as a prerequisite.</p>
+<h4><a href="#install-cassandra" name="install-cassandra" class="anchor"><span class="anchor-link"></span></a>Install Cassandra</h4>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>kubectl apply -f $MINI/cassandra.yaml
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ kubectl apply -f $MINI/cassandra.yaml
+service/cassandra created
+statefulset.apps/cassandra created
+$ kubectl exec -it cassandra-0 -- nodetool status
+Datacenter: datacenter1
+=======================
+Status=Up/Down
+|/ State=Normal/Leaving/Joining/Moving
+--  Address     Load       Tokens       Owns (effective)  Host ID                               Rack
+UN  172.17.0.4  103.71 KiB  256          100.0%            80c0bdfa-1f5e-41aa-8a7e-f0dea7fe7ef0  rack1
+$
+</code></pre></dd>
+</dl>
 <h2><a href="#on-premise-deployment" name="on-premise-deployment" class="anchor"><span class="anchor-link"></span></a>On premise deployment</h2>
 </div>
 <div>
