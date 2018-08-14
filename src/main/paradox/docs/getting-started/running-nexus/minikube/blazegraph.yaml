@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: blazegraph
+    namespace: nexus
+    labels:
+      app: blazegraph
+      group: infra
+  spec:
+    ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 9999
+    selector:
+      app: blazegraph
+      group: infra
+    type: ClusterIP
+    sessionAffinity: None
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: blazegraph
+    namespace: nexus
+    labels:
+      app: blazegraph
+      group: infra
+  spec:
+    serviceName: blazegraph
+    selector:
+      matchLabels:
+        app: blazegraph
+    replicas: 1
+    template:
+      metadata:
+        namespace: nexus
+        labels:
+          app: blazegraph
+          group: infra
+      spec:
+        containers:
+        - name: blazegraph
+          image: nawer/blazegraph:2.1.5
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+          - name: storage
+            mountPath: /var/lib/blazegraph
+          env:
+          - name: JAVA_XMS
+            value: '512m'
+          - name: JAVA_XMX
+            value: '1024m'
+          ports:
+          - containerPort: 9999
+            name: http
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 1Gi
+          livenessProbe:
+            tcpSocket:
+              port: http
+            failureThreshold: 5
+            successThreshold: 1
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            timeoutSeconds: 5
+        volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: storage-blazegraph
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: storage-blazegraph
+    namespace: nexus
+    labels:
+      app: blazegraph
+      group: infra
+  spec:
+    accessModes: [ ReadWriteOnce ]
+    storageClassName: standard
+    resources:
+      requests:
+        storage: 2Gi
+- apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /blazegraph
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    name: blazegraph
+    namespace: nexus
+  spec:
+    rules:
+    - http:
+        paths:
+        - backend:
+            serviceName: blazegraph
+            servicePort: 80
+          path: /blazegraph
