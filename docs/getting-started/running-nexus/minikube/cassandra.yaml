@@ -91,7 +91,7 @@ items:
             name: thrift
           resources:
             requests:
-              cpu: 500m
+              cpu: 200m
               memory: 1Gi
             limits:
               cpu: 500m
@@ -112,7 +112,7 @@ items:
               port: cql
             failureThreshold: 5
             successThreshold: 1
-            initialDelaySeconds: 15
+            initialDelaySeconds: 60
             periodSeconds: 10
             timeoutSeconds: 5
     volumeClaimTemplates:
