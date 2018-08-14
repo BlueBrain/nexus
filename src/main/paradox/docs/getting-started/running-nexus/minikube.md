@@ -9,7 +9,7 @@ day-to-day.
 This section makes use of static assets hosted on this website; to remove the clutter please export the base of the
 documentation to `$MINI` env var:
 ```
-export MINI="https://bluebrain.github.io/docs/getting-started/minikube/"
+export MINI="https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/minikube"
 ```
 
 @@@
