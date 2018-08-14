@@ -223,6 +223,10 @@ BlueBrain/nexus
 <p><a href="https://github.com/kubernetes/minikube">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>This section makes use of static assets hosted on this website; to remove the clutter please export the base of the documentation to <code>$MINI</code> env var:</p>
 <pre><code>export MINI=&quot;https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/minikube&quot;
+</code></pre></div><div class="callout note "><div class="callout-title">Note</div>
+<p>Some of the examples on this page make use of <code>curl</code> (<a href="https://curl.haxx.se/">https://curl.haxx.se/</a>) and <code>jq</code> (<a href="https://stedolan.github.io/jq/">https://stedolan.github.io/jq/</a>) for formatting the json output when interacting with the services. Please install these command line tools if you&rsquo;d like to run the commands in the examples.</p>
+<p>On macOS you can run:</p>
+<pre><code>brew install curl jq
 </code></pre></div>
 <h2><a href="#install-minikube" name="install-minikube" class="anchor"><span class="anchor-link"></span></a>Install Minikube</h2>
 <p>Follow the <a href="https://github.com/kubernetes/minikube#installation">installation instructions</a> posted on the Minikube project page.</p>
@@ -245,7 +249,10 @@ curl -Lo docker-machine-driver-hyperkit https://storage.googleapis.com/minikube/
 </code></pre>
 <p>To stop Minikube run:</p>
 <pre><code>minikube stop
-</code></pre>
+</code></pre><div class="callout note "><div class="callout-title">Note</div>
+<p>After stopping minikube the vm still exists on the system; starting minikube again will preserve the deployed services. To permanently remove minikube vm run:</p>
+<pre><code>minikube delete
+</code></pre></div>
 <h2><a href="#enable-the-ingress-addon" name="enable-the-ingress-addon" class="anchor"><span class="anchor-link"></span></a>Enable the ingress addon</h2>
 <p>Minikube comes with a collection of addons like the <a href="http://kubernetes.io/docs/user-guide/ui/">Kubernetes Dashboard</a> but not all are enabled by default. An important one is the <em>ingress</em> addon which enables routing http traffic from the host into the cluster.</p>
 <p>To enable the <em>ingress</em> addon run:</p>
@@ -347,7 +354,8 @@ $
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>kubectl apply -f $MINI/cassandra.yaml
+  <pre><code>kubectl apply -f $MINI/cassandra.yaml &amp;&amp; \
+  kubectl wait pod cassandra-0 --for condition=ready --timeout=180s
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
@@ -368,7 +376,8 @@ $
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>kubectl apply -f $MINI/elasticsearch.yaml
+  <pre><code>kubectl apply -f $MINI/elasticsearch.yaml &amp;&amp; \
+  kubectl wait pod elasticsearch-0 --for condition=ready --timeout=180s
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
@@ -403,7 +412,8 @@ $
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>kubectl apply -f $MINI/blazegraph.yaml
+  <pre><code>kubectl apply -f $MINI/blazegraph.yaml &amp;&amp; \
+  kubectl wait pod blazegraph-0 --for condition=ready --timeout=180s
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
@@ -427,8 +437,9 @@ $
   <dt>Command</dt>
   <dd>
   <pre><code>kubectl apply -f $MINI/zookeeper.yaml &amp;&amp; \
-kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s &amp;&amp; \
-kubectl apply -f $MINI/kafka.yaml
+  kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s &amp;&amp; \
+  kubectl apply -f $MINI/kafka.yaml &amp;&amp; \
+  kubectl wait pod kafka-0 --for condition=ready --timeout=180s
 </code></pre></dd>
 </dl>
 <h2><a href="#deploy-nexus-services" name="deploy-nexus-services" class="anchor"><span class="anchor-link"></span></a>Deploy Nexus Services</h2>
@@ -451,7 +462,8 @@ $
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>kubectl apply -f $MINI/iam.yaml
+  <pre><code>kubectl apply -f $MINI/iam.yaml &amp;&amp; \
+  kubectl wait pod iam-0 --for condition=ready --timeout=180s
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
@@ -468,27 +480,27 @@ $ curl -s &quot;http://$NEXUS/iam&quot; | jq
   &quot;name&quot;: &quot;iam&quot;,
   &quot;version&quot;: &quot;0.10.21&quot;,
   &quot;_links&quot;: [
-{
-  &quot;rel&quot;: &quot;api&quot;,
-  &quot;href&quot;: &quot;http://192.168.64.6/v1/acls&quot;
-}
+    {
+      &quot;rel&quot;: &quot;api&quot;,
+      &quot;href&quot;: &quot;http://192.168.64.6/v1/acls&quot;
+    }
   ]
 }
 $ curl -s &quot;http://$NEXUS/v1/acls/&quot; | jq
 {
   &quot;@context&quot;: &quot;http://192.168.64.6/v1/contexts/nexus/core/iam/v0.1.0&quot;,
   &quot;acl&quot;: [
-{
-  &quot;path&quot;: &quot;/&quot;,
-  &quot;identity&quot;: {
-    &quot;@id&quot;: &quot;http://192.168.64.6/v1/anonymous&quot;,
-    &quot;@type&quot;: &quot;Anonymous&quot;
-  },
-  &quot;permissions&quot;: [
-    &quot;read&quot;,
-    &quot;own&quot;
-  ]
-}
+    {
+      &quot;path&quot;: &quot;/&quot;,
+      &quot;identity&quot;: {
+        &quot;@id&quot;: &quot;http://192.168.64.6/v1/anonymous&quot;,
+        &quot;@type&quot;: &quot;Anonymous&quot;
+      },
+      &quot;permissions&quot;: [
+        &quot;read&quot;,
+        &quot;own&quot;
+      ]
+    }
   ]
 }
 $
@@ -498,7 +510,8 @@ $
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>kubectl apply -f $MINI/admin.yaml
+  <pre><code>kubectl apply -f $MINI/admin.yaml &amp;&amp; \
+  kubectl wait pod admin-0 --for condition=ready --timeout=180s
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
@@ -527,7 +540,8 @@ $
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>kubectl apply -f $MINI/kg.yaml
+  <pre><code>kubectl apply -f $MINI/kg.yaml &amp;&amp; \
+  kubectl wait pod kg-0 --for condition=ready --timeout=180s
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
@@ -544,6 +558,11 @@ $ curl -s &quot;http://$NEXUS/kg&quot; | jq
 {
   &quot;name&quot;: &quot;kg&quot;,
   &quot;version&quot;: &quot;0.10.11&quot;
+}
+$ curl -s &quot;http://$NEXUS/v1/resources/org/proj&quot; | jq # the access error is expected
+{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error&quot;,
+  &quot;code&quot;: &quot;UnauthorizedAccess&quot;
 }
 $
 </code></pre></dd>
