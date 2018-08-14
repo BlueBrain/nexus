@@ -30,6 +30,7 @@ lazy val root = project
   .settings(
     name       := "nexus",
     moduleName := "nexus",
+//    paradoxNavigationDepth in Compile := 3, // requires a fix in the generated right hand side TOC
     paradoxMaterialTheme in Compile := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")

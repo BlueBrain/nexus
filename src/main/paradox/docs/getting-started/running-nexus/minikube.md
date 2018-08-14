@@ -14,6 +14,19 @@ export MINI="https://bluebrain.github.io/nexus/docs/getting-started/running-nexu
 
 @@@
 
+@@@ note
+
+Some of the examples on this page make use of `curl` (https://curl.haxx.se/) and `jq` (https://stedolan.github.io/jq/)
+for formatting the json output when interacting with the services. Please install these command line tools if you'd like
+to run the commands in the examples.
+
+On macOS you can run:
+```
+brew install curl jq
+```
+
+@@@
+
 ## Install Minikube
 
 Follow the [installation instructions](https://github.com/kubernetes/minikube#installation) posted on the Minikube
@@ -52,6 +65,17 @@ To stop Minikube run:
 ```
 minikube stop
 ```
+
+@@@ note
+
+After stopping minikube the vm still exists on the system; starting minikube again will preserve the deployed services.
+To permanently remove minikube vm run:
+
+```
+minikube delete
+```
+
+@@@
 
 ## Enable the ingress addon
 
@@ -192,7 +216,8 @@ $
 Command
 :   
 ```
-kubectl apply -f $MINI/cassandra.yaml
+kubectl apply -f $MINI/cassandra.yaml && \
+  kubectl wait pod cassandra-0 --for condition=ready --timeout=180s
 ```
 
 Example
@@ -216,7 +241,8 @@ $
 Command
 :   
 ```
-kubectl apply -f $MINI/elasticsearch.yaml
+kubectl apply -f $MINI/elasticsearch.yaml && \
+  kubectl wait pod elasticsearch-0 --for condition=ready --timeout=180s
 ```
 
 Example
@@ -254,7 +280,8 @@ $
 Command
 :   
 ```
-kubectl apply -f $MINI/blazegraph.yaml
+kubectl apply -f $MINI/blazegraph.yaml && \
+  kubectl wait pod blazegraph-0 --for condition=ready --timeout=180s
 ```
 
 Example
@@ -281,8 +308,9 @@ Command
 :   
 ```
 kubectl apply -f $MINI/zookeeper.yaml && \
-    kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s && \
-    kubectl apply -f $MINI/kafka.yaml
+  kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s && \
+  kubectl apply -f $MINI/kafka.yaml && \
+  kubectl wait pod kafka-0 --for condition=ready --timeout=180s
 ```
 
 ## Deploy Nexus Services
@@ -312,7 +340,8 @@ $
 Command
 :   
 ```
-kubectl apply -f $MINI/iam.yaml
+kubectl apply -f $MINI/iam.yaml && \
+  kubectl wait pod iam-0 --for condition=ready --timeout=180s
 ```
 
 Example
@@ -331,27 +360,27 @@ $ curl -s "http://$NEXUS/iam" | jq
   "name": "iam",
   "version": "0.10.21",
   "_links": [
-    {
-      "rel": "api",
-      "href": "http://192.168.64.6/v1/acls"
-    }
+        {
+          "rel": "api",
+          "href": "http://192.168.64.6/v1/acls"
+        }
   ]
 }
 $ curl -s "http://$NEXUS/v1/acls/" | jq
 {
   "@context": "http://192.168.64.6/v1/contexts/nexus/core/iam/v0.1.0",
   "acl": [
-    {
-      "path": "/",
-      "identity": {
-        "@id": "http://192.168.64.6/v1/anonymous",
-        "@type": "Anonymous"
-      },
-      "permissions": [
-        "read",
-        "own"
-      ]
-    }
+        {
+          "path": "/",
+          "identity": {
+            "@id": "http://192.168.64.6/v1/anonymous",
+            "@type": "Anonymous"
+          },
+          "permissions": [
+            "read",
+            "own"
+          ]
+        }
   ]
 }
 $
@@ -362,7 +391,8 @@ $
 Command
 :   
 ```
-kubectl apply -f $MINI/admin.yaml
+kubectl apply -f $MINI/admin.yaml && \
+  kubectl wait pod admin-0 --for condition=ready --timeout=180s
 ```
 
 Example
@@ -394,7 +424,8 @@ $
 Command
 :   
 ```
-kubectl apply -f $MINI/kg.yaml
+kubectl apply -f $MINI/kg.yaml && \
+  kubectl wait pod kg-0 --for condition=ready --timeout=180s
 ```
 
 Example
@@ -413,6 +444,11 @@ $ curl -s "http://$NEXUS/kg" | jq
 {
   "name": "kg",
   "version": "0.10.11"
+}
+$ curl -s "http://$NEXUS/v1/resources/org/proj" | jq # the access error is expected
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error",
+  "code": "UnauthorizedAccess"
 }
 $
 ```
