@@ -5,7 +5,7 @@
 ### Docker
 
 Regardless of your OS, make sure to run a recent version of Docker (community edition).
-This was tested with versions <mark>18.03.1</mark> and above.
+This was tested with versions **18.03.1** and above.
 You might need to get installation packages directly
 from the [official Docker website](https://docs.docker.com/) if the one provided by your system
 package manager is outdated.
@@ -26,7 +26,7 @@ Docker version 18.03.1-ce, build 9ee9f40
 ### Memory and CPU limits
 
 On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor.
-Nexus requires at least <mark>2 CPUs and 8 GiB of memory</mark> in total. You can increase the limits
+Nexus requires at least **2 CPUs** and **8 GiB** of memory in total. You can increase the limits
 in Docker settings in the menu *Preferences* > *Advanced*.
 
 ### Initialize Docker Swarm
