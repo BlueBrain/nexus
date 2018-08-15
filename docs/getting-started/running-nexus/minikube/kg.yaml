@@ -80,6 +80,7 @@ items:
         containers:
         - name: kg
           image: bluebrain/nexus-kg:latest
+          imagePullPolicy: Always
           volumeMounts:
           - name: storage
             mountPath: /opt/binaries

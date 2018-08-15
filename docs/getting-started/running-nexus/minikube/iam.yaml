@@ -68,6 +68,7 @@ items:
         containers:
         - name: iam
           image: bluebrain/nexus-iam:latest
+          imagePullPolicy: Always
           env:
           - name: PUBLIC_IP
             valueFrom:

@@ -224,6 +224,7 @@ BlueBrain/nexus
 <p>This section makes use of static assets hosted on this website; to remove the clutter please export the base of the documentation to <code>$MINI</code> env var:</p>
 <pre><code>export MINI=&quot;https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/minikube&quot;
 </code></pre></div><div class="callout note "><div class="callout-title">Note</div>
+<p>This page presents the necessary commands to deploy Nexus with Minikube but also examples the show the expected output.</p>
 <p>Some of the examples on this page make use of <code>curl</code> (<a href="https://curl.haxx.se/">https://curl.haxx.se/</a>) and <code>jq</code> (<a href="https://stedolan.github.io/jq/">https://stedolan.github.io/jq/</a>) for formatting the json output when interacting with the services. Please install these command line tools if you&rsquo;d like to run the commands in the examples.</p>
 <p>On macOS you can run:</p>
 <pre><code>brew install curl jq
@@ -441,6 +442,20 @@ $
   kubectl apply -f $MINI/kafka.yaml &amp;&amp; \
   kubectl wait pod kafka-0 --for condition=ready --timeout=180s
 </code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ kubectl apply -f $MINI/zookeeper.yaml &amp;&amp; \
+  kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s &amp;&amp; \
+  kubectl apply -f $MINI/kafka.yaml &amp;&amp; \
+  kubectl wait pod kafka-0 --for condition=ready --timeout=180s
+service/zookeeper created
+statefulset.apps/zookeeper created
+pod/zookeeper-0 condition met
+service/kafka created
+statefulset.apps/kafka created
+pod/kafka-0 condition met
+$
+</code></pre></dd>
 </dl>
 <h2><a href="#deploy-nexus-services" name="deploy-nexus-services" class="anchor"><span class="anchor-link"></span></a>Deploy Nexus Services</h2>
 <p>Before configuring the services a configuration map must first be created that keeps track of the &ldquo;public&rdquo; ip address of the minikube cluster. The following command will replace the <code>{NEXUS}</code> token in the <code>config.yaml</code> file with the value stored in the <code>$NEXUS</code> variable set above.</p>
@@ -459,6 +474,7 @@ $
 </code></pre></dd>
 </dl>
 <h3><a href="#deploy-iam" name="deploy-iam" class="anchor"><span class="anchor-link"></span></a>Deploy IAM</h3>
+<p>IAM is the service that manages identities and tokens via downstream OIDC providers and manages the permissions to arbitrary resources in the system.</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -507,6 +523,7 @@ $
 </code></pre></dd>
 </dl>
 <h3><a href="#deploy-admin" name="deploy-admin" class="anchor"><span class="anchor-link"></span></a>Deploy Admin</h3>
+<p>Admin is the service that manages accounts (orgs and users) and projects their configuration.</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -537,6 +554,7 @@ $
 </code></pre></dd>
 </dl>
 <h3><a href="#deploy-kg" name="deploy-kg" class="anchor"><span class="anchor-link"></span></a>Deploy KG</h3>
+<p>KG is the service that manages user defined resources, their schemas and configuration like resolvers, views etc.</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -585,7 +603,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/getting-started/running-nexus/index.html" title="Running Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/getting-started/running-nexus/docker-compose.html" title="Run Nexus locally with Docker Compose" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -594,7 +612,7 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Running Nexus
+Run Nexus locally with Docker Compose
 </span>
 </div>
 </a>
