@@ -18,7 +18,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Running Nexus · Blue Brain Nexus</title>
+<title>Run Nexus locally with Docker · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.7a4cdee3.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.792431c1.css">
 <link rel="stylesheet" href="../../../lib/material__tabs/dist/mdc.tabs.min.css">
@@ -58,7 +58,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Running Nexus
+Run Nexus locally with Docker
 </span>
 </div>
 </div>
@@ -138,7 +138,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="active page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
     <li><a href="../../../docs/getting-started/intro-semantic-web.html" class="page">Introduction to Semantic Web</a></li>
     <li><a href="../../../docs/getting-started/shacl.html" class="page">Constraining data with SHACL</a></li>
     <li><a href="../../../docs/getting-started/example.html" class="page">Data management example</a></li>
@@ -175,9 +175,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/getting-started/running-nexus/docker.html#run-nexus-locally-with-docker" class="header">Run Nexus locally with Docker</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/docker.html#requirements" class="header">Requirements</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/docker.html#deployment" class="header">Deployment</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -196,9 +197,10 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/getting-started/running-nexus/docker.html#run-nexus-locally-with-docker" class="header">Run Nexus locally with Docker</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/docker.html#requirements" class="header">Requirements</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/docker.html#deployment" class="header">Deployment</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -209,13 +211,106 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
-<p>TBC.</p>
-<h2><a href="#using-the-public-sandbox" name="using-the-public-sandbox" class="anchor"><span class="anchor-link"></span></a>Using the public sandbox</h2>
-<p>TBC.</p>
+<h1><a href="#run-nexus-locally-with-docker" name="run-nexus-locally-with-docker" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Docker</h1>
+<h2><a href="#requirements" name="requirements" class="anchor"><span class="anchor-link"></span></a>Requirements</h2>
+<h3><a href="#docker" name="docker" class="anchor"><span class="anchor-link"></span></a>Docker</h3>
+<p>Regardless of your OS, make sure to run a recent version of Docker (community edition). This was tested with versions <strong>18.03.1</strong> and above. You might need to get installation packages directly from the <a href="https://docs.docker.com/">official Docker website</a> if the one provided by your system package manager is outdated.</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>docker --version
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ docker version
+Docker version 18.03.1-ce, build 9ee9f40
+</code></pre></dd>
+</dl>
+<h3><a href="#memory-and-cpu-limits" name="memory-and-cpu-limits" class="anchor"><span class="anchor-link"></span></a>Memory and CPU limits</h3>
+<p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least <strong>2 CPUs</strong> and <strong>8 GiB</strong> of memory in total. You can increase the limits in Docker settings in the menu <em>Preferences</em> &gt; <em>Advanced</em>.</p>
+<h3><a href="#initialize-docker-swarm" name="initialize-docker-swarm" class="anchor"><span class="anchor-link"></span></a>Initialize Docker Swarm</h3>
+<p>If you&rsquo;ve never used Docker Swarm or Docker Stacks before, you first need to create a swarm cluster on your local machine:</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>docker swarm init
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ docker swarm init
+Swarm initialized: current node (***) is now a manager.
+ 
+To add a worker to this swarm, run the following command:
+ 
+docker swarm join --token {token} 128.178.97.243:2377
+ 
+To add a manager to this swarm, run &#39;docker swarm join-token manager&#39; and follow the instructions.
+</code></pre></dd>
+</dl>
+<h2><a href="#deployment" name="deployment" class="anchor"><span class="anchor-link"></span></a>Deployment</h2>
+<p>Download the <a href="./docker/docker-compose.yaml">Docker Compose template</a> and the <a href="./docker/nginx.conf">Nginx router configuration</a> into a directory of your choice. For instance <code>~/docker/nexus/</code>.</p>
+<h3><a href="#starting-nexus" name="starting-nexus" class="anchor"><span class="anchor-link"></span></a>Starting Nexus</h3>
+<p>Create a <em>nexus</em> deployment with Docker Stacks:</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>docker stack deploy nexus --compose-file=docker-compose.yaml
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ cd ~/docker/nexus
+$ docker stack deploy nexus --compose-file=docker-compose.yaml
+Creating network nexus_default
+Creating config nexus_nginx
+Creating service nexus_iam
+Creating service nexus_admin
+Creating service nexus_elasticsearch
+Creating service nexus_cassandra
+Creating service nexus_kafka
+Creating service nexus_blazegraph
+Creating service nexus_router
+Creating service nexus_kg
+</code></pre></dd>
+</dl>
+<p>Wait about one minute and you should be able to access Nexus locally, on the port 80:</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>curl http://localhost
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ curl http://localhost
+{&quot;name&quot;:&quot;kg&quot;,&quot;version&quot;:&quot;0.10.11&quot;}
+</code></pre></dd>
+</dl>
+<p>To list running services or access logs, please refer to the <a href="https://docs.docker.com/engine/reference/commandline/stack/">documentation</a>.</p>
+<h3><a href="#stopping-nexus" name="stopping-nexus" class="anchor"><span class="anchor-link"></span></a>Stopping Nexus</h3>
+<p>You can stop and delete the entire deployment with:</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>docker stack rm nexus
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ docker stack rm nexus
+Removing service nexus_admin
+Removing service nexus_blazegraph
+Removing service nexus_cassandra
+Removing service nexus_elasticsearch
+Removing service nexus_iam
+Removing service nexus_kafka
+Removing service nexus_kg
+Removing service nexus_router
+Removing config nexus_nginx
+Removing network nexus_default
+</code></pre></dd>
+</dl><div class="callout note "><div class="callout-title">Note</div>
+<p>As no data is persisted outside the containers, <strong>everyting will be lost</strong> once you remove the Nexus deployment. If you&rsquo;d like help with creating persistent volumes, feel free to contact us on our <a href="https://gitter.im/BlueBrain/nexus">Gitter channel</a>.</p></div>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/docker.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -231,7 +326,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/getting-started/index.html" title="Getting Started Guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/getting-started/running-nexus/index.html" title="Running Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -240,17 +335,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Getting Started Guide
+Running Nexus
 </span>
 </div>
 </a>
-<a href="../../../docs/getting-started/running-nexus/docker.html" title="Run Nexus locally with Docker" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/getting-started/running-nexus/minikube.html" title="Run Nexus locally with Minikube" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Run Nexus locally with Docker
+Run Nexus locally with Minikube
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
