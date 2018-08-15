@@ -16,6 +16,8 @@ export MINI="https://bluebrain.github.io/nexus/docs/getting-started/running-nexu
 
 @@@ note
 
+This page presents the necessary commands to deploy Nexus with Minikube but also examples the show the expected output.
+
 Some of the examples on this page make use of `curl` (https://curl.haxx.se/) and `jq` (https://stedolan.github.io/jq/)
 for formatting the json output when interacting with the services. Please install these command line tools if you'd like
 to run the commands in the examples.
@@ -313,6 +315,22 @@ kubectl apply -f $MINI/zookeeper.yaml && \
   kubectl wait pod kafka-0 --for condition=ready --timeout=180s
 ```
 
+Example
+:   
+```
+$ kubectl apply -f $MINI/zookeeper.yaml && \
+  kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s && \
+  kubectl apply -f $MINI/kafka.yaml && \
+  kubectl wait pod kafka-0 --for condition=ready --timeout=180s
+service/zookeeper created
+statefulset.apps/zookeeper created
+pod/zookeeper-0 condition met
+service/kafka created
+statefulset.apps/kafka created
+pod/kafka-0 condition met
+$
+```
+
 ## Deploy Nexus Services
 
 Before configuring the services a configuration map must first be created that keeps track of the "public" ip address
@@ -336,6 +354,9 @@ $
 ```
 
 ### Deploy IAM
+
+IAM is the service that manages identities and tokens via downstream OIDC providers and manages the permissions to
+arbitrary resources in the system.
 
 Command
 :   
@@ -388,6 +409,8 @@ $
 
 ### Deploy Admin
 
+Admin is the service that manages accounts (orgs and users) and projects their configuration.
+
 Command
 :   
 ```
@@ -420,6 +443,8 @@ $
 ```
 
 ### Deploy KG
+
+KG is the service that manages user defined resources, their schemas and configuration like resolvers, views etc.
 
 Command
 :   

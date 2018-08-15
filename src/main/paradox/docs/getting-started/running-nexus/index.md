@@ -1,5 +1,6 @@
 @@@ index
 
+* [Run Nexus locally with Docker Compose](docker-compose.md)
 * [Run Nexus locally with Minikube](minikube.md)
 * [On premise deployment](on-premise.md)
 
