@@ -1,29 +1,135 @@
-# Running locally 
+# Running locally
 
-The easiest way to run BlueBrain Nexus locally is to use `docker-compose`.
+## Requirements
 
-## Prerequisites 
+### Docker
 
-In order to run Nexus on your local machine make sure that you have Docker and Docker Compose installed. Docker compose comes bundled together with docker which you can download from [Docker website](https://www.docker.com/).
+Regardless of your OS, make sure to run a recent version of Docker (community edition).
+This was tested with versions **18.03.1** and above.
+You might need to get installation packages directly
+from the [official Docker website](https://docs.docker.com/) if the one provided by your system
+package manager is outdated.
 
-## Running using docker-compose  
-
-Copy or download [docker-compose.yaml](../assets/running_locally/docker-compose.yaml) file.
-
-@@snip [docker-compose.yaml](../assets/running_locally/docker-compose.yaml) 
-
-and then run `docker-compose up` in the folder where `docker-compose.yaml` file is located.
-
-If you're running it for the first time it will take a few moments to download the required docker images.
-
-After all the containers have started you should be able to verify which version of Nexus KG and Nexus IAM are running by going to `http://localhost:8080/` and `http://localhost:8081/` respectively.
-
-All the paths for KG start with `http://localhost:8080/v0`, while all the IAM paths start with `http://localhost:8081/v0.`
-
-When everything is up and running run 
+Command
+:  
 ```
-curl -XPUT -H "Content-Type: application/json" http://127.0.0.1:8081/v0/acls/kg/ -d '{"acl":[{"permissions":["read","write","own","publish"],"identity":{"type":"Anonymous"}}]}'
+docker --version
+```
+
+Example
+:  
+```
+$ docker version
+Docker version 18.03.1-ce, build 9ee9f40
+```
+
+### Memory and CPU limits
+
+On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor.
+Nexus requires at least **2 CPUs and 8 GiB of memory** in total. You can increase the limits
+in Docker settings in the menu *Preferences* > *Advanced*.
+
+### Initialize Docker Swarm
+
+If you've never used Docker Swarm or Docker Stacks before, you first need to create a swarm cluster
+on your local machine:
+
+Command
+:  
+```
+docker swarm init
+```
+
+Example
+:  
+```
+$ docker swarm init
+Swarm initialized: current node (***) is now a manager.
+ 
+To add a worker to this swarm, run the following command:
+ 
+    docker swarm join --token {token} 128.178.97.243:2377
+ 
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+```
+
+## Deployment
+
+Download the [Docker Compose template](./docker/docker-compose.yaml) and
+the [Nginx router configuration](./docker/nginx.conf) into a directory of your choice.
+For instance `~/docker/nexus/`.
+
+### Starting Nexus
+
+Create a *nexus* deployment with Docker Stacks:
+
+Command
+:  
+```
+docker stack deploy nexus --compose-file=docker-compose.yaml
+```
+
+Example
+:  
+```
+$ cd ~/docker/nexus
+$ docker stack deploy nexus --compose-file=docker-compose.yaml
+Creating network nexus_default
+Creating config nexus_nginx
+Creating service nexus_explorer
+Creating service nexus_iam
+Creating service nexus_elasticsearch
+Creating service nexus_kafka
+Creating service nexus_blazegraph
+Creating service nexus_cassandra
+Creating service nexus_kg
+Creating service nexus_landing-page
+Creating service nexus_router
+```
+
+Wait about one minute and you should be able to open the [Nexus landing page](http://localhost) locally on the port 80.
+
+To grant anonymous users permissions for all the operations in KG, run:
+```
+curl -XPUT -H "Content-Type: application/json" http://localhost/v0/acls/kg/ -d '{"acl":[{"permissions":["read","write","own","publish"],"identity":{"type":"Anonymous"}}]}'
 ``` 
-to make sure that Anonymous users have permissions for all the operations in KG.
 
 Please visit @extref[Nexus KG documentation](service:kg) to for more details.
+
+To list running services or access logs, please refer to the
+[Docker stack documentation](https://docs.docker.com/engine/reference/commandline/stack/).
+
+### Stopping Nexus
+
+You can stop and delete the entire deployment with:
+
+Command
+:  
+```
+docker stack rm nexus
+```
+
+Example
+:  
+```
+$ docker stack rm nexus
+Removing service nexus_blazegraph
+Removing service nexus_cassandra
+Removing service nexus_elasticsearch
+Removing service nexus_explorer
+Removing service nexus_iam
+Removing service nexus_kafka
+Removing service nexus_kg
+Removing service nexus_landing-page
+Removing service nexus_router
+Removing config nexus_nginx
+Removing network nexus_default
+```
+
+@@@ note
+
+As no data is persisted outside the containers, **everyting will be lost** once you remove the Nexus
+deployment. If you'd like help with creating persistent volumes, feel free to contact us on our
+[Gitter channel](https://gitter.im/BlueBrain/nexus).
+
+@@@

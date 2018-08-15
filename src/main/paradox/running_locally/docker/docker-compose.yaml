@@ -1,0 +1,105 @@
+version: "3.3"
+services:
+  kg:
+    image: "bluebrain/kg-nexus:latest"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
+      - "BIND_INTERFACE=0.0.0.0"
+      - "PUBLIC_URI=http://localhost"
+      - "IAM_BASEURI=http://iam:8080/v0"
+      - "SPARQL_BASE_URI=http://blazegraph:9999/bigdata"
+      - "SPARQL_ENDPOINT=http://blazegraph:9999/bigdata/sparql"
+      - "ELASTIC_BASE_URI=http://elasticsearch:9200"
+      - "JAVA_OPTS=-Xms256m -Xmx512m"
+
+  iam:
+    image: "bluebrain/iam-nexus:latest"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+          echo Sleeping for 30 seconds
+          sleep 30
+          echo Starting IAM
+          ./bin/iam-service
+    environment:
+      - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
+      - "BIND_INTERFACE=0.0.0.0"
+      - "PUBLIC_URI=http://localhost"
+      - "IAM_TESTMODE=true"
+      - "ELASTIC_BASE_URI=http://elasticsearch:9200"
+      - "KAFKA_BOOTSTRAP_SERVERS=kafka:9092"
+      - "JAVA_OPTS=-Xms256m -Xmx512m"
+
+  elasticsearch:
+    image: "elasticsearch:latest"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+
+  cassandra:
+    image: "cassandra:3.11"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      - "MAX_HEAP_SIZE=512m"
+      - "HEAP_NEWSIZE=128m"
+
+  kafka:
+    image: "spotify/kafka:latest"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    environment:
+      - "ADVERTISED_HOST=kafka"
+      - "ADVERTISED_PORT=9092"
+      - "KAFKA_HEAP_OPTS=-Xms256m -Xmx512m"
+
+  blazegraph:
+    image: "bluebrain/blazegraph-nexus:latest"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  landing-page:
+    image: bluebrain/nexus-landing-page:latest
+    environment:
+      - "BASE_PATH="
+      - "BASE_URI=http://localhost"
+
+  explorer:
+    image: bluebrain/nexus-explorer:latest
+    environment:
+      - "BASE_PATH=/explorer"
+      - "BASE_URI=http://localhost"
+
+  router:
+    image: "nginx:stable-alpine"
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+    deploy:
+        mode: global
+    configs:
+      - source: nginx
+        target: /etc/nginx/conf.d/default.conf
+
+configs:
+  nginx:
+    file: ./nginx.conf
