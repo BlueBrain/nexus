@@ -1,3 +1,3 @@
-# Constraining data with SHACL
+# Data validation with SHACL
 
 TBC.
