@@ -18,7 +18,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Run Nexus locally with Docker Compose · Blue Brain Nexus</title>
+<title>On premise / cloud deployment · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.7a4cdee3.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.792431c1.css">
 <link rel="stylesheet" href="../../../lib/material__tabs/dist/mdc.tabs.min.css">
@@ -58,7 +58,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Run Nexus locally with Docker Compose
+On premise / cloud deployment
 </span>
 </div>
 </div>
@@ -139,8 +139,8 @@ BlueBrain/nexus
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
-    <li><a href="../../../docs/getting-started/intro-semantic-web.html" class="page">Introduction to Semantic Web</a></li>
-    <li><a href="../../../docs/getting-started/shacl.html" class="page">Constraining data with SHACL</a></li>
+    <li><a href="../../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
+    <li><a href="../../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
     <li><a href="../../../docs/getting-started/example.html" class="page">Data management example</a></li>
   </ul></li>
   <li><a href="../../../docs/api/index.html" class="page">API Reference</a>
@@ -173,6 +173,14 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#on-premise-cloud-deployment" class="header">On premise / cloud deployment</a>
+  <ul>
+    <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#choice-of-hardware" class="header">Choice of hardware</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#cassandra" class="header">Cassandra</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 <div class="md-nav__title--site md-version" title="Version">
@@ -183,14 +191,75 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#on-premise-cloud-deployment" class="header">On premise / cloud deployment</a>
+  <ul>
+    <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#choice-of-hardware" class="header">Choice of hardware</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#cassandra" class="header">Cassandra</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#run-nexus-locally-with-docker-compose" name="run-nexus-locally-with-docker-compose" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Docker Compose</h1>
-<p>TBC.</p>
+<h1><a href="#on-premise-cloud-deployment" name="on-premise-cloud-deployment" class="anchor"><span class="anchor-link"></span></a>On premise / cloud deployment</h1>
+<p>There are several things to consider when preparing to deploy Nexus &ldquo;on premise&rdquo; because the setup depends a lot on the various usage profiles, but the most important categories would be:</p>
+<ul>
+  <li>Availability</li>
+  <li>Latency &amp; throughput</li>
+  <li>Capacity</li>
+  <li>Efficient use of hardware resources</li>
+  <li>Backup and restore</li>
+  <li>Monitoring &amp; alerting</li>
+</ul>
+<p>Each of the Nexus services and &ldquo;off the shelf&rdquo; products can be deployed as a single instance or as a cluster (with one exception at this point being BlazeGraph which doesn&rsquo;t come with a clustering option). The advantages for deploying clusters are generally higher availability, capacity and throughput at the cost of higher latency, consistency and having to deal with network instability.</p>
+<p>The decision to go with single node deployments or clustered deployments can be revisited later on and mixed setups (some services single node while others clustered) are also possible.</p>
+<p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/">Kubernetes</a>, <a href="https://www.openshift.com/">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
+<h2><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h2>
+<p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../../benchmarks/index.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
+<ol>
+  <li>Nexus uses a collection of data stores (Cassandra, ElasticSearch, BlazeGraph) which depend performance wise to the underlying disk access, so:
+    <ul>
+      <li>prefer local storage over network storage for lower latency when doing IO</li>
+      <li>prefer SSD over HDDs because random access speed is more important than sequential access</li>
+      <li>one exception is the file storage (attachments to resources which are stored as binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access speed; this assumes that accessing attachments is not the at the top in the usage profile</li>
+    </ul>
+  </li>
+  <li>All of Nexus services and most of the &ldquo;off the shelf&rdquo; products are built to run on top of the JVM which usually require more memory over computing power. A rough ratio of 2 CPU cores per 8GB of RAM is probably a good one (this of course depends on the CPU specification).</li>
+  <li>Due to the design for scalability of Nexus services and &ldquo;off the shelf&rdquo; products the network is a very important characteristic of the deployment as frequent dropped packets or partitions can seriously affect the availability of the system. Clustered / distributed systems generally use some form of consensus which is significantly affected by the reliability of the network. If the reliability of the network is a concern within the target deployment then vertical scalability is desirable over horizontal scalability: fewer host nodes with better specifications is better over more commodity hardware host nodes.</li>
+</ol>
+<h2><a href="#cassandra" name="cassandra" class="anchor"><span class="anchor-link"></span></a>Cassandra</h2>
+<p>Nexus uses <a href="http://cassandra.apache.org/">Cassandra</a> as its <em>primary store</em> as it scales well in terms of reads with the number of nodes in the cluster. It offers data replication out of the box which allows the system to continue to be available in case of node failures or network partitions.</p>
+<p>Since this is the <em>primary store</em> it is the most important system to be <a href="https://docs.datastax.com/en/cassandra/3.0/cassandra/operations/opsBackupRestore.html">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as mere indexing systems.</p>
+<p>Please have a look at the <a href="https://docs.datastax.com/en/dse-planning/doc/">Planning and Testing</a> section in the DataStax documentation as it contains recommendations in terms of hardware and capacity.</p>
+<p>As described in the <a href="../../architecture/systematic-service-design.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
+<p>A formula for computing the required disk space:</p>
+<pre><code>total = (resource_size + nexus_metadata_size) * count * number_updates * replication_factor * 2 (compaction requirement)
+</code></pre>
+<p>The <code>nexus_metadata_size</code> varies depending on many things, but it&rsquo;s generally less than or equal to the <code>resource_size</code>.</p>
+<p>An example, assuming:</p>
+<ul>
+  <li>10KB per resource</li>
+  <li>1.000.000 distinct resources</li>
+  <li>10 updates per resource</li>
+  <li>replication factor of 3</li>
+</ul>
+<p>&hellip; the total required disk size would be:</p>
+<pre><code>(10KB + 10KB) * 1.000.000 * 10 * 3 * 2 = 1.000.000.000KB ~= 955GB
+</code></pre>
+<p>The resulting size represents the total disk space of the cluster; a 5 node cluster with the data volume in the example above would have to be configured with 200GB disks per node.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/docker-compose.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/on-premise-cloud.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -206,7 +275,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/getting-started/running-nexus/index.html" title="Running Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/getting-started/running-nexus/minikube.html" title="Run Nexus locally with Minikube" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -215,17 +284,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Running Nexus
+Run Nexus locally with Minikube
 </span>
 </div>
 </a>
-<a href="../../../docs/getting-started/running-nexus/minikube.html" title="Run Nexus locally with Minikube" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/getting-started/intro-linked-data.html" title="Introduction to Linked Data" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Run Nexus locally with Minikube
+Introduction to Linked Data
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
