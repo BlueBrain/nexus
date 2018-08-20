@@ -2,7 +2,7 @@
 
 * [Run Nexus locally with Docker](docker.md)
 * [Run Nexus locally with Minikube](minikube.md)
-* [On premise deployment](on-premise.md)
+* [On premise / cloud deployment](on-premise-cloud.md)
 
 @@@
 

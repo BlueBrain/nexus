@@ -1,3 +1,0 @@
-# On premise deployment
-
-TBC.
