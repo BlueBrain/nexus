@@ -1,0 +1,379 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl",
+    {
+      "this": "https://bluebrain.github.io/nexus/schemas/resolver/shapes/"
+    }
+  ],
+  "@id": "https://bluebrain.github.io/nexus/schemas/resolver",
+  "@type": "nxv:Schema",
+  "shapes": [
+    {
+      "@id": "this:ResolverShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": "nxv:Resolver",
+      "or": [
+        {
+          "node": "this:CrossProjectResolverShape"
+        },
+        {
+          "node": "this:InAccountResolverShape"
+        },
+        {
+          "node": "this:InProjectResolverShape"
+        }
+      ]
+    },
+    {
+      "@id": "this:CrossProjectResolverShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "sh:hasValue": {
+            "@id": "nxv:CrossProject"
+          },
+          "minCount": 2,
+          "maxCount": 2
+        },
+        {
+          "path": "nxv:priority",
+          "name": "Priority",
+          "description": "The priority of the resolver.",
+          "datatype": "xsd:integer",
+          "minInclusive": 0,
+          "maxInclusive": 1000,
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:resourceTypes",
+          "name": "Resource types",
+          "description": "The resource types that are to be applied for this resolver.",
+          "nodeKind": "sh:IRI",
+          "minCount": 0
+        },
+        {
+          "path": "nxv:projects",
+          "name": "Project UID",
+          "description": "The project UUID",
+          "datatype": "xsd:string",
+          "minCount": 1
+        },
+        {
+          "path": "nxv:identities",
+          "name": "UserRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:UserRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:UserRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "GroupRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:GroupRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:GroupRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "AuthenticatedRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:AuthenticatedRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:AuthenticatedRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "Anonymous identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:Anonymous"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:AnonymousIdentityShape"
+        }
+      ]
+    },
+    {
+      "@id": "this:InAccountResolverShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "minCount": 2,
+          "maxCount": 2,
+          "sh:hasValue": {
+            "@id": "nxv:InAccount"
+          }
+        },
+        {
+          "path": "nxv:priority",
+          "name": "Priority",
+          "description": "The priority of the resolver.",
+          "datatype": "xsd:integer",
+          "minInclusive": 0,
+          "maxInclusive": 1000,
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:resourceTypes",
+          "name": "Resource types",
+          "description": "The resource types that are to be applied for this resolver.",
+          "nodeKind": "sh:IRI",
+          "minCount": 0
+        },
+        {
+          "path": "nxv:identities",
+          "name": "UserRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:UserRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:UserRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "GroupRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:GroupRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:GroupRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "AuthenticatedRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:AuthenticatedRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:AuthenticatedRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "Anonymous identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:Anonymous"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:AnonymousIdentityShape"
+        }
+      ]
+    },
+    {
+      "@id": "this:InProjectResolverShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "minCount": 2,
+          "maxCount": 2,
+          "sh:hasValue": {
+            "@id": "nxv:InProject"
+          }
+        },
+        {
+          "path": "nxv:priority",
+          "name": "Priority",
+          "description": "The priority of the resolver.",
+          "datatype": "xsd:integer",
+          "minInclusive": 0,
+          "maxInclusive": 1000,
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:resourceTypes",
+          "name": "Resource types",
+          "description": "The resource types that are to be applied for this resolver.",
+          "nodeKind": "sh:IRI",
+          "minCount": 0
+        },
+        {
+          "path": "nxv:identities",
+          "name": "UserRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:UserRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:UserRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "GroupRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:GroupRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:GroupRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "AuthenticatedRef identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:AuthenticatedRef"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:AuthenticatedRefIdentityShape"
+        },
+        {
+          "path": "nxv:identities",
+          "name": "Anonymous identities",
+          "description": "The identities used to enforce security into this resolver.",
+          "sh:qualifiedValueShape": {
+            "class": "nxv:Anonymous"
+          },
+          "qualifiedValueShapesDisjoint": true,
+          "seeAlso": "this:AnonymousIdentityShape"
+        }
+      ]
+    },
+    {
+      "@id": "this:UserRefIdentityShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNode",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "minCount": 1,
+          "maxCount": 1,
+          "sh:hasValue": {
+            "@id": "nxv:UserRef"
+          }
+        },
+        {
+          "path": "nxv:realm",
+          "name": "Realm",
+          "description": "The OIDC Provider realm.",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:sub",
+          "name": "Subject",
+          "description": "The OIDC Provider subject.",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:GroupRefIdentityShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNode",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "minCount": 1,
+          "maxCount": 1,
+          "sh:hasValue": {
+            "@id": "nxv:GroupRef"
+          }
+        },
+        {
+          "path": "nxv:realm",
+          "name": "Realm",
+          "description": "The OIDC Provider realm.",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:group",
+          "name": "Group",
+          "description": "The OIDC Provider group.",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:AuthenticatedRefIdentityShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNode",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "minCount": 1,
+          "maxCount": 1,
+          "sh:hasValue": {
+            "@id": "nxv:AuthenticatedRef"
+          }
+        },
+        {
+          "path": "nxv:realm",
+          "name": "Realm",
+          "description": "The OIDC Provider realm.",
+          "datatype": "xsd:string",
+          "minCount": 0,
+          "maxCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:AnonymousIdentityShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNode",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "minCount": 1,
+          "maxCount": 1,
+          "sh:hasValue": {
+            "@id": "nxv:Anonymous"
+          }
+        }
+      ]
+    }
+  ]
+}
