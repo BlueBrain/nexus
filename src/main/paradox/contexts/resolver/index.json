@@ -1,0 +1,27 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "Resolver": "nxv:Resolver",
+    "CrossProject": "nxv:CrossProject",
+    "InAccount": "nxv:InAccount",
+    "InProject": "nxv:InProject",
+    "UserRef": "nxv:UserRef",
+    "GroupRef": "nxv:GroupRef",
+    "AuthenticatedRef": "nxv:AuthenticatedRef",
+    "Anonymous": "nxv:Anonymous",
+    "priority": "nxv:priority",
+    "resourceTypes": {
+      "@id": "nxv:resourceTypes",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "projects": "nxv:projects",
+    "identities": {
+      "@id": "nxv:identities",
+      "@container": "@set"
+    },
+    "realm": "nxv:realm",
+    "sub": "nxv:sub",
+    "group": "nxv:group"
+  }
+}

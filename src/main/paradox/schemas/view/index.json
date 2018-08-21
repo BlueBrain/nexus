@@ -1,0 +1,119 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl",
+    {
+      "this": "https://bluebrain.github.io/nexus/schemas/view/shapes/"
+    }
+  ],
+  "@id": "https://bluebrain.github.io/nexus/schemas/view",
+  "@type": "nxv:Schema",
+  "shapes": [
+    {
+      "@id": "this:ViewShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": "nxv:View",
+      "or": [
+        {
+          "node": "this:ElasticViewShape"
+        },
+        {
+          "node": "this:SparqlViewShape"
+        }
+      ]
+    },
+    {
+      "@id": "this:ElasticViewShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF type ElasticView",
+          "description": "The ElasticView RDF type.",
+          "nodeKind": "sh:IRI",
+          "sh:hasValue": {
+            "@id": "nxv:ElasticView"
+          }
+        },
+        {
+          "path": "rdf:type",
+          "name": "RDF type Alpha",
+          "description": "The Alpha RDF type.",
+          "nodeKind": "sh:IRI",
+          "sh:hasValue": {
+            "@id": "nxv:Alpha"
+          }
+        },
+        {
+          "path": "nxv:uuid",
+          "name": "UUID",
+          "description": "The underlying uuid generated for this view.",
+          "datatype": "xsd:string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:resourceSchemas",
+          "name": "Resource schemas",
+          "description": "The set of schemas absolute iris used in the view.",
+          "nodeKind": "sh:IRI"
+        },
+        {
+          "path": "nxv:mapping",
+          "name": "Mapping",
+          "description": "The ElasticSearch mapping definition",
+          "datatype": "xsd:string",
+          "minCount": "1"
+        },
+        {
+          "path": "nxv:resourceTag",
+          "name": "Resource tag",
+          "description": "The tag for which indexing will be triggered",
+          "datatype": "xsd:string"
+        },
+        {
+          "path": "nxv:includeMetadata",
+          "name": "Include metadata",
+          "description": "flag to include or exclude metadata on the indexed Document",
+          "datatype": "xsd:boolean"
+        },
+        {
+          "path": "nxv:sourceAsText",
+          "name": "Source as blob",
+          "description": "flag to include or exclude the source Json as a blob",
+          "datatype": "xsd:boolean"
+        }
+      ]
+    },
+    {
+      "@id": "this:SparqlViewShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "minCount": 2,
+          "maxCount": 2,
+          "sh:hasValue": {
+            "@id": "nxv:SparqlView"
+          }
+        },
+        {
+          "path": "nxv:uuid",
+          "name": "UUID",
+          "description": "The underlying uuid generated for this view.",
+          "datatype": "xsd:string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+          "minCount": 1,
+          "maxCount": 1
+        }
+      ]
+    }
+  ]
+}

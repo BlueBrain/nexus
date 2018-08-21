@@ -1,0 +1,17 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "code": "nxv:code",
+    "msg": "nxv:message",
+    "message": "nxv:message",
+    "ref": "nxv:ref",
+    "refs": "nxv:refs",
+    "filename": "nxv:filename",
+    "reason": "nxv:reason",
+    "rev": "nxv:rev",
+    "types": "nxv:types",
+    "supported": "nxv:supported",
+    "details": "nxv:details",
+    "missingParams": "nxv:missingParams"
+  }
+}

@@ -227,5 +227,5 @@ An example, assuming:
 
 Compactions can be applied to the journal using the
 [CompactJournalUtility](https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java)
-to reduce the disk usage, but it take quite a bit a time and requires taking the software offline during the process.
+to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.
 
