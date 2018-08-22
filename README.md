@@ -25,16 +25,23 @@ The easiest way to run BlueBrain Nexus locally is to use docker-compose.
 ### Prerequisites
 In order to run Nexus on your local machine make sure that you have Docker and Docker Compose installed. Docker compose comes bundled together with docker which you can download from Docker website.
 
-### Running using docker-compose
-Copy or download [docker-compose.yaml](https://bbp-nexus.epfl.ch/staging/docs/assets/running_locally/docker-compose.yaml) file.
+### Running using docker compose
 
-and then run `docker-compose up` in the folder where docker-compose.yaml file is located.
+Download the [docker-compose](https://bbp-nexus.epfl.ch/staging/docs/running_locally/docker/docker-compose.yaml) template
+and the [Nginx router](https://bbp-nexus.epfl.ch/staging/docs/running_locally/docker/nginx.conf) configuration into a 
+directory of your choice, for instance `~/docker/nexus/`.
 
-If you’re running it for the first time it will take a few moments to download the required docker images.
+Initialize the docker swarm and then deploy the template with Docker Stacks:
+```
+docker swarm init
+docker stack deploy nexus --compose-file=docker-compose.yaml
+```
 
-After all the containers have started you should be able to verify which version of Nexus KG and Nexus IAM are running by going to http://localhost:8080/ and http://localhost:8081/ respectively.
+If you’re running it for the first time it will take a few moments to download the required docker images. After all the
+containers have started you should be able to open the [Nexus Landing Page](http://localhost) locally on the port 80.
 
-Please visit [Nexus KG documentation](https://bbp-nexus.epfl.ch/staging/docs/) for more details.
+Please visit [Running Locally](https://bbp-nexus.epfl.ch/staging/docs/running_locally/) section of the documentation for
+more detailed instructions.
 
 # Documentation
 
