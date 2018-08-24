@@ -50,7 +50,7 @@ The overall documentation of the platform is available [here](https://bbp-nexus.
 ## Tutorials
 
 Please check out our tutorials:
- - [Nexus KG Schema Format](https://bbp-nexus.epfl.ch/dev/schema-documentation/documentation/shacl-schemas.html#nexus-kg-schemas)
+ - [Nexus KG Schema Format](https://bbp-nexus.epfl.ch/staging/schema-documentation/documentation/shacl-schemas.html#nexus-kg-schemas)
  - [Jupyter notebook with basic operations using Nexus](https://github.com/BlueBrain/nexus/blob/master/tutorial/basic_operations_nexus_v0.ipynb)
 
 ## Technical Introduction
