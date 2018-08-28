@@ -89,11 +89,6 @@ Creating service nexus_router
 
 Wait about one minute and you should be able to open the [Nexus landing page](http://localhost) locally on the port 80.
 
-To grant anonymous users permissions for all the operations in KG, run:
-```
-curl -XPUT -H "Content-Type: application/json" http://localhost/v0/acls/kg/ -d '{"acl":[{"permissions":["read","write","own","publish"],"identity":{"type":"Anonymous"}}]}'
-``` 
-
 Please visit @extref[Nexus KG documentation](service:kg) to for more details.
 
 To list running services or access logs, please refer to the
