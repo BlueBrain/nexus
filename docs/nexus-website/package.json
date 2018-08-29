@@ -1,0 +1,28 @@
+{
+  "name": "nexus-product-page",
+  "version": "0.1.17",
+  "description": "Product page of the Nexus Platform",
+  "main": "index.js",
+  "scripts": {
+    "build": "rm -rf dist && mkdir dist && parcel build index.html --public-url ./",
+    "build-docker": "docker build -f docker/Dockerfile -t ${npm_package_name} .",
+    "start": "parcel serve -p 8000",
+    "test": "true"
+  },
+  "author": "BlueBrain",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "eslint": "^4.18.1",
+    "parcel-bundler": "latest"
+  },
+  "dependencies": {
+    "autoprefixer": "^8.5.0",
+    "jquery": "^3.3.1",
+    "jquery-modal": "^0.9.1",
+    "jquery-ui-dist": "^1.12.1",
+    "paper": "^0.11.5"
+  }
+}
