@@ -1,6 +1,6 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/shacl",
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720",
     {
       "this": "https://bluebrain.github.io/nexus/schemas/resolver/shapes/"
     }
