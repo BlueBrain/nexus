@@ -59,6 +59,9 @@ Download the [Docker Compose template](./docker/docker-compose.yaml) and
 the [Nginx router configuration](./docker/nginx.conf) into a directory of your choice.
 For instance `~/docker/nexus/`.
 
+On a computer with 32 GiB of RAM or more, you can use [this template](./docker/docker-compose-32GB.yaml)
+with increased memory limits.
+
 ### Starting Nexus
 
 Create a *nexus* deployment with Docker Stacks:

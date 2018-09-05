@@ -5,7 +5,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 6G
     environment:
       - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
       - "BIND_INTERFACE=0.0.0.0"
@@ -14,14 +14,14 @@ services:
       - "SPARQL_BASE_URI=http://blazegraph:9999/blazegraph"
       - "SPARQL_ENDPOINT=http://blazegraph:9999/blazegraph/sparql"
       - "ELASTIC_BASE_URI=http://elasticsearch:9200"
-      - "JAVA_OPTS=-Xms256m -Xmx512m"
+      - "JAVA_OPTS=-Xms2G -Xmx4G"
 
   iam:
     image: "bluebrain/iam-nexus:latest"
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 4G
     entrypoint:
       - /bin/sh
       - -c
@@ -37,47 +37,47 @@ services:
       - "IAM_TESTMODE=true"
       - "ELASTIC_BASE_URI=http://elasticsearch:9200"
       - "KAFKA_BOOTSTRAP_SERVERS=kafka:9092"
-      - "JAVA_OPTS=-Xms256m -Xmx512m"
+      - "JAVA_OPTS=-Xms1G -Xmx3G"
 
   elasticsearch:
     image: "elasticsearch:latest"
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 4G
     environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms2G -Xmx3G"
 
   cassandra:
     image: "cassandra:3.11"
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 4G
     environment:
-      - "MAX_HEAP_SIZE=512m"
-      - "HEAP_NEWSIZE=128m"
+      - "MAX_HEAP_SIZE=3G"
+      - "HEAP_NEWSIZE=300m"
 
   kafka:
     image: "spotify/kafka:latest"
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 4G
     environment:
       - "ADVERTISED_HOST=kafka"
       - "ADVERTISED_PORT=9092"
-      - "KAFKA_HEAP_OPTS=-Xms256m -Xmx512m"
+      - "KAFKA_HEAP_OPTS=-Xms1G -Xmx3G"
 
   blazegraph:
     image: "nawer/blazegraph:2.1.5"
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 6G
     environment:
       - "JAVA_XMS=1G"
-      - "JAVA_XMX=1536m"
+      - "JAVA_XMX=4G"
 
   landing-page:
     image: bluebrain/nexus-landing-page:latest
