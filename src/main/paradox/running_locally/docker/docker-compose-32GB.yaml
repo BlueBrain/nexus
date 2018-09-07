@@ -2,10 +2,6 @@ version: "3.3"
 services:
   kg:
     image: "bluebrain/kg-nexus:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 6G
     environment:
       - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
       - "BIND_INTERFACE=0.0.0.0"
@@ -18,10 +14,6 @@ services:
 
   iam:
     image: "bluebrain/iam-nexus:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 4G
     entrypoint:
       - /bin/sh
       - -c
@@ -41,29 +33,17 @@ services:
 
   elasticsearch:
     image: "elasticsearch:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 4G
     environment:
-      - "ES_JAVA_OPTS=-Xms2G -Xmx3G"
+      - "ES_JAVA_OPTS=-Xms3G -Xmx3G"
 
   cassandra:
     image: "cassandra:3.11"
-    deploy:
-      resources:
-        limits:
-          memory: 4G
     environment:
       - "MAX_HEAP_SIZE=3G"
       - "HEAP_NEWSIZE=300m"
 
   kafka:
     image: "spotify/kafka:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 4G
     environment:
       - "ADVERTISED_HOST=kafka"
       - "ADVERTISED_PORT=9092"
@@ -71,10 +51,6 @@ services:
 
   blazegraph:
     image: "nawer/blazegraph:2.1.5"
-    deploy:
-      resources:
-        limits:
-          memory: 6G
     environment:
       - "JAVA_XMS=1G"
       - "JAVA_XMX=4G"
