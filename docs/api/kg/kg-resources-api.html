@@ -18,7 +18,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Running Nexus · Blue Brain Nexus</title>
+<title>Resources · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.7a4cdee3.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.792431c1.css">
 <link rel="stylesheet" href="../../../lib/material__tabs/dist/mdc.tabs.min.css">
@@ -58,7 +58,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Running Nexus
+Resources
 </span>
 </div>
 </div>
@@ -138,7 +138,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="active page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
     <li><a href="../../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
     <li><a href="../../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
     <li><a href="../../../docs/getting-started/example.html" class="page">Data management example</a></li>
@@ -175,9 +175,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/api/kg/kg-resources-api.html#resources" class="header">Resources</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#create-a-resource-using-post" class="header">Create a resource using POST</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -196,9 +196,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/api/kg/kg-resources-api.html#resources" class="header">Resources</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#create-a-resource-using-post" class="header">Create a resource using POST</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -209,13 +209,187 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
-<p>TBC.</p>
-<h2><a href="#using-the-public-sandbox" name="using-the-public-sandbox" class="anchor"><span class="anchor-link"></span></a>Using the public sandbox</h2>
-<p>TBC.</p>
+<h1><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h1>
+<p>Generic resources are rooted in the <code>/v1/resources/{accountId}/{projId}/{schema_id}</code> collection.</p>
+<p>Each resource&hellip; </p>
+<ul>
+  <li>belongs to a <code>project</code> (<code>{projId}</code>)</li>
+  <li>inside an <code>account</code> (<code>{accountId}</code>)</li>
+  <li>it is validated against a <code>schema</code> (<code>{schema_id}</code>).</li>
+</ul>
+<h2><a href="#create-a-resource-using-post" name="create-a-resource-using-post" class="anchor"><span class="anchor-link"></span></a>Create a resource using POST</h2>
+<pre><code>POST /v1/resources/{accountId}/{projId}/{schema_id}
+  {...}
+ ```
+
+The json payload: 
+
+- If the `@id` value is found on the payload, this @id will be used.
+- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resource&#39;s project (`{projId}`).
+
+### Example
+
+Request
+:   @@snip [resource.sh](../assets/resource.sh)
+
+Payload
+:   @@snip [resource.json](../assets/resource.json)
+
+Response
+:   @@snip [resource-ref-new.json](../assets/resource-ref-new.json)
+
+
+## Create a resource using PUT
+This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+</code></pre>
+<p>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}  {&hellip;}</p>
+<pre><code><br/>The json payload. Note that if the payload contains an @id different from the `{resource_id}`, the request will fail.
+
+### Example
+
+Request
+:   @@snip [resource-put.sh](../assets/resource-put.sh)
+
+Payload
+:   @@snip [resource.json](../assets/resource.json)
+
+Response
+:   @@snip [resource-ref-new.json](../assets/resource-ref-new.json)
+
+
+## Update a resource
+
+This operation overrides the payload.
+
+In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of
+the resource, the last revision needs to be passed as a query parameter.
+
+</code></pre>
+<p>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={previous_rev}  {&hellip;}</p>
+<pre><code>... where `{previous_rev}` is the last known revision number for the resource.
+
+
+### Example
+
+Request
+:   @@snip [resource-update.sh](../assets/resource-update.sh)
+
+Payload
+:   @@snip [resource.json](../assets/resource.json)
+
+Response
+:   @@snip [resource-ref-new-updated.json](../assets/resource-ref-new-updated.json)
+
+
+## Tag a resource
+
+Links a resource revision to a specific name. 
+
+Tagging a resource is considered to be an update as well.
+
+</code></pre>
+<p>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}/tags?rev={previous_rev}  {  &ldquo;tag&rdquo;: &ldquo;{name}&rdquo;,  &ldquo;rev&rdquo;: {rev}  }</p>
+<pre><code>... where 
+
+- `{previous_rev}` is the last known revision number for the resource.
+- `{name}` the name to give to the resource at a specific revision.
+- `{rev}` the revision number to link the provided `{name}`.
+
+### Example
+
+Request
+:   @@snip [resource-tag.sh](../assets/resource-tag.sh)
+
+Payload
+:   @@snip [tag.json](../assets/tag.json)
+
+Response
+:   @@snip [resource-ref-new-tagged.json](../assets/resource-ref-new-tagged.json)
+
+
+## Deprecate a resource
+
+Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying results.
+
+Deprecating a resource is considered to be an update as well. 
+
+</code></pre>
+<p>DELETE /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={previous_rev}</p>
+<pre><code><br/>... where `{previous_rev}` is the last known revision number for the resource.
+
+### Example
+
+Request
+:   @@snip [resource-deprecate.sh](../assets/resource-deprecate.sh)
+
+Response
+:   @@snip [resource-ref-new-deprecated.json](../assets/resource-ref-new-deprecated.json)
+
+
+## Fetch a resource (current version)
+
+</code></pre>
+<p>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}</p>
+<pre><code><br/>### Example
+
+Request
+:   @@snip [resource-fetch.sh](../assets/resource-fetch.sh)
+
+Response
+:   @@snip [resource-fetched.json](../assets/resource-fetched.json)
+
+
+## Fetch a resource (specific version)
+
+</code></pre>
+<p>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={rev}</p>
+<pre><code>... where `{rev}` is the revision number of the resource to be retrieved.
+
+### Example
+
+Request
+:   @@snip [resource-fetch-revision.sh](../assets/resource-fetch-revision.sh)
+
+Response
+:   @@snip [resource-fetched.json](../assets/resource-fetched.json)
+
+
+## Fetch a resource (specific tag)
+
+</code></pre>
+<p>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?tag={tag} ```</p>
+<p>&hellip; where <code>{tag}</code> is the tag of the resource to be retrieved.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-fetch-tag.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    {
+      &quot;@vocab&quot;: &quot;http://example.com/&quot;,
+      &quot;ex&quot;: &quot;http://example.com/&quot;
+    },
+    &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;Custom&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-fetched-tag.json">Full source at GitHub</a></dd>
+</dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg/kg-resources-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -231,7 +405,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/getting-started/index.html" title="Getting Started Guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/api/kg/index.html" title="KnowledgeGraph Service API" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -240,17 +414,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Getting Started Guide
+KnowledgeGraph Service API
 </span>
 </div>
 </a>
-<a href="../../../docs/getting-started/running-nexus/docker.html" title="Run Nexus locally with Docker" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/kg/kg-schemas-api.html" title="Schemas" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Run Nexus locally with Docker
+Schemas
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

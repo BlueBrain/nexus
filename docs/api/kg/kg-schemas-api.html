@@ -18,7 +18,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Running Nexus · Blue Brain Nexus</title>
+<title>Schemas · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.7a4cdee3.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.792431c1.css">
 <link rel="stylesheet" href="../../../lib/material__tabs/dist/mdc.tabs.min.css">
@@ -58,7 +58,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Running Nexus
+Schemas
 </span>
 </div>
 </div>
@@ -138,7 +138,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="active page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
     <li><a href="../../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
     <li><a href="../../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
     <li><a href="../../../docs/getting-started/example.html" class="page">Data management example</a></li>
@@ -175,9 +175,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/api/kg/kg-schemas-api.html#schemas" class="header">Schemas</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/api/kg/kg-schemas-api.html#create-a-schema-using-post" class="header">Create a schema using POST</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -196,9 +196,9 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/api/kg/kg-schemas-api.html#schemas" class="header">Schemas</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/api/kg/kg-schemas-api.html#create-a-schema-using-post" class="header">Create a schema using POST</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -209,13 +209,215 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
-<p>TBC.</p>
-<h2><a href="#using-the-public-sandbox" name="using-the-public-sandbox" class="anchor"><span class="anchor-link"></span></a>Using the public sandbox</h2>
-<p>TBC.</p>
+<h1><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h1>
+<p>Schemas are rooted in the <code>/v1/schemas/{accountId}/{projId}</code> collection.</p>
+<p>Each schema&hellip; </p>
+<ul>
+  <li>belongs to a <code>project</code> (<code>{projId}</code>)</li>
+  <li>inside an <code>account</code> (<code>{accountId}</code>)</li>
+  <li>it is validated against the <a href="https://www.w3.org/ns/shacl-shacl">shacl schema</a> (version 20170720).</li>
+</ul>
+<h2><a href="#create-a-schema-using-post" name="create-a-schema-using-post" class="anchor"><span class="anchor-link"></span></a>Create a schema using POST</h2>
+<pre><code>POST /v1/schemas/{accountId}/{projId}
+  {...}
+ ```
+
+The json payload: 
+
+- If the `@id` value is found on the payload, this @id will be used.
+- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resource&#39;s project (`{projId}`).
+
+### Example
+
+Request
+:   @@snip [schema.sh](../assets/schema.sh)
+
+Payload
+:   @@snip [schema.json](../assets/schema.json)
+
+Response
+:   @@snip [schema-ref-new.json](../assets/schema-ref-new.json)
+
+
+## Create a schema using PUT
+This alternative endpoint to create a schema is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+</code></pre>
+<p>PUT /v1/schemas/{accountId}/{projId}/{schema_id}  {&hellip;}</p>
+<pre><code><br/>The json payload. Note that if the payload contains an @id different from the `{schema_id}`, the request will fail.
+
+### Example
+
+Request
+:   @@snip [schema-put.sh](../assets/schema-put.sh)
+
+Payload
+:   @@snip [schema.json](../assets/schema.json)
+
+Response
+:   @@snip [schema-ref-new.json](../assets/schema-ref-new.json)
+
+
+## Update a schema
+
+This operation overrides the payload.
+
+In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of
+the resource, the last revision needs to be passed as a query parameter.
+
+</code></pre>
+<p>PUT /v1/schemas/{accountId}/{projId}/{schema_id}?rev={previous_rev}  {&hellip;}</p>
+<pre><code>... where `{previous_rev}` is the last known revision number for the schema.
+
+
+### Example
+
+Request
+:   @@snip [schema-update.sh](../assets/schema-update.sh)
+
+Payload
+:   @@snip [schema.json](../assets/schema.json)
+
+Response
+:   @@snip [schema-ref-new-updated.json](../assets/schema-ref-new-updated.json)
+
+
+## Tag a schema
+
+Links a schema revision to a specific name. 
+
+Tagging a schema is considered to be an update as well.
+
+</code></pre>
+<p>PUT /v1/schemas/{accountId}/{projId}/{schema_id}/tags?rev={previous_rev}  {  &ldquo;tag&rdquo;: &ldquo;{name}&rdquo;,  &ldquo;rev&rdquo;: {rev}  }</p>
+<pre><code>... where 
+
+- `{previous_rev}` is the last known revision number for the schema.
+- `{name}` the name to give to the schema at a specific revision.
+- `{rev}` the revision number to link the provided `{name}`.
+
+### Example
+
+Request
+:   @@snip [schema-tag.sh](../assets/schema-tag.sh)
+
+Payload
+:   @@snip [tag.json](../../assets/tag.json)
+
+Response
+:   @@snip [schema-ref-new-tagged.json](../assets/schema-ref-new-tagged.json)
+
+
+## Deprecate a schema
+
+Locks the schema, so no further operations can be performed. It also deletes the schema from listing/querying results.
+
+Deprecating a schema is considered to be an update as well. 
+
+</code></pre>
+<p>DELETE /v1/schemas/{accountId}/{projId}/{schema_id}?rev={previous_rev}</p>
+<pre><code><br/>... where `{previous_rev}` is the last known revision number for the schema.
+
+### Example
+
+Request
+:   @@snip [schema-deprecate.sh](../assets/schema-deprecate.sh)
+
+Response
+:   @@snip [schema-ref-new-deprecated.json](../assets/schema-ref-new-deprecated.json)
+
+
+## Fetch a schema (current version)
+
+</code></pre>
+<p>GET /v1/schemas/{accountId}/{projId}/{schema_id}</p>
+<pre><code><br/>### Example
+
+Request
+:   @@snip [schema-fetch.sh](../assets/schema-fetch.sh)
+
+Response
+:   @@snip [schema-fetched.json](../assets/schema-fetched.json)
+
+
+## Fetch a schema (specific version)
+
+</code></pre>
+<p>GET /v1/schemas/{accountId}/{projId}/{schema_id}?rev={rev}</p>
+<pre><code>... where `{rev}` is the revision number of the schema to be retrieved.
+
+### Example
+
+Request
+:   @@snip [schema-fetch-revision.sh](../assets/schema-fetch-revision.sh)
+
+Response
+:   @@snip [schema-fetched.json](../assets/schema-fetched.json)
+
+
+## Fetch a schema (specific tag)
+
+</code></pre>
+<p>GET /v1/schemas/{accountId}/{projId}/{schema_id}?tag={tag} ```</p>
+<p>&hellip; where <code>{tag}</code> is the tag of the resource to be retrieved.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetch-tag.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;,
+    {
+      &quot;ex&quot;: &quot;http://example.com/&quot;,
+      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;
+    },
+    &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
+  ],
+  &quot;@id&quot;: &quot;nxs:myschema2&quot;,
+  &quot;@type&quot;: &quot;nxv:Schema&quot;,
+  &quot;shapes&quot;: [
+    {
+      &quot;@id&quot;: &quot;this:MyShape&quot;,
+      &quot;@type&quot;: &quot;NodeShape&quot;,
+      &quot;nodeKind&quot;: &quot;BlankNode:OrIRI&quot;,
+      &quot;property&quot;: [
+        {
+          &quot;datatype&quot;: &quot;xsd:string&quot;,
+          &quot;minCount&quot;: 1,
+          &quot;path&quot;: &quot;ex:name&quot;
+        },
+        {
+          &quot;datatype&quot;: &quot;xsd:boolean&quot;,
+          &quot;minCount&quot;: 1,
+          &quot;path&quot;: &quot;ex:bool&quot;
+        },
+        {
+          &quot;datatype&quot;: &quot;xsd:integer&quot;,
+          &quot;minCount&quot;: 1,
+          &quot;path&quot;: &quot;ex:number&quot;
+        }
+      ],
+      &quot;targetClass&quot;: &quot;ex:Custom&quot;
+    }
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetched-tag.json">Full source at GitHub</a></dd>
+</dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg/kg-schemas-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -231,7 +433,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/getting-started/index.html" title="Getting Started Guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/api/kg/kg-resources-api.html" title="Resources" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -240,17 +442,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Getting Started Guide
+Resources
 </span>
 </div>
 </a>
-<a href="../../../docs/getting-started/running-nexus/docker.html" title="Run Nexus locally with Docker" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/kg/kg-resolvers-api.html" title="Resolvers" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Run Nexus locally with Docker
+Resolvers
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

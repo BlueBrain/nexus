@@ -18,7 +18,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Running Nexus · Blue Brain Nexus</title>
+<title>KnowledgeGraph Service API · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.7a4cdee3.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.792431c1.css">
 <link rel="stylesheet" href="../../../lib/material__tabs/dist/mdc.tabs.min.css">
@@ -58,7 +58,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Running Nexus
+KnowledgeGraph Service API
 </span>
 </div>
 </div>
@@ -138,7 +138,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="active page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
     <li><a href="../../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
     <li><a href="../../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
     <li><a href="../../../docs/getting-started/example.html" class="page">Data management example</a></li>
@@ -147,7 +147,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
     <li><a href="../../../docs/api/admin-service-api.html" class="page">Admin Service API</a></li>
-    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph Service API</a></li>
+    <li><a href="../../../docs/api/kg/index.html" class="active page">KnowledgeGraph Service API</a></li>
     <li><a href="../../../docs/api/iam-service-api.html" class="page">IAM Service API</a></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
@@ -175,9 +175,12 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/api/kg/index.html#knowledgegraph-service-api" class="header">KnowledgeGraph Service API</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/api/kg/index.html#resources" class="header">Resources</a></li>
+    <li><a href="../../../docs/api/kg/index.html#schemas" class="header">Schemas</a></li>
+    <li><a href="../../../docs/api/kg/index.html#resolvers" class="header">Resolvers</a></li>
+    <li><a href="../../../docs/api/kg/index.html#views" class="header">Views</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -196,9 +199,12 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/getting-started/running-nexus/index.html#running-nexus" class="header">Running Nexus</a>
+  <li><a href="../../../docs/api/kg/index.html#knowledgegraph-service-api" class="header">KnowledgeGraph Service API</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html#using-the-public-sandbox" class="header">Using the public sandbox</a></li>
+    <li><a href="../../../docs/api/kg/index.html#resources" class="header">Resources</a></li>
+    <li><a href="../../../docs/api/kg/index.html#schemas" class="header">Schemas</a></li>
+    <li><a href="../../../docs/api/kg/index.html#resolvers" class="header">Resolvers</a></li>
+    <li><a href="../../../docs/api/kg/index.html#views" class="header">Views</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -209,13 +215,22 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
-<p>TBC.</p>
-<h2><a href="#using-the-public-sandbox" name="using-the-public-sandbox" class="anchor"><span class="anchor-link"></span></a>Using the public sandbox</h2>
-<p>TBC.</p>
+<h1><a href="#knowledgegraph-service-api" name="knowledgegraph-service-api" class="anchor"><span class="anchor-link"></span></a>KnowledgeGraph Service API</h1>
+<h2><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h2>
+<p>A resource is an instance on the Knowledge Graph. </p>
+<p><a href="kg-resources-api.html">Operations on resources</a></p>
+<h2><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h2>
+<p>A schema is a resource which defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/">SHACL</a>. </p>
+<p><a href="kg-schemas-api.html">Operations on schemas</a></p>
+<h2><a href="#resolvers" name="resolvers" class="anchor"><span class="anchor-link"></span></a>Resolvers</h2>
+<p>A resolver s a resource which defines the way ids are resolved inside a project. </p>
+<p><a href="kg-resolvers-api.html">Operations on resolvers</a></p>
+<h2><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h2>
+<p>A view is a resource which defines the way indexing is applied to the resources inside a project. </p>
+<p><a href="kg-views-api.html">Operations on views</a></p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg/index.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -231,7 +246,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/getting-started/index.html" title="Getting Started Guide" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/api/admin-service-api.html" title="Admin Service API" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -240,17 +255,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Getting Started Guide
+Admin Service API
 </span>
 </div>
 </a>
-<a href="../../../docs/getting-started/running-nexus/docker.html" title="Run Nexus locally with Docker" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/kg/kg-resources-api.html" title="Resources" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Run Nexus locally with Docker
+Resources
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
