@@ -1,13 +1,13 @@
 {
   "@context": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "_total": "nxv:total",
-    "_results": {
+    "total": "nxv:total",
+    "results": {
       "@id": "nxv:results",
       "@container": "@list"
     },
     "resultId": "nxv:resultId",
-    "_maxScore": "nxv:maxScore",
-    "_score": "nxv:score"
+    "maxScore": "nxv:maxScore",
+    "score": "nxv:score"
   }
 }

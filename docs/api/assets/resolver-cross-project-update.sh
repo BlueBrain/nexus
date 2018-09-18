@@ -1,0 +1,1 @@
+curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver?rev=1" -d '{"@type": ["Resolver", "CrossProject"], "projects": ["account1/project1", "account1/project2"], "identities": [{"@type": "UserRef", "realm": "BBP", "sub": "name"} ], "priority": 50 }'

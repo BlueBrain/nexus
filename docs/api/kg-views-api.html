@@ -18,7 +18,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Error Signaling · Blue Brain Nexus</title>
+<title>Views</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.7a4cdee3.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.792431c1.css">
 <link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
@@ -45,7 +45,7 @@ data-md-color-accent="cyan"
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
 <div class="md-flex__cell md-flex__cell--shrink">
-<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<a href="../../docs/api/kg-views-api.html" title="Views" class="md-header-nav__button md-logo">
 <img src="../.././assets/img/logo.png" width="24" height="24">
 </a>
 </div>
@@ -54,12 +54,7 @@ data-md-color-accent="cyan"
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-<span class="md-header-nav__topic">
-Blue Brain Nexus
-</span>
-<span class="md-header-nav__topic">
-Error Signaling
-</span>
+Views
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -117,8 +112,8 @@ BlueBrain/nexus
 <span class="md-nav__button md-logo">
 <img src="../.././assets/img/logo.png" width="24" height="24">
 </span>
-<a href="../../docs/index.html" title="Blue Brain Nexus">
-Blue Brain Nexus
+<a href="../../docs/api/kg-views-api.html" title="Views">
+Views
 </a>
 </label>
 <div class="md-nav__source">
@@ -136,41 +131,6 @@ BlueBrain/nexus
 
 </div>
 <ul>
-  <li><a href="../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
-  <ul>
-    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
-    <li><a href="../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
-    <li><a href="../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
-    <li><a href="../../docs/getting-started/example.html" class="page">Data management example</a></li>
-  </ul></li>
-  <li><a href="../../docs/api/index.html" class="page">API Reference</a>
-  <ul>
-    <li><a href="../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
-    <li><a href="../../docs/api/admin-service-api.html" class="page">Admin Service API</a></li>
-    <li><a href="../../docs/api/kg-service-api.html" class="page">KnowledgeGraph Service API</a></li>
-    <li><a href="../../docs/api/iam-service-api.html" class="page">IAM Service API</a></li>
-    <li><a href="../../docs/api/error-signaling.html" class="active page">Error Signaling</a></li>
-  </ul></li>
-  <li><a href="../../docs/architecture/index.html" class="page">System Architecture</a>
-  <ul>
-    <li><a href="../../docs/architecture/use-cases.html" class="page">Use Cases</a></li>
-    <li><a href="../../docs/architecture/components.html" class="page">Components</a></li>
-    <li><a href="../../docs/architecture/integration.html" class="page">Integration</a></li>
-    <li><a href="../../docs/architecture/systematic-service-design.html" class="page">Systematic service design</a></li>
-  </ul></li>
-  <li><a href="../../docs/roadmap/index.html" class="page">Roadmap</a></li>
-  <li><a href="../../docs/benchmarks/index.html" class="page">Benchmarks</a>
-  <ul>
-    <li><a href="../../docs/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
-    <li><a href="../../docs/benchmarks/data-volumes.html" class="page">Data Volumes</a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html" class="page">Scenarios</a></li>
-    <li><a href="../../docs/benchmarks/results.html" class="page">Results</a></li>
-  </ul></li>
-  <li><a href="../../docs/additional-info/index.html" class="page">Additional Information</a>
-  <ul>
-    <li><a href="../../docs/additional-info/incremental-domain-definition.html" class="page">Incremental domain definition</a></li>
-    <li><a href="../../docs/additional-info/faq.html" class="page">Frequently asked questions</a></li>
-  </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
 </nav>
@@ -186,33 +146,13 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#error-signaling" name="error-signaling" class="anchor"><span class="anchor-link"></span></a>Error Signaling</h1>
-<p>The services makes use of the HTTP Status Codes to report the outcome of each API call. The status codes are complemented by a consistent response data model for reporting client and system level failures.</p>
-<dl>
-  <dt>Format</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: {
-    &quot;@vocab&quot;: &quot;{{base}}/voc/nexus/core&quot;
-  },
-  &quot;code&quot;: &quot;&lt;a machine readable unique code&gt;&quot;,
-  &quot;message&quot;: &quot;&lt;a human readable description of the error&gt;&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/error.json">Full source at GitHub</a></dd>
-  <dt>Example</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: {
-    &quot;@vocab&quot;: &quot;{{base}}/voc/nexus/core&quot;
-  },
-  &quot;code&quot;: &quot;IllegalFilterFormat&quot;,
-  &quot;message&quot;: &quot;Unable to parse &#39;path&#39; as an uri&quot;,
-  &quot;field&quot;: &quot;DownField(filter)/DownField(path)&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/error-example.json">Full source at GitHub</a></dd>
-</dl>
-<p>While the format only specifies <code>_code</code> and <code>_message</code> fields, additional fields may be presented for additional information in certain scenarios.</p>
+<h1><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h1>
+<p>Views are rooted in the <code>/v1/views/{accountId}/{projId}</code> collection.</p>
+<p>Views are used in the following scenarios</p>
+<p>TBD</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/error-signaling.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg-views-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -226,36 +166,6 @@ Edit this page
 </div>
 </main>
 <footer class="md-footer">
-<div class="md-footer-nav">
-<nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/api/iam-service-api.html" title="IAM Service API" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-<div class="md-flex__cell md-flex__cell--shrink">
-<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
-</div>
-<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-<span class="md-flex__ellipsis">
-<span class="md-footer-nav__direction">
-Previous
-</span>
-IAM Service API
-</span>
-</div>
-</a>
-<a href="../../docs/architecture/index.html" title="System Architecture" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-<span class="md-flex__ellipsis">
-<span class="md-footer-nav__direction">
-Next
-</span>
-System Architecture
-</span>
-</div>
-<div class="md-flex__cell md-flex__cell--shrink">
-<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-</div>
-</a>
-</nav>
-</div>
 <div class="md-footer-meta md-typeset">
 <div class="md-footer-meta__inner md-grid">
 <div class="md-footer-copyright">
