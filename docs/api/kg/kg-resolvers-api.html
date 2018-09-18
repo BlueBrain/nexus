@@ -182,6 +182,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver" class="header">InAccount resolver</a></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-cross-project-resolver-using-post" class="header">Create a (cross-project)resolver using POST</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-cross-project-resolver-using-put" class="header">Create a (cross-project)resolver using PUT</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#update-a-cross-project-resolver" class="header">Update a (cross-project)resolver</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#tag-a-resolver" class="header">Tag a resolver</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#deprecate-a-resolver" class="header">Deprecate a resolver</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#fetch-a-resolver-current-version-" class="header">Fetch a resolver (current version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#fetch-a-resolver-specific-version-" class="header">Fetch a resolver (specific version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#fetch-a-resolver-specific-tag-" class="header">Fetch a resolver (specific tag)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -207,6 +214,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver" class="header">InAccount resolver</a></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-cross-project-resolver-using-post" class="header">Create a (cross-project)resolver using POST</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-cross-project-resolver-using-put" class="header">Create a (cross-project)resolver using PUT</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#update-a-cross-project-resolver" class="header">Update a (cross-project)resolver</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#tag-a-resolver" class="header">Tag a resolver</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#deprecate-a-resolver" class="header">Deprecate a resolver</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#fetch-a-resolver-current-version-" class="header">Fetch a resolver (current version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#fetch-a-resolver-specific-version-" class="header">Fetch a resolver (specific version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#fetch-a-resolver-specific-tag-" class="header">Fetch a resolver (specific tag)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -385,144 +399,329 @@ BlueBrain/nexus
 <h2><a href="#create-a-cross-project-resolver-using-post" name="create-a-cross-project-resolver-using-post" class="anchor"><span class="anchor-link"></span></a>Create a (cross-project)resolver using POST</h2>
 <pre><code>POST /v1/resolver/{accountId}/{projId}
   {...}
- ```
-
-The json payload: 
-
-- If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resolver&#39;s project (`{projId}`).
-
-### Example
-
-Request
-:   @@snip [resolver-cross-project.sh](../assets/resolver-cross-project.sh)
-
-Payload
-:   @@snip [resolver-cross-project.json](../assets/resolver-cross-project.json)
-
-Response
-:   @@snip [resolver-cross-project-ref-new.json](../assets/resolver-cross-project-ref-new.json)
-
-
-## Create a (cross-project)resolver using PUT
-This alternative endpoint to create a resolver is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
 </code></pre>
-<p>PUT /v1/resolvers/{accountId}/{projId}/{resolver_id}  {&hellip;}</p>
-<pre><code><br/>The json payload. Note that if the payload contains an @id different from the `{resolver_id}`, the request will fail.
-
-### Example
-
-Request
-:   @@snip [resolver-cross-project.sh](../assets/resolver-cross-project-put.sh)
-
-Payload
-:   @@snip [resolver-cross-project.json](../assets/resolver-cross-project.json)
-
-Response
-:   @@snip [resolver-cross-project-ref-new.json](../assets/resolver-cross-project-ref-new.json)
-
-
-## Update a (cross-project)resolver
-
-This operation overrides the payload.
-
-In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of
-the resolver, the last revision needs to be passed as a query parameter.
-
+<p>The json payload: </p>
+<ul>
+  <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
+  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resolver&rsquo;s project (<code>{projId}</code>).</li>
+</ul>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myaccount/myproj&quot; -d &#39;{&quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;, &quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;account1/project1&quot;, &quot;account1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;account1/project1&quot;,
+    &quot;account1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;@type&quot;: &quot;UserRef&quot;,
+      &quot;realm&quot;: &quot;BBP&quot;,
+      &quot;sub&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;nxv:myresolver&quot;,
+  &quot;@type&quot;: [
+    &quot;nxv:Resolver&quot;,
+    &quot;nxv:CrossProject&quot;
+  ],
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resolvers/myaccount/myproject/nxv:myresolver&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#create-a-cross-project-resolver-using-put" name="create-a-cross-project-resolver-using-put" class="anchor"><span class="anchor-link"></span></a>Create a (cross-project)resolver using PUT</h2>
+<p>This alternative endpoint to create a resolver is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
+<pre><code>PUT /v1/resolvers/{accountId}/{projId}/{resolver_id}
+  {...}
 </code></pre>
-<p>PUT /v1/resolvers/{accountId}/{projId}/{resolver_id}?rev={previous_rev}  {&hellip;}</p>
-<pre><code>... where `{previous_rev}` is the last known revision number for the schema.
-
-
-### Example
-
-Request
-:   @@snip [resolver-cross-project-update.sh](../assets/resolver-cross-project-update.sh)
-
-Payload
-:   @@snip [resolver-cross-project.json](../assets/resolver-cross-project.json)
-
-Response
-:   @@snip [resolver-cross-project-ref-updated.json](../assets/resolver-cross-project-ref-updated.json)
-
-
-## Tag a resolver
-
-Links a resolver revision to a specific name. 
-
-Tagging a resolver is considered to be an update as well.
-
+<p>The json payload. Note that if the payload contains an @id different from the <code>{resolver_id}</code>, the request will fail.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;account1/project1&quot;, &quot;account1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;account1/project1&quot;,
+    &quot;account1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;@type&quot;: &quot;UserRef&quot;,
+      &quot;realm&quot;: &quot;BBP&quot;,
+      &quot;sub&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;nxv:myresolver&quot;,
+  &quot;@type&quot;: [
+    &quot;nxv:Resolver&quot;,
+    &quot;nxv:CrossProject&quot;
+  ],
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resolvers/myaccount/myproject/nxv:myresolver&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#update-a-cross-project-resolver" name="update-a-cross-project-resolver" class="anchor"><span class="anchor-link"></span></a>Update a (cross-project)resolver</h2>
+<p>This operation overrides the payload.</p>
+<p>In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of the resolver, the last revision needs to be passed as a query parameter.</p>
+<pre><code>PUT /v1/resolvers/{accountId}/{projId}/{resolver_id}?rev={previous_rev}
+  {...}
 </code></pre>
-<p>PUT /v1/resolvers/{accountId}/{projId}/{resolver_id}/tags?rev={previous_rev}  {  &ldquo;tag&rdquo;: &ldquo;{name}&rdquo;,  &ldquo;rev&rdquo;: {rev}  }</p>
-<pre><code>... where 
-
-- `{previous_rev}` is the last known revision number for the resolver.
-- `{name}` the name to give to the resolver at a specific revision.
-- `{rev}` the revision number to link the provided `{name}`.
-
-### Example
-
-Request
-:   @@snip [resolver-tag.sh](../assets/resolver-tag.sh)
-
-Payload
-:   @@snip [tag.json](../assets/tag.json)
-
-Response
-:   @@snip [resolver-cross-project-ref-tagged.json](../assets/resolver-cross-project-ref-tagged.json)
-
-
-## Deprecate a resolver
-
-Locks the resolver, so no further operations can be performed. It will also not be taken into account in the resolution process.
-
-Deprecating a resolver is considered to be an update as well. 
-
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the schema.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver?rev=1&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;account1/project1&quot;, &quot;account1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-update.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;account1/project1&quot;,
+    &quot;account1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;@type&quot;: &quot;UserRef&quot;,
+      &quot;realm&quot;: &quot;BBP&quot;,
+      &quot;sub&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;nxv:myresolver&quot;,
+  &quot;@type&quot;: [
+    &quot;nxv:Resolver&quot;,
+    &quot;nxv:CrossProject&quot;
+  ],
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resolvers/myaccount/myproject/nxv:myresolver&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:10:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-updated.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#tag-a-resolver" name="tag-a-resolver" class="anchor"><span class="anchor-link"></span></a>Tag a resolver</h2>
+<p>Links a resolver revision to a specific name. </p>
+<p>Tagging a resolver is considered to be an update as well.</p>
+<pre><code>PUT /v1/resolvers/{accountId}/{projId}/{resolver_id}/tags?rev={previous_rev}
+  {
+    &quot;tag&quot;: &quot;{name}&quot;,
+    &quot;rev&quot;: {rev}
+  }
 </code></pre>
-<p>DELETE /v1/resolvers/{accountId}/{projId}/{resolver_id}?rev={previous_rev}</p>
-<pre><code><br/>... where `{previous_rev}` is the last known revision number for the schema.
-
-### Example
-
-Request
-:   @@snip [resolver-deprecate.sh](../assets/resolver-deprecate.sh)
-
-Response
-:   @@snip [resolver-ref-deprecated.json](../assets/resolver-ref-deprecated.json)
-
-
-## Fetch a resolver (current version)
-
+<p>&hellip; where </p>
+<ul>
+  <li><code>{previous_rev}</code> is the last known revision number for the resolver.</li>
+  <li><code>{name}</code> the name to give to the resolver at a specific revision.</li>
+  <li><code>{rev}</code> the revision number to link the provided <code>{name}</code>.</li>
+</ul>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-tag.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;tag&quot;: &quot;mytag&quot;,
+  &quot;rev&quot;: 1
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/tag.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;nxv:myresolver&quot;,
+  &quot;@type&quot;: [
+    &quot;nxv:Resolver&quot;,
+    &quot;nxv:CrossProject&quot;
+  ],
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resolvers/myaccount/myproject/nxv:myresolver&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 3,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-tagged.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#deprecate-a-resolver" name="deprecate-a-resolver" class="anchor"><span class="anchor-link"></span></a>Deprecate a resolver</h2>
+<p>Locks the resolver, so no further operations can be performed. It will also not be taken into account in the resolution process.</p>
+<p>Deprecating a resolver is considered to be an update as well. </p>
+<pre><code>DELETE /v1/resolvers/{accountId}/{projId}/{resolver_id}?rev={previous_rev}
 </code></pre>
-<p>GET /v1/resolvers/{accountId}/{projId}/{resolver_id}</p>
-<pre><code><br/>### Example
-
-Request
-:   @@snip [resolver-fetch.sh](../assets/resolver-fetch.sh)
-
-Response
-:   @@snip [resolver-fetched.json](../assets/resolver-fetched.json)
-
-
-## Fetch a resolver (specific version)
-
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the schema.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-deprecate.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;nxv:myresolver&quot;,
+  &quot;@type&quot;: [
+    &quot;nxv:Resolver&quot;,
+    &quot;nxv:CrossProject&quot;
+  ],
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resolvers/myaccount/myproject/nxv:myresolver&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-deprecated.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-resolver-current-version-" name="fetch-a-resolver-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (current version)</h2>
+<pre><code>GET /v1/resolvers/{accountId}/{projId}/{resolver_id}
 </code></pre>
-<p>GET /v1/resolvers/{accountId}/{projId}/{resolver_id}?rev={rev}</p>
-<pre><code>... where `{rev}` is the revision number of the resolver to be retrieved.
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-fetch.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resolver&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
+  ],
+  &quot;@id&quot;: &quot;nxv:myresolver&quot;,
 
-### Example
-
-Request
-:   @@snip [resolver-fetch-revision.sh](../assets/resolver-fetch-revision.sh)
-
-Response
-:   @@snip [resolver-fetched.json](../assets/resolver-fetched.json)
-
-
-## Fetch a resolver (specific tag)
-
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;account1/project1&quot;,
+    &quot;account1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;@type&quot;: &quot;UserRef&quot;,
+      &quot;realm&quot;: &quot;BBP&quot;,
+      &quot;sub&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resolvers/myaccount/myproject/nxv:myresolver&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-fetched.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-resolver-specific-version-" name="fetch-a-resolver-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (specific version)</h2>
+<pre><code>GET /v1/resolvers/{accountId}/{projId}/{resolver_id}?rev={rev}
 </code></pre>
-<p>GET /v1/resolvers/{accountId}/{projId}/{resolver_id}?tag={tag} ```</p>
+<p>&hellip; where <code>{rev}</code> is the revision number of the resolver to be retrieved.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-fetch-revision.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resolver&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
+  ],
+  &quot;@id&quot;: &quot;nxv:myresolver&quot;,
+
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;account1/project1&quot;,
+    &quot;account1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;@type&quot;: &quot;UserRef&quot;,
+      &quot;realm&quot;: &quot;BBP&quot;,
+      &quot;sub&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resolvers/myaccount/myproject/nxv:myresolver&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-fetched.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-resolver-specific-tag-" name="fetch-a-resolver-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (specific tag)</h2>
+<pre><code>GET /v1/resolvers/{accountId}/{projId}/{resolver_id}?tag={tag}
+</code></pre>
 <p>&hellip; where <code>{tag}</code> is the tag of the resolver to be retrieved.</p>
 <h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
 <dl>

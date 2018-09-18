@@ -178,6 +178,13 @@ BlueBrain/nexus
   <li><a href="../../../docs/api/kg/kg-resources-api.html#resources" class="header">Resources</a>
   <ul>
     <li><a href="../../../docs/api/kg/kg-resources-api.html#create-a-resource-using-post" class="header">Create a resource using POST</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#create-a-resource-using-put" class="header">Create a resource using PUT</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#update-a-resource" class="header">Update a resource</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#tag-a-resource" class="header">Tag a resource</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#fetch-a-resource-current-version-" class="header">Fetch a resource (current version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#fetch-a-resource-specific-version-" class="header">Fetch a resource (specific version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#fetch-a-resource-specific-tag-" class="header">Fetch a resource (specific tag)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -199,6 +206,13 @@ BlueBrain/nexus
   <li><a href="../../../docs/api/kg/kg-resources-api.html#resources" class="header">Resources</a>
   <ul>
     <li><a href="../../../docs/api/kg/kg-resources-api.html#create-a-resource-using-post" class="header">Create a resource using POST</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#create-a-resource-using-put" class="header">Create a resource using PUT</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#update-a-resource" class="header">Update a resource</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#tag-a-resource" class="header">Tag a resource</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#fetch-a-resource-current-version-" class="header">Fetch a resource (current version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#fetch-a-resource-specific-version-" class="header">Fetch a resource (specific version)</a></li>
+    <li><a href="../../../docs/api/kg/kg-resources-api.html#fetch-a-resource-specific-tag-" class="header">Fetch a resource (specific tag)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -220,144 +234,270 @@ BlueBrain/nexus
 <h2><a href="#create-a-resource-using-post" name="create-a-resource-using-post" class="anchor"><span class="anchor-link"></span></a>Create a resource using POST</h2>
 <pre><code>POST /v1/resources/{accountId}/{projId}/{schema_id}
   {...}
- ```
-
-The json payload: 
-
-- If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resource&#39;s project (`{projId}`).
-
-### Example
-
-Request
-:   @@snip [resource.sh](../assets/resource.sh)
-
-Payload
-:   @@snip [resource.json](../assets/resource.json)
-
-Response
-:   @@snip [resource-ref-new.json](../assets/resource-ref-new.json)
-
-
-## Create a resource using PUT
-This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
 </code></pre>
-<p>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}  {&hellip;}</p>
-<pre><code><br/>The json payload. Note that if the payload contains an @id different from the `{resource_id}`, the request will fail.
-
-### Example
-
-Request
-:   @@snip [resource-put.sh](../assets/resource-put.sh)
-
-Payload
-:   @@snip [resource.json](../assets/resource.json)
-
-Response
-:   @@snip [resource-ref-new.json](../assets/resource-ref-new.json)
-
-
-## Update a resource
-
-This operation overrides the payload.
-
-In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of
-the resource, the last revision needs to be passed as a query parameter.
-
+<p>The json payload: </p>
+<ul>
+  <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
+  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resource&rsquo;s project (<code>{projId}</code>).</li>
+</ul>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema&quot; -d &#39;{&quot;@context&quot;: {&quot;ex&quot;: &quot;http://example.com/&quot;, &quot;@vocab&quot;: &quot;http://example.com/&quot;}, &quot;@type&quot;: &quot;ex:Custom&quot;, &quot;name&quot;: &quot;Alex&quot;, &quot;number&quot;: 24, &quot;bool&quot;: false }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: {
+    &quot;ex&quot;: &quot;http://example.com/&quot;,
+    &quot;@vocab&quot;: &quot;http://example.com/&quot;
+  },
+  &quot;@type&quot;: &quot;ex:Custom&quot;,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;bool&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-ref-new.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#create-a-resource-using-put" name="create-a-resource-using-put" class="anchor"><span class="anchor-link"></span></a>Create a resource using PUT</h2>
+<p>This alternative endpoint to create a resource is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
+<pre><code>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}
+  {...}
 </code></pre>
-<p>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={previous_rev}  {&hellip;}</p>
-<pre><code>... where `{previous_rev}` is the last known revision number for the resource.
-
-
-### Example
-
-Request
-:   @@snip [resource-update.sh](../assets/resource-update.sh)
-
-Payload
-:   @@snip [resource.json](../assets/resource.json)
-
-Response
-:   @@snip [resource-ref-new-updated.json](../assets/resource-ref-new-updated.json)
-
-
-## Tag a resource
-
-Links a resource revision to a specific name. 
-
-Tagging a resource is considered to be an update as well.
-
+<p>The json payload. Note that if the payload contains an @id different from the <code>{resource_id}</code>, the request will fail.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot; -d &#39;{&quot;@context&quot;: {&quot;ex&quot;: &quot;http://example.com/&quot;, &quot;@vocab&quot;: &quot;http://example.com/&quot;}, &quot;@type&quot;: &quot;ex:Custom&quot;, &quot;name&quot;: &quot;Alex&quot;, &quot;number&quot;: 24, &quot;bool&quot;: false }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-put.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: {
+    &quot;ex&quot;: &quot;http://example.com/&quot;,
+    &quot;@vocab&quot;: &quot;http://example.com/&quot;
+  },
+  &quot;@type&quot;: &quot;ex:Custom&quot;,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;bool&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-ref-new.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#update-a-resource" name="update-a-resource" class="anchor"><span class="anchor-link"></span></a>Update a resource</h2>
+<p>This operation overrides the payload.</p>
+<p>In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of the resource, the last revision needs to be passed as a query parameter.</p>
+<pre><code>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={previous_rev}
+  {...}
 </code></pre>
-<p>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}/tags?rev={previous_rev}  {  &ldquo;tag&rdquo;: &ldquo;{name}&rdquo;,  &ldquo;rev&rdquo;: {rev}  }</p>
-<pre><code>... where 
-
-- `{previous_rev}` is the last known revision number for the resource.
-- `{name}` the name to give to the resource at a specific revision.
-- `{rev}` the revision number to link the provided `{name}`.
-
-### Example
-
-Request
-:   @@snip [resource-tag.sh](../assets/resource-tag.sh)
-
-Payload
-:   @@snip [tag.json](../assets/tag.json)
-
-Response
-:   @@snip [resource-ref-new-tagged.json](../assets/resource-ref-new-tagged.json)
-
-
-## Deprecate a resource
-
-Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying results.
-
-Deprecating a resource is considered to be an update as well. 
-
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?rev=1&quot; -d &#39;{&quot;@context&quot;: {&quot;ex&quot;: &quot;http://example.com/&quot;, &quot;@vocab&quot;: &quot;http://example.com/&quot;}, &quot;@type&quot;: &quot;ex:Custom&quot;, &quot;name&quot;: &quot;Alex&quot;, &quot;number&quot;: 24, &quot;bool&quot;: false }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-update.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: {
+    &quot;ex&quot;: &quot;http://example.com/&quot;,
+    &quot;@vocab&quot;: &quot;http://example.com/&quot;
+  },
+  &quot;@type&quot;: &quot;ex:Custom&quot;,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;bool&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T14:56:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-ref-new-updated.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#tag-a-resource" name="tag-a-resource" class="anchor"><span class="anchor-link"></span></a>Tag a resource</h2>
+<p>Links a resource revision to a specific name. </p>
+<p>Tagging a resource is considered to be an update as well.</p>
+<pre><code>PUT /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}/tags?rev={previous_rev}
+  {
+    &quot;tag&quot;: &quot;{name}&quot;,
+    &quot;rev&quot;: {rev}
+  }
 </code></pre>
-<p>DELETE /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={previous_rev}</p>
-<pre><code><br/>... where `{previous_rev}` is the last known revision number for the resource.
-
-### Example
-
-Request
-:   @@snip [resource-deprecate.sh](../assets/resource-deprecate.sh)
-
-Response
-:   @@snip [resource-ref-new-deprecated.json](../assets/resource-ref-new-deprecated.json)
-
-
-## Fetch a resource (current version)
-
+<p>&hellip; where </p>
+<ul>
+  <li><code>{previous_rev}</code> is the last known revision number for the resource.</li>
+  <li><code>{name}</code> the name to give to the resource at a specific revision.</li>
+  <li><code>{rev}</code> the revision number to link the provided <code>{name}</code>.</li>
+</ul>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-tag.sh">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;tag&quot;: &quot;mytag&quot;,
+  &quot;rev&quot;: 1
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/tag.json">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T14:58:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 3,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-ref-new-tagged.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#deprecate-a-resource" name="deprecate-a-resource" class="anchor"><span class="anchor-link"></span></a>Deprecate a resource</h2>
+<p>Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying results.</p>
+<p>Deprecating a resource is considered to be an update as well. </p>
+<pre><code>DELETE /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={previous_rev}
 </code></pre>
-<p>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}</p>
-<pre><code><br/>### Example
-
-Request
-:   @@snip [resource-fetch.sh](../assets/resource-fetch.sh)
-
-Response
-:   @@snip [resource-fetched.json](../assets/resource-fetched.json)
-
-
-## Fetch a resource (specific version)
-
+<p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the resource.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?rev=3&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-deprecate.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-ref-new-deprecated.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-resource-current-version-" name="fetch-a-resource-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a resource (current version)</h2>
+<pre><code>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}
 </code></pre>
-<p>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={rev}</p>
-<pre><code>... where `{rev}` is the revision number of the resource to be retrieved.
-
-### Example
-
-Request
-:   @@snip [resource-fetch-revision.sh](../assets/resource-fetch-revision.sh)
-
-Response
-:   @@snip [resource-fetched.json](../assets/resource-fetched.json)
-
-
-## Fetch a resource (specific tag)
-
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-fetch.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    {
+      &quot;@vocab&quot;: &quot;http://example.com/&quot;,
+      &quot;ex&quot;: &quot;http://example.com/&quot;
+    },
+    &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;Custom&quot;,
+  &quot;bool&quot;: false,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-fetched.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-resource-specific-version-" name="fetch-a-resource-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a resource (specific version)</h2>
+<pre><code>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?rev={rev}
 </code></pre>
-<p>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?tag={tag} ```</p>
+<p>&hellip; where <code>{rev}</code> is the revision number of the resource to be retrieved.</p>
+<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-fetch-revision.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    {
+      &quot;@vocab&quot;: &quot;http://example.com/&quot;,
+      &quot;ex&quot;: &quot;http://example.com/&quot;
+    },
+    &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;Custom&quot;,
+  &quot;bool&quot;: false,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resource-fetched.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-resource-specific-tag-" name="fetch-a-resource-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a resource (specific tag)</h2>
+<pre><code>GET /v1/resources/{accountId}/{projId}/{schema_id}/{resource_id}?tag={tag}
+</code></pre>
 <p>&hellip; where <code>{tag}</code> is the tag of the resource to be retrieved.</p>
 <h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
 <dl>
