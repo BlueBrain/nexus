@@ -4,8 +4,8 @@
     "CrossProject"
   ],
   "projects": [
-    "account1/project1",
-    "account1/project2"
+    "org1/project1",
+    "org1/project2"
   ],
   "identities": [
     {

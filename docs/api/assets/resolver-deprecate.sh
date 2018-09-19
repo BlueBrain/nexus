@@ -1,1 +1,1 @@
-curl -XDELETE "https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver"
+curl -XDELETE "https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver"

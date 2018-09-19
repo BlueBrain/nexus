@@ -5,32 +5,35 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="nexus">
-<meta name="generator" content="Paradox, paradox-material-theme=0.4.0, mkdocs-material=2.2.2">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
 <meta name="lang:search.result.none" content="No matching documents">
 <meta name="lang:search.result.one" content="1 matching document">
 <meta name="lang:search.result.other" content="# matching documents">
-<meta name="lang:search.language" content="">
 <meta name="lang:search.tokenizer" content="[\s\-]+">
 
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
 <title>Schemas · Blue Brain Nexus</title>
-<link rel="stylesheet" href="../../../assets/stylesheets/application.7a4cdee3.css">
-<link rel="stylesheet" href="../../../assets/stylesheets/application-palette.792431c1.css">
+<link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
 <link rel="stylesheet" href="../../../lib/material__tabs/dist/mdc.tabs.min.css">
 <link rel="stylesheet" href="../../../lib/prettify/prettify.css">
-<script src="../../../lib/modernizr/modernizr.min.js"></script>
+<script src="../../../assets/javascripts/modernizr.1aa3b519.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
 <style>
 body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
 code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="../../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../../assets/fonts/material-icons.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/paradox-material-theme.css">
 <link rel="stylesheet" href="../../.././assets/css/docs.css">
 </head>
@@ -38,9 +41,9 @@ code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
 data-md-color-primary="light-blue"
 data-md-color-accent="cyan"
 >
-<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
-<input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
-<label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
 <header class="md-header" data-md-component="header">
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
@@ -50,7 +53,7 @@ data-md-color-accent="cyan"
 </a>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
-<label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
@@ -63,14 +66,14 @@ Schemas
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
-<label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
 <div class="md-search" data-md-component="search" role="dialog">
-<label class="md-search__overlay" for="search"></label>
-<div class="md-search__inner">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
 <form class="md-search__form" name="search">
-<input type="text" class="md-search__input" name="query" required placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query">
-<label class="md-icon md-search__icon" for="search"></label>
-<button type="reset" class="md-icon md-search__icon" data-md-component="reset">&#xE5CD;</button>
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
 </form>
 <div class="md-search__output">
 <div class="md-search__scrollwrap" data-md-scrollfix>
@@ -114,9 +117,10 @@ BlueBrain/nexus
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
 <label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
 <span class="md-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
-</span>
+</a>
 <a href="../../../docs/index.html" title="Blue Brain Nexus">
 Blue Brain Nexus
 </a>
@@ -138,7 +142,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../../docs/getting-started/running-nexus/docker.html" class="page">Run Nexus locally with Docker</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html" class="page">Run Nexus locally with Minikube</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html" class="page">On premise / cloud deployment</a></li>
+    </ul></li>
     <li><a href="../../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
     <li><a href="../../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
     <li><a href="../../../docs/getting-started/example.html" class="page">Data management example</a></li>
@@ -146,9 +155,19 @@ BlueBrain/nexus
   <li><a href="../../../docs/api/index.html" class="page">API Reference</a>
   <ul>
     <li><a href="../../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
-    <li><a href="../../../docs/api/admin-service-api.html" class="page">Admin Service API</a></li>
-    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph Service API</a></li>
-    <li><a href="../../../docs/api/iam-service-api.html" class="page">IAM Service API</a></li>
+    <li><a href="../../../docs/api/admin/index.html" class="page">Admin API</a>
+    <ul>
+      <li><a href="../../../docs/api/admin/admin-orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../../docs/api/admin/admin-projects-api.html" class="page">Projects</a></li>
+    </ul></li>
+    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph API</a>
+    <ul>
+      <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/api/kg/kg-schemas-api.html" class="active page">Schemas</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html" class="page">Views</a></li>
+    </ul></li>
+    <li><a href="../../../docs/api/iam-service-api.html" class="page">IAM API</a></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
   <li><a href="../../../docs/architecture/index.html" class="page">System Architecture</a>
@@ -173,7 +192,7 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="toc">Table of contents</label>
+<label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
   <li><a href="../../../docs/api/kg/kg-schemas-api.html#schemas" class="header">Schemas</a>
   <ul>
@@ -185,15 +204,19 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/kg/kg-schemas-api.html#fetch-a-schema-current-version-" class="header">Fetch a schema (current version)</a></li>
     <li><a href="../../../docs/api/kg/kg-schemas-api.html#fetch-a-schema-specific-version-" class="header">Fetch a schema (specific version)</a></li>
     <li><a href="../../../docs/api/kg/kg-schemas-api.html#fetch-a-schema-specific-tag-" class="header">Fetch a schema (specific tag)</a></li>
+    <li><a href="../../../docs/api/kg/kg-schemas-api.html#list-schemas" class="header">List schemas</a></li>
   </ul></li>
 </ul>
 </nav>
 
-<div class="md-nav__title--site md-version" title="Version">
-<i class="md-icon">label_outline</i> 0.1.0*
-</div>
 </nav>
-
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> 0.1.0*
+</label>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -201,7 +224,7 @@ BlueBrain/nexus
 <div class="md-sidebar__scrollwrap">
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="toc">Table of contents</label>
+<label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
   <li><a href="../../../docs/api/kg/kg-schemas-api.html#schemas" class="header">Schemas</a>
   <ul>
@@ -213,6 +236,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/kg/kg-schemas-api.html#fetch-a-schema-current-version-" class="header">Fetch a schema (current version)</a></li>
     <li><a href="../../../docs/api/kg/kg-schemas-api.html#fetch-a-schema-specific-version-" class="header">Fetch a schema (specific version)</a></li>
     <li><a href="../../../docs/api/kg/kg-schemas-api.html#fetch-a-schema-specific-tag-" class="header">Fetch a schema (specific tag)</a></li>
+    <li><a href="../../../docs/api/kg/kg-schemas-api.html#list-schemas" class="header">List schemas</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -224,34 +248,35 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h1>
-<p>Schemas are rooted in the <code>/v1/schemas/{accountId}/{projId}</code> collection.</p>
+<p>Schemas are rooted in the <code>/v1/schemas/{org_label}/{project_label}</code> collection.</p>
 <p>Each schema&hellip; </p>
 <ul>
-  <li>belongs to a <code>project</code> (<code>{projId}</code>)</li>
-  <li>inside an <code>account</code> (<code>{accountId}</code>)</li>
+  <li>belongs to a <code>project</code> identifier by the label <code>{project_label}</code></li>
+  <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://www.w3.org/ns/shacl-shacl">shacl schema</a> (version 20170720).</li>
 </ul>
+<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
 <h2><a href="#create-a-schema-using-post" name="create-a-schema-using-post" class="anchor"><span class="anchor-link"></span></a>Create a schema using POST</h2>
-<pre><code>POST /v1/schemas/{accountId}/{projId}
+<pre><code>POST /v1/schemas/{org_label}/{project_label}
   {...}
 </code></pre>
 <p>The json payload: </p>
 <ul>
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
-  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resource&rsquo;s project (<code>{projId}</code>).</li>
+  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
 </ul>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/myschema&quot; -d &#39;{&quot;@context&quot;: [&quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;, {&quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;, &quot;ex&quot;: &quot;http://example.com/&quot;} ], &quot;@type&quot;: &quot;nxv:Schema&quot;, &quot;shapes&quot;: [{&quot;@id&quot;: &quot;this:MyShape&quot;, &quot;@type&quot;: &quot;sh:NodeShape&quot;, &quot;nodeKind&quot;: &quot;sh:BlankNodeOrIRI&quot;, &quot;targetClass&quot;: &quot;ex:Custom&quot;, &quot;property&quot;: [{&quot;path&quot;: &quot;ex:name&quot;, &quot;datatype&quot;: &quot;xsd:string&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:number&quot;, &quot;datatype&quot;: &quot;xsd:integer&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:bool&quot;, &quot;datatype&quot;: &quot;xsd:boolean&quot;, &quot;minCount&quot;: 1 } ] } ] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myorg/myproj/myschema&quot; -d &#39;{&quot;@context&quot;: [&quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;, {&quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;, &quot;ex&quot;: &quot;http://example.com/&quot;} ], &quot;@type&quot;: &quot;nxv:Schema&quot;, &quot;shapes&quot;: [{&quot;@id&quot;: &quot;this:MyShape&quot;, &quot;@type&quot;: &quot;sh:NodeShape&quot;, &quot;nodeKind&quot;: &quot;sh:BlankNodeOrIRI&quot;, &quot;targetClass&quot;: &quot;ex:Custom&quot;, &quot;property&quot;: [{&quot;path&quot;: &quot;ex:name&quot;, &quot;datatype&quot;: &quot;xsd:string&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:number&quot;, &quot;datatype&quot;: &quot;xsd:integer&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:bool&quot;, &quot;datatype&quot;: &quot;xsd:boolean&quot;, &quot;minCount&quot;: 1 } ] } ] }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema.sh">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;,
     {
-      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;,
+      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;,
       &quot;ex&quot;: &quot;http://example.com/&quot;
     }
   ],
@@ -281,42 +306,42 @@ BlueBrain/nexus
       ]
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema.json">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-ref-new.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-ref-new.json">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#create-a-schema-using-put" name="create-a-schema-using-put" class="anchor"><span class="anchor-link"></span></a>Create a schema using PUT</h2>
 <p>This alternative endpoint to create a schema is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
-<pre><code>PUT /v1/schemas/{accountId}/{projId}/{schema_id}
+<pre><code>PUT /v1/schemas/{org_label}/{project_label}/{schema_id}
   {...}
 </code></pre>
-<p>The json payload. Note that if the payload contains an @id different from the <code>{schema_id}</code>, the request will fail.</p>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p>Note that if the payload contains an @id different from the <code>{schema_id}</code>, the request will fail.</p>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot; -d &#39;{&quot;@context&quot;: [&quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;, {&quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;, &quot;ex&quot;: &quot;http://example.com/&quot;} ], &quot;@type&quot;: &quot;nxv:Schema&quot;, &quot;shapes&quot;: [{&quot;@id&quot;: &quot;this:MyShape&quot;, &quot;@type&quot;: &quot;sh:NodeShape&quot;, &quot;nodeKind&quot;: &quot;sh:BlankNodeOrIRI&quot;, &quot;targetClass&quot;: &quot;ex:Custom&quot;, &quot;property&quot;: [{&quot;path&quot;: &quot;ex:name&quot;, &quot;datatype&quot;: &quot;xsd:string&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:number&quot;, &quot;datatype&quot;: &quot;xsd:integer&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:bool&quot;, &quot;datatype&quot;: &quot;xsd:boolean&quot;, &quot;minCount&quot;: 1 } ] } ] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-put.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot; -d &#39;{&quot;@context&quot;: [&quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;, {&quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;, &quot;ex&quot;: &quot;http://example.com/&quot;} ], &quot;@type&quot;: &quot;nxv:Schema&quot;, &quot;shapes&quot;: [{&quot;@id&quot;: &quot;this:MyShape&quot;, &quot;@type&quot;: &quot;sh:NodeShape&quot;, &quot;nodeKind&quot;: &quot;sh:BlankNodeOrIRI&quot;, &quot;targetClass&quot;: &quot;ex:Custom&quot;, &quot;property&quot;: [{&quot;path&quot;: &quot;ex:name&quot;, &quot;datatype&quot;: &quot;xsd:string&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:number&quot;, &quot;datatype&quot;: &quot;xsd:integer&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:bool&quot;, &quot;datatype&quot;: &quot;xsd:boolean&quot;, &quot;minCount&quot;: 1 } ] } ] }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-put.sh">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;,
     {
-      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;,
+      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;,
       &quot;ex&quot;: &quot;http://example.com/&quot;
     }
   ],
@@ -346,43 +371,43 @@ BlueBrain/nexus
       ]
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema.json">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-ref-new.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-ref-new.json">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#update-a-schema" name="update-a-schema" class="anchor"><span class="anchor-link"></span></a>Update a schema</h2>
 <p>This operation overrides the payload.</p>
 <p>In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of the resource, the last revision needs to be passed as a query parameter.</p>
-<pre><code>PUT /v1/schemas/{accountId}/{projId}/{schema_id}?rev={previous_rev}
+<pre><code>PUT /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
   {...}
 </code></pre>
 <p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the schema.</p>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?rev=1&quot; -d &#39;{&quot;@context&quot;: [&quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;, {&quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;, &quot;ex&quot;: &quot;http://example.com/&quot;} ], &quot;@type&quot;: &quot;nxv:Schema&quot;, &quot;shapes&quot;: [{&quot;@id&quot;: &quot;this:MyShape&quot;, &quot;@type&quot;: &quot;sh:NodeShape&quot;, &quot;nodeKind&quot;: &quot;sh:BlankNodeOrIRI&quot;, &quot;targetClass&quot;: &quot;ex:Custom&quot;, &quot;property&quot;: [{&quot;path&quot;: &quot;ex:name&quot;, &quot;datatype&quot;: &quot;xsd:string&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:number&quot;, &quot;datatype&quot;: &quot;xsd:integer&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:bool&quot;, &quot;datatype&quot;: &quot;xsd:boolean&quot;, &quot;minCount&quot;: 1 } ] } ] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-update.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?rev=1&quot; -d &#39;{&quot;@context&quot;: [&quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;, {&quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;, &quot;ex&quot;: &quot;http://example.com/&quot;} ], &quot;@type&quot;: &quot;nxv:Schema&quot;, &quot;shapes&quot;: [{&quot;@id&quot;: &quot;this:MyShape&quot;, &quot;@type&quot;: &quot;sh:NodeShape&quot;, &quot;nodeKind&quot;: &quot;sh:BlankNodeOrIRI&quot;, &quot;targetClass&quot;: &quot;ex:Custom&quot;, &quot;property&quot;: [{&quot;path&quot;: &quot;ex:name&quot;, &quot;datatype&quot;: &quot;xsd:string&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:number&quot;, &quot;datatype&quot;: &quot;xsd:integer&quot;, &quot;minCount&quot;: 1 }, {&quot;path&quot;: &quot;ex:bool&quot;, &quot;datatype&quot;: &quot;xsd:boolean&quot;, &quot;minCount&quot;: 1 } ] } ] }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-update.sh">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;,
     {
-      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;,
+      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;,
       &quot;ex&quot;: &quot;http://example.com/&quot;
     }
   ],
@@ -412,28 +437,28 @@ BlueBrain/nexus
       ]
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema.json">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T14:56:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-ref-new-updated.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-ref-new-updated.json">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#tag-a-schema" name="tag-a-schema" class="anchor"><span class="anchor-link"></span></a>Tag a schema</h2>
 <p>Links a schema revision to a specific name. </p>
 <p>Tagging a schema is considered to be an update as well.</p>
-<pre><code>PUT /v1/schemas/{accountId}/{projId}/{schema_id}/tags?rev={previous_rev}
+<pre><code>PUT /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={previous_rev}
   {
     &quot;tag&quot;: &quot;{name}&quot;,
     &quot;rev&quot;: {rev}
@@ -441,74 +466,74 @@ BlueBrain/nexus
 </code></pre>
 <p>&hellip; where </p>
 <ul>
-  <li><code>{previous_rev}</code> is the last known revision number for the schema.</li>
-  <li><code>{name}</code> the name to give to the schema at a specific revision.</li>
-  <li><code>{rev}</code> the revision number to link the provided <code>{name}</code>.</li>
+  <li><code>{previous_rev}</code>: Number - is the last known revision for the resolver.</li>
+  <li><code>{name}</code>: String - label given to the schemas at specific revision.</li>
+  <li><code>{rev}</code>: Number - the revision to link the provided <code>{name}</code>.</li>
 </ul>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/myschema/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-tag.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/schemas/myorg/myproj/myschema/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-tag.sh">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;tag&quot;: &quot;mytag&quot;,
   &quot;rev&quot;: 1
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/tag.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/tag.json">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T14:58:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-ref-new-tagged.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-ref-new-tagged.json">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#deprecate-a-schema" name="deprecate-a-schema" class="anchor"><span class="anchor-link"></span></a>Deprecate a schema</h2>
 <p>Locks the schema, so no further operations can be performed. It also deletes the schema from listing/querying results.</p>
 <p>Deprecating a schema is considered to be an update as well. </p>
-<pre><code>DELETE /v1/schemas/{accountId}/{projId}/{schema_id}?rev={previous_rev}
+<pre><code>DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 </code></pre>
 <p>&hellip; where <code>{previous_rev}</code> is the last known revision number for the schema.</p>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?rev=3&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-deprecate.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?rev=3&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-deprecate.sh">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T15:05:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-ref-new-deprecated.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-ref-new-deprecated.json">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-schema-current-version-" name="fetch-a-schema-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a schema (current version)</h2>
-<pre><code>GET /v1/schemas/{accountId}/{projId}/{schema_id}
+<pre><code>GET /v1/schemas/{org_label}/{project_label}/{schema_id}
 </code></pre>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetch.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-fetch.sh">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -516,7 +541,7 @@ BlueBrain/nexus
     &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;,
     {
       &quot;ex&quot;: &quot;http://example.com/&quot;,
-      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;
+      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;
     },
     &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
   ],
@@ -547,28 +572,28 @@ BlueBrain/nexus
       &quot;targetClass&quot;: &quot;ex:Custom&quot;
     }
   ],
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T15:05:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetched.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-fetched.json">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-schema-specific-version-" name="fetch-a-schema-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a schema (specific version)</h2>
-<pre><code>GET /v1/schemas/{accountId}/{projId}/{schema_id}?rev={rev}
+<pre><code>GET /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={rev}
 </code></pre>
 <p>&hellip; where <code>{rev}</code> is the revision number of the schema to be retrieved.</p>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetch-revision.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?rev=4&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-fetch-revision.sh">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -576,7 +601,7 @@ BlueBrain/nexus
     &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;,
     {
       &quot;ex&quot;: &quot;http://example.com/&quot;,
-      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;
+      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;
     },
     &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
   ],
@@ -607,28 +632,28 @@ BlueBrain/nexus
       &quot;targetClass&quot;: &quot;ex:Custom&quot;
     }
   ],
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T15:05:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetched.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-fetched.json">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-schema-specific-tag-" name="fetch-a-schema-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a schema (specific tag)</h2>
-<pre><code>GET /v1/schemas/{accountId}/{projId}/{schema_id}?tag={tag}
+<pre><code>GET /v1/schemas/{org_label}/{project_label}/{schema_id}?tag={tag}
 </code></pre>
 <p>&hellip; where <code>{tag}</code> is the tag of the resource to be retrieved.</p>
-<h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
+<p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetch-tag.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c?tag=mytag&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-fetch-tag.sh">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -636,7 +661,7 @@ BlueBrain/nexus
     &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;,
     {
       &quot;ex&quot;: &quot;http://example.com/&quot;,
-      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;
+      &quot;this&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes&quot;
     },
     &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;
   ],
@@ -667,22 +692,63 @@ BlueBrain/nexus
       &quot;targetClass&quot;: &quot;ex:Custom&quot;
     }
   ],
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myaccount/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myaccount/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myaccount/myproj&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/schema-fetched-tag.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-fetched-tag.json">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#list-schemas" name="list-schemas" class="anchor"><span class="anchor-link"></span></a>List schemas</h2>
+<pre><code>GET /v1/schemas/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;q={full_text_search_query}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{full_text_search_query}</code>: String - can be provided to select only the schemas in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
+  <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
+  <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
+  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting schemas based on their deprecation status</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/schemas/myorg/myproj&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-list.sh">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/search&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720&quot;
+  ],
+  &quot;_total&quot;: 1,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/schemas/myschema2&quot;,
+      &quot;@type&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Schema&quot;,
+      &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c&quot;,
+      &quot;_constrainedBy&quot;: &quot;nxs:shacl&quot;,
+      &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+      &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-17T15:05:42.939Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_rev&quot;: 4,
+      &quot;_deprecated&quot;: true
+    }
+  ]
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/schema-list.json">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg/kg-schemas-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/bogdanromanx/nexus/tree/master/src/main/paradox/docs/api/kg/kg-schemas-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -744,7 +810,7 @@ Nexus is Open Source and available under the Apache 2 License.<br/>
 </footer>
 
 </div>
-<script src="../../../assets/javascripts/application.5165553b.js"></script>
+<script src="../../../assets/javascripts/application.583bbe55.js"></script>
 <script src="../../../assets/javascripts/paradox-material-theme.js"></script>
 <script>app.initialize({version:"0.17",url:{base:"../../../."}})</script>
 <script type="text/javascript" src="../../../lib/prettify/prettify.js"></script>

@@ -5,32 +5,35 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="nexus">
-<meta name="generator" content="Paradox, paradox-material-theme=0.4.0, mkdocs-material=2.2.2">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
 <meta name="lang:search.result.none" content="No matching documents">
 <meta name="lang:search.result.one" content="1 matching document">
 <meta name="lang:search.result.other" content="# matching documents">
-<meta name="lang:search.language" content="">
 <meta name="lang:search.tokenizer" content="[\s\-]+">
 
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
 <title>Operating on resources · Blue Brain Nexus</title>
-<link rel="stylesheet" href="../../assets/stylesheets/application.7a4cdee3.css">
-<link rel="stylesheet" href="../../assets/stylesheets/application-palette.792431c1.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
 <link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
 <link rel="stylesheet" href="../../lib/prettify/prettify.css">
-<script src="../../lib/modernizr/modernizr.min.js"></script>
+<script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
 <style>
 body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
 code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../assets/fonts/material-icons.css">
 <link rel="stylesheet" href="../../assets/stylesheets/paradox-material-theme.css">
 <link rel="stylesheet" href="../.././assets/css/docs.css">
 </head>
@@ -38,9 +41,9 @@ code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
 data-md-color-primary="light-blue"
 data-md-color-accent="cyan"
 >
-<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
-<input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
-<label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
 <header class="md-header" data-md-component="header">
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
@@ -50,7 +53,7 @@ data-md-color-accent="cyan"
 </a>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
-<label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
@@ -63,14 +66,14 @@ Operating on resources
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
-<label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
 <div class="md-search" data-md-component="search" role="dialog">
-<label class="md-search__overlay" for="search"></label>
-<div class="md-search__inner">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
 <form class="md-search__form" name="search">
-<input type="text" class="md-search__input" name="query" required placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query">
-<label class="md-icon md-search__icon" for="search"></label>
-<button type="reset" class="md-icon md-search__icon" data-md-component="reset">&#xE5CD;</button>
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
 </form>
 <div class="md-search__output">
 <div class="md-search__scrollwrap" data-md-scrollfix>
@@ -114,9 +117,10 @@ BlueBrain/nexus
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
 <label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
 <span class="md-nav__button md-logo">
 <img src="../.././assets/img/logo.png" width="24" height="24">
-</span>
+</a>
 <a href="../../docs/index.html" title="Blue Brain Nexus">
 Blue Brain Nexus
 </a>
@@ -138,7 +142,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
-    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
+    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../docs/getting-started/running-nexus/docker.html" class="page">Run Nexus locally with Docker</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/minikube.html" class="page">Run Nexus locally with Minikube</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/on-premise-cloud.html" class="page">On premise / cloud deployment</a></li>
+    </ul></li>
     <li><a href="../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
     <li><a href="../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
     <li><a href="../../docs/getting-started/example.html" class="page">Data management example</a></li>
@@ -146,9 +155,19 @@ BlueBrain/nexus
   <li><a href="../../docs/api/index.html" class="page">API Reference</a>
   <ul>
     <li><a href="../../docs/api/operating-on-resources.html" class="active page">Operating on resources</a></li>
-    <li><a href="../../docs/api/admin-service-api.html" class="page">Admin Service API</a></li>
-    <li><a href="../../docs/api/kg/index.html" class="page">KnowledgeGraph Service API</a></li>
-    <li><a href="../../docs/api/iam-service-api.html" class="page">IAM Service API</a></li>
+    <li><a href="../../docs/api/admin/index.html" class="page">Admin API</a>
+    <ul>
+      <li><a href="../../docs/api/admin/admin-orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../docs/api/admin/admin-projects-api.html" class="page">Projects</a></li>
+    </ul></li>
+    <li><a href="../../docs/api/kg/index.html" class="page">KnowledgeGraph API</a>
+    <ul>
+      <li><a href="../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/api/kg/kg-schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../docs/api/kg/kg-views-api.html" class="page">Views</a></li>
+    </ul></li>
+    <li><a href="../../docs/api/iam-service-api.html" class="page">IAM API</a></li>
     <li><a href="../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
   <li><a href="../../docs/architecture/index.html" class="page">System Architecture</a>
@@ -173,7 +192,7 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="toc">Table of contents</label>
+<label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
   <li><a href="../../docs/api/operating-on-resources.html#operating-on-resources" class="header">Operating on resources</a>
   <ul>
@@ -184,16 +203,22 @@ BlueBrain/nexus
     <li><a href="../../docs/api/operating-on-resources.html#update-a-resource" class="header">Update a resource</a></li>
     <li><a href="../../docs/api/operating-on-resources.html#tag-a-resource" class="header">Tag a resource</a></li>
     <li><a href="../../docs/api/operating-on-resources.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
-    <li><a href="../../docs/api/operating-on-resources.html#listing" class="header">Listing</a></li>
+    <li><a href="../../docs/api/operating-on-resources.html#listing" class="header">Listing</a>
+    <ul>
+      <li><a href="../../docs/api/operating-on-resources.html#list-response-format" class="header">List response format</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
 
-<div class="md-nav__title--site md-version" title="Version">
-<i class="md-icon">label_outline</i> 0.1.0*
-</div>
 </nav>
-
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> 0.1.0*
+</label>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -201,7 +226,7 @@ BlueBrain/nexus
 <div class="md-sidebar__scrollwrap">
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="toc">Table of contents</label>
+<label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
   <li><a href="../../docs/api/operating-on-resources.html#operating-on-resources" class="header">Operating on resources</a>
   <ul>
@@ -212,7 +237,10 @@ BlueBrain/nexus
     <li><a href="../../docs/api/operating-on-resources.html#update-a-resource" class="header">Update a resource</a></li>
     <li><a href="../../docs/api/operating-on-resources.html#tag-a-resource" class="header">Tag a resource</a></li>
     <li><a href="../../docs/api/operating-on-resources.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
-    <li><a href="../../docs/api/operating-on-resources.html#listing" class="header">Listing</a></li>
+    <li><a href="../../docs/api/operating-on-resources.html#listing" class="header">Listing</a>
+    <ul>
+      <li><a href="../../docs/api/operating-on-resources.html#list-response-format" class="header">List response format</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -229,7 +257,7 @@ BlueBrain/nexus
 <h3><a href="#fetch-the-current-revision-of-the-resource" name="fetch-the-current-revision-of-the-resource" class="anchor"><span class="anchor-link"></span></a>Fetch the current revision of the resource</h3>
 <pre><code>GET /v1/{address}
 </code></pre>
-<h4><a href="#status-codes" name="status-codes" class="anchor"><span class="anchor-link"></span></a>Status Codes</h4>
+<p><strong>Status Codes</strong></p>
 <ul>
   <li><strong>200 OK</strong>: the resource is found and returned successfully</li>
   <li><strong>404 Not Found</strong>: the resource was not found</li>
@@ -238,7 +266,7 @@ BlueBrain/nexus
 <pre><code>GET /v1/{address}?rev={rev}
 </code></pre>
 <p>&hellip; where <code>{rev}</code> is the revision number, starting at <code>1</code>.</p>
-<h4><a href="#status-codes" name="status-codes" class="anchor"><span class="anchor-link"></span></a>Status Codes</h4>
+<p><strong>Status Codes</strong></p>
 <ul>
   <li><strong>200 OK</strong>: the resource revision is found and returned successfully</li>
   <li><strong>404 Not Found</strong>: the resource revision was not found</li>
@@ -247,7 +275,7 @@ BlueBrain/nexus
 <pre><code>GET /v1/{address}?tag={tag}
 </code></pre>
 <p>&hellip; where <code>{tag}</code> is the tag name linked to a certain revision number.</p>
-<h4><a href="#status-codes" name="status-codes" class="anchor"><span class="anchor-link"></span></a>Status Codes</h4>
+<p><strong>Status Codes</strong></p>
 <ul>
   <li><strong>200 OK</strong>: the resource tag is found and returned successfully</li>
   <li><strong>404 Not Found</strong>: the resource tag was not found</li>
@@ -263,7 +291,7 @@ BlueBrain/nexus
 {...}
 </code></pre>
 <p>&hellip; where <code>{collection_address}</code> is the address of the collection the resource belongs to.</p>
-<h4><a href="#status-codes" name="status-codes" class="anchor"><span class="anchor-link"></span></a>Status Codes</h4>
+<p><strong>Status Codes</strong></p>
 <ul>
   <li><strong>201 Created</strong>: the resource was created successfully</li>
   <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be created at this time</li>
@@ -274,7 +302,7 @@ BlueBrain/nexus
 <pre><code>PUT /v1/{address}?rev={previous_rev}
 {...}
 </code></pre>
-<h4><a href="#status-codes" name="status-codes" class="anchor"><span class="anchor-link"></span></a>Status Codes</h4>
+<p><strong>Status Codes</strong></p>
 <ul>
   <li><strong>200 OK</strong>: the resource was created successfully</li>
   <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be updated at this time</li>
@@ -291,21 +319,21 @@ BlueBrain/nexus
 </code></pre>
 <p>&hellip; where:</p>
 <ul>
-  <li><code>{name}</code> the name to give to the resource at a specific revision.</li>
-  <li><code>{rev}</code> the revision number to link the provided <code>{name}</code>.</li>
+  <li><code>{name}</code>: String - the name given to the resource at specific revision.</li>
+  <li><code>{rev}</code>: Number - the revision to link the provided <code>{name}</code>.</li>
 </ul>
 <h3><a href="#deprecate-a-resource" name="deprecate-a-resource" class="anchor"><span class="anchor-link"></span></a>Deprecate a resource</h3>
 <p>Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying results.</p>
 <p>Deprecating a resource is considered to be an update as well. </p>
 <pre><code>DELETE /v1/{address}?rev={previous_rev}
 </code></pre>
-<h4><a href="#status-codes" name="status-codes" class="anchor"><span class="anchor-link"></span></a>Status Codes</h4>
+<p><strong>Status Codes</strong></p>
 <ul>
   <li><strong>200 OK</strong>: the resource was created successfully</li>
   <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be deprecated at this time</li>
   <li><strong>409 Conflict</strong>: the provided revision is not the current resource revision number</li>
 </ul>
-<h4><a href="#status-codes" name="status-codes" class="anchor"><span class="anchor-link"></span></a>Status Codes</h4>
+<p><strong>Status Codes</strong></p>
 <ul>
   <li><strong>200 OK</strong>: the resource was created successfully</li>
   <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be created at this time</li>
@@ -316,10 +344,10 @@ BlueBrain/nexus
 </code></pre>
 <p>&hellip; where all of the query parameters are individually optional.</p>
 <ul>
-  <li><code>{collection_address}</code> is the selected collection to list, filter or search; for example: <code>/v1/projects/</code>, <code>/v1/schemas/{account}/{project}</code>,</li>
+  <li><code>{collection_address}</code> Path - the selected collection to list, filter or search; for example: <code>/v1/projects/</code>, <code>/v1/schemas/{org_label}/{project}</code>,</li>
   <li><code>{full_text_search_query}</code>: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
-  <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
-  <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
+  <li><code>{from}</code>: Number - the parameter that describes the offset for the current query; defaults to <code>0</code></li>
+  <li><code>{size}</code>: Number - the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
 </ul>
 <h3><a href="#list-response-format" name="list-response-format" class="anchor"><span class="anchor-link"></span></a>List response format</h3>
@@ -341,15 +369,15 @@ BlueBrain/nexus
 </code></pre>
 <p>&hellip; where:</p>
 <ul>
-  <li><code>{hits}</code> is the total number of results found for the requested search.</li>
-  <li><code>{maxScore}</code> is the maximum score found across all hits.</li>
-  <li><code>{resource_id}</code> is the qualified id for one of the results.</li>
+  <li><code>{hits}</code>: Number - the total number of results found for the requested search.</li>
+  <li><code>{maxScore}</code> Float - the maximum score found across all hits.</li>
+  <li><code>{resource_id}</code> Iri - the qualified id for one of the results.</li>
 </ul>
 <p>The relationships <code>_next</code> and <code>_previous</code> at the top level offer discovery of more resources, in terms of navigation/pagination. </p>
 <p>The fields <code>{maxScore}</code> and <code>{score_id}</code> are optional fields and will only be present whenever a <code>q</code> query parameter is provided on the request.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/operating-on-resources.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/bogdanromanx/nexus/tree/master/src/main/paradox/docs/api/operating-on-resources.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -378,13 +406,13 @@ API Reference
 </span>
 </div>
 </a>
-<a href="../../docs/api/admin-service-api.html" title="Admin Service API" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/api/admin/index.html" title="Admin API" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Admin Service API
+Admin API
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -411,7 +439,7 @@ Nexus is Open Source and available under the Apache 2 License.<br/>
 </footer>
 
 </div>
-<script src="../../assets/javascripts/application.5165553b.js"></script>
+<script src="../../assets/javascripts/application.583bbe55.js"></script>
 <script src="../../assets/javascripts/paradox-material-theme.js"></script>
 <script>app.initialize({version:"0.17",url:{base:"../../."}})</script>
 <script type="text/javascript" src="../../lib/prettify/prettify.js"></script>

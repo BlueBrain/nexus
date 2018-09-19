@@ -5,32 +5,35 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="description" content="nexus">
-<meta name="generator" content="Paradox, paradox-material-theme=0.4.0, mkdocs-material=2.2.2">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.0, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
 <meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
 <meta name="lang:search.result.none" content="No matching documents">
 <meta name="lang:search.result.one" content="1 matching document">
 <meta name="lang:search.result.other" content="# matching documents">
-<meta name="lang:search.language" content="">
 <meta name="lang:search.tokenizer" content="[\s\-]+">
 
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
 <title>On premise / cloud deployment · Blue Brain Nexus</title>
-<link rel="stylesheet" href="../../../assets/stylesheets/application.7a4cdee3.css">
-<link rel="stylesheet" href="../../../assets/stylesheets/application-palette.792431c1.css">
+<link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
 <link rel="stylesheet" href="../../../lib/material__tabs/dist/mdc.tabs.min.css">
 <link rel="stylesheet" href="../../../lib/prettify/prettify.css">
-<script src="../../../lib/modernizr/modernizr.min.js"></script>
+<script src="../../../assets/javascripts/modernizr.1aa3b519.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
 <style>
 body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
 code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<link rel="stylesheet" href="../../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../../assets/fonts/material-icons.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/paradox-material-theme.css">
 <link rel="stylesheet" href="../../.././assets/css/docs.css">
 </head>
@@ -38,9 +41,9 @@ code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
 data-md-color-primary="light-blue"
 data-md-color-accent="cyan"
 >
-<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="drawer">
-<input class="md-toggle" data-md-toggle="search" type="checkbox" id="search">
-<label class="md-overlay" data-md-component="overlay" for="drawer"></label>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
 <header class="md-header" data-md-component="header">
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
@@ -50,7 +53,7 @@ data-md-color-accent="cyan"
 </a>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
-<label class="md-icon md-icon--menu md-header-nav__button" for="drawer"></label>
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
@@ -63,14 +66,14 @@ On premise / cloud deployment
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
-<label class="md-icon md-icon--search md-header-nav__button" for="search"></label>
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
 <div class="md-search" data-md-component="search" role="dialog">
-<label class="md-search__overlay" for="search"></label>
-<div class="md-search__inner">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
 <form class="md-search__form" name="search">
-<input type="text" class="md-search__input" name="query" required placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query">
-<label class="md-icon md-search__icon" for="search"></label>
-<button type="reset" class="md-icon md-search__icon" data-md-component="reset">&#xE5CD;</button>
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
 </form>
 <div class="md-search__output">
 <div class="md-search__scrollwrap" data-md-scrollfix>
@@ -114,9 +117,10 @@ BlueBrain/nexus
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
 <label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
 <span class="md-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
-</span>
+</a>
 <a href="../../../docs/index.html" title="Blue Brain Nexus">
 Blue Brain Nexus
 </a>
@@ -138,7 +142,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../../docs/getting-started/running-nexus/docker.html" class="page">Run Nexus locally with Docker</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html" class="page">Run Nexus locally with Minikube</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html" class="active page">On premise / cloud deployment</a></li>
+    </ul></li>
     <li><a href="../../../docs/getting-started/intro-linked-data.html" class="page">Introduction to Linked Data</a></li>
     <li><a href="../../../docs/getting-started/shacl.html" class="page">Data validation with SHACL</a></li>
     <li><a href="../../../docs/getting-started/example.html" class="page">Data management example</a></li>
@@ -146,9 +155,19 @@ BlueBrain/nexus
   <li><a href="../../../docs/api/index.html" class="page">API Reference</a>
   <ul>
     <li><a href="../../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
-    <li><a href="../../../docs/api/admin-service-api.html" class="page">Admin Service API</a></li>
-    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph Service API</a></li>
-    <li><a href="../../../docs/api/iam-service-api.html" class="page">IAM Service API</a></li>
+    <li><a href="../../../docs/api/admin/index.html" class="page">Admin API</a>
+    <ul>
+      <li><a href="../../../docs/api/admin/admin-orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../../docs/api/admin/admin-projects-api.html" class="page">Projects</a></li>
+    </ul></li>
+    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph API</a>
+    <ul>
+      <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/api/kg/kg-schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html" class="page">Views</a></li>
+    </ul></li>
+    <li><a href="../../../docs/api/iam-service-api.html" class="page">IAM API</a></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
   <li><a href="../../../docs/architecture/index.html" class="page">System Architecture</a>
@@ -173,7 +192,7 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="toc">Table of contents</label>
+<label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
   <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#on-premise-cloud-deployment" class="header">On premise / cloud deployment</a>
   <ul>
@@ -186,11 +205,14 @@ BlueBrain/nexus
 </ul>
 </nav>
 
-<div class="md-nav__title--site md-version" title="Version">
-<i class="md-icon">label_outline</i> 0.1.0*
-</div>
 </nav>
-
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> 0.1.0*
+</label>
+</li>
+</ul>
 </div>
 </div>
 </div>
@@ -198,7 +220,7 @@ BlueBrain/nexus
 <div class="md-sidebar__scrollwrap">
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="toc">Table of contents</label>
+<label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
   <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#on-premise-cloud-deployment" class="header">On premise / cloud deployment</a>
   <ul>
@@ -329,7 +351,7 @@ log.retention.hours=-1
 <p>Compactions can be applied to the journal using the <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java">CompactJournalUtility</a> to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/on-premise-cloud.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/bogdanromanx/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/on-premise-cloud.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -391,7 +413,7 @@ Nexus is Open Source and available under the Apache 2 License.<br/>
 </footer>
 
 </div>
-<script src="../../../assets/javascripts/application.5165553b.js"></script>
+<script src="../../../assets/javascripts/application.583bbe55.js"></script>
 <script src="../../../assets/javascripts/paradox-material-theme.js"></script>
 <script>app.initialize({version:"0.17",url:{base:"../../../."}})</script>
 <script type="text/javascript" src="../../../lib/prettify/prettify.js"></script>

@@ -1,1 +1,1 @@
-curl "https://nexus.example.com/v1/resolvers/myaccount/myproj/nxv:myresolver?tag=mytag"
+curl "https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?tag=mytag"

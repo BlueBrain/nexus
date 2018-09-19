@@ -1,6 +1,6 @@
 /*!
  Paradox Material Theme
- Copyright (c) 2017 Jonas Fonseca
+ Copyright (c) 2017-2018 Jonas Fonseca
  License: MIT
 */
 
@@ -16,6 +16,10 @@
   padding: 1.2rem 1.2rem 0rem;
 }
 
+.md-nav--primary .md-version label {
+  cursor: default;
+}
+
 .md-version .md-icon {
   position: relative;
   top: .2rem;
@@ -24,7 +28,7 @@
 
 @media only screen and (max-width: 76.1875em) {
   .md-nav--primary .md-version {
-    padding: 1.2rem 1.6rem;
+    padding: 0;
   }
 }
 
