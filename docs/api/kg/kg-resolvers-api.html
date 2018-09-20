@@ -196,18 +196,11 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/kg/kg-resolvers-api.html#resolvers" class="header">Resolvers</a>
   <ul>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#resolver-types" class="header">Resolver types</a></li>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inproject-resolver" class="header">InProject resolver</a>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#resolver-types" class="header">Resolver types</a>
     <ul>
-      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inproject-resolver-payload" class="header">InProject resolver payload</a></li>
-    </ul></li>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver" class="header">InAccount resolver</a>
-    <ul>
-      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver-payload" class="header">InAccount resolver payload</a></li>
-    </ul></li>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a>
-    <ul>
-      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver-payload" class="header">CrossProject resolver payload</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inproject-resolver" class="header">InProject resolver</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver" class="header">InAccount resolver</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     </ul></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-resolver-using-post" class="header">Create a resolver using POST</a></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-resolver-using-put" class="header">Create a resolver using PUT</a></li>
@@ -241,18 +234,11 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/kg/kg-resolvers-api.html#resolvers" class="header">Resolvers</a>
   <ul>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#resolver-types" class="header">Resolver types</a></li>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inproject-resolver" class="header">InProject resolver</a>
+    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#resolver-types" class="header">Resolver types</a>
     <ul>
-      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inproject-resolver-payload" class="header">InProject resolver payload</a></li>
-    </ul></li>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver" class="header">InAccount resolver</a>
-    <ul>
-      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver-payload" class="header">InAccount resolver payload</a></li>
-    </ul></li>
-    <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a>
-    <ul>
-      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver-payload" class="header">CrossProject resolver payload</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inproject-resolver" class="header">InProject resolver</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#inaccount-resolver" class="header">InAccount resolver</a></li>
+      <li><a href="../../../docs/api/kg/kg-resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     </ul></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-resolver-using-post" class="header">Create a resolver using POST</a></li>
     <li><a href="../../../docs/api/kg/kg-resolvers-api.html#create-a-resolver-using-put" class="header">Create a resolver using PUT</a></li>
@@ -288,14 +274,14 @@ BlueBrain/nexus
 <p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
 <h2><a href="#resolver-types" name="resolver-types" class="anchor"><span class="anchor-link"></span></a>Resolver types</h2>
 <p>There are several types of resolvers, which perform resolution in different scopes.</p>
-<h2><a href="#inproject-resolver" name="inproject-resolver" class="anchor"><span class="anchor-link"></span></a>InProject resolver</h2>
+<h3><a href="#inproject-resolver" name="inproject-resolver" class="anchor"><span class="anchor-link"></span></a>InProject resolver</h3>
 <p>The scope of the resolution is the current project where the resource resides. In other words:</p>
 <ul>
   <li>Schema <code>A</code> can import schema <code>B</code> using the <code>owl:import</code> as long as schema <code>B</code> is located on the same project as schema <code>A</code>.</li>
   <li>Resource <code>A</code> can reference resource&rsquo;s context <code>B</code> (inside <code>@context</code>) as long as resource <code>B</code> is located on the same project as resource <code>A</code>.</li>
 </ul>
 <p>This resolver gets automatically created when the project is created and it cannot be modified.</p>
-<h3><a href="#inproject-resolver-payload" name="inproject-resolver-payload" class="anchor"><span class="anchor-link"></span></a>InProject resolver payload</h3>
+<p><strong>InProject resolver payload</strong></p>
 <pre><code>{
     &quot;@id&quot;: &quot;nxv:InProject&quot;,
     &quot;@type&quot;: [ &quot;InProject&quot;, &quot;Resolver&quot; ],
@@ -303,13 +289,13 @@ BlueBrain/nexus
 }
 </code></pre>
 <p>where <code>{priority}</code> is a numeric value (from 1 - 100) which defines the resolution priority when attempting to find the resource with a particular @id.</p>
-<h2><a href="#inaccount-resolver" name="inaccount-resolver" class="anchor"><span class="anchor-link"></span></a>InAccount resolver</h2>
+<h3><a href="#inaccount-resolver" name="inaccount-resolver" class="anchor"><span class="anchor-link"></span></a>InAccount resolver</h3>
 <p>The scope of the resolution is the current organization where the resource resides. Account resolution defines a collection of identities <code>I</code> to enforce ACLs. In other words:</p>
 <ul>
   <li>Schema <code>A</code> can import schema <code>B</code> using the <code>owl:import</code> as long as schema <code>B</code> is located on the same organization as schema <code>A</code> and as long <code>I</code> have <code>schemas/read</code> permissions on the schema <code>B</code> project.</li>
   <li>Resource <code>A</code> can reference resource&rsquo;s context <code>B</code> (inside <code>@context</code>) as long as resource <code>B</code> is located on the same organization as resource <code>A</code> and as long as <code>I</code> have <code>schemas/read</code> permissions on the schema <code>B</code> project.</li>
 </ul>
-<h3><a href="#inaccount-resolver-payload" name="inaccount-resolver-payload" class="anchor"><span class="anchor-link"></span></a>InAccount resolver payload</h3>
+<p><strong>InAccount resolver payload</strong></p>
 <pre><code>{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: [&quot;Resolver&quot;, &quot;InAccount&quot;],
@@ -369,13 +355,13 @@ BlueBrain/nexus
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-in-account-ref-new.json">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#crossproject-resolver" name="crossproject-resolver" class="anchor"><span class="anchor-link"></span></a>CrossProject resolver</h2>
+<h3><a href="#crossproject-resolver" name="crossproject-resolver" class="anchor"><span class="anchor-link"></span></a>CrossProject resolver</h3>
 <p>The scope of the resolution is the collections of projects <code>P</code> defined on the resolver. CrossProject resolution also defines a collection of identities <code>I</code> to enforce ACLs. In other words:</p>
 <ul>
   <li>Schema <code>A</code> can import schema <code>B</code> using the <code>owl:import</code> as long as schema <code>B</code> is located on some of the projects from the collection <code>P</code> and as long <code>I</code> have <code>schemas/read</code> permissions on the schema <code>B</code> project.</li>
   <li>Resource <code>A</code> can reference resource&rsquo;s context <code>B</code> (inside <code>@context</code>) as long as resource <code>B</code> is located on some of the projects from the collection <code>P</code> and as long as <code>I</code> have <code>schemas/read</code> permissions on the schema <code>B</code> project.</li>
 </ul>
-<h3><a href="#crossproject-resolver-payload" name="crossproject-resolver-payload" class="anchor"><span class="anchor-link"></span></a>CrossProject resolver payload</h3>
+<p><strong>CrossProject resolver payload</strong></p>
 <pre><code>{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;],

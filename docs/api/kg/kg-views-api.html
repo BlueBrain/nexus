@@ -196,14 +196,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/kg/kg-views-api.html#views" class="header">Views</a>
   <ul>
-    <li><a href="../../../docs/api/kg/kg-views-api.html#view-types" class="header">View types</a></li>
-    <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview" class="header">SparqlView</a>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#view-types" class="header">View types</a>
     <ul>
-      <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview-payload" class="header">SparqlView payload</a></li>
-    </ul></li>
-    <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview" class="header">ElasticView</a>
-    <ul>
-      <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview-payload" class="header">ElasticView payload</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview" class="header">SparqlView</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview" class="header">ElasticView</a></li>
     </ul></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-post" class="header">Create an ElasticView using POST</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-put" class="header">Create an ElasticView using PUT</a></li>
@@ -237,14 +233,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/kg/kg-views-api.html#views" class="header">Views</a>
   <ul>
-    <li><a href="../../../docs/api/kg/kg-views-api.html#view-types" class="header">View types</a></li>
-    <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview" class="header">SparqlView</a>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#view-types" class="header">View types</a>
     <ul>
-      <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview-payload" class="header">SparqlView payload</a></li>
-    </ul></li>
-    <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview" class="header">ElasticView</a>
-    <ul>
-      <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview-payload" class="header">ElasticView payload</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview" class="header">SparqlView</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview" class="header">ElasticView</a></li>
     </ul></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-post" class="header">Create an ElasticView using POST</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-put" class="header">Create an ElasticView using PUT</a></li>
@@ -276,20 +268,20 @@ BlueBrain/nexus
 <p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
 <h2><a href="#view-types" name="view-types" class="anchor"><span class="anchor-link"></span></a>View types</h2>
 <p>There are several types of views, which relies on different technology to perform the indexing</p>
-<h2><a href="#sparqlview" name="sparqlview" class="anchor"><span class="anchor-link"></span></a>SparqlView</h2>
+<h3><a href="#sparqlview" name="sparqlview" class="anchor"><span class="anchor-link"></span></a>SparqlView</h3>
 <p>This view creates a SPARQL <code>namespace</code> where it stores all the resource&rsquo;s graph inside the view <code>project</code>.</p>
 <p>This view gets automatically created when the project is created and it cannot be modified.</p>
-<h3><a href="#sparqlview-payload" name="sparqlview-payload" class="anchor"><span class="anchor-link"></span></a>SparqlView payload</h3>
+<p><strong>SparqlView payload</strong></p>
 <pre><code>{
   &quot;@id&quot;: &quot;nxv:defaultSparqlIndex&quot;,
   &quot;@type&quot;: [ &quot;View&quot;, &quot;SparqlView&quot; ]
 }
 </code></pre>
-<h2><a href="#elasticview" name="elasticview" class="anchor"><span class="anchor-link"></span></a>ElasticView</h2><div class="callout note "><div class="callout-title">Note</div>
+<h3><a href="#elasticview" name="elasticview" class="anchor"><span class="anchor-link"></span></a>ElasticView</h3><div class="callout note "><div class="callout-title">Note</div>
 <p>The described features are in <code>@Alpha</code> phase of development. The operations might change in the future.</p></div>
 <p>This view creates an ElasticSearch <code>index</code> where it stores the selected resources inside the view <code>project</code>.</p>
 <p>A default view gets automatically created when the project is created but other views can be created.</p>
-<h3><a href="#elasticview-payload" name="elasticview-payload" class="anchor"><span class="anchor-link"></span></a>ElasticView payload</h3>
+<p><strong>ElasticView payload</strong></p>
 <pre><code>{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: [ &quot;View&quot;, &quot;ElasticView&quot;, &quot;Alpha&quot; ],
