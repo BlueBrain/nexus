@@ -1,0 +1,47 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/view",
+    "https://bluebrain.github.io/nexus/contexts/resource"
+  ],
+  "@id": "nxv:myview2",
+  "@type": [
+    "ElasticView",
+    "View",
+    "Alpha"
+  ],
+  "includeMetadata": false,
+  "mapping": {
+    "dynamic": false,
+    "properties": {
+      "@id": {
+        "type": "keyword"
+      },
+      "@type": {
+        "type": "keyword"
+      },
+      "bool": {
+        "type": "boolean"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "number": {
+        "type": "long"
+      }
+    }
+  },
+  "resourceSchemas": [
+    "nxs:myschema"
+  ],
+  "sourceAsText": false,
+  "_uuid": "4f90ceff-45b7-442d-8536-d41705321d50",
+  "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
+  "_constrainedBy": "nxs:view",
+  "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+  "_createdAt": "2018-09-18T16:39:22.748Z",
+  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_updatedAt": "2018-09-18T17:10:22.748Z",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_rev": 4,
+  "_deprecated": true
+}
