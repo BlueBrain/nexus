@@ -1,3 +1,0 @@
-# KnowledgeGraph Service API
-
-TBC.

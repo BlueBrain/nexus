@@ -1,3 +1,3 @@
-# IAM Service API
+# IAM API
 
 TBC.

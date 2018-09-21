@@ -30,7 +30,6 @@ lazy val root = project
   .settings(
     name       := "nexus",
     moduleName := "nexus",
-//    paradoxNavigationDepth in Compile := 3, // requires a fix in the generated right hand side TOC
     paradoxMaterialTheme in Compile := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
@@ -47,7 +46,8 @@ lazy val root = project
             |© 2017-2018 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
             |""".stripMargin)
     },
-    paradoxProperties in Compile += ("github.base_url" -> "https://github.com/BlueBrain/nexus")
+    paradoxNavigationDepth in Compile := 3,
+    paradoxProperties in Compile += ("github.base_url" -> "https://github.com/bogdanromanx/nexus/tree/docs")
   )
 
 addCommandAlias("review", ";clean;paradox")
