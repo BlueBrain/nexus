@@ -133,19 +133,21 @@ function initParadoxMaterialTheme() {
     root.parentNode.style.visibility = 'visible'
   })
 
-  document.querySelectorAll('.md-nav--secondary > ul').forEach(tocRoot => {
+  document.querySelectorAll('.md-sidebar--secondary .md-nav--secondary > ul').forEach(tocRoot => {
     function visitListItem(item) {
       item.classList.add('md-nav__item')
       item.querySelectorAll(':scope> a').forEach(link => {
         link.classList.add('md-nav__link')
         link.setAttribute('data-md-state', '')
       })
+      item.querySelectorAll(':scope > ul').forEach(list => {
+        visitList(list)
+      })
     }
 
     function visitList(list) {
       list.classList.add('md-nav__list')
-
-      list.querySelectorAll('li').forEach(item => {
+      list.querySelectorAll(':scope > li').forEach(item => {
         visitListItem(item)
       })
     }
@@ -153,7 +155,7 @@ function initParadoxMaterialTheme() {
     var parent = tocRoot.parentNode
     parent.removeChild(tocRoot)
 
-    tocRoot.querySelectorAll('ul').forEach(list => {
+    tocRoot.querySelectorAll(':scope > li > ul').forEach(list => {
       parent.append(list)
       list.setAttribute('data-md-scrollfix', '')
       visitList(list)
