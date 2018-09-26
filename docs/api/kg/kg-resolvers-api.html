@@ -315,7 +315,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;InAccount&quot;], &quot;resourceTypes&quot;: [&quot;nxv:Schema&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;GroupRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;group&quot;: &quot;some-project&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-in-account-put.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;InAccount&quot;], &quot;resourceTypes&quot;: [&quot;nxv:Schema&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;GroupRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;group&quot;: &quot;some-project&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-in-account-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -334,7 +334,7 @@ BlueBrain/nexus
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-in-account.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-in-account.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -353,7 +353,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-in-account-ref-new.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-in-account-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h3><a href="#crossproject-resolver" name="crossproject-resolver" class="anchor"><span class="anchor-link"></span></a>CrossProject resolver</h3>
 <p>The scope of the resolution is the collections of projects <code>P</code> defined on the resolver. CrossProject resolution also defines a collection of identities <code>I</code> to enforce ACLs. In other words:</p>
@@ -383,7 +383,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -403,7 +403,7 @@ BlueBrain/nexus
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -422,7 +422,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#create-a-resolver-using-post" name="create-a-resolver-using-post" class="anchor"><span class="anchor-link"></span></a>Create a resolver using POST</h2>
 <pre><code>POST /v1/resolver/{org_label}/{project_label}
@@ -437,7 +437,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj&quot; -d &#39;{&quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;, &quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj&quot; -d &#39;{&quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;, &quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -457,7 +457,7 @@ BlueBrain/nexus
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -476,7 +476,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#create-a-resolver-using-put" name="create-a-resolver-using-put" class="anchor"><span class="anchor-link"></span></a>Create a resolver using PUT</h2>
 <p>This alternative endpoint to create a resolver is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
@@ -488,7 +488,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -508,7 +508,7 @@ BlueBrain/nexus
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -527,7 +527,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#update-a-resolver" name="update-a-resolver" class="anchor"><span class="anchor-link"></span></a>Update a resolver</h2>
 <p>This operation overrides the payload.</p>
@@ -540,7 +540,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?rev=1&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-update.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?rev=1&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -560,7 +560,7 @@ BlueBrain/nexus
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -579,7 +579,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-updated.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#tag-a-resolver" name="tag-a-resolver" class="anchor"><span class="anchor-link"></span></a>Tag a resolver</h2>
 <p>Links a resolver revision to a specific name. </p>
@@ -600,13 +600,13 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-tag.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;tag&quot;: &quot;mytag&quot;,
   &quot;rev&quot;: 1
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/tag.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -625,7 +625,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-tagged.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#deprecate-a-resolver" name="deprecate-a-resolver" class="anchor"><span class="anchor-link"></span></a>Deprecate a resolver</h2>
 <p>Locks the resolver, so no further operations can be performed. It will also not be taken into account in the resolution process.</p>
@@ -637,7 +637,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-deprecate.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-deprecate.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -656,7 +656,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-deprecated.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-cross-project-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-resolver-current-version-" name="fetch-a-resolver-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (current version)</h2>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}
@@ -665,7 +665,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetch.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -700,7 +700,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetched.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-resolver-specific-version-" name="fetch-a-resolver-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (specific version)</h2>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}
@@ -710,7 +710,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?rev=4&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetch-revision.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?rev=4&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -745,7 +745,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetched.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-resolver-specific-tag-" name="fetch-a-resolver-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (specific tag)</h2>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?tag={tag}
@@ -755,7 +755,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?tag=mytag&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetch-tag.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?tag=mytag&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -790,7 +790,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetched-tag.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-resolvers" name="list-resolvers" class="anchor"><span class="anchor-link"></span></a>List resolvers</h2>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;q={full_text_search_query}
@@ -806,7 +806,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-list.sh">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -863,11 +863,11 @@ BlueBrain/nexus
       &quot;_deprecated&quot;: true
     }
   ]
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-list.json">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/resolver-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/bogdanromanx/nexus/tree/master/src/main/paradox/docs/api/kg/kg-resolvers-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/kg/kg-resolvers-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
