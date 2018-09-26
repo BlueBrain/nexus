@@ -52,6 +52,7 @@ The overall documentation of the platform is available [here](https://bbp-nexus.
 Please check out our tutorials:
  - [Nexus KG Schema Format](https://bbp-nexus.epfl.ch/staging/schema-documentation/documentation/shacl-schemas.html#nexus-kg-schemas)
  - [Jupyter notebook with basic operations using Nexus](https://github.com/BlueBrain/nexus/blob/master/tutorial/basic_operations_nexus_v0.ipynb)
+ - Comprehensive example (real use case): [workflow (IPython notebook)](https://github.com/BlueBrain/nat/blob/master/kg/Literature%20Annotation%20-%20Knowledge%20Graph.ipynb) and [productivity toolkit (Python modules)](https://github.com/BlueBrain/nat/blob/master/kg/README.md).
 
 ## Technical Introduction
 
