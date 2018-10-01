@@ -42,9 +42,9 @@ for a short technical introduction to Nexus.
 # Participation
 
 There are several channels provided to address different issues:
-- **Feature request**: If there is a feature you would like us to implement and it is not listed on the [feature issues](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature), create a [github issue](https://github.com/BlueBrain/nexus/issues/new?title=[Feature]%20My%20feature%20request) describing your feature with as much detail as possible and tag it with the `feature` label.
-- **Questions**: For any questions on how to deploy/install/use the platform, first please visit the [documentation](https://bluebrain.github.io/nexus/docs/index.html). Alternatively join our [Gitter channel](https://gitter.im/BlueBrain/nexus) to get quick feedback about your inquiry.
-- **Bug report**: If you have found a bug while using some of the Nexus services, please create a Github issue in the appropiate service describing the bug with as much detail as possible. If you cannot find or don't know the service where the bug happened, create an issue [here](https://github.com/BlueBrain/nexus/issues/new) with the `bug` label.
+- **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the [list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature). In case there isn't already one, please [open a feature request](https://github.com/BlueBrain/nexus/issues/new?labels=feature) describing your feature with as much detail as possible.
+- **Questions**: For any questions on how to deploy, install or use the platform, please visit the [documentation](https://bluebrain.github.io/nexus/docs/index.html). If the documentation doesn't contain the answer to your question, you can get in touch with is on our [Gitter channel](https://gitter.im/BlueBrain/nexus).
+- **Bug report**: If you have found a bug while using some of the Nexus services, please create a Github issue in the appropiate service describing the bug with as much detail as possible. If you cannot find or don't know the service where the bug happened, create an issue [here](https://github.com/BlueBrain/nexus/issues/new?labels=bug).
 
 # Blue Brain Nexus components
 
