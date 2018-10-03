@@ -138,7 +138,7 @@ This library contains all the code shared by nexus web applications in order to 
 ### Nexus Registration
 This prototypic web application will allow users to enter data into the knowledge graph using forms generated automatically from domain’s schemas. This application is meant for low scale data integration while large scale will be done programmatically through APIs.
 
-**Status**: currently inactive
+**Status**: currently inactive 
 **Source code**: https://github.com/BlueBrain/nexus-registration-webapp  
 
 
@@ -155,7 +155,7 @@ This prototypic web application will allow users to enter data into the knowledg
 #### nexus-prov
 Data management oriented [SHACL](https://www.w3.org/TR/shacl/) version of [W3C PROV-O](http://www.w3.org/ns/prov-o-20130430).
 
-**Status**: active development  
+**Status**: active development 
 **Source code**: https://github.com/BlueBrain/nexus-prov  
 
 ### Nexus domain specific components
@@ -172,11 +172,17 @@ A community effort to develop open SHACL schemas for FAIR (Findable, Accessible,
 **Status**: active development  
 **Source code**: https://github.com/INCF/neuroshapes  
 
-## Nexus SDK
+## Nexus Clients
+
+### Nexus CLI
+A command line interface (CLI) to operate basic operation on a Nexus deployment.
+
+**Status**: active development 
+**Source code**: https://github.com/BlueBrain/nexus-cli
 
 ### Nexus Python SDK
 The Human Brain Project has developed an open source library called Pyxus to facilitate the use of Nexus with Python. 
 This library will help Python users to integrate their tools with the Blue Brain Nexus platform. Initially, it will mainly enable the interface with the Knowledge Graph service.
 
-**Status**: active development
+**Status**: active development 
 **Source code**: https://github.com/HumanBrainProject/pyxus
