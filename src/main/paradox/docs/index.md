@@ -122,7 +122,13 @@ neuroscience data.
 
 [Source Code](https://github.com/INCF/neuroshapes)
 
-## Nexus SDK
+## Nexus tools
+
+### Nexus CLI
+
+A command line interface (CLI) to operate basic operation on a Nexus deployment.
+
+[Source Code](https://github.com/BlueBrain/nexus-cli)
 
 ### Nexus Python SDK
 
