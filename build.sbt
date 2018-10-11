@@ -26,11 +26,14 @@ scalafmt: {
 
 lazy val root = project
   .in(file("."))
-  .enablePlugins(ParadoxMaterialThemePlugin)
+  .enablePlugins(ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
   .settings(
     name       := "nexus",
     moduleName := "nexus",
-    paradoxMaterialTheme in Compile := {
+    // paradox settings
+    sourceDirectory in Paradox := sourceDirectory.value / "main" / "paradox",
+    ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox),
+    paradoxMaterialTheme in Paradox := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
         .withFavicon("./assets/img/favicon-32x32.png")
@@ -41,13 +44,16 @@ lazy val root = project
           uri("https://github.com/BlueBrain"),
           uri("https://gitter.im/BlueBrain/nexus")
         )
-        .withCopyright(
-          """Nexus is Open Source and available under the Apache 2 License.<br/>
+        .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
             |© 2017-2018 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
             |""".stripMargin)
     },
-    paradoxNavigationDepth in Compile := 3,
-    paradoxProperties in Compile += ("github.base_url" -> "https://github.com/bogdanromanx/nexus/tree/docs")
+    paradoxNavigationDepth in Paradox := 3,
+    paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
+    // gh pages settings
+    git.remoteRepo  := "git@github.com:BlueBrain/nexus.git",
+    ghpagesNoJekyll := true,
+    ghpagesBranch   := "gh-pages",
   )
 
 addCommandAlias("review", ";clean;paradox")

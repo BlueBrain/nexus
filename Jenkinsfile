@@ -1,4 +1,6 @@
-def version = env.BRANCH_NAME
+String version = env.BRANCH_NAME
+Boolean isRelease = version ==~ /v\d+\.\d+\.\d+.*/
+Boolean isPR = env.CHANGE_ID != null
 
 pipeline {
     agent none
@@ -6,7 +8,7 @@ pipeline {
     stages {
         stage("Review") {
             when {
-                expression { env.CHANGE_ID != null }
+                expression { isPR }
             }
             steps {
                 node("slave-sbt") {
@@ -15,17 +17,14 @@ pipeline {
                 }
             }
         }
-        stage("Build Image") {
+        stage("Deploy GhPages") {
             when {
-                expression { env.CHANGE_ID == null && version ==~ /v\d+\.\d+\.\d+.*/ }
+                expression { !isPR && !isRelease }
             }
             steps {
                 node("slave-sbt") {
                     checkout scm
-                    sh "sbt clean paradox universal:packageZipTarball"
-                    sh "mv target/universal/docs.tgz ."
-                    sh "oc start-build docs-build --from-file=docs.tgz --follow"
-                    openshiftTag srcStream: 'docs', srcTag: 'latest', destStream: 'docs', destTag: version.substring(1), verbose: 'false'
+                    sh "sbt clean makeSite ghpagesPushSite"
                 }
             }
         }

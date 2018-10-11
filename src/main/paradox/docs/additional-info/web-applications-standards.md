@@ -18,7 +18,8 @@ Zero-configuration testing framework, best support for React.
 One of the most widespread coding style to make it easy for multiple developers to collaborate on the same code base.
 
 - **[NodeJS](https://nodejs.org/) version:** latest LTS
-To allow anyone to install Blue Brain Nexus on their infrastructure, we stay compatible with NodeJS Long Term Support version that is the one usually available for production systems.
+To allow anyone to install Blue Brain Nexus on their infrastructure, we stay compatible with NodeJS Long Term Support
+version that is the one usually available for production systems.
 
 ## Workflow
 
@@ -31,10 +32,13 @@ Our workflow is inspired by [Gitflow](https://nvie.com/posts/a-successful-git-br
 - When ready for review, a Pull Request is opened for inclusion into the master branch.
 - The Pull Request must be approved by at least 1 other developer.
 - When merged into the master branch, it triggers a deployment to our `staging` environment.
-- We tag the master branch with a [Semantic Versioning](https://semver.org/) version number when we consider it is high quality enough for release.
+- We tag the master branch with a [Semantic Versioning](https://semver.org/) version number when we consider it is high
+quality enough for release.
 
 ### Code documentation
 
-Technical documentation is written along with the code in the form of [JSDoc](http://usejsdoc.org/) comments, and that we can extract with tools like [documentation.js](http://documentation.js.org/).
+Technical documentation is written along with the code in the form of [JSDoc](http://usejsdoc.org/) comments, and that
+we can extract with tools like [documentation.js](http://documentation.js.org/).
 
-User documentation is written in the Blue Brain Nexus Platform documentation, including this very document. It is kept up-to-date with the latest features of the web applications and revised before any release.
+User documentation is written in the Blue Brain Nexus Platform documentation, including this very document. It is kept
+up-to-date with the latest features of the web applications and revised before any release.
