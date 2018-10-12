@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search",
+    "https://bluebrain.github.io/nexus/contexts/resource",
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/schemas/myschema2",
+      "@type": "https://bluebrain.github.io/nexus/vocabulary/Schema",
+      "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c",
+      "_constrainedBy": "nxs:shacl",
+      "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+      "_createdAt": "2018-09-17T14:55:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_updatedAt": "2018-09-17T15:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_rev": 4,
+      "_deprecated": true
+    }
+  ]
+}

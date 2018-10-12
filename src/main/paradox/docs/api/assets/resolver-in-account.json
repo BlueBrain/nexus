@@ -1,0 +1,17 @@
+{
+  "@type": [
+    "Resolver",
+    "InAccount"
+  ],
+  "resourceTypes": [
+    "nxv:Schema"
+  ],
+  "identities": [
+    {
+      "@type": "GroupRef",
+      "realm": "BBP",
+      "group": "some-project"
+    }
+  ],
+  "priority": 50
+}

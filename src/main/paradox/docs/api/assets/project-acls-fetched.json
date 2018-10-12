@@ -1,0 +1,23 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/acls",
+  "acl": [
+    {
+      "path": "/",
+      "identity": {
+        "@id": "https://nexus.example.com/v1/v1/realms/BBP/groups/some-group",
+        "@type": "GroupRef",
+        "realm": "BBP",
+        "group": "some-group"
+      },
+      "permissions": [
+        "resources/manage",
+        "projects/manage",
+        "orgs/manage",
+        "schemas/manage",
+        "resolvers/manage",
+        "views/manage",
+        "own"
+      ]
+    }
+  ]
+}

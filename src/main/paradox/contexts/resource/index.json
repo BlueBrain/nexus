@@ -1,0 +1,37 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "_updatedBy": {
+      "@id": "nxv:updatedBy",
+      "@type": "@id"
+    },
+    "_deprecated": "nxv:deprecated",
+    "_createdAt": "nxv:createdAt",
+    "_updatedAt": "nxv:updatedAt",
+    "_createdBy": {
+      "@id": "nxv:createdBy",
+      "@type": "@id"
+    },
+    "_constrainedBy": {
+      "@id": "nxv:constrainedBy",
+      "@type": "@id"
+    },
+    "_rev": "nxv:rev",
+    "_distribution": {
+      "@container": "@set",
+      "@id": "nxv:distribution"
+    },
+    "_unit": "nxv:unit",
+    "_value": "nxv:value",
+    "_downloadURL": {
+      "@type": "@id",
+      "@id": "nxv:downloadURL"
+    },
+    "_digest": "nxv:digest",
+    "_algorithm": "nxv:algorithm",
+    "_mediaType": "nxv:mediaType",
+    "_originalFileName": "nxv:originalFileName",
+    "_contentSize": "nxv:contentSize"
+  }
+}

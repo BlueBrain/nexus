@@ -1,0 +1,18 @@
+{
+  "@type": [
+    "Resolver",
+    "CrossProject"
+  ],
+  "projects": [
+    "org1/project1",
+    "org1/project2"
+  ],
+  "identities": [
+    {
+      "@type": "UserRef",
+      "realm": "BBP",
+      "sub": "name"
+    }
+  ],
+  "priority": 50
+}
