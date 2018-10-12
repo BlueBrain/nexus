@@ -188,6 +188,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
     <li><a href="../../../docs/additional-info/incremental-domain-definition.html" class="page">Incremental domain definition</a></li>
+    <li><a href="../../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
     <li><a href="../../../docs/additional-info/faq.html" class="page">Frequently asked questions</a></li>
   </ul></li>
 </ul>
@@ -247,10 +248,7 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h1>
 <p>Organizations are rooted in the <code>/v1/orgs</code> and are used to group and categorize its sub-resources. An organization it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/organization">organization schema</a>.</p>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
-<p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/organization-postman.json">organizations collection</a>.</p>
-<p>If your deployment is protected by an access token: </p>
-<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
+<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
 <h2><a href="#create-an-organization" name="create-an-organization" class="anchor"><span class="anchor-link"></span></a>Create an organization</h2>
 <pre><code>PUT /v1/orgs/{label}
   {...}
@@ -260,12 +258,12 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg&quot; -d &#39;{&quot;name&quot;: &quot;myname&quot;}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg&quot; -d &#39;{&quot;name&quot;: &quot;myname&quot;}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;name&quot;: &quot;myname&quot;
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -280,7 +278,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#update-an-organization" name="update-an-organization" class="anchor"><span class="anchor-link"></span></a>Update an organization</h2>
 <p>This operation overrides the payload.</p>
@@ -297,12 +295,12 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg?rev=1&quot; -d &#39;{&quot;name&quot;: &quot;myname&quot;}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg?rev=1&quot; -d &#39;{&quot;name&quot;: &quot;myname&quot;}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;name&quot;: &quot;myname&quot;
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -317,7 +315,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#tag-an-organization" name="tag-an-organization" class="anchor"><span class="anchor-link"></span></a>Tag an organization</h2>
 <p>Links an organization revision to a specific name. </p>
@@ -339,13 +337,13 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;tag&quot;: &quot;mytag&quot;,
   &quot;rev&quot;: 1
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -360,7 +358,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#deprecate-an-organization" name="deprecate-an-organization" class="anchor"><span class="anchor-link"></span></a>Deprecate an organization</h2>
 <p>Locks the organization, so no further operations can be performed on the resource or on the children resources.</p>
@@ -376,7 +374,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/orgs/myorg/tags?rev=3&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-deprecate.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/orgs/myorg/tags?rev=3&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-deprecate.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -391,7 +389,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-an-organization-current-version-" name="fetch-an-organization-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch an organization (current version)</h2>
 <pre><code>GET /v1/orgs/{label}
@@ -401,7 +399,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/myorg&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/myorg&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -419,7 +417,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-an-organization-specific-version-" name="fetch-an-organization-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch an organization (specific version)</h2>
 <pre><code>GET /v1/orgs/{label}?rev={rev}
@@ -433,7 +431,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/myorg?rev=4&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/myorg?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -451,7 +449,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-resolver-specific-tag-" name="fetch-a-resolver-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (specific tag)</h2>
 <pre><code>GET /v1/orgs/{label}?tag={tag}
@@ -465,7 +463,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/myorg?tag=mytag&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/myorg?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -483,7 +481,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-organizations" name="list-organizations" class="anchor"><span class="anchor-link"></span></a>List organizations</h2>
 <pre><code>GET /v1/orgs?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;q={full_text_search_query}
@@ -499,7 +497,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -522,11 +520,11 @@ BlueBrain/nexus
       &quot;_deprecated&quot;: true
     }
   ]
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/organization-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/admin/admin-orgs-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/admin/admin-orgs-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -578,6 +576,11 @@ Nexus is Open Source and available under the Apache 2 License.<br/>
 © 2017-2018 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>
+Powered by
+<a href="https://github.com/lightbend/paradox">Paradox</a>
+and
+<a href="https://jonas.github.io/paradox-material-theme/">Paradox Material Theme</a>
+
 </div>
 <div class="md-footer-social">
 <a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://gitter.im/BlueBrain/nexus" class="md-footer-social__link fa fa-globe"></a>

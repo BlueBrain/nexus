@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Results · Blue Brain Nexus</title>
+<title>Web applications development best practices · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Results
+Web applications development best practices
 </span>
 </div>
 </div>
@@ -183,16 +183,28 @@ BlueBrain/nexus
     <li><a href="../../docs/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
     <li><a href="../../docs/benchmarks/data-volumes.html" class="page">Data Volumes</a></li>
     <li><a href="../../docs/benchmarks/scenarios.html" class="page">Scenarios</a></li>
-    <li><a href="../../docs/benchmarks/results.html" class="active page">Results</a></li>
+    <li><a href="../../docs/benchmarks/results.html" class="page">Results</a></li>
   </ul></li>
   <li><a href="../../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
     <li><a href="../../docs/additional-info/incremental-domain-definition.html" class="page">Incremental domain definition</a></li>
-    <li><a href="../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
+    <li><a href="../../docs/additional-info/web-applications-standards.html" class="active page">Web applications development best practices</a></li>
     <li><a href="../../docs/additional-info/faq.html" class="page">Frequently asked questions</a></li>
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/additional-info/web-applications-standards.html#web-applications-development-best-practices" class="header">Web applications development best practices</a>
+  <ul>
+    <li><a href="../../docs/additional-info/web-applications-standards.html#tools-we-standardize-on" class="header">Tools we standardize on</a></li>
+    <li><a href="../../docs/additional-info/web-applications-standards.html#workflow" class="header">Workflow</a>
+    <ul>
+      <li><a href="../../docs/additional-info/web-applications-standards.html#git-and-deployment" class="header">Git and deployment</a></li>
+      <li><a href="../../docs/additional-info/web-applications-standards.html#code-documentation" class="header">Code documentation</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -206,14 +218,63 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/additional-info/web-applications-standards.html#web-applications-development-best-practices" class="header">Web applications development best practices</a>
+  <ul>
+    <li><a href="../../docs/additional-info/web-applications-standards.html#tools-we-standardize-on" class="header">Tools we standardize on</a></li>
+    <li><a href="../../docs/additional-info/web-applications-standards.html#workflow" class="header">Workflow</a>
+    <ul>
+      <li><a href="../../docs/additional-info/web-applications-standards.html#git-and-deployment" class="header">Git and deployment</a></li>
+      <li><a href="../../docs/additional-info/web-applications-standards.html#code-documentation" class="header">Code documentation</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#results" name="results" class="anchor"><span class="anchor-link"></span></a>Results</h1>
-<p>TBC.</p>
+<h1><a href="#web-applications-development-best-practices" name="web-applications-development-best-practices" class="anchor"><span class="anchor-link"></span></a>Web applications development best practices</h1>
+<h2><a href="#tools-we-standardize-on" name="tools-we-standardize-on" class="anchor"><span class="anchor-link"></span></a>Tools we standardize on</h2>
+<ul>
+  <li>
+  <p><strong>Language:</strong> <a href="https://www.typescriptlang.org/">Typescript</a> Powerful type system and other features allow building higher quality applications, especially when they become complex. It is becoming the standard for entreprise-grade applications.</p></li>
+  <li>
+  <p><strong>Framework</strong>: <a href="https://reactjs.org/">React</a> + <a href="https://redux.js.org/">Redux</a> The most widespread JS framework and state management solution.</p></li>
+  <li>
+  <p><strong>Bundler:</strong> <a href="https://parceljs.org/">Parcel</a> Manages everything needed to bundle regular web applications with zero configuration most of the time.</p></li>
+  <li>
+  <p><strong>Unit tests:</strong> <a href="https://jestjs.io/">Jest</a> Zero-configuration testing framework, best support for React.</p></li>
+  <li>
+  <p><strong>Linting:</strong> <a href="https://www.npmjs.com/package/eslint-config-airbnb">ESLint Airbnb</a> with a few additions One of the most widespread coding style to make it easy for multiple developers to collaborate on the same code base.</p></li>
+  <li>
+  <p><strong><a href="https://nodejs.org/">NodeJS</a> version:</strong> latest LTS To allow anyone to install Blue Brain Nexus on their infrastructure, we stay compatible with NodeJS Long Term Support version that is the one usually available for production systems.</p></li>
+</ul>
+<h2><a href="#workflow" name="workflow" class="anchor"><span class="anchor-link"></span></a>Workflow</h2>
+<h3><a href="#git-and-deployment" name="git-and-deployment" class="anchor"><span class="anchor-link"></span></a>Git and deployment</h3>
+<p>Our workflow is inspired by <a href="https://nvie.com/posts/a-successful-git-branching-model/">Gitflow</a>, simplified.</p>
+<ul>
+  <li>Direct commit to the <code>master</code> branch is prohibited</li>
+  <li>Features and fixes are developed in separate feature branches</li>
+  <li>When ready for review, a Pull Request is opened for inclusion into the master branch.</li>
+  <li>The Pull Request must be approved by at least 1 other developer.</li>
+  <li>When merged into the master branch, it triggers a deployment to our <code>staging</code> environment.</li>
+  <li>We tag the master branch with a <a href="https://semver.org/">Semantic Versioning</a> version number when we consider it is high quality enough for release.</li>
+</ul>
+<h3><a href="#code-documentation" name="code-documentation" class="anchor"><span class="anchor-link"></span></a>Code documentation</h3>
+<p>Technical documentation is written along with the code in the form of <a href="http://usejsdoc.org/">JSDoc</a> comments, and that we can extract with tools like <a href="http://documentation.js.org/">documentation.js</a>.</p>
+<p>User documentation is written in the Blue Brain Nexus Platform documentation, including this very document. It is kept up-to-date with the latest features of the web applications and revised before any release.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/benchmarks/results.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/additional-info/web-applications-standards.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -229,7 +290,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/benchmarks/scenarios.html" title="Scenarios" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/additional-info/incremental-domain-definition.html" title="Incremental domain definition" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -238,17 +299,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Scenarios
+Incremental domain definition
 </span>
 </div>
 </a>
-<a href="../../docs/additional-info/index.html" title="Additional Information" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/additional-info/faq.html" title="Frequently asked questions" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Additional Information
+Frequently asked questions
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

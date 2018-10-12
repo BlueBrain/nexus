@@ -188,6 +188,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
     <li><a href="../../../docs/additional-info/incremental-domain-definition.html" class="page">Incremental domain definition</a></li>
+    <li><a href="../../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
     <li><a href="../../../docs/additional-info/faq.html" class="page">Frequently asked questions</a></li>
   </ul></li>
 </ul>
@@ -314,7 +315,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj&quot; -d &#39;{&quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myview&quot;, &quot;@type&quot;: [&quot;View&quot;, &quot;ElasticView&quot;, &quot;Alpha&quot;], &quot;mapping&quot;: {&quot;dynamic&quot;: false, &quot;properties&quot;: {&quot;@id&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;@type&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;name&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;number&quot;: {&quot;type&quot;: &quot;long&quot;}, &quot;bool&quot;: {&quot;type&quot;: &quot;boolean&quot;} } }, &quot;includeMetadata&quot;: false, &quot;sourceAsText&quot;: false, &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj&quot; -d &#39;{&quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myview&quot;, &quot;@type&quot;: [&quot;View&quot;, &quot;ElasticView&quot;, &quot;Alpha&quot;], &quot;mapping&quot;: {&quot;dynamic&quot;: false, &quot;properties&quot;: {&quot;@id&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;@type&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;name&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;number&quot;: {&quot;type&quot;: &quot;long&quot;}, &quot;bool&quot;: {&quot;type&quot;: &quot;boolean&quot;} } }, &quot;includeMetadata&quot;: false, &quot;sourceAsText&quot;: false, &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -347,7 +348,7 @@ BlueBrain/nexus
   &quot;includeMetadata&quot;: false,
   &quot;sourceAsText&quot;: false,
   &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -367,7 +368,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#create-an-elasticview-using-put" name="create-an-elasticview-using-put" class="anchor"><span class="anchor-link"></span></a>Create an ElasticView using PUT</h2>
 <p>This alternative endpoint to create a view is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
@@ -379,7 +380,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview&quot; -d &#39;{&quot;@type&quot;: [&quot;View&quot;, &quot;ElasticView&quot;, &quot;Alpha&quot;], &quot;mapping&quot;: {&quot;dynamic&quot;: false, &quot;properties&quot;: {&quot;@id&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;@type&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;name&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;number&quot;: {&quot;type&quot;: &quot;long&quot;}, &quot;bool&quot;: {&quot;type&quot;: &quot;boolean&quot;} } }, &quot;includeMetadata&quot;: false, &quot;sourceAsText&quot;: false, &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview&quot; -d &#39;{&quot;@type&quot;: [&quot;View&quot;, &quot;ElasticView&quot;, &quot;Alpha&quot;], &quot;mapping&quot;: {&quot;dynamic&quot;: false, &quot;properties&quot;: {&quot;@id&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;@type&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;name&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;number&quot;: {&quot;type&quot;: &quot;long&quot;}, &quot;bool&quot;: {&quot;type&quot;: &quot;boolean&quot;} } }, &quot;includeMetadata&quot;: false, &quot;sourceAsText&quot;: false, &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -411,7 +412,7 @@ BlueBrain/nexus
   &quot;includeMetadata&quot;: false,
   &quot;sourceAsText&quot;: false,
   &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -431,7 +432,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#update-an-elasticview" name="update-an-elasticview" class="anchor"><span class="anchor-link"></span></a>Update an ElasticView</h2>
 <p>This operation overrides the payload.</p>
@@ -444,7 +445,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=1&quot; -d &#39;{&quot;@type&quot;: [&quot;View&quot;, &quot;ElasticView&quot;, &quot;Alpha&quot;], &quot;mapping&quot;: {&quot;dynamic&quot;: false, &quot;properties&quot;: {&quot;@id&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;@type&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;name&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;number&quot;: {&quot;type&quot;: &quot;long&quot;}, &quot;bool&quot;: {&quot;type&quot;: &quot;boolean&quot;} } }, &quot;includeMetadata&quot;: false, &quot;sourceAsText&quot;: false, &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=1&quot; -d &#39;{&quot;@type&quot;: [&quot;View&quot;, &quot;ElasticView&quot;, &quot;Alpha&quot;], &quot;mapping&quot;: {&quot;dynamic&quot;: false, &quot;properties&quot;: {&quot;@id&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;@type&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;name&quot;: {&quot;type&quot;: &quot;keyword&quot;}, &quot;number&quot;: {&quot;type&quot;: &quot;long&quot;}, &quot;bool&quot;: {&quot;type&quot;: &quot;boolean&quot;} } }, &quot;includeMetadata&quot;: false, &quot;sourceAsText&quot;: false, &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -476,7 +477,7 @@ BlueBrain/nexus
   &quot;includeMetadata&quot;: false,
   &quot;sourceAsText&quot;: false,
   &quot;resourceSchemas&quot;: &quot;nxs:myschema&quot;
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -496,7 +497,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#tag-an-elasticview" name="tag-an-elasticview" class="anchor"><span class="anchor-link"></span></a>Tag an ElasticView</h2>
 <p>Links a view&rsquo;s revision to a specific name. </p>
@@ -517,13 +518,13 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;tag&quot;: &quot;mytag&quot;,
   &quot;rev&quot;: 1
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -543,7 +544,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#deprecate-a-view" name="deprecate-a-view" class="anchor"><span class="anchor-link"></span></a>Deprecate a view</h2>
 <p>Locks the view, so no further operations can be performed. It also stops indexing any more resources into it.</p>
@@ -555,7 +556,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=3&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-deprecate.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=3&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-deprecate.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -575,7 +576,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-elastic-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-view-current-version-" name="fetch-a-view-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a view (current version)</h2>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}
@@ -584,7 +585,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -633,7 +634,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-view-specific-version-" name="fetch-a-view-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a view (specific version)</h2>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}
@@ -643,7 +644,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=4&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -692,7 +693,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-view-specific-tag-" name="fetch-a-view-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a view (specific tag)</h2>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}?tag={tag}
@@ -702,7 +703,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?tag=mytag&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -751,7 +752,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-views" name="list-views" class="anchor"><span class="anchor-link"></span></a>List views</h2>
 <pre><code>GET /v1/views/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;q={full_text_search_query}
@@ -767,7 +768,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj&quot;</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -934,11 +935,11 @@ BlueBrain/nexus
       &quot;_deprecated&quot;: true
     }
   ]
-}</code></pre><a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/assets/view-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/api/kg/kg-views-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg/kg-views-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -990,6 +991,11 @@ Nexus is Open Source and available under the Apache 2 License.<br/>
 © 2017-2018 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>
+Powered by
+<a href="https://github.com/lightbend/paradox">Paradox</a>
+and
+<a href="https://jonas.github.io/paradox-material-theme/">Paradox Material Theme</a>
+
 </div>
 <div class="md-footer-social">
 <a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://gitter.im/BlueBrain/nexus" class="md-footer-social__link fa fa-globe"></a>

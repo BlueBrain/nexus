@@ -183,6 +183,7 @@ BlueBrain/nexus
   <li><a href="../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
     <li><a href="../docs/additional-info/incremental-domain-definition.html" class="page">Incremental domain definition</a></li>
+    <li><a href="../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
     <li><a href="../docs/additional-info/faq.html" class="page">Frequently asked questions</a></li>
   </ul></li>
 </ul>
@@ -203,6 +204,16 @@ BlueBrain/nexus
       <li><a href="../docs/index.html#nexus-search" class="header">Nexus Search</a></li>
       <li><a href="../docs/index.html#nexus-explorer" class="header">Nexus Explorer</a></li>
       <li><a href="../docs/index.html#nexus-docs" class="header">Nexus Docs</a></li>
+    </ul></li>
+    <li><a href="../docs/index.html#domains-schemas-vocabularies-" class="header">Domains (Schemas, Vocabularies)</a>
+    <ul>
+      <li><a href="../docs/index.html#nexus-core-schemas" class="header">Nexus Core Schemas</a></li>
+      <li><a href="../docs/index.html#nexus-domain-specific-components" class="header">Nexus domain specific components</a></li>
+    </ul></li>
+    <li><a href="../docs/index.html#nexus-tools" class="header">Nexus tools</a>
+    <ul>
+      <li><a href="../docs/index.html#nexus-cli" class="header">Nexus CLI</a></li>
+      <li><a href="../docs/index.html#nexus-python-sdk" class="header">Nexus Python SDK</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -239,6 +250,16 @@ BlueBrain/nexus
       <li><a href="../docs/index.html#nexus-search" class="header">Nexus Search</a></li>
       <li><a href="../docs/index.html#nexus-explorer" class="header">Nexus Explorer</a></li>
       <li><a href="../docs/index.html#nexus-docs" class="header">Nexus Docs</a></li>
+    </ul></li>
+    <li><a href="../docs/index.html#domains-schemas-vocabularies-" class="header">Domains (Schemas, Vocabularies)</a>
+    <ul>
+      <li><a href="../docs/index.html#nexus-core-schemas" class="header">Nexus Core Schemas</a></li>
+      <li><a href="../docs/index.html#nexus-domain-specific-components" class="header">Nexus domain specific components</a></li>
+    </ul></li>
+    <li><a href="../docs/index.html#nexus-tools" class="header">Nexus tools</a>
+    <ul>
+      <li><a href="../docs/index.html#nexus-cli" class="header">Nexus CLI</a></li>
+      <li><a href="../docs/index.html#nexus-python-sdk" class="header">Nexus Python SDK</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -284,9 +305,31 @@ BlueBrain/nexus
 <h3><a href="#nexus-docs" name="nexus-docs" class="anchor"><span class="anchor-link"></span></a>Nexus Docs</h3>
 <p>Generated documentation for the platform (this website).</p>
 <p><a href="https://github.com/BlueBrain/nexus">Source Code</a> | <a href="./">Website</a></p>
+<h2><a href="#domains-schemas-vocabularies-" name="domains-schemas-vocabularies-" class="anchor"><span class="anchor-link"></span></a>Domains (Schemas, Vocabularies)</h2>
+<h3><a href="#nexus-core-schemas" name="nexus-core-schemas" class="anchor"><span class="anchor-link"></span></a>Nexus Core Schemas</h3>
+<h4><a href="#nexus-schemaorg" name="nexus-schemaorg" class="anchor"><span class="anchor-link"></span></a>nexus-schemaorg</h4>
+<p><a href="https://www.w3.org/TR/shacl/">SHACL</a> version of a subset of schemas defined by <a href="http://schema.org/docs/full.html">schema.org</a> that are commonly used in Blue Brain Nexus.</p>
+<p><a href="https://github.com/BlueBrain/nexus-schemaorg">Source Code</a></p>
+<h4><a href="#nexus-prov" name="nexus-prov" class="anchor"><span class="anchor-link"></span></a>nexus-prov</h4>
+<p>Data management oriented <a href="https://www.w3.org/TR/shacl/">SHACL</a> version of <a href="http://www.w3.org/ns/prov-o-20130430">W3C PROV-O</a>.</p>
+<p><a href="https://github.com/BlueBrain/nexus-prov">Source Code</a></p>
+<h3><a href="#nexus-domain-specific-components" name="nexus-domain-specific-components" class="anchor"><span class="anchor-link"></span></a>Nexus domain specific components</h3>
+<h4><a href="#nexus-bbp-data-models" name="nexus-bbp-data-models" class="anchor"><span class="anchor-link"></span></a>Nexus BBP Data models</h4>
+<p>Data models that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.</p>
+<p><a href="https://github.com/BlueBrain/nexus-bbp-domains">Source Code</a></p>
+<h4><a href="#neuroshapes" name="neuroshapes" class="anchor"><span class="anchor-link"></span></a>Neuroshapes</h4>
+<p>A community effort to develop open SHACL schemas for FAIR (Findable, Accessible, Interoperable, Reproducible) neuroscience data.</p>
+<p><a href="https://github.com/INCF/neuroshapes">Source Code</a></p>
+<h2><a href="#nexus-tools" name="nexus-tools" class="anchor"><span class="anchor-link"></span></a>Nexus tools</h2>
+<h3><a href="#nexus-cli" name="nexus-cli" class="anchor"><span class="anchor-link"></span></a>Nexus CLI</h3>
+<p>A command line interface (CLI) to operate basic operation on a Nexus deployment.</p>
+<p><a href="https://github.com/BlueBrain/nexus-cli">Source Code</a></p>
+<h3><a href="#nexus-python-sdk" name="nexus-python-sdk" class="anchor"><span class="anchor-link"></span></a>Nexus Python SDK</h3>
+<p>The Human Brain Project has developed an open source library called Pyxus to facilitate the use of Nexus with Python. This library will help Python users to integrate their tools with the Blue Brain Nexus platform. Initially, it will mainly enable the interface with the Knowledge Graph service.</p>
+<p><a href="https://github.com/HumanBrainProject/pyxus">Source Code</a></p>
 </div>
 <div>
-<a href="https://github.com/bogdanromanx/nexus/tree/docs/src/main/paradox/docs/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/index.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -325,6 +368,11 @@ Nexus is Open Source and available under the Apache 2 License.<br/>
 © 2017-2018 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>
+Powered by
+<a href="https://github.com/lightbend/paradox">Paradox</a>
+and
+<a href="https://jonas.github.io/paradox-material-theme/">Paradox Material Theme</a>
+
 </div>
 <div class="md-footer-social">
 <a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://gitter.im/BlueBrain/nexus" class="md-footer-social__link fa fa-globe"></a>
