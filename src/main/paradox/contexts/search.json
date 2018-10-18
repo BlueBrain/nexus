@@ -23,5 +23,5 @@
     "_maxScore": "nxv:maxScore",
     "_score": "nxv:score"
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/resource/search"
+  "@id": "https://bluebrain.github.io/nexus/contexts/search.json"
 }

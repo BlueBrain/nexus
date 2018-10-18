@@ -6,7 +6,7 @@ Each schema...
 
 - belongs to a `project` identifier by the label `{project_label}` 
 - inside an `organization` identifier by the label `{org_label}` 
-- it is validated against the [shacl schema](https://www.w3.org/ns/shacl-shacl) (version 20170720).
+- it is validated against the [shacl schema](https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl) (version 20170720).
 
 Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](../iam-service-api.md) in order to learn more about how to retrieve an access token.
 

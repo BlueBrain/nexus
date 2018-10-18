@@ -29,5 +29,5 @@
     "sourceAsText": "nxv:sourceAsText",
     "mapping": "nxv:mapping"
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/view"
+  "@id": "https://bluebrain.github.io/nexus/contexts/view.json"
 }
