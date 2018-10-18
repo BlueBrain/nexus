@@ -1,8 +1,8 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/search",
-    "https://bluebrain.github.io/nexus/contexts/resource",
-    "https://bluebrain.github.io/nexus/contexts/shacl-20170720"
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
   ],
   "_total": 1,
   "_results": [

@@ -40,5 +40,5 @@
     "sub": "nxv:sub",
     "group": "nxv:group"
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/resolver"
+  "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json"
 }
