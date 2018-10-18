@@ -1,5 +1,5 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource",
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
   "@id": "nxv:myresolver",
   "@type": [
     "nxv:Resolver",

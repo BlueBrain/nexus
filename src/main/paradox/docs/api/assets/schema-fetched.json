@@ -1,11 +1,11 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/shacl-20170720",
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
     {
       "ex": "http://example.com/",
       "this": "https://nexus.example.com/v1/schemas/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c/shapes"
     },
-    "https://bluebrain.github.io/nexus/contexts/resource"
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
   ],
   "@id": "nxs:myschema2",
   "@type": "nxv:Schema",

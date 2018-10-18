@@ -1,7 +1,7 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/view",
-    "https://bluebrain.github.io/nexus/contexts/resource"
+    "https://bluebrain.github.io/nexus/contexts/view.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
   ],
   "@id": "nxv:myview2",
   "@type": [

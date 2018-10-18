@@ -1,5 +1,5 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource",
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
   "@id": "https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
   "@type": "http://example.com/Custom",
   "_self": "https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0",

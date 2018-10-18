@@ -1,5 +1,5 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource",
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
   "@id": "https://nexus.example.com/v1/orgs/myorg",
   "@type": "nxv:Organization",
   "_self": "https://nexus.example.com/v1/orgs/myorg",
