@@ -13,5 +13,6 @@
     "supported": "nxv:supported",
     "details": "nxv:details",
     "missingParams": "nxv:missingParams"
-  }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/error.json"
 }

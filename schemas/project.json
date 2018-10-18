@@ -5,7 +5,7 @@
       "this": "https://bluebrain.github.io/nexus/schemas/project/shapes/"
     }
   ],
-  "@id" : "https://bluebrain.github.io/nexus/schemas/project",
+  "@id" : "https://bluebrain.github.io/nexus/schemas/project.json",
   "@type": "nxv:Schema",
   "shapes": [
     {

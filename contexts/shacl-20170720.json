@@ -1,17 +1,20 @@
 {
   "@context": {
-    "dcterms": "http://purl.org/dc/terms/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "nxs": "https://bluebrain.github.io/nexus/schemas/",
+    "nxc": "https://bluebrain.github.io/nexus/contexts/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
     "owl": "http://www.w3.org/2002/07/owl#",
-    "prov": "http://www.w3.org/ns/prov#",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-    "schema": "http://schema.org/",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "prov": "http://www.w3.org/ns/prov#",
     "sh": "http://www.w3.org/ns/shacl#",
     "shsh": "http://www.w3.org/ns/shacl-shacl#",
-    "skos": "http://www.w3.org/2004/02/skos/core#",
-    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "schema": "http://schema.org/",
+    "dcat": "http://www.w3.org/ns/dcat#",
     "shext": "http://www.w3.org/ns/shacl/ext#",
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "nxsh": "https://bluebrain.github.io/nexus/vocabulary/shacl/",
     "distribution": "schema:distribution",
     "class": {
@@ -157,12 +160,8 @@
       "@id": "sh:target",
       "@type": "@id"
     },
-    "isDefinedBy": {
-      "@id": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
-      "@type": "@id"
-    },
     "shapes": {
-      "@reverse": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+      "@id": "nxv:shapes",
       "@type": "@id",
       "@container": "@set"
     },
@@ -255,5 +254,6 @@
       "@id": "sh:detail",
       "@container": "@set"
     }
-  }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
 }
