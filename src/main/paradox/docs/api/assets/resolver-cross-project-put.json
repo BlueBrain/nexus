@@ -1,5 +1,4 @@
 {
-  "@id": "https://bluebrain.github.io/nexus/vocabulary/myresolver",
   "@type": [
     "Resolver",
     "CrossProject"

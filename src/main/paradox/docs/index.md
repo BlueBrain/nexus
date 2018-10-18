@@ -53,20 +53,20 @@ This service is the heart of the BlueBrain Nexus platform. It allows users to de
 knowledge graph with data, attach files to data. It also provides semantic search facilities to discover similar and
 relevant data in the platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-kg) | [Documentation](./kg)
+[Source Code](https://github.com/BlueBrain/nexus-kg) | @ref:[Documentation](./api/kg/index.md)
 
 ### Nexus Admin
 
 This service manages the platform wide scopes for data and their configuration (i.e.: the API mapping).
 
-[Source Code](https://github.com/BlueBrain/nexus-admin) | [Documentation](./admin)
+[Source Code](https://github.com/BlueBrain/nexus-admin) | @ref:[Documentation](./api/admin/index.md)
 
 ### Nexus IAM
 
 This service manages the access to data within the platform. It makes use of configurable downstream OpenID Connect
 compliant identity providers to authenticate clients and manages the access controls for the entire platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-iam) | [Documentation](./iam)
+[Source Code](https://github.com/BlueBrain/nexus-iam) | [Documentation](https://bbp-nexus.epfl.ch/staging/docs/iam/api-reference/index.html)
 
 ## Nexus Web Applications
 

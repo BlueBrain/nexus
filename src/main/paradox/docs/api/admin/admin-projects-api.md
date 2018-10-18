@@ -12,6 +12,16 @@ Each project...
 
 Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](../iam-service-api.md) in order to learn more about how to retrieve an access token.
 
+@@@ note { .tip title="Running examples with Postman" }
+
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [projects collection](../assets/project-postman.json).
+
+If your deployment is protected by an access token: 
+
+Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+
+@@@
+
 ## Projects payload
 
 ```
@@ -31,29 +41,49 @@ Any resources in the system might be protected using an **access token**, provid
 where...
  
 - `{name}`: String - the name for this project.
-- `{base}`: Iri - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a [resource is created using POST](../kg/kg-resources-api.html#create-a-resource-using-post) and no `@id` is present on the payload, the platform will generate and @id which will look like `http://example.com/{UUID}`.
-- `{prefix}`: String - the left hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName).
-- `{namespace}`: Iri - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
+- `{base}`: Iri - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a [resource is created using POST](../kg/kg-resources-api.html#create-a-resource-using-post) and no `@id` is present on the payload, the platform will generate and @id which will look like `http://example.com/{UUID}`. This field is optional and it will default to `{{base}}/v1/{org_label}/{project_label}`.
+- `{prefixMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.
 
-The `prefixMappings` Json object array provides a convenient way to deal with URIs when performing operations on a project sub-resources. It maps each `prefix` to its `namespace` so that curies on children endpoints can be used. Let's see an example.
+### Prefix Mappings
+The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be used. Let's see an example.
 
 Having the following `prefixMappings`:
 
-```json
+```
 {
   "prefixMappings": [
    {
-      "prefix": "person",
-      "namespace": "http://example.com/some/person"
+      "prefix": "{prefix}",
+      "namespace": "{namespace}"
     },
-    {
-      "prefix": "schemas",
-      "namespace": "https://bluebrain.github.io/nexus/schemas/"
-    }
+    { ... }
   ]
 }
 ```
-Allows us to [create a schema](../kg/kg-schemas-api.html##create-a-schema-using-put) using the following endpoints:
+
+where...
+
+- `{prefix}`: String - the left hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName).
+- `{namespace}`: Iri - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
+
+The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be used. Let's see an example:
+ 
+ ```json
+ {
+   "prefixMappings": [
+    {
+       "prefix": "person",
+       "namespace": "http://example.com/some/person"
+     },
+     {
+       "prefix": "schemas",
+       "namespace": "https://bluebrain.github.io/nexus/schemas/"
+     }
+   ]
+ }
+ ```
+
+The previous payload allows us to [create a schema](../kg/kg-schemas-api.html##create-a-schema-using-put) using the following endpoints:
 
 - `/v1/schemas/{org_label}/{project_label}/person`. The `@id` of the resulting schema will be `http://example.com/some/person`
 - `/v1/schemas/{org_label}/{project_label}/schema:other`. The `@id` of the resulting schema will be `https://bluebrain.github.io/nexus/schemas/other`

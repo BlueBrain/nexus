@@ -1,0 +1,277 @@
+{
+  "id": "b118c0ef-531c-485a-a30c-ad22b6350513",
+  "name": "Project",
+  "description": "",
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": ""
+      }
+    ]
+  },
+  "events": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "74cce738-4102-4e00-bb8c-407ba6d185ee",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "eb1ad89b-b1ae-4bc4-bb74-ec87a263f3c6",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variables": [],
+  "order": [
+    "5f3d0bc3-a792-44a9-af51-55d1debbff92",
+    "ce807535-096f-4f0a-a0b0-fd851152afdb",
+    "b8b5d652-8467-4c75-9b95-925f74930ddd",
+    "780e2101-2c3d-45b7-9e50-0478ed9adecc",
+    "49b1180d-6ab7-4f4a-a7e0-cb751b3e4745",
+    "2e5e8b3d-fb5b-4fc2-be6e-a460255e35e2",
+    "74c7b8b9-302e-41bd-8c99-98419c20880c"
+  ],
+  "folders_order": [],
+  "folders": [],
+  "requests": [
+    {
+      "id": "2e5e8b3d-fb5b-4fc2-be6e-a460255e35e2",
+      "name": "List projects",
+      "url": "{{host}}\/v1\/projects",
+      "description": "List all the projects from all organizations",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "b118c0ef-531c-485a-a30c-ad22b6350513",
+      "rawModeData": "",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "49b1180d-6ab7-4f4a-a7e0-cb751b3e4745",
+      "name": "Deprecate a project",
+      "url": "{{host}}\/v1\/projects\/myorg\/myproject?rev=2",
+      "description": "Deprecates the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "DELETE",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "2",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "b118c0ef-531c-485a-a30c-ad22b6350513",
+      "rawModeData": "",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "5f3d0bc3-a792-44a9-af51-55d1debbff92",
+      "name": "Create a project",
+      "url": "{{host}}\/v1\/projects\/myorg\/myproject",
+      "description": "Create the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "value": "application\/json",
+          "description": "",
+          "type": "text"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "b118c0ef-531c-485a-a30c-ad22b6350513",
+      "rawModeData": "{\n  \"name\": \"example project creation\",\n  \"base\": \"https:\/\/nexus.example.com\/v1\/myorg\/myproject\/\",\n  \"prefixMappings\": [\n    {\n      \"prefix\": \"person\",\n      \"namespace\": \"http:\/\/example.com\/some\/person\"\n    },\n    {\n      \"prefix\": \"schemas\",\n      \"namespace\": \"https:\/\/bluebrain.github.io\/nexus\/schemas\/\"\n    },\n    {\n      \"prefix\": \"ex\",\n      \"namespace\": \"http:\/\/example.com\/\"\n    }\n  ]\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "74c7b8b9-302e-41bd-8c99-98419c20880c",
+      "name": "List projects belonging to an organization",
+      "url": "{{host}}\/v1\/projects\/myorg",
+      "description": "List projects belonging to the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "b118c0ef-531c-485a-a30c-ad22b6350513",
+      "rawModeData": "",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "780e2101-2c3d-45b7-9e50-0478ed9adecc",
+      "name": "Fetch a project (specific version)",
+      "url": "{{host}}\/v1\/projects\/myorg\/myproject?rev=1",
+      "description": "Fetches the project 'myproject' on revision '1' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "1",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "b118c0ef-531c-485a-a30c-ad22b6350513",
+      "rawModeData": "{\n  \"name\": \"example project creation\",\n  \"base\": \"https:\/\/nexus.example.com\/v1\/projects\/myorg\/myproject\",\n  \"prefixMappings\": [\n    {\n      \"prefix\": \"person\",\n      \"namespace\": \"http:\/\/example.com\/some\/person\"\n    },\n    {\n      \"prefix\": \"schemas\",\n      \"namespace\": \"https:\/\/bluebrain.github.io\/nexus\/schemas\/\"\n    },\n    {\n      \"prefix\": \"ex\",\n      \"namespace\": \"http:\/\/example.com\/\"\n    },\n    {\n      \"prefix\": \"theid\",\n      \"namespace\": \"http:\/\/example.com\/id\"\n    }\n  ]\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "b8b5d652-8467-4c75-9b95-925f74930ddd",
+      "name": "Fetch a project (current version)",
+      "url": "{{host}}\/v1\/projects\/myorg\/myproject",
+      "description": "Fetches the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "b118c0ef-531c-485a-a30c-ad22b6350513",
+      "rawModeData": "{\n  \"name\": \"example project creation\",\n  \"base\": \"https:\/\/nexus.example.com\/v1\/projects\/myorg\/myproject\",\n  \"prefixMappings\": [\n    {\n      \"prefix\": \"person\",\n      \"namespace\": \"http:\/\/example.com\/some\/person\"\n    },\n    {\n      \"prefix\": \"schemas\",\n      \"namespace\": \"https:\/\/bluebrain.github.io\/nexus\/schemas\/\"\n    },\n    {\n      \"prefix\": \"ex\",\n      \"namespace\": \"http:\/\/example.com\/\"\n    },\n    {\n      \"prefix\": \"theid\",\n      \"namespace\": \"http:\/\/example.com\/id\"\n    }\n  ]\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "ce807535-096f-4f0a-a0b0-fd851152afdb",
+      "name": "Update a project",
+      "url": "{{host}}\/v1\/projects\/myorg\/myproject?rev=1",
+      "description": "Updates the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "1",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "b118c0ef-531c-485a-a30c-ad22b6350513",
+      "rawModeData": "{\n  \"name\": \"example project creation\",\n  \"base\": \"https:\/\/nexus.example.com\/v1\/myorg\/myproject\/\",\n  \"prefixMappings\": [\n    {\n      \"prefix\": \"person\",\n      \"namespace\": \"http:\/\/example.com\/some\/person\"\n    },\n    {\n      \"prefix\": \"schemas\",\n      \"namespace\": \"https:\/\/bluebrain.github.io\/nexus\/schemas\/\"\n    },\n    {\n      \"prefix\": \"ex\",\n      \"namespace\": \"http:\/\/example.com\/\"\n    },\n    {\n      \"prefix\": \"theid\",\n      \"namespace\": \"http:\/\/example.com\/id\"\n    }\n  ]\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    }
+  ]
+}

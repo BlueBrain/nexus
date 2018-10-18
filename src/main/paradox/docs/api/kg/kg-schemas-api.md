@@ -10,6 +10,16 @@ Each schema...
 
 Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](../iam-service-api.md) in order to learn more about how to retrieve an access token.
 
+@@@ note { .tip title="Running examples with Postman" }
+
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [schemas collection](../assets/schema-postman.json).
+
+If your deployment is protected by an access token: 
+
+Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+
+@@@
+
 ## Create a schema using POST
 
 ```
