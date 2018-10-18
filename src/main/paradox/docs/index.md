@@ -59,7 +59,7 @@ relevant data in the platform.
 
 This service manages the platform wide scopes for data and their configuration (i.e.: the API mapping).
 
-[Source Code](https://github.com/BlueBrain/nexus-admin) | [Documentation](./api/admin/index.md)
+[Source Code](https://github.com/BlueBrain/nexus-admin) | @ref:[Documentation](./api/admin/index.md)
 
 ### Nexus IAM
 
