@@ -266,7 +266,10 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/view">view schema</a>.</li>
 </ul>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
+<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/view-postman.json">views collection</a>.</p>
+<p>If your deployment is protected by an access token: </p>
+<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
 <h2><a href="#view-types" name="view-types" class="anchor"><span class="anchor-link"></span></a>View types</h2>
 <p>There are several types of views, which relies on different technology to perform the indexing</p>
 <h3><a href="#sparqlview" name="sparqlview" class="anchor"><span class="anchor-link"></span></a>SparqlView</h3>

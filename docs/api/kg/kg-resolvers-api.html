@@ -272,7 +272,10 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/resolver">resolver schema</a>.</li>
 </ul>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
+<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/resolver-postman.json">resolvers collection</a>.</p>
+<p>If your deployment is protected by an access token: </p>
+<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
 <h2><a href="#resolver-types" name="resolver-types" class="anchor"><span class="anchor-link"></span></a>Resolver types</h2>
 <p>There are several types of resolvers, which perform resolution in different scopes.</p>
 <h3><a href="#inproject-resolver" name="inproject-resolver" class="anchor"><span class="anchor-link"></span></a>InProject resolver</h3>
@@ -388,6 +391,7 @@ BlueBrain/nexus
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
+  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;,
   &quot;@type&quot;: [
     &quot;Resolver&quot;,
     &quot;CrossProject&quot;
@@ -442,6 +446,7 @@ BlueBrain/nexus
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
+  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;,
   &quot;@type&quot;: [
     &quot;Resolver&quot;,
     &quot;CrossProject&quot;
@@ -509,7 +514,7 @@ BlueBrain/nexus
     }
   ],
   &quot;priority&quot;: 50
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -545,6 +550,7 @@ BlueBrain/nexus
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
+  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;,
   &quot;@type&quot;: [
     &quot;Resolver&quot;,
     &quot;CrossProject&quot;

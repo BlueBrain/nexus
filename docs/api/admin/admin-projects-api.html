@@ -197,7 +197,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/admin/admin-projects-api.html#projects" class="header">Projects</a>
   <ul>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#projects-payload" class="header">Projects payload</a></li>
+    <li><a href="../../../docs/api/admin/admin-projects-api.html#projects-payload" class="header">Projects payload</a>
+    <ul>
+      <li><a href="../../../docs/api/admin/admin-projects-api.html#prefix-mappings" class="header">Prefix Mappings</a></li>
+    </ul></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#create-a-project" class="header">Create a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#update-a-project" class="header">Update a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#tag-a-project" class="header">Tag a project</a></li>
@@ -231,7 +234,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/admin/admin-projects-api.html#projects" class="header">Projects</a>
   <ul>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#projects-payload" class="header">Projects payload</a></li>
+    <li><a href="../../../docs/api/admin/admin-projects-api.html#projects-payload" class="header">Projects payload</a>
+    <ul>
+      <li><a href="../../../docs/api/admin/admin-projects-api.html#prefix-mappings" class="header">Prefix Mappings</a></li>
+    </ul></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#create-a-project" class="header">Create a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#update-a-project" class="header">Update a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#tag-a-project" class="header">Tag a project</a></li>
@@ -263,7 +269,10 @@ BlueBrain/nexus
   <li>belongs to an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/project">project schema</a>.</li>
 </ul>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
+<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/project-postman.json">projects collection</a>.</p>
+<p>If your deployment is protected by an access token: </p>
+<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
 <h2><a href="#projects-payload" name="projects-payload" class="anchor"><span class="anchor-link"></span></a>Projects payload</h2>
 <pre><code>{
   &quot;name&quot;: &quot;{name}&quot;,
@@ -280,26 +289,43 @@ BlueBrain/nexus
 <p>where&hellip;</p>
 <ul>
   <li><code>{name}</code>: String - the name for this project.</li>
-  <li><code>{base}</code>: Iri - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a <a href="../kg/kg-resources-api.html#create-a-resource-using-post">resource is created using POST</a> and no <code>@id</code> is present on the payload, the platform will generate and @id which will look like <code>http://example.com/{UUID}</code>.</li>
-  <li><code>{prefix}</code>: String - the left hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName">certain constrains</a>.</li>
-  <li><code>{namespace}</code>: Iri - the right hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://tools.ietf.org/html/rfc3987#page-7">certain constrains (irelative-ref)</a>.</li>
+  <li><code>{base}</code>: Iri - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a <a href="../kg/kg-resources-api.html#create-a-resource-using-post">resource is created using POST</a> and no <code>@id</code> is present on the payload, the platform will generate and @id which will look like <code>http://example.com/{UUID}</code>. This field is optional and it will default to <code>{{base}}/v1/{org_label}/{project_label}</code>.</li>
+  <li><code>{prefixMappings}</code>: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.</li>
 </ul>
-<p>The <code>prefixMappings</code> Json object array provides a convenient way to deal with URIs when performing operations on a project sub-resources. It maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used. Let&rsquo;s see an example.</p>
+<h3><a href="#prefix-mappings" name="prefix-mappings" class="anchor"><span class="anchor-link"></span></a>Prefix Mappings</h3>
+<p>The <code>prefixMappings</code> Json object array maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used. Let&rsquo;s see an example.</p>
 <p>Having the following <code>prefixMappings</code>:</p>
-<pre class="prettyprint"><code class="language-json">{
+<pre><code>{
   &quot;prefixMappings&quot;: [
    {
-      &quot;prefix&quot;: &quot;person&quot;,
-      &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
+      &quot;prefix&quot;: &quot;{prefix}&quot;,
+      &quot;namespace&quot;: &quot;{namespace}&quot;
     },
-    {
-      &quot;prefix&quot;: &quot;schemas&quot;,
-      &quot;namespace&quot;: &quot;https://bluebrain.github.io/nexus/schemas/&quot;
-    }
+    { ... }
   ]
 }
 </code></pre>
-<p>Allows us to <a href="../kg/kg-schemas-api.html##create-a-schema-using-put">create a schema</a> using the following endpoints:</p>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{prefix}</code>: String - the left hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName">certain constrains</a>.</li>
+  <li><code>{namespace}</code>: Iri - the right hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://tools.ietf.org/html/rfc3987#page-7">certain constrains (irelative-ref)</a>.</li>
+</ul>
+<p>The <code>prefixMappings</code> Json object array maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used. Let&rsquo;s see an example:</p>
+<p><code>json
+ {
+   &quot;prefixMappings&quot;: [
+    {
+       &quot;prefix&quot;: &quot;person&quot;,
+       &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
+     },
+     {
+       &quot;prefix&quot;: &quot;schemas&quot;,
+       &quot;namespace&quot;: &quot;https://bluebrain.github.io/nexus/schemas/&quot;
+     }
+   ]
+ }
+</code></p>
+<p>The previous payload allows us to <a href="../kg/kg-schemas-api.html##create-a-schema-using-put">create a schema</a> using the following endpoints:</p>
 <ul>
   <li><code>/v1/schemas/{org_label}/{project_label}/person</code>. The <code>@id</code> of the resulting schema will be <code>http://example.com/some/person</code></li>
   <li><code>/v1/schemas/{org_label}/{project_label}/schema:other</code>. The <code>@id</code> of the resulting schema will be <code>https://bluebrain.github.io/nexus/schemas/other</code></li>
