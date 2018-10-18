@@ -4,5 +4,5 @@
     "tag": "nxv:tag",
     "rev": "nxv:rev"
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/tag"
+  "@id": "https://bluebrain.github.io/nexus/contexts/tag.json"
 }
