@@ -30,7 +30,7 @@
     },
     "projects": {
       "@container": "@set",
-      "@id":"nxv:projects"
+      "@id": "nxv:projects"
     },
     "identities": {
       "@id": "nxv:identities",

@@ -54,7 +54,7 @@ Having the following `prefixMappings`:
   "prefixMappings": [
    {
       "prefix": "{prefix}",
-      "namespace": "{}"
+      "namespace": "{namespace}"
     },
     { ... }
   ]
