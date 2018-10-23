@@ -1,0 +1,293 @@
+{
+  "id": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+  "name": "Data",
+  "description": "",
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": ""
+      }
+    ]
+  },
+  "events": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "f9e139b3-dfd6-4a3a-bd75-c3d5a8ef8bc3",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "a204a388-1429-413a-a328-7407e0aa7111",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variables": [],
+  "order": [
+    "e5561cc2-e73b-4e66-9882-f9ed267b40fb",
+    "8548e2a6-a799-48c5-9d9f-ed7759c3b9a2",
+    "21f143ee-5d8c-4369-a8e7-9d5bc510dfb9",
+    "4d893c68-0537-4acd-8ce7-6c99faac139b",
+    "8c13e014-29a1-42d8-bf2e-adcf47a0b87a",
+    "fbcd21f6-4f46-49ff-8ed4-75493542147a",
+    "9082ab5c-d681-490f-8cab-92195380b520"
+  ],
+  "folders_order": [],
+  "folders": [],
+  "requests": [
+    {
+      "id": "21f143ee-5d8c-4369-a8e7-9d5bc510dfb9",
+      "name": "Deprecate a resource",
+      "url": "{{host}}\/v1\/data\/myorg\/myproject\/ex:myresource?rev=3",
+      "description": "Deprecates the resource with id 'ex:myresource' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "DELETE",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "3",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "4d893c68-0537-4acd-8ce7-6c99faac139b",
+      "name": "Fetch a resource (current revision)",
+      "url": "{{host}}\/v1\/data\/myorg\/myproject\/ex:myresource",
+      "description": "Fetches the resource with id 'ex:myresource' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "8548e2a6-a799-48c5-9d9f-ed7759c3b9a2",
+      "name": "Tag a resource",
+      "url": "{{host}}\/v1\/data\/myorg\/myproject\/ex:myresource\/tags?rev=2",
+      "description": "Tags the resource with id 'ex:myresource' on the revision '1' with the tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "2",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "8c13e014-29a1-42d8-bf2e-adcf47a0b87a",
+      "name": "Fetch a resource (specific revision)",
+      "url": "{{host}}\/v1\/data\/myorg\/myproject\/ex:myresource?rev=1",
+      "description": "Fetches the resource with id 'ex:myresource' on revision '1' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "1",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "9082ab5c-d681-490f-8cab-92195380b520",
+      "name": "List resources",
+      "url": "{{host}}\/v1\/data\/myorg\/myproject",
+      "description": "List all resources on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "e5561cc2-e73b-4e66-9882-f9ed267b40fb",
+      "name": "Updates a resource",
+      "url": "{{host}}\/v1\/data\/myorg\/myproject\/ex:myresource?rev=1",
+      "description": "Updates a resource with id 'ex:myresource' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "1",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+      "rawModeData": "{\n  \"@context\": {\n    \"name\": \"http:\/\/schema.org\/name\",\n    \"description\": \"http:\/\/schema.org\/description\"\n  },\n  \"name\": \"The Empire State Building\",\n  \"description\": \"The Empire State Building is a 102-story landmark in New York City. Some other facts...\"\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "fbcd21f6-4f46-49ff-8ed4-75493542147a",
+      "name": "Fetch a resource (specific tag)",
+      "url": "{{host}}\/v1\/data\/myorg\/myproject\/ex:myresource?tag=mytag",
+      "description": "Fetches the resource with id 'ex:myresource' on tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "tag",
+          "value": "mytag",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "18c2388d-38b9-45bd-8e89-9a8c334e57aa",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    }
+  ]
+}

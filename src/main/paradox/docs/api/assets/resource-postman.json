@@ -90,7 +90,7 @@
       "id": "0607ca0f-fab7-45ca-8b63-b158ab846967",
       "name": "Fetch a resource (specific tag)",
       "url": "{{host}}\/v1\/resources\/myorg\/myproject\/resource\/ex:myresource?tag=mytag",
-      "description": "Fetches the view with id 'ex:myresource' on tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "description": "Fetches the resource with id 'ex:myresource' on tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
       "data": [],
       "dataMode": "raw",
       "headerData": [
@@ -164,7 +164,7 @@
       "id": "6e8c012f-ed45-479e-885b-1f6de894d1ff",
       "name": "Create a resource using POST",
       "url": "{{host}}\/v1\/resources\/myorg\/myproject\/base:myid",
-      "description": "Creates a resource view with an auto-generated id, against the schema with id 'base:myid' on the project 'myproject' inside the organization 'myorg'",
+      "description": "Creates a resource with an auto-generated id, against the schema with id 'base:myid' on the project 'myproject' inside the organization 'myorg'",
       "data": [],
       "dataMode": "raw",
       "headerData": [
@@ -279,7 +279,7 @@
     {
       "id": "d9faa535-f35c-406c-b460-2cd1e23b8e44",
       "name": "Deprecate a resource",
-      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview?rev=3",
+      "url": "{{host}}\/v1\/resources\/myorg\/myproject\/ex:myresource?rev=3",
       "description": "Deprecates the resource with id 'ex:myresource' on the project 'myproject' inside the organization 'myorg'",
       "data": [],
       "dataMode": "raw",
