@@ -1,99 +1,76 @@
 version: "3.3"
 services:
   kg:
-    image: "bluebrain/nexus-kg:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
+    image: bluebrain/nexus-kg:latest
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
     environment:
-      - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
-      - "BIND_INTERFACE=0.0.0.0"
-      - "PUBLIC_URI=http://localhost"
-      - "IAM_BASEURI=http://iam:8080"
-      - "ADMIN_BASE_URI=http://admin:8080"
-      - "SPARQL_BASE_URI=http://blazegraph:9999/bigdata"
-      - "SPARQL_ENDPOINT=http://blazegraph:9999/bigdata/sparql"
-      - "ELASTIC_BASE_URI=http://elasticsearch:9200"
-      - "KAFKA_BOOTSTRAP_SERVERS=kafka:9092"
-      - "JAVA_OPTS=-Xms256m -Xmx512m"
+      CASSANDRA_CONTACT_POINT1: "cassandra:9042"
+      BIND_INTERFACE: "0.0.0.0"
+      PUBLIC_URI: "http://localhost"
+      SERVICE_DESCRIPTION_URI: "http://localhost"
+      IAM_BASEURI: "http://iam:8080/v1"
+      ADMIN_BASE_URI: "http://admin:8080"
+      SPARQL_BASE_URI: "http://blazegraph:9999/blazegraph"
+      SPARQL_ENDPOINT: "http://blazegraph:9999/blazegraph/sparql"
+      ELASTIC_BASE_URI: "http://elasticsearch:9200"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      JAVA_OPTS: "-Xmx512m"
 
   iam:
-    image: "bluebrain/nexus-iam:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-    entrypoint:
-      - /bin/sh
-      - -c
-      - |
-          echo Sleeping for 30 seconds
-          sleep 30
-          echo Starting IAM
-          ./bin/iam-service
+    image: bluebrain/nexus-iam:latest
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam-service"]
     environment:
-      - "HTTP_PREFIX=v1"
-      - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
-      - "BIND_INTERFACE=0.0.0.0"
-      - "PUBLIC_URI=http://localhost"
-      - "IAM_TESTMODE=true"
-      - "ELASTIC_BASE_URI=http://elasticsearch:9200"
-      - "KAFKA_BOOTSTRAP_SERVERS=kafka:9092"
-      - "JAVA_OPTS=-Xms256m -Xmx512m"
+      HTTP_PREFIX: "v1"
+      CASSANDRA_CONTACT_POINT1: "cassandra:9042"
+      BIND_INTERFACE: "0.0.0.0"
+      PUBLIC_URI: "http://localhost"
+      SERVICE_DESCRIPTION_URI: "http://localhost/iam"
+      IAM_TESTMODE: "true"
+      ELASTIC_BASE_URI: "http://elasticsearch:9200"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      JAVA_OPTS: "-Xmx512m"
 
   admin:
-    image: "bluebrain/nexus-admin:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
+    image: bluebrain/nexus-admin:latest
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin-service"]
     environment:
-      - "CASSANDRA_CONTACT_POINT1=cassandra:9042"
-      - "BIND_INTERFACE=0.0.0.0"
-      - "PUBLIC_URI=http://localhost"
-      - "IAM_TESTMODE=true"
-      - "IAM_BASEURI=http://iam:8080/v1"
-      - "SPARQL_BASE_URI=http://blazegraph:9999/bigdata"
-      - "KAFKA_BOOTSTRAP_SERVERS=kafka:9092"
-      - "JAVA_OPTS=-Xms256m -Xmx512m"
+      CASSANDRA_CONTACT_POINT1: "cassandra:9042"
+      BIND_INTERFACE: "0.0.0.0"
+      PUBLIC_URI: "http://localhost"
+      SERVICE_DESCRIPTION_URI: "http://localhost/admin"
+      IAM_TESTMODE: "true"
+      IAM_BASEURI: "http://iam:8080/v1"
+      SPARQL_BASE_URI: "http://blazegraph:9999/blazegraph"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      JAVA_OPTS: "-Xmx512m"
 
   elasticsearch:
-    image: "elasticsearch:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
+    image: "docker.elastic.co/elasticsearch/elasticsearch:6.3.2"
     environment:
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      discovery.type: "single-node"
 
   cassandra:
     image: "cassandra:3.11"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
     environment:
-      - "MAX_HEAP_SIZE=512m"
-      - "HEAP_NEWSIZE=128m"
+      MAX_HEAP_SIZE: "512m"
+      HEAP_NEWSIZE: "128m"
 
   kafka:
-    image: "spotify/kafka:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 1G
+    image: "wurstmeister/kafka:2.11-1.1.1"
     environment:
-      - "ADVERTISED_HOST=kafka"
-      - "ADVERTISED_PORT=9092"
-      - "KAFKA_HEAP_OPTS=-Xms256m -Xmx512m"
+      KAFKA_PORT: 9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_CREATE_TOPICS: "admin-events:1:1"
+
+  zookeeper:
+    image: "zookeeper:latest"
+    environment:
+      ZOO_STANDALONE_ENABLED: "true"
 
   blazegraph:
-    image: "bluebrain/blazegraph-nexus:latest"
-    deploy:
-      resources:
-        limits:
-          memory: 2G
+    image: "nawer/blazegraph:2.1.5"
 
   router:
     image: "nginx:stable-alpine"
