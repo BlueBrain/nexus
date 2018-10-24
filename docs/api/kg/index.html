@@ -162,10 +162,11 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../docs/api/kg/index.html" class="active page">KnowledgeGraph API</a>
     <ul>
-      <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/api/kg/kg-schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../../docs/api/kg/kg-views-api.html" class="page">Views</a></li>
+      <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../docs/api/kg/kg-data-api.html" class="page">Data</a></li>
     </ul></li>
     <li><a href="../../../docs/api/iam-service-api.html" class="page">IAM API</a></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
@@ -197,10 +198,11 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/kg/index.html#knowledgegraph-api" class="header">KnowledgeGraph API</a>
   <ul>
-    <li><a href="../../../docs/api/kg/index.html#resources" class="header">Resources</a></li>
     <li><a href="../../../docs/api/kg/index.html#schemas" class="header">Schemas</a></li>
     <li><a href="../../../docs/api/kg/index.html#resolvers" class="header">Resolvers</a></li>
     <li><a href="../../../docs/api/kg/index.html#views" class="header">Views</a></li>
+    <li><a href="../../../docs/api/kg/index.html#resources" class="header">Resources</a></li>
+    <li><a href="../../../docs/api/kg/index.html#data" class="header">Data</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -224,10 +226,11 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/kg/index.html#knowledgegraph-api" class="header">KnowledgeGraph API</a>
   <ul>
-    <li><a href="../../../docs/api/kg/index.html#resources" class="header">Resources</a></li>
     <li><a href="../../../docs/api/kg/index.html#schemas" class="header">Schemas</a></li>
     <li><a href="../../../docs/api/kg/index.html#resolvers" class="header">Resolvers</a></li>
     <li><a href="../../../docs/api/kg/index.html#views" class="header">Views</a></li>
+    <li><a href="../../../docs/api/kg/index.html#resources" class="header">Resources</a></li>
+    <li><a href="../../../docs/api/kg/index.html#data" class="header">Data</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -239,9 +242,6 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#knowledgegraph-api" name="knowledgegraph-api" class="anchor"><span class="anchor-link"></span></a>KnowledgeGraph API</h1>
-<h2><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h2>
-<p>A resource is the most generic entity on the Knowledge Graph. Resources can be <code>schemas</code>, <code>resolvers</code>, <code>views</code> or <code>data</code>.</p>
-<p><a href="kg-resources-api.html">Operations on resources</a></p>
 <h2><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h2>
 <p>A schema is a resource which defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/">SHACL</a>. </p>
 <p><a href="kg-schemas-api.html">Operations on schemas</a></p>
@@ -251,6 +251,12 @@ BlueBrain/nexus
 <h2><a href="#views" name="views" class="anchor"><span class="anchor-link"></span></a>Views</h2>
 <p>A view is a resource which defines the way indexing is applied to certain resources inside a project.</p>
 <p><a href="kg-views-api.html">Operations on views</a></p>
+<h2><a href="#resources" name="resources" class="anchor"><span class="anchor-link"></span></a>Resources</h2>
+<p>A resource is the most generic entity on the Knowledge Graph. Resources can be <code>schemas</code>, <code>resolvers</code>, <code>views</code> or <code>data</code>.</p>
+<p><a href="kg-resources-api.html">Operations on resources</a></p>
+<h2><a href="#data" name="data" class="anchor"><span class="anchor-link"></span></a>Data</h2>
+<p>Data endpoints are simply a shortcut to access some of the <a href="kg-resources-api.html">operations on resources</a>. In these endpoints the <code>{schema}</code> segment is omitted.</p>
+<p><a href="kg-data-api.html">Operations on data</a></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg/index.md" title="Edit this page" class="md-source-file md-edit">
@@ -282,13 +288,13 @@ Projects
 </span>
 </div>
 </a>
-<a href="../../../docs/api/kg/kg-resources-api.html" title="Resources" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/kg/kg-schemas-api.html" title="Schemas" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Resources
+Schemas
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
