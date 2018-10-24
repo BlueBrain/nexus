@@ -225,6 +225,86 @@ Payload
 Response
 :   @@snip [resolver-cross-project-ref-tagged.json](../assets/resolver-cross-project-ref-tagged.json)
 
+## Add attachment to a resolver
+
+Adds a binary to an already existing resolver
+
+```
+PUT /v1/resolvers/{org_label}/{project_label}/{resolver_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the resolver.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [resolver-attach.sh](../assets/resolver-attach.sh)
+
+Response
+:   @@snip [resolver-cross-project-ref-attached.json](../assets/resolver-cross-project-ref-attached.json)
+
+## Delete attachment from a resolver
+
+Deletes the attachment metadata from the latest revision of the resolver. The attachment will still be accessible accessing the previous revision.
+
+```
+DELETE /v1/resolvers/{org_label}/{project_label}/{resolver_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the resolver.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [resolver-unattach.sh](../assets/resolver-unattach.sh)
+
+Response
+:   @@snip [resolver-cross-project-ref-unattached.json](../assets/resolver-cross-project-ref-unattached.json)
+
+## Fetch attachment from a resolver (current revision)
+
+```
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/atachments/{name}
+```
+...where `{name}` is the attachment identifier.
+
+**Example**
+
+Request
+:   @@snip [resolver-attach-fetch.sh](../assets/resolver-attach-fetch.sh)
+
+## Fetch attachment from a resolver (specific revision)
+
+```
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/atachments/{name}?rev={rev}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{rev}` - Long: is the revision number of the resolver to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [resolver-attach-fetch-rev.sh](../assets/resolver-attach-fetch-rev.sh)
+
+## Fetch attachment from a resolver (specific tag)
+
+```
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/atachments/{name}?tag={tag}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{tag}` - String: is the tag of the resolver to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [resolver-attach-fetch-tag.sh](../assets/resolver-attach-fetch-tag.sh)
+
 
 ## Deprecate a resolver
 

@@ -121,6 +121,85 @@ Payload
 Response
 :   @@snip [schema-ref-new-tagged.json](../assets/schema-ref-new-tagged.json)
 
+## Add attachment to a schema
+
+Adds a binary to an already existing schema
+
+```
+PUT /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the schema.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [schema-attach.sh](../assets/schema-attach.sh)
+
+Response
+:   @@snip [schema-ref-new-attached.json](../assets/schema-ref-new-attached.json)
+
+## Delete attachment from a schema
+
+Deletes the attachment metadata from the latest revision of the schema. The attachment will still be accessible accessing the previous revision.
+
+```
+DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the schema.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [schema-unattach.sh](../assets/schema-unattach.sh)
+
+Response
+:   @@snip [schema-ref-new-unattached.json](../assets/schema-ref-new-unattached.json)
+
+## Fetch attachment from a schema (current revision)
+
+```
+GET /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}
+```
+...where `{name}` is the attachment identifier.
+
+**Example**
+
+Request
+:   @@snip [schema-attach-fetch.sh](../assets/schema-attach-fetch.sh)
+
+## Fetch attachment from a schema (specific revision)
+
+```
+GET /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?rev={rev}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{rev}` - Long: is the revision number of the resource to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [schema-attach-fetch-rev.sh](../assets/schema-attach-fetch-rev.sh)
+
+## Fetch attachment from a schema (specific tag)
+
+```
+GET /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?tag={tag}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{tag}` - String: is the tag of the schema to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [schema-attach-fetch-tag.sh](../assets/schema-attach-fetch-tag.sh)
 
 ## Deprecate a schema
 

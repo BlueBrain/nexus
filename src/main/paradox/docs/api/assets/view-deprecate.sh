@@ -1,1 +1,1 @@
-curl -XDELETE "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=3"
+curl -XDELETE "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=5"

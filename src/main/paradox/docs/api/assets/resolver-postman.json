@@ -41,6 +41,11 @@
     "01ebd4dd-0c09-49bf-98f6-c38852980f47",
     "acd36d35-3dc0-4f5a-894e-7377caf50c64",
     "86c45519-f1fa-4e4c-861a-1c35629fb466",
+    "2895cb50-050f-4ebf-aac6-876aebd43691",
+    "0e146fa1-24cb-4e36-99fa-1a6b6bab8ac3",
+    "fab78e6d-c64c-444d-bce4-4017eecc1f62",
+    "d98227b7-0636-4cc5-a94d-0a83111a008c",
+    "98448d6f-36e4-4fbf-a3c8-d396d2cbd59c",
     "b1274085-10ca-4909-8dd6-578fa09fa519",
     "eb8c6537-9058-451c-afb9-821c02d665ca",
     "d093bfd2-aed1-419a-9034-ba94f931d909",
@@ -76,6 +81,86 @@
       "helperAttributes": null,
       "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
       "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/vocab\/\"\n  },\n  \"@type\": [\n    \"Resolver\",\n    \"InAccount\"\n  ],\n  \"resourceTypes\": [\n    \"ex:MyType\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"GroupRef\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 20\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "0e146fa1-24cb-4e36-99fa-1a6b6bab8ac3",
+      "name": "Fetch attachment from a resolver (current revision)",
+      "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver\/attachments\/myFile.jpg",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the resolver with id 'ex:myresolver' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "2895cb50-050f-4ebf-aac6-876aebd43691",
+      "name": "Add attachment to resolver",
+      "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver\/attachments\/myFile.jpg?rev=3",
+      "description": "Add attachment with name 'myFile.jpg' to the resource with id 'ex:myresolver' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "3",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -212,6 +297,50 @@
       "pathVariables": []
     },
     {
+      "id": "98448d6f-36e4-4fbf-a3c8-d396d2cbd59c",
+      "name": "Delete attachment from a resolver",
+      "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver\/attachments\/myFile.jpg?rev=4",
+      "description": "Deletes the attachment with name 'myFile.jpg' from the resource with id 'ex:myresolver' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "DELETE",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
       "id": "a07326b3-8d57-4138-bfe5-572ff7de666f",
       "name": "Create a cross project resolver using POST",
       "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/",
@@ -273,7 +402,7 @@
       "id": "b1274085-10ca-4909-8dd6-578fa09fa519",
       "name": "Deprecate a resolver",
       "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver?rev=3",
-      "description": "Deprecates the resolver with id 'ex:myresolver' on the project 'myproject' inside the organization 'myorg'",
+      "description": "Deprecates the view with id 'ex:myresolver' on the project 'myproject' inside the organization 'myorg'",
       "data": [],
       "dataMode": "raw",
       "headerData": [
@@ -381,6 +510,50 @@
       "pathVariables": []
     },
     {
+      "id": "d98227b7-0636-4cc5-a94d-0a83111a008c",
+      "name": "Fetch attachment from a resolver (specific tag)",
+      "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver\/attachments\/myFile.jpg?tag=mytag",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the resolver with id 'ex:myresolver' on tag 'myTag' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "tag",
+          "value": "mytag",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
       "id": "eb8c6537-9058-451c-afb9-821c02d665ca",
       "name": "Fetch a resolver (current revision)",
       "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver",
@@ -406,6 +579,50 @@
       "helperAttributes": null,
       "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
       "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "fab78e6d-c64c-444d-bce4-4017eecc1f62",
+      "name": "Fetch attachment from a resolver (specific revision)",
+      "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver\/attachments\/myFile.jpg?rev=4",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the resolver with id 'ex:myresolver' on revision '4' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     }
