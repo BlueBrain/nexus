@@ -402,7 +402,7 @@
       "id": "b1274085-10ca-4909-8dd6-578fa09fa519",
       "name": "Deprecate a resolver",
       "url": "{{host}}\/v1\/resolvers\/myorg\/myproject\/ex:myresolver?rev=3",
-      "description": "Deprecates the view with id 'ex:myresolver' on the project 'myproject' inside the organization 'myorg'",
+      "description": "Deprecates the resolver with id 'ex:myresolver' on the project 'myproject' inside the organization 'myorg'",
       "data": [],
       "dataMode": "raw",
       "headerData": [
