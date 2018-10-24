@@ -1,0 +1,1 @@
+curl -XDELETE -F "https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg?rev=4"

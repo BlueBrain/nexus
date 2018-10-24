@@ -39,6 +39,11 @@
     "48360acd-4bb3-4553-97b7-c765c889d93c",
     "c2fa87ff-c334-4c30-9303-d3d8f1f8bc25",
     "f6fffcb6-6d2a-455f-9633-8046ee7560c4",
+    "a2594368-0eb9-4b1a-88c8-d8a6e8186c61",
+    "bf3b736d-7b2a-4104-bc5d-69c3f4a551fa",
+    "3e0ef2e6-7b47-44ce-be87-e7cec90e5e96",
+    "4f8462f3-7c0c-46a2-bc18-d20311b2532a",
+    "af1193ba-0f6e-4712-83fd-37eb147f450e",
     "9d0b7671-c84a-474f-9ad4-121d8722d46d",
     "f1f87dc6-adbd-43d9-8bf0-9f5ceafa9505",
     "d8bd4e8d-405d-4655-aa61-c5beb917e756",
@@ -107,6 +112,50 @@
       "pathVariables": []
     },
     {
+      "id": "3e0ef2e6-7b47-44ce-be87-e7cec90e5e96",
+      "name": "Fetch attachment from a view (specific revision)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?rev=4",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on revision '4' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
       "id": "48360acd-4bb3-4553-97b7-c765c889d93c",
       "name": "Create an ElasticSearch view using POST",
       "url": "{{host}}\/v1\/views\/myorg\/myproject",
@@ -132,6 +181,50 @@
       "helperAttributes": null,
       "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
       "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": false,\n  \"sourceAsText\": false,\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "4f8462f3-7c0c-46a2-bc18-d20311b2532a",
+      "name": "Fetch attachment from a view (specific tag)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?tag=mytag",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "tag",
+          "value": "mytag",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -169,6 +262,130 @@
       "helperAttributes": null,
       "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
       "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "a2594368-0eb9-4b1a-88c8-d8a6e8186c61",
+      "name": "Add attachment to view",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?rev=3",
+      "description": "Add attachment with name 'myFile.jpg' to the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "3",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "af1193ba-0f6e-4712-83fd-37eb147f450e",
+      "name": "Delete attachment from a view",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?rev=4",
+      "description": "Deletes the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "DELETE",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "bf3b736d-7b2a-4104-bc5d-69c3f4a551fa",
+      "name": "Fetch attachment from a view (current revision)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
