@@ -6,13 +6,26 @@
     "nxv:View",
     "nxv:Alpha"
   ],
+  "_distribution": [
+    {
+      "@type": "dcat:Distribution",
+      "_byteSize": 48144,
+      "_digest": {
+        "_algorithm": "SHA-256",
+        "_value": "721d03056b82a22c54f30fd3c68b41dfe5f53828911984e47182d82cfbac9f36"
+      },
+      "_downloadURL": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/attachments/myfile.jpg",
+      "_mediaType": "image/jpeg",
+      "_originalFileName": "myfile.jpg"
+    }
+  ],
   "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
   "_constrainedBy": "nxs:view",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
   "_createdAt": "2018-09-18T16:39:22.748Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
-  "_updatedAt": "2018-09-18T17:10:22.748Z",
+  "_updatedAt": "2018-09-18T16:52:22.748Z",
   "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
-  "_rev": 6,
-  "_deprecated": true
+  "_rev": 4,
+  "_deprecated": false
 }

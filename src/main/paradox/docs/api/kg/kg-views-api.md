@@ -177,6 +177,85 @@ Payload
 Response
 :   @@snip [view-elastic-ref-tagged.json](../assets/view-elastic-ref-tagged.json)
 
+## Add attachment to a view
+
+Adds a binary to an already existing view
+
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the view.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [view-attach.sh](../assets/view-attach.sh)
+
+Response
+:   @@snip [view-elastic-ref-attached.json](../assets/view-elastic-ref-attached.json)
+
+## Delete attachment from a view
+
+Deletes the attachment metadata from the latest revision of the view. The attachment will still be accessible accessing the previous revision.
+
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the view.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [view-unattach.sh](../assets/view-unattach.sh)
+
+Response
+:   @@snip [view-elastic-ref-unattached.json](../assets/view-elastic-ref-unattached.json)
+
+## Fetch attachment from a view (current revision)
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}
+```
+...where `{name}` is the attachment identifier.
+
+**Example**
+
+Request
+:   @@snip [view-attach-fetch.sh](../assets/view-attach-fetch.sh)
+
+## Fetch attachment from a view (specific revision)
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?rev={rev}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{rev}` - Long: is the revision number of the view to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [view-attach-fetch-rev.sh](../assets/view-attach-fetch-rev.sh)
+
+## Fetch attachment from a view (specific tag)
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?tag={tag}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{tag}` - String: is the tag of the view to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [view-attach-fetch-tag.sh](../assets/view-attach-fetch-tag.sh)
 
 ## Deprecate a view
 

@@ -121,6 +121,86 @@ Payload
 Response
 :   @@snip [resource-ref-new-tagged.json](../assets/resource-ref-new-tagged.json)
 
+## Add attachment to a resource
+
+Adds a binary to an already existing resource
+
+```
+PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the resource.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [resource-attach.sh](../assets/resource-attach.sh)
+
+Response
+:   @@snip [resource-ref-new-attached.json](../assets/resource-ref-new-attached.json)
+
+## Delete attachment from a resource
+
+Deletes the attachment metadata from the latest revision of the resource. The attachment will still be accessible accessing the previous revision.
+
+```
+DELETE /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/atachments/{name}?rev={previous_rev}
+```
+...where
+
+- `{previous_rev}`: is the last known revision number for the resource.
+- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
+
+**Example**
+
+Request
+:   @@snip [resource-unattach.sh](../assets/resource-unattach.sh)
+
+Response
+:   @@snip [resource-ref-new-unattached.json](../assets/resource-ref-new-unattached.json)
+
+## Fetch attachment from a resource (current revision)
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/atachments/{name}
+```
+...where `{name}` is the attachment identifier.
+
+**Example**
+
+Request
+:   @@snip [resource-attach-fetch.sh](../assets/resource-attach-fetch.sh)
+
+## Fetch attachment from a resource (specific revision)
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/atachments/{name}?rev={rev}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{rev}` - Long: is the revision number of the resource to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [resource-attach-fetch-rev.sh](../assets/resource-attach-fetch-rev.sh)
+
+## Fetch attachment from a resource (specific tag)
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/atachments/{name}?tag={tag}
+```
+... where 
+- `{name}` - String:  is the attachment identifier.
+- `{tag}` - String: is the tag of the resource to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [resource-attach-fetch-tag.sh](../assets/resource-attach-fetch-tag.sh)
+
 
 ## Deprecate a resource
 

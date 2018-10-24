@@ -1,0 +1,27 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@id": "https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
+  "@type": "http://example.com/Custom",
+  "_distribution": [
+    {
+      "@type": "dcat:Distribution",
+      "_byteSize": 48144,
+      "_digest": {
+        "_algorithm": "SHA-256",
+        "_value": "721d03056b82a22c54f30fd3c68b41dfe5f53828911984e47182d82cfbac9f36"
+      },
+      "_downloadURL": "https://nexus.example.com/v1/resources/myorg/myproject/resource/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/attachments/myfile.jpg",
+      "_mediaType": "image/jpeg",
+      "_originalFileName": "myfile.jpg"
+    }
+  ],
+  "_self": "https://nexus.example.com/v1/resources/myorg/myproj/resource/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
+  "_constrainedBy": "nxs:resource",
+  "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+  "_createdAt": "2018-09-17T14:54:42.939Z",
+  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_updatedAt": "2018-09-17T14:58:42.939Z",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_rev": 4,
+  "_deprecated": false
+}

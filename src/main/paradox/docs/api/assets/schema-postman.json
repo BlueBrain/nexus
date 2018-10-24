@@ -11,13 +11,39 @@
       }
     ]
   },
-  "events": null,
+  "events": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "3267d005-bbcd-4f8c-b522-b76073bc5264",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "a4e0aad1-75f2-4295-8893-c6ef4153fb0f",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
   "variables": [],
   "order": [
     "2d58b376-af43-4945-9a16-b2207fa9df91",
     "f9a1d0de-418c-479b-aa24-ff544f7492dd",
     "677f5444-d56e-42d7-8d46-09159a9ee877",
     "f82b34a0-c3a1-4feb-a86c-cb20c7511dd7",
+    "0d890a09-b5d4-4e0f-bb40-780b94d19567",
+    "34ed428b-bcff-4b4f-9e0d-03b861a9fbd2",
+    "8e423ee9-511d-44db-ac6e-34552e41f748",
+    "27f5dc69-4da0-4174-8cb9-2bc1db3528c0",
+    "17865087-36bc-4261-832c-f50e1c62a835",
     "030b8075-1e7f-4c36-a42a-b8f0837ce7a9",
     "68475235-a415-41c7-b356-6a2115948a4a",
     "29e27544-da05-42e4-b8ea-75d1e8cd2aa7",
@@ -61,6 +87,138 @@
       "helperAttributes": null,
       "collectionId": "047b8d59-d8cd-4e86-8e0c-0048564b48d1",
       "rawModeData": "",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "0d890a09-b5d4-4e0f-bb40-780b94d19567",
+      "name": "Add attachment to schema",
+      "url": "{{host}}\/v1\/schemas\/myorg\/myproject\/base:myid\/attachments\/myFile.jpg?rev=3",
+      "description": "Add attachment with name 'myFile.jpg' to the schema with id 'base:myid' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "3",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "047b8d59-d8cd-4e86-8e0c-0048564b48d1",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "17865087-36bc-4261-832c-f50e1c62a835",
+      "name": "Delete attachment from a schema",
+      "url": "{{host}}\/v1\/schemas\/myorg\/myproject\/base:myid\/attachments\/myFile.jpg?rev=4",
+      "description": "Deletes the attachment with name 'myFile.jpg' from the resource with id 'base:myid' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "DELETE",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "047b8d59-d8cd-4e86-8e0c-0048564b48d1",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "27f5dc69-4da0-4174-8cb9-2bc1db3528c0",
+      "name": "Fetch attachment from a schema (specific tag)",
+      "url": "{{host}}\/v1\/schemas\/myorg\/myproject\/base:myid\/attachments\/myFile.jpg?tag=mytag",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the schema with id 'base:myid' on tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "tag",
+          "value": "mytag",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "047b8d59-d8cd-4e86-8e0c-0048564b48d1",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -131,6 +289,42 @@
       "pathVariables": []
     },
     {
+      "id": "34ed428b-bcff-4b4f-9e0d-03b861a9fbd2",
+      "name": "Fetch attachment from a resolver (current revision)",
+      "url": "{{host}}\/v1\/schemas\/myorg\/myproject\/base:myid\/attachments\/myFile.jpg",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the resource with id 'base:myid' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "047b8d59-d8cd-4e86-8e0c-0048564b48d1",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
       "id": "677f5444-d56e-42d7-8d46-09159a9ee877",
       "name": "Update a schema",
       "url": "{{host}}\/v1\/schemas\/myorg\/myproject\/base:myid?rev=1",
@@ -193,6 +387,50 @@
       "helperAttributes": null,
       "collectionId": "047b8d59-d8cd-4e86-8e0c-0048564b48d1",
       "rawModeData": "",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "8e423ee9-511d-44db-ac6e-34552e41f748",
+      "name": "Fetch attachment from a schema (specific revision)",
+      "url": "{{host}}\/v1\/schemas\/myorg\/myproject\/base:myid\/attachments\/myFile.jpg?rev=4",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the schema with id 'base:myid' on revision '4' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "description": "",
+          "type": "file",
+          "enabled": true,
+          "value": ""
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "047b8d59-d8cd-4e86-8e0c-0048564b48d1",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
