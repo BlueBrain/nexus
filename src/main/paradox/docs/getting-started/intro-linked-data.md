@@ -1,3 +1,3 @@
 # Introduction to Linked Data
 
-TBC.
+![Linked data](./assets/knowledge_graph.png "Linked data")

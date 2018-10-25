@@ -1,0 +1,40 @@
+{
+  "_shards": {
+    "failed": 0,
+    "skipped": 0,
+    "successful": 0,
+    "total": 0
+  },
+  "hits": {
+    "hits": [
+      {
+        "_score": 1.2039728,
+        "_id": "http://example.com/myview",
+        "_index": "kg_v1_803da242-d510-4e1a-a12d-d0e0b7018a41_684bd815-9273-46f4-ac1c-0383d4a98254_1",
+        "_source": {
+          "@id": "http://example.com/myview",
+          "@type": [
+            "https://bluebrain.github.io/nexus/vocabulary/View",
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticView",
+            "https://bluebrain.github.io/nexus/vocabulary/Alpha"
+          ],
+          "_original_source": "{\"mapping\":\"{\\\"dynamic\\\":false,\\\"properties\\\":{\\\"@id\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"@type\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"name\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"number\\\":{\\\"type\\\":\\\"long\\\"},\\\"bool\\\":{\\\"type\\\":\\\"boolean\\\"}}}\",\"_uuid\":\"89dd9858-cf87-4c46-94c2-24da0fcae0aa\",\"@context\":\"https://bluebrain.github.io/nexus/contexts/view\",\"@type\":[\"View\",\"ElasticView\",\"Alpha\"],\"includeMetadata\":true,\"sourceAsText\":false}",
+          "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
+          "_constrainedBy": "nxs:view",
+          "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+          "_createdAt": "2018-09-18T16:39:22.748Z",
+          "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+          "_updatedAt": "2018-09-18T17:10:22.748Z",
+          "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+          "_rev": 6,
+          "_deprecated": true
+        },
+        "_type": "doc"
+      }
+    ],
+    "max_score": 1.2039728,
+    "total": 1
+  },
+  "timed_out": false,
+  "took": 11
+}
