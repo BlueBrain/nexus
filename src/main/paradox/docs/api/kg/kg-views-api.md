@@ -379,9 +379,10 @@ Provides search functionality on the `SparqlView` content.
 
 ```
 POST /v1/views/{org_label}/{project_label}/graph/sparql
-  {...}
+  "..."
 ```
 The supported payload is defined on the [SparQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+The `Content-Type` HTTP header for this request is `application/sparql-query`.
 
 **Example**
 
