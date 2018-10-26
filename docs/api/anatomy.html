@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Systematic service design · Blue Brain Nexus</title>
+<title>Services anatomy · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Systematic service design
+Services anatomy
 </span>
 </div>
 </div>
@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/api/index.html" class="page">API Reference</a>
   <ul>
+    <li><a href="../../docs/api/anatomy.html" class="active page">Services anatomy</a></li>
     <li><a href="../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
     <li><a href="../../docs/api/admin/index.html" class="page">Admin API</a>
     <ul>
@@ -176,7 +177,6 @@ BlueBrain/nexus
     <li><a href="../../docs/architecture/use-cases.html" class="page">Use Cases</a></li>
     <li><a href="../../docs/architecture/components.html" class="page">Components</a></li>
     <li><a href="../../docs/architecture/integration.html" class="page">Integration</a></li>
-    <li><a href="../../docs/architecture/systematic-service-design.html" class="active page">Systematic service design</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap/index.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/benchmarks/index.html" class="page">Benchmarks</a>
@@ -210,11 +210,18 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#systematic-service-design" name="systematic-service-design" class="anchor"><span class="anchor-link"></span></a>Systematic service design</h1>
-<p>TBC.</p>
+<h1><a href="#services-anatomy" name="services-anatomy" class="anchor"><span class="anchor-link"></span></a>Services anatomy</h1>
+<p>Nexus services are assembled by a series of components</p>
+<ul>
+  <li><strong>Write Model</strong>: This component is executed when a customer performs a write API operation (create, update, tag, &hellip;). The business logic is triggered (validation, state computation, Json and Graph manipulations, etc). As a result, an Event gets stored into the Primary Store or a rejection is delivered to the client.</li>
+  <li><strong>Event Stream</strong>: This is an asynchronous process that gets triggered as soon as there are elements to be read from the Primary Store. The stream runs several operations that take the stored Events and transform them. The result is then saved into a target index.</li>
+  <li><strong>Write Model</strong>: This component gets triggered when a customer performs a read API operation (get, list). A call to the index is performed. The resulting data is transformed if required and delivered to the client.</li>
+</ul>
+<p>The service structure and workflow has been designed following the <a href="https://martinfowler.com/bliki/CQRS.html">CQRS</a> and [Event sourcing](<a href="https://martinfowler.com/eaaDev/EventSourcing.html">Event sourcing</a>) strategies. The distinction between the write and read model, as well as the use of event streams is a perfect match to CQRS and Event Sourcing.</p>
+<p><img src="./assets/infrastructure-Anatomy.png" alt="Services anatomy" title="Services anatomy" /></p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/architecture/systematic-service-design.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/anatomy.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -230,7 +237,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/architecture/integration.html" title="Integration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/api/index.html" title="API Reference" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -239,17 +246,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Integration
+API Reference
 </span>
 </div>
 </a>
-<a href="../../docs/roadmap/index.html" title="Roadmap" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/api/operating-on-resources.html" title="Operating on resources" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Roadmap
+Operating on resources
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

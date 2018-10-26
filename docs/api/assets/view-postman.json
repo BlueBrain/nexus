@@ -48,11 +48,42 @@
     "f1f87dc6-adbd-43d9-8bf0-9f5ceafa9505",
     "d8bd4e8d-405d-4655-aa61-c5beb917e756",
     "fdbcdcca-babc-46b0-8a2f-de0fe0c5304d",
-    "1239fcd3-02b1-4609-b0c6-ebc68cabb678"
+    "1239fcd3-02b1-4609-b0c6-ebc68cabb678",
+    "5554baad-25cd-48d2-8817-0275170cf376",
+    "01a31407-2a14-47e9-921f-31bffbe47256"
   ],
   "folders_order": [],
   "folders": [],
   "requests": [
+    {
+      "id": "01a31407-2a14-47e9-921f-31bffbe47256",
+      "name": "ElasticSearch query",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/_search",
+      "description": "Execute a query against the ElasticSearch endpoint for the view 'ex:myview', on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "value": "application\/json",
+          "description": "",
+          "type": "text"
+        }
+      ],
+      "method": "POST",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
+      "rawModeData": "{\n  \"query\": {\n    \"term\": {\n      \"_deprecated\": true\n    }\n  }\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
     {
       "id": "1239fcd3-02b1-4609-b0c6-ebc68cabb678",
       "name": "List views",
@@ -226,6 +257,35 @@
       "helperAttributes": null,
       "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
       "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "5554baad-25cd-48d2-8817-0275170cf376",
+      "name": "SparQL query",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/graph\/sparql",
+      "description": "Execute a query against the sparql endpoint for the project 'myproject' on the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/sparql-query"
+        }
+      ],
+      "method": "POST",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "982050c9-d6b5-451b-877e-341e71d1ea0f",
+      "rawModeData": "SELECT ?s where {?s ?p ?o} LIMIT 2",
+      "headers": "Content-Type: application\/sparql-query\n",
       "pathVariables": []
     },
     {

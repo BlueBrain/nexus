@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/api/index.html" class="page">API Reference</a>
   <ul>
+    <li><a href="../../../docs/api/anatomy.html" class="page">Services anatomy</a></li>
     <li><a href="../../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
     <li><a href="../../../docs/api/admin/index.html" class="page">Admin API</a>
     <ul>
@@ -176,7 +177,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/architecture/use-cases.html" class="page">Use Cases</a></li>
     <li><a href="../../../docs/architecture/components.html" class="page">Components</a></li>
     <li><a href="../../../docs/architecture/integration.html" class="page">Integration</a></li>
-    <li><a href="../../../docs/architecture/systematic-service-design.html" class="page">Systematic service design</a></li>
   </ul></li>
   <li><a href="../../../docs/roadmap/index.html" class="page">Roadmap</a></li>
   <li><a href="../../../docs/benchmarks/index.html" class="page">Benchmarks</a>
@@ -217,6 +217,9 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/kg/kg-views-api.html#fetch-a-view-specific-version-" class="header">Fetch a view (specific version)</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#fetch-a-view-specific-tag-" class="header">Fetch a view (specific tag)</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#list-views" class="header">List views</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#elasticsearch-query" class="header">ElasticSearch query</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#sparql-query" class="header">SparQL query</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#views-internals" class="header">Views internals</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -259,6 +262,9 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/kg/kg-views-api.html#fetch-a-view-specific-version-" class="header">Fetch a view (specific version)</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#fetch-a-view-specific-tag-" class="header">Fetch a view (specific tag)</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#list-views" class="header">List views</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#elasticsearch-query" class="header">ElasticSearch query</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#sparql-query" class="header">SparQL query</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#views-internals" class="header">Views internals</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -282,6 +288,7 @@ BlueBrain/nexus
 <p>If your deployment is protected by an access token: </p>
 <p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
 <h2><a href="#view-types" name="view-types" class="anchor"><span class="anchor-link"></span></a>View types</h2>
+<p><img src="../assets/view-defaults.png" alt="view defaults" title="View defaults" /></p>
 <p>There are several types of views, which relies on different technology to perform the indexing</p>
 <h3><a href="#sparqlview" name="sparqlview" class="anchor"><span class="anchor-link"></span></a>SparqlView</h3>
 <p>This view creates a SPARQL <code>namespace</code> where it stores all the resource&rsquo;s graph inside the view <code>project</code>.</p>
@@ -1077,6 +1084,102 @@ BlueBrain/nexus
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
+<h2><a href="#elasticsearch-query" name="elasticsearch-query" class="anchor"><span class="anchor-link"></span></a>ElasticSearch query</h2>
+<p>Provides search functionality on the <code>ElasticView</code> content.</p>
+<pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/_search
+  {...}
+</code></pre>
+<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch documentation</a></p>
+<p>The string <code>documents</code> is used as a prefix of the default ElasticSearch <code>view_id</code></p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/_search&quot; -d &#39;{&quot;query&quot;: {&quot;term&quot;: {&quot;_deprecated&quot;: true } } }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/elastic-view-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;_shards&quot;: {
+    &quot;failed&quot;: 0,
+    &quot;skipped&quot;: 0,
+    &quot;successful&quot;: 0,
+    &quot;total&quot;: 0
+  },
+  &quot;hits&quot;: {
+    &quot;hits&quot;: [
+      {
+        &quot;_score&quot;: 1.2039728,
+        &quot;_id&quot;: &quot;http://example.com/myview&quot;,
+        &quot;_index&quot;: &quot;kg_v1_803da242-d510-4e1a-a12d-d0e0b7018a41_684bd815-9273-46f4-ac1c-0383d4a98254_1&quot;,
+        &quot;_source&quot;: {
+          &quot;@id&quot;: &quot;http://example.com/myview&quot;,
+          &quot;@type&quot;: [
+            &quot;https://bluebrain.github.io/nexus/vocabulary/View&quot;,
+            &quot;https://bluebrain.github.io/nexus/vocabulary/ElasticView&quot;,
+            &quot;https://bluebrain.github.io/nexus/vocabulary/Alpha&quot;
+          ],
+          &quot;_original_source&quot;: &quot;{\&quot;mapping\&quot;:\&quot;{\\\&quot;dynamic\\\&quot;:false,\\\&quot;properties\\\&quot;:{\\\&quot;@id\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;keyword\\\&quot;},\\\&quot;@type\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;keyword\\\&quot;},\\\&quot;name\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;keyword\\\&quot;},\\\&quot;number\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;long\\\&quot;},\\\&quot;bool\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;boolean\\\&quot;}}}\&quot;,\&quot;_uuid\&quot;:\&quot;89dd9858-cf87-4c46-94c2-24da0fcae0aa\&quot;,\&quot;@context\&quot;:\&quot;https://bluebrain.github.io/nexus/contexts/view\&quot;,\&quot;@type\&quot;:[\&quot;View\&quot;,\&quot;ElasticView\&quot;,\&quot;Alpha\&quot;],\&quot;includeMetadata\&quot;:true,\&quot;sourceAsText\&quot;:false}&quot;,
+          &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview&quot;,
+          &quot;_constrainedBy&quot;: &quot;nxs:view&quot;,
+          &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+          &quot;_createdAt&quot;: &quot;2018-09-18T16:39:22.748Z&quot;,
+          &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+          &quot;_updatedAt&quot;: &quot;2018-09-18T17:10:22.748Z&quot;,
+          &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+          &quot;_rev&quot;: 6,
+          &quot;_deprecated&quot;: true
+        },
+        &quot;_type&quot;: &quot;doc&quot;
+      }
+    ],
+    &quot;max_score&quot;: 1.2039728,
+    &quot;total&quot;: 1
+  },
+  &quot;timed_out&quot;: false,
+  &quot;took&quot;: 11
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/elastic-view-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#sparql-query" name="sparql-query" class="anchor"><span class="anchor-link"></span></a>SparQL query</h2>
+<p>Provides search functionality on the <code>SparqlView</code> content.</p>
+<pre><code>POST /v1/views/{org_label}/{project_label}/graph/sparql
+  &quot;...&quot;
+</code></pre>
+<p>The supported payload is defined on the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns">SparQL documentation</a> The <code>Content-Type</code> HTTP header for this request is <code>application/sparql-query</code>.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/graph/sparql&quot; -d &#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/sparql-view-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;head&quot;: {
+    &quot;vars&quot;: [
+      &quot;s&quot;
+    ]
+  },
+  &quot;results&quot;: {
+    &quot;bindings&quot;: [
+      {
+        &quot;s&quot;: {
+          &quot;type&quot;: &quot;uri&quot;,
+          &quot;value&quot;: &quot;http://example.com/myview&quot;
+        }
+      },
+      {
+        &quot;s&quot;: {
+          &quot;type&quot;: &quot;uri&quot;,
+          &quot;value&quot;: &quot;http://example.com/other&quot;
+        }
+      }
+    ]
+  }
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/sparql-view-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#views-internals" name="views-internals" class="anchor"><span class="anchor-link"></span></a>Views internals</h2>
+<p>When an asynchronous process that reads the view events from the Primary Store gets triggered, a new index (SparQL or ElasticSearch) gets created. After that, an endpoint (<code>/sparql</code> for SparQL view or <code>/_search</code> for ElasticSearch view) becomes available. The client can then perform queries against those endpoints.</p>
+<p>The view provides the configuration of the index and defines which Events are going to be indexed.</p>
+<p><img src="../assets/views-internals.png" alt="View internals" title="View internals" /></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/kg/kg-views-api.md" title="Edit this page" class="md-source-file md-edit">

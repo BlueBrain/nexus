@@ -154,6 +154,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/api/index.html" class="active page">API Reference</a>
   <ul>
+    <li><a href="../../docs/api/anatomy.html" class="page">Services anatomy</a></li>
     <li><a href="../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
     <li><a href="../../docs/api/admin/index.html" class="page">Admin API</a>
     <ul>
@@ -176,7 +177,6 @@ BlueBrain/nexus
     <li><a href="../../docs/architecture/use-cases.html" class="page">Use Cases</a></li>
     <li><a href="../../docs/architecture/components.html" class="page">Components</a></li>
     <li><a href="../../docs/architecture/integration.html" class="page">Integration</a></li>
-    <li><a href="../../docs/architecture/systematic-service-design.html" class="page">Systematic service design</a></li>
   </ul></li>
   <li><a href="../../docs/roadmap/index.html" class="page">Roadmap</a></li>
   <li><a href="../../docs/benchmarks/index.html" class="page">Benchmarks</a>
@@ -194,6 +194,13 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/api/index.html#api-reference" class="header">API Reference</a>
+  <ul>
+    <li><a href="../../docs/api/index.html#resource-lifecycle" class="header">Resource Lifecycle</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -207,11 +214,52 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/api/index.html#api-reference" class="header">API Reference</a>
+  <ul>
+    <li><a href="../../docs/api/index.html#resource-lifecycle" class="header">Resource Lifecycle</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#api-reference" name="api-reference" class="anchor"><span class="anchor-link"></span></a>API Reference</h1>
-<p>TBC.</p>
+<p>All Nexus services expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically <a href="https://json-ld.org/">JSON-LD</a>.</p>
+<p>The services operates on 3 primary types of resources: Organizations, Projects and Resources. Each of them is constrain by a set of <a href="https://www.w3.org/TR/shacl/">SHACL</a> rules, grouped in what is called a Schema.</p>
+<p><img src="./assets/resources-tree.png" alt="Resources tree" title="Resources tree" /></p>
+<ul>
+  <li>An <strong><a href="admin/admin-orgs-api.html">organization</a></strong> is used to organize and categorize its sub-resources.</li>
+  <li>A <strong><a href="admin/admin-projects-api.html">project</a></strong> is rooted on a given <code>organization</code>. It is used to organize and categorize its sub-resources while providing a way to <a href="https://bluebrain.github.io/nexus/docs/api/admin/admin-projects-api.html#prefix-mappings">interact with its sub-resources conveniently</a>.</li>
+  <li>A <strong><a href="kg/kg-resources-api.html">resource</a></strong> is rooted on a given <code>project</code>. In this level of the hierarchy, multiple types of resources can be found. Each of them has a different purpose:</li>
+  <li>A <strong><a href="kg/kg-schemas-api.html">schema</a></strong> is a resource that defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/">SHACL</a>.</li>
+  <li>A <strong><a href="kg/kg-resolvers-api.html">resolvers</a></strong>: is a resource that defines the way ids are retrieved inside a project.</li>
+  <li>A <strong><a href="kg/kg-views-api.html">views</a></strong>: is a resource that describes the way indexing is applied to certain resources inside a project.</li>
+  <li>The <strong><a href="kg/kg-data-api.html">data</a></strong>: resource is the most generic entity and it can be either a <code>schema</code>, <code>resolver</code>, <code>view</code> or <code>data</code>. Data resources stored in Nexus are validated against a certain schema. The data then is transformed into <a href="https://www.w3.org/TR/rdf-concepts/#section-triples">RDF triples</a> that enriching the Knowledge Graph.</li>
+</ul>
+<h2><a href="#resource-lifecycle" name="resource-lifecycle" class="anchor"><span class="anchor-link"></span></a>Resource Lifecycle</h2>
+<p>Our services are build using the <a href="https://martinfowler.com/eaaDev/EventSourcing.html">event sourcing</a> approach. This strategy captures all changes to an application state as a sequence of events.</p>
+<p>All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.</p>
+<p><img src="./assets/resource-lifecycle.png" alt="Resource Lifecycle" title="Resource Lifecycle" /></p>
+<p>Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the deprecation flag may have various semantics:</p>
+<ul>
+  <li><strong>Organizations</strong>: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this organization will not be considered during indexing and resolution processes.</li>
+  <li><strong>Projects</strong>: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this project will not be considered during indexing and resolution processes.</li>
+  <li><strong>Schemas</strong>: the resource itself cannot be updated and new data conformant to it cannot be created</li>
+  <li><strong>Resolvers</strong>: the resource itself will not be considered during the resolution process</li>
+  <li><strong>Views</strong>: the resource itself will not be considered during the indexing process</li>
+  <li><strong>Data</strong>: the resource itself cannot be updated and attachments cannot be added/deleted</li>
+</ul>
+<p>Future policies may use this flag to determine if or when the deprecated data may be archived.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/index.md" title="Edit this page" class="md-source-file md-edit">
@@ -243,13 +291,13 @@ Data management example
 </span>
 </div>
 </a>
-<a href="../../docs/api/operating-on-resources.html" title="Operating on resources" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/api/anatomy.html" title="Services anatomy" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Operating on resources
+Services anatomy
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
