@@ -1,3 +1,0 @@
-# Systematic service design
-
-TBC.

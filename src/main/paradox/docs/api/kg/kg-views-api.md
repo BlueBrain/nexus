@@ -23,6 +23,9 @@ Edit the imported collection -> Click on the `Authorization` tab -> Fill the tok
 
 ## View types
 
+![view defaults](../assets/view-defaults.png "View defaults")
+
+
 There are several types of views, which relies on different technology to perform the indexing
 
 ### SparqlView
@@ -348,3 +351,52 @@ Request
 
 Response
 :   @@snip [view-list.json](../assets/view-list.json)
+
+
+## ElasticSearch query
+
+Provides search functionality on the `ElasticView` content.
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/_search
+  {...}
+```
+The supported payload is defined on the [ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html)
+
+The string `documents` is used as a prefix of the default ElasticSearch `view_id`
+
+**Example**
+
+Request
+:   @@snip [elastic-view-search.sh](../assets/elastic-view-search.sh)
+
+Response
+:   @@snip [elastic-view-search.json](../assets/elastic-view-search.json)
+
+## SparQL query
+
+Provides search functionality on the `SparqlView` content.
+
+```
+POST /v1/views/{org_label}/{project_label}/graph/sparql
+  "..."
+```
+The supported payload is defined on the [SparQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+The `Content-Type` HTTP header for this request is `application/sparql-query`.
+
+**Example**
+
+Request
+:   @@snip [sparql-view-search.sh](../assets/sparql-view-search.sh)
+
+Response
+:   @@snip [sparql-view-search.json](../assets/sparql-view-search.json)
+
+## Views internals
+
+When an asynchronous process that reads the view events from the Primary Store gets triggered, a new index (SparQL or ElasticSearch) gets created. After that, an endpoint (`/sparql` for SparQL view or `/_search` for ElasticSearch view) becomes available. The client can then perform queries against those endpoints.
+
+The view provides the configuration of the index and defines which Events are going to be indexed.
+
+![View internals](../assets/views-internals.png "View internals")
+

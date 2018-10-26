@@ -3,7 +3,6 @@
 * [Use Cases](use-cases.md)
 * [Components](components.md)
 * [Integration](integration.md)
-* [Systematic Service Design](systematic-service-design.md)
 
 @@@
 
