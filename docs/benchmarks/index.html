@@ -210,9 +210,19 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#benchmarks" name="benchmarks" class="anchor"><span class="anchor-link"></span></a>Benchmarks</h1>
-<p>The main goal of the benchmarks was to analyze the hardware requirements for a Nexus deployment and to find potential bottlenecks.</p>
-<p>The benchmarks were run on a Kubernetes cluster deployed on AWS. Fore more details see <a href="deployment-configuration.md">deployment configuration</a>. The tests were run against v1 API of Nexus in October 2018.</p>
-<p>The test scenarios and scripts can be found in <a href="https://github.com/BlueBrain/nexus-tests">nexus-tests</a> repository. The description of the scenarios can be found <a href="scenarios.md">here</a></p>
+<p>The main goal of the benchmarks was to analyze the hardware requirements for a Nexus deployment and to find potential bottlenecks. In particular, we were most interested in the following metrics:</p>
+<ul>
+  <li><strong>throughput</strong> - how many requests per second the system can handle</li>
+  <li><strong>latency</strong> - the time the system needed to provide response to the requests</li>
+</ul>
+<p>and how they were affected by different factors, especially:</p>
+<ul>
+  <li><strong>data volume</strong> - how does the volume of the data in the system affect the performance</li>
+  <li><strong>hardware configuration and scalability</strong> - does assigning more hardware increase the performance of the system and can the system scale both horizontally and vertically.</li>
+  <li><strong>clustering</strong> - what&rsquo;s the effect of changing from a single node to clustered deployment, as well as, what&rsquo;s the effect of adding more nodes to the cluster.</li>
+</ul>
+<p>The description of the test scenarios can be found <a href="scenarios.html">here</a>. The test scenarios and scripts can be found in <a href="https://github.com/BlueBrain/nexus-tests">nexus-tests</a> repository. The results of the benchmarks are described in detail in the <a href="results.html">Results section</a>.</p>
+<p>The benchmarks were run on a Kubernetes cluster deployed on AWS. Fore more details see <a href="deployment-configuration.html">deployment configuration</a>. The tests were run against v1 API of Nexus in October 2018.</p>
 <p>The benchmarks were using <code>final_number_of_instances</code> million of instances distributed in <code>final_number_of_projects</code> of projects.</p>
 </div>
 <div>
