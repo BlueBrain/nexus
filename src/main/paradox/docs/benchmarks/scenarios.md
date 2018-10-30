@@ -46,7 +46,7 @@ This scenario uploads multiple attachments to resources.
 
 This scenario fetches attachments from resources.
 
-## [Mixed scenario](https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FetchAttachmentSimulation.scala/FullSimulation.scala)
+## [Mixed scenario](https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FullSimulation.scala)
 
 This simulation performs multiple types of requests: fetching, updating, fetching by revision, ElasticSearch and Blazegraph search.
 Percentage of each type of the requests can be configured.
