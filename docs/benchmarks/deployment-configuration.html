@@ -182,7 +182,6 @@ BlueBrain/nexus
   <li><a href="../../docs/benchmarks/index.html" class="page">Benchmarks</a>
   <ul>
     <li><a href="../../docs/benchmarks/deployment-configuration.html" class="active page">Deployment Configuration</a></li>
-    <li><a href="../../docs/benchmarks/data-volumes.html" class="page">Data Volumes</a></li>
     <li><a href="../../docs/benchmarks/scenarios.html" class="page">Scenarios</a></li>
     <li><a href="../../docs/benchmarks/results.html" class="page">Results</a></li>
   </ul></li>
@@ -211,7 +210,9 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#deployment-configuration" name="deployment-configuration" class="anchor"><span class="anchor-link"></span></a>Deployment Configuration</h1>
-<p>TBC.</p>
+<p>The tests were performed against Nexus services deployed in Kubernetes cluster provisioned by <a href="https://aws.amazon.com/eks/">Amazon EKS</a>. The deployment configuration and the number of nodes assigned to each Nexus service are presented in the following diagram:</p>
+<p><img src="../../assets/img/performance_tests_environment.png" alt="deployment configuration" /></p>
+<p>The benchmarks were run on a AWS EC2 <code>m5.2xlarge</code> server outside of the Kubernetes cluster.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/benchmarks/deployment-configuration.md" title="Edit this page" class="md-source-file md-edit">
@@ -243,13 +244,13 @@ Benchmarks
 </span>
 </div>
 </a>
-<a href="../../docs/benchmarks/data-volumes.html" title="Data Volumes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/benchmarks/scenarios.html" title="Scenarios" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Data Volumes
+Scenarios
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

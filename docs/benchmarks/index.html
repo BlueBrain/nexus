@@ -182,7 +182,6 @@ BlueBrain/nexus
   <li><a href="../../docs/benchmarks/index.html" class="active page">Benchmarks</a>
   <ul>
     <li><a href="../../docs/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
-    <li><a href="../../docs/benchmarks/data-volumes.html" class="page">Data Volumes</a></li>
     <li><a href="../../docs/benchmarks/scenarios.html" class="page">Scenarios</a></li>
     <li><a href="../../docs/benchmarks/results.html" class="page">Results</a></li>
   </ul></li>
@@ -211,7 +210,10 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#benchmarks" name="benchmarks" class="anchor"><span class="anchor-link"></span></a>Benchmarks</h1>
-<p>TBC.</p>
+<p>The main goal of the benchmarks was to analyze the hardware requirements for a Nexus deployment and to find potential bottlenecks.</p>
+<p>The benchmarks were run on a Kubernetes cluster deployed on AWS. Fore more details see <a href="deployment-configuration.md">deployment configuration</a>. The tests were run against v1 API of Nexus in October 2018.</p>
+<p>The test scenarios and scripts can be found in <a href="https://github.com/BlueBrain/nexus-tests">nexus-tests</a> repository. The description of the scenarios can be found <a href="scenarios.md">here</a></p>
+<p>The benchmarks were using <code>final_number_of_instances</code> million of instances distributed in <code>final_number_of_projects</code> of projects.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/benchmarks/index.md" title="Edit this page" class="md-source-file md-edit">
