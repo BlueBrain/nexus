@@ -80,7 +80,37 @@ Response
 ```
 
 Request
- :   @@snip [realms-get.sh](../assets/realms/realms-get.sh)
+ :   @@snip [realms-list.sh](../assets/realms/realms-list.sh)
 
 Response
- :   @@snip [realms-get.json](../assets/realms/realms-get.json)
+ :   @@snip [realms-list.json](../assets/realms/realms-list.json)
+
+## Fetch a realm (current version)
+
+```
+GET /v1/realms/{realm}
+```
+
+**Example**
+
+Request
+:   @@snip [realm-fetch.sh](../assets/realms/realm-fetch.sh)
+
+Response
+:   @@snip [realm-replaced-ref.json](../assets/realms/realm-replaced-ref.json)
+
+
+## Fetch a realm (specific version)
+
+```
+GET /v1/realms/{realm}?rev={rev}
+```
+... where `{rev}` is the revision number of the resolver to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [realm-fetch-revision.sh](../assets/realms/realm-fetch-revision.sh)
+
+Response
+:   @@snip [realm-added-ref.json](../assets/realms/realm-added-ref.json)
