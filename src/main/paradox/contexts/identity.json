@@ -1,0 +1,26 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "UserRef": {
+      "@id": "nxv:UserRef",
+      "@type": "@id"
+    },
+    "GroupRef": {
+      "@id": "nxv:GroupRef",
+      "@type": "@id"
+    },
+    "AuthenticatedRef": {
+      "@id": "nxv:AuthenticatedRef",
+      "@type": "@id"
+    },
+    "Anonymous": {
+      "@id": "nxv:Anonymous",
+      "@type": "@id"
+    },
+    "realm": "nxv:realm",
+    "sub": "nxv:sub",
+    "group": "nxv:group",
+    "identity": "nxv:identity"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/identity.json"
+}

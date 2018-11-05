@@ -189,7 +189,7 @@ Let's imagine we have the ACLs from the [following diagram in place](#acls-hiera
 The following examples illustrate listings from the diagram on the section [ACLs hierarchy](#acls-hierarchy) with the following considerations:
 
 - identity 1: Is a group called `one`
-- identity 1: Is a group called `two`
+- identity 2: Is a group called `two`
 - identity 3: Is a user called `me`
 - The auth. token is linked to the `identity 1`.
 

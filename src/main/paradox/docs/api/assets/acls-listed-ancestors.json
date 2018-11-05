@@ -8,7 +8,7 @@
   "_results": [
     {
       "@id": "https://bluebrain.github.io/nexus/acls/root",
-      "@type": "nxv:Acls",
+      "@type": "Acls",
       "path": "/",
       "acl": [
         {
