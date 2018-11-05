@@ -1,0 +1,84 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/acls.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/acls/root",
+      "@type": "nxv:Acls",
+      "path": "/",
+      "acl": [
+        {
+          "permissions": [
+            "acls:create",
+            "acls:read"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realm/groups/one",
+            "@type": "GroupRef",
+            "realm": "realm",
+            "group": "one"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:55:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_updatedAt": "2018-09-17T15:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_rev": 1,
+      "_deprecated": false
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/acls/myorg",
+      "@type": "nxv:Acls",
+      "path": "/myorg",
+      "acl": [
+        {
+          "permissions": [
+            "acls:create",
+            "acls:write"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realm/groups/two",
+            "@type": "GroupRef",
+            "realm": "realm",
+            "group": "two"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:other",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:other",
+      "_rev": 2,
+      "_deprecated": false
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/acls/myorg2",
+      "@type": "nxv:Acls",
+      "path": "/myorg2",
+      "acl": [
+        {
+          "permissions": [
+            "other"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realm/groups/one",
+            "@type": "GroupRef",
+            "realm": "realm",
+            "group": "one"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:other",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:other",
+      "_rev": 1,
+      "_deprecated": false
+    }
+  ]
+}

@@ -54,7 +54,7 @@ Response
 :   @@snip [permissions-replaced-ref.json](../assets/permissions-replaced-ref.json)
 
 
-## Subtract certain permissions
+## Subtract permissions
 
 This operation removes the provided permissions from the existing collection of permissions.
 
@@ -76,7 +76,7 @@ Payload
 Response
 :   @@snip [permissions-subtracted-ref.json](../assets/permissions-subtracted-ref.json)
 
-## Append certain permissions
+## Append permissions
 
 This operation appends the provided permissions to the existing collection of  permissions.
 
@@ -105,7 +105,6 @@ This operation deletes the entire collection of permissions.
 
 ```
 DELETE /v1/permissions?rev={previous_rev}
-  {...}
 ```
 
 ...where ``{previous_rev}`` is the last known revision number for the permissions.

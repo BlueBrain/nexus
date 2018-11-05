@@ -1,0 +1,15 @@
+{
+  "@type": "Subtract",
+  "acl": [
+    {
+      "permissions": [
+        "read"
+      ],
+      "identity": {
+        "@id": "https://nexus.example.com/v1/realms/realm",
+        "@type": "AuthenticatedRef",
+        "realm": "realm"
+      }
+    }
+  ]
+}
