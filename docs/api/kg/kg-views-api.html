@@ -169,7 +169,12 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/api/kg/kg-data-api.html" class="page">Data</a></li>
     </ul></li>
-    <li><a href="../../../docs/api/iam-service-api.html" class="page">IAM API</a></li>
+    <li><a href="../../../docs/api/iam/index.html" class="page">IAM API</a>
+    <ul>
+      <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../../docs/api/iam/iam-permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control List</a></li>
+    </ul></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
   <li><a href="../../../docs/architecture/index.html" class="page">System Architecture</a>
@@ -282,7 +287,7 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/view">view schema</a>.</li>
 </ul>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam-service-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam/iam-realms-api.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
 <p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/view-postman.json">views collection</a>.</p>
 <p>If your deployment is protected by an access token: </p>
 <p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
