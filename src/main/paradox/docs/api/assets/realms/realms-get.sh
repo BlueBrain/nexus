@@ -1,0 +1,1 @@
+curl -XGET -H "Content-Type: application/json" "https://nexus.example.com/v1/realms"
