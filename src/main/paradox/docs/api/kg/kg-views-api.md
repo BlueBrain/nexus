@@ -9,7 +9,7 @@ Each view...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the [view schema](https://bluebrain.github.io/nexus/schemas/view).
 
-Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](../iam/iam-realms-api.md) in order to learn more about how to retrieve an access token.
+Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](../iam/authentication.md) in order to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Running examples with Postman" }
 

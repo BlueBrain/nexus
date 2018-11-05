@@ -4,7 +4,7 @@ Permissions are rooted in the `/v1/permissions` collection.
 
 Each permission is the basic unit to provide a way to limit applications' access to sensitive information.  
 
-Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](./iam-realms-api.md) in order to learn more about how to retrieve an access token.
+Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](./authentication.md) in order to learn more about how to retrieve an access token.
 
 
 ## Create permissions
