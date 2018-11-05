@@ -172,6 +172,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/iam/index.html" class="page">IAM API</a>
     <ul>
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="active page">Realms</a></li>
+      <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
       <li><a href="../../../docs/api/iam/iam-permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control List</a></li>
     </ul></li>
@@ -198,6 +199,18 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/api/iam/iam-realms-api.html#realms" class="header">Realms</a>
+  <ul>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#create-a-realm" class="header">Create a realm</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#update-a-realm" class="header">Update a realm</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#delete-a-realm" class="header">Delete a realm</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#list-realms" class="header">List realms</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#fetch-a-realm-current-version-" class="header">Fetch a realm (current version)</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#fetch-a-realm-specific-version-" class="header">Fetch a realm (specific version)</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -211,10 +224,263 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/api/iam/iam-realms-api.html#realms" class="header">Realms</a>
+  <ul>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#create-a-realm" class="header">Create a realm</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#update-a-realm" class="header">Update a realm</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#delete-a-realm" class="header">Delete a realm</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#list-realms" class="header">List realms</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#fetch-a-realm-current-version-" class="header">Fetch a realm (current version)</a></li>
+    <li><a href="../../../docs/api/iam/iam-realms-api.html#fetch-a-realm-specific-version-" class="header">Fetch a realm (specific version)</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#realms" name="realms" class="anchor"><span class="anchor-link"></span></a>Realms</h1>
+<p>Realms are rooted in <code>/v1/realms</code> collection.</p>
+<p>Each realm defines a specific authentication provider. Any of the authentication providers can be used to obtain access tokens that can be used with Nexus.</p>
+<h2><a href="#create-a-realm" name="create-a-realm" class="anchor"><span class="anchor-link"></span></a>Create a realm</h2>
+<p>This operation creates a realm.</p>
+<pre><code>PUT /v1/realms/{realm}
+</code></pre>
+<p>The following examples describe the payload used to create a realm.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/realms/realm1&quot; \
+    -d &#39;{&quot;label&quot;:&quot;realm1&quot;,&quot;openidConfiguration&quot;:&quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,&quot;requiredScopes&quot;:[&quot;openid&quot;,&quot;nexus&quot;]}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-add.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;label&quot;: &quot;realm1&quot;,
+  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;requiredScopes&quot;: [
+    &quot;openid&quot;,
+    &quot;nexus&quot;
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-add.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;nxv:Realm&quot;,
+  &quot;label&quot;: &quot;realm1&quot;,
+  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;requiredScopes&quot;: [
+    &quot;openid&quot;,
+    &quot;nexus&quot;
+  ],
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-added-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<p>The <code>requiredScopes</code> field defines the scopes that need to be included in the token from this realm in order for Nexus to accept it as valid.</p>
+<h2><a href="#update-a-realm" name="update-a-realm" class="anchor"><span class="anchor-link"></span></a>Update a realm</h2>
+<p>This operation updates a realm.</p>
+<pre><code>PUT /v1/realms/{realm}?rev={previous_rev}
+  {...}
+</code></pre>
+<p>where <code>{previous_rev}</code> is the last known revision number for the realm.  The json payload should be the same as the one used to create realms.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/realms/realm1?rev=1&quot; \
+    -d &#39;{&quot;name&quot;:&quot;realm1&quot;,&quot;openidConfiguration&quot;:&quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,&quot;requiredScopes&quot;:[&quot;openid&quot;,&quot;nexus&quot;, &quot;another&quot;]}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replace.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;name&quot;: &quot;realm1&quot;,
+  &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;requiredScopes&quot;: [
+    &quot;openid&quot;,
+    &quot;nexus&quot;,
+    &quot;another&quot;
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replace.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
+  &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;nxv:Realm&quot;,
+  &quot;name&quot;: &quot;realm1&quot;,
+  &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;requiredScopes&quot;: [
+    &quot;openid&quot;,
+    &quot;nexus&quot;,
+    &quot;another&quot;
+  ],
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#delete-a-realm" name="delete-a-realm" class="anchor"><span class="anchor-link"></span></a>Delete a realm</h2>
+<p>This operation deletes a realm.</p>
+<p><code>
+ DELETE /v1/realms/{realm}?rev={previous_rev}
+   {...}
+</code></p>
+<p>where <code>{previous_rev}</code> is the last known revision number for the realm.</p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE  -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/realms/realm1?rev=2&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-delete.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;nxv:Realm&quot;,
+  &quot;name&quot;: &quot;realm1&quot;,
+  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/v1/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;requiredScopes&quot;: [
+    &quot;openid&quot;,
+    &quot;nexus&quot;
+  ],
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 3,
+  &quot;_deprecated&quot;: true
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-deleted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#list-realms" name="list-realms" class="anchor"><span class="anchor-link"></span></a>List realms</h2>
+<p>Lists all available realms.</p>
+<pre><code> GET /v1/realms
+</code></pre>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/realms&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realms-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: {
+    &quot;@context&quot;: [
+      &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+      &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+      &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;
+    ]
+  },
+  &quot;_total&quot;: 2,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm1&quot;,
+      &quot;@type&quot;: &quot;nxv:Realm&quot;,
+      &quot;name&quot;: &quot;realm1&quot;,
+      &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+      &quot;requiredScopes&quot;: [
+        &quot;openid&quot;,
+        &quot;nexus&quot;
+      ],
+      &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_rev&quot;: 1,
+      &quot;_deprecated&quot;: false
+    },
+    {
+      &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm2&quot;,
+      &quot;@type&quot;: &quot;nxv:Realm&quot;,
+      &quot;name&quot;: &quot;realm2&quot;,
+      &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+      &quot;requiredScopes&quot;: [
+        &quot;openid&quot;,
+        &quot;nexus&quot;
+      ],
+      &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_rev&quot;: 2,
+      &quot;_deprecated&quot;: false
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realms-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-realm-current-version-" name="fetch-a-realm-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a realm (current version)</h2>
+<pre><code>GET /v1/realms/{realm}
+</code></pre>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/realms/realm1&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
+  &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;nxv:Realm&quot;,
+  &quot;name&quot;: &quot;realm1&quot;,
+  &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;requiredScopes&quot;: [
+    &quot;openid&quot;,
+    &quot;nexus&quot;,
+    &quot;another&quot;
+  ],
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-a-realm-specific-version-" name="fetch-a-realm-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a realm (specific version)</h2>
+<pre><code>GET /v1/realms/{realm}?rev={rev}
+</code></pre>
+<p>&hellip; where <code>{rev}</code> is the revision number of the resolver to be retrieved.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/realms/realm1?rev=1&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;nxv:Realm&quot;,
+  &quot;label&quot;: &quot;realm1&quot;,
+  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;requiredScopes&quot;: [
+    &quot;openid&quot;,
+    &quot;nexus&quot;
+  ],
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-added-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/iam/iam-realms-api.md" title="Edit this page" class="md-source-file md-edit">
@@ -246,13 +512,13 @@ IAM API
 </span>
 </div>
 </a>
-<a href="../../../docs/api/iam/iam-permissions-api.html" title="Permissions" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/iam/authentication.html" title="Authentication" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Permissions
+Authentication
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

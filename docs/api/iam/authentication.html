@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Admin API · Blue Brain Nexus</title>
+<title>Authentication · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Admin API
+Authentication
 </span>
 </div>
 </div>
@@ -156,7 +156,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/api/anatomy.html" class="page">Services anatomy</a></li>
     <li><a href="../../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
-    <li><a href="../../../docs/api/admin/index.html" class="active page">Admin API</a>
+    <li><a href="../../../docs/api/admin/index.html" class="page">Admin API</a>
     <ul>
       <li><a href="../../../docs/api/admin/admin-orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/api/admin/admin-projects-api.html" class="page">Projects</a></li>
@@ -172,7 +172,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/api/iam/index.html" class="page">IAM API</a>
     <ul>
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
-      <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
+      <li><a href="../../../docs/api/iam/authentication.html" class="active page">Authentication</a></li>
       <li><a href="../../../docs/api/iam/iam-permissions-api.html" class="page">Permissions</a></li>
       <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control List</a></li>
     </ul></li>
@@ -199,14 +199,6 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../../docs/api/admin/index.html#admin-api" class="header">Admin API</a>
-  <ul>
-    <li><a href="../../../docs/api/admin/index.html#organizations" class="header">Organizations</a></li>
-    <li><a href="../../../docs/api/admin/index.html#projects" class="header">Projects</a></li>
-  </ul></li>
-</ul>
 </nav>
 
 </nav>
@@ -220,41 +212,16 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../../docs/api/admin/index.html#admin-api" class="header">Admin API</a>
-  <ul>
-    <li><a href="../../../docs/api/admin/index.html#organizations" class="header">Organizations</a></li>
-    <li><a href="../../../docs/api/admin/index.html#projects" class="header">Projects</a></li>
-  </ul></li>
-</ul>
-</nav>
-
-</div>
-</div>
-</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#admin-api" name="admin-api" class="anchor"><span class="anchor-link"></span></a>Admin API</h1>
-<p>The Admin API provides operations on two types of resources, <code>organizations</code> and <code>projects</code>. Those resources define the tree-like structure or grouping of the platform</p>
-<h2><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h2>
-<p>The top level resource in the platform. It is used to group and categorize its sub-resources.</p>
-<p><a href="admin-orgs-api.html">Operations on organizations</a></p>
-<h2><a href="#projects" name="projects" class="anchor"><span class="anchor-link"></span></a>Projects</h2>
-<p>The 2nd level resource in the platform. It is used to group and categorize its sub-resources. Relevant roles of a projects are:</p>
-<ul>
-  <li>Defining settings which can be used for operations on sub-resources.</li>
-  <li>Providing (by default) isolation from resources inside other projects. This isolation can be avoided by defining <a href="../kg/kg-resolvers-api.html">resolvers</a></li>
-</ul>
-<p><a href="admin-projects-api.html">Operations on projects</a></p>
+<h1><a href="#authentication" name="authentication" class="anchor"><span class="anchor-link"></span></a>Authentication</h1>
+<p>In order to interact with Nexus, clients need a valid access token. Tokens can be obtained from authentication providers. Please see, <a href="iam-realms-api.html">realms</a> for documentation on how to find available providers(realms).</p>
+<p>Each realm defines <code>openid-configuration</code> endpoint. From that endpoint, clients can obtain the information necessary to obtain an access token, especially the <code>authorize</code> and <code>token</code> endpoints for the provider.</p>
+<p>Please see <a href="https://www.oauth.com/">oauth2 documentation</a> for different authentication flows available for different types of applications. </p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/admin/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/iam/authentication.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -270,7 +237,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/api/operating-on-resources.html" title="Operating on resources" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/api/iam/iam-realms-api.html" title="Realms" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -279,17 +246,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Operating on resources
+Realms
 </span>
 </div>
 </a>
-<a href="../../../docs/api/admin/admin-orgs-api.html" title="Organizations" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/iam/iam-permissions-api.html" title="Permissions" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Organizations
+Permissions
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
