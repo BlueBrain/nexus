@@ -4,7 +4,10 @@
     {
       "label": "nxv:label",
       "openidConfiguration": "nxv:openidConfiguration",
-      "requiredScopes": "nxv:requiredScopes"
+      "requiredScopes": {
+        "@id": "nxv:requiredScopes",
+        "@container": "@set"
+      }
     }
   ],
   "@id": "https://bluebrain.github.io/nexus/contexts/realm.json"
