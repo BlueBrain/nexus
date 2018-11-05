@@ -1,0 +1,8 @@
+{
+  "label": "realm1",
+  "openidConfiguration": "https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration",
+  "requiredScopes": [
+    "openid",
+    "nexus"
+  ]
+}

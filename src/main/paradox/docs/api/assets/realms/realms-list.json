@@ -1,0 +1,44 @@
+{
+  "@context": {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/search.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json",
+      "https://bluebrain.github.io/nexus/contexts/realm.json"
+    ]
+  },
+  "_total": 2,
+  "_results": [
+    {
+      "@id": "http://nexus.example.com/v1/realms/realm1",
+      "@type": "nxv:Realm",
+      "name": "realm1",
+      "openidConfiguration": "http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration",
+      "requiredScopes": [
+        "openid",
+        "nexus"
+      ],
+      "_createdAt": "2018-09-18T09:58:00.801Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_updatedAt": "2018-09-18T10:25:00.801Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_rev": 1,
+      "_deprecated": false
+    },
+    {
+      "@id": "http://nexus.example.com/v1/realms/realm2",
+      "@type": "nxv:Realm",
+      "name": "realm2",
+      "openidConfiguration": "http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration",
+      "requiredScopes": [
+        "openid",
+        "nexus"
+      ],
+      "_createdAt": "2018-09-18T09:58:00.801Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_updatedAt": "2018-09-18T10:25:00.801Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_rev": 2,
+      "_deprecated": false
+    }
+  ]
+}

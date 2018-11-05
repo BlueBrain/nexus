@@ -1,6 +1,7 @@
 @@@ index
 
 * [Realms](iam-realms-api.md)
+* [Authentication](authentication.md)
 * [Permissions](iam-permissions-api.md)
 * [ACLs](iam-acls-api.md)
 
