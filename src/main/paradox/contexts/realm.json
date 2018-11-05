@@ -1,0 +1,12 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    {
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+      "label": "nxv:label",
+      "openidConfiguration": "nxv:openidConfiguration",
+      "requiredScopes": "nxv:requiredScopes"
+    }
+  ],
+  "@id": "https://bluebrain.github.io/nexus/contexts/realm.json"
+}
