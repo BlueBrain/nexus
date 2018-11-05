@@ -4,4 +4,4 @@ In order to interact with Nexus, clients need a valid token. Tokens can be obtai
 Please see, @ref:[realms](realms-api.md) for documentation on how to find available providers(realm). Each realm defines
 `openid-configuration` endpoint. From that endpoint, clients can obtain the information necessary to 
 obtain an access token, especially the `authorize` and `token` endpoints for the provider. Please see [oauth2 documentation](https://www.oauth.com/)
-for different authentication flows available for different types of application. 
+for different authentication flows available for different types of applications. 

@@ -3,7 +3,7 @@
 Realms are rooted in `/v1/realms` collection.
 
 Each realm defines a specific authentication provider.
-Any of the authentication providers can be used to obtain access tokens that can bee used with Nexus.
+Any of the authentication providers can be used to obtain access tokens that can be used with Nexus.
 
 
 
