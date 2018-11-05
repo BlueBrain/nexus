@@ -1,7 +1,7 @@
 {
-  "name": "realm1",
-  "openid-configuration": "http://dev.nexus.ocp.bbp.epfl.ch/auth/realms/bbp-test/.well-known/openid-configuration",
-  "required-scopes": [
+  "label": "realm1",
+  "openidConfiguration": "https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration",
+  "requiredScopes": [
     "openid",
     "nexus"
   ]

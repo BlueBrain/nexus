@@ -1,10 +1,10 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/realms.json",
-  "@id": "http://dev.nexus.ocp.bbp.epfl.ch/auth/realms/realm1",
-  "@type": "nxv:realm",
+  "@context": "https://bluebrain.github.io/nexus/contexts/realm.json",
+  "@id": "http://nexus.example.com/v1/realms/realm1",
+  "@type": "nxv:Realm",
   "name": "realm1",
-  "openid-configuration": "http://dev.nexus.ocp.bbp.epfl.ch/auth/realms/bbp-test/.well-known/openid-configuration",
-  "required-scopes": [
+  "openidConfiguration": "http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration",
+  "requiredScopes": [
     "openid",
     "nexus",
     "another"
