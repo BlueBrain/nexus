@@ -5,7 +5,7 @@
       "path": "/",
       "identity": {
         "@id": "https://nexus.example.com/v1/v1/realms/BBP/groups/some-group",
-        "@type": "GroupRef",
+        "@type": "Group",
         "realm": "BBP",
         "group": "some-group"
       },

@@ -97,7 +97,7 @@ Payload
 :   @@snip [permissions-append.json](../assets/permissions-append.json)
 
 Response
-:   @@snip [permissions-subtracted-ref.json](../assets/permissions-subtracted-ref.json)
+:   @@snip [permissions-appended-ref.json](../assets/permissions-appended-ref.json)
 
 ## Delete all permissions
 

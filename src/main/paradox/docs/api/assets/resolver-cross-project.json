@@ -10,7 +10,7 @@
   ],
   "identities": [
     {
-      "@type": "UserRef",
+      "@type": "User",
       "realm": "BBP",
       "sub": "name"
     }

@@ -80,7 +80,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
-      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/vocab\/\"\n  },\n  \"@type\": [\n    \"Resolver\",\n    \"InAccount\"\n  ],\n  \"resourceTypes\": [\n    \"ex:MyType\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"GroupRef\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 20\n}",
+      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/vocab\/\"\n  },\n  \"@type\": [\n    \"Resolver\",\n    \"InAccount\"\n  ],\n  \"resourceTypes\": [\n    \"ex:MyType\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"Group\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 20\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -255,7 +255,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
-      "rawModeData": "{\n  \"@type\": [\n    \"Resolver\",\n    \"CrossProject\"\n  ],\n  \"projects\": [\n    \"myorg\/project2\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"GroupRef\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 50\n}",
+      "rawModeData": "{\n  \"@type\": [\n    \"Resolver\",\n    \"CrossProject\"\n  ],\n  \"projects\": [\n    \"myorg\/project2\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"Group\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 50\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -365,7 +365,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
-      "rawModeData": "{\n  \"@id\": \"https:\/\/bluebrain.github.io\/nexus\/vocabulary\/myresolver\",\n  \"@type\": [\n    \"Resolver\",\n    \"CrossProject\"\n  ],\n  \"projects\": [\n    \"myorg\/project2\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"GroupRef\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 50\n}",
+      "rawModeData": "{\n  \"@id\": \"https:\/\/bluebrain.github.io\/nexus\/vocabulary\/myresolver\",\n  \"@type\": [\n    \"Resolver\",\n    \"CrossProject\"\n  ],\n  \"projects\": [\n    \"myorg\/project2\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"Group\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 50\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -394,7 +394,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
-      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/vocab\/\"\n  },\n  \"@type\": [\n    \"Resolver\",\n    \"InAccount\"\n  ],\n  \"resourceTypes\": [\n    \"ex:MyType\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"GroupRef\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 20\n}",
+      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/vocab\/\"\n  },\n  \"@type\": [\n    \"Resolver\",\n    \"InAccount\"\n  ],\n  \"resourceTypes\": [\n    \"ex:MyType\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"Group\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 20\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -468,7 +468,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "862856a2-3166-4de1-894e-a22d8390a770",
-      "rawModeData": "{\n  \"@type\": [\n    \"Resolver\",\n    \"CrossProject\"\n  ],\n  \"projects\": [\n    \"myorg\/project2\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"GroupRef\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 20\n}",
+      "rawModeData": "{\n  \"@type\": [\n    \"Resolver\",\n    \"CrossProject\"\n  ],\n  \"projects\": [\n    \"myorg\/project2\"\n  ],\n  \"identities\": [\n    {\n\t    \"@type\": \"Group\",\n\t    \"realm\": \"{CHANGE_ME_REALM}\",\n\t    \"group\": \"{CHANGE_ME_GROUP}\"\n    }\n  ],\n  \"priority\": 20\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },

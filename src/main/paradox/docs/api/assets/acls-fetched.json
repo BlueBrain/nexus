@@ -1,5 +1,8 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/acls.json"
+  ],
   "@id": "https://nexus.example.com/v1/acls/org1",
   "@type": "nxv:AccessControlList",
   "path": "/org1",
@@ -10,7 +13,7 @@
       ],
       "identity": {
         "@id": "https://nexus.example.com/v1/realms/myrealm",
-        "@type": "AuthenticatedRef",
+        "@type": "Group",
         "realm": "myrealm"
       }
     },
@@ -21,7 +24,7 @@
       ],
       "identity": {
         "@id": "https://nexus.example.com/v1/realms/myrealm/groups/some-group",
-        "@type": "GroupRef",
+        "@type": "Group",
         "realm": "myrealm",
         "group": "some-group"
       }
@@ -33,15 +36,15 @@
       ],
       "identity": {
         "@id": "https://nexus.example.com/v1/realms/myrealm/users/user",
-        "@type": "UserRef",
+        "@type": "User",
         "realm": "myrealm",
         "sub": "alice"
       }
     }
   ],
   "_createdAt": "2018-09-18T09:58:00.801Z",
-  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
   "_updatedAt": "2018-09-18T10:01:00.801Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
   "_rev": 1
 }

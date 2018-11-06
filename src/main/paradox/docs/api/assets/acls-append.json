@@ -7,7 +7,7 @@
         "other"
       ],
       "identity": {
-        "@type": "GroupRef",
+        "@type": "Group",
         "realm": "realm",
         "group": "some-group"
       }

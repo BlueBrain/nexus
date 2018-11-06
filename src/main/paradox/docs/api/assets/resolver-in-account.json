@@ -8,7 +8,7 @@
   ],
   "identities": [
     {
-      "@type": "GroupRef",
+      "@type": "Group",
       "realm": "BBP",
       "group": "some-project"
     }

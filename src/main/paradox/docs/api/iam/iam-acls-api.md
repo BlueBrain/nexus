@@ -6,13 +6,13 @@ An ACL defines the applications' data access restriction using the following thr
          
 - permission: the value used to limit application's access to information.
 - identity: the way to identify individuals.
-- path: the address where to apply those restrictions.
+- path: the address where to apply the restrictions. Examples of paths are: `/`, `/myorg` or `/myorg/myproject`
 
 Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](./authentication.md) in order to learn more about how to retrieve an access token.
 
 ## ACLs Hierarchy
 
-It is important to know that ACLs are represented in a tree-like structure depending on their path. Examples of paths are: `/`, `/myorg` or `/myorg/myproject`. Imagine the following scenario:
+It is important to know that ACLs are represented in a tree-like structure depending on their path. Imagine the following scenario:
 ![Resources tree](../assets/permissions-tree.png "Permissions tree")
 
 Each block is identified by a path that contains a list of permissions for a certain identity (identities are color code divided). There is a special set of permissions which restrict the use of the ACLs API
