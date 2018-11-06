@@ -7,9 +7,8 @@
         "other"
       ],
       "identity": {
-        "@type": "Group",
         "realm": "realm",
-        "group": "some-group"
+        "group": "a-group"
       }
     }
   ]

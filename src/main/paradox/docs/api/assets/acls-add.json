@@ -5,8 +5,8 @@
         "read"
       ],
       "identity": {
-        "@type": "Group",
-        "realm": "realm"
+        "realm": "realm",
+        "group": "a-group"
       }
     },
     {
@@ -15,7 +15,6 @@
         "write"
       ],
       "identity": {
-        "@type": "Group",
         "realm": "realm",
         "group": "some-group"
       }
@@ -26,7 +25,6 @@
         "acls/write"
       ],
       "identity": {
-        "@type": "User",
         "realm": "realm",
         "subject": "alice"
       }

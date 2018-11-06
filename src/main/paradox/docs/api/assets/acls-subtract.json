@@ -6,9 +6,8 @@
         "read"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realms/realm",
-        "@type": "Group",
-        "realm": "realm"
+        "realm": "realm",
+        "group": "a-group"
       }
     }
   ]

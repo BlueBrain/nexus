@@ -1,1 +1,2 @@
-curl -XPATCH -H "Content-Type: application/json" "https://nexus.example.com/v1/acls/org1?rev=2" -d '{"@type": "Subtract", "acl": [{"permissions": ["read"], "identity": {"@id": "https://nexus.example.com/v1/realms/realm", "@type": "Group", "realm": "realm"} } ] }'
+curl -XPATCH -H "Content-Type: application/json" "https://nexus.example.com/v1/acls/org1?rev=2" \
+    -d '{"@type": "Subtract", "acl": [{"permissions": ["read"], "identity": {"group": "a-group", "realm": "realm"} } ] }'

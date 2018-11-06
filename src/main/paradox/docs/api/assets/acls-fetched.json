@@ -12,9 +12,10 @@
         "read"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realms/myrealm",
+        "@id": "https://nexus.example.com/v1/realms/myrealm/groups/a-group",
         "@type": "Group",
-        "realm": "myrealm"
+        "realm": "myrealm",
+        "group": "a-group"
       }
     },
     {

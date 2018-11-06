@@ -19,7 +19,7 @@
     }
   ],
   "_label": "myproject",
-  "_uuid": "968ad034-268a-4b07-aedd-219e3b2d8940"
+  "_uuid": "968ad034-268a-4b07-aedd-219e3b2d8940",
   "_self": "https://nexus.example.com/v1/projects/myorg/myproject",
   "_constrainedBy": "nxs:project",
   "_createdAt": "2018-09-18T09:58:00.801Z",
