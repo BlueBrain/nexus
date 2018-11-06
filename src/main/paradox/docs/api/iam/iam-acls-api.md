@@ -11,14 +11,14 @@ An ACL defines the applications' data access restriction using the following thr
 Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](./authentication.md) in order to learn more about how to retrieve an access token.
 
 ## ACLs Hierarchy
-It is important to know that ACLs are represented in a tree-like structure depending on the path. Imagine the following scenario:
+
+It is important to know that ACLs are represented in a tree-like structure depending on their path. Examples of paths are: `/`, `/myorg` or `/myorg/myproject`. Imagine the following scenario:
 ![Resources tree](../assets/permissions-tree.png "Permissions tree")
 
-Each block is identified by a path that contains a list of permissions for a certain identity (identities are color code divided). There is a special set of permissions which restricts the use of the ACLs API:
+Each block is identified by a path that contains a list of permissions for a certain identity (identities are color code divided). There is a special set of permissions which restrict the use of the ACLs API
 
-- **acls:read** - an auth. token containing an identity with this permission is allowed to visualize a collection of ACL from any other identity.
-- **acls:create** - an auth. token containing an identity with this permission is allowed to perform the call to the [create ACLs](#create-acls) endpoint.
-- **acls:write** - an auth. token containing an identity with this permission is allowed to perform the call to the following endpoints: [replace ACLs](#replace-acls), [subtract ACLs](#subtract-acls), [append ACLs](#append-acls) and [delete ACLs](#delete-acls)
+- **acls/read** - an auth. token containing an identity with this permission is allowed to fetch a collection of ACL from any other identity.
+- **acls/write** - an auth. token containing an identity with this permission is allowed to perform the call to the following endpoints: [cerate ACLs](#create-acls), [replace ACLs](#replace-acls), [subtract ACLs](#subtract-acls), [append ACLs](#append-acls) and [delete ACLs](#delete-acls).
 
 Those permissions need to be present in the current `{address}` where the API interaction occurs or in any parent address. In other words, they are inherited.
 
@@ -31,9 +31,9 @@ This operation creates a collection of ACL on the provided path.
 PUT /v1/acls/{address}
   {...}
 ```
-...where `{address}` is the path where the provided collection of ACL are going to be added. Examples of addresses are: `/`, `/myorg` or `/myorg/myproject`.
+...where `{address}` is the target path for the ACL collection.
 
-The json payload contains the collection of ACL to set on the provided address.
+The json payload contains the collection of ACL to set.
 
 **Example**
 
@@ -49,7 +49,7 @@ Response
 
 ## Replace ACLs
 
-This operation overrides the collection of ACL on a path.
+This operation overrides the collection of ACL on the provided path.
 ```
 PUT /v1/acls/{address}?rev={previous_rev}
   {...}
@@ -58,9 +58,9 @@ PUT /v1/acls/{address}?rev={previous_rev}
 ...where:
 
 - `{previous_rev}`: Number - the last known revision for the ACL collection.
-- `{address}`: String - the path where the provided collection of ACL are going to be replaced.
+- `{address}`: String - is the target path for the ACL collection.
 
-The json payload contains the collection of ACL to set on the provided address.
+The json payload contains the collection of ACL to set.
 
 **Example**
 
@@ -76,7 +76,7 @@ Response
 
 ## Subtract ACLs
 
-This operation removes the provided ACL collection from the existing collection of ACL on the provided address.
+This operation removes the provided ACL collection from the existing collection of ACL on the provided path.
 
 ```
 PATCH /v1/acls/{address}?rev={previous_rev}
@@ -85,7 +85,7 @@ PATCH /v1/acls/{address}?rev={previous_rev}
 ...where:
 
 - `{previous_rev}`: Number - the last known revision for the ACL collection.
-- `{address}`: String - the path where the provided collection of ACL are going to be subtracted.
+- `{address}`: String - is the target path for the ACL collection.
  
 The json payload contains the collection of ACL to remove.
 
@@ -102,7 +102,7 @@ Response
 
 ## Append ACLs
 
-This operation appends the provided ACL collection to the existing collection of ACL on the provided address.
+This operation appends the provided ACL collection to the existing collection of ACL on the provided path.
 
 ```
 PATCH /v1/acls/{address}?rev={previous_rev}
@@ -111,7 +111,7 @@ PATCH /v1/acls/{address}?rev={previous_rev}
 ...where:
 
 - `{previous_rev}`: Number - the last known revision for the ACL collection.
-- `{address}`: String - the path where the provided collection of ACL are going to be appended.
+- `{address}`: String - is the target path for the ACL collection.
 
 The json payload contains the collection of ACL to add.
 
@@ -129,7 +129,7 @@ Response
 
 ## Delete ACLs
 
-This operation deletes the entire collection of ACL on the provided address.
+This operation deletes the entire collection of ACL on the provided path.
 
 ```
 DELETE /v1/acls/{address}?rev={previous_rev}
@@ -138,7 +138,7 @@ DELETE /v1/acls/{address}?rev={previous_rev}
 ...where:
  
 - `{previous_rev}`: Number - the last known revision for the ACL collection.
-- `{address}`: String - the path where the provided collection of ACL are going to be deleted.
+- `{address}`: String - is the target path for the ACL collection.
 
 Request
 :   @@snip [acls-delete.sh](../assets/acls-delete.sh)
@@ -155,7 +155,7 @@ GET /v1/acls/{address}?rev={rev}&self={self}
 
 ...where 
 
-- `{address}`: String - the path where the provided collection of ACL are going to be fetched.
+- `{address}`: String - is the target path for the ACL collection.
 - `{rev}`: Number - the revision of the ACL to be retrieved. This parameter is optional and it defaults to the current revision.
 - `{self}`: Boolean - if `true`, only the ACLs containing the identities found on the auth. token are included in the response. If `false` all the ACLs on the current `{address}` are included. This parameter is optional and it defaults to `true`.
 
@@ -176,7 +176,7 @@ GET /v1/acls/{address}?ancestors={ancestors}&self={self}
 
 ...where 
 
-- `{address}`: String - the path where the provided collection of ACL are going to be fetched.
+- `{address}`: String - is the target path for the ACL collection.
 - `{ancestors}`: Boolean - if `true`, the ACLs of the parent `{address}` are included in the response. If `false` only the ACLs on the current `{address}` are included. This parameter is optional and it defaults to `false`.
 - `{self}`: Boolean - if `true`, only the ACLs containing the identities found on the auth. token are included in the response. If `false` all the ACLs on the current `{address}` are included. This parameter is optional and it defaults to `true`.
 

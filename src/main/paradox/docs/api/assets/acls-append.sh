@@ -1,1 +1,1 @@
-curl -XPATCH -H "Content-Type: application/json" "https://nexus.example.com/v1/acls/org1?rev=3" -d '{"@type": "Append", "acl": [{"permissions": ["own", "other"], "identity": {"@id": "https://nexus.example.com/v1/realm/groups/some-group", "@type": "GroupRef", "realm": "realm", "group": "some-group"} } ] }'
+curl -XPATCH -H "Content-Type: application/json" "https://nexus.example.com/v1/acls/org1?rev=3" -d '{"@type": "Append", "acl": [{"permissions": ["own", "other"], "identity": {"@type": "GroupRef", "realm": "realm", "group": "some-group"} } ] }'

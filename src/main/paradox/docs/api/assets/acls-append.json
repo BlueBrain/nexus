@@ -7,7 +7,6 @@
         "other"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realm/groups/some-group",
         "@type": "GroupRef",
         "realm": "realm",
         "group": "some-group"

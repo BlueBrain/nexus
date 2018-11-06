@@ -1,16 +1,17 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
   "@id": "https://nexus.example.com/v1/acls/org1",
-  "@type": "nxv:Acls",
+  "@type": "nxv:AccessControlList",
+  "path": "/org1",
   "acl": [
     {
       "permissions": [
         "read"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realms/realm",
+        "@id": "https://nexus.example.com/v1/realms/myrealm",
         "@type": "AuthenticatedRef",
-        "realm": "realm"
+        "realm": "myrealm"
       }
     },
     {
@@ -19,22 +20,21 @@
         "write"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realm/groups/some-group",
+        "@id": "https://nexus.example.com/v1/realms/myrealm/groups/some-group",
         "@type": "GroupRef",
-        "realm": "realm",
+        "realm": "myrealm",
         "group": "some-group"
       }
     },
     {
       "permissions": [
-        "acls:read",
-        "acls:write",
-        "acls:create"
+        "acls/read",
+        "acls/write"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realms/realm/users/user",
+        "@id": "https://nexus.example.com/v1/realms/myrealm/users/user",
         "@type": "UserRef",
-        "realm": "realm",
+        "realm": "myrealm",
         "sub": "alice"
       }
     }
@@ -43,6 +43,5 @@
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
   "_updatedAt": "2018-09-18T10:01:00.801Z",
   "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
-  "_rev": 1,
-  "_deprecated": false
+  "_rev": 1
 }

@@ -5,7 +5,6 @@
         "read"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realms/realm",
         "@type": "AuthenticatedRef",
         "realm": "realm"
       }
@@ -16,7 +15,6 @@
         "write"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realm/groups/some-group",
         "@type": "GroupRef",
         "realm": "realm",
         "group": "some-group"
@@ -24,12 +22,10 @@
     },
     {
       "permissions": [
-        "acls:read",
-        "acls:write",
-        "acls:create"
+        "acls/read",
+        "acls/write"
       ],
       "identity": {
-        "@id": "https://nexus.example.com/v1/realms/realm/users/user",
         "@type": "UserRef",
         "realm": "realm",
         "sub": "alice"

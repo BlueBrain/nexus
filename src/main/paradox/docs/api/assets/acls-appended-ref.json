@@ -1,11 +1,10 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
   "@id": "https://nexus.example.com/v1/acls/org1",
-  "@type": "nxv:Acls",
+  "@type": "nxv:AccessControlList",
   "_createdAt": "2018-09-18T09:58:00.801Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
   "_updatedAt": "2018-09-18T10:15:00.801Z",
   "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
-  "_rev": 4,
-  "_deprecated": false
+  "_rev": 4
 }

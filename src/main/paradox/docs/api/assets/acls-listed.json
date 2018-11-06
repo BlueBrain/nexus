@@ -7,8 +7,8 @@
   "_total": 2,
   "_results": [
     {
-      "@id": "https://bluebrain.github.io/nexus/acls/myorg/myproj",
-      "@type": "Acls",
+      "@id": "https://nexus.example.com/v1/acls/myorg/myproj",
+      "@type": "AccessControlList",
       "path": "/myorg/myproj",
       "acl": [
         {
@@ -19,7 +19,7 @@
           "identity": {
             "@id": "https://nexus.example.com/v1/realm/groups/two",
             "@type": "GroupRef",
-            "realm": "realm",
+            "realm": "myrealm",
             "group": "two"
           }
         }
@@ -28,12 +28,11 @@
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
       "_updatedAt": "2018-09-17T15:05:42.939Z",
       "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
-      "_rev": 1,
-      "_deprecated": false
+      "_rev": 1
     },
     {
-      "@id": "https://bluebrain.github.io/nexus/acls/myorg/myproj2",
-      "@type": "nxv:Acls",
+      "@id": "https://nexus.example.com/v1/acls/myorg/myproj2",
+      "@type": "AccessControlList",
       "path": "/myorg/myproj2",
       "acl": [
         {
@@ -41,9 +40,9 @@
             "read"
           ],
           "identity": {
-            "@id": "https://nexus.example.com/v1/realm/users/me",
+            "@id": "https://nexus.example.com/v1/realms/myrealm/users/me",
             "@type": "UserRef",
-            "realm": "realm",
+            "realm": "myrealm",
             "sub": "me"
           }
         }
@@ -52,8 +51,7 @@
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:other",
       "_updatedAt": "2018-09-17T14:05:42.939Z",
       "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:other",
-      "_rev": 2,
-      "_deprecated": false
+      "_rev": 2
     }
   ]
 }
