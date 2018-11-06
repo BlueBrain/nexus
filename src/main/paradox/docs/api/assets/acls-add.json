@@ -28,7 +28,7 @@
       "identity": {
         "@type": "User",
         "realm": "realm",
-        "sub": "alice"
+        "subject": "alice"
       }
     }
   ]

@@ -17,7 +17,7 @@
     {
       "@type": "User",
       "realm": "BBP",
-      "sub": "name"
+      "subject": "name"
     }
   ],
   "priority": 50,

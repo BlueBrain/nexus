@@ -38,7 +38,7 @@
         "@id": "https://nexus.example.com/v1/realms/myrealm/users/user",
         "@type": "User",
         "realm": "myrealm",
-        "sub": "alice"
+        "subject": "alice"
       }
     }
   ],
