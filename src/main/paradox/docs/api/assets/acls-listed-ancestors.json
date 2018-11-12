@@ -1,0 +1,79 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/acls.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "@id": "https://nexus.example.com/v1/acls/",
+      "@type": "AccessControlList",
+      "path": "/",
+      "acl": [
+        {
+          "permissions": [
+            "acls/write"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realms/myrealm/groups/one",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "one"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:55:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_updatedAt": "2018-09-17T15:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_rev": 1
+    },
+    {
+      "@id": "https://nexus.example.com/v1/acls/myorg",
+      "@type": "AccessControlList",
+      "path": "/myorg",
+      "acl": [
+        {
+          "permissions": [
+            "acls/write"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realms/myrealm/groups/two",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "two"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/alice",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/alice",
+      "_rev": 2
+    },
+    {
+      "@id": "https://nexus.example.com/v1/acls/myorg2",
+      "@type": "nxv:AccessControlList",
+      "path": "/myorg2",
+      "acl": [
+        {
+          "permissions": [
+            "other"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realms/myrealm/groups/one",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "one"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/alice",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/alice",
+      "_rev": 1
+    }
+  ]
+}

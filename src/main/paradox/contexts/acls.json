@@ -1,0 +1,22 @@
+{
+  "@context": [
+    {
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+      "path": "nxv:path",
+      "AccessControlList": {
+        "@id": "nxv:AccessControlList",
+        "@type": "@id"
+      },
+      "acl": {
+        "@id": "nxv:accessControlList",
+        "@container": "@set"
+      },
+      "permissions": {
+        "@id": "nxv:permissions",
+        "@container": "@set"
+      }
+    },
+    "https://bluebrain.github.io/nexus/contexts/identity.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/contexts/acls.json"
+}

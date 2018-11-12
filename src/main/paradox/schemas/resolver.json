@@ -67,33 +67,33 @@
         },
         {
           "path": "nxv:identities",
-          "name": "UserRef identities",
+          "name": "User identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:UserRef"
+            "class": "nxv:User"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:UserRefIdentityShape"
+          "seeAlso": "this:UserIdentityShape"
         },
         {
           "path": "nxv:identities",
-          "name": "GroupRef identities",
+          "name": "Group identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:GroupRef"
+            "class": "nxv:Group"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:GroupRefIdentityShape"
+          "seeAlso": "this:GroupIdentityShape"
         },
         {
           "path": "nxv:identities",
-          "name": "AuthenticatedRef identities",
+          "name": "Group identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:AuthenticatedRef"
+            "class": "nxv:Group"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:AuthenticatedRefIdentityShape"
+          "seeAlso": "this:GroupIdentityShape"
         },
         {
           "path": "nxv:identities",
@@ -143,33 +143,33 @@
         },
         {
           "path": "nxv:identities",
-          "name": "UserRef identities",
+          "name": "User identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:UserRef"
+            "class": "nxv:User"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:UserRefIdentityShape"
+          "seeAlso": "this:UserIdentityShape"
         },
         {
           "path": "nxv:identities",
-          "name": "GroupRef identities",
+          "name": "Group identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:GroupRef"
+            "class": "nxv:Group"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:GroupRefIdentityShape"
+          "seeAlso": "this:GroupIdentityShape"
         },
         {
           "path": "nxv:identities",
-          "name": "AuthenticatedRef identities",
+          "name": "Group identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:AuthenticatedRef"
+            "class": "nxv:Group"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:AuthenticatedRefIdentityShape"
+          "seeAlso": "this:GroupIdentityShape"
         },
         {
           "path": "nxv:identities",
@@ -219,33 +219,33 @@
         },
         {
           "path": "nxv:identities",
-          "name": "UserRef identities",
+          "name": "User identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:UserRef"
+            "class": "nxv:User"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:UserRefIdentityShape"
+          "seeAlso": "this:UserIdentityShape"
         },
         {
           "path": "nxv:identities",
-          "name": "GroupRef identities",
+          "name": "Group identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:GroupRef"
+            "class": "nxv:Group"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:GroupRefIdentityShape"
+          "seeAlso": "this:GroupIdentityShape"
         },
         {
           "path": "nxv:identities",
-          "name": "AuthenticatedRef identities",
+          "name": "Group identities",
           "description": "The identities used to enforce security into this resolver.",
           "sh:qualifiedValueShape": {
-            "class": "nxv:AuthenticatedRef"
+            "class": "nxv:Group"
           },
           "qualifiedValueShapesDisjoint": true,
-          "seeAlso": "this:AuthenticatedRefIdentityShape"
+          "seeAlso": "this:GroupIdentityShape"
         },
         {
           "path": "nxv:identities",
@@ -260,7 +260,7 @@
       ]
     },
     {
-      "@id": "this:UserRefIdentityShape",
+      "@id": "this:UserIdentityShape",
       "@type": "sh:NodeShape",
       "nodeKind": "sh:BlankNode",
       "sh:closed": true,
@@ -273,7 +273,7 @@
           "minCount": 1,
           "maxCount": 1,
           "sh:hasValue": {
-            "@id": "nxv:UserRef"
+            "@id": "nxv:User"
           }
         },
         {
@@ -295,7 +295,7 @@
       ]
     },
     {
-      "@id": "this:GroupRefIdentityShape",
+      "@id": "this:GroupIdentityShape",
       "@type": "sh:NodeShape",
       "nodeKind": "sh:BlankNode",
       "sh:closed": true,
@@ -308,7 +308,7 @@
           "minCount": 1,
           "maxCount": 1,
           "sh:hasValue": {
-            "@id": "nxv:GroupRef"
+            "@id": "nxv:Group"
           }
         },
         {
@@ -330,7 +330,7 @@
       ]
     },
     {
-      "@id": "this:AuthenticatedRefIdentityShape",
+      "@id": "this:GroupIdentityShape",
       "@type": "sh:NodeShape",
       "nodeKind": "sh:BlankNode",
       "sh:closed": true,
@@ -343,7 +343,7 @@
           "minCount": 1,
           "maxCount": 1,
           "sh:hasValue": {
-            "@id": "nxv:AuthenticatedRef"
+            "@id": "nxv:Group"
           }
         },
         {

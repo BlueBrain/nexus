@@ -8,7 +8,7 @@ Each resource...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against a `schema` (`{schema_id}`).
 
-Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](../iam/authentication.md) in order to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Running examples with Postman" }
 

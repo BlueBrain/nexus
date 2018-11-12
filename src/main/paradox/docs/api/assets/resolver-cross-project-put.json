@@ -9,9 +9,8 @@
   ],
   "identities": [
     {
-      "@type": "UserRef",
-      "realm": "BBP",
-      "sub": "name"
+      "realm": "myrealm",
+      "subject": "name"
     }
   ],
   "priority": 50

@@ -4,7 +4,7 @@ Permissions are rooted in the `/v1/permissions` collection.
 
 Each permission is the basic unit to provide a way to limit applications' access to sensitive information.  
 
-Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](./authentication.md) in order to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
 
 
 ## Create permissions
@@ -54,7 +54,7 @@ Response
 :   @@snip [permissions-replaced-ref.json](../assets/permissions-replaced-ref.json)
 
 
-## Subtract certain permissions
+## Subtract permissions
 
 This operation removes the provided permissions from the existing collection of permissions.
 
@@ -76,7 +76,7 @@ Payload
 Response
 :   @@snip [permissions-subtracted-ref.json](../assets/permissions-subtracted-ref.json)
 
-## Append certain permissions
+## Append permissions
 
 This operation appends the provided permissions to the existing collection of  permissions.
 
@@ -97,7 +97,7 @@ Payload
 :   @@snip [permissions-append.json](../assets/permissions-append.json)
 
 Response
-:   @@snip [permissions-subtracted-ref.json](../assets/permissions-subtracted-ref.json)
+:   @@snip [permissions-appended-ref.json](../assets/permissions-appended-ref.json)
 
 ## Delete all permissions
 
@@ -105,7 +105,6 @@ This operation deletes the entire collection of permissions.
 
 ```
 DELETE /v1/permissions?rev={previous_rev}
-  {...}
 ```
 
 ...where ``{previous_rev}`` is the last known revision number for the permissions.

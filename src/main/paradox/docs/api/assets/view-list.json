@@ -95,9 +95,9 @@
       "_constrainedBy": "nxs:view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
       "_createdAt": "2018-09-18T16:39:22.748Z",
-      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2018-09-18T17:10:22.748Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_rev": 1,
       "_deprecated": false
     },
@@ -112,9 +112,9 @@
       "_constrainedBy": "nxs:view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
       "_createdAt": "2018-09-18T16:39:22.748Z",
-      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2018-09-18T17:10:22.748Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_rev": 1,
       "_deprecated": false
     },
@@ -155,9 +155,9 @@
       "_constrainedBy": "nxs:view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
       "_createdAt": "2018-09-18T16:39:22.748Z",
-      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2018-09-18T17:10:22.748Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_rev": 4,
       "_deprecated": true
     }
