@@ -6,7 +6,7 @@
         "read"
       ],
       "identity": {
-        "realm": "realm",
+        "realm": "myrealm",
         "group": "a-group"
       }
     }

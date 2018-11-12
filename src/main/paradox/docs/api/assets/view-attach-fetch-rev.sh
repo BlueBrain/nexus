@@ -1,1 +1,1 @@
-curl -XGET "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/attachments/myfile.jpg?rev=4"
+curl "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/attachments/myfile.jpg?rev=4"

@@ -36,7 +36,7 @@
       "identities": [
         {
           "@type": "User",
-          "realm": "BBP",
+          "realm": "myrealm",
           "subject": "name"
         }
       ],

@@ -5,10 +5,10 @@ Access Control Lists are rooted in the `/v1/acls` collection.
 An ACL defines the applications' data access restriction using the following three parameters:
          
 - permission: the value used to limit application's access to information.
-- identity: the way to identify individuals.
+- identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.
 - path: the address where to apply the restrictions. Examples of paths are: `/`, `/myorg` or `/myorg/myproject`
 
-Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](./authentication.md) in order to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
 
 ## ACLs Hierarchy
 

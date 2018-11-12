@@ -8,8 +8,7 @@
   ],
   "identities": [
     {
-      "@type": "Group",
-      "realm": "BBP",
+      "realm": "myRealm",
       "group": "some-project"
     }
   ],

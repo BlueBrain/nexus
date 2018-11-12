@@ -1,1 +1,1 @@
-curl -XGET "https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg?tag=mytag"
+curl "https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg?tag=mytag"

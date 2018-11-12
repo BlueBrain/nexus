@@ -1,1 +1,1 @@
-curl -XGET "https://nexus.example.com/v1/acls/myorg/*?ancestors=false&self=false"
+curl "https://nexus.example.com/v1/acls/myorg/*?ancestors=false&self=false"

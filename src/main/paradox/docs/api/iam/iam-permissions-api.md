@@ -4,7 +4,7 @@ Permissions are rooted in the `/v1/permissions` collection.
 
 Each permission is the basic unit to provide a way to limit applications' access to sensitive information.  
 
-Any resources in the system might be protected using an **access token**, provided by the HTTP header `Authorization: Bearer {access_token}`. Visit @ref:[Authentication](./authentication.md) in order to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
 
 
 ## Create permissions
