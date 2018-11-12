@@ -174,7 +174,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
       <li><a href="../../../docs/api/iam/iam-permissions-api.html" class="active page">Permissions</a></li>
-      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control List</a></li>
+      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control Lists</a></li>
     </ul></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
@@ -205,8 +205,8 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#create-permissions" class="header">Create permissions</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#replace-permissions" class="header">Replace permissions</a></li>
-    <li><a href="../../../docs/api/iam/iam-permissions-api.html#subtract-certain-permissions" class="header">Subtract certain permissions</a></li>
-    <li><a href="../../../docs/api/iam/iam-permissions-api.html#append-certain-permissions" class="header">Append certain permissions</a></li>
+    <li><a href="../../../docs/api/iam/iam-permissions-api.html#subtract-permissions" class="header">Subtract permissions</a></li>
+    <li><a href="../../../docs/api/iam/iam-permissions-api.html#append-permissions" class="header">Append permissions</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#delete-all-permissions" class="header">Delete all permissions</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#fetch-permissions-latest-revision-" class="header">Fetch permissions (latest revision)</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#fetch-permissions-specific-revision-" class="header">Fetch permissions (specific revision)</a></li>
@@ -235,8 +235,8 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#create-permissions" class="header">Create permissions</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#replace-permissions" class="header">Replace permissions</a></li>
-    <li><a href="../../../docs/api/iam/iam-permissions-api.html#subtract-certain-permissions" class="header">Subtract certain permissions</a></li>
-    <li><a href="../../../docs/api/iam/iam-permissions-api.html#append-certain-permissions" class="header">Append certain permissions</a></li>
+    <li><a href="../../../docs/api/iam/iam-permissions-api.html#subtract-permissions" class="header">Subtract permissions</a></li>
+    <li><a href="../../../docs/api/iam/iam-permissions-api.html#append-permissions" class="header">Append permissions</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#delete-all-permissions" class="header">Delete all permissions</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#fetch-permissions-latest-revision-" class="header">Fetch permissions (latest revision)</a></li>
     <li><a href="../../../docs/api/iam/iam-permissions-api.html#fetch-permissions-specific-revision-" class="header">Fetch permissions (specific revision)</a></li>
@@ -253,7 +253,7 @@ BlueBrain/nexus
 <h1><a href="#permissions" name="permissions" class="anchor"><span class="anchor-link"></span></a>Permissions</h1>
 <p>Permissions are rooted in the <code>/v1/permissions</code> collection.</p>
 <p>Each permission is the basic unit to provide a way to limit applications&rsquo; access to sensitive information. </p>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="authentication.html">Authentication</a> in order to learn more about how to retrieve an access token.</p>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
 <h2><a href="#create-permissions" name="create-permissions" class="anchor"><span class="anchor-link"></span></a>Create permissions</h2>
 <p>This operation creates the collection of permissions when it is empty.</p>
 <pre><code>PUT /v1/permissions
@@ -264,7 +264,13 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions&quot; -d &#39;{&quot;permissions&quot;: [&quot;read&quot;, &quot;write&quot;] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-add.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions&quot; -d \
+&#39;{
+  &quot;permissions&quot;: [
+    &quot;read&quot;,
+    &quot;write&quot;
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-add.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -280,11 +286,10 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:permissions&quot;,
   &quot;@type&quot;: &quot;nxv:Permissions&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 1
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-added-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#replace-permissions" name="replace-permissions" class="anchor"><span class="anchor-link"></span></a>Replace permissions</h2>
@@ -298,7 +303,13 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions?rev=1&quot; -d &#39;{&quot;permissions&quot;: [&quot;read&quot;, &quot;write&quot;] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-replace.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions?rev=1&quot; -d \
+&#39;{
+  &quot;permissions&quot;: [
+    &quot;read&quot;,
+    &quot;write&quot;
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-replace.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -314,14 +325,13 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:permissions&quot;,
   &quot;@type&quot;: &quot;nxv:Permissions&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:26:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
-  &quot;_rev&quot;: 2,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 2
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#subtract-certain-permissions" name="subtract-certain-permissions" class="anchor"><span class="anchor-link"></span></a>Subtract certain permissions</h2>
+<h2><a href="#subtract-permissions" name="subtract-permissions" class="anchor"><span class="anchor-link"></span></a>Subtract permissions</h2>
 <p>This operation removes the provided permissions from the existing collection of permissions.</p>
 <pre><code>PATCH /v1/permissions?rev={previous_rev}
   {...}
@@ -331,7 +341,13 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions?rev=2&quot; -d &#39;{&quot;@type&quot;: &quot;Subtract&quot;, &quot;permissions&quot;: [ &quot;write&quot;] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-subtract.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions?rev=2&quot; -d \
+&#39;{
+  &quot;@type&quot;: &quot;Subtract&quot;,
+  &quot;permissions&quot;: [
+    &quot;write&quot;
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-subtract.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -347,14 +363,13 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:permissions&quot;,
   &quot;@type&quot;: &quot;nxv:Permissions&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:35:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 3
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-subtracted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#append-certain-permissions" name="append-certain-permissions" class="anchor"><span class="anchor-link"></span></a>Append certain permissions</h2>
+<h2><a href="#append-permissions" name="append-permissions" class="anchor"><span class="anchor-link"></span></a>Append permissions</h2>
 <p>This operation appends the provided permissions to the existing collection of permissions.</p>
 <pre><code>PATCH /v1/permissions?rev={previous_rev}
   {...}
@@ -365,7 +380,13 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions?rev=3&quot; -d &#39;{&quot;@type&quot;: &quot;Append&quot;, &quot;permissions&quot;: [ &quot;create&quot;] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-append.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/permissions?rev=3&quot; -d \
+&#39;{
+  &quot;@type&quot;: &quot;Append&quot;,
+  &quot;permissions&quot;: [
+    &quot;create&quot;
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-append.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -381,17 +402,15 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:permissions&quot;,
   &quot;@type&quot;: &quot;nxv:Permissions&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:35:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-subtracted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 4
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-appended-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#delete-all-permissions" name="delete-all-permissions" class="anchor"><span class="anchor-link"></span></a>Delete all permissions</h2>
 <p>This operation deletes the entire collection of permissions.</p>
 <pre><code>DELETE /v1/permissions?rev={previous_rev}
-  {...}
 </code></pre>
 <p>&hellip;where <code>{previous_rev}</code> is the last known revision number for the permissions.</p>
 <dl>
@@ -405,11 +424,10 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:permissions&quot;,
   &quot;@type&quot;: &quot;nxv:Permissions&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:55:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
-  &quot;_rev&quot;: 5,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 5
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-deleted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-permissions-latest-revision-" name="fetch-permissions-latest-revision-" class="anchor"><span class="anchor-link"></span></a>Fetch permissions (latest revision)</h2>
@@ -427,11 +445,10 @@ BlueBrain/nexus
   &quot;@type&quot;: &quot;nxv:Permissions&quot;,
   &quot;permissions&quot;: [&quot;read&quot;],
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:55:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 3
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-get.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-permissions-specific-revision-" name="fetch-permissions-specific-revision-" class="anchor"><span class="anchor-link"></span></a>Fetch permissions (specific revision)</h2>
@@ -450,11 +467,10 @@ BlueBrain/nexus
   &quot;@type&quot;: &quot;nxv:Permissions&quot;,
   &quot;permissions&quot;: [&quot;read&quot;, &quot;write&quot;],
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 1
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/permissions-get-rev.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
@@ -488,13 +504,13 @@ Authentication
 </span>
 </div>
 </a>
-<a href="../../../docs/api/iam/iam-acls-api.html" title="Access Control List" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/iam/iam-acls-api.html" title="Access Control Lists" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Access Control List
+Access Control Lists
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

@@ -1,1 +1,4 @@
-curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/orgs/myorg" -d '{"name": "myname"}'
+curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/orgs/myorg" -d \
+'{
+  "name": "myname"
+}'

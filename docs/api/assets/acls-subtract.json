@@ -1,0 +1,14 @@
+{
+  "@type": "Subtract",
+  "acl": [
+    {
+      "permissions": [
+        "read"
+      ],
+      "identity": {
+        "realm": "myrealm",
+        "group": "a-group"
+      }
+    }
+  ]
+}

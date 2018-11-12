@@ -40,9 +40,9 @@
   "_constrainedBy": "nxs:shacl",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
   "_createdAt": "2018-09-17T14:54:42.939Z",
-  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
   "_updatedAt": "2018-09-17T14:54:42.939Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
   "_rev": 1,
   "_deprecated": false
 }

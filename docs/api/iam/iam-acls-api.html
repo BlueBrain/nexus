@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Access Control List · Blue Brain Nexus</title>
+<title>Access Control Lists · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Access Control List
+Access Control Lists
 </span>
 </div>
 </div>
@@ -174,7 +174,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
       <li><a href="../../../docs/api/iam/iam-permissions-api.html" class="page">Permissions</a></li>
-      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="active page">Access Control List</a></li>
+      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="active page">Access Control Lists</a></li>
     </ul></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
@@ -199,6 +199,20 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/api/iam/iam-acls-api.html#access-control-lists" class="header">Access Control Lists</a>
+  <ul>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#acls-hierarchy" class="header">ACLs Hierarchy</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#create-acls" class="header">Create ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#replace-acls" class="header">Replace ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#subtract-acls" class="header">Subtract ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#append-acls" class="header">Append ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#delete-acls" class="header">Delete ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#fetch-acls" class="header">Fetch ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#list-acls" class="header">List ACLs</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -212,10 +226,624 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/api/iam/iam-acls-api.html#access-control-lists" class="header">Access Control Lists</a>
+  <ul>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#acls-hierarchy" class="header">ACLs Hierarchy</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#create-acls" class="header">Create ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#replace-acls" class="header">Replace ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#subtract-acls" class="header">Subtract ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#append-acls" class="header">Append ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#delete-acls" class="header">Delete ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#fetch-acls" class="header">Fetch ACLs</a></li>
+    <li><a href="../../../docs/api/iam/iam-acls-api.html#list-acls" class="header">List ACLs</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#access-control-list" name="access-control-list" class="anchor"><span class="anchor-link"></span></a>Access Control List</h1>
+<h1><a href="#access-control-lists" name="access-control-lists" class="anchor"><span class="anchor-link"></span></a>Access Control Lists</h1>
+<p>Access Control Lists are rooted in the <code>/v1/acls</code> collection.</p>
+<p>An ACL defines the applications&rsquo; data access restriction using the following three parameters:</p>
+<ul>
+  <li>permission: the value used to limit a client (user, group) access to resources.</li>
+  <li>identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.</li>
+  <li>path: the location where to apply the restrictions. Examples of paths are: <code>/</code>, <code>/myorg</code> or <code>/myorg/myproject</code></li>
+</ul>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
+<h2><a href="#acls-hierarchy" name="acls-hierarchy" class="anchor"><span class="anchor-link"></span></a>ACLs Hierarchy</h2>
+<p>It is important to know that ACLs are represented in a tree-like structure depending on their path. Imagine the following scenario: <img src="../assets/permissions-tree.png" alt="Resources tree" title="Permissions tree" /></p>
+<p>Each block is identified by a path that contains a list of permissions for a certain identity (identities are color code divided). </p>
+<p>There is a special set of permissions which restrict the use of the ACLs API:</p>
+<ul>
+  <li><strong>acls/read</strong> - an auth. token containing an identity with this permission is allowed to fetch a collection of ACL from any other identity.</li>
+  <li><strong>acls/write</strong> - an auth. token containing an identity with this permission is allowed to perform the call to the following endpoints: <a href="#create-acls">create ACLs</a>, <a href="#replace-acls">replace ACLs</a>, <a href="#subtract-acls">subtract ACLs</a>, <a href="#append-acls">append ACLs</a> and <a href="#delete-acls">delete ACLs</a>.</li>
+</ul>
+<p>Those permissions need to be present in the current <code>{path}</code> where the API interaction occurs or in any parent path. In other words, they are inherited.</p>
+<p>Let&rsquo;s clarify this concept with an example from the previous diagram. <code>identity 1</code> could call the <a href="#create-acls">create ACLs</a> endpoint on any <code>{path}</code> while <code>identity 2</code> could only call the same endpoint for any path child of <code>/myorg</code> (like <code>/myorg/myproj</code>). At the same time, <code>identity 3</code> could not perform any of the write operations.</p>
+<h2><a href="#create-acls" name="create-acls" class="anchor"><span class="anchor-link"></span></a>Create ACLs</h2>
+<p>This operation creates a collection of ACL on the provided path.</p>
+<pre><code>PUT /v1/acls/{path}
+  {...}
+</code></pre>
+<p>&hellip;where <code>{path}</code> is the target location for the ACL collection.</p>
+<p>The json payload contains the collection of ACL to set.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1&quot; -d  \
+&#39;{
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;,
+        &quot;write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;realm&quot;,
+        &quot;group&quot;: &quot;some-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;acls/read&quot;,
+        &quot;acls/write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;realm&quot;,
+        &quot;subject&quot;: &quot;alice&quot;
+      }
+    }
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-add.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;,
+        &quot;write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;some-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;acls/read&quot;,
+        &quot;acls/write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;subject&quot;: &quot;alice&quot;
+      }
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-add.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
+  &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 1
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-added-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#replace-acls" name="replace-acls" class="anchor"><span class="anchor-link"></span></a>Replace ACLs</h2>
+<p>This operation overrides the collection of ACL on the provided path.</p>
+<pre><code>PUT /v1/acls/{path}?rev={previous_rev}
+  {...}
+</code></pre>
+<p>&hellip;where:</p>
+<ul>
+  <li><code>{previous_rev}</code>: Number - the last known revision for the ACL collection.</li>
+  <li><code>{path}</code>: String - is the target location for the ACL collection.</li>
+</ul>
+<p>The json payload contains the collection of ACL to set.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=1&quot; -d \
+&#39;{
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;,
+        &quot;write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;realm&quot;,
+        &quot;group&quot;: &quot;some-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;acls/read&quot;,
+        &quot;acls/write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;realm&quot;,
+        &quot;subject&quot;: &quot;alice&quot;
+      }
+    }
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-replace.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;,
+        &quot;write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;some-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;acls/read&quot;,
+        &quot;acls/write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;subject&quot;: &quot;alice&quot;
+      }
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-add.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
+  &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:07:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 2
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#subtract-acls" name="subtract-acls" class="anchor"><span class="anchor-link"></span></a>Subtract ACLs</h2>
+<p>This operation removes the provided ACL collection from the existing collection of ACL on the provided path.</p>
+<pre><code>PATCH /v1/acls/{path}?rev={previous_rev}
+  {...}
+</code></pre>
+<p>&hellip;where:</p>
+<ul>
+  <li><code>{previous_rev}</code>: Number - the last known revision for the ACL collection.</li>
+  <li><code>{path}</code>: String - is the target location for the ACL collection.</li>
+</ul>
+<p>The json payload contains the collection of ACL to remove.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=2&quot; -d \
+&#39;{
+  &quot;@type&quot;: &quot;Subtract&quot;,
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;group&quot;: &quot;a-group&quot;,
+        &quot;realm&quot;: &quot;myrealm&quot;
+      }
+    }
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-subtract.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@type&quot;: &quot;Subtract&quot;,
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-subtract.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
+  &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:10:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 3
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-subtracted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#append-acls" name="append-acls" class="anchor"><span class="anchor-link"></span></a>Append ACLs</h2>
+<p>This operation appends the provided ACL collection to the existing collection of ACL on the provided path.</p>
+<pre><code>PATCH /v1/acls/{path}?rev={previous_rev}
+  {...}
+</code></pre>
+<p>&hellip;where:</p>
+<ul>
+  <li><code>{previous_rev}</code>: Number - the last known revision for the ACL collection.</li>
+  <li><code>{path}</code>: String - is the target location for the ACL collection.</li>
+</ul>
+<p>The json payload contains the collection of ACL to add.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=3&quot; -d  \
+&#39;{
+  &quot;@type&quot;: &quot;Append&quot;,
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;own&quot;,
+        &quot;other&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    }
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-append.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@type&quot;: &quot;Append&quot;,
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;own&quot;,
+        &quot;other&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-append.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
+  &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:15:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 4
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-appended-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#delete-acls" name="delete-acls" class="anchor"><span class="anchor-link"></span></a>Delete ACLs</h2>
+<p>This operation deletes the entire collection of ACL on the provided path.</p>
+<pre><code>DELETE /v1/acls/{path}?rev={previous_rev}
+</code></pre>
+<p>&hellip;where:</p>
+<ul>
+  <li><code>{previous_rev}</code>: Number - the last known revision for the ACL collection.</li>
+  <li><code>{path}</code>: String - is the target location for the ACL collection.</li>
+</ul>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/acls/org1?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-delete.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
+  &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 5
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-deleted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-acls" name="fetch-acls" class="anchor"><span class="anchor-link"></span></a>Fetch ACLs</h2>
+<pre><code>GET /v1/acls/{path}?rev={rev}&amp;self={self}
+</code></pre>
+<p>&hellip;where </p>
+<ul>
+  <li><code>{path}</code>: String - is the target location for the ACL collection.</li>
+  <li><code>{rev}</code>: Number - the revision of the ACL to be retrieved. This parameter is optional and it defaults to the current revision.</li>
+  <li><code>{self}</code>: Boolean - if <code>true</code>, only the ACLs containing the identities found on the auth. token are included in the response. If <code>false</code> all the ACLs on the current <code>{path}</code> are included. This parameter is optional and it defaults to <code>true</code>.</li>
+</ul>
+<p>The ability to use the query parameter <code>self=false</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its parents. For further details, check <a href="#acls-hierarchy">ACLs hierarchy</a>.</p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/org1?rev=1&amp;self=false&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-get.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
+  &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
+  &quot;path&quot;: &quot;/org1&quot;,
+  &quot;acl&quot;: [
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/groups/a-group&quot;,
+        &quot;@type&quot;: &quot;Group&quot;,
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;a-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;read&quot;,
+        &quot;write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/groups/some-group&quot;,
+        &quot;@type&quot;: &quot;Group&quot;,
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;group&quot;: &quot;some-group&quot;
+      }
+    },
+    {
+      &quot;permissions&quot;: [
+        &quot;acls/read&quot;,
+        &quot;acls/write&quot;
+      ],
+      &quot;identity&quot;: {
+        &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/user&quot;,
+        &quot;@type&quot;: &quot;User&quot;,
+        &quot;realm&quot;: &quot;myrealm&quot;,
+        &quot;subject&quot;: &quot;alice&quot;
+      }
+    }
+  ],
+  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 1
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#list-acls" name="list-acls" class="anchor"><span class="anchor-link"></span></a>List ACLs</h2>
+<pre><code>GET /v1/acls/{path}?ancestors={ancestors}&amp;self={self}
+</code></pre>
+<p>&hellip;where </p>
+<ul>
+  <li><code>{path}</code>: String - is the target location for the ACL collection.</li>
+  <li><code>{ancestors}</code>: Boolean - if <code>true</code>, the ACLs of the parent <code>{path}</code> are included in the response. If <code>false</code> only the ACLs on the current <code>{path}</code> are included. This parameter is optional and it defaults to <code>false</code>.</li>
+  <li><code>{self}</code>: Boolean - if <code>true</code>, only the ACLs containing the identities found on the auth. token are included in the response. If <code>false</code> all the ACLs on the current <code>{path}</code> are included. This parameter is optional and it defaults to <code>true</code>.</li>
+</ul>
+<p>The ability to use the query parameter <code>self=false</code> and <code>ancestors=true</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its parents. For further details, check <a href="#acls-hierarchy">ACLs hierarchy</a>.</p>
+<p>The <code>{path}</code> can contain the special character <code>*</code> which can be read as <code>any</code>. </p>
+<p>Let&rsquo;s imagine we have the ACLs from the <a href="#acls-hierarchy">following diagram in place</a>. If we query this endpoint with the path <code>/myorg/*</code>, we are selecting the ACLs defined in <code>/myorg/myproj</code> and <code>myorg/myproj2</code>. Likewise If we use the path <code>/*</code>, we are selecting the ACLs defined in <code>/myorg</code> and <code>myorg2</code>.</p>
+<p>The following examples illustrate listings from the diagram on the section <a href="#acls-hierarchy">ACLs hierarchy</a> with the following considerations:</p>
+<ul>
+  <li>identity 1: Is a group called <code>one</code></li>
+  <li>identity 2: Is a group called <code>two</code></li>
+  <li>identity 3: Is a user called <code>me</code></li>
+  <li>The auth. token is linked to the <code>identity 1</code>.</li>
+</ul>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/*?ancestors=true&amp;self=true&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
+  ],
+  &quot;_total&quot;: 2,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/myorg/myproj&quot;,
+      &quot;@type&quot;: &quot;AccessControlList&quot;,
+      &quot;path&quot;: &quot;/myorg/myproj&quot;,
+      &quot;acl&quot;: [
+        {
+          &quot;permissions&quot;: [
+            &quot;read&quot;,
+            &quot;write&quot;
+          ],
+          &quot;identity&quot;: {
+            &quot;@id&quot;: &quot;https://nexus.example.com/v1/realm/groups/two&quot;,
+            &quot;@type&quot;: &quot;Group&quot;,
+            &quot;realm&quot;: &quot;myrealm&quot;,
+            &quot;group&quot;: &quot;two&quot;
+          }
+        }
+      ],
+      &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-17T15:05:42.939Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_rev&quot;: 1
+    },
+    {
+      &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/myorg/myproj2&quot;,
+      &quot;@type&quot;: &quot;AccessControlList&quot;,
+      &quot;path&quot;: &quot;/myorg/myproj2&quot;,
+      &quot;acl&quot;: [
+        {
+          &quot;permissions&quot;: [
+            &quot;read&quot;
+          ],
+          &quot;identity&quot;: {
+            &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/me&quot;,
+            &quot;@type&quot;: &quot;User&quot;,
+            &quot;realm&quot;: &quot;myrealm&quot;,
+            &quot;subject&quot;: &quot;me&quot;
+          }
+        }
+      ],
+      &quot;_createdAt&quot;: &quot;2018-09-17T14:00:42.939Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-17T14:05:42.939Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;,
+      &quot;_rev&quot;: 2
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-listed.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Request (with ancestors)
+  </dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/myorg/*?ancestors=false&amp;self=false&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-list-ancestors.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response (with ancestors)
+  </dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  ],
+  &quot;_total&quot;: 3,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/&quot;,
+      &quot;@type&quot;: &quot;AccessControlList&quot;,
+      &quot;path&quot;: &quot;/&quot;,
+      &quot;acl&quot;: [
+        {
+          &quot;permissions&quot;: [
+            &quot;acls/write&quot;
+          ],
+          &quot;identity&quot;: {
+            &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/groups/one&quot;,
+            &quot;@type&quot;: &quot;Group&quot;,
+            &quot;realm&quot;: &quot;myrealm&quot;,
+            &quot;group&quot;: &quot;one&quot;
+          }
+        }
+      ],
+      &quot;_createdAt&quot;: &quot;2018-09-17T14:55:42.939Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-17T15:05:42.939Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_rev&quot;: 1
+    },
+    {
+      &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/myorg&quot;,
+      &quot;@type&quot;: &quot;AccessControlList&quot;,
+      &quot;path&quot;: &quot;/myorg&quot;,
+      &quot;acl&quot;: [
+        {
+          &quot;permissions&quot;: [
+            &quot;acls/write&quot;
+          ],
+          &quot;identity&quot;: {
+            &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/groups/two&quot;,
+            &quot;@type&quot;: &quot;Group&quot;,
+            &quot;realm&quot;: &quot;myrealm&quot;,
+            &quot;group&quot;: &quot;two&quot;
+          }
+        }
+      ],
+      &quot;_createdAt&quot;: &quot;2018-09-17T14:00:42.939Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-17T14:05:42.939Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;,
+      &quot;_rev&quot;: 2
+    },
+    {
+      &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/myorg2&quot;,
+      &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
+      &quot;path&quot;: &quot;/myorg2&quot;,
+      &quot;acl&quot;: [
+        {
+          &quot;permissions&quot;: [
+            &quot;other&quot;
+          ],
+          &quot;identity&quot;: {
+            &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/groups/one&quot;,
+            &quot;@type&quot;: &quot;Group&quot;,
+            &quot;realm&quot;: &quot;myrealm&quot;,
+            &quot;group&quot;: &quot;one&quot;
+          }
+        }
+      ],
+      &quot;_createdAt&quot;: &quot;2018-09-17T14:00:42.939Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-17T14:05:42.939Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;,
+      &quot;_rev&quot;: 1
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/acls-listed-ancestors.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/iam/iam-acls-api.md" title="Edit this page" class="md-source-file md-edit">

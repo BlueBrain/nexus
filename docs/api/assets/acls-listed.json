@@ -1,0 +1,57 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/acls.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 2,
+  "_results": [
+    {
+      "@id": "https://nexus.example.com/v1/acls/myorg/myproj",
+      "@type": "AccessControlList",
+      "path": "/myorg/myproj",
+      "acl": [
+        {
+          "permissions": [
+            "read",
+            "write"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realm/groups/two",
+            "@type": "Group",
+            "realm": "myrealm",
+            "group": "two"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:55:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_updatedAt": "2018-09-17T15:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_rev": 1
+    },
+    {
+      "@id": "https://nexus.example.com/v1/acls/myorg/myproj2",
+      "@type": "AccessControlList",
+      "path": "/myorg/myproj2",
+      "acl": [
+        {
+          "permissions": [
+            "read"
+          ],
+          "identity": {
+            "@id": "https://nexus.example.com/v1/realms/myrealm/users/me",
+            "@type": "User",
+            "realm": "myrealm",
+            "subject": "me"
+          }
+        }
+      ],
+      "_createdAt": "2018-09-17T14:00:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/alice",
+      "_updatedAt": "2018-09-17T14:05:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/alice",
+      "_rev": 2
+    }
+  ]
+}

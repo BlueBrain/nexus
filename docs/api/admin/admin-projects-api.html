@@ -174,7 +174,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
       <li><a href="../../../docs/api/iam/iam-permissions-api.html" class="page">Permissions</a></li>
-      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control List</a></li>
+      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control Lists</a></li>
     </ul></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
@@ -275,7 +275,7 @@ BlueBrain/nexus
   <li>belongs to an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/project">project schema</a>.</li>
 </ul>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam/authentication.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
 <p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/project-postman.json">projects collection</a>.</p>
 <p>If your deployment is protected by an access token: </p>
 <p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
@@ -345,7 +345,25 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg/myproject&quot; -d &#39;{&quot;name&quot;: &quot;example project creation&quot;, &quot;base&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;, &quot;prefixMappings&quot;: [{&quot;prefix&quot;: &quot;person&quot;, &quot;namespace&quot;: &quot;http://example.com/some/person&quot;}, {&quot;prefix&quot;: &quot;schemas&quot;, &quot;namespace&quot;: &quot;https://bluebrain.github.io/nexus/schemas/&quot;}, {&quot;prefix&quot;: &quot;ex&quot;, &quot;namespace&quot;: &quot;http://example.com/&quot;} ] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg/myproject&quot; -d \
+&#39;{
+  &quot;name&quot;: &quot;example project creation&quot;,
+  &quot;base&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
+  &quot;prefixMappings&quot;: [
+    {
+      &quot;prefix&quot;: &quot;person&quot;,
+      &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
+    },
+    {
+      &quot;prefix&quot;: &quot;schemas&quot;,
+      &quot;namespace&quot;: &quot;https://bluebrain.github.io/nexus/schemas/&quot;
+    },
+    {
+      &quot;prefix&quot;: &quot;ex&quot;,
+      &quot;namespace&quot;: &quot;http://example.com/&quot;
+    }
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -375,9 +393,9 @@ BlueBrain/nexus
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -397,7 +415,25 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/projects/myorg/myproject?rev=1&quot; -d &#39;{&quot;name&quot;: &quot;example project creation&quot;, &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;, &quot;prefixMappings&quot;: [{&quot;prefix&quot;: &quot;person&quot;, &quot;namespace&quot;: &quot;http://example.com/some/person&quot;}, {&quot;prefix&quot;: &quot;schemas&quot;, &quot;namespace&quot;: &quot;https://bluebrain.github.io/nexus/schemas/&quot;}, {&quot;prefix&quot;: &quot;ex&quot;, &quot;namespace&quot;: &quot;http://example.com/&quot;} ] }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/projects/myorg/myproject?rev=1&quot; -d \
+&#39;{
+  &quot;name&quot;: &quot;example project creation&quot;,
+  &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;,
+  &quot;prefixMappings&quot;: [
+    {
+      &quot;prefix&quot;: &quot;person&quot;,
+      &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
+    },
+    {
+      &quot;prefix&quot;: &quot;schemas&quot;,
+      &quot;namespace&quot;: &quot;https://bluebrain.github.io/nexus/schemas/&quot;
+    },
+    {
+      &quot;prefix&quot;: &quot;ex&quot;,
+      &quot;namespace&quot;: &quot;http://example.com/&quot;
+    }
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -427,9 +463,9 @@ BlueBrain/nexus
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -454,7 +490,11 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/projects/myorg/myproject/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/projects/myorg/myproject/tags?rev=2&quot; -d \
+&#39;{
+  &quot;tag&quot;: &quot;mytag&quot;,
+  &quot;rev&quot;: 1
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -470,9 +510,9 @@ BlueBrain/nexus
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:20:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -501,9 +541,9 @@ BlueBrain/nexus
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -540,13 +580,13 @@ BlueBrain/nexus
     }
   ],
   &quot;_label&quot;: &quot;myproject&quot;,
-  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;
+  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;,
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -587,13 +627,13 @@ BlueBrain/nexus
     }
   ],
   &quot;_label&quot;: &quot;myproject&quot;,
-  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;
+  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;,
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -634,13 +674,13 @@ BlueBrain/nexus
     }
   ],
   &quot;_label&quot;: &quot;myproject&quot;,
-  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;
+  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;,
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
   &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -666,9 +706,9 @@ BlueBrain/nexus
     {
       &quot;path&quot;: &quot;/&quot;,
       &quot;identity&quot;: {
-        &quot;@id&quot;: &quot;https://nexus.example.com/v1/v1/realms/BBP/groups/some-group&quot;,
-        &quot;@type&quot;: &quot;GroupRef&quot;,
-        &quot;realm&quot;: &quot;BBP&quot;,
+        &quot;@id&quot;: &quot;https://nexus.example.com/v1/v1/realms/myrealm/groups/some-group&quot;,
+        &quot;@type&quot;: &quot;Group&quot;,
+        &quot;realm&quot;: &quot;myrealm&quot;,
         &quot;group&quot;: &quot;some-group&quot;
       },
       &quot;permissions&quot;: [
@@ -714,9 +754,9 @@ BlueBrain/nexus
       &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
       &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
       &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_rev&quot;: 4,
       &quot;_deprecated&quot;: true
     }
@@ -753,9 +793,9 @@ BlueBrain/nexus
       &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
       &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
       &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_rev&quot;: 4,
       &quot;_deprecated&quot;: true
     }

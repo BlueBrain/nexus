@@ -174,7 +174,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
       <li><a href="../../../docs/api/iam/iam-permissions-api.html" class="page">Permissions</a></li>
-      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control List</a></li>
+      <li><a href="../../../docs/api/iam/iam-acls-api.html" class="page">Access Control Lists</a></li>
     </ul></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
@@ -288,7 +288,7 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/resolver">resolver schema</a>.</li>
 </ul>
-<p>Any resources in the system might be protected using an <strong>access token</strong>, provided by the HTTP header <code>Authorization: Bearer {access_token}</code>. Visit <a href="../iam/authentication.html">Authentication</a> in order to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
 <p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/resolver-postman.json">resolvers collection</a>.</p>
 <p>If your deployment is protected by an access token: </p>
 <p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
@@ -335,7 +335,23 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;InAccount&quot;], &quot;resourceTypes&quot;: [&quot;nxv:Schema&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;GroupRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;group&quot;: &quot;some-project&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-in-account-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d \
+&#39;{
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;InAccount&quot;
+  ],
+  &quot;resourceTypes&quot;: [
+    &quot;nxv:Schema&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;group&quot;: &quot;some-project&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-in-account-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -348,8 +364,7 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;GroupRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
+      &quot;realm&quot;: &quot;myRealm&quot;,
       &quot;group&quot;: &quot;some-project&quot;
     }
   ],
@@ -368,9 +383,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-in-account-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -403,7 +418,24 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d \
+&#39;{
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;org1/project1&quot;,
+    &quot;org1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -418,9 +450,8 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;UserRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
-      &quot;sub&quot;: &quot;name&quot;
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
     }
   ],
   &quot;priority&quot;: 50
@@ -438,9 +469,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -458,7 +489,25 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj&quot; -d &#39;{&quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;, &quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj&quot; -d \
+&#39;{
+  &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myresolver&quot;,
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;org1/project1&quot;,
+    &quot;org1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -473,9 +522,8 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;UserRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
-      &quot;sub&quot;: &quot;name&quot;
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
     }
   ],
   &quot;priority&quot;: 50
@@ -493,9 +541,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -510,7 +558,24 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver&quot; -d \
+&#39;{
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;org1/project1&quot;,
+    &quot;org1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -524,9 +589,8 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;UserRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
-      &quot;sub&quot;: &quot;name&quot;
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
     }
   ],
   &quot;priority&quot;: 50
@@ -544,9 +608,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -562,7 +626,24 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?rev=1&quot; -d &#39;{&quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;], &quot;projects&quot;: [&quot;org1/project1&quot;, &quot;org1/project2&quot;], &quot;identities&quot;: [{&quot;@type&quot;: &quot;UserRef&quot;, &quot;realm&quot;: &quot;BBP&quot;, &quot;sub&quot;: &quot;name&quot;} ], &quot;priority&quot;: 50 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver?rev=1&quot; -d \
+&#39;{
+  &quot;@type&quot;: [
+    &quot;Resolver&quot;,
+    &quot;CrossProject&quot;
+  ],
+  &quot;projects&quot;: [
+    &quot;org1/project1&quot;,
+    &quot;org1/project2&quot;
+  ],
+  &quot;identities&quot;: [
+    {
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
+    }
+  ],
+  &quot;priority&quot;: 50
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -577,9 +658,8 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;UserRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
-      &quot;sub&quot;: &quot;name&quot;
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
     }
   ],
   &quot;priority&quot;: 50
@@ -597,9 +677,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:10:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -623,7 +703,11 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/tags?rev=2&quot; -d &#39;{&quot;tag&quot;: &quot;mytag&quot;, &quot;rev&quot;: 1}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/tags?rev=2&quot; -d \
+&#39;{
+  &quot;tag&quot;: &quot;mytag&quot;,
+  &quot;rev&quot;: 1
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -643,9 +727,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 3,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -690,9 +774,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-attached.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -724,9 +808,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 5,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-unattached.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -739,7 +823,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XGET &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-attach-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-attach-fetch.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-attachment-from-a-resolver-specific-revision-" name="fetch-attachment-from-a-resolver-specific-revision-" class="anchor"><span class="anchor-link"></span></a>Fetch attachment from a resolver (specific revision)</h2>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/atachments/{name}?rev={rev}
@@ -749,7 +833,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XGET &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-attach-fetch-rev.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-attach-fetch-rev.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-attachment-from-a-resolver-specific-tag-" name="fetch-attachment-from-a-resolver-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch attachment from a resolver (specific tag)</h2>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/atachments/{name}?tag={tag}
@@ -759,7 +843,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XGET &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-attach-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/attachments/myfile.jpg?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-attach-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#deprecate-a-resolver" name="deprecate-a-resolver" class="anchor"><span class="anchor-link"></span></a>Deprecate a resolver</h2>
 <p>Locks the resolver, so no further operations can be performed. It will also not be taken into account in the resolution process.</p>
@@ -785,9 +869,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 6,
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-cross-project-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -819,9 +903,9 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;UserRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
-      &quot;sub&quot;: &quot;name&quot;
+      &quot;@type&quot;: &quot;User&quot;,
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
     }
   ],
   &quot;priority&quot;: 50,
@@ -829,9 +913,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -864,9 +948,9 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;UserRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
-      &quot;sub&quot;: &quot;name&quot;
+      &quot;@type&quot;: &quot;User&quot;,
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
     }
   ],
   &quot;priority&quot;: 50,
@@ -874,9 +958,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 4,
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -909,9 +993,9 @@ BlueBrain/nexus
   ],
   &quot;identities&quot;: [
     {
-      &quot;@type&quot;: &quot;UserRef&quot;,
-      &quot;realm&quot;: &quot;BBP&quot;,
-      &quot;sub&quot;: &quot;name&quot;
+      &quot;@type&quot;: &quot;User&quot;,
+      &quot;realm&quot;: &quot;myrealm&quot;,
+      &quot;subject&quot;: &quot;name&quot;
     }
   ],
   &quot;priority&quot;: 50,
@@ -919,9 +1003,9 @@ BlueBrain/nexus
   &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/resolver-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -962,9 +1046,9 @@ BlueBrain/nexus
       &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
       &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
       &quot;_createdAt&quot;: &quot;2018-09-18T09:50:00.801Z&quot;,
-      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_updatedAt&quot;: &quot;2018-09-18T10:00:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_rev&quot;: 1,
       &quot;_deprecated&quot;: true
     },
@@ -980,9 +1064,9 @@ BlueBrain/nexus
       ],
       &quot;identities&quot;: [
         {
-          &quot;@type&quot;: &quot;UserRef&quot;,
-          &quot;realm&quot;: &quot;BBP&quot;,
-          &quot;sub&quot;: &quot;name&quot;
+          &quot;@type&quot;: &quot;User&quot;,
+          &quot;realm&quot;: &quot;myrealm&quot;,
+          &quot;subject&quot;: &quot;name&quot;
         }
       ],
       &quot;priority&quot;: 50,
@@ -990,9 +1074,9 @@ BlueBrain/nexus
       &quot;_constrainedBy&quot;: &quot;nxs:resolver&quot;,
       &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
       &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/f:ad46ddd6-134e-44d6-ab70-bdf00f48dfce:someone&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_rev&quot;: 4,
       &quot;_deprecated&quot;: true
     }
