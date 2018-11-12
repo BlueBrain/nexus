@@ -13,7 +13,7 @@
       "acl": [
         {
           "permissions": [
-            "acls/read"
+            "acls/write"
           ],
           "identity": {
             "@id": "https://nexus.example.com/v1/realms/myrealm/groups/one",
