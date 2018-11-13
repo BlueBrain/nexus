@@ -5,5 +5,8 @@ The deployment configuration and the number of nodes assigned to each Nexus serv
 
 ![deployment configuration](../../assets/img/performance_tests_environment.png)
 
+The benchmarks were run on a AWS EC2 `m5.large` server outside of the Kubernetes cluster.
 
-The benchmarks were run on a AWS EC2 `m5.2xlarge` server outside of the Kubernetes cluster.
+Preliminary tests shows that KG service is the most critical component of the system (as expected) and it has the most
+impact of the performance aspects of the system. Thus, during the tests the KG service cluster size was scaled to 1, 2,
+4 and 6 replicas along with the number of concurrent connections (using the same multiplier) during the test executions.
