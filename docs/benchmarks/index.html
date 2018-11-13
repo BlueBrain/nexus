@@ -188,7 +188,7 @@ BlueBrain/nexus
   <li><a href="../../docs/benchmarks/index.html" class="active page">Benchmarks</a>
   <ul>
     <li><a href="../../docs/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html" class="page">Scenarios</a></li>
+    <li><a href="../../docs/benchmarks/data-volume-and-scenarios.html" class="page">Data volume and scenarios</a></li>
     <li><a href="../../docs/benchmarks/results.html" class="page">Results</a></li>
   </ul></li>
   <li><a href="../../docs/additional-info/index.html" class="page">Additional Information</a>
@@ -227,9 +227,8 @@ BlueBrain/nexus
   <li><strong>hardware configuration and scalability</strong> - does assigning more hardware increase the performance of the system and can the system scale both horizontally and vertically.</li>
   <li><strong>clustering</strong> - what&rsquo;s the effect of changing from a single node to clustered deployment, as well as, what&rsquo;s the effect of adding more nodes to the cluster.</li>
 </ul>
-<p>The description of the test scenarios can be found <a href="scenarios.html">here</a>. The test scenarios and scripts can be found in <a href="https://github.com/BlueBrain/nexus-tests">nexus-tests</a> repository. The results of the benchmarks are described in detail in the <a href="results.html">Results section</a>.</p>
-<p>The benchmarks were run on a Kubernetes cluster deployed on AWS. Fore more details see <a href="deployment-configuration.html">deployment configuration</a>. The tests were run against v1 API of Nexus in October 2018.</p>
-<p>The benchmarks were using <code>final_number_of_instances</code> million of instances distributed in <code>final_number_of_projects</code> of projects.</p>
+<p>The description of the test scenarios can be found <a href="data-volume-and-scenarios.html">here</a>. The test scenarios and scripts can be found in <a href="https://github.com/BlueBrain/nexus-tests">nexus-tests</a> repository. The results of the benchmarks are described in detail in the <a href="results.html">Results section</a>.</p>
+<p>The benchmarks were run on a Kubernetes cluster deployed on AWS. Fore more details see <a href="deployment-configuration.html">deployment configuration</a>. The tests were run against v1 API of Nexus in November 2018 using <a href="https://gatling.io/">Gatling</a> version 3.0.0.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/benchmarks/index.md" title="Edit this page" class="md-source-file md-edit">

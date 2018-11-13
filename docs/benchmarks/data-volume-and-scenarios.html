@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Scenarios · Blue Brain Nexus</title>
+<title>Data volume and scenarios · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Scenarios
+Data volume and scenarios
 </span>
 </div>
 </div>
@@ -188,7 +188,7 @@ BlueBrain/nexus
   <li><a href="../../docs/benchmarks/index.html" class="page">Benchmarks</a>
   <ul>
     <li><a href="../../docs/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html" class="active page">Scenarios</a></li>
+    <li><a href="../../docs/benchmarks/data-volume-and-scenarios.html" class="active page">Data volume and scenarios</a></li>
     <li><a href="../../docs/benchmarks/results.html" class="page">Results</a></li>
   </ul></li>
   <li><a href="../../docs/additional-info/index.html" class="page">Additional Information</a>
@@ -199,23 +199,6 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../docs/benchmarks/scenarios.html#scenarios" class="header">Scenarios</a>
-  <ul>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/CreateSimulation.scala">Upload scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FetchSimulation.scala">Fetch scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/UpdateSimulation.scala">Update scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/GetByRevSimulation.scala">Fetch by revision scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/TagSimulation.scala">Tagging scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/GetByTagSimulation.scala">Fetch by tag scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/ElasticSearchSimulation.scala">ElasticSearch search scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/BlazegraphSimulation.scala">Blazegraph search scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/AddAttachmentSimulation.scala">Add attachments scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FetchAttachmentSimulation.scala">Fetch attachments scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FullSimulation.scala">Mixed scenario</a></a></li>
-  </ul></li>
-</ul>
 </nav>
 
 </nav>
@@ -229,62 +212,37 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../docs/benchmarks/scenarios.html#scenarios" class="header">Scenarios</a>
-  <ul>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/CreateSimulation.scala">Upload scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FetchSimulation.scala">Fetch scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/UpdateSimulation.scala">Update scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/GetByRevSimulation.scala">Fetch by revision scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/TagSimulation.scala">Tagging scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/GetByTagSimulation.scala">Fetch by tag scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/ElasticSearchSimulation.scala">ElasticSearch search scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/BlazegraphSimulation.scala">Blazegraph search scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/AddAttachmentSimulation.scala">Add attachments scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FetchAttachmentSimulation.scala">Fetch attachments scenario</a></a></li>
-    <li><a href="../../docs/benchmarks/scenarios.html#" class="header"><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FullSimulation.scala">Mixed scenario</a></a></li>
-  </ul></li>
-</ul>
-</nav>
-
-</div>
-</div>
-</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#scenarios" name="scenarios" class="anchor"><span class="anchor-link"></span></a>Scenarios</h1>
-<p>All the scenarios are based on a provenance pattern which spans multiple entities.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/CreateSimulation.scala">Upload scenario</a></h2>
-<p>This scenario creates a specified number o resources in a project using a prepared provenance template. The number of threads used to perform the upload can be customized.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FetchSimulation.scala">Fetch scenario</a></h2>
-<p>This scenario simulates the fetching of resources from Nexus KG. For each schema in the system, the simulation performs listing and fetches a random resource for the schema. For a defined ratio of resources an update will be applied.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/UpdateSimulation.scala">Update scenario</a></h2>
-<p>This scenario applies a specified number of revision to resources.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/GetByRevSimulation.scala">Fetch by revision scenario</a></h2>
-<p>This scenario tries to fetch a random revision of a resource.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/TagSimulation.scala">Tagging scenario</a></h2>
-<p>This scenario applies a specified number of tags to resources</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/GetByTagSimulation.scala">Fetch by tag scenario</a></h2>
-<p>This scenario fetches resources by a random tag.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/ElasticSearchSimulation.scala">ElasticSearch search scenario</a></h2>
-<p>This scenario performs queries against the default ElasticSearch view for the project. The list of the queries can be found <a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/resources/es-queries.json">here</a>.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/BlazegraphSimulation.scala">Blazegraph search scenario</a></h2>
-<p>This scenario performs SPARQL queries traversing the provenance graph against the default SPARQL view. The queries used can be found <a href="https://github.com/BlueBrain/nexus-tests/tree/master/src/it/resources">here</a>.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/AddAttachmentSimulation.scala">Add attachments scenario</a></h2>
-<p>This scenario uploads multiple attachments to resources.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FetchAttachmentSimulation.scala">Fetch attachments scenario</a></h2>
-<p>This scenario fetches attachments from resources.</p>
-<h2><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-tests/blob/master/src/it/scala/ch/epfl/bluebrain/nexus/perf/FullSimulation.scala">Mixed scenario</a></h2>
-<p>This simulation performs multiple types of requests: fetching, updating, fetching by revision, ElasticSearch and Blazegraph search. Percentage of each type of the requests can be configured.</p>
+<h1><a href="#data-volume-and-scenarios" name="data-volume-and-scenarios" class="anchor"><span class="anchor-link"></span></a>Data volume and scenarios</h1>
+<p>Prior to the test execution a reasonable amount of data was injected into the system to ensure the system behaves well under a typical volume. Specifically:</p>
+<ul>
+  <li>Total number of resources: 115,690,687</li>
+  <li>Total number of triples (edges): 2,493,134,304</li>
+  <li>Total number of entities (nodes): 352,856,595</li>
+  <li>Total number of property types: 74</li>
+  <li>Total number of classes (distinct values of <code>@type</code>): 24</li>
+</ul>
+<p>The data was generated by replicating a collection of <em>provenance patterns</em>, each spanning several resources:</p>
+<ul>
+  <li>resource <a href="https://github.com/BlueBrain/nexus-tests/tree/master/src/main/resources/bbp">examples</a></li>
+  <li>corresponding SHACL <a href="https://github.com/BlueBrain/nexus-tests/tree/master/scripts/schemas">schemas</a></li>
+</ul>
+<p>The full collection of scenarios can be found <a href="https://github.com/BlueBrain/nexus-tests/tree/master/src/it/scala/ch/epfl/bluebrain/nexus/perf">here</a> each within its own file.</p>
+<p>Several scenarios were executed to verify the behaviour of the system, most notably:</p>
+<ul>
+  <li>create resource (with validation)</li>
+  <li>create resource (without validation)</li>
+  <li>get resource by id</li>
+  <li>tag resource</li>
+  <li>get resource by revision, get resource by tag</li>
+  <li>mixed operations: list resources, get resource by id, ElasticSearch query, BlazeGraph query, update resource</li>
+</ul>
+<p>Please head over to the <a href="results.html">results</a> section for a summary of the results and conclusions.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/benchmarks/scenarios.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/benchmarks/data-volume-and-scenarios.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
