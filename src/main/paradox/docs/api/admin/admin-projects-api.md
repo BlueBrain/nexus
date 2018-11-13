@@ -8,7 +8,7 @@ Projects are rooted in the `/v1/projects/{org_label}` and are used to group and 
 Each project... 
 
 - belongs to an `organization` identifier by the label `{org_label}` 
-- it is validated against the [project schema](https://bluebrain.github.io/nexus/schemas/project).
+- it is validated against the [project schema](https://bluebrain.github.io/nexus/schemas/project.json).
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 

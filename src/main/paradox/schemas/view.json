@@ -19,6 +19,9 @@
         },
         {
           "node": "this:SparqlViewShape"
+        },
+        {
+          "node": "this:AggregateElasticViewShape"
         }
       ]
     },
@@ -110,6 +113,63 @@
           "description": "The underlying uuid generated for this view.",
           "datatype": "xsd:string",
           "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+          "minCount": 1,
+          "maxCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:AggregateElasticViewShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "sh:hasValue": {
+            "@id": "nxv:AggregateElasticView"
+          }
+        },
+        {
+          "path": "nxv:uuid",
+          "name": "UUID",
+          "description": "The underlying uuid generated for this view.",
+          "datatype": "xsd:string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:views",
+          "name": "viewsref",
+          "description": "the collection of views references.",
+          "node": "this:ViewRefShape",
+          "minCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:ViewRefShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNode",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "nxv:project",
+          "name": "project label",
+          "description": "The project label.",
+          "datatype": "xsd:string",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:viewId",
+          "name": "view id",
+          "description": "The view id.",
+          "nodeKind": "sh:IRI",
           "minCount": 1,
           "maxCount": 1
         }

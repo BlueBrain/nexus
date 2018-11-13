@@ -7,7 +7,7 @@ Each view...
 
 - belongs to a `project` identifier by the label `{project_label}` 
 - inside an `organization` identifier by the label `{org_label}` 
-- it is validated against the [view schema](https://bluebrain.github.io/nexus/schemas/view).
+- it is validated against the [view schema](https://bluebrain.github.io/nexus/schemas/view.json).
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 
@@ -76,6 +76,43 @@ where...
 - `{sourceAsText}`: Boolean - If true, the resource's payload will be stored in the ElasticSearch document as a single escaped string value of the key `_original_source`. If false, the resource's payload will be stored normally in the ElasticSearch document. The default value is `false`.
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
 - `{someid}`: Iri - the @id value for this view.
+
+
+### AggregateElasticView
+
+@@@ note
+
+The described features are in `@Alpha` phase of development. The operations might change in the future.
+
+@@@
+
+This view is an aggregate of ElasticViews. The view itself does not create any index, but it reference to the already existing indices of the linked ElasticViews.
+
+When performing queries on the `_search` endpoint, this view will make use of the [multi-index](https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html) query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.
+
+If the caller does not have the permission `views/read` on all the projects defined on the aggregated view, only a subset of indices (or none) will be selecting, respecting the defined permissions.
+
+![Aggregate ElasticView](../assets/aggregate-view.png "Aggregate ElasticView")
+
+**AggregateElasticView payload**
+```
+{
+  "@id": "{someid}",
+  "@type": [ "View", "AggregateElasticView", "Alpha" ],
+  "views": [ 
+    {
+        "project": "{project}",
+        "viewId": "{viewId}"
+    },
+    ...
+  ]
+}
+```
+
+where...
+ 
+- `{project}`: String - the user friendly reference to the project from where the `{viewId}` field is going to be retrieved. It follows the format {organization}/{project}.
+- `{viewId}`: Iri - The view @id value to be aggregated.
 
 
 ## Create an ElasticView using POST
@@ -148,6 +185,27 @@ Payload
 
 Response
 :   @@snip [view-elastic-ref-updated.json](../assets/view-elastic-ref-updated.json)
+
+## Create an AggregateElasticView using PUT
+
+This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}
+  {...}
+```
+ 
+Note that if the payload contains an @id different from the `{view_id}`, the request will fail.
+
+**Example**
+
+Request
+:   @@snip [view-agg-put.sh](../assets/view-agg-put.sh)
+
+Payload
+:   @@snip [view-agg-put.json](../assets/view-agg-put.json)
+
+Response
+:   @@snip [view-agg-ref-new.json](../assets/view-agg-ref-new.json)
 
 
 ## Tag an ElasticView
@@ -355,7 +413,7 @@ Response
 
 ## ElasticSearch query
 
-Provides search functionality on the `ElasticView` content.
+Provides search functionality on the `ElasticView` or `AggregateElasticView` content.
 
 ```
 POST /v1/views/{org_label}/{project_label}/{view_id}/_search
