@@ -41,10 +41,9 @@ information.
 
 ### <a name="submit-pr"></a> Submitting a Pull Request (PR)
 
-Before you submit your Pull Request (PR) consider the following guidelines:
-* Please sign our [Contributor License Agreement (CLA)](#cla) before sending PRs.
-  We cannot accept code without this.
-* Make your changes in a new git branch:
+When you wish to contribute to the code base, please consider the following guidelines:
+* Make a [fork](https://guides.github.com/activities/forking/) of this repository.
+* Make your changes in your fork, in a new git branch:
      ```shell
      git checkout -b my-fix-branch master
      ```
@@ -59,7 +58,9 @@ Before you submit your Pull Request (PR) consider the following guidelines:
     ```shell
     git push origin my-fix-branch
     ```
-* In GitHub, send a pull request to the `master` branch of the relevant component.
+* Please sign our [Contributor License Agreement (CLA)](#cla) before sending Pull Requests (PR).
+  We cannot accept code without this.
+* In GitHub, send a Pull Request to the `master` branch of the upstream repository of the relevant component.
 * If we suggest changes then:
   * Make the required updates.
   * Re-run the test suites to ensure tests are still passing.
