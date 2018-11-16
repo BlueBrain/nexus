@@ -59,7 +59,7 @@ When you wish to contribute to the code base, please consider the following guid
     git push origin my-fix-branch
     ```
 * Please sign our [Contributor License Agreement (CLA)](#cla) before sending Pull Requests (PR).
-  We cannot accept code without this.
+  We cannot accept any contribution without your signature.
 * In GitHub, send a Pull Request to the `master` branch of the upstream repository of the relevant component.
 * If we suggest changes then:
   * Make the required updates.
