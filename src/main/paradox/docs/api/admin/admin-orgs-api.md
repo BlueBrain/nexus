@@ -1,7 +1,7 @@
 # Organizations 
 
 Organizations are rooted in the `/v1/orgs` and are used to group and categorize its sub-resources.
-An organization it is validated against the [organization schema](https://bluebrain.github.io/nexus/schemas/organization).
+An organization it is validated against the [organization schema](https://bluebrain.github.io/nexus/schemas/organization.json).
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 

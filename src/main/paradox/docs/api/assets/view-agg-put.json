@@ -1,0 +1,20 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+  },
+  "@type": [
+    "View",
+    "AggregateElasticView",
+    "Alpha"
+  ],
+  "views": [
+    {
+      "project": "myorg/myproj",
+      "viewId": "nxv:myview"
+    },
+    {
+      "project": "myorg/myproj2",
+      "viewId": "nxv:myview2"
+    }
+  ]
+}
