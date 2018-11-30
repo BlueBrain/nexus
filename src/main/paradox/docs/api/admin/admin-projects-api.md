@@ -1,24 +1,25 @@
 # Projects
 
-Projects are rooted in the `/v1/projects/{org_label}` and are used to group and categorize its sub-resources. Relevant roles of a projects are:
+Projects belong to an `organization` and are rooted in the corresponding `/v1/projects/{org_label}` path.
+They are validated against the [project schema](https://bluebrain.github.io/nexus/schemas/project.json).
+The purposes of projects are:
 
-- Defining settings which can be used for operations on sub-resources. 
-- Providing (by default) isolation from resources inside other projects. This isolation can be avoided by defining @ref:[resolvers](../kg/kg-resolvers-api.md)
+- Group and categorize sub-resources.
+- Define settings that apply for operations on all sub-resources. 
+- Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](../kg/kg-resolvers-api.md)
 
-Each project... 
-
-- belongs to an `organization` identifier by the label `{org_label}` 
-- it is validated against the [project schema](https://bluebrain.github.io/nexus/schemas/project.json).
-
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. A caller may need to prove its
+identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
+Please visit @ref:[Authentication](../iam/authentication.md) to learn more about retrieving access tokens.
 
 @@@ note { .tip title="Running examples with Postman" }
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [projects collection](../assets/project-postman.json).
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the
+[projects collection](../assets/project-postman.json).
 
 If your deployment is protected by an access token: 
 
-Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+Edit the imported collection -> Click on the `Authorization` tab -> Fill in the token field.
 
 @@@
 
@@ -41,11 +42,12 @@ Edit the imported collection -> Click on the `Authorization` tab -> Fill the tok
 where...
  
 - `{name}`: String - the name for this project.
-- `{base}`: Iri - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a [resource is created using POST](../kg/kg-resources-api.html#create-a-resource-using-post) and no `@id` is present on the payload, the platform will generate and @id which will look like `http://example.com/{UUID}`. This field is optional and it will default to `{{base}}/v1/{org_label}/{project_label}`.
+- `{base}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a [resource is created using POST](../kg/kg-resources-api.html#create-a-resource-using-post) and no `@id` is present on the payload, the platform will generate and @id which will look like `http://example.com/{UUID}`. This field is optional and it will default to `{{base}}/v1/{org_label}/{project_label}`.
 - `{prefixMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.
 
 ### Prefix Mappings
-The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be used. Let's see an example.
+The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
+used. Let's see an example.
 
 Having the following `prefixMappings`:
 
@@ -64,9 +66,10 @@ Having the following `prefixMappings`:
 where...
 
 - `{prefix}`: String - the left hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName).
-- `{namespace}`: Iri - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
+- `{namespace}`: IRI - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
 
-The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be used. Let's see an example:
+The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
+used. Let's see an example:
  
  ```json
  {
@@ -95,7 +98,8 @@ PUT /v1/projects/{org_label}/{label}
   {...}
 ```
 
-...where  `{label}` is the user friendly name assigned to this project. The semantics of the `label` should be consistent with the type of data provided by its sub-resources, since they are exposed on the URI of the sub-resource's operations.
+...where  `{label}` is the user friendly name assigned to this project. The semantics of the `label` should be
+consistent with the type of data provided by its sub-resources, since it'll be a part of the sub-resources' URI.
 
 **Example**
 
@@ -113,7 +117,8 @@ Response
 
 This operation overrides the payload.
 
-In order to ensure a client does not perform any changes to a project without having had seen the previous revision of the project, the last revision needs to be passed as a query parameter.
+In order to ensure a client does not perform any changes to a project without having had seen the previous revision of
+the project, the last revision needs to be passed as a query parameter.
 
 ```
 PUT /v1/projects/{org_label}/{label}?rev={previous_rev}

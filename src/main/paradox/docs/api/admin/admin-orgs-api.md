@@ -1,17 +1,20 @@
 # Organizations 
 
-Organizations are rooted in the `/v1/orgs` and are used to group and categorize its sub-resources.
-An organization it is validated against the [organization schema](https://bluebrain.github.io/nexus/schemas/organization.json).
+Organizations are rooted in the `/v1/orgs` path and are used to group and categorize sub-resources.
+They are validated against the [organization schema](https://bluebrain.github.io/nexus/schemas/organization.json).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. A caller may need to prove its
+identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
+Please visit @ref:[Authentication](../iam/authentication.md) to learn more about retrieving access tokens.
 
 @@@ note { .tip title="Running examples with Postman" }
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [organizations collection](../assets/organization-postman.json).
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the
+[organizations collection](../assets/organization-postman.json).
 
 If your deployment is protected by an access token: 
 
-Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+Edit the imported collection -> Click on the `Authorization` tab -> Fill in the token field.
 
 @@@
 
@@ -22,7 +25,8 @@ PUT /v1/orgs/{label}
   {...}
 ```
 
-...where `{label}` is the user friendly name assigned to this organization. The semantics of the `label` should be consistent with the type of data provided by its sub-resources, since are exposed on the URI of the sub-resource's operations.
+...where `{label}` is the user friendly name assigned to this organization. The semantics of the `label` should be
+consistent with the type of data provided by its sub-resources, since it'll be a part of the sub-resources' URI.
 
 **Example**
 
@@ -40,8 +44,8 @@ Response
 
 This operation overrides the payload.
 
-In order to ensure a client does not perform any changes to an organization without having had seen the previous revision of
-the organization, the last revision needs to be passed as a query parameter.
+In order to ensure a client does not perform any changes to an organization without having had seen the previous
+revision of the organization, the last revision needs to be passed as a query parameter.
 
 ```
 PUT /v1/orgs/{label}?rev={previous_rev}
@@ -98,7 +102,7 @@ Response
 
 ## Deprecate an organization
 
-Locks the organization, so no further operations can be performed on the resource or on the children resources.
+Locks the organization, so that no further operations can be performed on the resource or on the child resources.
 
 Deprecating an organization is considered to be an update as well. 
 

@@ -9,7 +9,7 @@
 
 @@@
 
-# KnowledgeGraph API
+# Knowledge Graph API
 
 ## Schemas
 A schema is a resource which defines a set of rules and constrains using [SHACL](https://www.w3.org/TR/shacl/). 
