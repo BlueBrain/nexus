@@ -12,10 +12,7 @@
       "path": "/myorg/myproj",
       "acl": [
         {
-          "permissions": [
-            "read",
-            "write"
-          ],
+          "permissions": ["read", "write"],
           "identity": {
             "@id": "https://nexus.example.com/v1/realm/groups/two",
             "@type": "Group",
@@ -36,14 +33,12 @@
       "path": "/myorg/myproj2",
       "acl": [
         {
-          "permissions": [
-            "read"
-          ],
+          "permissions": ["read"],
           "identity": {
             "@id": "https://nexus.example.com/v1/realms/myrealm/users/me",
             "@type": "User",
             "realm": "myrealm",
-            "subject": "me"
+            "sub": "me"
           }
         }
       ],

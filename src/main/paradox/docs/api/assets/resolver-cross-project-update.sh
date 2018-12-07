@@ -11,7 +11,7 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/res
   "identities": [
     {
       "realm": "myrealm",
-      "subject": "name"
+      "sub": "name"
     }
   ],
   "priority": 50

@@ -12,7 +12,7 @@ curl -XPOST -H "Content-Type: application/json" "https://nexus.example.com/v1/re
   "identities": [
     {
       "realm": "myrealm",
-      "subject": "name"
+      "sub": "name"
     }
   ],
   "priority": 50

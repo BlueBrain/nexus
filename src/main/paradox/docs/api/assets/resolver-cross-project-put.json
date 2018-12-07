@@ -1,16 +1,10 @@
 {
-  "@type": [
-    "Resolver",
-    "CrossProject"
-  ],
-  "projects": [
-    "org1/project1",
-    "org1/project2"
-  ],
+  "@type": ["Resolver", "CrossProject"],
+  "projects": ["org1/project1", "org1/project2"],
   "identities": [
     {
       "realm": "myrealm",
-      "subject": "name"
+      "sub": "name"
     }
   ],
   "priority": 50

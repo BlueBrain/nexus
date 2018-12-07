@@ -8,10 +8,7 @@
   "_results": [
     {
       "@id": "nxv:InProject",
-      "@type": [
-        "InProject",
-        "Resolver"
-      ],
+      "@type": ["InProject", "Resolver"],
       "priority": 1,
       "_self": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:InProject",
       "_constrainedBy": "nxs:resolver",
@@ -25,19 +22,13 @@
     },
     {
       "@id": "nxv:myresolver",
-      "@type": [
-        "Resolver",
-        "CrossProject"
-      ],
-      "projects": [
-        "org1/project1",
-        "org1/project2"
-      ],
+      "@type": ["Resolver", "CrossProject"],
+      "projects": ["org1/project1", "org1/project2"],
       "identities": [
         {
           "@type": "User",
           "realm": "myrealm",
-          "subject": "name"
+          "sub": "name"
         }
       ],
       "priority": 50,

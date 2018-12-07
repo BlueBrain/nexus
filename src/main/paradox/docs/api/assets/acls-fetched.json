@@ -8,9 +8,7 @@
   "path": "/org1",
   "acl": [
     {
-      "permissions": [
-        "read"
-      ],
+      "permissions": ["read"],
       "identity": {
         "@id": "https://nexus.example.com/v1/realms/myrealm/groups/a-group",
         "@type": "Group",
@@ -19,10 +17,7 @@
       }
     },
     {
-      "permissions": [
-        "read",
-        "write"
-      ],
+      "permissions": ["read", "write"],
       "identity": {
         "@id": "https://nexus.example.com/v1/realms/myrealm/groups/some-group",
         "@type": "Group",
@@ -31,15 +26,12 @@
       }
     },
     {
-      "permissions": [
-        "acls/read",
-        "acls/write"
-      ],
+      "permissions": ["acls/read", "acls/write"],
       "identity": {
         "@id": "https://nexus.example.com/v1/realms/myrealm/users/user",
         "@type": "User",
         "realm": "myrealm",
-        "subject": "alice"
+        "sub": "alice"
       }
     }
   ],
