@@ -207,10 +207,12 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview" class="header">SparqlView</a></li>
       <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview" class="header">ElasticView</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html#aggregateelasticview" class="header">AggregateElasticView</a></li>
     </ul></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-post" class="header">Create an ElasticView using POST</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-put" class="header">Create an ElasticView using PUT</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#update-an-elasticview" class="header">Update an ElasticView</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-aggregateelasticview-using-put" class="header">Create an AggregateElasticView using PUT</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#tag-an-elasticview" class="header">Tag an ElasticView</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#add-attachment-to-a-view" class="header">Add attachment to a view</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#delete-attachment-from-a-view" class="header">Delete attachment from a view</a></li>
@@ -252,10 +254,12 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/api/kg/kg-views-api.html#sparqlview" class="header">SparqlView</a></li>
       <li><a href="../../../docs/api/kg/kg-views-api.html#elasticview" class="header">ElasticView</a></li>
+      <li><a href="../../../docs/api/kg/kg-views-api.html#aggregateelasticview" class="header">AggregateElasticView</a></li>
     </ul></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-post" class="header">Create an ElasticView using POST</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-elasticview-using-put" class="header">Create an ElasticView using PUT</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#update-an-elasticview" class="header">Update an ElasticView</a></li>
+    <li><a href="../../../docs/api/kg/kg-views-api.html#create-an-aggregateelasticview-using-put" class="header">Create an AggregateElasticView using PUT</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#tag-an-elasticview" class="header">Tag an ElasticView</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#add-attachment-to-a-view" class="header">Add attachment to a view</a></li>
     <li><a href="../../../docs/api/kg/kg-views-api.html#delete-attachment-from-a-view" class="header">Delete attachment from a view</a></li>
@@ -286,7 +290,7 @@ BlueBrain/nexus
 <ul>
   <li>belongs to a <code>project</code> identifier by the label <code>{project_label}</code></li>
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
-  <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/view">view schema</a>.</li>
+  <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/view.json">view schema</a>.</li>
 </ul>
 <p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
 <p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/view-postman.json">views collection</a>.</p>
@@ -327,6 +331,30 @@ BlueBrain/nexus
   <li><code>{sourceAsText}</code>: Boolean - If true, the resource&rsquo;s payload will be stored in the ElasticSearch document as a single escaped string value of the key <code>_original_source</code>. If false, the resource&rsquo;s payload will be stored normally in the ElasticSearch document. The default value is <code>false</code>.</li>
   <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
   <li><code>{someid}</code>: Iri - the @id value for this view.</li>
+</ul>
+<h3><a href="#aggregateelasticview" name="aggregateelasticview" class="anchor"><span class="anchor-link"></span></a>AggregateElasticView</h3><div class="callout note "><div class="callout-title">Note</div>
+<p>The described features are in <code>@Alpha</code> phase of development. The operations might change in the future.</p></div>
+<p>This view is an aggregate of ElasticViews. The view itself does not create any index, but it reference to the already existing indices of the linked ElasticViews.</p>
+<p>When performing queries on the <code>_search</code> endpoint, this view will make use of the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html">multi-index</a> query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.</p>
+<p>If the caller does not have the permission <code>views/read</code> on all the projects defined on the aggregated view, only a subset of indices (or none) will be selecting, respecting the defined permissions.</p>
+<p><img src="../assets/aggregate-view.png" alt="Aggregate ElasticView" title="Aggregate ElasticView" /></p>
+<p><strong>AggregateElasticView payload</strong></p>
+<pre><code>{
+  &quot;@id&quot;: &quot;{someid}&quot;,
+  &quot;@type&quot;: [ &quot;View&quot;, &quot;AggregateElasticView&quot;, &quot;Alpha&quot; ],
+  &quot;views&quot;: [ 
+    {
+        &quot;project&quot;: &quot;{project}&quot;,
+        &quot;viewId&quot;: &quot;{viewId}&quot;
+    },
+    ...
+  ]
+}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{project}</code>: String - the user friendly reference to the project from where the <code>{viewId}</code> field is going to be retrieved. It follows the format {organization}/{project}.</li>
+  <li><code>{viewId}</code>: Iri - The view @id value to be aggregated.</li>
 </ul>
 <h2><a href="#create-an-elasticview-using-post" name="create-an-elasticview-using-post" class="anchor"><span class="anchor-link"></span></a>Create an ElasticView using POST</h2>
 <pre><code>POST /v1/view/{org_label}/{project_label}
@@ -615,6 +643,80 @@ BlueBrain/nexus
   &quot;_rev&quot;: 2,
   &quot;_deprecated&quot;: false
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-elastic-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#create-an-aggregateelasticview-using-put" name="create-an-aggregateelasticview-using-put" class="anchor"><span class="anchor-link"></span></a>Create an AggregateElasticView using PUT</h2>
+<p>This alternative endpoint to create a view is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
+<pre><code>PUT /v1/views/{org_label}/{project_label}/{view_id}
+  {...}
+</code></pre>
+<p>Note that if the payload contains an @id different from the <code>{view_id}</code>, the request will fail.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj3/nxv:myagg&quot; -d \
+&#39;{
+  &quot;@context&quot;: {
+    &quot;nxv&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;
+  },
+  &quot;@type&quot;: [
+    &quot;View&quot;,
+    &quot;AggregateElasticView&quot;,
+    &quot;Alpha&quot;
+  ],
+  &quot;views&quot;: [
+    {
+      &quot;project&quot;: &quot;myorg/myproj&quot;,
+      &quot;viewId&quot;: &quot;nxv:myview&quot;
+    },
+    {
+      &quot;project&quot;: &quot;myorg/myproj2&quot;,
+      &quot;viewId&quot;: &quot;nxv:myview2&quot;
+    }
+  ]
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-agg-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: {
+    &quot;nxv&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;
+  },
+  &quot;@type&quot;: [
+    &quot;View&quot;,
+    &quot;AggregateElasticView&quot;,
+    &quot;Alpha&quot;
+  ],
+  &quot;views&quot;: [
+    {
+      &quot;project&quot;: &quot;myorg/myproj&quot;,
+      &quot;viewId&quot;: &quot;nxv:myview&quot;
+    },
+    {
+      &quot;project&quot;: &quot;myorg/myproj2&quot;,
+      &quot;viewId&quot;: &quot;nxv:myview2&quot;
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-agg-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;nxv:myview&quot;,
+  &quot;@type&quot;: [
+    &quot;nxv:AggregateElasticView&quot;,
+    &quot;nxv:View&quot;,
+    &quot;nxv:Alpha&quot;
+  ],
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj3/nxv:myagg&quot;,
+  &quot;_constrainedBy&quot;: &quot;nxs:view&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj3&quot;,
+  &quot;_createdAt&quot;: &quot;2018-09-18T16:39:22.748Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-18T16:39:22.748Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-agg-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#tag-an-elasticview" name="tag-an-elasticview" class="anchor"><span class="anchor-link"></span></a>Tag an ElasticView</h2>
 <p>Links a view&rsquo;s revision to a specific name. </p>
@@ -1185,7 +1287,7 @@ BlueBrain/nexus
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/view-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#elasticsearch-query" name="elasticsearch-query" class="anchor"><span class="anchor-link"></span></a>ElasticSearch query</h2>
-<p>Provides search functionality on the <code>ElasticView</code> content.</p>
+<p>Provides search functionality on the <code>ElasticView</code> or <code>AggregateElasticView</code> content.</p>
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/_search
   {...}
 </code></pre>
