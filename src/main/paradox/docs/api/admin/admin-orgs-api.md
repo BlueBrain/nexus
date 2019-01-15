@@ -68,38 +68,6 @@ Response
 :   @@snip [organization-ref-new.json](../assets/organization-ref-updated.json)
 
 
-## Tag an organization
-
-Links an organization revision to a specific name. 
-
-Tagging an organization is considered to be an update as well.
-
-```
-PUT /v1/orgs/{label}/tags?rev={previous_rev}
-  {
-    "tag": "{name}",
-    "rev": {rev}
-  }
-```
-... where 
-
-- `{previous_rev}`: Number - is the last known revision for the organization.
-- `{label}`: String - is the user friendly name that identifies this organization.
-- `{name}`: String - label given to the organization at specific revision.
-- `{rev}`: Number - the revision to link the provided `{name}`.
-
-**Example**
-
-Request
-:   @@snip [organization-tag.sh](../assets/organization-tag.sh)
-
-Payload
-:   @@snip [tag.json](../assets/tag.json)
-
-Response
-:   @@snip [organization-ref-tagged.json](../assets/organization-ref-tagged.json)
-
-
 ## Deprecate an organization
 
 Locks the organization, so that no further operations can be performed on the resource or on the child resources.
@@ -161,39 +129,16 @@ Response
 :   @@snip [organization-fetched.json](../assets/organization-fetched.json)
 
 
-## Fetch a resolver (specific tag)
-
-```
-GET /v1/orgs/{label}?tag={tag}
-```
-
-... where 
-
-- `{tag}`: String - is the tag of the organization to be retrieved.
-- `{label}`: String - is the user friendly name that identifies this organization.
-
-
-**Example**
-
-Request
-:   @@snip [organization-fetch-tag.sh](../assets/organization-fetch-tag.sh)
-
-Response
-:   @@snip [organization-fetched-tag.json](../assets/organization-fetched-tag.json)
-
-
 ## List organizations
 
 ```
-GET /v1/orgs?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
+GET /v1/orgs?from={from}&size={size}
 ```
 
 where...
 
-- `{full_text_search_query}`: String - can be provided to select only the organizations in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{deprecated}`: Boolean - can be used to filter the resulting organizations based on their deprecation status
 
 
 **Example**

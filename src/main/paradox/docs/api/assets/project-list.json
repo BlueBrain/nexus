@@ -1,5 +1,6 @@
 {
   "@context": [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
     "https://bluebrain.github.io/nexus/contexts/search.json",
     "https://bluebrain.github.io/nexus/contexts/resource.json"
   ],
@@ -8,7 +9,18 @@
     {
       "@id": "https://nexus.example.com/v1/projects/myorg/myproject",
       "@type": "nxv:Project",
-      "_self": "https://nexus.example.com/v1/projects/myorg/myproject",
+      "_label": "myproject",
+      "_organizationLabel": "myorg",
+      "_organizationUuid": "bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7",
+      "_uuid": "e622745d-5eea-4dc5-8318-58a3dd4101ff",
+      "apiMappings": [
+        {
+          "namespace": "http://schema.org/",
+          "prefix": "schema"
+        }
+      ],
+      "base": "http://nexus.example.com/",
+      "vocab": "http://schema.org/",
       "_constrainedBy": "nxs:project",
       "_createdAt": "2018-09-18T09:58:00.801Z",
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",

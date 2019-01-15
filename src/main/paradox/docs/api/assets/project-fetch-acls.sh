@@ -1,1 +1,0 @@
-curl "https://nexus.example.com/v1/projects/myorg/myproject/acls?self=true&parents=true"

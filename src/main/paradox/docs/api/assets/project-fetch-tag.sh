@@ -1,1 +1,0 @@
-curl "https://nexus.example.com/v1/projects/myorg/myproject?tag=mytag"
