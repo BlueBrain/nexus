@@ -1,7 +1,6 @@
 # Projects
 
 Projects belong to an `organization` and are rooted in the corresponding `/v1/projects/{org_label}` path.
-They are validated against the [project schema](https://bluebrain.github.io/nexus/schemas/project.json).
 The purposes of projects are:
 
 - Group and categorize sub-resources.

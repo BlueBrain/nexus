@@ -8,29 +8,29 @@
   "_results": [
     {
       "@id": "https://nexus.example.com/v1/orgs/myorg",
-      "@type": "nxv:Organization",
+      "@type": "Organization",
+      "description": "My Organization",
       "_label": "myorg",
       "_uuid": "bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7",
-      "description": "My Organization",
+      "_rev": 4,
+      "_deprecated": true,
       "_createdAt": "2018-09-18T09:58:00.801Z",
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2018-09-18T10:01:00.801Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-      "_rev": 4,
-      "_deprecated": true
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
     },
     {
       "@id": "https://nexus.example.com/v1/orgs/myorg2",
-      "@type": "nxv:Organization",
+      "@type": "Organization",
+      "description": "My Second Organization",
       "_label": "myorg2",
       "_uuid": "b42e5206-f81e-430b-808d-5dac2599153d",
-      "description": "My Second Organization",
+      "_rev": 1,
+      "_deprecated": false,
       "_createdAt": "2019-01-14T09:29:39.416Z",
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2019-01-14T09:29:39.416Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-      "_rev": 1,
-      "_deprecated": false
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
     }
   ]
 }
