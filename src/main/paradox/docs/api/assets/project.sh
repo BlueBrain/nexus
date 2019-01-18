@@ -1,8 +1,9 @@
 curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/orgs/myorg/myproject" -d \
 '{
-  "name": "example project creation",
-  "base": "https://nexus.example.com/v1/projects/myorg/myproject",
-  "prefixMappings": [
+  "description": "example project creation",
+  "base": "https://nexus.example.com/v1/projects/myorg/myproject/",
+  "vocab": "https://schema.org/",
+  "apiMappings": [
     {
       "prefix": "person",
       "namespace": "http://example.com/some/person"

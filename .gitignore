@@ -9,6 +9,9 @@
 
 # Maven / SBT / Ant target #
 target/
+.bloop
+.metals
+
 
 # IDE
 .settings

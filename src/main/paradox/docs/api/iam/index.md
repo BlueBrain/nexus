@@ -7,7 +7,7 @@
 
 @@@
 
-# IAM API
+# Identity & Access Management API
 
 The IAM API provides operations on three types of resources, `realms`, `permissions` and `acls`.
 

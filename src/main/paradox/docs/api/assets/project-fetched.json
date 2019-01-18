@@ -1,10 +1,13 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/project",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/admin.json"
+  ],
   "@id": "https://nexus.example.com/v1/projects/myorg/myproject",
-  "@type": "nxv:Project",
-  "name": "example project creation",
+  "@type": "Project",
   "base": "https://nexus.example.com/v1/myorg/myproject/",
-  "prefixMappings": [
+  "vocab": "https://schema.org/",
+  "apiMappings": [
     {
       "prefix": "person",
       "namespace": "http://example.com/some/person"
@@ -19,13 +22,13 @@
     }
   ],
   "_label": "myproject",
-  "_uuid": "968ad034-268a-4b07-aedd-219e3b2d8940",
-  "_self": "https://nexus.example.com/v1/projects/myorg/myproject",
-  "_constrainedBy": "nxs:project",
+  "_organizationLabel": "myorg",
+  "_organizationUuid": "bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7",
+  "_uuid": "e622745d-5eea-4dc5-8318-58a3dd4101ff",
+  "_rev": 4,
+  "_deprecated": true,
   "_createdAt": "2018-09-18T09:58:00.801Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
   "_updatedAt": "2018-09-18T10:30:00.801Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_rev": 4,
-  "_deprecated": true
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
 }
