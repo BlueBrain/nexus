@@ -161,7 +161,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/admin/admin-orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/api/admin/admin-projects-api.html" class="page">Projects</a></li>
     </ul></li>
-    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph API</a>
+    <li><a href="../../../docs/api/kg/index.html" class="page">Knowledge Graph API</a>
     <ul>
       <li><a href="../../../docs/api/kg/kg-schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
@@ -169,7 +169,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/api/kg/kg-data-api.html" class="page">Data</a></li>
     </ul></li>
-    <li><a href="../../../docs/api/iam/index.html" class="page">IAM API</a>
+    <li><a href="../../../docs/api/iam/index.html" class="page">Identity &amp; Access Management API</a>
     <ul>
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
@@ -243,14 +243,10 @@ BlueBrain/nexus
 <h1><a href="#admin-api" name="admin-api" class="anchor"><span class="anchor-link"></span></a>Admin API</h1>
 <p>The Admin API provides operations on two types of resources, <code>organizations</code> and <code>projects</code>. Those resources define the tree-like structure or grouping of the platform</p>
 <h2><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h2>
-<p>The top level resource in the platform. It is used to group and categorize its sub-resources.</p>
+<p>The top level resources in the platform. They are used to group and categorize projects.</p>
 <p><a href="admin-orgs-api.html">Operations on organizations</a></p>
 <h2><a href="#projects" name="projects" class="anchor"><span class="anchor-link"></span></a>Projects</h2>
-<p>The 2nd level resource in the platform. It is used to group and categorize its sub-resources. Relevant roles of a projects are:</p>
-<ul>
-  <li>Defining settings which can be used for operations on sub-resources.</li>
-  <li>Providing (by default) isolation from resources inside other projects. This isolation can be avoided by defining <a href="../kg/kg-resolvers-api.html">resolvers</a></li>
-</ul>
+<p>The 2nd level resources in the platform. They are used to group and categorize any sub-resources supported by the Knowledge Graph.</p>
 <p><a href="admin-projects-api.html">Operations on projects</a></p>
 </div>
 <div>

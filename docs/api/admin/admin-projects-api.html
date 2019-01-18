@@ -161,7 +161,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/admin/admin-orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/api/admin/admin-projects-api.html" class="active page">Projects</a></li>
     </ul></li>
-    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph API</a>
+    <li><a href="../../../docs/api/kg/index.html" class="page">Knowledge Graph API</a>
     <ul>
       <li><a href="../../../docs/api/kg/kg-schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
@@ -169,7 +169,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/api/kg/kg-data-api.html" class="page">Data</a></li>
     </ul></li>
-    <li><a href="../../../docs/api/iam/index.html" class="page">IAM API</a>
+    <li><a href="../../../docs/api/iam/index.html" class="page">Identity &amp; Access Management API</a>
     <ul>
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
@@ -203,18 +203,15 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/admin/admin-projects-api.html#projects" class="header">Projects</a>
   <ul>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#projects-payload" class="header">Projects payload</a>
+    <li><a href="../../../docs/api/admin/admin-projects-api.html#project-payload" class="header">Project payload</a>
     <ul>
-      <li><a href="../../../docs/api/admin/admin-projects-api.html#prefix-mappings" class="header">Prefix Mappings</a></li>
+      <li><a href="../../../docs/api/admin/admin-projects-api.html#api-mappings" class="header">API Mappings</a></li>
     </ul></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#create-a-project" class="header">Create a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#update-a-project" class="header">Update a project</a></li>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#tag-a-project" class="header">Tag a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#deprecate-a-project" class="header">Deprecate a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#fetch-a-project-current-version-" class="header">Fetch a project (current version)</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#fetch-a-project-specific-version-" class="header">Fetch a project (specific version)</a></li>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#fetch-a-project-specific-tag-" class="header">Fetch a project (specific tag)</a></li>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#get-the-acls-for-a-project" class="header">Get the ACLs for a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#list-projects" class="header">List projects</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#list-projects-belonging-to-an-organization" class="header">List projects belonging to an organization</a></li>
   </ul></li>
@@ -240,18 +237,15 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/api/admin/admin-projects-api.html#projects" class="header">Projects</a>
   <ul>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#projects-payload" class="header">Projects payload</a>
+    <li><a href="../../../docs/api/admin/admin-projects-api.html#project-payload" class="header">Project payload</a>
     <ul>
-      <li><a href="../../../docs/api/admin/admin-projects-api.html#prefix-mappings" class="header">Prefix Mappings</a></li>
+      <li><a href="../../../docs/api/admin/admin-projects-api.html#api-mappings" class="header">API Mappings</a></li>
     </ul></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#create-a-project" class="header">Create a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#update-a-project" class="header">Update a project</a></li>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#tag-a-project" class="header">Tag a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#deprecate-a-project" class="header">Deprecate a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#fetch-a-project-current-version-" class="header">Fetch a project (current version)</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#fetch-a-project-specific-version-" class="header">Fetch a project (specific version)</a></li>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#fetch-a-project-specific-tag-" class="header">Fetch a project (specific tag)</a></li>
-    <li><a href="../../../docs/api/admin/admin-projects-api.html#get-the-acls-for-a-project" class="header">Get the ACLs for a project</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#list-projects" class="header">List projects</a></li>
     <li><a href="../../../docs/api/admin/admin-projects-api.html#list-projects-belonging-to-an-organization" class="header">List projects belonging to an organization</a></li>
   </ul></li>
@@ -265,25 +259,22 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#projects" name="projects" class="anchor"><span class="anchor-link"></span></a>Projects</h1>
-<p>Projects are rooted in the <code>/v1/projects/{org_label}</code> and are used to group and categorize its sub-resources. Relevant roles of a projects are:</p>
+<p>Projects belong to an <code>organization</code> and are rooted in the corresponding <code>/v1/projects/{org_label}</code> path. The purposes of projects are:</p>
 <ul>
-  <li>Defining settings which can be used for operations on sub-resources.</li>
-  <li>Providing (by default) isolation from resources inside other projects. This isolation can be avoided by defining <a href="../kg/kg-resolvers-api.html">resolvers</a></li>
+  <li>Group and categorize sub-resources.</li>
+  <li>Define settings that apply for operations on all sub-resources.</li>
+  <li>Provide isolation from resources inside other projects. This behavior can be changed by defining <a href="../kg/kg-resolvers-api.html">resolvers</a></li>
 </ul>
-<p>Each project&hellip; </p>
-<ul>
-  <li>belongs to an <code>organization</code> identifier by the label <code>{org_label}</code></li>
-  <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/project.json">project schema</a>.</li>
-</ul>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
 <p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/project-postman.json">projects collection</a>.</p>
 <p>If your deployment is protected by an access token: </p>
-<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
-<h2><a href="#projects-payload" name="projects-payload" class="anchor"><span class="anchor-link"></span></a>Projects payload</h2>
+<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill in the token field.</p></div>
+<h2><a href="#project-payload" name="project-payload" class="anchor"><span class="anchor-link"></span></a>Project payload</h2>
 <pre><code>{
-  &quot;name&quot;: &quot;{name}&quot;,
+  &quot;description&quot;: &quot;{description}&quot;,
   &quot;base&quot;: &quot;{base}&quot;,
-  &quot;prefixMappings&quot;: [
+  &quot;vocab&quot;: &quot;{vocab}&quot;,
+  &quot;apiMappings&quot;: [
    {
       &quot;prefix&quot;: &quot;{prefix}&quot;,
       &quot;namespace&quot;: &quot;{namespace}&quot;
@@ -294,15 +285,16 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{name}</code>: String - the name for this project.</li>
-  <li><code>{base}</code>: Iri - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a <a href="../kg/kg-resources-api.html#create-a-resource-using-post">resource is created using POST</a> and no <code>@id</code> is present on the payload, the platform will generate and @id which will look like <code>http://example.com/{UUID}</code>. This field is optional and it will default to <code>{{base}}/v1/{org_label}/{project_label}</code>.</li>
-  <li><code>{prefixMappings}</code>: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.</li>
+  <li><code>{description}</code>: String - an optional description for this project.</li>
+  <li><code>{base}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a <a href="../kg/kg-resources-api.html#create-a-resource-using-post">resource is created</a> and no <code>@id</code> is present in the payload, the platform will generate an @id which will look like <code>http://example.com/{UUID}</code>. This field is optional and will default to <code>{{base}}/v1/resources/{org_label}/{project_label}/_/</code>.</li>
+  <li><code>{vocab}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> prefix for all unqualified predicates in children resources. E.g. if the vocab is set to <code>https://schema.org/</code>, when a field a resource is created and a field <code>name</code> is present in the payload, it will be expanded to <code>http://schema.org/name</code> by the system during indexing and fetch operations. This field is optional and will default to <code>{{base}}/v1/vocabs/{org_label}/{project_label}/</code>.</li>
+  <li><code>{apiMappings}</code>: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.</li>
 </ul>
-<h3><a href="#prefix-mappings" name="prefix-mappings" class="anchor"><span class="anchor-link"></span></a>Prefix Mappings</h3>
-<p>The <code>prefixMappings</code> Json object array maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used. Let&rsquo;s see an example.</p>
-<p>Having the following <code>prefixMappings</code>:</p>
+<h3><a href="#api-mappings" name="api-mappings" class="anchor"><span class="anchor-link"></span></a>API Mappings</h3>
+<p>The <code>apiMappings</code> Json object array maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used. Let&rsquo;s see an example.</p>
+<p>Having the following <code>apiMappings</code>:</p>
 <pre><code>{
-  &quot;prefixMappings&quot;: [
+  &quot;apiMappings&quot;: [
    {
       &quot;prefix&quot;: &quot;{prefix}&quot;,
       &quot;namespace&quot;: &quot;{namespace}&quot;
@@ -314,12 +306,12 @@ BlueBrain/nexus
 <p>where&hellip;</p>
 <ul>
   <li><code>{prefix}</code>: String - the left hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName">certain constrains</a>.</li>
-  <li><code>{namespace}</code>: Iri - the right hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://tools.ietf.org/html/rfc3987#page-7">certain constrains (irelative-ref)</a>.</li>
+  <li><code>{namespace}</code>: IRI - the right hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://tools.ietf.org/html/rfc3987#page-7">certain constrains (irelative-ref)</a>.</li>
 </ul>
-<p>The <code>prefixMappings</code> Json object array maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used. Let&rsquo;s see an example:</p>
+<p>The <code>apiMappings</code> Json object array maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used. Let&rsquo;s see an example:</p>
 <p><code>json
  {
-   &quot;prefixMappings&quot;: [
+   &quot;apiMappings&quot;: [
     {
        &quot;prefix&quot;: &quot;person&quot;,
        &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
@@ -340,16 +332,17 @@ BlueBrain/nexus
 <pre><code>PUT /v1/projects/{org_label}/{label}
   {...}
 </code></pre>
-<p>&hellip;where <code>{label}</code> is the user friendly name assigned to this project. The semantics of the <code>label</code> should be consistent with the type of data provided by its sub-resources, since they are exposed on the URI of the sub-resource&rsquo;s operations.</p>
+<p>&hellip;where <code>{label}</code> is the user friendly name assigned to this project. The semantics of the <code>label</code> should be consistent with the type of data provided by its sub-resources, since it&rsquo;ll be a part of the sub-resources&rsquo; URI.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg/myproject&quot; -d \
 &#39;{
-  &quot;name&quot;: &quot;example project creation&quot;,
-  &quot;base&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;prefixMappings&quot;: [
+  &quot;description&quot;: &quot;example project creation&quot;,
+  &quot;base&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject/&quot;,
+  &quot;vocab&quot;: &quot;https://schema.org/&quot;,
+  &quot;apiMappings&quot;: [
     {
       &quot;prefix&quot;: &quot;person&quot;,
       &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
@@ -367,9 +360,10 @@ BlueBrain/nexus
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot;: &quot;example project creation&quot;,
+  &quot;description&quot;: &quot;example project creation&quot;,
   &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;,
-  &quot;prefixMappings&quot;: [
+  &quot;vocab&quot;: &quot;https://schema.org/&quot;,
+  &quot;apiMappings&quot;: [
     {
       &quot;prefix&quot;: &quot;person&quot;,
       &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
@@ -387,17 +381,18 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;@type&quot;: &quot;nxv:Project&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
+  &quot;@type&quot;: &quot;Project&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#update-a-project" name="update-a-project" class="anchor"><span class="anchor-link"></span></a>Update a project</h2>
@@ -417,9 +412,10 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/projects/myorg/myproject?rev=1&quot; -d \
 &#39;{
-  &quot;name&quot;: &quot;example project creation&quot;,
+  &quot;description&quot;: &quot;example project creation&quot;,
   &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;,
-  &quot;prefixMappings&quot;: [
+  &quot;vocab&quot;: &quot;https://schema.org/&quot;,
+  &quot;apiMappings&quot;: [
     {
       &quot;prefix&quot;: &quot;person&quot;,
       &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
@@ -437,9 +433,10 @@ BlueBrain/nexus
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot;: &quot;example project creation&quot;,
+  &quot;description&quot;: &quot;example project creation&quot;,
   &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;,
-  &quot;prefixMappings&quot;: [
+  &quot;vocab&quot;: &quot;https://schema.org/&quot;,
+  &quot;apiMappings&quot;: [
     {
       &quot;prefix&quot;: &quot;person&quot;,
       &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
@@ -457,65 +454,19 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;@type&quot;: &quot;nxv:Project&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
+  &quot;@type&quot;: &quot;Project&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 2,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
-<h2><a href="#tag-a-project" name="tag-a-project" class="anchor"><span class="anchor-link"></span></a>Tag a project</h2>
-<p>Links a project revision to a specific name. </p>
-<p>Tagging a project is considered to be an update as well.</p>
-<pre><code>PUT /v1/projects/{org_label}/{label}/tags?rev={previous_rev}
-  {
-    &quot;tag&quot;: &quot;{name}&quot;,
-    &quot;rev&quot;: {rev}
-  }
-</code></pre>
-<p>&hellip; where </p>
-<ul>
-  <li><code>{name}</code>: String - label given the project at specific revision.</li>
-  <li><code>{rev}</code>: Number - the revision to link the provided <code>{name}</code>.</li>
-  <li><code>{previous_rev}</code>: Number - the last known revision for the organization.</li>
-  <li><code>{label}</code>: String - the user friendly name that identifies this project.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/projects/myorg/myproject/tags?rev=2&quot; -d \
-&#39;{
-  &quot;tag&quot;: &quot;mytag&quot;,
-  &quot;rev&quot;: 1
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Payload</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;tag&quot;: &quot;mytag&quot;,
-  &quot;rev&quot;: 1
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;@type&quot;: &quot;nxv:Project&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
-  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-18T10:20:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#deprecate-a-project" name="deprecate-a-project" class="anchor"><span class="anchor-link"></span></a>Deprecate a project</h2>
 <p>Locks the project, so no further operations can be performed on it or on the children resources.</p>
@@ -535,17 +486,18 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;@type&quot;: &quot;nxv:Project&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
+  &quot;@type&quot;: &quot;Project&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-project-current-version-" name="fetch-a-project-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a project (current version)</h2>
@@ -560,12 +512,15 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/project&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;@type&quot;: &quot;nxv:Project&quot;,
-  &quot;name&quot;: &quot;example project creation&quot;,
+  &quot;@type&quot;: &quot;Project&quot;,
   &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;,
-  &quot;prefixMappings&quot;: [
+  &quot;vocab&quot;: &quot;https://schema.org/&quot;,
+  &quot;apiMappings&quot;: [
     {
       &quot;prefix&quot;: &quot;person&quot;,
       &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
@@ -580,15 +535,15 @@ BlueBrain/nexus
     }
   ],
   &quot;_label&quot;: &quot;myproject&quot;,
-  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
+  &quot;_organizationLabel&quot;: &quot;myorg&quot;,
+  &quot;_organizationUuid&quot;: &quot;bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7&quot;,
+  &quot;_uuid&quot;: &quot;e622745d-5eea-4dc5-8318-58a3dd4101ff&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-project-specific-version-" name="fetch-a-project-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a project (specific version)</h2>
@@ -607,12 +562,15 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/project&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;@type&quot;: &quot;nxv:Project&quot;,
-  &quot;name&quot;: &quot;example project creation&quot;,
+  &quot;@type&quot;: &quot;Project&quot;,
   &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;,
-  &quot;prefixMappings&quot;: [
+  &quot;vocab&quot;: &quot;https://schema.org/&quot;,
+  &quot;apiMappings&quot;: [
     {
       &quot;prefix&quot;: &quot;person&quot;,
       &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
@@ -627,112 +585,24 @@ BlueBrain/nexus
     }
   ],
   &quot;_label&quot;: &quot;myproject&quot;,
-  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
+  &quot;_organizationLabel&quot;: &quot;myorg&quot;,
+  &quot;_organizationUuid&quot;: &quot;bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7&quot;,
+  &quot;_uuid&quot;: &quot;e622745d-5eea-4dc5-8318-58a3dd4101ff&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-project-specific-tag-" name="fetch-a-project-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a project (specific tag)</h2>
-<pre><code>GET /v1/projects/{org_label}/{label}?tag={tag}
-</code></pre>
-<p>&hellip; where </p>
-<ul>
-  <li><code>{label}</code>: String - the user friendly name that identifies this project.</li>
-  <li><code>{tag}</code>: String - the tag of the project to be retrieved.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/projects/myorg/myproject?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/project&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;@type&quot;: &quot;nxv:Project&quot;,
-  &quot;name&quot;: &quot;example project creation&quot;,
-  &quot;base&quot;: &quot;https://nexus.example.com/v1/myorg/myproject/&quot;,
-  &quot;prefixMappings&quot;: [
-    {
-      &quot;prefix&quot;: &quot;person&quot;,
-      &quot;namespace&quot;: &quot;http://example.com/some/person&quot;
-    },
-    {
-      &quot;prefix&quot;: &quot;schemas&quot;,
-      &quot;namespace&quot;: &quot;https://bluebrain.github.io/nexus/schemas/&quot;
-    },
-    {
-      &quot;prefix&quot;: &quot;ex&quot;,
-      &quot;namespace&quot;: &quot;http://example.com/&quot;
-    }
-  ],
-  &quot;_label&quot;: &quot;myproject&quot;,
-  &quot;_uuid&quot;: &quot;968ad034-268a-4b07-aedd-219e3b2d8940&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
-  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
-<h2><a href="#get-the-acls-for-a-project" name="get-the-acls-for-a-project" class="anchor"><span class="anchor-link"></span></a>Get the ACLs for a project</h2>
-<pre><code>GET /v1/projects/{org_label}/{label}/acls?self=true&amp;parents={parents}
-</code></pre>
-<p>&hellip; where </p>
-<ul>
-  <li><code>{label}</code>: String - the user friendly name that identifies this project.</li>
-  <li><code>{parents}</code>: Boolean - if true, the response includes the ACLs for the parent <code>organization</code> of the current project. If false, the response only includes the project ACLs.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/projects/myorg/myproject/acls?self=true&amp;parents=true&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-fetch-acls.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/acls&quot;,
-  &quot;acl&quot;: [
-    {
-      &quot;path&quot;: &quot;/&quot;,
-      &quot;identity&quot;: {
-        &quot;@id&quot;: &quot;https://nexus.example.com/v1/v1/realms/myrealm/groups/some-group&quot;,
-        &quot;@type&quot;: &quot;Group&quot;,
-        &quot;realm&quot;: &quot;myrealm&quot;,
-        &quot;group&quot;: &quot;some-group&quot;
-      },
-      &quot;permissions&quot;: [
-        &quot;resources/manage&quot;,
-        &quot;projects/manage&quot;,
-        &quot;orgs/manage&quot;,
-        &quot;schemas/manage&quot;,
-        &quot;resolvers/manage&quot;,
-        &quot;views/manage&quot;,
-        &quot;own&quot;
-      ]
-    }
-  ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-acls-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
 <h2><a href="#list-projects" name="list-projects" class="anchor"><span class="anchor-link"></span></a>List projects</h2>
-<pre><code>GET /v1/projects?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;q={full_text_search_query}
+<pre><code>GET /v1/projects?from={from}&amp;size={size}
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{full_text_search_query}</code>: String - can be provided to select only the projects in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
-  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting projects based on their deprecation status</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -743,6 +613,7 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
   ],
@@ -750,15 +621,25 @@ BlueBrain/nexus
   &quot;_results&quot;: [
     {
       &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-      &quot;@type&quot;: &quot;nxv:Project&quot;,
-      &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-      &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
+      &quot;@type&quot;: &quot;Project&quot;,
+      &quot;base&quot;: &quot;http://nexus.example.com/&quot;,
+      &quot;vocab&quot;: &quot;http://schema.org/&quot;,
+      &quot;apiMappings&quot;: [
+        {
+          &quot;namespace&quot;: &quot;http://schema.org/&quot;,
+          &quot;prefix&quot;: &quot;schema&quot;
+        }
+      ],
+      &quot;_uuid&quot;: &quot;e622745d-5eea-4dc5-8318-58a3dd4101ff&quot;,
+      &quot;_label&quot;: &quot;myproject&quot;,
+      &quot;_organizationUuid&quot;: &quot;bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7&quot;,
+      &quot;_organizationLabel&quot;: &quot;myorg&quot;,
+      &quot;_rev&quot;: 4,
+      &quot;_deprecated&quot;: true,
       &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
       &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-      &quot;_rev&quot;: 4,
-      &quot;_deprecated&quot;: true
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -768,10 +649,8 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{full_text_search_query}</code>: String - can be provided to select only the projects in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
-  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting projects based on their deprecation status</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -782,6 +661,7 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
   ],
@@ -789,15 +669,25 @@ BlueBrain/nexus
   &quot;_results&quot;: [
     {
       &quot;@id&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-      &quot;@type&quot;: &quot;nxv:Project&quot;,
-      &quot;_self&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
-      &quot;_constrainedBy&quot;: &quot;nxs:project&quot;,
+      &quot;@type&quot;: &quot;Project&quot;,
+      &quot;base&quot;: &quot;http://nexus.example.com/&quot;,
+      &quot;vocab&quot;: &quot;http://schema.org/&quot;,
+      &quot;apiMappings&quot;: [
+        {
+          &quot;namespace&quot;: &quot;http://schema.org/&quot;,
+          &quot;prefix&quot;: &quot;schema&quot;
+        }
+      ],
+      &quot;_uuid&quot;: &quot;e622745d-5eea-4dc5-8318-58a3dd4101ff&quot;,
+      &quot;_label&quot;: &quot;myproject&quot;,
+      &quot;_organizationUuid&quot;: &quot;bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7&quot;,
+      &quot;_organizationLabel&quot;: &quot;myorg&quot;,
+      &quot;_rev&quot;: 4,
+      &quot;_deprecated&quot;: true,
       &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
       &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-      &quot;_rev&quot;: 4,
-      &quot;_deprecated&quot;: true
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/project-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -833,13 +723,13 @@ Organizations
 </span>
 </div>
 </a>
-<a href="../../../docs/api/kg/index.html" title="KnowledgeGraph API" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/kg/index.html" title="Knowledge Graph API" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-KnowledgeGraph API
+Knowledge Graph API
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

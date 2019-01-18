@@ -161,7 +161,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/admin/admin-orgs-api.html" class="active page">Organizations</a></li>
       <li><a href="../../../docs/api/admin/admin-projects-api.html" class="page">Projects</a></li>
     </ul></li>
-    <li><a href="../../../docs/api/kg/index.html" class="page">KnowledgeGraph API</a>
+    <li><a href="../../../docs/api/kg/index.html" class="page">Knowledge Graph API</a>
     <ul>
       <li><a href="../../../docs/api/kg/kg-schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
@@ -169,7 +169,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/api/kg/kg-data-api.html" class="page">Data</a></li>
     </ul></li>
-    <li><a href="../../../docs/api/iam/index.html" class="page">IAM API</a>
+    <li><a href="../../../docs/api/iam/index.html" class="page">Identity &amp; Access Management API</a>
     <ul>
       <li><a href="../../../docs/api/iam/iam-realms-api.html" class="page">Realms</a></li>
       <li><a href="../../../docs/api/iam/authentication.html" class="page">Authentication</a></li>
@@ -205,11 +205,9 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#create-an-organization" class="header">Create an organization</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#update-an-organization" class="header">Update an organization</a></li>
-    <li><a href="../../../docs/api/admin/admin-orgs-api.html#tag-an-organization" class="header">Tag an organization</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#deprecate-an-organization" class="header">Deprecate an organization</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#fetch-an-organization-current-version-" class="header">Fetch an organization (current version)</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#fetch-an-organization-specific-version-" class="header">Fetch an organization (specific version)</a></li>
-    <li><a href="../../../docs/api/admin/admin-orgs-api.html#fetch-a-resolver-specific-tag-" class="header">Fetch a resolver (specific tag)</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#list-organizations" class="header">List organizations</a></li>
   </ul></li>
 </ul>
@@ -236,11 +234,9 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#create-an-organization" class="header">Create an organization</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#update-an-organization" class="header">Update an organization</a></li>
-    <li><a href="../../../docs/api/admin/admin-orgs-api.html#tag-an-organization" class="header">Tag an organization</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#deprecate-an-organization" class="header">Deprecate an organization</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#fetch-an-organization-current-version-" class="header">Fetch an organization (current version)</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#fetch-an-organization-specific-version-" class="header">Fetch an organization (specific version)</a></li>
-    <li><a href="../../../docs/api/admin/admin-orgs-api.html#fetch-a-resolver-specific-tag-" class="header">Fetch a resolver (specific tag)</a></li>
     <li><a href="../../../docs/api/admin/admin-orgs-api.html#list-organizations" class="header">List organizations</a></li>
   </ul></li>
 </ul>
@@ -253,43 +249,44 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h1>
-<p>Organizations are rooted in the <code>/v1/orgs</code> and are used to group and categorize its sub-resources. An organization it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/organization.json">organization schema</a>.</p>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
+<p>Organizations are rooted in the <code>/v1/orgs</code> path and are used to group and categorize sub-resources.</p>
+<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
 <p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/organization-postman.json">organizations collection</a>.</p>
 <p>If your deployment is protected by an access token: </p>
-<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
+<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill in the token field.</p></div>
 <h2><a href="#create-an-organization" name="create-an-organization" class="anchor"><span class="anchor-link"></span></a>Create an organization</h2>
 <pre><code>PUT /v1/orgs/{label}
   {...}
 </code></pre>
-<p>&hellip;where <code>{label}</code> is the user friendly name assigned to this organization. The semantics of the <code>label</code> should be consistent with the type of data provided by its sub-resources, since are exposed on the URI of the sub-resource&rsquo;s operations.</p>
+<p>&hellip;where <code>{label}</code> is the user friendly name assigned to this organization. The semantics of the <code>label</code> should be consistent with the type of data provided by its sub-resources, since it&rsquo;ll be a part of the sub-resources&rsquo; URI.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg&quot; -d \
 &#39;{
-  &quot;name&quot;: &quot;myname&quot;
+  &quot;description&quot;: &quot;My organization&quot;
 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot;: &quot;myname&quot;
+  &quot;description&quot;: &quot;My organization&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;@type&quot;: &quot;nxv:Organization&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
+  &quot;@type&quot;: &quot;Organization&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-new.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#update-an-organization" name="update-an-organization" class="anchor"><span class="anchor-link"></span></a>Update an organization</h2>
@@ -309,78 +306,33 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg?rev=1&quot; -d \
 &#39;{
-  &quot;name&quot;: &quot;myname&quot;
+  &quot;description&quot;: &quot;A new description&quot;
 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot;: &quot;myname&quot;
+  &quot;description&quot;: &quot;My organization&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;@type&quot;: &quot;nxv:Organization&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
+  &quot;@type&quot;: &quot;Organization&quot;,
+  &quot;description&quot;: &quot;My organization&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 2,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#tag-an-organization" name="tag-an-organization" class="anchor"><span class="anchor-link"></span></a>Tag an organization</h2>
-<p>Links an organization revision to a specific name. </p>
-<p>Tagging an organization is considered to be an update as well.</p>
-<pre><code>PUT /v1/orgs/{label}/tags?rev={previous_rev}
-  {
-    &quot;tag&quot;: &quot;{name}&quot;,
-    &quot;rev&quot;: {rev}
-  }
-</code></pre>
-<p>&hellip; where </p>
-<ul>
-  <li><code>{previous_rev}</code>: Number - is the last known revision for the organization.</li>
-  <li><code>{label}</code>: String - is the user friendly name that identifies this organization.</li>
-  <li><code>{name}</code>: String - label given to the organization at specific revision.</li>
-  <li><code>{rev}</code>: Number - the revision to link the provided <code>{name}</code>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/orgs/myorg/tags?rev=2&quot; -d \
-&#39;{
-  &quot;tag&quot;: &quot;mytag&quot;,
-  &quot;rev&quot;: 1
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Payload</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;tag&quot;: &quot;mytag&quot;,
-  &quot;rev&quot;: 1
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;@type&quot;: &quot;nxv:Organization&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
-  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-18T10:03:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-tagged.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
 <h2><a href="#deprecate-an-organization" name="deprecate-an-organization" class="anchor"><span class="anchor-link"></span></a>Deprecate an organization</h2>
-<p>Locks the organization, so no further operations can be performed on the resource or on the children resources.</p>
+<p>Locks the organization, so that no further operations can be performed on the resource or on the child resources.</p>
 <p>Deprecating an organization is considered to be an update as well. </p>
 <pre><code>DELETE /v1/orgs/{label}?rev={previous_rev}
 </code></pre>
@@ -397,17 +349,18 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;@type&quot;: &quot;nxv:Organization&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
+  &quot;@type&quot;: &quot;Organization&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-an-organization-current-version-" name="fetch-an-organization-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch an organization (current version)</h2>
@@ -422,20 +375,21 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/organization&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;@type&quot;: &quot;nxv:Organization&quot;,
-  &quot;name&quot;: &quot;myname&quot;,
+  &quot;@type&quot;: &quot;Organization&quot;,
+  &quot;description&quot;: &quot;My Organization&quot;,
   &quot;_label&quot;: &quot;myorg&quot;,
-  &quot;_uuid&quot;: &quot;659aed73-4cde-4016-93ec-67cbd308ac25&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
+  &quot;_uuid&quot;: &quot;bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-an-organization-specific-version-" name="fetch-an-organization-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch an organization (specific version)</h2>
@@ -454,63 +408,30 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/organization&quot;,
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;
+  ],
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;@type&quot;: &quot;nxv:Organization&quot;,
-  &quot;name&quot;: &quot;myname&quot;,
+  &quot;@type&quot;: &quot;Organization&quot;,
+  &quot;description&quot;: &quot;My Organization&quot;,
   &quot;_label&quot;: &quot;myorg&quot;,
-  &quot;_uuid&quot;: &quot;659aed73-4cde-4016-93ec-67cbd308ac25&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
+  &quot;_uuid&quot;: &quot;bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-resolver-specific-tag-" name="fetch-a-resolver-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a resolver (specific tag)</h2>
-<pre><code>GET /v1/orgs/{label}?tag={tag}
-</code></pre>
-<p>&hellip; where </p>
-<ul>
-  <li><code>{tag}</code>: String - is the tag of the organization to be retrieved.</li>
-  <li><code>{label}</code>: String - is the user friendly name that identifies this organization.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/myorg?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/organization&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;@type&quot;: &quot;nxv:Organization&quot;,
-  &quot;name&quot;: &quot;myname&quot;,
-  &quot;_label&quot;: &quot;myorg&quot;,
-  &quot;_uuid&quot;: &quot;659aed73-4cde-4016-93ec-67cbd308ac25&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-  &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
-  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
 <h2><a href="#list-organizations" name="list-organizations" class="anchor"><span class="anchor-link"></span></a>List organizations</h2>
-<pre><code>GET /v1/orgs?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;q={full_text_search_query}
+<pre><code>GET /v1/orgs?from={from}&amp;size={size}
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{full_text_search_query}</code>: String - can be provided to select only the organizations in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
-  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting organizations based on their deprecation status</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -521,22 +442,37 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
   ],
-  &quot;_total&quot;: 1,
+  &quot;_total&quot;: 2,
   &quot;_results&quot;: [
     {
       &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-      &quot;@type&quot;: &quot;nxv:Organization&quot;,
-      &quot;_self&quot;: &quot;https://nexus.example.com/v1/orgs/myorg&quot;,
-      &quot;_constrainedBy&quot;: &quot;nxs:organization&quot;,
+      &quot;@type&quot;: &quot;Organization&quot;,
+      &quot;description&quot;: &quot;My Organization&quot;,
+      &quot;_label&quot;: &quot;myorg&quot;,
+      &quot;_uuid&quot;: &quot;bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7&quot;,
+      &quot;_rev&quot;: 4,
+      &quot;_deprecated&quot;: true,
       &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
       &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
       &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-      &quot;_rev&quot;: 4,
-      &quot;_deprecated&quot;: true
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+    },
+    {
+      &quot;@id&quot;: &quot;https://nexus.example.com/v1/orgs/myorg2&quot;,
+      &quot;@type&quot;: &quot;Organization&quot;,
+      &quot;description&quot;: &quot;My Second Organization&quot;,
+      &quot;_label&quot;: &quot;myorg2&quot;,
+      &quot;_uuid&quot;: &quot;b42e5206-f81e-430b-808d-5dac2599153d&quot;,
+      &quot;_rev&quot;: 1,
+      &quot;_deprecated&quot;: false,
+      &quot;_createdAt&quot;: &quot;2019-01-14T09:29:39.416Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_updatedAt&quot;: &quot;2019-01-14T09:29:39.416Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/organization-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>

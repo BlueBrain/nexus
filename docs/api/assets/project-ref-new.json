@@ -1,13 +1,14 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/admin.json"
+  ],
   "@id": "https://nexus.example.com/v1/projects/myorg/myproject",
-  "@type": "nxv:Project",
-  "_self": "https://nexus.example.com/v1/projects/myorg/myproject",
-  "_constrainedBy": "nxs:project",
+  "@type": "Project",
+  "_rev": 1,
+  "_deprecated": false,
   "_createdAt": "2018-09-18T09:58:00.801Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
   "_updatedAt": "2018-09-18T09:58:00.801Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_rev": 1,
-  "_deprecated": false
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
 }
