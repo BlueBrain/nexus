@@ -1,17 +1,15 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/realm.json",
-  "@id": "https://nexus.example.com/v1/realms/realm1",
-  "@type": "nxv:Realm",
-  "label": "realm1",
-  "openidConfiguration": "https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration",
-  "requiredScopes": [
-    "openid",
-    "nexus"
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/iam.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
   ],
+  "@id": "https://nexus.example.com/v1/realms/realm1",
+  "@type": "Realm",
+  "_label": "realm1",
+  "_rev": 1,
+  "_deprecated": false,
   "_createdAt": "2018-09-18T09:58:00.801Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_updatedAt": "2018-09-18T10:25:00.801Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_rev": 1,
-  "_deprecated": false
+  "_updatedAt": "2018-09-18T09:58:00.801Z",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
 }
