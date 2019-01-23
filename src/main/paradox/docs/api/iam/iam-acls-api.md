@@ -1,3 +1,4 @@
+
 # Access Control Lists
 
 Access Control Lists are rooted in the `/v1/acls` collection.
@@ -9,6 +10,10 @@ An ACL defines the applications' data access restriction using the following thr
 - path: the location where to apply the restrictions. Examples of paths are: `/`, `/myorg` or `/myorg/myproject`
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
+
+## Default permissions
+
+When IAM starts for the first time, it applies the default permissions to `/`. This gives all permissions to the anonymous user to enable setting up realms. It is recommended to replace these permissions once user has setup an authorization realm.
 
 ## ACLs Hierarchy
 
@@ -40,13 +45,13 @@ The json payload contains the collection of ACL to set.
 **Example**
 
 Request
-:   @@snip [acls-add.sh](../assets/acls-add.sh)
+:   @@snip [acls-add.sh](../assets/acls/acls-add.sh)
 
 Payload
-:   @@snip [acls-add.json](../assets/acls-add.json)
+:   @@snip [acls-add.json](../assets/acls/acls-add.json)
 
 Response
-:   @@snip [acls-added-ref.json](../assets/acls-added-ref.json)
+:   @@snip [acls-added-ref.json](../assets/acls/acls-added-ref.json)
 
 
 ## Replace ACLs
@@ -67,13 +72,13 @@ The json payload contains the collection of ACL to set.
 **Example**
 
 Request
-:   @@snip [acls-replace.sh](../assets/acls-replace.sh)
+:   @@snip [acls-replace.sh](../assets/acls/acls-replace.sh)
 
 Payload
-:   @@snip [acls-add.json](../assets/acls-add.json)
+:   @@snip [acls-add.json](../assets/acls/acls-add.json)
 
 Response
-:   @@snip [acls-replaced-ref.json](../assets/acls-replaced-ref.json)
+:   @@snip [acls-replaced-ref.json](../assets/acls/acls-replaced-ref.json)
 
 
 ## Subtract ACLs
@@ -94,13 +99,13 @@ The json payload contains the collection of ACL to remove.
 **Example**
 
 Request
-:   @@snip [acls-subtract.sh](../assets/acls-subtract.sh)
+:   @@snip [acls-subtract.sh](../assets/acls/acls-subtract.sh)
 
 Payload
-:   @@snip [acls-subtract.json](../assets/acls-subtract.json)
+:   @@snip [acls-subtract.json](../assets/acls/acls-subtract.json)
 
 Response
-:   @@snip [acls-subtracted-ref.json](../assets/acls-subtracted-ref.json)
+:   @@snip [acls-subtracted-ref.json](../assets/acls/acls-subtracted-ref.json)
 
 ## Append ACLs
 
@@ -120,13 +125,13 @@ The json payload contains the collection of ACL to add.
 **Example**
 
 Request
-:   @@snip [acls-append.sh](../assets/acls-append.sh)
+:   @@snip [acls-append.sh](../assets/acls/acls-append.sh)
 
 Payload
-:   @@snip [acls-append.json](../assets/acls-append.json)
+:   @@snip [acls-append.json](../assets/acls/acls-append.json)
 
 Response
-:   @@snip [acls-appended-ref.json](../assets/acls-appended-ref.json)
+:   @@snip [acls-appended-ref.json](../assets/acls/acls-appended-ref.json)
 
 
 ## Delete ACLs
@@ -143,10 +148,10 @@ DELETE /v1/acls/{path}?rev={previous_rev}
 - `{path}`: String - is the target location for the ACL collection.
 
 Request
-:   @@snip [acls-delete.sh](../assets/acls-delete.sh)
+:   @@snip [acls-delete.sh](../assets/acls/acls-delete.sh)
 
 Response
-:   @@snip [acls-deleted-ref.json](../assets/acls-deleted-ref.json)
+:   @@snip [acls-deleted-ref.json](../assets/acls/acls-deleted-ref.json)
 
 
 ## Fetch ACLs
@@ -164,10 +169,10 @@ GET /v1/acls/{path}?rev={rev}&self={self}
 The ability to use the query parameter `self=false` depends on whether or not any of the identities found on the auth. token contains the `acls:read` permission on the provided `{path}` or its parents. For further details, check [ACLs hierarchy](#acls-hierarchy).
 
 Request
-:   @@snip [acls-get.sh](../assets/acls-get.sh)
+:   @@snip [acls-get.sh](../assets/acls/acls-get.sh)
 
 Response
-:   @@snip [acls-fetched.json](../assets/acls-fetched.json)
+:   @@snip [acls-fetched.json](../assets/acls/acls-fetched.json)
 
 
 ## List ACLs
@@ -196,13 +201,13 @@ The following examples illustrate listings from the diagram on the section [ACLs
 - The auth. token is linked to the `identity 1`.
 
 Request
-:   @@snip [acls-list.sh](../assets/acls-list.sh)
+:   @@snip [acls-list.sh](../assets/acls/acls-list.sh)
 
 Response
-:   @@snip [acls-listed.json](../assets/acls-listed.json)
+:   @@snip [acls-listed.json](../assets/acls/acls-listed.json)
 
 Request (with ancestors)
-:   @@snip [acls-list-ancestors.sh](../assets/acls-list-ancestors.sh)
+:   @@snip [acls-list-ancestors.sh](../assets/acls/acls-list-ancestors.sh)
 
 Response (with ancestors)
-:   @@snip [acls-listed-ancestors.json](../assets/acls-listed-ancestors.json)
+:   @@snip [acls-listed-ancestors.json](../assets/acls/acls-listed-ancestors.json)

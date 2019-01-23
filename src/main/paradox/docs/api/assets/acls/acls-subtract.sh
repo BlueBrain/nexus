@@ -4,7 +4,7 @@ curl -XPATCH -H "Content-Type: application/json" "https://nexus.example.com/v1/a
   "acl": [
     {
       "permissions": [
-        "read"
+        "projects/read"
       ],
       "identity": {
         "group": "a-group",
