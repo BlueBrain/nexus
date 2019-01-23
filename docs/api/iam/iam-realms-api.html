@@ -261,38 +261,33 @@ BlueBrain/nexus
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/realms/realm1&quot; \
-    -d &#39;{&quot;label&quot;:&quot;realm1&quot;,&quot;openidConfiguration&quot;:&quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,&quot;requiredScopes&quot;:[&quot;openid&quot;,&quot;nexus&quot;]}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-add.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+    -d &#39;{&quot;name&quot;:&quot;Nexus Dev&quot;,&quot;openIdConfig&quot;:&quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,&quot;logo&quot;:&quot;http://nexus.example.com/logo.png&quot;}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-add.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;label&quot;: &quot;realm1&quot;,
-  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-  &quot;requiredScopes&quot;: [
-    &quot;openid&quot;,
-    &quot;nexus&quot;
-  ]
+  &quot;name&quot;: &quot;Nexus Dev&quot;,
+  &quot;openIdConfig&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;logo&quot;: &quot;http://nexus.example.com/logo.png&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-add.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
-  &quot;@type&quot;: &quot;nxv:Realm&quot;,
-  &quot;label&quot;: &quot;realm1&quot;,
-  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-  &quot;requiredScopes&quot;: [
-    &quot;openid&quot;,
-    &quot;nexus&quot;
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
   ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;Realm&quot;,
+  &quot;_label&quot;: &quot;realm1&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-added-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<p>The <code>requiredScopes</code> field defines the scopes that need to be included in the token from this realm in order for Nexus to accept it as valid.</p>
+<p>The <code>logo</code> parameter is optional.</p>
 <h2><a href="#update-a-realm" name="update-a-realm" class="anchor"><span class="anchor-link"></span></a>Update a realm</h2>
 <p>This operation updates a realm.</p>
 <pre><code>PUT /v1/realms/{realm}?rev={previous_rev}
@@ -304,37 +299,30 @@ BlueBrain/nexus
   <dt>Request</dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/realms/realm1?rev=1&quot; \
-    -d &#39;{&quot;name&quot;:&quot;realm1&quot;,&quot;openidConfiguration&quot;:&quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,&quot;requiredScopes&quot;:[&quot;openid&quot;,&quot;nexus&quot;, &quot;another&quot;]}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replace.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+    -d &#39;{&quot;name&quot;:&quot;Nexus Dev&quot;,&quot;openIdConfig&quot;:&quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,&quot;logo&quot;:&quot;http://nexus.example.com/logo.png&quot;}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replace.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;name&quot;: &quot;realm1&quot;,
-  &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-  &quot;requiredScopes&quot;: [
-    &quot;openid&quot;,
-    &quot;nexus&quot;,
-    &quot;another&quot;
-  ]
+  &quot;name&quot;: &quot;Nexus Dev&quot;,
+  &quot;openIdConfig&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
+  &quot;logo&quot;: &quot;http://nexus.example.com/logo.png&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replace.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
-  &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm1&quot;,
-  &quot;@type&quot;: &quot;nxv:Realm&quot;,
-  &quot;name&quot;: &quot;realm1&quot;,
-  &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-  &quot;requiredScopes&quot;: [
-    &quot;openid&quot;,
-    &quot;nexus&quot;,
-    &quot;another&quot;
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
   ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;Realm&quot;,
+  &quot;_label&quot;: &quot;realm1&quot;,
+  &quot;_rev&quot;: 2,
+  &quot;_deprecated&quot;: false,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 2,
-  &quot;_deprecated&quot;: false
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#delete-a-realm" name="delete-a-realm" class="anchor"><span class="anchor-link"></span></a>Delete a realm</h2>
@@ -351,21 +339,19 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
-  &quot;@type&quot;: &quot;nxv:Realm&quot;,
-  &quot;name&quot;: &quot;realm1&quot;,
-  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/v1/realms/bbp-test/.well-known/openid-configuration&quot;,
-  &quot;requiredScopes&quot;: [
-    &quot;openid&quot;,
-    &quot;nexus&quot;
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
   ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;Realm&quot;,
+  &quot;_label&quot;: &quot;realm1&quot;,
+  &quot;_rev&quot;: 3,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 3,
-  &quot;_deprecated&quot;: true
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-deleted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-realms" name="list-realms" class="anchor"><span class="anchor-link"></span></a>List realms</h2>
@@ -379,46 +365,62 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: {
-    &quot;@context&quot;: [
-      &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
-      &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-      &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;
-    ]
-  },
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;
+  ],
   &quot;_total&quot;: 2,
   &quot;_results&quot;: [
     {
       &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm1&quot;,
-      &quot;@type&quot;: &quot;nxv:Realm&quot;,
-      &quot;name&quot;: &quot;realm1&quot;,
-      &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-      &quot;requiredScopes&quot;: [
-        &quot;openid&quot;,
-        &quot;nexus&quot;
+      &quot;@type&quot;: &quot;Realm&quot;,
+      &quot;name&quot;: &quot;Github Dev&quot;,
+      &quot;openIdConfig&quot;: &quot;http://nexus.example.com/auth/realms/realm1/.well-known/openid-configuration&quot;,
+      &quot;_label&quot;: &quot;realm1&quot;,
+      &quot;_grantTypes&quot;: [
+        &quot;password&quot;,
+        &quot;clientCredentials&quot;,
+        &quot;refreshToken&quot;,
+        &quot;authorizationCode&quot;,
+        &quot;implicit&quot;
       ],
-      &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-      &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-      &quot;_rev&quot;: 1,
-      &quot;_deprecated&quot;: false
+      &quot;_issuer&quot;: &quot;http://nexus.example.com/auth/realms/realm1&quot;,
+      &quot;_authorizationEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/auth&quot;,
+      &quot;_tokenEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/token&quot;,
+      &quot;_userInfoEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/userinfo&quot;,
+      &quot;_endSessionEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/logout&quot;,
+      &quot;_rev&quot;: 3,
+      &quot;_deprecated&quot;: false,
+      &quot;_createdAt&quot;: &quot;2019-01-22T10:50:47.351Z&quot;,
+      &quot;_createdBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;,
+      &quot;_updatedAt&quot;: &quot;2019-01-22T12:24:13.029Z&quot;,
+      &quot;_updatedBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;
     },
     {
       &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm2&quot;,
-      &quot;@type&quot;: &quot;nxv:Realm&quot;,
-      &quot;name&quot;: &quot;realm2&quot;,
-      &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-      &quot;requiredScopes&quot;: [
-        &quot;openid&quot;,
-        &quot;nexus&quot;
+      &quot;@type&quot;: &quot;Realm&quot;,
+      &quot;name&quot;: &quot;Realm 2&quot;,
+      &quot;openIdConfig&quot;: &quot;http://nexus.example.com/auth/realms/realm2/.well-known/openid-configuration&quot;,
+      &quot;_label&quot;: &quot;realm2&quot;,
+      &quot;_grantTypes&quot;: [
+        &quot;password&quot;,
+        &quot;clientCredentials&quot;,
+        &quot;refreshToken&quot;,
+        &quot;authorizationCode&quot;,
+        &quot;implicit&quot;
       ],
-      &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-      &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-      &quot;_rev&quot;: 2,
-      &quot;_deprecated&quot;: false
+      &quot;_issuer&quot;: &quot;http://nexus.example.com/auth/realms/realm2&quot;,
+      &quot;_authorizationEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm2/protocol/openid-connect/auth&quot;,
+      &quot;_tokenEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm2/protocol/openid-connect/token&quot;,
+      &quot;_userInfoEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm2/protocol/openid-connect/userinfo&quot;,
+      &quot;_endSessionEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm2/protocol/openid-connect/logout&quot;,
+      &quot;_rev&quot;: 1,
+      &quot;_deprecated&quot;: false,
+      &quot;_createdAt&quot;: &quot;2019-01-22T12:22:50.738Z&quot;,
+      &quot;_createdBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;,
+      &quot;_updatedAt&quot;: &quot;2019-01-22T12:22:50.738Z&quot;,
+      &quot;_updatedBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realms-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -434,23 +436,30 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
   &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm1&quot;,
-  &quot;@type&quot;: &quot;nxv:Realm&quot;,
-  &quot;name&quot;: &quot;realm1&quot;,
-  &quot;openidConfiguration&quot;: &quot;http://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-  &quot;requiredScopes&quot;: [
-    &quot;openid&quot;,
-    &quot;nexus&quot;,
-    &quot;another&quot;
+  &quot;@type&quot;: &quot;Realm&quot;,
+  &quot;name&quot;: &quot;Github Dev&quot;,
+  &quot;openIdConfig&quot;: &quot;http://nexus.example.com/auth/realms/realm1/.well-known/openid-configuration&quot;,
+  &quot;_label&quot;: &quot;realm1&quot;,
+  &quot;_grantTypes&quot;: [
+    &quot;password&quot;,
+    &quot;clientCredentials&quot;,
+    &quot;refreshToken&quot;,
+    &quot;authorizationCode&quot;,
+    &quot;implicit&quot;
   ],
-  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 2,
-  &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  &quot;_issuer&quot;: &quot;http://nexus.example.com/auth/realms/realm1&quot;,
+  &quot;_authorizationEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/auth&quot;,
+  &quot;_tokenEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/token&quot;,
+  &quot;_userInfoEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/userinfo&quot;,
+  &quot;_endSessionEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/logout&quot;,
+  &quot;_rev&quot;: 3,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2019-01-22T10:50:47.351Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;,
+  &quot;_updatedAt&quot;: &quot;2019-01-22T12:24:13.029Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-fetch.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#fetch-a-realm-specific-version-" name="fetch-a-realm-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a realm (specific version)</h2>
 <pre><code>GET /v1/realms/{realm}?rev={rev}
@@ -460,26 +469,34 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/realms/realm1?rev=1&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/realms/realm1?rev=3&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/realm.json&quot;,
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/realms/realm1&quot;,
-  &quot;@type&quot;: &quot;nxv:Realm&quot;,
-  &quot;label&quot;: &quot;realm1&quot;,
-  &quot;openidConfiguration&quot;: &quot;https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration&quot;,
-  &quot;requiredScopes&quot;: [
-    &quot;openid&quot;,
-    &quot;nexus&quot;
+  &quot;@id&quot;: &quot;http://nexus.example.com/v1/realms/realm1&quot;,
+  &quot;@type&quot;: &quot;Realm&quot;,
+  &quot;name&quot;: &quot;Github Dev&quot;,
+  &quot;openIdConfig&quot;: &quot;http://nexus.example.com/auth/realms/realm1/.well-known/openid-configuration&quot;,
+  &quot;_label&quot;: &quot;realm1&quot;,
+  &quot;_grantTypes&quot;: [
+    &quot;password&quot;,
+    &quot;clientCredentials&quot;,
+    &quot;refreshToken&quot;,
+    &quot;authorizationCode&quot;,
+    &quot;implicit&quot;
   ],
-  &quot;_createdAt&quot;: &quot;2018-09-18T09:58:00.801Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-18T10:25:00.801Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-added-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  &quot;_issuer&quot;: &quot;http://nexus.example.com/auth/realms/realm1&quot;,
+  &quot;_authorizationEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/auth&quot;,
+  &quot;_tokenEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/token&quot;,
+  &quot;_userInfoEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/userinfo&quot;,
+  &quot;_endSessionEndpoint&quot;: &quot;http://nexus.example.com/auth/realms/realm1/protocol/openid-connect/logout&quot;,
+  &quot;_rev&quot;: 3,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2019-01-22T10:50:47.351Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;,
+  &quot;_updatedAt&quot;: &quot;2019-01-22T12:24:13.029Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/assets/realms/realm-fetch.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
