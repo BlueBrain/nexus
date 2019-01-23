@@ -64,7 +64,7 @@ PUT /v1/acls/{path}?rev={previous_rev}
 
 ...where:
 
-- `{previous_rev}`: Number - the last known revision for the ACL collection.
+- `{previous_rev}`: Number - the last known revision for the ACL collection. Not required for replacing empty ACLs.
 - `{path}`: String - is the target location for the ACL collection.
 
 The json payload contains the collection of ACL to set.
@@ -117,7 +117,7 @@ PATCH /v1/acls/{path}?rev={previous_rev}
 ```
 ...where:
 
-- `{previous_rev}`: Number - the last known revision for the ACL collection.
+- `{previous_rev}`: Number - the last known revision for the ACL collection. Not required for appending to empty ACLs.
 - `{path}`: String - is the target location for the ACL collection.
 
 The json payload contains the collection of ACL to add.
