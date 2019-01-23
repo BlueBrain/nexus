@@ -3,7 +3,7 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/acl
   "acl": [
     {
       "permissions": [
-        "read"
+        "projects/read"
       ],
       "identity": {
         "realm": "myrealm",
@@ -12,8 +12,8 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/acl
     },
     {
       "permissions": [
-        "read",
-        "write"
+        "projects/read",
+        "projects/write"
       ],
       "identity": {
         "realm": "realm",

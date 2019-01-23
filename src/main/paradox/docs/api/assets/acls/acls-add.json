@@ -1,9 +1,8 @@
-curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/acls/org1?rev=1" -d \
-'{
+{
   "acl": [
     {
       "permissions": [
-        "read"
+        "projects/read"
       ],
       "identity": {
         "realm": "myrealm",
@@ -12,11 +11,11 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/acl
     },
     {
       "permissions": [
-        "read",
-        "write"
+        "projects/read",
+        "projects/write"
       ],
       "identity": {
-        "realm": "realm",
+        "realm": "myrealm",
         "group": "some-group"
       }
     },
@@ -26,9 +25,9 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/acl
         "acls/write"
       ],
       "identity": {
-        "realm": "realm",
+        "realm": "myrealm",
         "subject": "alice"
       }
     }
   ]
-}'
+}

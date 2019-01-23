@@ -3,7 +3,7 @@
   "acl": [
     {
       "permissions": [
-        "read"
+        "projects/read"
       ],
       "identity": {
         "realm": "myrealm",

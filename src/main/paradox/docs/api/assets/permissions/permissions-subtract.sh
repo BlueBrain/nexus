@@ -2,6 +2,6 @@ curl -XPATCH -H "Content-Type: application/json" "https://nexus.example.com/v1/p
 '{
   "@type": "Subtract",
   "permissions": [
-    "write"
+    "newpermission/write"
   ]
 }'

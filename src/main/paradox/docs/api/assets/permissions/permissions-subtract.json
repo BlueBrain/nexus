@@ -1,6 +1,6 @@
 {
   "@type": "Subtract",
   "permissions": [
-    "write"
+    "newpermission/write"
   ]
 }
