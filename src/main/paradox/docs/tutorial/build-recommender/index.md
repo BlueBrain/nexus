@@ -1,12 +1,11 @@
 
 @@@ index
-
-* [Set up ES view](setup-es-view.md)
+* [Set up Nexus environment](setup-nexus.md)
 * [Pull the data from Nexus](pull-data.md)
 * [Prepare data](prepare-data.md)
 * [Train collabrative filtering models](train-recommender-model.md)
-* [Push trained models to Nexus]()
-* [Recommend using provenance](recommend-query.md)
+* [Push output back to Nexus](push-model.md)
+* [Recommend by querying Nexus](recommend-query.md)
 @@@
 
 # Building a Recommender System
