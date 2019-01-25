@@ -1,13 +1,4 @@
 
-@@@ index
-* [Set up Nexus environment](setup-nexus.md)
-* [Pull the data from Nexus](pull-data.md)
-* [Prepare data](prepare-data.md)
-* [Train collaborative filtering models](train-recommender-model.md)
-* [Push output back to Nexus](push-model.md)
-* [Recommend by querying Nexus](recommend-query.md)
-@@@
-
 # Building a Data Pipeline for a Recommender System
 [](assets/recommendation.png)
 
