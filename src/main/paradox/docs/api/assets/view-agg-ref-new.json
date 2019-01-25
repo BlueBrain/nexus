@@ -2,7 +2,8 @@
   "@context": [
     "https://bluebrain.github.io/nexus/contexts/view.json",
     "https://bluebrain.github.io/nexus/contexts/resource.json"
-  ],  "@id": "nxv:myview",
+  ],
+  "@id": "nxv:myview",
   "@type": [
     "AggregateElasticSearchView",
     "View",
