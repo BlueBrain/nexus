@@ -4,8 +4,6 @@
 * [Resolvers](kg-resolvers-api.md)
 * [Views](kg-views-api.md)
 * [Resources](kg-resources-api.md)
-* [Resources](kg-data-api.md)
-
 
 @@@
 
