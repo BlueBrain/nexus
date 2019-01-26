@@ -24,4 +24,4 @@ In this tutorial, we demonstrate how to consume structured data available on the
 This tutorial code is available:
 
 * at [Github](https://github.com/BlueBrain/nexus/blob/tutorial_init/src/main/paradox/docs/tutorial/notebooks/Linking%20data%20on%20the%20web.ipynb)
-* on [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/tutorial_init/src/main/paradox/docs/tutorial/notebooks/Linking%20data%20on%20the%20web.ipynb)
+* on [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Linking%20data%20on%20the%20web.ipynb)
