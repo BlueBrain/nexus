@@ -15,19 +15,19 @@
           "@id": "http://example.com/myview",
           "@type": [
             "https://bluebrain.github.io/nexus/vocabulary/View",
-            "https://bluebrain.github.io/nexus/vocabulary/ElasticView",
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
             "https://bluebrain.github.io/nexus/vocabulary/Alpha"
           ],
-          "_original_source": "{\"mapping\":\"{\\\"dynamic\\\":false,\\\"properties\\\":{\\\"@id\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"@type\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"name\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"number\\\":{\\\"type\\\":\\\"long\\\"},\\\"bool\\\":{\\\"type\\\":\\\"boolean\\\"}}}\",\"_uuid\":\"89dd9858-cf87-4c46-94c2-24da0fcae0aa\",\"@context\":\"https://bluebrain.github.io/nexus/contexts/view\",\"@type\":[\"View\",\"ElasticView\",\"Alpha\"],\"includeMetadata\":true,\"sourceAsText\":false}",
+          "_original_source": "{\"mapping\":\"{\\\"dynamic\\\":false,\\\"properties\\\":{\\\"@id\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"@type\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"name\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"number\\\":{\\\"type\\\":\\\"long\\\"},\\\"bool\\\":{\\\"type\\\":\\\"boolean\\\"}}}\",\"_uuid\":\"89dd9858-cf87-4c46-94c2-24da0fcae0aa\",\"@context\":\"https://bluebrain.github.io/nexus/contexts/view\",\"@type\":[\"View\",\"ElasticSearchView\",\"Alpha\"],\"includeMetadata\":true,\"sourceAsText\":false}",
           "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
-          "_constrainedBy": "nxs:view",
+          "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
           "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+          "_rev": 6,
+          "_deprecated": true,
           "_createdAt": "2018-09-18T16:39:22.748Z",
           "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
           "_updatedAt": "2018-09-18T17:10:22.748Z",
-          "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-          "_rev": 6,
-          "_deprecated": true
+          "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
         },
         "_type": "doc"
       }

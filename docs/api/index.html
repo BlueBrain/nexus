@@ -167,7 +167,6 @@ BlueBrain/nexus
       <li><a href="../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/api/kg/kg-views-api.html" class="page">Views</a></li>
       <li><a href="../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
-      <li><a href="../../docs/api/kg/kg-data-api.html" class="page">Data</a></li>
     </ul></li>
     <li><a href="../../docs/api/iam/index.html" class="page">Identity &amp; Access Management API</a>
     <ul>
@@ -250,7 +249,6 @@ BlueBrain/nexus
   <li>A <strong><a href="kg/kg-schemas-api.html">schema</a></strong> is a resource that defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/">SHACL</a>.</li>
   <li>A <strong><a href="kg/kg-resolvers-api.html">resolvers</a></strong>: is a resource that defines the way ids are retrieved inside a project.</li>
   <li>A <strong><a href="kg/kg-views-api.html">views</a></strong>: is a resource that describes the way indexing is applied to certain resources inside a project.</li>
-  <li>The <strong><a href="kg/kg-data-api.html">data</a></strong>: resource is the most generic entity and it can be either a <code>schema</code>, <code>resolver</code>, <code>view</code> or <code>data</code>. Data resources stored in Nexus are validated against a certain schema. The data then is transformed into <a href="https://www.w3.org/TR/rdf-concepts/#section-triples">RDF triples</a> that enriching the Knowledge Graph.</li>
 </ul>
 <h2><a href="#resource-lifecycle" name="resource-lifecycle" class="anchor"><span class="anchor-link"></span></a>Resource Lifecycle</h2>
 <p>Our services are build using the <a href="https://martinfowler.com/eaaDev/EventSourcing.html">event sourcing</a> approach. This strategy captures all changes to an application state as a sequence of events.</p>
