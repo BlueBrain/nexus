@@ -1,6 +1,7 @@
 @@@ index
 
 * [Quick Start](quick-start/index.md)
+* [The MovieLens Dataset](dataset/index.md)
 
 @@@
 
