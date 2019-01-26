@@ -163,7 +163,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
-      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": false,\n  \"sourceAsText\": false,\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
+      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": false,\n  \"sourceAsText\": false,\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -264,7 +264,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
-      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/\"\n  },\n  \"@type\": [\n    \"View\",\n    \"AggregateElasticView\",\n    \"Alpha\"\n  ],\n  \"views\": [\n    {\n      \"project\": \"myorg\/myproject\",\n      \"viewId\": \"ex:myview\"\n    },\n    {\n      \"project\": \"myorg\/myproject-other\",\n      \"viewId\": \"ex:my-other-view\"\n    }\n  ]\n}",
+      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/\"\n  },\n  \"@type\": [\n    \"View\",\n    \"AggregateElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"views\": [\n    {\n      \"project\": \"myorg\/myproject\",\n      \"viewId\": \"ex:myview\"\n    },\n    {\n      \"project\": \"myorg\/myproject-other\",\n      \"viewId\": \"ex:my-other-view\"\n    }\n  ]\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -452,7 +452,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
-      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/\"\n  },\n  \"@type\": [\n    \"View\",\n    \"AggregateElasticView\",\n    \"Alpha\"\n  ],\n  \"views\": [\n    {\n      \"project\": \"myorg\/myproject\",\n      \"viewId\": \"ex:myview\"\n    },\n    {\n      \"project\": \"myorg\/myproject-other\",\n      \"viewId\": \"ex:my-other-view\"\n    }\n  ]\n}",
+      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/\"\n  },\n  \"@type\": [\n    \"View\",\n    \"AggregateElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"views\": [\n    {\n      \"project\": \"myorg\/myproject\",\n      \"viewId\": \"ex:myview\"\n    },\n    {\n      \"project\": \"myorg\/myproject-other\",\n      \"viewId\": \"ex:my-other-view\"\n    }\n  ]\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -517,7 +517,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
-      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": false,\n  \"sourceAsText\": false,\n  \"resourceSchemas\": \"nxs:myschema\",\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
+      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": false,\n  \"sourceAsText\": false,\n  \"resourceSchemas\": \"https://bluebrain.github.io/nexus/schemas/myschema\",\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },
@@ -590,7 +590,7 @@
       "currentHelper": null,
       "helperAttributes": null,
       "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
-      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": true,\n  \"sourceAsText\": false,\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
+      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": true,\n  \"sourceAsText\": false,\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
       "headers": "Content-Type: application\/json\n",
       "pathVariables": []
     },

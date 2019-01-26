@@ -16,7 +16,7 @@
     }
   ],
   "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c",
-  "_constrainedBy": "nxs:shacl",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/shacl",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
   "_createdAt": "2018-09-17T14:55:42.939Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",

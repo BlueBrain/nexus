@@ -23,8 +23,6 @@ The services operates on 3 primary types of resources: Organizations, Projects a
   - A **@ref:[schema](./kg/kg-schemas-api.md)** is a resource that defines a set of rules and constrains using [SHACL].
   - A **@ref:[resolvers](./kg/kg-resolvers-api.md)**: is a resource that defines the way ids are retrieved inside a project.
   - A **@ref:[views](./kg/kg-views-api.md)**: is a resource that describes the way indexing is applied to certain resources inside a project.
-  - The **@ref:[data](./kg/kg-data-api.md)**: resource is the most generic entity and it can be either a `schema`, `resolver`, `view` or `data`. Data resources stored in Nexus are validated against a certain schema. The data then is transformed into [RDF triples](https://www.w3.org/TR/rdf-concepts/#section-triples) that enriching the Knowledge Graph.
-
 
 ## Resource Lifecycle
 

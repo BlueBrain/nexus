@@ -3,7 +3,7 @@
   "@id": "https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
   "@type": "http://example.com/Custom",
   "_self": "https://nexus.example.com/v1/resources/myorg/myproj/resource/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
-  "_constrainedBy": "nxs:resource",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resource",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
   "_createdAt": "2018-09-17T14:54:42.939Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",

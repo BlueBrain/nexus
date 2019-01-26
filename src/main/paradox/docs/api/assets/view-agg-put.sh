@@ -4,8 +4,7 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/vie
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
   },
   "@type": [
-    "View",
-    "AggregateElasticView",
+    "AggregateElasticSearchView",
     "Alpha"
   ],
   "views": [
