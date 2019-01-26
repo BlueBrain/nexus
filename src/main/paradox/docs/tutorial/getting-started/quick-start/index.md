@@ -10,226 +10,283 @@ The goal is to go over some capabilities of Blue Brain Nexus enabling:
 * The creation of a project as a protected data space to work with
 * An easy ingestion of dataset and management of it's lifecycle
 * Querying a dataset to retrieve various information
-* Share a dataset by making it public
+* Sharing a dataset by making it public
 
 For that we will work with the small version of the [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip) containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
 An overview of this dataset can be found [here](../dataset/index.html) but it's not required to read it to follow this quick start tutorial.
 
 @@@ note
-This tutorial makes use of an AWS deployment of Blue Brain Nexus available at $NEXUS-URL.
+* This tutorial makes use of an AWS deployment of Blue Brain Nexus available at https://nexus-sandbox.io/v1.
+* We will be using [Nexus CLI](https://github.com/BlueBrain/nexus-cli), a python client,  to interact with the deployment.
 @@@
 
 Let's get started.
 
 ## Set up
 
-* Download the dataset
 
-The dataset can be downloaded either directly on a browser or using the following  curl command:
-
-```shell
-# Go to your home
-$ cd ~
-
-# Download the dataset and unzip it in the directory ~/ml-latest-small.
-$ curl -s -O http://files.grouplens.org/datasets/movielens/ml-latest-small.zip && unzip -qq ml-latest-small.zip && cd ml-latest-small && ls
-README.txt	links.csv	movies.csv	ratings.csv	tags.csv
-...
-```
-
-* Install and setup the Nexus CLI
+### Install and setup the Nexus CLI
 
 ```shell
-$ pip install nexus-cli
+pip install git+https://github.com/BlueBrain/nexus-cli
 ```
 
-* Create and select an 'amld2019' profile
 
-```shell
-# Create a profile named amld2019
-$ nexus profiles --create amld2019 --url $NEXUS-URL
+### Create and select a 'tutorial' profile
 
-# The created profile is local to your machine.
-$ nexus profiles --select amld2019
+To ease the usage of the CLI, we will create a profile named 'tutorial' storing locally various configurations such as the the Nexus deployment url.
 
-# Verify that the 'amld2019' profile is actually selected.
-$ nexus profiles
-+------------+----------+-------------------------------------+-------+
-| Profile    | Selected | URL                                 | Token |
-+------------+----------+-------------------------------------+-------+
-| amld2019   |   Yes    | $NEXUS-URL                          |  None |
-+------------+----------+-------------------------------------+-------+
-...
-```
+Command
+:   @@snip [create-profile-cmd.sh](../assets/create-profile-cmd.sh)
 
-* Login with a token
+Output
+:   @@snip [create-profile-out.sh](../assets/create-profile-out.sh)
 
-Let login to the AWS Nexus deployment to get a token
-```shell
-# At this point the profile amld2019 is selected
-$ nexus login $NEXUS-URL -t $TOKEN
-...
-```
+Let select the tutorial profile we just created.
 
-TBFD
+Command
+:   @@snip [select-profile-cmd.sh](../assets/select-profile-cmd.sh)
+
+Output
+:   @@snip [select-profile-out.sh](../assets/select-profile-out.sh)
+
+
+
+### Login
+
+A bearer token is needed to authenticate to Nexus. For the purpose of this tutorial, you'll login using your github account.
+
+@@@ note
+* If you don't have a github account, please follow the instructions on this [page](https://github.com/join?source=header-home) to create one.
+@@@
+
+
+The following command will open a browser window from where you can login using your github account.
+
+
+Command
+:   @@snip [login-auth-cmd.sh](../assets/login-auth-cmd.sh)
+
+Output
+:   @@snip [login-auth-out.sh](../assets/login-auth-out.sh)
+
+From the opened web page, click on the login button on the right corner and follow the instructions.
+
+
+![login-ui](../assets/login-ui.png)
+
+At the end you'll see a token button on the right corner. Click on it to copy the token.
+
+![login-ui](../assets/copy-token.png)
+
+The token can now be added to the tutorial profile. In the output of the following command you should see that the token column has now an expiry date.
+
+Command
+:   @@snip [settoken-auth-cmd.sh](../assets/settoken-auth-cmd.sh)
+
+Output
+:   @@snip [settoken-auth-out.sh](../assets/settoken-auth-out.sh)
+
+
 
 ## Create a project
 
-Projects in BlueBrain Nexus are spaces where data can be **managed** ( **created**, **validated**, **secured**, **updated**, **deprecated**), **accessed** and **shared**.
-A project is always created within an organization just like a git repository is created in a github organization.
+Projects in BlueBrain Nexus are spaces where data can be:
+
+* **managed**: created, updated, deprecated, validated, secured,
+* **accessed**: directly by ids or through various search interfaces.
+* **shared**: through fine grain Access Control List
+
+A **project** is always created within an **organization** just like a git repository is created in a github organization. Organizations can be understood as accounts hosting multiple projects.
+
+### Select an organization
 
 @@@ note
-A public **organization named "amld2019"** is already created for the purpose of this tutorial. All projects will be created under the "amld2019" organization.
+A public organization named **tutorialnexus** is already created for the purpose of this tutorial. All projects will be created under this organization.
 @@@
 
-Let first select the amld2019 organization.
+The following command should list the organizations you have access to. The **tutorialnexus** orgnization should be listed and tagged as non deprecated in the output.
 
-```shell
-$ nexus organization amld2019
-Set current organization to amld2019 on server $NEXUS-URL
-```
+Command
+:   @@snip [list-orgs-cmd.sh](../assets/list-orgs-cmd.sh)
 
-Create a project in the organization "amld2019 using your [USERNAME].
-
-```shell
-$ nexus create project $USERNAME
-Created project named "$USERNAME" on organization "amld2019" and server "$NEXUS-URL"
-```
-
-By default created projects are private meaning that only the project creator has read and write access. We'll [see below](#make-a-dataset-public) how to make a project public.
-
-The following command shows the list of projects you have access to. The project you just created should be the only one listed at this point.
-Note the * character showing the current project you're working in.
+Output
+:   @@snip [list-orgs-out.sh](../assets/list-orgs-out.sh)
 
 
-```shell
-$ nexus projects
-Projects on server "$NEXUS-URL":
-    * USERNAME
-```
+Let select the **tutorialnexus** organization.
 
-The following command displays a short description of the current project.
+Command
+:   @@snip [select-orgs-cmd.sh](../assets/select-orgs-cmd.sh)
 
-```shell
- $ nexus project
- Working with project "$USERNAME" on organization "amld2019" and server "$NEXUS-URL"
-```
-
-A complete project description can also be displayed by adding the -v (for verbose) flag. A default configuration was generated for the project you just created as you can see.
-
-```shell
- $ nexus project -v
- Working with project "$USERNAME" on organization "amld2019" and server "$NEXUS-URL".
- Project configuration:
-    '{
-      "@context": "https://bbp-nexus.epfl.ch/staging/v1/contexts/nexus/core/resource/v0.4.0",
-      "@id": "https://bbp-nexus.epfl.ch/staging/v1/projects/anorg/$USERNAME",
-      "@type": "nxv:Project",
-      "_uuid": "714839aa-8262-460a-8b90-dbfff2db7b5c",
-      "base": "https://bbp-nexus.epfl.ch/staging/v1/resources/amld2019/$USERNAME/_/",
-      "vocab": "ttps://bbp-nexus.epfl.ch/staging/v1/vocabs/amld2019/$USERNAME/",
-      "label": "$USERNAME",
-      "name": "$USERNAME",
-      "prefixMappings": [],
-      "_rev": 1,
-      "_deprecated": false
-    }'
-```
+Output
+:   @@snip [select-orgs-out.sh](../assets/select-orgs-out.sh)
 
 
-## Ingest a dataset
+### Create a project
+
+A project is created with a label and within an organization. The label should be made of alphanumerical characters and its length should be between 3 and 32 (it should match the regex: [a-zA-Z0-9-_]{3,32}).
+
+Pick a label (hereafter referred to as $PROJECTLABEL) and create a project using the following command.
+It is recommended to use your username to avoid collision of projects labels within an organization.
+
+Command
+:   @@snip [create-project-cmd.sh](../assets/create-project-cmd.sh)
+
+Output
+:   @@snip [create-project-out.sh](../assets/create-project-out.sh)
+
+By default created projects are private meaning that only the project creator (you) has read and write access to it. We'll [see below](#share-data) how to make a project public.
+
+The output of the previous command shows the list of projects you have read access to. The project you just created should be the only one listed at this point. Let select it.
+
+Command
+:   @@snip [select-project-cmd.sh](../assets/select-project-cmd.sh)
+
+Output
+:   @@snip [select-project-out.sh](../assets/select-project-out.sh)
 
 We are all set to bring some data within the project we just created.
-Loading a csv file can be performed by running the following simple command:
 
-```
-$ nexus create resource -f path/to/file_to_load.csv
-```
+## Ingest data
 
-For the purpose of this tutorial, we will take advantage within Nexus of the dataset data model namely:
+### Download the dataset
 
-* the data types: movies, tags, ratings
-* ids
+The [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip) can be downloaded either directly on a browser or using a curl command as shown below.
 
-The following command ingest movies in Nexus (from the file movies.csv):
+The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded MovieLens dataset is made of four csv files as shown in the output tab.
 
-```shell
-# {filename:type} is one of: movies, ratings and tags
-$ nexus create resource -f ~/ml-latest-small/movies.csv --type Movie
-Created 9742 resources of type Movie.
-```
+Command
+:   @@snip [downloadmovielens-cmd.sh](../assets/downloadmovielens-cmd.sh)
 
-From json payload
-:   @@snip [resource.sh](../assets/create_from_json.sh)
-
-From json file
-:   @@snip [resource.json](../assets/create_json_from_file.sh)
-
-From csv file
-:   @@snip [resource-ref-new.json](../assets/create_csv_from_file.sh)
+Output
+:   @@snip [downloadmovielens-out.sh](../assets/downloadmovielens-out.sh)
 
 
-
-## Query a dataset
-
-### Listing resources
-
-The quickest and simplest way to accessed ingested dataset is by listing them as shown in the following command:
+### Load the dataset
+Let first load the movies and merge them with the links.
 
 ```shell
-# List 5 created resources
-$ nexus list resources --from=0 --size=5
+nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv -idfield movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId
 ```
 
-Some filters are available to list specific resources. For example the resources of type Movie can be retrieved by running the following command:
+Then we can load the tags.
+
 ```shell
-# List 5 movies (resources of type Movie)
-$ nexus list resources --type Movie --from=0 --size=5
+nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv
 ```
+
+And finally the ratings.
+
+```shell
+nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv
+```
+
+
+## Access data
+
+### List data
+
+The simplest way to accessed data within Nexus is by listing them. The following command lists 5 resources:
+
+
+Command
+:   @@snip [list-res-cmd.sh](../assets/list-res-cmd.sh)
+
+Output
+:   @@snip [list-res-out.sh](../assets/list-res-out.sh)
+
+The full payload of the resources are not retrieved when listing them: only identifier, type as well as Nexus added metadata are.
+But the result list can be scrolled and each resource fetched by identifier.
+
+Command
+:   @@snip [fetch-res-id-cmd.sh](../assets/fetch-res-id-cmd.sh)
+
+Output
+:   @@snip [fetch-res-id-out.sh](../assets/fetch-res-id-out.sh)
+
+Whenever a resource is created, Nexus injects some useful metadata. The table below details some of them:
+
+| Metadata | Description                                                                                                                          | Value Type |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|------------|
+| @id                  | Generated resource identifier. The user can provide its own identifier.                                                              | URI        |
+| @type                | The type of the resource if provided by the user.                                                                                    | URI        |
+| \_self               | The resource address within Nexus. It contains the resource management details such as the organization, the project and the schema. | URI        |
+| \_createdAt          | The resource creation date.                                                                                                          | DateTime   |
+| \_createdBy          | The resource creator.                                                                                                                | DateTime   |
+
+Note that Nexus uses [JSON-LD]() as data exchange format.
+
+Filters are available to list specific resources. For example a list of resources of type Rating can be retrieved by running the following command:
+
+Command
+:   @@snip [list-res-filter-cmd.sh](../assets/list-res-filter-cmd.sh)
+
+Output
+:   @@snip [list-res-filter-out.sh](../assets/list-res-filter-out.sh)
+
+
 
 @@@ note { .tip title="Listing with various filters using the CLI" }
 
-Resources can be filtered from the CLI by any [Nexus added metadata](). As an exercise try to run the listing command above with different filters (like --updatedAt).
+As an exercise try to filter by tag to only retrieve resources of type Tag.
 
 @@@
 
-### Search using views
+### Query data
 
-Listing is usually not enough to select specific subset of the data. Data ingested within each project can be queried through two search endpoints called [views]() offering two complementary search features.
+Listing is usually not enough to select specific subset of the data. Data ingested within each project can be searched through two complementary search interfaces called [views](https://bluebrain.github.io/nexus/docs/api/kg/kg-views-api.html).
 
-View | Accessible at |Description
-------------------|-------------
-ElasticSearchView |$NEXUS-URL/views/amld2019/movielens/documents/_search|This view exposes data in a document oriented [ElasticSearch]() index and provide access to it using the [ElasticSearch query langugage]().
-SparqlView |$NEXUS-URL/views/amld2019/movielens/graph/sparql|This view exposes data as a graph and allows to navigate and traverse the data the [W3C Sparql query langugage]().
+View              | Description
+------------------|---------------
+ElasticSearchView | Exposes data in [ElasticSearch]() a document oriented search engine and provide access to it using the [ElasticSearch query langugage](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
+SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the [W3C Sparql query langugage](https://www.w3.org/TR/sparql11-query/).
 
-Let see some examples of queries using the SparqlView:
+#### Query data using the ElasticSearchView
 
-Select queries
-:   @@snip [resource.json](../assets/sparql_list.sh)
-
-Graph navigation queries
-:   @@snip [resource.json](../assets/sparql_nav.sh)
-
-Analytics queries
-:   @@snip [resource.json](../assets/sparql_analytics.sh)
-
-Let see some examples of queries using the ElasticSearchView:
+The ElasticSearchView URL is $NEXUS-URL/views/tutorialnexus/$PROJECTLABEL/documents/_search.
 
 Select queries
-:   @@snip [resource.json](../assets/sparql_list.sh)
+:   @@snip [select_elastic.sh](../assets/select_elastic.sh)
+
+Graph navigation queries
+:   @@snip [resource.sh](../assets/graph_elastic.sh)
+
+Analytics queries
+:   @@snip [analytics_elastic.sh](../assets/analytics_elastic.sh)
+
+#### Query data using the SparqlView
+
+$NEXUS-URL/views/tutorialnexus/$PROJECTLABEL/graph/sparql
+
+Select queries
+:   @@snip [select_sparql.sh](../assets/select_sparql.sh)
 
 Graph navigation queries
 :   @@snip [resource.json](../assets/sparql_list.sh)
 
 Analytics queries
-:   @@snip [resource.json](../assets/sparql_list.sh)
+:   @@snip [analytics_sparql.sh](../assets/analytics_sparql.sh)
 
-## Make a dataset public
+## Share data
 
 Making a dataset public means granting read permissions to "anonymous" user.
 
 ```shell
-$ nexus grant read on [USERNAME] to anonymous
+$ nexus acls make-public
 ```
 
-To check that the dataset is now public, logout and run some of the above query examples. You should be able to get result.
+To check that the dataset is now public:
+
+* Ask the person next to you to list resources in your project.
+* Or create and select another profile named public-tutorial (following the instructions in the [Set up](#set-up).
+You should see the that the public-tutorial is selected and its corresponding token column is None.
+
+Output
+:   @@snip [select-profile-public-out.sh](../assets/select-profile-public-out.sh)
+
+
+* Resources in your project should be listed with the command even though you are not authenticated.
+
+Command
+:   @@snip [list-res-org-proj-cmd.sh](../assets/list-res-org-proj-cmd.sh)

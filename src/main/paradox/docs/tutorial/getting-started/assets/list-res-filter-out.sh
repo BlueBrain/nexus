@@ -1,0 +1,9 @@
++------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
+| Id                                                                                 | Type                                                                       | Revision | Deprecated |
++------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
+| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_1  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_9  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_12 | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_7  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_8  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
++------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
