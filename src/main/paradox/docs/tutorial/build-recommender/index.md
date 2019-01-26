@@ -1,7 +1,7 @@
 
 # Building a Data Pipeline for a Recommender System
 
-[](assets/recommendation.png)
+![recommendation](assets/recommendation.png)
 
 ## Overview
 Recommendation engines are among the most well known, widely used and highest-value use cases for applying machine learning.
