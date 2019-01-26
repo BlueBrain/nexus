@@ -27,4 +27,4 @@ You will use a Jupyter notebook to build a pipeline to train a recommendation sy
 A Python environment with support of Jupyter notebook
 
 ## Get the tutorial code
-This tutorial code is available at [Github](https://github.com/BlueBrain/nexus/blob/tutorial_init/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb)
+This tutorial code is available at [Github](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb)
