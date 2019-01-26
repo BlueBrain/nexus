@@ -70,16 +70,9 @@ compliant identity providers to authenticate clients and manages the access cont
 
 ## Nexus Web Applications
 
-### Nexus Search
+### Nexus Web
 
-This web application allows users of the nexus platform to search in the knowledge graph. Beyond searching and
-inspecting data stored in the platform, its purpose is to enable the discovery of similar and related data.
-
-[Source Code](https://github.com/BlueBrain/nexus-search-webapp)
-
-### Nexus Explorer
-
-This web application allows users to browse the data within the system.
+This is the web interface to the platform. It allows users to browse the data within the system and perform administration tasks.
 
 [Source Code](https://github.com/BlueBrain/nexus-explorer)
 
