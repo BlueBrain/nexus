@@ -1,5 +1,6 @@
 
 # Building a Data Pipeline for a Recommender System
+
 [](assets/recommendation.png)
 
 ## Overview
