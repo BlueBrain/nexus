@@ -1,0 +1,6 @@
+{
+  "permissions": [
+    "newpermission/read",
+    "newpermission/write"
+  ]
+}

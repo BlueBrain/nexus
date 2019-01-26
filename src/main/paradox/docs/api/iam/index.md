@@ -4,6 +4,7 @@
 * [Authentication](authentication.md)
 * [Permissions](iam-permissions-api.md)
 * [ACLs](iam-acls-api.md)
+* [Identities](iam-identities.md)
 
 @@@
 
@@ -32,3 +33,8 @@ In order to restrict applications' access to data by placing restrictions on the
 An ACL defines the set of **permissions** that certain **identities** have on a concrete **path**.
 
 @ref:[Operations on ACLs](iam-acls-api.md)
+
+## Identities
+Identities endpoint can be used to fetch user identities.
+
+@ref:[Operations on identities](iam-identities.md)

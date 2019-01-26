@@ -28,7 +28,7 @@ Payload
 Response
 :   @@snip [realm-added-ref.json](../assets/realms/realm-added-ref.json)
 
-The `requiredScopes` field defines the scopes that need to be included in the token from this realm in order for Nexus to accept it as valid.
+The `logo` parameter is optional.
 
 
 
@@ -97,7 +97,7 @@ Request
 :   @@snip [realm-fetch.sh](../assets/realms/realm-fetch.sh)
 
 Response
-:   @@snip [realm-replaced-ref.json](../assets/realms/realm-replaced-ref.json)
+:   @@snip [realm-fetch.json](../assets/realms/realm-fetch.json)
 
 
 ## Fetch a realm (specific version)
@@ -113,4 +113,4 @@ Request
 :   @@snip [realm-fetch-revision.sh](../assets/realms/realm-fetch-revision.sh)
 
 Response
-:   @@snip [realm-added-ref.json](../assets/realms/realm-added-ref.json)
+:   @@snip [realm-fetch.json](../assets/realms/realm-fetch.json)
