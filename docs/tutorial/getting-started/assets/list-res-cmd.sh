@@ -1,1 +1,0 @@
-nexus resources list --size 5

@@ -1,1 +1,0 @@
-nexus projects select $PROJECTLABEL && nexus projects list
