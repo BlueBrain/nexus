@@ -9,7 +9,7 @@ Despite this, while there are many resources available for the basics of trainin
 there are relatively few that explain how to use Nexus to build a data pipeline,
 actually deploy these models to create a production-level machine learning eco-system for a recommender system.
 
-[](assets/ml_datapipeline.png)
+![ml_datapipeline](assets/ml_datapipeline.png)
 
 ## What you'll build
 You will use a Jupyter notebook to build a pipeline to train a recommendation system.
