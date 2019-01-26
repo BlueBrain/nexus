@@ -143,6 +143,7 @@ BlueBrain/nexus
   <li><a href="../../../../docs/tutorial/getting-started/index.html" class="page">Getting Started</a>
   <ul>
     <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html" class="active page">Quick Start</a></li>
+    <li><a href="../../../../docs/tutorial/getting-started/dataset/index.html" class="page">The MovieLens Dataset</a></li>
   </ul></li>
   <li><a href="../../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
   <li><a href="../../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
@@ -171,6 +172,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#access-data" class="header">Access data</a>
     <ul>
+      <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#view-data-in-nexus-web" class="header">View data in Nexus Web</a></li>
       <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#list-data" class="header">List data</a></li>
       <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#query-data" class="header">Query data</a></li>
     </ul></li>
@@ -217,6 +219,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#access-data" class="header">Access data</a>
     <ul>
+      <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#view-data-in-nexus-web" class="header">View data in Nexus Web</a></li>
       <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#list-data" class="header">List data</a></li>
       <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html#query-data" class="header">Query data</a></li>
     </ul></li>
@@ -248,7 +251,10 @@ BlueBrain/nexus
 <p>Let&rsquo;s get started.</p>
 <h2><a href="#set-up" name="set-up" class="anchor"><span class="anchor-link"></span></a>Set up</h2>
 <h3><a href="#install-and-setup-the-nexus-cli" name="install-and-setup-the-nexus-cli" class="anchor"><span class="anchor-link"></span></a>Install and setup the Nexus CLI</h3>
-<pre class="prettyprint"><code class="language-shell">pip install git+https://github.com/BlueBrain/nexus-cli
+<p>Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don&rsquo;t have it installed follow the instructions <a href="https://conda.io/docs/user-guide/install/index.html">here</a>.</p>
+<pre class="prettyprint"><code class="language-shell">conda create -n nexus-cli python=3.5
+conda activate nexus-cli
+pip install git+https://github.com/BlueBrain/nexus-cli
 </code></pre>
 <h3><a href="#create-and-select-a-profile" name="create-and-select-a-profile" class="anchor"><span class="anchor-link"></span></a>Create and select a &lsquo;tutorial&rsquo; profile</h3>
 <p>To ease the usage of the CLI, we will create a profile named &lsquo;tutorial&rsquo; storing locally various configurations such as the the Nexus deployment url.</p>
@@ -388,15 +394,18 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 </dl>
 <h3><a href="#load-the-dataset" name="load-the-dataset" class="anchor"><span class="anchor-link"></span></a>Load the dataset</h3>
 <p>Let first load the movies and merge them with the links.</p>
-<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv -idfield movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId
+<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv --idcolumn movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId --thread 4
+
 </code></pre>
 <p>Then we can load the tags.</p>
-<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv
+<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --thread 4
 </code></pre>
-<p>And finally the ratings.</p>
-<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv
+<p>And finally load the ratings. Loading 100837 resources might take some time.</p>
+<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --thread 4
 </code></pre>
 <h2><a href="#access-data" name="access-data" class="anchor"><span class="anchor-link"></span></a>Access data</h2>
+<h3><a href="#view-data-in-nexus-web" name="view-data-in-nexus-web" class="anchor"><span class="anchor-link"></span></a>View data in Nexus Web</h3>
+<p>Nexus is deployed with a web application allowing to browse organizations, projects, data and schemas you have access to. You can go to the address <a href="https://nexus-sandbox.io/web">https://nexus-sandbox.io/web</a> and browse the data you just loaded.</p>
 <h3><a href="#list-data" name="list-data" class="anchor"><span class="anchor-link"></span></a>List data</h3>
 <p>The simplest way to accessed data within Nexus is by listing them. The following command lists 5 resources:</p>
 <dl>
@@ -525,7 +534,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   </tbody>
 </table>
 <h4><a href="#query-data-using-the-elasticsearchview" name="query-data-using-the-elasticsearchview" class="anchor"><span class="anchor-link"></span></a>Query data using the ElasticSearchView</h4>
-<p>The ElasticSearchView URL is $NEXUS-URL/views/tutorialnexus/$PROJECTLABEL/documents/_search.</p>
+<p>The ElasticSearchView URL is available at the address <a href="https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search">https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search</a>.</p>
 <dl>
   <dt>Select queries</dt>
   <dd>
@@ -549,37 +558,9 @@ nexus views query-es --data \
 # Relationships handling needs to be made explicit to ElasticSearch through a mapping.
 
 </code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/graph_elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Analytics queries</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh"># Average rating score for movies tagged as funny
-nexus views query-sparql --data \
-&#39;
-PREFIX vocab: &lt;https://nexus-sandbox.io/v1/vocabs/testamld2019/movielens2/&gt;
-PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
-
-Select  DISTINCT ?movieId (AVG(?rating) AS ?score)
- WHERE  {
-    # Select movies
-    ?movie a vocab:Movie.
-
-    # Select their movieId value
-    ?movie vocab:movieId ?movieId.
-
-    # Keep movies with &#39;funny&#39; tags
-    ?tagnode vocab:movieId ?movieId.
-    ?tagnode vocab:tag &quot;funny&quot;.
-
-    # Keep movies with ratings
-    ?ratingNode vocab:movieId ?movidId.
-    ?ratingNode vocab:rating ?rating.
-
-}
-GROUP BY ?movieId&#39;
-
-</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/analytics_elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h4><a href="#query-data-using-the-sparqlview" name="query-data-using-the-sparqlview" class="anchor"><span class="anchor-link"></span></a>Query data using the SparqlView</h4>
-<p>$NEXUS-URL/views/tutorialnexus/$PROJECTLABEL/graph/sparql</p>
+<p>The SparqlView is available at the address <a href="https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql">https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql</a></p>
 <dl>
   <dt>Select queries</dt>
   <dd>
@@ -601,32 +582,6 @@ Select ?userId ?moviedId ?rating ?createdAt
 ORDER BY DESC (?creationDate)
 LIMIT 5&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/select_sparql.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Graph navigation queries</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh"># Select 5 movies sorted by title in descending order
-$ nexus search --view https://nexus-sandbox.io/v1/views/amld2019/movielens/graph/sparql -d \
-&#39;PREFIX vocab: &lt;https://nexus-sandbox.io/v1/vocabs/amld2019/movielens/&gt;
- Select ?m ?title
-   WHERE  {
-      ?m     a       vocab:Movie.
-      ?m vocab:title ?title.
-}
-ORDER BY vocab:title DESC
-LIMIT 5&#39;
-
-
-# Select 5 Comedy and Action movies sorted by title
-$ nexus search --view https://nexus-sandbox.io/v1/views/amld2019/movielens/graph/sparql -d \
-&#39;PREFIX vocab: &lt;https://nexus-sandbox.io/v1/vocabs/amld2019/movielens/&gt;
- Select ?m ?title
-   WHERE  {
-      ?m     a       vocab:Movie.
-      ?m vocab:genres ?genre.
-      ?m vocab:title ?title.
-      FILTER ((&quot;Comedy&quot; IN ?genre) AND (&quot;Action&quot; IN ?genre)).
-}
-ORDER BY vocab:title DESC
-LIMIT 5&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/sparql_list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Analytics queries</dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh"># Average rating score for movies tagged as funny
 nexus views query-sparql --data \
@@ -713,13 +668,13 @@ Getting Started
 </span>
 </div>
 </a>
-<a href="../../../../docs/tutorial/linking-data/index.html" title="Linking data on the web" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../../docs/tutorial/getting-started/dataset/index.html" title="The MovieLens Dataset" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Linking data on the web
+The MovieLens Dataset
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
