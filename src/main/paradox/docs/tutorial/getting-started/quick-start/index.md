@@ -27,7 +27,11 @@ Let's get started.
 
 ### Install and setup the Nexus CLI
 
+Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/docs/user-guide/install/index.html).
+
 ```shell
+conda create -n nexus-cli python=3.5
+conda activate nexus-cli
 pip install git+https://github.com/BlueBrain/nexus-cli
 ```
 
@@ -167,23 +171,29 @@ Output
 Let first load the movies and merge them with the links.
 
 ```shell
-nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv -idfield movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId
+nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv --idcolumn movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId --thread 4
+
 ```
 
 Then we can load the tags.
 
 ```shell
-nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv
+nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --thread 4
 ```
 
-And finally the ratings.
+And finally load the ratings. Loading 100837 resources might take some time.
 
 ```shell
-nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv
+nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --thread 4
 ```
 
 
 ## Access data
+
+### View data in Nexus Web
+
+Nexus is deployed with a web application allowing to browse organizations, projects, data and schemas you have access to.
+You can go to the address https://nexus-sandbox.io/web and browse the data you just loaded.
 
 ### List data
 
@@ -244,7 +254,7 @@ SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-
 
 #### Query data using the ElasticSearchView
 
-The ElasticSearchView URL is $NEXUS-URL/views/tutorialnexus/$PROJECTLABEL/documents/_search.
+The ElasticSearchView URL is available at the address https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search.
 
 Select queries
 :   @@snip [select_elastic.sh](../assets/select_elastic.sh)
@@ -252,20 +262,16 @@ Select queries
 Graph navigation queries
 :   @@snip [resource.sh](../assets/graph_elastic.sh)
 
-Analytics queries
-:   @@snip [analytics_elastic.sh](../assets/analytics_elastic.sh)
+
 
 #### Query data using the SparqlView
 
-$NEXUS-URL/views/tutorialnexus/$PROJECTLABEL/graph/sparql
+The SparqlView is available at the address https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql
 
 Select queries
 :   @@snip [select_sparql.sh](../assets/select_sparql.sh)
 
 Graph navigation queries
-:   @@snip [resource.json](../assets/sparql_list.sh)
-
-Analytics queries
 :   @@snip [analytics_sparql.sh](../assets/analytics_sparql.sh)
 
 ## Share data
