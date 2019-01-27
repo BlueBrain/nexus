@@ -181,7 +181,8 @@ Then we can load the tags.
 nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --thread 4
 ```
 
-And finally load the ratings. Loading 100837 resources might take some time.
+And finally load the ratings. Loading 100837 resources might take some time and also it is not needed to load them all to follow this tutorial.
+The number of threads can be increased for better loading performance.
 
 ```shell
 nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --thread 4
