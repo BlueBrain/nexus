@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Understanding JSON-LD · Blue Brain Nexus tutorials</title>
+<title>Data modeling approach</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -48,7 +48,7 @@ data-md-color-accent="cyan"
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
 <div class="md-flex__cell md-flex__cell--shrink">
-<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials" class="md-header-nav__button md-logo">
+<a href="../../../docs/tutorial/shacl-in-a-nutshell/data-modeling-approach.html" title="Data modeling approach" class="md-header-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
 </div>
@@ -57,12 +57,7 @@ data-md-color-accent="cyan"
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-<span class="md-header-nav__topic">
-Blue Brain Nexus tutorials
-</span>
-<span class="md-header-nav__topic">
-Understanding JSON-LD
-</span>
+Data modeling approach
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -117,12 +112,12 @@ BlueBrain/nexus
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
 <label class="md-nav__title md-nav__title--site" for="drawer">
-<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials" class="md-nav__button md-logo">
+<a href="../../../docs/tutorial/shacl-in-a-nutshell/data-modeling-approach.html" title="Data modeling approach" class="md-nav__button md-logo">
 <span class="md-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
-<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials">
-Blue Brain Nexus tutorials
+<a href="../../../docs/tutorial/shacl-in-a-nutshell/data-modeling-approach.html" title="Data modeling approach">
+Data modeling approach
 </a>
 </label>
 <div class="md-nav__source">
@@ -140,32 +135,8 @@ BlueBrain/nexus
 
 </div>
 <ul>
-  <li><a href="../../../docs/tutorial/getting-started/index.html" class="page">Getting Started</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/getting-started/quick-start/index.html" class="page">Quick Start</a></li>
-    <li><a href="../../../docs/tutorial/getting-started/dataset/index.html" class="page">The MovieLens Dataset</a></li>
-  </ul></li>
-  <li><a href="../../../docs/tutorial/knowledge-graph/index.html" class="page">Understanding knowledge graphs</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in graph</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="active page">Understanding JSON-LD</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="page">Querying knowledge graph</a></li>
-  </ul></li>
-  <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
-  <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#understanding-json-ld" class="header">Understanding JSON-LD</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#rdf" class="header">RDF</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#json-ld" class="header">JSON-LD</a>
-    <ul>
-      <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#more-than-a-json-format" class="header">More than a JSON format</a></li>
-    </ul></li>
-  </ul></li>
-</ul>
 </nav>
 
 </nav>
@@ -179,71 +150,16 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#understanding-json-ld" class="header">Understanding JSON-LD</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#rdf" class="header">RDF</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#json-ld" class="header">JSON-LD</a>
-    <ul>
-      <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#more-than-a-json-format" class="header">More than a JSON format</a></li>
-    </ul></li>
-  </ul></li>
-</ul>
-</nav>
-
-</div>
-</div>
-</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#understanding-json-ld" name="understanding-json-ld" class="anchor"><span class="anchor-link"></span></a>Understanding JSON-LD</h1>
-<h2><a href="#rdf" name="rdf" class="anchor"><span class="anchor-link"></span></a>RDF</h2>
-<p><strong>RDF (Resource Description Framework)</strong> is a (extremely simple and truly <strong>schemaless</strong>) data model where <strong>every piece of knowledge is broken down in (subject, predicate and object) called triple</strong>.</p>
-<p><img src="./assets/triple.png" alt="ds" /></p>
-<h2><a href="#json-ld" name="json-ld" class="anchor"><span class="anchor-link"></span></a>JSON-LD</h2>
-<p><a href="https://json-ld.org/">JSON-LD</a> stands for JSON for Linking Data.</p>
-<h3><a href="#more-than-a-json-format" name="more-than-a-json-format" class="anchor"><span class="anchor-link"></span></a>More than a JSON format</h3>
-<p>A simple json example:</p>
-<pre class="prettyprint"><code class="language-json">[
-  	 {
-  		&quot;name&quot;:&quot;python&quot;,
-  		&quot;loadedFrom&quot;:&quot;java&quot;
-  	 },
-  	{
-  		&quot;name&quot;:&quot;java&quot;,
-  		&quot;testedFrom&quot;:&quot;java&quot;
-  	 }
-
-  ]
-</code></pre>
-<p>What this data is about ? Programming languages or particular snake type and coffee you would find in the Java Indonesia ? There is clearly a lack of context resulting in an ambiguity. JSON-LD allows to solve the ambiguity problem by enabling a semantic-preserving data exchange. It does that by adding to a json document a @context object where every key is associated with an identifier.</p>
-<p>For example with the payload below machine and human agents can look up the context to find out which JAVA are this data talking about.</p>
-<pre class="prettyprint"><code class="language-json">{
-  [
-  	 {
-  	    &quot;@context&quot;:&quot;https://json-ld.org/contexts/programminglanguage.jsonld&quot;,
-  		“name”:”python”,
-  		“loadedFrom”:”java”
-  	 },
-  	{
-  	    &quot;@context&quot;:&quot;https://json-ld.org/contexts/programminglanguage.jsonld&quot;,
-  		“name”:”java”,
-  		“testedFrom”:”java”
-  	 }
-
-  ]
-}
-</code></pre>
-<p>Let go the <a href="https://json-ld.org/playground/">JSON-LD playground</a> to have a closer look at its data model.</p>
+<h1><a href="#data-modeling-approach" name="data-modeling-approach" class="anchor"><span class="anchor-link"></span></a>Data modeling approach</h1>
+<ul>
+  <li><a href="linkeddata/rdf/index.md">Shapes are different from types</a> closed shapes:  anyone can say anything about anything  least power  <img src="../../assets/datamodelling/modelling.svg" alt="Data modelling approach" /></li>
+</ul>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/understanding-jsonld.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/shacl-in-a-nutshell/data-modeling-approach.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -257,36 +173,6 @@ Edit this page
 </div>
 </main>
 <footer class="md-footer">
-<div class="md-footer-nav">
-<nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" title="Thinking in graph" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-<div class="md-flex__cell md-flex__cell--shrink">
-<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
-</div>
-<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-<span class="md-flex__ellipsis">
-<span class="md-footer-nav__direction">
-Previous
-</span>
-Thinking in graph
-</span>
-</div>
-</a>
-<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" title="Querying knowledge graph" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-<span class="md-flex__ellipsis">
-<span class="md-footer-nav__direction">
-Next
-</span>
-Querying knowledge graph
-</span>
-</div>
-<div class="md-flex__cell md-flex__cell--shrink">
-<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-</div>
-</a>
-</nav>
-</div>
 <div class="md-footer-meta md-typeset">
 <div class="md-footer-meta__inner md-grid">
 <div class="md-footer-copyright">

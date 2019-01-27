@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Understanding JSON-LD · Blue Brain Nexus tutorials</title>
+<title>Target declaration</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -48,7 +48,7 @@ data-md-color-accent="cyan"
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
 <div class="md-flex__cell md-flex__cell--shrink">
-<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials" class="md-header-nav__button md-logo">
+<a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html" title="Target declaration" class="md-header-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
 </div>
@@ -57,12 +57,7 @@ data-md-color-accent="cyan"
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-<span class="md-header-nav__topic">
-Blue Brain Nexus tutorials
-</span>
-<span class="md-header-nav__topic">
-Understanding JSON-LD
-</span>
+Target declaration
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -117,12 +112,12 @@ BlueBrain/nexus
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
 <label class="md-nav__title md-nav__title--site" for="drawer">
-<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials" class="md-nav__button md-logo">
+<a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html" title="Target declaration" class="md-nav__button md-logo">
 <span class="md-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
-<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials">
-Blue Brain Nexus tutorials
+<a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html" title="Target declaration">
+Target declaration
 </a>
 </label>
 <div class="md-nav__source">
@@ -140,30 +135,16 @@ BlueBrain/nexus
 
 </div>
 <ul>
-  <li><a href="../../../docs/tutorial/getting-started/index.html" class="page">Getting Started</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/getting-started/quick-start/index.html" class="page">Quick Start</a></li>
-    <li><a href="../../../docs/tutorial/getting-started/dataset/index.html" class="page">The MovieLens Dataset</a></li>
-  </ul></li>
-  <li><a href="../../../docs/tutorial/knowledge-graph/index.html" class="page">Understanding knowledge graphs</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in graph</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="active page">Understanding JSON-LD</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="page">Querying knowledge graph</a></li>
-  </ul></li>
-  <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
-  <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#understanding-json-ld" class="header">Understanding JSON-LD</a>
+  <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#target-declaration" class="header">Target declaration</a>
   <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#rdf" class="header">RDF</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#json-ld" class="header">JSON-LD</a>
-    <ul>
-      <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#more-than-a-json-format" class="header">More than a JSON format</a></li>
-    </ul></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#node-target" class="header">Node target</a></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#class-target" class="header">Class target</a></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#property-object-target" class="header">Property Object target</a></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#property-subject-target" class="header">Property Subject target</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -185,13 +166,12 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#understanding-json-ld" class="header">Understanding JSON-LD</a>
+  <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#target-declaration" class="header">Target declaration</a>
   <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#rdf" class="header">RDF</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#json-ld" class="header">JSON-LD</a>
-    <ul>
-      <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html#more-than-a-json-format" class="header">More than a JSON format</a></li>
-    </ul></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#node-target" class="header">Node target</a></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#class-target" class="header">Class target</a></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#property-object-target" class="header">Property Object target</a></li>
+    <li><a href="../../../docs/tutorial/shacl-in-a-nutshell/shape-target.html#property-subject-target" class="header">Property Subject target</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -202,48 +182,77 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#understanding-json-ld" name="understanding-json-ld" class="anchor"><span class="anchor-link"></span></a>Understanding JSON-LD</h1>
-<h2><a href="#rdf" name="rdf" class="anchor"><span class="anchor-link"></span></a>RDF</h2>
-<p><strong>RDF (Resource Description Framework)</strong> is a (extremely simple and truly <strong>schemaless</strong>) data model where <strong>every piece of knowledge is broken down in (subject, predicate and object) called triple</strong>.</p>
-<p><img src="./assets/triple.png" alt="ds" /></p>
-<h2><a href="#json-ld" name="json-ld" class="anchor"><span class="anchor-link"></span></a>JSON-LD</h2>
-<p><a href="https://json-ld.org/">JSON-LD</a> stands for JSON for Linking Data.</p>
-<h3><a href="#more-than-a-json-format" name="more-than-a-json-format" class="anchor"><span class="anchor-link"></span></a>More than a JSON format</h3>
-<p>A simple json example:</p>
-<pre class="prettyprint"><code class="language-json">[
-  	 {
-  		&quot;name&quot;:&quot;python&quot;,
-  		&quot;loadedFrom&quot;:&quot;java&quot;
-  	 },
-  	{
-  		&quot;name&quot;:&quot;java&quot;,
-  		&quot;testedFrom&quot;:&quot;java&quot;
-  	 }
-
-  ]
-</code></pre>
-<p>What this data is about ? Programming languages or particular snake type and coffee you would find in the Java Indonesia ? There is clearly a lack of context resulting in an ambiguity. JSON-LD allows to solve the ambiguity problem by enabling a semantic-preserving data exchange. It does that by adding to a json document a @context object where every key is associated with an identifier.</p>
-<p>For example with the payload below machine and human agents can look up the context to find out which JAVA are this data talking about.</p>
-<pre class="prettyprint"><code class="language-json">{
-  [
-  	 {
-  	    &quot;@context&quot;:&quot;https://json-ld.org/contexts/programminglanguage.jsonld&quot;,
-  		“name”:”python”,
-  		“loadedFrom”:”java”
-  	 },
-  	{
-  	    &quot;@context&quot;:&quot;https://json-ld.org/contexts/programminglanguage.jsonld&quot;,
-  		“name”:”java”,
-  		“testedFrom”:”java”
-  	 }
-
-  ]
+<h1><a href="#target-declaration" name="target-declaration" class="anchor"><span class="anchor-link"></span></a>Target declaration</h1>
+<p>Because graph like RDF does not have root node.</p>
+<p>A shape can define the nodes it will select and validate in a given data graph. It does so by declaring a target. Four different target declarations exist in SHACL as described in the following sections:</p>
+<ul>
+  <li>Node target using the key <strong>targetNode</strong></li>
+  <li>Class target using the key <strong>targetClass</strong></li>
+  <li>Property Subject target using the key <strong>targetSubjectsOf</strong></li>
+  <li>Property Object target using the key <strong>targetObjectsOf</strong></li>
+</ul>
+<aside class="notice">
+Note that selected nodes for every target below are identified by a green line color.
+</aside>
+<h4><a href="#node-target" name="node-target" class="anchor"><span class="anchor-link"></span></a>Node target</h4>
+<p>A shape can target very specific instances (nodes) by specifying their URIs through a <strong>targetNode</strong>:</p>
+<pre class="prettyprint"><code class="language-json--schemas">{
+  &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/core/entity/v1.0.0/&quot;,
+  &quot;shapes&quot; : [ {
+    &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/core/entity/v1.0.0/shapes/Circuit_1_2&quot;,
+    &quot;@type&quot; : &quot;sh:NodeShape&quot;,
+    &quot;targetNode&quot; : [&quot;bbp:Circuit_1&quot;,&quot;bbp:Circuit_2&quot;]
+  } ]
 }
 </code></pre>
-<p>Let go the <a href="https://json-ld.org/playground/">JSON-LD playground</a> to have a closer look at its data model.</p>
+<p><img src="../../../images/circuit_2instances.svg" alt="Instance target" /></p>
+<p>The instances identified by <strong>bbp:Circuit_1</strong> and <strong>bbp:Circuit_2</strong> are targeted in the figure above.</p>
+<h4><a href="#class-target" name="class-target" class="anchor"><span class="anchor-link"></span></a>Class target</h4>
+<p>The following schema defines one node shape which targets all instances of the class <strong>bbp:Entity</strong>. So only nodes that has <strong>bbp:Entity</strong> as direct type (**bb:Entity_1**) or indirect type (**bbp:Circuit_1** and <strong>bbp:Circuit_2</strong>) will be validated while all the other nodes are ignored.</p>
+<pre class="prettyprint"><code class="language-json--schemas">{
+  &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/core/entity/v1.0.0/&quot;,
+  &quot;shapes&quot; : [ {
+    &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/core/entity/v1.0.0/shapes/Entity&quot;,
+    &quot;@type&quot; : &quot;sh:NodeShape&quot;,
+    &quot;targetClass&quot; : &quot;bbp:Entity&quot;
+  } ]
+}
+</code></pre>
+<p><img src="../../../images/circuit_type_target.svg" alt="Instance target" /></p>
+<h4><a href="#property-object-target" name="property-object-target" class="anchor"><span class="anchor-link"></span></a>Property Object target</h4>
+<p>A shape can target nodes that are objects of a specific property through <strong>targetObjectsOf</strong>.</p>
+<p>This target will select any node that participate to the following triple as object: (subject, property, <strong>SelectedNode</strong>). In the figure below, there are two selected nodes (**bbp:Morphology_1** and <strong>bbp:Morphology_2</strong>) which respectively participate to the following two triples:</p>
+<p>*(bbp:Circuit_1, bbp:morphology, <strong>bbp:Morphology_1</strong>) *(bbp:Circuit_2, bbp:morphology, <strong>bbp:Morphology_2</strong>)</p>
+<pre class="prettyprint"><code class="language-json--schemas">{
+  &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/simulation/circuit/v1.0.0/&quot;,
+  &quot;shapes&quot; : [ {
+    &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/simulation/circuit/v1.0.0/shapes/MorphologyPropertyObject&quot;,
+    &quot;@type&quot; : &quot;sh:NodeShape&quot;,
+    &quot;targetObjectsOf&quot; : &quot;bbp:morphology&quot;
+  } ]
+}
+</code></pre>
+<p><img src="../../../images/circuit_objectproperty_target.svg" alt="Instance target" /></p>
+<h4><a href="#property-subject-target" name="property-subject-target" class="anchor"><span class="anchor-link"></span></a>Property Subject target</h4>
+<p>This target is the subject counterpart of the previous one. A shape can target nodes that are subjects of a specific property through <strong>targetSubjectsOf</strong>. So any nodes that are subjects of a triple with the target property as predicate will be selected: (**SelectedNode**, property, object).</p>
+<p>In the figure below, there are two selected nodes (**bbp:Circuit_1** and <strong>bbp:Circuit_2</strong>) which respectively participate to the following two triples:</p>
+<ul>
+  <li>(**bbp:Circuit_1**, bbp:morphology, bbp:Morphology_1)</li>
+  <li>(**bbp:Circuit_2**, bbp:morphology, bbp:Morphology_2)</li>
+</ul>
+<pre class="prettyprint"><code class="language-json--schemas">{
+  &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/simulation/circuit/v1.0.0/&quot;,
+  &quot;shapes&quot; : [ {
+    &quot;@id&quot; : &quot;{endpoint}/schemas/bbp/simulation/circuit/v1.0.0/shapes/MorphologyPropertySubject&quot;,
+    &quot;@type&quot; : &quot;sh:NodeShape&quot;,
+    &quot;targetSubjectsOf&quot; : &quot;bbp:morphology&quot;
+  } ]
+}
+</code></pre>
+<p><img src="../../../images/circuit_subjectproperty_target.svg" alt="Instance target" /></p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/understanding-jsonld.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/shacl-in-a-nutshell/shape-target.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -257,36 +266,6 @@ Edit this page
 </div>
 </main>
 <footer class="md-footer">
-<div class="md-footer-nav">
-<nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" title="Thinking in graph" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
-<div class="md-flex__cell md-flex__cell--shrink">
-<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
-</div>
-<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-<span class="md-flex__ellipsis">
-<span class="md-footer-nav__direction">
-Previous
-</span>
-Thinking in graph
-</span>
-</div>
-</a>
-<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" title="Querying knowledge graph" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
-<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
-<span class="md-flex__ellipsis">
-<span class="md-footer-nav__direction">
-Next
-</span>
-Querying knowledge graph
-</span>
-</div>
-<div class="md-flex__cell md-flex__cell--shrink">
-<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
-</div>
-</a>
-</nav>
-</div>
 <div class="md-footer-meta md-typeset">
 <div class="md-footer-meta__inner md-grid">
 <div class="md-footer-copyright">
