@@ -13,24 +13,22 @@
 [JSON-LD](https://json-ld.org/) (JSON for Linking Data) can be seen in two ways:
 
 
-## More than a JSON format
+### More than a JSON format
 
 A simple json example:
 
 ```json
-{
-  [
+[
   	 {
-  		“name”:”python”,
-  		“loadedFrom”:”java”
+  		"name":"python",
+  		"loadedFrom":"java"
   	 },
   	{
-  		“name”:”java”,
-  		“testedFrom”:”java”
+  		"name":"java",
+  		"testedFrom":"java"
   	 }
 
   ]
-}
 ```
 
 What this data is about ? Programming languages or particular snake type and coffee you would find in the Java Indonesia ?
