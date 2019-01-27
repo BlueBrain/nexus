@@ -10,7 +10,7 @@
 
 ## JSON-LD
 
-[JSON-LD](https://json-ld.org/) (JSON for Linking Data) can be seen in two ways:
+[JSON-LD](https://json-ld.org/) stands for JSON for Linking Data.
 
 
 ### More than a JSON format
