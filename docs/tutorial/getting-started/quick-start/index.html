@@ -145,6 +145,12 @@ BlueBrain/nexus
     <li><a href="../../../../docs/tutorial/getting-started/quick-start/index.html" class="active page">Quick Start</a></li>
     <li><a href="../../../../docs/tutorial/getting-started/dataset/index.html" class="page">The MovieLens Dataset</a></li>
   </ul></li>
+  <li><a href="../../../../docs/tutorial/knowledge-graph/index.html" class="page">Understanding knowledge graphs</a>
+  <ul>
+    <li><a href="../../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in graph</a></li>
+    <li><a href="../../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="page">Understanding JSON-LD</a></li>
+    <li><a href="../../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="page">Querying knowledge graph</a></li>
+  </ul></li>
   <li><a href="../../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
   <li><a href="../../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
 </ul>
@@ -236,7 +242,7 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#quick-start" name="quick-start" class="anchor"><span class="anchor-link"></span></a>Quick Start</h1>
 <h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
-<p>This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple <a href="">knowledge graph</a>. The goal is to go over some capabilities of Blue Brain Nexus enabling:</p>
+<p>This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple <a href="../../knowledge-graph/thinking-in-graph.html">knowledge graph</a>. The goal is to go over some capabilities of Blue Brain Nexus enabling:</p>
 <ul>
   <li>The creation of a project as a protected data space to work with</li>
   <li>An easy ingestion of dataset and management of it&rsquo;s lifecycle</li>
@@ -251,7 +257,7 @@ BlueBrain/nexus
 <p>Let&rsquo;s get started.</p>
 <h2><a href="#set-up" name="set-up" class="anchor"><span class="anchor-link"></span></a>Set up</h2>
 <h3><a href="#install-and-setup-the-nexus-cli" name="install-and-setup-the-nexus-cli" class="anchor"><span class="anchor-link"></span></a>Install and setup the Nexus CLI</h3>
-<p>Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don&rsquo;t have it installed follow the instructions <a href="https://conda.io/docs/user-guide/install/index.html">here</a>.</p>
+<p>Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don&rsquo;t have it installed follow the instructions <a href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">here</a>.</p>
 <pre class="prettyprint"><code class="language-shell">conda create -n nexus-cli python=3.5
 conda activate nexus-cli
 pip install git+https://github.com/BlueBrain/nexus-cli

@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Introducing knowledge graph</title>
+<title>Understanding knowledge graphs · Blue Brain Nexus tutorials</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -48,7 +48,7 @@ data-md-color-accent="cyan"
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
 <div class="md-flex__cell md-flex__cell--shrink">
-<a href="../../../docs/tutorial/knowledge-graph/index.html" title="Introducing knowledge graph" class="md-header-nav__button md-logo">
+<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials" class="md-header-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
 </div>
@@ -57,7 +57,12 @@ data-md-color-accent="cyan"
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-Introducing knowledge graph
+<span class="md-header-nav__topic">
+Blue Brain Nexus tutorials
+</span>
+<span class="md-header-nav__topic">
+Understanding knowledge graphs
+</span>
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -112,12 +117,12 @@ BlueBrain/nexus
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
 <label class="md-nav__title md-nav__title--site" for="drawer">
-<a href="../../../docs/tutorial/knowledge-graph/index.html" title="Introducing knowledge graph" class="md-nav__button md-logo">
+<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials" class="md-nav__button md-logo">
 <span class="md-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
-<a href="../../../docs/tutorial/knowledge-graph/index.html" title="Introducing knowledge graph">
-Introducing knowledge graph
+<a href="../../../docs/tutorial/index.html" title="Blue Brain Nexus tutorials">
+Blue Brain Nexus tutorials
 </a>
 </label>
 <div class="md-nav__source">
@@ -135,18 +140,29 @@ BlueBrain/nexus
 
 </div>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in Graph</a></li>
+  <li><a href="../../../docs/tutorial/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../../docs/tutorial/getting-started/quick-start/index.html" class="page">Quick Start</a></li>
+    <li><a href="../../../docs/tutorial/getting-started/dataset/index.html" class="page">The MovieLens Dataset</a></li>
+  </ul></li>
+  <li><a href="../../../docs/tutorial/knowledge-graph/index.html" class="active page">Understanding knowledge graphs</a>
+  <ul>
+    <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in graph</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="page">Understanding JSON-LD</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="page">Querying knowledge graph</a></li>
+  </ul></li>
+  <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
+  <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/index.html#introducing-knowledge-graph" class="header">Introducing knowledge graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/index.html#understanding-knowledge-graphs" class="header">Understanding knowledge graphs</a>
   <ul>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#overview" class="header">Overview</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/index.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -168,13 +184,12 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/index.html#introducing-knowledge-graph" class="header">Introducing knowledge graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/index.html#understanding-knowledge-graphs" class="header">Understanding knowledge graphs</a>
   <ul>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#overview" class="header">Overview</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/index.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/index.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -185,12 +200,23 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#introducing-knowledge-graph" name="introducing-knowledge-graph" class="anchor"><span class="anchor-link"></span></a>Introducing knowledge graph</h1>
+<h1><a href="#understanding-knowledge-graphs" name="understanding-knowledge-graphs" class="anchor"><span class="anchor-link"></span></a>Understanding knowledge graphs</h1>
 <h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
+<p>How does Google display information card like in the following search ? Well they use the <a href="https://developers.google.com/knowledge-graph/">Google Knowledge Graph</a>. Knowledge graphs are now ubiquitous and serves as data integration hub to integrate and connect data of different types, formats and sources.</p>
+<p><img src="./assets/toy-story.png" alt="Toy story search" /></p>
 <h2><a href="#what-youll-build" name="what-youll-build" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll build</h2>
+<ul>
+  <li>Queries to explore and navigate a knowledge graph using Sparql</li>
+</ul>
 <h2><a href="#what-youll-learn" name="what-youll-learn" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll learn</h2>
+<ul>
+  <li>An understanding of what is a knowledge graph</li>
+  <li>Understanding RDF and JSON-LD data model</li>
+</ul>
 <h2><a href="#what-youll-need" name="what-youll-need" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll need</h2>
-<h2><a href="#get-the-tutorial-code" name="get-the-tutorial-code" class="anchor"><span class="anchor-link"></span></a>Get the tutorial code</h2>
+<ul>
+  <li>A Python 3.5 or higher with support of Jupyter notebook</li>
+</ul>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/index.md" title="Edit this page" class="md-source-file md-edit">
@@ -209,13 +235,26 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" title="Thinking in Graph" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/tutorial/getting-started/dataset/index.html" title="The MovieLens Dataset" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+The MovieLens Dataset
+</span>
+</div>
+</a>
+<a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" title="Thinking in graph" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Thinking in Graph
+Thinking in graph
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

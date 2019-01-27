@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Thinking in graph · Blue Brain Nexus tutorials</title>
+<title>Querying knowledge graph · Blue Brain Nexus tutorials</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus tutorials
 </span>
 <span class="md-header-nav__topic">
-Thinking in graph
+Querying knowledge graph
 </span>
 </div>
 </div>
@@ -147,9 +147,9 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/tutorial/knowledge-graph/index.html" class="page">Understanding knowledge graphs</a>
   <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="active page">Thinking in graph</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in graph</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="page">Understanding JSON-LD</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="page">Querying knowledge graph</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="active page">Querying knowledge graph</a></li>
   </ul></li>
   <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
   <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
@@ -157,15 +157,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#thinking-in-graph" class="header">Thinking in graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#querying-knowledge-graph" class="header">Querying knowledge graph</a>
   <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#what-is-a-knowledge-graph-" class="header">What is a Knowledge Graph ?</a>
-    <ul>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-a-graph-structure" class="header">It is a graph structure</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-semantic" class="header">It is semantic</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-smart" class="header">It is smart</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-alive" class="header">It is alive</a></li>
-    </ul></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#overview" class="header">Overview</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -187,15 +185,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#thinking-in-graph" class="header">Thinking in graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#querying-knowledge-graph" class="header">Querying knowledge graph</a>
   <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#what-is-a-knowledge-graph-" class="header">What is a Knowledge Graph ?</a>
-    <ul>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-a-graph-structure" class="header">It is a graph structure</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-semantic" class="header">It is semantic</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-smart" class="header">It is smart</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html#it-is-alive" class="header">It is alive</a></li>
-    </ul></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#overview" class="header">Overview</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -206,35 +202,32 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#thinking-in-graph" name="thinking-in-graph" class="anchor"><span class="anchor-link"></span></a>Thinking in graph</h1>
-<h2><a href="#what-is-a-knowledge-graph-" name="what-is-a-knowledge-graph-" class="anchor"><span class="anchor-link"></span></a>What is a Knowledge Graph ?</h2>
-<p>In this section, we will explain what a Knowledge Graph and some of the advantages of using them.</p>
-<h3><a href="#it-is-a-graph-structure" name="it-is-a-graph-structure" class="anchor"><span class="anchor-link"></span></a>It is a graph structure</h3>
-<p>A knowledge graph uses a graph data structure to represent information, it uses the concept of nodes and edges to represent respectively entities and their relations. An entity could be a person, a company, a product. Each entity can have properties that describes it, for example, a person could have a first name, last name, address, birth date and age. These properties are also refered to as the entity&rsquo;s metadata.</p>
-<p>Relations between entities are first class citizen, consequently, it becomes easy to traverse and discover related entities. Examples of relations could be a person is friend with an other person (john &ndash;friend&ndash;&gt; Ann) or a person works for a company (Eric &ndash;works for&ndash;&gt; EPFL).</p>
-<p>Furthermore, a graph data structure makes it easy to merge new data in existing graph.</p>
-<p><img src="./assets/kg-entity_relation.png" alt="Graph Structure" /></p>
-<h3><a href="#it-is-semantic" name="it-is-semantic" class="anchor"><span class="anchor-link"></span></a>It is semantic</h3>
-<p>The metadata definition is encoded, alongside the metadata, in an <a href="https://en.wikipedia.org/wiki/Ontology_(information_science)">ontology</a> This is a formal description that both a human and a computer can understand and process. The metadata is said to be self descriptive.</p>
-<p>In the example below, you can see that the entity <strong>Bob</strong> is a <strong>Person</strong> (also known as the <strong>type</strong> of the entity) and he has a property <strong>was born on</strong> for this the value is <strong>14 July 1990</strong>.</p>
-<p><img src="./assets/kg-graph_structure.png" alt="Graph Structure" /></p>
-<h3><a href="#it-is-smart" name="it-is-smart" class="anchor"><span class="anchor-link"></span></a>It is smart</h3>
-<p>Since all this information is representd in an ontologies, it enables us to run a tool called an inference engine on the data and derive new information from explicitly asserted data. This inference can make information easier to discover.</p>
-<p>In the example below, we have <strong>Bob</strong>, he has parents (using the relation called <strong>parent</strong>) and we have asserted that his father also has parents. Having define this, we can now define a rule that instructs the inference engine to create new relations <strong>grand parent</strong> whenever we find the <strong>parent</strong> of a <strong>parent</strong>. This enables us to query the graph and directly get <strong>Bob</strong>&rsquo;s grand parents without having to navigate through his parents first.</p>
-<p><img src="./assets/kg-smart.png" alt="Graph Structure" /></p>
-<h3><a href="#it-is-alive" name="it-is-alive" class="anchor"><span class="anchor-link"></span></a>It is alive</h3>
-<p>A graph is a flexible data structure, and an ontology can evolve as new data comes in. As a result, Data can be continually be added to help serve new usecases.</p>
-<p>The illustration below shows how the initial graph representing <strong>Bob</strong> can be augmented to capture many other related domains such as:</p>
+<h1><a href="#querying-knowledge-graph" name="querying-knowledge-graph" class="anchor"><span class="anchor-link"></span></a>Querying knowledge graph</h1>
+<h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
+<p>This tutorial introduces the basics of SPARQL and shows how to query a Nexus SparqlView.</p>
+<p><img src="./assets/toy-story.png" alt="Toy story search" /></p>
+<h2><a href="#what-youll-build" name="what-youll-build" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll build</h2>
 <ul>
-  <li>Bob&rsquo;s social network (e.g. Friends)</li>
-  <li>People&rsquo;s tourism destinations (e.g. Eifel Tower)</li>
-  <li>Towns and tourism lamdmarks (e.g. Louvre)</li>
-  <li>Pieces of arts and where they are located (e.g. Mona Lisa)</li>
+  <li>Queries to explore and navigate a knowledge graph using SPARQL and Nexus</li>
 </ul>
-<p><img src="./assets/kg-alive.png" alt="Graph Structure" /></p>
+<h2><a href="#what-youll-learn" name="what-youll-learn" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll learn</h2>
+<ul>
+  <li>Basics of the SPARQL query language</li>
+  <li>How to connect to and query a SparqlView in Nexus</li>
+</ul>
+<h2><a href="#what-youll-need" name="what-youll-need" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll need</h2>
+<ul>
+  <li>A Python 3.5 or higher with support of Jupyter notebook</li>
+</ul>
+<h2><a href="#get-the-tutorial-code" name="get-the-tutorial-code" class="anchor"><span class="anchor-link"></span></a>Get the tutorial code</h2>
+<p>This tutorial code is available:</p>
+<ul>
+  <li>at <a href="https://github.com/BlueBrain/nexus/blob/tutorial_init/src/main/paradox/docs/tutorial/notebooks/Query_Sparql_View.ipynb">Github</a></li>
+  <li>on <a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Query_Sparql_View.ipynb">Google Colab</a></li>
+</ul>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/thinking-in-graph.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/querying-knowledge-graph.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -250,7 +243,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/tutorial/knowledge-graph/index.html" title="Understanding knowledge graphs" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" title="Understanding JSON-LD" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -259,17 +252,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Understanding knowledge graphs
+Understanding JSON-LD
 </span>
 </div>
 </a>
-<a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" title="Understanding JSON-LD" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/tutorial/linking-data/index.html" title="Linking data on the web" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Understanding JSON-LD
+Linking data on the web
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
