@@ -4,7 +4,7 @@
 
 ## Overview
 
-This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple [knowledge graph]().
+This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple [knowledge graph](../../knowledge-graph/thinking-in-graph.html).
 The goal is to go over some capabilities of Blue Brain Nexus enabling:
 
 * The creation of a project as a protected data space to work with
@@ -27,7 +27,7 @@ Let's get started.
 
 ### Install and setup the Nexus CLI
 
-Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/docs/user-guide/install/index.html).
+Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 ```shell
 conda create -n nexus-cli python=3.5

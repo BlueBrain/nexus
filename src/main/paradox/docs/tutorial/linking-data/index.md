@@ -2,7 +2,12 @@
 
 ## Overview
 
-In this tutorial, we demonstrate how to consume structured data available on the web to extend and enrich a knowledge graph.
+In this tutorial, we demonstrate how to consume structured data published on the web according to the Linked data principles to extend and enrich a knowledge graph.
+
+
+
+![linked-data](./assets/linked-data.jpg)
+
 
 ## What you'll build
 
@@ -10,7 +15,7 @@ In this tutorial, we demonstrate how to consume structured data available on the
 
 ## What you'll learn
 
-* How to install and configure the Blue Brain Nexus python [SDK](https://github.com/BlueBrain/nexus-python-sdk)
+* An understanding of linked data principles
 * How to query data stored in a Nexus SparqlView.
 * How to query structured data on the web.
 * How to extend the metadata of entities managed within Blue Brain Nexus with external structured data on the web. We target [Wikidata](https://www.wikidata.org/wiki/Wikidata:Main_Page) as an example.
