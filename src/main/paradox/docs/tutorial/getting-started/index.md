@@ -1,6 +1,7 @@
 @@@ index
 
 * [Quick Start](quick-start/index.md)
+* [The MovieLens Dataset](dataset/index.md)
 
 @@@
 
@@ -26,5 +27,3 @@ This Getting Started tutorial introduces basic Blue Brain Nexus features and cap
 ## What you'll need
 
 * A Python 3.5 or higher  with support of Jupyter notebook
-
-## Get the tutorial code

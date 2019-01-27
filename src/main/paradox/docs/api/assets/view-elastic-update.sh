@@ -1,8 +1,7 @@
 curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=1" -d \
 '{
   "@type": [
-    "View",
-    "ElasticView",
+    "ElasticSearchView",
     "Alpha"
   ],
   "mapping": {
@@ -27,5 +26,5 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/vie
   },
   "includeMetadata": false,
   "sourceAsText": false,
-  "resourceSchemas": "nxs:myschema"
+  "resourceSchemas": "https://bluebrain.github.io/nexus/schemas/myschema"
 }'

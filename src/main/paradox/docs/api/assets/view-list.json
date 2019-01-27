@@ -1,165 +1,59 @@
 {
   "@context": [
     "https://bluebrain.github.io/nexus/contexts/search.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/view.json"
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
   ],
   "_total": 3,
   "_results": [
     {
       "@id": "nxv:defaultElasticIndex",
       "@type": [
-        "View",
-        "Alpha",
-        "ElasticView"
+        "https://bluebrain.github.io/nexus/vocabulary/View",
+        "https://bluebrain.github.io/nexus/vocabulary/Alpha",
+        "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView"
       ],
-      "includeMetadata": true,
-      "mapping": {
-        "dynamic": false,
-        "properties": {
-          "@id": {
-            "type": "keyword"
-          },
-          "@type": {
-            "type": "keyword"
-          },
-          "_distribution": {
-            "properties": {
-              "@id": {
-                "type": "keyword"
-              },
-              "@type": {
-                "type": "keyword"
-              },
-              "_byteSize": {
-                "type": "long"
-              },
-              "_digest": {
-                "properties": {
-                  "_algorithm": {
-                    "type": "keyword"
-                  },
-                  "_value": {
-                    "type": "keyword"
-                  }
-                },
-                "type": "nested"
-              },
-              "_downloadURL": {
-                "type": "keyword"
-              },
-              "_mediaType": {
-                "type": "keyword"
-              },
-              "_originalFileName": {
-                "type": "keyword"
-              }
-            },
-            "type": "nested"
-          },
-          "_original_source": {
-            "type": "text"
-          },
-          "_self": {
-            "type": "keyword"
-          },
-          "_constrainedBy": {
-            "type": "keyword"
-          },
-          "_project": {
-            "type": "keyword"
-          },
-          "_createdAt": {
-            "type": "date"
-          },
-          "_createdBy": {
-            "type": "keyword"
-          },
-          "_updatedAt": {
-            "type": "date"
-          },
-          "_updatedBy": {
-            "type": "keyword"
-          },
-          "_rev": {
-            "type": "long"
-          },
-          "_deprecated": {
-            "type": "boolean"
-          }
-        }
-      },
-      "sourceAsText": true,
-      "_uuid": "684bd815-9273-46f4-ac1c-0383d4a98254",
       "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultElasticIndex",
-      "_constrainedBy": "nxs:view",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+      "_rev": 1,
+      "_deprecated": false,
       "_createdAt": "2018-09-18T16:39:22.748Z",
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2018-09-18T17:10:22.748Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-      "_rev": 1,
-      "_deprecated": false
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
     },
     {
       "@id": "nxv:defaultSparqlIndex",
       "@type": [
-        "View",
-        "SparqlView"
+        "https://bluebrain.github.io/nexus/vocabulary/View",
+        "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
       ],
-      "_uuid": "d88b71d2-b8a4-4744-bf22-2d99ef5bd26b",
       "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex",
-      "_constrainedBy": "nxs:view",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+      "_rev": 1,
+      "_deprecated": false,
       "_createdAt": "2018-09-18T16:39:22.748Z",
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2018-09-18T17:10:22.748Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-      "_rev": 1,
-      "_deprecated": false
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
     },
     {
       "@id": "nxv:myview2",
       "@type": [
-        "ElasticView",
-        "View",
-        "Alpha"
+        "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+        "https://bluebrain.github.io/nexus/vocabulary/View",
+        "https://bluebrain.github.io/nexus/vocabulary/Alpha"
       ],
-      "includeMetadata": false,
-      "mapping": {
-        "dynamic": false,
-        "properties": {
-          "@id": {
-            "type": "keyword"
-          },
-          "@type": {
-            "type": "keyword"
-          },
-          "bool": {
-            "type": "boolean"
-          },
-          "name": {
-            "type": "keyword"
-          },
-          "number": {
-            "type": "long"
-          }
-        }
-      },
-      "resourceSchemas": [
-        "nxs:myschema"
-      ],
-      "sourceAsText": false,
-      "_uuid": "4f90ceff-45b7-442d-8536-d41705321d50",
       "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
-      "_constrainedBy": "nxs:view",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+      "_rev": 4,
+      "_deprecated": true,
       "_createdAt": "2018-09-18T16:39:22.748Z",
       "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
       "_updatedAt": "2018-09-18T17:10:22.748Z",
-      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-      "_rev": 4,
-      "_deprecated": true
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
     }
   ]
 }
