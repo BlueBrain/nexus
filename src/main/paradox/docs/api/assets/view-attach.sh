@@ -1,1 +1,0 @@
-curl -XPUT -F "file=@/path/to/myfile.jpg" "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/attachments/myfile.jpg?rev=3"

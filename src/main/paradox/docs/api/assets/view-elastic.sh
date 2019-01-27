@@ -2,8 +2,7 @@ curl -XPOST -H "Content-Type: application/json" "https://nexus.example.com/v1/vi
 '{
   "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
   "@type": [
-    "View",
-    "ElasticView",
+    "ElasticSearchView",
     "Alpha"
   ],
   "mapping": {
@@ -28,5 +27,5 @@ curl -XPOST -H "Content-Type: application/json" "https://nexus.example.com/v1/vi
   },
   "includeMetadata": false,
   "sourceAsText": false,
-  "resourceSchemas": "nxs:myschema"
+  "resourceSchemas": "https://bluebrain.github.io/nexus/schemas/myschema"
 }'

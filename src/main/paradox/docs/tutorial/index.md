@@ -2,9 +2,7 @@
 @@@ index
 
 * [Getting Started](getting-started/index.md)
-* [Nexus in a nutshell](nexus-nutshell/index.md)
-* [knowledge Graph](knowledge-graph/index.md)
-* [Data Quality](shacl-in-a-nutshell/index.md)
+* [Understanding Knowledge graphs](knowledge-graph/index.md)
 * [Linked Data](linking-data/index.md)
 * [Recommender](build-recommender/index.md)
 @@@
@@ -13,3 +11,5 @@
 
 
 ## Overview
+
+This documentation contains a set of pages and notebooks demonstrating Blue Brain Nexus features and capabilities.

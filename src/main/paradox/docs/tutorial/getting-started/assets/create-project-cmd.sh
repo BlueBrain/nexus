@@ -1,0 +1,1 @@
+nexus projects create $PROJECTLABEL && nexus projects list

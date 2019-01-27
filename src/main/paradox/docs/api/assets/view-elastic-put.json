@@ -1,7 +1,6 @@
 {
   "@type": [
-    "View",
-    "ElasticView",
+    "ElasticSearchView",
     "Alpha"
   ],
   "mapping": {
@@ -26,5 +25,5 @@
   },
   "includeMetadata": false,
   "sourceAsText": false,
-  "resourceSchemas": "nxs:myschema"
+  "resourceSchemas": "https://bluebrain.github.io/nexus/schemas/myschema"
 }

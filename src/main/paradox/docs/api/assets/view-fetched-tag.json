@@ -5,7 +5,7 @@
   ],
   "@id": "nxv:myview2",
   "@type": [
-    "ElasticView",
+    "ElasticSearchView",
     "View",
     "Alpha"
   ],
@@ -31,12 +31,12 @@
     }
   },
   "resourceSchemas": [
-    "nxs:myschema"
+    "https://bluebrain.github.io/nexus/schemas/myschema"
   ],
   "sourceAsText": false,
   "_uuid": "4f90ceff-45b7-442d-8536-d41705321d50",
   "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
-  "_constrainedBy": "nxs:view",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
   "_createdAt": "2018-09-18T16:39:22.748Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",

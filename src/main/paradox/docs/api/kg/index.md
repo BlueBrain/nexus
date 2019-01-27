@@ -4,8 +4,6 @@
 * [Resolvers](kg-resolvers-api.md)
 * [Views](kg-views-api.md)
 * [Resources](kg-resources-api.md)
-* [Resources](kg-data-api.md)
-
 
 @@@
 
@@ -30,9 +28,3 @@ A view is a resource which defines the way indexing is applied to certain resour
 A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views` or `data`.
 
 @ref:[Operations on resources](kg-resources-api.md)
-
-
-## Data
-Data endpoints are simply a shortcut to access some of the @ref:[operations on resources](kg-resources-api.md). In these endpoints the `{schema}` segment is omitted.
-
-@ref:[Operations on data](kg-data-api.md)

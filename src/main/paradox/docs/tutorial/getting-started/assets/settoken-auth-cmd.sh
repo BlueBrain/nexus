@@ -1,0 +1,1 @@
+nexus auth set-token $TOKEN && nexus profiles list
