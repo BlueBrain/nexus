@@ -23,6 +23,7 @@ The services operates on 3 primary types of resources: Organizations, Projects a
   - A **@ref:[schema](./kg/kg-schemas-api.md)** is a resource that defines a set of rules and constrains using [SHACL].
   - A **@ref:[resolvers](./kg/kg-resolvers-api.md)**: is a resource that defines the way ids are retrieved inside a project.
   - A **@ref:[views](./kg/kg-views-api.md)**: is a resource that describes the way indexing is applied to certain resources inside a project.
+  - A **@ref:[file](./kg/kg-files-api.md)**: is a binary resource.
 
 ## Resource Lifecycle
 
@@ -30,7 +31,7 @@ Our services are build using the [event sourcing](https://martinfowler.com/eaaDe
 
 All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.
 
-![Resource Lifecycle](./assets/resource-lifecycle.png "Resource Lifecycle")
+![Resource Lifecycle](./assets/resources/resource-lifecycle.png "Resource Lifecycle")
 
 
 Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the deprecation flag may have various semantics:
@@ -40,7 +41,8 @@ Data is never removed from the system, but rather is marked as deprecated. Depen
 - **Schemas**: the resource itself cannot be updated and new data conformant to it cannot be created
 - **Resolvers**: the resource itself will not be considered during the resolution process
 - **Views**: the resource itself will not be considered during the indexing process
-- **Data**: the resource itself cannot be updated and attachments cannot be added/deleted
+- **Files**: attachments cannot be added/deleted
+- **Data**: the resource itself cannot be updated
 
 Future policies may use this flag to determine if or when the deprecated data may be archived.
 

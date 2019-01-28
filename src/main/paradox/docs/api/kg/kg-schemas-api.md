@@ -1,6 +1,6 @@
 # Schemas
 
-Schemas are rooted in the `/v1/schemas/{org_label}/{project_label}` collection.
+Schemas are rooted in the `/v1/schemas/{org_label}/{project_label}` collection. They define a set of rules and constrains using [SHACL](https://www.w3.org/TR/shacl/). Once those schemas are present, other resources can be created against them. Those resources won't be successfully created unless they match the required constrains defined on the schema.
 
 Each schema... 
 
@@ -12,7 +12,7 @@ Access to resources in the system depends on the access control list set for the
 
 @@@ note { .tip title="Running examples with Postman" }
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [schemas collection](../assets/schema-postman.json).
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [schemas collection](../assets/schemas/schema-postman.json).
 
 If your deployment is protected by an access token: 
 
@@ -35,13 +35,13 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [schema.sh](../assets/schema.sh)
+:   @@snip [schema.sh](../assets/schemas/schema.sh)
 
 Payload
-:   @@snip [schema.json](../assets/schema.json)
+:   @@snip [schema.json](../assets/schemas/schema.json)
 
 Response
-:   @@snip [schema-ref-new.json](../assets/schema-ref-new.json)
+:   @@snip [schema-ref-new.json](../assets/schemas/schema-ref-new.json)
 
 
 ## Create a schema using PUT
@@ -56,13 +56,13 @@ Note that if the payload contains an @id different from the `{schema_id}`, the r
 **Example**
 
 Request
-:   @@snip [schema-put.sh](../assets/schema-put.sh)
+:   @@snip [schema-put.sh](../assets/schemas/schema-put.sh)
 
 Payload
-:   @@snip [schema.json](../assets/schema.json)
+:   @@snip [schema.json](../assets/schemas/schema.json)
 
 Response
-:   @@snip [schema-ref-new.json](../assets/schema-ref-new.json)
+:   @@snip [schema-ref-new.json](../assets/schemas/schema-ref-new.json)
 
 
 ## Update a schema
@@ -82,13 +82,13 @@ PUT /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-update.sh](../assets/schema-update.sh)
+:   @@snip [schema-update.sh](../assets/schemas/schema-update.sh)
 
 Payload
-:   @@snip [schema.json](../assets/schema.json)
+:   @@snip [schema.json](../assets/schemas/schema.json)
 
 Response
-:   @@snip [schema-ref-new-updated.json](../assets/schema-ref-new-updated.json)
+:   @@snip [schema-ref-new-updated.json](../assets/schemas/schema-ref-new-updated.json)
 
 
 ## Tag a schema
@@ -113,93 +113,13 @@ PUT /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-tag.sh](../assets/schema-tag.sh)
+:   @@snip [schema-tag.sh](../assets/schemas/schema-tag.sh)
 
 Payload
 :   @@snip [tag.json](../assets/tag.json)
 
 Response
-:   @@snip [schema-ref-new-tagged.json](../assets/schema-ref-new-tagged.json)
-
-## Add attachment to a schema
-
-Adds a binary to an already existing schema
-
-```
-PUT /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?rev={previous_rev}
-```
-...where
-
-- `{previous_rev}`: is the last known revision number for the schema.
-- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
-
-**Example**
-
-Request
-:   @@snip [schema-attach.sh](../assets/schema-attach.sh)
-
-Response
-:   @@snip [schema-ref-new-attached.json](../assets/schema-ref-new-attached.json)
-
-## Delete attachment from a schema
-
-Deletes the attachment metadata from the latest revision of the schema. The attachment will still be accessible accessing the previous revision.
-
-```
-DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?rev={previous_rev}
-```
-...where
-
-- `{previous_rev}`: is the last known revision number for the schema.
-- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
-
-**Example**
-
-Request
-:   @@snip [schema-unattach.sh](../assets/schema-unattach.sh)
-
-Response
-:   @@snip [schema-ref-new-unattached.json](../assets/schema-ref-new-unattached.json)
-
-## Fetch attachment from a schema (current revision)
-
-```
-GET /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}
-```
-...where `{name}` is the attachment identifier.
-
-**Example**
-
-Request
-:   @@snip [schema-attach-fetch.sh](../assets/schema-attach-fetch.sh)
-
-## Fetch attachment from a schema (specific revision)
-
-```
-GET /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?rev={rev}
-```
-... where 
-- `{name}` - String:  is the attachment identifier.
-- `{rev}` - Long: is the revision number of the resource to be retrieved.
-
-**Example**
-
-Request
-:   @@snip [schema-attach-fetch-rev.sh](../assets/schema-attach-fetch-rev.sh)
-
-## Fetch attachment from a schema (specific tag)
-
-```
-GET /v1/schemas/{org_label}/{project_label}/{schema_id}/atachments/{name}?tag={tag}
-```
-... where 
-- `{name}` - String:  is the attachment identifier.
-- `{tag}` - String: is the tag of the schema to be retrieved.
-
-**Example**
-
-Request
-:   @@snip [schema-attach-fetch-tag.sh](../assets/schema-attach-fetch-tag.sh)
+:   @@snip [schema-ref-new-tagged.json](../assets/schemas/schema-ref-new-tagged.json)
 
 ## Deprecate a schema
 
@@ -216,10 +136,10 @@ DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-deprecate.sh](../assets/schema-deprecate.sh)
+:   @@snip [schema-deprecate.sh](../assets/schemas/schema-deprecate.sh)
 
 Response
-:   @@snip [schema-ref-new-deprecated.json](../assets/schema-ref-new-deprecated.json)
+:   @@snip [schema-ref-new-deprecated.json](../assets/schemas/schema-ref-new-deprecated.json)
 
 
 ## Fetch a schema (current version)
@@ -231,10 +151,10 @@ GET /v1/schemas/{org_label}/{project_label}/{schema_id}
 **Example**
 
 Request
-:   @@snip [schema-fetch.sh](../assets/schema-fetch.sh)
+:   @@snip [schema-fetch.sh](../assets/schemas/schema-fetch.sh)
 
 Response
-:   @@snip [schema-fetched.json](../assets/schema-fetched.json)
+:   @@snip [schema-fetched.json](../assets/schemas/schema-fetched.json)
 
 
 ## Fetch a schema (specific version)
@@ -247,10 +167,10 @@ GET /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={rev}
 **Example**
 
 Request
-:   @@snip [schema-fetch-revision.sh](../assets/schema-fetch-revision.sh)
+:   @@snip [schema-fetch-revision.sh](../assets/schemas/schema-fetch-revision.sh)
 
 Response
-:   @@snip [schema-fetched.json](../assets/schema-fetched.json)
+:   @@snip [schema-fetched.json](../assets/schemas/schema-fetched.json)
 
 
 ## Fetch a schema (specific tag)
@@ -265,30 +185,34 @@ GET /v1/schemas/{org_label}/{project_label}/{schema_id}?tag={tag}
 **Example**
 
 Request
-:   @@snip [schema-fetch-tag.sh](../assets/schema-fetch-tag.sh)
+:   @@snip [schema-fetch-tag.sh](../assets/schemas/schema-fetch-tag.sh)
 
 Response
-:   @@snip [schema-fetched-tag.json](../assets/schema-fetched-tag.json)
+:   @@snip [schema-fetched-tag.json](../assets/schemas/schema-fetched-tag.json)
 
 
 ## List schemas
 
 ```
-GET /v1/schemas/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
+GET /v1/schemas/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
 ```
-
+                                            
 where...
 
 - `{full_text_search_query}`: String - can be provided to select only the schemas in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting schemas based on their deprecation status
+- `{rev}`: Number - can be used to filter the resulting schemas based on their revision value
+- `{type}`: Iri - can be used to filter the resulting schemas based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{createdBy}`: Iri - can be used to filter the resulting schemas based on their creator
+- `{updatedBy}`: Iri - can be used to filter the resulting schemas based on the person which performed the last update
 
 
 **Example**
 
 Request
-:   @@snip [schema-list.sh](../assets/schema-list.sh)
+:   @@snip [schema-list.sh](../assets/schemas/schema-list.sh)
 
 Response
-:   @@snip [schema-list.json](../assets/schema-list.json)
+:   @@snip [schema-list.json](../assets/schemas/schema-list.json)
