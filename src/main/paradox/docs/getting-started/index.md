@@ -1,7 +1,7 @@
 @@@ index
 
 * [Running Nexus](running-nexus/index.md)
-* [Tutorials](../../tutorial/index.md)
+* [Tutorials](../tutorial/index.md)
 
 @@@
 
