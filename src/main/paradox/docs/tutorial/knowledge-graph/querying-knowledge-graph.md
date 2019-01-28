@@ -2,7 +2,7 @@
 
 ## Overview
 
-This tutorial introduces the basics of SPARQL and shows how to query a Nexus SparqlView.
+This tutorial introduces the basics of SPARQL, a query language for querying RDF based knowledge graph. I also demonstrates how to query a Nexus SparqlView.
 
 ![Toy story search](./assets/toy-story.png)
 
