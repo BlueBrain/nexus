@@ -3,6 +3,7 @@
 * [Schemas](kg-schemas-api.md)
 * [Resolvers](kg-resolvers-api.md)
 * [Views](kg-views-api.md)
+* [Files](kg-files-api.md)
 * [Resources](kg-resources-api.md)
 
 @@@
@@ -24,7 +25,12 @@ A view is a resource which defines the way indexing is applied to certain resour
 
 @ref:[Operations on views](kg-views-api.md)
 
+## Files
+A file is a binary attachment resource. 
+
+@ref:[Operations on files](kg-files-api.md)
+
 ## Resources
-A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views` or `data`.
+A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views`, `files` or `data`.
 
 @ref:[Operations on resources](kg-resources-api.md)
