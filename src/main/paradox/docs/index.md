@@ -3,6 +3,8 @@
 * [Getting Started](getting-started/index.md)
 * [API Reference](api/index.md)
 * [System Architecture](architecture/index.md)
+* [Web applications](webapps/index.md)
+* [Tools](tools/index.md)
 * [Benchmarks](benchmarks/index.md)
 * [Additional Information](additional-info/index.md)
 * [Release Notes](release-notes/index.md)
@@ -74,7 +76,7 @@ compliant identity providers to authenticate clients and manages the access cont
 
 This is the web interface to the platform. It allows users to browse the data within the system and perform administration tasks.
 
-[Source Code](https://github.com/BlueBrain/nexus-explorer)
+[Source Code](https://github.com/BlueBrain/nexus-explorer) | @ref:[Documentation](./webapps/web.md)
 
 ### Nexus Docs
 
@@ -129,3 +131,8 @@ This library will help Python users to integrate their tools with the Blue Brain
 
 [Source Code](https://github.com/BlueBrain/nexus-python-sdk) | [Documentation](https://bluebrain.github.io/nexus-python-sdk/)
 
+### JS SDK for Nexus
+
+A set of helpers to abstract the Nexus API and build Javascript / Typescript applications.
+
+[Source Code](https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js) | @ref:[Documentation](./tools/js-sdk.md)
