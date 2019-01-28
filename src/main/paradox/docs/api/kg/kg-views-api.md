@@ -13,7 +13,7 @@ Access to resources in the system depends on the access control list set for the
 
 @@@ note { .tip title="Running examples with Postman" }
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [views collection](../assets/view-postman.json).
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [views collection](../assets/views/view-postman.json).
 
 If your deployment is protected by an access token: 
 
@@ -23,7 +23,7 @@ Edit the imported collection -> Click on the `Authorization` tab -> Fill the tok
 
 ## View types
 
-![view defaults](../assets/view-defaults.png "View defaults")
+![view defaults](../assets/views/view-defaults.png "View defaults")
 
 
 There are several types of views, which relies on different technology to perform the indexing
@@ -92,7 +92,7 @@ When performing queries on the `_search` endpoint, this view will make use of th
 
 If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset of indices (or none) will be selecting, respecting the defined permissions.
 
-![Aggregate ElasticSearchView](../assets/aggregate-view.png "Aggregate ElasticSearchView")
+![Aggregate ElasticSearchView](../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
 
 **AggregateElasticSearchView payload**
 ```
@@ -130,13 +130,13 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [view-elastic.sh](../assets/view-elastic.sh)
+:   @@snip [view-elastic.sh](../assets/views/view-elastic.sh)
 
 Payload
-:   @@snip [view-elastic.json](../assets/view-elastic.json)
+:   @@snip [view-elastic.json](../assets/views/view-elastic.json)
 
 Response
-:   @@snip [view-elastic-ref-new.json](../assets/view-elastic-ref-new.json)
+:   @@snip [view-elastic-ref-new.json](../assets/views/view-elastic-ref-new.json)
 
 
 ## Create an ElasticSearchView using PUT
@@ -152,13 +152,13 @@ Note that if the payload contains an @id different from the `{view_id}`, the req
 **Example**
 
 Request
-:   @@snip [view-elastic-put.sh](../assets/view-elastic-put.sh)
+:   @@snip [view-elastic-put.sh](../assets/views/view-elastic-put.sh)
 
 Payload
-:   @@snip [view-elastic-put.json](../assets/view-elastic-put.json)
+:   @@snip [view-elastic-put.json](../assets/views/view-elastic-put.json)
 
 Response
-:   @@snip [view-elastic-ref-new.json](../assets/view-elastic-ref-new.json)
+:   @@snip [view-elastic-ref-new.json](../assets/views/view-elastic-ref-new.json)
 
 
 ## Update an ElasticSearchView
@@ -178,13 +178,13 @@ PUT /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-elastic-update.sh](../assets/view-elastic-update.sh)
+:   @@snip [view-elastic-update.sh](../assets/views/view-elastic-update.sh)
 
 Payload
-:   @@snip [view-elastic-put.json](../assets/view-elastic-put.json)
+:   @@snip [view-elastic-put.json](../assets/views/view-elastic-put.json)
 
 Response
-:   @@snip [view-elastic-ref-updated.json](../assets/view-elastic-ref-updated.json)
+:   @@snip [view-elastic-ref-updated.json](../assets/views/view-elastic-ref-updated.json)
 
 ## Create an AggregateElasticSearchView using PUT
 
@@ -199,13 +199,13 @@ Note that if the payload contains an @id different from the `{view_id}`, the req
 **Example**
 
 Request
-:   @@snip [view-agg-put.sh](../assets/view-agg-put.sh)
+:   @@snip [view-agg-put.sh](../assets/views/view-agg-put.sh)
 
 Payload
-:   @@snip [view-agg-put.json](../assets/view-agg-put.json)
+:   @@snip [view-agg-put.json](../assets/views/view-agg-put.json)
 
 Response
-:   @@snip [view-agg-ref-new.json](../assets/view-agg-ref-new.json)
+:   @@snip [view-agg-ref-new.json](../assets/views/view-agg-ref-new.json)
 
 
 ## Tag a View
@@ -230,13 +230,13 @@ PUT /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-tag.sh](../assets/view-tag.sh)
+:   @@snip [view-tag.sh](../assets/views/view-tag.sh)
 
 Payload
 :   @@snip [tag.json](../assets/tag.json)
 
 Response
-:   @@snip [view-elastic-ref-tagged.json](../assets/view-elastic-ref-tagged.json)
+:   @@snip [view-elastic-ref-tagged.json](../assets/views/view-elastic-ref-tagged.json)
 
 ## Deprecate a view
 
@@ -253,10 +253,10 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-deprecate.sh](../assets/view-deprecate.sh)
+:   @@snip [view-deprecate.sh](../assets/views/view-deprecate.sh)
 
 Response
-:   @@snip [view-elastic-ref-deprecated.json](../assets/view-elastic-ref-deprecated.json)
+:   @@snip [view-elastic-ref-deprecated.json](../assets/views/view-elastic-ref-deprecated.json)
 
 
 ## Fetch a view (current version)
@@ -268,10 +268,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}
 **Example**
 
 Request
-:   @@snip [view-fetch.sh](../assets/view-fetch.sh)
+:   @@snip [view-fetch.sh](../assets/views/view-fetch.sh)
 
 Response
-:   @@snip [view-fetched.json](../assets/view-fetched.json)
+:   @@snip [view-fetched.json](../assets/views/view-fetched.json)
 
 
 ## Fetch a view (specific version)
@@ -284,10 +284,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}
 **Example**
 
 Request
-:   @@snip [view-fetch-revision.sh](../assets/view-fetch-revision.sh)
+:   @@snip [view-fetch-revision.sh](../assets/views/view-fetch-revision.sh)
 
 Response
-:   @@snip [view-fetched.json](../assets/view-fetched.json)
+:   @@snip [view-fetched.json](../assets/views/view-fetched.json)
 
 
 ## Fetch a view (specific tag)
@@ -302,10 +302,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}?tag={tag}
 **Example**
 
 Request
-:   @@snip [view-fetch-tag.sh](../assets/view-fetch-tag.sh)
+:   @@snip [view-fetch-tag.sh](../assets/views/view-fetch-tag.sh)
 
 Response
-:   @@snip [view-fetched-tag.json](../assets/view-fetched-tag.json)
+:   @@snip [view-fetched-tag.json](../assets/views/view-fetched-tag.json)
 
 
 ## List views
@@ -329,10 +329,10 @@ where...
 **Example**
 
 Request
-:   @@snip [view-list.sh](../assets/view-list.sh)
+:   @@snip [view-list.sh](../assets/views/view-list.sh)
 
 Response
-:   @@snip [view-list.json](../assets/view-list.json)
+:   @@snip [view-list.json](../assets/views/view-list.json)
 
 
 ## ElasticSearch query
@@ -350,10 +350,10 @@ The string `documents` is used as a prefix of the default ElasticSearch `view_id
 **Example**
 
 Request
-:   @@snip [elastic-view-search.sh](../assets/elastic-view-search.sh)
+:   @@snip [elastic-view-search.sh](../assets/views/elastic-view-search.sh)
 
 Response
-:   @@snip [elastic-view-search.json](../assets/elastic-view-search.json)
+:   @@snip [elastic-view-search.json](../assets/views/elastic-view-search.json)
 
 ## SparQL query
 
@@ -369,10 +369,10 @@ The `Content-Type` HTTP header for this request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [sparql-view-search.sh](../assets/sparql-view-search.sh)
+:   @@snip [sparql-view-search.sh](../assets/views/sparql-view-search.sh)
 
 Response
-:   @@snip [sparql-view-search.json](../assets/sparql-view-search.json)
+:   @@snip [sparql-view-search.json](../assets/views/sparql-view-search.json)
 
 ## Views internals
 
@@ -380,5 +380,5 @@ When an asynchronous process that reads the view events from the Primary Store g
 
 The view provides the configuration of the index and defines which Events are going to be indexed.
 
-![View internals](../assets/views-internals.png "View internals")
+![View internals](../assets/views/views-internals.png "View internals")
 
