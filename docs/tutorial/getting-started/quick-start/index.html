@@ -406,7 +406,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 <p>Then we can load the tags.</p>
 <pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --thread 4
 </code></pre>
-<p>And finally load the ratings. Loading 100837 resources might take some time.</p>
+<p>And finally load the ratings. Loading 100837 resources might take some time and also it is not needed to load them all to follow this tutorial. The number of threads can be increased for better loading performance.</p>
 <pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --thread 4
 </code></pre>
 <h2><a href="#access-data" name="access-data" class="anchor"><span class="anchor-link"></span></a>Access data</h2>

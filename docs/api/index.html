@@ -166,6 +166,7 @@ BlueBrain/nexus
       <li><a href="../../docs/api/kg/kg-schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/api/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
       <li><a href="../../docs/api/kg/kg-views-api.html" class="page">Views</a></li>
+      <li><a href="../../docs/api/kg/kg-files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/api/kg/kg-resources-api.html" class="page">Resources</a></li>
     </ul></li>
     <li><a href="../../docs/api/iam/index.html" class="page">Identity &amp; Access Management API</a>
@@ -249,11 +250,12 @@ BlueBrain/nexus
   <li>A <strong><a href="kg/kg-schemas-api.html">schema</a></strong> is a resource that defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/">SHACL</a>.</li>
   <li>A <strong><a href="kg/kg-resolvers-api.html">resolvers</a></strong>: is a resource that defines the way ids are retrieved inside a project.</li>
   <li>A <strong><a href="kg/kg-views-api.html">views</a></strong>: is a resource that describes the way indexing is applied to certain resources inside a project.</li>
+  <li>A <strong><a href="kg/kg-files-api.html">file</a></strong>: is a binary resource.</li>
 </ul>
 <h2><a href="#resource-lifecycle" name="resource-lifecycle" class="anchor"><span class="anchor-link"></span></a>Resource Lifecycle</h2>
 <p>Our services are build using the <a href="https://martinfowler.com/eaaDev/EventSourcing.html">event sourcing</a> approach. This strategy captures all changes to an application state as a sequence of events.</p>
 <p>All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.</p>
-<p><img src="./assets/resource-lifecycle.png" alt="Resource Lifecycle" title="Resource Lifecycle" /></p>
+<p><img src="./assets/resources/resource-lifecycle.png" alt="Resource Lifecycle" title="Resource Lifecycle" /></p>
 <p>Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the deprecation flag may have various semantics:</p>
 <ul>
   <li><strong>Organizations</strong>: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this organization will not be considered during indexing and resolution processes.</li>
@@ -261,7 +263,8 @@ BlueBrain/nexus
   <li><strong>Schemas</strong>: the resource itself cannot be updated and new data conformant to it cannot be created</li>
   <li><strong>Resolvers</strong>: the resource itself will not be considered during the resolution process</li>
   <li><strong>Views</strong>: the resource itself will not be considered during the indexing process</li>
-  <li><strong>Data</strong>: the resource itself cannot be updated and attachments cannot be added/deleted</li>
+  <li><strong>Files</strong>: attachments cannot be added/deleted</li>
+  <li><strong>Data</strong>: the resource itself cannot be updated</li>
 </ul>
 <p>Future policies may use this flag to determine if or when the deprecated data may be archived.</p>
 </div>
