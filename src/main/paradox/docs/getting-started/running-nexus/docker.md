@@ -20,7 +20,7 @@ Example
 :  
 ```
 $ docker version
-Docker version 18.03.1-ce, build 9ee9f40
+Docker version 18.09.1, build 4c52b90
 ```
 
 ### Memory and CPU limits
@@ -55,8 +55,7 @@ To add a manager to this swarm, run 'docker swarm join-token manager' and follow
 
 ## Deployment
 
-Download the [Docker Compose template](./docker/docker-compose.yaml) and
-the [Nginx router configuration](./docker/nginx.conf) into a directory of your choice.
+Download the [Docker Compose template](./docker/docker-compose.yaml) into a directory of your choice.
 For instance `~/docker/nexus/`.
 
 ### Starting Nexus
@@ -75,34 +74,52 @@ Example
 $ cd ~/docker/nexus
 $ docker stack deploy nexus --compose-file=docker-compose.yaml
 Creating network nexus_default
-Creating config nexus_nginx
 Creating service nexus_iam
 Creating service nexus_admin
 Creating service nexus_elasticsearch
 Creating service nexus_cassandra
-Creating service nexus_kafka
 Creating service nexus_blazegraph
 Creating service nexus_router
 Creating service nexus_kg
 ```
 
-Wait about one minute and you should be able to access Nexus locally, on the port 80:
+Wait one or two minutes and you should be able to access Nexus locally, on the port 80:
 
 Command
 :  
 ```
-curl http://localhost
+curl http://localhost/kg
 ```
 
 Example
 :  
 ```
-$ curl http://localhost
-{"name":"kg","version":"0.10.11"}
+$ curl http://localhost/kg
+{"name":"kg","version":"1.0.0"}
 ```
 
-To list running services or access logs, please refer to the
+## Endpoints
+
+The provided reverse proxy (the `nexus-router` image) exposes several endpoints:
+
+* [root](http://localhost): Nexus web interface
+* [v1](http://localhost/v1): API root
+* [admin](http://localhost/admin): Admin service descriptor
+* [iam](http://localhost/iam): IAM service descriptor
+* [kg](http://localhost/kg): KG service descriptor
+* [elasticsearch](http://localhost/elasticsearch): Elasticsearch endpoint
+* [blazegraph](http://localhost/blazegraph): Blazegraph web interface
+
+If you'd like to customize the listening port or remove unnecessary endpoints, you can build your own
+Nginx based Docker image. See the [reference configuration](./docker/nginx.conf).
+
+### Administration
+
+To list running services or access logs, please refer to the official Docker
 [documentation](https://docs.docker.com/engine/reference/commandline/stack/).
+
+Alternatively you can deploy [Swarmpit](https://swarmpit.io/) which provides a comprehensive UI
+to manage your Docker Swarm cluster.
 
 ### Stopping Nexus
 
@@ -123,10 +140,8 @@ Removing service nexus_blazegraph
 Removing service nexus_cassandra
 Removing service nexus_elasticsearch
 Removing service nexus_iam
-Removing service nexus_kafka
 Removing service nexus_kg
 Removing service nexus_router
-Removing config nexus_nginx
 Removing network nexus_default
 ```
 
