@@ -1,7 +1,4 @@
-@@@ index
-
-* [JS SDK for Nexus](./js-sdk.md)
-
-@@@
-
 # Tools
+
+## JS SDK for Nexus
+

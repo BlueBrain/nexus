@@ -1,7 +1,3 @@
-@@@ index
-
-* [Nexus Web](./web.md)
-
-@@@
-
 # Web applications
+
+## Nexus Web
