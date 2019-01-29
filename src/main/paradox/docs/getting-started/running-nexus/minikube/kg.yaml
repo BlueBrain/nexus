@@ -79,7 +79,7 @@ items:
       spec:
         containers:
         - name: kg
-          image: bluebrain/nexus-kg:latest
+          image: bluebrain/nexus-kg:1.0
           imagePullPolicy: Always
           volumeMounts:
           - name: storage
@@ -120,22 +120,22 @@ items:
             value: 'kg'
           - name: SEED_NODES
             value: 'kg-0.kg-hd.nexus.svc.cluster.local:2552'
-          - name: IAM_BASEURI
+          - name: IAM_PUBLIC_IRI
+            value: 'http://$(PUBLIC_IP)/v1'
+          - name: IAM_INTERNAL_IRI
             value: 'http://iam.nexus.svc.cluster.local/v1'
-          - name: ADMIN_BASE_URI
+          - name: ADMIN_PUBLIC_IRI
+            value: 'http://$(PUBLIC_IP)/v1'
+          - name: ADMIN_INTERNAL_IRI
             value: 'http://admin.nexus.svc.cluster.local/v1'
-          - name: ELASTIC_BASE_URI
+          - name: ELASTIC_SEARCH_BASE_URI
             value: 'http://elasticsearch.nexus.svc.cluster.local:9200'
-          - name: ELASTIC_PREFIX_INDEX
-            value: 'kg'
           - name: SPARQL_BASE_URI
             value: 'http://blazegraph.nexus.svc.cluster.local/blazegraph'
-          - name: KAFKA_BOOTSTRAP_SERVERS
-            value: 'kafka-0.kafka.nexus.svc.cluster.local:9092'
           command:
           - '/bin/bash'
           - '-c'
-          - '/bin/bash /opt/docker/bin/kg -Doverride.remoting.interface=$REMOTING_INTERFACE.kg-hd.nexus.svc.cluster.local'
+          - '/opt/docker/bin/kg -Doverride.remoting.interface=$REMOTING_INTERFACE.kg-hd.nexus.svc.cluster.local'
           ports:
           - containerPort: 8080
             name: http
@@ -202,7 +202,7 @@ items:
         - backend:
             serviceName: kg
             servicePort: 8080
-          path: /v1/data
+          path: /v1/files
 - apiVersion: extensions/v1beta1
   kind: Ingress
   metadata:
