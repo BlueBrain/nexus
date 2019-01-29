@@ -1,89 +1,73 @@
 version: "3.3"
 services:
   kg:
-    image: bluebrain/nexus-kg:latest
+    image: bluebrain/nexus-kg:1.0
     entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
       PUBLIC_URI: "http://localhost"
       SERVICE_DESCRIPTION_URI: "http://localhost"
-      IAM_BASEURI: "http://iam:8080/v1"
-      ADMIN_BASE_URI: "http://admin:8080"
+      IAM_INTERNAL_IRI: "http://iam:8080/v1"
+      IAM_PUBLIC_IRI: "http://localhost/v1"
+      ADMIN_INTERNAL_IRI: "http://admin:8080/v1"
+      ADMIN_PUBLIC_IRI: "http://localhost/v1"
       SPARQL_BASE_URI: "http://blazegraph:9999/blazegraph"
-      SPARQL_ENDPOINT: "http://blazegraph:9999/blazegraph/sparql"
-      ELASTIC_BASE_URI: "http://elasticsearch:9200"
-      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
-      JAVA_OPTS: "-Xmx512m"
+      ELASTIC_SEARCH_BASE_URI: "http://elasticsearch:9200"
+      JAVA_OPTS: "-XX:+UseG1GC -XX:+UseStringDeduplication -Xms2G -Xmx4G"
 
   iam:
-    image: bluebrain/nexus-iam:latest
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam-service"]
+    image: bluebrain/nexus-iam:1.0
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
     environment:
-      HTTP_PREFIX: "v1"
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
       PUBLIC_URI: "http://localhost"
       SERVICE_DESCRIPTION_URI: "http://localhost/iam"
       IAM_TESTMODE: "true"
-      ELASTIC_BASE_URI: "http://elasticsearch:9200"
-      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
-      JAVA_OPTS: "-Xmx512m"
+      JAVA_OPTS: "-XX:+UseG1GC -Xms1G -Xmx2G"
 
   admin:
-    image: bluebrain/nexus-admin:latest
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin-service"]
+    image: bluebrain/nexus-admin:1.0
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
       PUBLIC_URI: "http://localhost"
       SERVICE_DESCRIPTION_URI: "http://localhost/admin"
-      IAM_TESTMODE: "true"
-      IAM_BASEURI: "http://iam:8080/v1"
-      SPARQL_BASE_URI: "http://blazegraph:9999/blazegraph"
-      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
-      JAVA_OPTS: "-Xmx512m"
+      IAM_INTERNAL_IRI: "http://iam:8080/v1"
+      IAM_PUBLIC_IRI: "http://localhost/v1"
+      JAVA_OPTS: "-XX:+UseG1GC -Xms1G -Xmx1G"
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:6.3.2"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:6.4.3"
     environment:
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      ES_JAVA_OPTS: "-Xms4G -Xmx4G"
       discovery.type: "single-node"
+      bootstrap.memory_lock: "true"
 
   cassandra:
-    image: "cassandra:3.11"
+    image: "cassandra:3"
     environment:
-      MAX_HEAP_SIZE: "512m"
-      HEAP_NEWSIZE: "128m"
-
-  kafka:
-    image: "wurstmeister/kafka:2.11-1.1.1"
-    environment:
-      KAFKA_PORT: 9092
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_HOST_NAME: kafka
-      KAFKA_CREATE_TOPICS: "admin-events:1:1"
-
-  zookeeper:
-    image: "zookeeper:latest"
-    environment:
-      ZOO_STANDALONE_ENABLED: "true"
+      MAX_HEAP_SIZE: "4G"
+      HEAP_NEWSIZE: "256m"
+      CASSANDRA_BROADCAST_ADDRESS: cassandra
 
   blazegraph:
     image: "nawer/blazegraph:2.1.5"
 
+  web:
+    image: "bluebrain/nexus-web"
+    environment:
+      BASE_PATH: "/"
+      HOST_NAME: "http://localhost"
+      API_ENDPOINT: "http://localhost/v1"
+
   router:
-    image: "nginx:stable-alpine"
+    image: "bluebrain/nexus-router:1.0"
     ports:
       - target: 80
         published: 80
         mode: host
     deploy:
         mode: global
-    configs:
-      - source: nginx
-        target: /etc/nginx/conf.d/default.conf
-
-configs:
-  nginx:
-    file: ./nginx.conf

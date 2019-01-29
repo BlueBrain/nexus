@@ -213,6 +213,10 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/docker.html#deployment" class="header">Deployment</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/docker.html#starting-nexus" class="header">Starting Nexus</a></li>
+    </ul></li>
+    <li><a href="../../../docs/getting-started/running-nexus/docker.html#endpoints" class="header">Endpoints</a>
+    <ul>
+      <li><a href="../../../docs/getting-started/running-nexus/docker.html#administration" class="header">Administration</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/docker.html#stopping-nexus" class="header">Stopping Nexus</a></li>
     </ul></li>
   </ul></li>
@@ -247,6 +251,10 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/docker.html#deployment" class="header">Deployment</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/docker.html#starting-nexus" class="header">Starting Nexus</a></li>
+    </ul></li>
+    <li><a href="../../../docs/getting-started/running-nexus/docker.html#endpoints" class="header">Endpoints</a>
+    <ul>
+      <li><a href="../../../docs/getting-started/running-nexus/docker.html#administration" class="header">Administration</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/docker.html#stopping-nexus" class="header">Stopping Nexus</a></li>
     </ul></li>
   </ul></li>
@@ -271,7 +279,7 @@ BlueBrain/nexus
   <dt>Example</dt>
   <dd>
   <pre><code>$ docker version
-Docker version 18.03.1-ce, build 9ee9f40
+Docker version 18.09.1, build 4c52b90
 </code></pre></dd>
 </dl>
 <h3><a href="#memory-and-cpu-limits" name="memory-and-cpu-limits" class="anchor"><span class="anchor-link"></span></a>Memory and CPU limits</h3>
@@ -296,7 +304,7 @@ To add a manager to this swarm, run &#39;docker swarm join-token manager&#39; an
 </code></pre></dd>
 </dl>
 <h2><a href="#deployment" name="deployment" class="anchor"><span class="anchor-link"></span></a>Deployment</h2>
-<p>Download the <a href="./docker/docker-compose.yaml">Docker Compose template</a> and the <a href="./docker/nginx.conf">Nginx router configuration</a> into a directory of your choice. For instance <code>~/docker/nexus/</code>.</p>
+<p>Download the <a href="./docker/docker-compose.yaml">Docker Compose template</a> into a directory of your choice. For instance <code>~/docker/nexus/</code>.</p>
 <h3><a href="#starting-nexus" name="starting-nexus" class="anchor"><span class="anchor-link"></span></a>Starting Nexus</h3>
 <p>Create a <em>nexus</em> deployment with Docker Stacks:</p>
 <dl>
@@ -309,30 +317,42 @@ To add a manager to this swarm, run &#39;docker swarm join-token manager&#39; an
   <pre><code>$ cd ~/docker/nexus
 $ docker stack deploy nexus --compose-file=docker-compose.yaml
 Creating network nexus_default
-Creating config nexus_nginx
 Creating service nexus_iam
 Creating service nexus_admin
 Creating service nexus_elasticsearch
 Creating service nexus_cassandra
-Creating service nexus_kafka
 Creating service nexus_blazegraph
 Creating service nexus_router
 Creating service nexus_kg
 </code></pre></dd>
 </dl>
-<p>Wait about one minute and you should be able to access Nexus locally, on the port 80:</p>
+<p>Wait one or two minutes and you should be able to access Nexus locally, on the port 80:</p>
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>curl http://localhost
+  <pre><code>curl http://localhost/kg
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
-  <pre><code>$ curl http://localhost
-{&quot;name&quot;:&quot;kg&quot;,&quot;version&quot;:&quot;0.10.11&quot;}
+  <pre><code>$ curl http://localhost/kg
+{&quot;name&quot;:&quot;kg&quot;,&quot;version&quot;:&quot;1.0.0&quot;}
 </code></pre></dd>
 </dl>
-<p>To list running services or access logs, please refer to the <a href="https://docs.docker.com/engine/reference/commandline/stack/">documentation</a>.</p>
+<h2><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h2>
+<p>The provided reverse proxy (the <code>nexus-router</code> image) exposes several endpoints:</p>
+<ul>
+  <li><a href="http://localhost">root</a>: Nexus web interface</li>
+  <li><a href="http://localhost/v1">v1</a>: API root</li>
+  <li><a href="http://localhost/admin">admin</a>: Admin service descriptor</li>
+  <li><a href="http://localhost/iam">iam</a>: IAM service descriptor</li>
+  <li><a href="http://localhost/kg">kg</a>: KG service descriptor</li>
+  <li><a href="http://localhost/elasticsearch">elasticsearch</a>: Elasticsearch endpoint</li>
+  <li><a href="http://localhost/blazegraph">blazegraph</a>: Blazegraph web interface</li>
+</ul>
+<p>If you&rsquo;d like to customize the listening port or remove unnecessary endpoints, you can build your own Nginx based Docker image. See the <a href="./docker/nginx.conf">reference configuration</a>.</p>
+<h3><a href="#administration" name="administration" class="anchor"><span class="anchor-link"></span></a>Administration</h3>
+<p>To list running services or access logs, please refer to the official Docker <a href="https://docs.docker.com/engine/reference/commandline/stack/">documentation</a>.</p>
+<p>Alternatively you can deploy <a href="https://swarmpit.io/">Swarmpit</a> which provides a comprehensive UI to manage your Docker Swarm cluster.</p>
 <h3><a href="#stopping-nexus" name="stopping-nexus" class="anchor"><span class="anchor-link"></span></a>Stopping Nexus</h3>
 <p>You can stop and delete the entire deployment with:</p>
 <dl>
@@ -348,10 +368,8 @@ Removing service nexus_blazegraph
 Removing service nexus_cassandra
 Removing service nexus_elasticsearch
 Removing service nexus_iam
-Removing service nexus_kafka
 Removing service nexus_kg
 Removing service nexus_router
-Removing config nexus_nginx
 Removing network nexus_default
 </code></pre></dd>
 </dl><div class="callout note "><div class="callout-title">Note</div>
