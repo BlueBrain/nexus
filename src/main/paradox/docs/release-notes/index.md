@@ -4,10 +4,16 @@ This part of the documentation lists the significant changes to the system for e
 
 ## Nexus 1.0.x
 
-This is the first major release of the system after almost two years of development.
+This is the first major release of Blue Brain Nexus after almost two years of development.
 
-Also referred to as "_Nexus V1_" this initial release is our first big milestone in our quest to build a semantic
-data management platform. We've been running this software in production for more than a year getting good feedback
+Also referred to as "_Nexus V1_”, this initial release is our first big milestone in our quest to build a Knowledge Graph platform uniquely combining flexible graph database, powerful search engine and scalable data store to enable: 
+
+* Easy unification and integration of fragmented and disparate data from heterogeneous domains to break data and metadata silos
+* Better data governance with the ability to specify and enforce organisation’s best practices for data collection, storage and description through high quality metadata
+* Data lineage and provenance recording and description
+* FAIR (Findable, Accessible, Interoperable, Re-usable) data and metadata management
+
+We've been running this software in production for more than a year getting good feedback
 on its design and we are confident that the current API meets our current and longer term goals.
 
 This release represents a commitment to backwards compatibility in all future releases of the `v1.m.p` series.
