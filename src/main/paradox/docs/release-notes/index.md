@@ -37,8 +37,10 @@ The behaviour of the system is described across the documentation, but here are 
 
 #### Nexus web interface
 
+![Nexus Web](./assets/img/nexus-web.png)
+
 Previously, the web interface was dubbed _Nexus Explorer_, and could only be used to browse the data stored in your
-Nexus instance. For the _Nexus V1_ release, we decided to build a new web application, called _Nexus Web_, that also
+Nexus instance. For the _Nexus V1_ release, we decided to build a new web application, called _[Nexus Web]_, that also
 enables operational management, data management and search capabilities on the system.
 
 The web application is set to offer most of the features you can get with the raw API, as well as additional
@@ -311,5 +313,6 @@ general availability. In between nodes, when services are deployed as a cluster,
 [Akka Distributed Data]: https://doc.akka.io/docs/akka/2.5/distributed-data.html
 [gitter]: https://gitter.im/BlueBrain/nexus
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
+[Nexus Web]: https://github.com/bluebrain/nexus-explorer
 [Neuroshapes]: https://incf.github.io/neuroshapes/
 [CouchDB]: http://docs.couchdb.org/en/stable/api/document/common.html#attachments
