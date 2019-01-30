@@ -19,7 +19,7 @@ Graph platform uniquely combining flexible graph database, powerful search engin
 We've been running this software in production for more than a year getting good feedback on its design and we are
 confident that the current API meets our current and longer term goals.
 
-This release represents a commitment to backwards compatibility in all future releases of the `v1.m.p` series.
+This release represents a commitment to backwards compatibility in all future releases of the `v1.y.z` series.
 
 @@@ note { title=Versioning }
 
@@ -31,7 +31,7 @@ _minor_ numbers match regardless of the value of the _patch_ numbers.
 @@@
 
 The behaviour of the system is described across the documentation, but here are some notable changes from the previous
-`v0.m.p` series.
+`v0.y.z` series.
 
 ### Functionality & Behaviour
 
@@ -56,7 +56,7 @@ At the time of the _Nexus V1_ release, you can use it to:
 
 #### Isolated data scopes
 
-The `v0.m.p` series handled data within one single space and while it did provide some benefits with respect to the
+The `v0.y.z` series handled data within one single space and while it did provide some benefits with respect to the
 ability to query the entire system, it also provided severe limitations with respect to data evolution, scalability
 and future developments. We move on from this monolithic approach towards a multi scoped system, where data is
 bucketed and managed independently in projects.
@@ -84,7 +84,7 @@ as follows:
 
 #### Client defined identifiers
 
-The `v0.m.p` series was very opinionated on how resource ids are defined and prohibited client provided identifiers. The
+The `v0.y.z` series was very opinionated on how resource ids are defined and prohibited client provided identifiers. The
 choice at the time was that a resource id needs to be resolvable (the resource id needed to match the url to access it).
 This strong constraint tied the resource ids to the Nexus deployment where they were managed. While this was probably
 fine for most data within the system, it was nearly impossible to manage data from external sources that came with its
@@ -104,7 +104,7 @@ During the past year of production use of Nexus we have noticed that users tend 
 reusable components. An example of that is the [Neuroshapes] initiative, a community effort for a shared vocabulary and
 collection of constraints for neuroscience.
 
-The use of schemas and contexts in the `v0.m.p` series applied a restriction on the locality of constrained resources,
+The use of schemas and contexts in the `v0.y.z` series applied a restriction on the locality of constrained resources,
 specifically resources could only be created in the same _domain_ with schemas.
 
 In the new iteration we've introduced a configurable resolution mechanism that allows users to make use of schemas
@@ -133,7 +133,7 @@ representation to the resource that references it.
 
 #### Improved handling of binary resources
 
-The `v0.m.p` series handled binary resources as sub-resources, called _attachments_, following the model pioneered by
+The `v0.y.z` series handled binary resources as sub-resources, called _attachments_, following the model pioneered by
 [CouchDB]. While it provided a guarantee that every binary resource is properly described with metadata, the model did
 not work well in the following situations:
 
@@ -151,7 +151,7 @@ separate resource. This model allows for many-to-many relationships between file
 
 #### New mechanism for stable resource references
 
-The `v0.m.p` series was quite opinionated on the use of stable references ensuring the structural and semantic
+The `v0.y.z` series was quite opinionated on the use of stable references ensuring the structural and semantic
 immutability of a resource revision. Schemas and Contexts had to be published before they could be used and once
 published their lifecycle would finish, preventing further updates.
 
@@ -280,9 +280,9 @@ service dependency tree is now as follows:
 Access control lists are now restricted to either root (`/`), organization (`/{org}`) or project (`/{org}/{project}`)
 removing the need to index these definitions along with the data in their respective service boundaries.
 
-#### Migration from v0.m.p series
+#### Migration from v0.y.z series
 
-The semantics of the API and managed resources in between the `v0.m.p` and `v1.m.p` series has changed considerably
+The semantics of the API and managed resources in between the `v0.y.z` and `v1.y.z` series has changed considerably
 making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We
 recommend building a tailored migration script. Please find us on [gitter] for help and advice on how to do this
 effectively depending on your use of Nexus.
@@ -299,7 +299,7 @@ direct access to the message broker.
 
 #### In memory indices
 
-Versions `v0.m.p` of _iam_ and later on _admin_ services depended on ElasticSearch and BlazeGraph to maintain indices of
+Versions `v0.y.z` of _iam_ and later on _admin_ services depended on ElasticSearch and BlazeGraph to maintain indices of
 the resources managed. Since these resources easily fit in memory on a single node, the dependency on these external
 systems has been removed in favour of in memory indices to provide a consistent view on the data and increase the
 general availability. In between nodes, when services are deployed as a cluster, the indices are replicated by using
