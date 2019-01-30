@@ -3,7 +3,6 @@
 * [Getting Started](getting-started/index.md)
 * [API Reference](api/index.md)
 * [System Architecture](architecture/index.md)
-* [Roadmap](roadmap/index.md)
 * [Benchmarks](benchmarks/index.md)
 * [Additional Information](additional-info/index.md)
 * [Release Notes](release-notes/index.md)
