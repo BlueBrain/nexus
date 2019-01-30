@@ -107,6 +107,24 @@ deployments or shared repositories (e.g.: a git repository).
 Schema imports through the `owl:import` clause works recursively as before, but it applies the resolution mechanism at
 each iteration. Context references work recursively as before applying the resolution mechanism at each iteration.
 
+#### Improved handling of binary resources
+
+The `v0.m.p` series handled binary resources as sub-resources, called _attachments_, following the model pioneered by
+[CouchDB]. While it provided a guarantee that every binary resource is properly described with metadata, the model did
+not work well in the following situations:
+
+*   uploading binaries for later organization: the parent resource required creation before a binary could be attached
+    to it, which in the cases where users were just interested in storing binaries in Nexus it required two API calls
+    instead of one.
+*   conflicting vocabulary definitions: a lot of the data modeling effort relied on the Nexus metadata for the uploaded
+    binaries which forced the use of a certain vocabulary and metadata structure in Nexus
+
+This model of handling binaries has been superseded by full class support for binaries through _files_, a new kind of
+resource managed just like the other types of resources within the system. _Files_ have their own lifecycle and can
+be independently updated.
+Description of _files_, for example in the case of _datasets_, can now be done external to the file resource within a
+separate resource. This model allows for many-to-many relationships between files and other resources.
+
 ### Technical Notes
 
 #### Introduced a new service: Admin
@@ -163,3 +181,4 @@ general availability. In between nodes, when services are deployed as a cluster,
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
 [Neuroshapes]: https://incf.github.io/neuroshapes/
 [INCF]: https://www.incf.org/
+[CouchDB]: http://docs.couchdb.org/en/stable/api/document/common.html#attachments
