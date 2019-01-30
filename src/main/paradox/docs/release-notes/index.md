@@ -75,17 +75,46 @@ maintain the same API simplicity with respect to accessing resources we came up 
 configurable at the project level (_apiMappings_) that handles bidirectional compaction and expansion of resource
 identifiers.
 
-A simple http proxying configuration with URL rewriting allows resources to continue to be resolvable. 
+A simple http proxying configuration with URL rewriting deployed in front of the Nexus API allows resources to continue
+to be resolvable.
 
+#### Resolution mechanisms for shared resources
+
+During the past year of production use of Nexus we have noticed that users tend to develop schemas and contexts as
+reusable components. An example of that is the [Neuroshapes] initiative, a community effort for a shared vocabulary and
+collection of constraints for neuroscience, an initiative under the [INCF] umbrella.
+
+The use of schemas and contexts in the `v0.m.p` series applied a restriction on the locality of constrained resources,
+specifically resources could only be created in the same _domain_ with schemas.
+
+In the new iteration we've introduced a configurable resolution mechanism that allows users to make use of schemas
+and contexts that reside in other projects. The resources that control this behaviour are called _Resolvers_ and they
+behave like dependency management systems in programming language ecosystems.
+
+_Resolvers_  can now be created and configured to look up schemas and contexts in arbitrary locations, scoped within
+projects. The resolution mechanism takes into account all the resolvers defined in a project using the priorities of
+each resolver and attempts to resolve the referenced resource based on its `@id` value.
+Current supported resolvers are:
+
+*   _InProject_: a default project resource created along with a project that looks up referenced resources in the same
+    project.
+*   _CrossProject_: a type of resolver that can be created by clients to look up referenced resources in projects other
+    than the current one.
+
+Future developments will include additional resolver types that are capable of resolving resources in other Nexus
+deployments or shared repositories (e.g.: a git repository).
+
+Schema imports through the `owl:import` clause works recursively as before, but it applies the resolution mechanism at
+each iteration. Context references work recursively as before applying the resolution mechanism at each iteration.
 
 ### Technical Notes
 
 #### Introduced a new service: Admin
 
 A new service has been introduced, named _Admin_ that manages the scoping (and its configuration) within the Nexus
-ecosystem. Organizations and Projects are now managed by this service, allowing other future services to take
-advantage of the functionality provided without a direct dependency on the KG service. The service dependency tree
-is now as follows:
+ecosystem. Organizations and Projects (previously named _domains_) are now managed by this service, allowing other
+future services to take advantage of the functionality provided without a direct dependency on the KG service. The
+service dependency tree is now as follows:
 
 ```
   +-----------+         +-----------+         +-----------+
@@ -98,9 +127,8 @@ is now as follows:
         +---------------------------------------+
 ```
 
-ACLs now be set only on the defined scopes: root (`/`), organizations (`/{org}`) and projects (`/{org}/{project}`).
-Supporting a deeper nesting for ACLs has proved to introduce unnecessary penalties in terms of performance and
-functional complexity.
+Access control lists are now restricted to either root (`/`), organization (`/{org}`) or project (`/{org}/{project}`)
+removing the need to index these definitions along with the data in their respective service boundaries.
 
 #### Migration from v0.m.p series
 
@@ -133,3 +161,5 @@ general availability. In between nodes, when services are deployed as a cluster,
 [Akka Distributed Data]: https://doc.akka.io/docs/akka/2.5/distributed-data.html
 [gitter]: https://gitter.im/BlueBrain/nexus
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
+[Neuroshapes]: https://incf.github.io/neuroshapes/
+[INCF]: https://www.incf.org/
