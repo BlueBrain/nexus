@@ -103,8 +103,6 @@ items:
             value: 'iam'
           - name: SEED_NODES
             value: 'iam-0.iam-hd.nexus.svc.cluster.local:2552'
-          - name: IAM_TESTMODE
-            value: 'true'
           command:
           - '/bin/bash'
           - '-c'

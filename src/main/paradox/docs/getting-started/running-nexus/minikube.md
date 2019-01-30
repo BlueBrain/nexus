@@ -319,8 +319,8 @@ $
 
 IAM is the service that manages identities and tokens via OIDC providers and manages the permissions to
 arbitrary resources in the system. By default, anonymous users will be granted enough permissions to
-fully manage resources in the system. If you'd like to change this behavior, you must disable `IAM_TEST_MODE` in
-the YAML manifest and set up [realms and permissions](../../api/iam/index.html) manually.
+fully manage resources in the system. If you'd like to change this behavior, you must set up
+[realms and permissions](../../api/iam/index.html) manually.
 
 Command
 :   
