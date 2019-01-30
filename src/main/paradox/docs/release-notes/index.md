@@ -125,6 +125,52 @@ be independently updated.
 Description of _files_, for example in the case of _datasets_, can now be done external to the file resource within a
 separate resource. This model allows for many-to-many relationships between files and other resources.
 
+#### New mechanism for stable resource references
+
+The `v0.m.p` series was quite opinionated on the use of stable references ensuring the structural and semantic
+immutability of a resource revision. Schemas and Contexts had to be published before they could be used and once
+published their lifecycle would finish, preventing further updates.
+
+This behaviour was replaced by giving the client the control on the immutability guarantees through the use of revisions
+and tags. The schema versions are no longer present in the API and the mechanism for unpacking schema references are
+aware of possible tag and revision references provided as query parameters. A _tag_ is a new type of sub-resource that
+represents a pointer to a resource revision.
+
+Assuming the following entry in the project `apiMappings`:
+```
+{
+  "prefix": "persons",
+  "namespace": "http://nexus.example.com/schemas/person?tag=v1.0.0"
+}
+```
+... would ensure that resources are constrained with a stable version of a schema:
+```
+curl -XPOST http://nexus.example.com/resources/{org}/{proj}/persons -d '{}'
+```
+
+Additionally, the use of curies is also available, leaving the door open to providing schema versions per resource.
+Considering the following entry in the project `apiMappings`:
+```
+{
+  "prefix": "persons",
+  "namespace": "http://nexus.example.com/schemas/person?tag="
+}
+```
+... resources can be constrained with a dynamic version of a schema provided at the time of resource creation:
+```
+curl -XPOST http://nexus.example.com/resources/{org}/{proj}/persons:v1.0.0 -d '{}'
+```
+
+Revision query params can be used in the exact same manner as tag params.
+When omitting `rev` or `tag` query params when referring to schema, it is implied that the latest version should be used
+every time that schema is resolved.
+
+Context references follow the very same behaviour. Context `iri` values can be augmented with a `tag` or `rev` query
+parameter to point to a specific immutable reference of the resource.
+
+_Note_: the behaviour depends on the new resource reference resolution process; a change in the resolver resources (a
+different resolution process configuration) can not provide an immutability guarantee of the references.
+
 ### Technical Notes
 
 #### Introduced a new service: Admin
