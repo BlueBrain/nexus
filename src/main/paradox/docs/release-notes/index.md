@@ -6,10 +6,10 @@ This part of the documentation lists the significant changes to the system for e
 
 This is the first major release of Blue Brain Nexus after almost two years of development.
 
-Also referred to as "_Nexus V1_”, this initial release is our first big milestone in our quest to build a Knowledge Graph platform uniquely combining flexible graph database, powerful search engine and scalable data store to enable: 
+Also referred to as "_Nexus V1_”, this initial release is our first big milestone in our quest to build a Knowledge Graph platform uniquely combining flexible graph database, powerful search engine and scalable data store to enable:
 
 * Easy unification and integration of fragmented and disparate data from heterogeneous domains to break data and metadata silos
-* Better data governance with the ability to specify and enforce organisation’s best practices for data collection, storage and description through high quality metadata
+* Better data governance with the ability to specify and enforce organization’s best practices for data collection, storage and description through high quality metadata
 * Data lineage and provenance recording and description
 * FAIR (Findable, Accessible, Interoperable, Re-usable) data and metadata management
 
@@ -30,15 +30,24 @@ The behaviour of the system is described across the documentation, but here are 
 
 ### Functionality & Behaviour
 
-#### Nexus clients
+#### Nexus web interface
 
-A lot of early adopters quick provided us the feedback that exposing only an API for interacting with the system was
-insufficient and that we needed to build applications that facilitate using the system.
+Previously, the web interface was dubbed _Nexus Explorer_, and could only be used to browse the data stored in your
+Nexus instance. For the _Nexus V1_ release, we decided to build a new web application, called _Nexus Web_, that also
+enables operational management, data management and search capabilities on the system.
 
-We've therefore build a generic web application (_nexus-web_) that enables operational management, data management and
-search capabilities on the system. As the system evolves we're committed to improve and keep a parity between the
-functionality offered through the API and through the web interface.
-  
+The web application is set to offer most of the features you can get with the raw API, as well as additional
+conveniences for Nexus users.
+
+At the time of the _Nexus V1_ release, you can use it to:
+
+- Login into Nexus
+- Browse and search organizations, projects and resources you have access to
+- See the raw JSON-LD payload of a resources
+- Make advanced ElasticSearch and SPARQL queries
+- Create, edit and deprecate organizations and projects
+- Make a project publicly accessible
+- Create resources through an interactive JSON editor
 
 #### Isolated data scopes
 
@@ -67,7 +76,7 @@ as follows:
     projects.
 *   access control lists are now restricted to either root (`/`), organization (`/{org}`) or project
     (`/{org}/{project}`) removing the need to index these definitions along with the data.
-    
+
 #### Client defined identifiers
 
 The `v0.m.p` series was very opinionated on how resource ids are defined and prohibited client provided identifiers. The
@@ -253,7 +262,7 @@ mechanism as with the rest of the API, thus ensuring that the information exchan
 
 The change reduces the additional operational burden of maintaining a Kafka cluster and also opens up the system for
 extension as the event logs can be consumed by third party applications in an efficient manner without the need of
-direct access to the message broker. 
+direct access to the message broker.
 
 #### In memory indices
 
