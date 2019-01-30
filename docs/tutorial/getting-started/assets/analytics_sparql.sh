@@ -4,22 +4,24 @@ nexus views query-sparql --data \
 PREFIX vocab: <https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/>
 PREFIX nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 
-Select  DISTINCT ?movieId (AVG(?rating) AS ?score)
+Select (AVG(?ratingvalue) AS ?score)
  WHERE  {
     # Select movies
     ?movie a vocab:Movie.
 
-    # Select their movieId value
+    # Select their movieId values
     ?movie vocab:movieId ?movieId.
 
     # Keep movies with 'funny' tags
-    ?tagnode vocab:movieId ?movieId.
-    ?tagnode vocab:tag "funny".
-
+    ?tag a vocab:Tag.
+    ?tag vocab:movieId ?movieId.
+    ?tag vocab:tag ?tagvalue.
+    FILTER(?tagvalue = "funny").
+    
     # Keep movies with ratings
-    ?ratingNode vocab:movieId ?movidId.
-    ?ratingNode vocab:rating ?rating.
+    ?rating a vocab:Rating.
+    ?rating vocab:movieId ?ratingmovieId.
+    FILTER(xsd:integer(?ratingmovieId) = xsd:integer(?movieId))
+    ?rating vocab:rating ?ratingvalue.
 
-}
-GROUP BY ?movieId
-LIMIT 5'
+}'
