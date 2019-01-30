@@ -49,7 +49,7 @@ Introducing these boundaries has opened the door to make several performance and
 as follows:
 
 *   data indexing can now be configured at the project level without impacting the overall system; we've introduced a
-    new resource type _View_ that controls how and where the data is being transformed. They can be managed at runtime
+    new resource type _View_ that controls how and where the data is being indexed. They can be managed at runtime
     by the clients with "administrative" privileges enabling the development of applications specific to the area of
     interest. An example of that is the [BBP Nexus Search] application designed specifically to address the needs of
     the BlueBrain Project.
@@ -82,7 +82,7 @@ to be resolvable.
 
 During the past year of production use of Nexus we have noticed that users tend to develop schemas and contexts as
 reusable components. An example of that is the [Neuroshapes] initiative, a community effort for a shared vocabulary and
-collection of constraints for neuroscience, an initiative under the [INCF] umbrella.
+collection of constraints for neuroscience.
 
 The use of schemas and contexts in the `v0.m.p` series applied a restriction on the locality of constrained resources,
 specifically resources could only be created in the same _domain_ with schemas.
@@ -104,8 +104,12 @@ Current supported resolvers are:
 Future developments will include additional resolver types that are capable of resolving resources in other Nexus
 deployments or shared repositories (e.g.: a git repository).
 
-Schema imports through the `owl:import` clause works recursively as before, but it applies the resolution mechanism at
+Schema imports through the `owl:imports` clause works recursively as before, but it applies the resolution mechanism at
 each iteration. Context references work recursively as before applying the resolution mechanism at each iteration.
+
+_Note:_ Contexts are no longer handled differently, as special kind of resources. Any resource id can be used as a
+context reference; the system will resolve the referenced resource and apply _only_ the `@context` value from its
+representation to the resource that references it.
 
 #### Improved handling of binary resources
 
@@ -260,5 +264,4 @@ general availability. In between nodes, when services are deployed as a cluster,
 [gitter]: https://gitter.im/BlueBrain/nexus
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
 [Neuroshapes]: https://incf.github.io/neuroshapes/
-[INCF]: https://www.incf.org/
 [CouchDB]: http://docs.couchdb.org/en/stable/api/document/common.html#attachments
