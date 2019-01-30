@@ -22,11 +22,13 @@ confident that the current API meets our current and longer term goals.
 This release represents a commitment to backwards compatibility in all future releases of the `v1.m.p` series.
 
 @@@ note { title=Versioning }
+
 Nexus artifacts are versioned using [semantic versioning] and while services and web applications that make up Nexus are
 versioned independently to address specific improvements or bugfixes, their versions are synchronized across minor
 releases. This means, for example, that services and applications are compatible with each other if their _major_ and
 _minor_ numbers match regardless of the value of the _patch_ numbers.
-@@@@
+
+@@@
 
 The behaviour of the system is described across the documentation, but here are some notable changes from the previous
 `v0.m.p` series.
