@@ -171,6 +171,40 @@ parameter to point to a specific immutable reference of the resource.
 _Note_: the behaviour depends on the new resource reference resolution process; a change in the resolver resources (a
 different resolution process configuration) can not provide an immutability guarantee of the references.
 
+#### Client configurable indexing process
+
+As mentioned previously, the indexing processes are now applied at the level of each project and can be customized
+by the client. Each index process is represented by a newly introduced resource _View_ which has the following
+classification:
+
+*   _ElasticSearchView_: the process replays the project event log, filters out undesired resources based on
+    configuration, applies minimal data transformation and updates an ElasticSearch index.
+*   _AggregateElasticSearchView_: this view does not directly manage an indexing process, but rather represents a
+    collection of referenced _ElasticSearchView_s that would be proxied (queried at the same time) when querying this
+    view.
+*   _SparqlView_: the process replays the project event log applies minimal data transformation and updates an RDF
+    store (currently BlazeGraph).
+
+A default _ElasticSearchView_ and a default _SparqlView_ are automatically created along with a project. The default
+_ElasticSearchView_ is used by Nexus internally to power resource listing.
+
+Since access control lists are now limited to nesting up to the level of a project, these views do not require indexing
+the acl configuration and can be proxied by the system supporting their native APIs.
+
+_ElasticSearchView_s expose a `/_search` sub-resource that represents the native API for interacting with ElasticSearch.
+Client HTTP requests are checked for authentication and authorization and then forwarded to their respective backends.
+In the case of an _AggregateElasticSearchView_ the requests executed on all the referenced indices.
+
+_SparqlView_s expose a `/sparql` sub-resource that represents the native API for interacting with the SPARQL endpoint of
+the RDF store. Client HTTP requests are checked for authentication and authorization and then forwarded to the
+respective backend.
+
+The previously supported query DSL has been dropped in favour of the direct interaction with the indices via their
+native APIs. The attempt to provide a general query interface on top of both indices was very ambitious but
+production use has proven it unsatisfactory.
+The change gives clients a lot more power in terms of function, flexibility, expressiveness and query optimization. It
+also opens the door to support additional index backends without having to reconcile them with the query DSL.
+
 ### Technical Notes
 
 #### Introduced a new service: Admin
