@@ -282,6 +282,16 @@ service dependency tree is now as follows:
 Access control lists are now restricted to either root (`/`), organization (`/{org}`) or project (`/{org}/{project}`)
 removing the need to index these definitions along with the data in their respective service boundaries.
 
+#### Introduced Javascript SDK for Nexus
+
+![Logo of JS SDK for Nexus](./assets/img/nexus-js-logo.png)
+
+We released a [Javascript SDK for Nexus] that helps integrating with the Blue Brain Nexus API from Javascript and
+Typescript code. It aims at giving easy access to all the features offered by the API. It also offers Typescript
+declarations.
+
+This is the library of top of which the Nexus Web interface is built, but it remains framework-agnostic.
+
 #### Migration from v0.y.z series
 
 The semantics of the API and managed resources in between the `v0.y.z` and `v1.y.z` series has changed considerably
@@ -314,5 +324,6 @@ general availability. In between nodes, when services are deployed as a cluster,
 [gitter]: https://gitter.im/BlueBrain/nexus
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
 [Nexus Web]: https://github.com/bluebrain/nexus-explorer
+[Javascript SDK for Nexus]: https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js
 [Neuroshapes]: https://incf.github.io/neuroshapes/
 [CouchDB]: http://docs.couchdb.org/en/stable/api/document/common.html#attachments
