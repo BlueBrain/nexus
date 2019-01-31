@@ -65,7 +65,7 @@ items:
       spec:
         containers:
         - name: admin
-          image: bluebrain/nexus-admin:latest
+          image: bluebrain/nexus-admin:1.0
           imagePullPolicy: Always
           env:
           - name: PUBLIC_IP
@@ -101,24 +101,14 @@ items:
             value: 'admin'
           - name: SEED_NODES
             value: 'admin-0.admin-hd.nexus.svc.cluster.local:2552'
-          - name: IAM_BASEURI
+          - name: IAM_PUBLIC_IRI
+            value: 'http://$(PUBLIC_IP)/v1'
+          - name: IAM_INTERNAL_IRI
             value: 'http://iam.nexus.svc.cluster.local/v1'
-          - name: NEXUS_CORE_CONTEXT
-            value: 'http://bluebrain.github.io/nexus/contexts/resource.json'
-          - name: NEXUS_STD_CONTEXT
-            value: 'http://bluebrain.github.io/nexus/contexts/standards.json'
-          - name: NEXUS_ERROR_CONTEXT
-            value: 'http://bluebrain.github.io/nexus/contexts/error.json'
-          - name: SPARQL_BASE_URI
-            value: 'http://blazegraph.nexus.svc.cluster.local/blazegraph'
-          - name: SPARQL_NAMESPACE
-            value: 'admin'
-          - name: KAFKA_BOOTSTRAP_SERVERS
-            value: 'kafka-0.kafka.nexus.svc.cluster.local:9092'
           command:
           - '/bin/bash'
           - '-c'
-          - '/bin/bash /opt/docker/bin/admin-service -Doverride.remoting.interface=$REMOTING_INTERFACE.admin-hd.nexus.svc.cluster.local'
+          - '/opt/docker/bin/admin -Doverride.remoting.interface=$REMOTING_INTERFACE.admin-hd.nexus.svc.cluster.local'
           ports:
           - containerPort: 8080
             name: http
