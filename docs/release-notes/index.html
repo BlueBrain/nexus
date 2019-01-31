@@ -148,13 +148,6 @@ BlueBrain/nexus
       <li><a href="../../docs/getting-started/running-nexus/minikube.html" class="page">Run Nexus locally with Minikube</a></li>
       <li><a href="../../docs/getting-started/running-nexus/on-premise-cloud.html" class="page">On premise / cloud deployment</a></li>
     </ul></li>
-    <li><a href="../../docs/tutorial/index.html" class="page">Blue Brain Nexus tutorials</a>
-    <ul>
-      <li><a href="../../docs/tutorial/getting-started/index.html" class="page">Getting Started</a></li>
-      <li><a href="../../docs/tutorial/knowledge-graph/index.html" class="page">Understanding knowledge graphs</a></li>
-      <li><a href="../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
-      <li><a href="../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
-    </ul></li>
   </ul></li>
   <li><a href="../../docs/api/index.html" class="page">API Reference</a>
   <ul>
@@ -263,9 +256,9 @@ BlueBrain/nexus
   <li>FAIR (Findable, Accessible, Interoperable, Re-usable) data and metadata management</li>
 </ul>
 <p>We&rsquo;ve been running this software in production for more than a year getting good feedback on its design and we are confident that the current API meets our current and longer term goals.</p>
-<p>This release represents a commitment to backwards compatibility in all future releases of the <code>v1.m.p</code> series.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>This release represents a commitment to backwards compatibility in all future releases of the <code>v1.y.z</code> series.</p><div class="callout note "><div class="callout-title">Versioning</div>
 <p>Nexus artifacts are versioned using <a href="https://semver.org/">semantic versioning</a> and while services and web applications that make up Nexus are versioned independently to address specific improvements or bugfixes, their versions are synchronized across minor releases. This means, for example, that services and applications are compatible with each other if their <em>major</em> and <em>minor</em> numbers match regardless of the value of the <em>patch</em> numbers.</p></div>
-<p>The behaviour of the system is described across the documentation, but here are some notable changes from the previous <code>v0.m.p</code> series.</p>
+<p>The behaviour of the system is described across the documentation, but here are some notable changes from the previous <code>v0.y.z</code> series.</p>
 <h3><a href="#functionality-behaviour" name="functionality-behaviour" class="anchor"><span class="anchor-link"></span></a>Functionality &amp; Behaviour</h3>
 <h4><a href="#nexus-web-interface" name="nexus-web-interface" class="anchor"><span class="anchor-link"></span></a>Nexus web interface</h4>
 <p>Previously, the web interface was dubbed <em>Nexus Explorer</em>, and could only be used to browse the data stored in your Nexus instance. For the <em>Nexus V1</em> release, we decided to build a new web application, called <em>Nexus Web</em>, that also enables operational management, data management and search capabilities on the system.</p>
@@ -281,7 +274,7 @@ BlueBrain/nexus
   <li>Create resources through an interactive JSON editor</li>
 </ul>
 <h4><a href="#isolated-data-scopes" name="isolated-data-scopes" class="anchor"><span class="anchor-link"></span></a>Isolated data scopes</h4>
-<p>The <code>v0.m.p</code> series handled data within one single space and while it did provide some benefits with respect to the ability to query the entire system, it also provided severe limitations with respect to data evolution, scalability and future developments. We move on from this monolithic approach towards a multi scoped system, where data is bucketed and managed independently in projects.</p>
+<p>The <code>v0.y.z</code> series handled data within one single space and while it did provide some benefits with respect to the ability to query the entire system, it also provided severe limitations with respect to data evolution, scalability and future developments. We move on from this monolithic approach towards a multi scoped system, where data is bucketed and managed independently in projects.</p>
 <p>What we previously referred to as <em>domains</em> are now called <em>projects</em> and represent data and configuration boundaries within the system (we decided to change the naming as we have found that the term &ldquo;domain&rdquo; was understood to imply a certain data organization scheme centered around business or scientific domains; this was not intended).</p>
 <p>Introducing these boundaries has opened the door to make several performance and functional improvements to the system as follows:</p>
 <ul>
@@ -291,12 +284,12 @@ BlueBrain/nexus
   <li>access control lists are now restricted to either root (<code>/</code>), organization (<code>/{org}</code>) or project (<code>/{org}/{project}</code>) removing the need to index these definitions along with the data.</li>
 </ul>
 <h4><a href="#client-defined-identifiers" name="client-defined-identifiers" class="anchor"><span class="anchor-link"></span></a>Client defined identifiers</h4>
-<p>The <code>v0.m.p</code> series was very opinionated on how resource ids are defined and prohibited client provided identifiers. The choice at the time was that a resource id needs to be resolvable (the resource id needed to match the url to access it). This strong constraint tied the resource ids to the Nexus deployment where they were managed. While this was probably fine for most data within the system, it was nearly impossible to manage data from external sources that came with its own identification scheme (e.g. ontologies).</p>
+<p>The <code>v0.y.z</code> series was very opinionated on how resource ids are defined and prohibited client provided identifiers. The choice at the time was that a resource id needs to be resolvable (the resource id needed to match the url to access it). This strong constraint tied the resource ids to the Nexus deployment where they were managed. While this was probably fine for most data within the system, it was nearly impossible to manage data from external sources that came with its own identification scheme (e.g. ontologies).</p>
 <p>The decision was made to remove this constraint and allow clients to specify their own identifiers. In order to maintain the same API simplicity with respect to accessing resources we came up with a aliasing and curie scheme configurable at the project level (_apiMappings_) that handles bidirectional compaction and expansion of resource identifiers.</p>
 <p>A simple http proxying configuration with URL rewriting deployed in front of the Nexus API allows resources to continue to be resolvable.</p>
 <h4><a href="#resolution-mechanisms-for-shared-resources" name="resolution-mechanisms-for-shared-resources" class="anchor"><span class="anchor-link"></span></a>Resolution mechanisms for shared resources</h4>
 <p>During the past year of production use of Nexus we have noticed that users tend to develop schemas and contexts as reusable components. An example of that is the <a href="https://incf.github.io/neuroshapes/">Neuroshapes</a> initiative, a community effort for a shared vocabulary and collection of constraints for neuroscience.</p>
-<p>The use of schemas and contexts in the <code>v0.m.p</code> series applied a restriction on the locality of constrained resources, specifically resources could only be created in the same <em>domain</em> with schemas.</p>
+<p>The use of schemas and contexts in the <code>v0.y.z</code> series applied a restriction on the locality of constrained resources, specifically resources could only be created in the same <em>domain</em> with schemas.</p>
 <p>In the new iteration we&rsquo;ve introduced a configurable resolution mechanism that allows users to make use of schemas and contexts that reside in other projects. The resources that control this behaviour are called <em>Resolvers</em> and they behave like dependency management systems in programming language ecosystems.</p>
 <p><em>Resolvers</em> can now be created and configured to look up schemas and contexts in arbitrary locations, scoped within projects. The resolution mechanism takes into account all the resolvers defined in a project using the priorities of each resolver and attempts to resolve the referenced resource based on its <code>@id</code> value. Current supported resolvers are:</p>
 <ul>
@@ -307,14 +300,14 @@ BlueBrain/nexus
 <p>Schema imports through the <code>owl:imports</code> clause works recursively as before, but it applies the resolution mechanism at each iteration. Context references work recursively as before applying the resolution mechanism at each iteration.</p>
 <p><em>Note:</em> Contexts are no longer handled differently, as special kind of resources. Any resource id can be used as a context reference; the system will resolve the referenced resource and apply <em>only</em> the <code>@context</code> value from its representation to the resource that references it.</p>
 <h4><a href="#improved-handling-of-binary-resources" name="improved-handling-of-binary-resources" class="anchor"><span class="anchor-link"></span></a>Improved handling of binary resources</h4>
-<p>The <code>v0.m.p</code> series handled binary resources as sub-resources, called <em>attachments</em>, following the model pioneered by <a href="http://docs.couchdb.org/en/stable/api/document/common.html#attachments">CouchDB</a>. While it provided a guarantee that every binary resource is properly described with metadata, the model did not work well in the following situations:</p>
+<p>The <code>v0.y.z</code> series handled binary resources as sub-resources, called <em>attachments</em>, following the model pioneered by <a href="http://docs.couchdb.org/en/stable/api/document/common.html#attachments">CouchDB</a>. While it provided a guarantee that every binary resource is properly described with metadata, the model did not work well in the following situations:</p>
 <ul>
   <li>uploading binaries for later organization: the parent resource required creation before a binary could be attached to it, which in the cases where users were just interested in storing binaries in Nexus it required two API calls instead of one.</li>
   <li>conflicting vocabulary definitions: a lot of the data modeling effort relied on the Nexus metadata for the uploaded binaries which forced the use of a certain vocabulary and metadata structure in Nexus</li>
 </ul>
 <p>This model of handling binaries has been superseded by full class support for binaries through <em>files</em>, a new kind of resource managed just like the other types of resources within the system. <em>Files</em> have their own lifecycle and can be independently updated. Description of <em>files</em>, for example in the case of <em>datasets</em>, can now be done external to the file resource within a separate resource. This model allows for many-to-many relationships between files and other resources.</p>
 <h4><a href="#new-mechanism-for-stable-resource-references" name="new-mechanism-for-stable-resource-references" class="anchor"><span class="anchor-link"></span></a>New mechanism for stable resource references</h4>
-<p>The <code>v0.m.p</code> series was quite opinionated on the use of stable references ensuring the structural and semantic immutability of a resource revision. Schemas and Contexts had to be published before they could be used and once published their lifecycle would finish, preventing further updates.</p>
+<p>The <code>v0.y.z</code> series was quite opinionated on the use of stable references ensuring the structural and semantic immutability of a resource revision. Schemas and Contexts had to be published before they could be used and once published their lifecycle would finish, preventing further updates.</p>
 <p>This behaviour was replaced by giving the client the control on the immutability guarantees through the use of revisions and tags. The schema versions are no longer present in the API and the mechanism for unpacking schema references are aware of possible tag and revision references provided as query parameters. A <em>tag</em> is a new type of sub-resource that represents a pointer to a resource revision.</p>
 <p>Assuming the following entry in the project <code>apiMappings</code>:</p>
 <pre><code>{
@@ -375,13 +368,13 @@ BlueBrain/nexus
         +---------------------------------------+
 </code></pre>
 <p>Access control lists are now restricted to either root (<code>/</code>), organization (<code>/{org}</code>) or project (<code>/{org}/{project}</code>) removing the need to index these definitions along with the data in their respective service boundaries.</p>
-<h4><a href="#migration-from-v0-m-p-series" name="migration-from-v0-m-p-series" class="anchor"><span class="anchor-link"></span></a>Migration from v0.m.p series</h4>
-<p>The semantics of the API and managed resources in between the <code>v0.m.p</code> and <code>v1.m.p</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://gitter.im/BlueBrain/nexus">gitter</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
+<h4><a href="#migration-from-v0-y-z-series" name="migration-from-v0-y-z-series" class="anchor"><span class="anchor-link"></span></a>Migration from v0.y.z series</h4>
+<p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://gitter.im/BlueBrain/nexus">gitter</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
 <h4><a href="#removed-of-dependency-on-kafka" name="removed-of-dependency-on-kafka" class="anchor"><span class="anchor-link"></span></a>Removed of dependency on Kafka</h4>
 <p>Services have been updated to expose their event logs or subsets via HTTP through <a href="https://www.w3.org/TR/eventsource/">Server Sent Events</a>, removing the need to use Kafka as means of service to service communication. It uses the same authentication and authorization mechanism as with the rest of the API, thus ensuring that the information exchanged in guarded by the ACLs defined.</p>
 <p>The change reduces the additional operational burden of maintaining a Kafka cluster and also opens up the system for extension as the event logs can be consumed by third party applications in an efficient manner without the need of direct access to the message broker.</p>
 <h4><a href="#in-memory-indices" name="in-memory-indices" class="anchor"><span class="anchor-link"></span></a>In memory indices</h4>
-<p>Versions <code>v0.m.p</code> of <em>iam</em> and later on <em>admin</em> services depended on ElasticSearch and BlazeGraph to maintain indices of the resources managed. Since these resources easily fit in memory on a single node, the dependency on these external systems has been removed in favour of in memory indices to provide a consistent view on the data and increase the general availability. In between nodes, when services are deployed as a cluster, the indices are replicated by using <a href="https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type">CRDTs</a> which are natively supported by <a href="https://doc.akka.io/docs/akka/2.5/distributed-data.html">Akka Distributed Data</a>.</p>
+<p>Versions <code>v0.y.z</code> of <em>iam</em> and later on <em>admin</em> services depended on ElasticSearch and BlazeGraph to maintain indices of the resources managed. Since these resources easily fit in memory on a single node, the dependency on these external systems has been removed in favour of in memory indices to provide a consistent view on the data and increase the general availability. In between nodes, when services are deployed as a cluster, the indices are replicated by using <a href="https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type">CRDTs</a> which are natively supported by <a href="https://doc.akka.io/docs/akka/2.5/distributed-data.html">Akka Distributed Data</a>.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/release-notes/index.md" title="Edit this page" class="md-source-file md-edit">

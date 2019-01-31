@@ -148,13 +148,6 @@ BlueBrain/nexus
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html" class="active page">Run Nexus locally with Minikube</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html" class="page">On premise / cloud deployment</a></li>
     </ul></li>
-    <li><a href="../../../docs/tutorial/index.html" class="page">Blue Brain Nexus tutorials</a>
-    <ul>
-      <li><a href="../../../docs/tutorial/getting-started/index.html" class="page">Getting Started</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/index.html" class="page">Understanding knowledge graphs</a></li>
-      <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
-      <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
-    </ul></li>
   </ul></li>
   <li><a href="../../../docs/api/index.html" class="page">API Reference</a>
   <ul>
@@ -208,22 +201,25 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/running-nexus/minikube.html#run-nexus-locally-with-minikube" class="header">Run Nexus locally with Minikube</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#install-minikube" class="header">Install Minikube</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#minikube-install-instructions-for-macos" class="header">Minikube install instructions for macOS</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#enable-the-ingress-addon" class="header">Enable the ingress addon</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#setup-a-separate-namespace" class="header">Setup a separate namespace</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#minikube-set-up" class="header">Minikube set-up</a>
+    <ul>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#installation" class="header">Installation</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#run-minikube" class="header">Run Minikube</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#enable-the-ingress-addon" class="header">Enable the ingress addon</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#setup-a-separate-namespace" class="header">Setup a separate namespace</a></li>
+    </ul></li>
     <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-dependent-services" class="header">Deploy dependent services</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-cassandra" class="header">Deploy Cassandra</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-elasticsearch" class="header">Deploy ElasticSearch</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-elasticsearch" class="header">Deploy Elasticsearch</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-blazegraph" class="header">Deploy BlazeGraph</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-kafka" class="header">Deploy Kafka</a></li>
     </ul></li>
     <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-nexus-services" class="header">Deploy Nexus Services</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-iam" class="header">Deploy IAM</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-admin" class="header">Deploy Admin</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-kg" class="header">Deploy KG</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-the-web-interface" class="header">Deploy the web interface</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -248,22 +244,25 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/running-nexus/minikube.html#run-nexus-locally-with-minikube" class="header">Run Nexus locally with Minikube</a>
   <ul>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#install-minikube" class="header">Install Minikube</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#minikube-install-instructions-for-macos" class="header">Minikube install instructions for macOS</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#enable-the-ingress-addon" class="header">Enable the ingress addon</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#setup-a-separate-namespace" class="header">Setup a separate namespace</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/minikube.html#minikube-set-up" class="header">Minikube set-up</a>
+    <ul>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#installation" class="header">Installation</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#run-minikube" class="header">Run Minikube</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#enable-the-ingress-addon" class="header">Enable the ingress addon</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#setup-a-separate-namespace" class="header">Setup a separate namespace</a></li>
+    </ul></li>
     <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-dependent-services" class="header">Deploy dependent services</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-cassandra" class="header">Deploy Cassandra</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-elasticsearch" class="header">Deploy ElasticSearch</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-elasticsearch" class="header">Deploy Elasticsearch</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-blazegraph" class="header">Deploy BlazeGraph</a></li>
-      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-kafka" class="header">Deploy Kafka</a></li>
     </ul></li>
     <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-nexus-services" class="header">Deploy Nexus Services</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-iam" class="header">Deploy IAM</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-admin" class="header">Deploy Admin</a></li>
       <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-kg" class="header">Deploy KG</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/minikube.html#deploy-the-web-interface" class="header">Deploy the web interface</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -276,31 +275,20 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#run-nexus-locally-with-minikube" name="run-nexus-locally-with-minikube" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Minikube</h1>
-<p><a href="https://github.com/kubernetes/minikube">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.</p><div class="callout note "><div class="callout-title">Note</div>
+<p><a href="https://github.com/kubernetes/minikube">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your machine for users looking to try out Kubernetes or develop with it day-to-day.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>This section makes use of static assets hosted on this website; to remove the clutter please export the base of the documentation to <code>$MINI</code> env var:</p>
 <pre><code>export MINI=&quot;https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/minikube&quot;
 </code></pre></div><div class="callout note "><div class="callout-title">Note</div>
 <p>This page presents the necessary commands to deploy Nexus with Minikube but also examples the show the expected output.</p>
-<p>Some of the examples on this page make use of <code>curl</code> (<a href="https://curl.haxx.se/">https://curl.haxx.se/</a>) and <code>jq</code> (<a href="https://stedolan.github.io/jq/">https://stedolan.github.io/jq/</a>) for formatting the json output when interacting with the services. Please install these command line tools if you&rsquo;d like to run the commands in the examples.</p>
-<p>On macOS you can run:</p>
-<pre><code>brew install curl jq
-</code></pre></div>
-<h2><a href="#install-minikube" name="install-minikube" class="anchor"><span class="anchor-link"></span></a>Install Minikube</h2>
-<p>Follow the <a href="https://github.com/kubernetes/minikube#installation">installation instructions</a> posted on the Minikube project page.</p>
-<h2><a href="#minikube-install-instructions-for-macos" name="minikube-install-instructions-for-macos" class="anchor"><span class="anchor-link"></span></a>Minikube install instructions for macOS</h2>
-<p>An example for installing and running Minikube on macOS using Hyperkit after installing <a href="https://docs.docker.com/docker-for-mac/install/">Docker for Mac</a>:</p>
-<pre><code>brew install kubectl
-brew cask install minikube
-curl -Lo docker-machine-driver-hyperkit https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
-    &amp;&amp; chmod +x docker-machine-driver-hyperkit \
-    &amp;&amp; sudo cp docker-machine-driver-hyperkit /usr/local/bin/ \
-    &amp;&amp; rm docker-machine-driver-hyperkit \
-    &amp;&amp; sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit \
-    &amp;&amp; sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
-</code></pre>
+<p>Some of the examples on this page make use of <a href="https://curl.haxx.se/">curl</a> and <a href="https://stedolan.github.io/jq/">jq</a> for formatting the json output when interacting with the services. Please install these command line tools if you&rsquo;d like to run the commands in the examples. They should be available through your usual package manager (Chocolatey, Homebrew, APT, YUM/DNF, &hellip;)</p></div>
+<h2><a href="#minikube-set-up" name="minikube-set-up" class="anchor"><span class="anchor-link"></span></a>Minikube set-up</h2>
+<h3><a href="#installation" name="installation" class="anchor"><span class="anchor-link"></span></a>Installation</h3>
+<p>Follow the <a href="https://kubernetes.io/docs/tasks/tools/install-minikube/">installation instructions</a> from the official Kubernetes documentation.</p>
+<h3><a href="#run-minikube" name="run-minikube" class="anchor"><span class="anchor-link"></span></a>Run Minikube</h3>
 <p>To start Minikube run (notice the <em>cpu</em> and <em>memory</em> flags, the setup requires a minimum of <code>--cpus=2 --memory=8196</code>):</p>
-<pre><code>minikube start --cpus 6 --memory 10240 --vm-driver=hyperkit
+<pre><code>minikube start --cpus 6 --memory 10240 --vm-driver=$DRIVER
 </code></pre>
+<p>For better performance we recommended to select the <code>$DRIVER</code> corresponding to your OS native hypervisor, namely <em>hyperkit</em> on macOS, <em>hyperv</em> on Windows and <em>kvm2</em> on Linux.</p>
 <p>If the installation is successful you can run the following command to open the <a href="http://kubernetes.io/docs/user-guide/ui/">Kubernetes Dashboard</a>:</p>
 <pre><code>minikube dashboard
 </code></pre>
@@ -310,9 +298,9 @@ curl -Lo docker-machine-driver-hyperkit https://storage.googleapis.com/minikube/
 <p>After stopping minikube the vm still exists on the system; starting minikube again will preserve the deployed services. To permanently remove minikube vm run:</p>
 <pre><code>minikube delete
 </code></pre></div>
-<h2><a href="#enable-the-ingress-addon" name="enable-the-ingress-addon" class="anchor"><span class="anchor-link"></span></a>Enable the ingress addon</h2>
+<h3><a href="#enable-the-ingress-addon" name="enable-the-ingress-addon" class="anchor"><span class="anchor-link"></span></a>Enable the ingress addon</h3>
 <p>Minikube comes with a collection of addons like the <a href="http://kubernetes.io/docs/user-guide/ui/">Kubernetes Dashboard</a> but not all are enabled by default. An important one is the <em>ingress</em> addon which enables routing http traffic from the host into the cluster.</p>
-<p>To enable the <em>ingress</em> addon run:</p>
+<p>To make sure the <em>ingress</em> addon is enabled run:</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -329,16 +317,16 @@ $
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>minikube addons open ingress --url | awk -F / &#39;{print $3}&#39; | awk -F : &#39;{print $1}&#39;
+  <pre><code>minikube ip
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
-  <pre><code>$ minikube addons open ingress --url | awk -F / &#39;{print $3}&#39; | awk -F : &#39;{print $1}&#39;
+  <pre><code>$ minikube ip
 192.168.64.3
 $
 </code></pre></dd>
 </dl>
-<h2><a href="#setup-a-separate-namespace" name="setup-a-separate-namespace" class="anchor"><span class="anchor-link"></span></a>Setup a separate namespace</h2>
+<h3><a href="#setup-a-separate-namespace" name="setup-a-separate-namespace" class="anchor"><span class="anchor-link"></span></a>Setup a separate namespace</h3>
 <p>Kubernetes namespaces are logical groupings of resources which allow segregating various deployments in &ldquo;virtual clusters&rdquo;.</p>
 <p>The default installation of Minikube creates three namespaces: <em>kube-system</em>, <em>kube-public</em> and <em>default</em>. This example uses a separate namespace to group Nexus specific resources.</p>
 <p>Get the list of available namespaces:</p>
@@ -393,15 +381,15 @@ $
 <pre><code>kubectl config use-context minikube &amp;&amp; kubectl config set-context minikube --namespace=nexus
 </code></pre></div>
 <h2><a href="#deploy-dependent-services" name="deploy-dependent-services" class="anchor"><span class="anchor-link"></span></a>Deploy dependent services</h2>
-<p>Nexus uses numerous off the shelf services that need to be set-up as a prerequisite. Run the following command to save the IP address of the minikube cluster in an environment variable:</p>
+<p>Nexus uses numerous off the shelf services that need to be set up as a prerequisite. Run the following command to save the IP address of the minikube cluster in an environment variable:</p>
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre><code>export NEXUS=$(minikube addons open ingress --url | awk -F / &#39;{print $3}&#39; | awk -F : &#39;{print $1}&#39;)
+  <pre><code>export NEXUS=$(minikube ip)
 </code></pre></dd>
   <dt>Example</dt>
   <dd>
-  <pre><code>$ export NEXUS=$(minikube addons open ingress --url | awk -F / &#39;{print $3}&#39; | awk -F : &#39;{print $1}&#39;)
+  <pre><code>$ export NEXUS=$(minikube ip)
 $ echo $NEXUS
 192.168.64.3
 $
@@ -429,7 +417,7 @@ UN  172.17.0.4  103.71 KiB  256          100.0%            80c0bdfa-1f5e-41aa-8a
 $
 </code></pre></dd>
 </dl>
-<h3><a href="#deploy-elasticsearch" name="deploy-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Deploy ElasticSearch</h3>
+<h3><a href="#deploy-elasticsearch" name="deploy-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Deploy Elasticsearch</h3>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -446,17 +434,17 @@ $ kubectl wait pod elasticsearch-0 --for condition=ready --timeout=60s
 pod/elasticsearch-0 condition met
 $ curl &quot;http://$NEXUS/elasticsearch&quot;
 {
-  &quot;name&quot; : &quot;elasticsearch-0&quot;,
-  &quot;cluster_name&quot; : &quot;nexus-cluster&quot;,
-  &quot;cluster_uuid&quot; : &quot;pvu_3bdoR0az4_9qIw0wlg&quot;,
+  &quot;name&quot; : &quot;0LfjOb2&quot;,
+  &quot;cluster_name&quot; : &quot;es-cluster&quot;,
+  &quot;cluster_uuid&quot; : &quot;ZZF9_hFgTm2wQYYBKQ9dRg&quot;,
   &quot;version&quot; : {
-&quot;number&quot; : &quot;6.3.1&quot;,
+&quot;number&quot; : &quot;6.4.3&quot;,
 &quot;build_flavor&quot; : &quot;default&quot;,
 &quot;build_type&quot; : &quot;tar&quot;,
-&quot;build_hash&quot; : &quot;eb782d0&quot;,
-&quot;build_date&quot; : &quot;2018-06-29T21:59:26.107521Z&quot;,
+&quot;build_hash&quot; : &quot;fe40335&quot;,
+&quot;build_date&quot; : &quot;2018-10-30T23:17:19.084789Z&quot;,
 &quot;build_snapshot&quot; : false,
-&quot;lucene_version&quot; : &quot;7.3.1&quot;,
+&quot;lucene_version&quot; : &quot;7.4.0&quot;,
 &quot;minimum_wire_compatibility_version&quot; : &quot;5.6.0&quot;,
 &quot;minimum_index_compatibility_version&quot; : &quot;5.0.0&quot;
   },
@@ -489,30 +477,6 @@ $ curl -s -H&quot;Accept: application/json&quot; &quot;http://$NEXUS/blazegraph/
 $
 </code></pre></dd>
 </dl>
-<h3><a href="#deploy-kafka" name="deploy-kafka" class="anchor"><span class="anchor-link"></span></a>Deploy Kafka</h3>
-<dl>
-  <dt>Command</dt>
-  <dd>
-  <pre><code>kubectl apply -f $MINI/zookeeper.yaml &amp;&amp; \
-  kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s &amp;&amp; \
-  kubectl apply -f $MINI/kafka.yaml &amp;&amp; \
-  kubectl wait pod kafka-0 --for condition=ready --timeout=180s
-</code></pre></dd>
-  <dt>Example</dt>
-  <dd>
-  <pre><code>$ kubectl apply -f $MINI/zookeeper.yaml &amp;&amp; \
-  kubectl wait pod zookeeper-0 --for condition=ready --timeout=180s &amp;&amp; \
-  kubectl apply -f $MINI/kafka.yaml &amp;&amp; \
-  kubectl wait pod kafka-0 --for condition=ready --timeout=180s
-service/zookeeper created
-statefulset.apps/zookeeper created
-pod/zookeeper-0 condition met
-service/kafka created
-statefulset.apps/kafka created
-pod/kafka-0 condition met
-$
-</code></pre></dd>
-</dl>
 <h2><a href="#deploy-nexus-services" name="deploy-nexus-services" class="anchor"><span class="anchor-link"></span></a>Deploy Nexus Services</h2>
 <p>Before configuring the services a configuration map must first be created that keeps track of the &ldquo;public&rdquo; ip address of the minikube cluster. The following command will replace the <code>{NEXUS}</code> token in the <code>config.yaml</code> file with the value stored in the <code>$NEXUS</code> variable set above.</p>
 <dl>
@@ -530,7 +494,7 @@ $
 </code></pre></dd>
 </dl>
 <h3><a href="#deploy-iam" name="deploy-iam" class="anchor"><span class="anchor-link"></span></a>Deploy IAM</h3>
-<p>IAM is the service that manages identities and tokens via downstream OIDC providers and manages the permissions to arbitrary resources in the system.</p>
+<p>IAM is the service that manages identities and tokens via OIDC providers and manages the permissions to arbitrary resources in the system. By default, anonymous users will be granted enough permissions to fully manage resources in the system. If you&rsquo;d like to change this behavior, you must set up <a href="../../api/iam/index.html">realms and permissions</a> manually.</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -550,36 +514,64 @@ pod/iam-0 condition met
 $ curl -s &quot;http://$NEXUS/iam&quot; | jq
 {
   &quot;name&quot;: &quot;iam&quot;,
-  &quot;version&quot;: &quot;0.10.21&quot;,
-  &quot;_links&quot;: [
-    {
-      &quot;rel&quot;: &quot;api&quot;,
-      &quot;href&quot;: &quot;http://192.168.64.6/v1/acls&quot;
-    }
-  ]
+  &quot;version&quot;: &quot;1.0.1&quot;
 }
 $ curl -s &quot;http://$NEXUS/v1/acls/&quot; | jq
 {
-  &quot;@context&quot;: &quot;http://192.168.64.6/v1/contexts/nexus/core/iam/v0.1.0&quot;,
+  &quot;@context&quot;: [
+&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
+&quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;
+  ],
+  &quot;_total&quot;: 1,
+  &quot;_results&quot;: [
+{
+  &quot;@id&quot;: &quot;http://192.168.39.171/v1/acls&quot;,
+  &quot;@type&quot;: &quot;AccessControlList&quot;,
   &quot;acl&quot;: [
     {
-      &quot;path&quot;: &quot;/&quot;,
       &quot;identity&quot;: {
-        &quot;@id&quot;: &quot;http://192.168.64.6/v1/anonymous&quot;,
+        &quot;@id&quot;: &quot;http://192.168.39.171/v1/anonymous&quot;,
         &quot;@type&quot;: &quot;Anonymous&quot;
       },
       &quot;permissions&quot;: [
-        &quot;read&quot;,
-        &quot;own&quot;
+        &quot;schemas/write&quot;,
+        &quot;views/write&quot;,
+        &quot;files/write&quot;,
+        &quot;permissions/write&quot;,
+        &quot;acls/write&quot;,
+        &quot;realms/write&quot;,
+        &quot;projects/read&quot;,
+        &quot;acls/read&quot;,
+        &quot;organizations/create&quot;,
+        &quot;organizations/write&quot;,
+        &quot;resources/write&quot;,
+        &quot;realms/read&quot;,
+        &quot;projects/create&quot;,
+        &quot;permissions/read&quot;,
+        &quot;resources/read&quot;,
+        &quot;organizations/read&quot;,
+        &quot;resolvers/write&quot;,
+        &quot;events/read&quot;,
+        &quot;views/query&quot;,
+        &quot;projects/write&quot;
       ]
     }
+  ],
+  &quot;_path&quot;: &quot;/&quot;,
+  &quot;_rev&quot;: 0,
+  &quot;_createdAt&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://192.168.39.171/v1/anonymous&quot;,
+  &quot;_updatedAt&quot;: &quot;1970-01-01T00:00:00Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://192.168.39.171/v1/anonymous&quot;
+}
   ]
 }
 $
 </code></pre></dd>
 </dl>
 <h3><a href="#deploy-admin" name="deploy-admin" class="anchor"><span class="anchor-link"></span></a>Deploy Admin</h3>
-<p>Admin is the service that manages accounts (orgs and users) and projects their configuration.</p>
+<p>Admin is the service that manages organizations, projects and their configuration.</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -599,12 +591,17 @@ pod/admin-0 condition met
 $ curl -s &quot;http://$NEXUS/admin&quot; | jq
 {
   &quot;name&quot;: &quot;admin&quot;,
-  &quot;version&quot;: &quot;0.2.7&quot;
+  &quot;version&quot;: &quot;1.0.2&quot;
 }
-$ curl -s &quot;http://$NEXUS/v1/projects&quot; | jq # the access error is expected
+$ curl -s &quot;http://$NEXUS/v1/projects&quot; | jq
 {
-  &quot;@context&quot;: &quot;http://bluebrain.github.io/nexus/contexts/error.json&quot;,
-  &quot;code&quot;: &quot;UnauthorizedAccess&quot;
+  &quot;@context&quot;: [
+&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,
+&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+&quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;
+  ],
+  &quot;_total&quot;: 0,
+  &quot;_results&quot;: []
 }
 $ 
 </code></pre></dd>
@@ -631,16 +628,38 @@ pod/kg-0 condition met
 $ curl -s &quot;http://$NEXUS/kg&quot; | jq
 {
   &quot;name&quot;: &quot;kg&quot;,
-  &quot;version&quot;: &quot;0.10.11&quot;
+  &quot;version&quot;: &quot;1.0.0&quot;
 }
-$ curl -s &quot;http://$NEXUS/v1/resources/org/proj&quot; | jq # the access error is expected
+$ curl -s &quot;http://$NEXUS/v1/resources/org/proj&quot; | jq # the 404 error is expected
 {
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error&quot;,
-  &quot;code&quot;: &quot;UnauthorizedAccess&quot;
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,
+  &quot;@type&quot;: &quot;ProjectNotFound&quot;,
+  &quot;label&quot;: &quot;org/proj&quot;,
+  &quot;reason&quot;: &quot;Project &#39;org/proj&#39; not found.&quot;
 }
 $
 </code></pre></dd>
 </dl>
+<h3><a href="#deploy-the-web-interface" name="deploy-the-web-interface" class="anchor"><span class="anchor-link"></span></a>Deploy the web interface</h3>
+<p>The Nexus web application provides an interface to perform basic tasks on organizations and projects and query the system resources through Elasticsearch and SPARQL queries.</p>
+<dl>
+  <dt>Command</dt>
+  <dd>
+  <pre><code>kubectl apply -f $MINI/web.yaml &amp;&amp; \
+  kubectl wait pod nexus-web-0 --for condition=ready --timeout=180s
+</code></pre></dd>
+  <dt>Example</dt>
+  <dd>
+  <pre><code>$ kubectl apply -f $MINI/web.yaml
+service/nexus-web created
+statefulset.apps/nexus-web created
+ingress.extensions/nexus-web created
+$ kubectl wait pod nexus-web-0 --for condition=ready --timeout=180s
+pod/nexus-web-0 condition met
+$
+</code></pre></dd>
+</dl>
+<p>You can now access the web interface at <a href="http://$NEXUS">http://$NEXUS</a>, <code>$NEXUS</code> being the public IP of your Minikube cluster, as seen above.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/getting-started/running-nexus/minikube.md" title="Edit this page" class="md-source-file md-edit">

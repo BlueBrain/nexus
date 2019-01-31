@@ -24,7 +24,6 @@ services:
       BIND_INTERFACE: "0.0.0.0"
       PUBLIC_URI: "http://localhost"
       SERVICE_DESCRIPTION_URI: "http://localhost/iam"
-      IAM_TESTMODE: "true"
       JAVA_OPTS: "-XX:+UseG1GC -Xms1G -Xmx2G"
 
   admin:

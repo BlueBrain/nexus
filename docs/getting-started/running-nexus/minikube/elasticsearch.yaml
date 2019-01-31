@@ -25,6 +25,7 @@ items:
       app: elasticsearch
       group: infra
   spec:
+    clusterIP: None
     selector:
       app: elasticsearch
     ports:
@@ -64,34 +65,25 @@ items:
             privileged: true
         containers:
         - name: elasticsearch
-          image: quay.io/pires/docker-elasticsearch-kubernetes:6.3.1
+          image: hygt/elasticsearch:6.4.3
           imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              add:
+              - IPC_LOCK
+              - SYS_RESOURCE
           volumeMounts:
           - name: storage
-            mountPath: /data
+            mountPath: /usr/share/elasticsearch/data
           env:
-          - name: NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: CLUSTER_NAME
-            value: "nexus-cluster"
-          - name: NUMBER_OF_MASTERS
-            value: "1"
-          - name: NODE_MASTER
-            value: "true"
-          - name: NODE_DATA
-            value: "true"
-          - name: NODE_INGEST
-            value: "true"
-          - name: HTTP_ENABLE
-            value: "true"
-          - name: NETWORK_HOST
-            value: _site_,_lo_
+          - name: cluster.name
+            value: 'es-cluster'
+          - name: discovery.zen.ping.unicast.hosts
+            value: 'elasticsearch-discovery'
+          - name: discovery.type
+            value: 'single-node'
+          - name: bootstrap.memory_lock
+            value: 'true'
           - name: PROCESSORS
             valueFrom:
               resourceFieldRef:
@@ -105,7 +97,7 @@ items:
             name: transport
           resources:
             limits:
-              cpu: 1000m
+              cpu: '1'
               memory: 1Gi
             requests:
               cpu: 200m

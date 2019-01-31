@@ -67,7 +67,7 @@ items:
       spec:
         containers:
         - name: iam
-          image: bluebrain/nexus-iam:latest
+          image: bluebrain/nexus-iam:1.0
           imagePullPolicy: Always
           env:
           - name: PUBLIC_IP
@@ -103,18 +103,10 @@ items:
             value: 'iam'
           - name: SEED_NODES
             value: 'iam-0.iam-hd.nexus.svc.cluster.local:2552'
-          - name: IAM_TESTMODE
-            value: 'true'
-          - name: ELASTIC_BASE_URI
-            value: 'http://elasticsearch.nexus.svc.cluster.local:9200'
-          - name: ELASTIC_PREFIX_INDEX
-            value: 'iam'
-          - name: KAFKA_BOOTSTRAP_SERVERS
-            value: 'kafka-0.kafka.nexus.svc.cluster.local:9092'
           command:
           - '/bin/bash'
           - '-c'
-          - '/bin/bash /opt/docker/bin/iam-service -Doverride.remoting.interface=$REMOTING_INTERFACE.iam-hd.nexus.svc.cluster.local'
+          - '/opt/docker/bin/iam -Doverride.remoting.interface=$REMOTING_INTERFACE.iam-hd.nexus.svc.cluster.local'
           ports:
           - containerPort: 8080
             name: http
@@ -165,7 +157,15 @@ items:
         - backend:
             serviceName: iam
             servicePort: 8080
-          path: /v1/oauth2
+          path: /v1/identities
+        - backend:
+            serviceName: iam
+            servicePort: 8080
+          path: /v1/realms
+        - backend:
+            serviceName: iam
+            servicePort: 8080
+          path: /v1/permissions
 - apiVersion: extensions/v1beta1
   kind: Ingress
   metadata:
