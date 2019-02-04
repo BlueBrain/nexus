@@ -125,61 +125,6 @@ An example, assuming:
 The resulting size represents the total disk space of the data nodes in the cluster; a 5 data node cluster with the data
 volume in the example above would have to be configured with 60GB disks per node.
 
-## Kafka and ZooKeeper
-
-Nexus uses [Kafka](https://kafka.apache.org/) for asynchronous communication between services, usually exposing the
-event log directly with simple transformations (internal service event representation to public representation). Kafka
-is also used to provide an integration point such that custom / specialized services can be built to run on top of
-Nexus. It offers replication out of the box and while the event log can be rebuilt from the _primary store_ whether it
-requires backup or not is a decision that depends on how quickly a restore needs to be performed in case of failure.
-
-The system is not used at its full potential in terms of throughput, a small cluster will work on most Nexus
-deployments. It was chosen because of its similarity with the Nexus service event based
-[persistence model](../../architecture/systematic-service-design.html). 
-
-Nexus doesn't use [ZooKeeper](https://zookeeper.apache.org/) directly, but just as a dependency for Kafka which in turn
-is used solely for coordinating the Kafka cluster. A 3 node 0.5 CPU / 1.5GB RAM cluster should be sufficient for most
-use cases.
-
-The Kafka [configuration section](https://kafka.apache.org/documentation/#config) in its
-[documentation](https://kafka.apache.org/documentation/) list a series of recommendations and instructions for a
-production deployment.
-
-The ZooKeeper's [Getting Started](https://zookeeper.apache.org/doc/current/zookeeperStarted.html) and
-[Administrator](https://zookeeper.apache.org/doc/current/zookeeperAdmin.html) guides are a good place to start.
-
-Nexus pushes to Kafka each service event log, so the allocated disk space is an important aspect to take into
-consideration. As with previous sizing instructions the disk size depends on the number of resources, their size and the
-configured replication factor:
-```
-total = (resource_size + nexus_metadata_size) * count * replication_factor
-```
-
-An example, assuming:
-
-*   10KB per resource
-*   1.000.000 distinct resources
-*   10 updates per resource
-*   replication factor of 3
-
-... the total required disk size would be:
-```
-(10KB + 10KB) * 1.000.000 * 3 = 60.000.000KB ~= 60GB
-```
-The resulting size represents the total disk space of the cluster; a 3 data node cluster with the data volume in the
-example above would have to be configured with 20GB disks per node.
-
-@@@ note
-
-Nexus stores its entire event log in Kafka so it's important to configure Kafka with _permanent log retention_. Make
-sure the following configuration values are set:
-```
-log.retention.bytes=-1
-log.retention.hours=-1
-```
-
-@@@
-
 ## BlazeGraph
 
 Nexus uses [BlazeGraph](https://www.blazegraph.com/) as an RDF (triple) store to provide a advanced querying

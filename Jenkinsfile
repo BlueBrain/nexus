@@ -24,10 +24,9 @@ pipeline {
             steps {
                 node("slave-sbt") {
                     sshagent(['bbpnexusbuildbot-ssh-key']) {
-                        sh 'git config user.email "noreply@epfl.ch"'
-                        sh 'git config user.name "BBP Nexus Build Bot"'
-                        sh 'rm -rf nexus && git clone git@github.com:BlueBrain/nexus.git'
                         sh 'rm -rf ~/.sbt/ghpages/'
+                        sh 'rm -rf nexus && git clone git@github.com:BlueBrain/nexus.git'
+                        sh 'cd nexus && git config user.email "noreply@epfl.ch" && git config user.name "BBP Nexus Build Bot"'
                         sh 'cd nexus && sbt clean makeSite ghpagesPushSite'
                     }
                 }
