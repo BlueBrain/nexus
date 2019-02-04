@@ -17,14 +17,19 @@ pipeline {
                 }
             }
         }
-        stage("Deploy GhPages") {
+        stage("Deploy GitHub Pages") {
             when {
-                expression { !isPR && !isRelease }
+                expression { version == "master" }
             }
             steps {
                 node("slave-sbt") {
-                    checkout scm
-                    sh "sbt clean makeSite ghpagesPushSite"
+                    sshagent(['bbpnexusbuildbot-ssh-key']) {
+                        sh 'git config user.email "noreply@epfl.ch"'
+                        sh 'git config user.name "BBP Nexus Build Bot"'
+                        sh 'rm -rf nexus && git clone git@github.com:BlueBrain/nexus.git'
+                        sh 'rm -rf ~/.sbt/ghpages/'
+                        sh 'cd nexus && sbt clean makeSite ghpagesPushSite'
+                    }
                 }
             }
         }
