@@ -11,17 +11,6 @@ Access to resources in the system depends on the access control list set for the
 identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
 Please visit @ref:[Authentication](../iam/authentication.md) to learn more about retrieving access tokens.
 
-@@@ note { .tip title="Running examples with Postman" }
-
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the
-[projects collection](../assets/project-postman.json).
-
-If your deployment is protected by an access token: 
-
-Edit the imported collection -> Click on the `Authorization` tab -> Fill in the token field.
-
-@@@
-
 ## Project payload
 
 ```
