@@ -128,13 +128,12 @@ DELETE /v1/{address}?rev={previous_rev}
 ## Listing
 
 ```
-GET /v1/{collection_address}?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
+GET /v1/{collection_address}?from={from}&size={size}&deprecated={deprecated}
 ```
 
 ... where all of the query parameters are individually optional.
 
 - `{collection_address}` Path - the selected collection to list, filter or search; for example: `/v1/projects/`, `/v1/schemas/{org_label}/{project}`,
-- `{full_text_search_query}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
