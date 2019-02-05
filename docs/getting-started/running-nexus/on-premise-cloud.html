@@ -142,6 +142,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started Guide</a>
   <ul>
+    <li><a href="../../../docs/getting-started/nexus-concepts.html" class="page">Brief introduction of Nexus concepts</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/docker.html" class="page">Run Nexus locally with Docker</a></li>
@@ -204,7 +205,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#choice-of-hardware" class="header">Choice of hardware</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#cassandra" class="header">Cassandra</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#elasticsearch" class="header">ElasticSearch</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#kafka-and-zookeeper" class="header">Kafka and ZooKeeper</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#blazegraph" class="header">BlazeGraph</a></li>
   </ul></li>
 </ul>
@@ -232,7 +232,6 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#choice-of-hardware" class="header">Choice of hardware</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#cassandra" class="header">Cassandra</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#elasticsearch" class="header">ElasticSearch</a></li>
-    <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#kafka-and-zookeeper" class="header">Kafka and ZooKeeper</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/on-premise-cloud.html#blazegraph" class="header">BlazeGraph</a></li>
   </ul></li>
 </ul>
@@ -308,30 +307,6 @@ BlueBrain/nexus
 <pre><code>(10KB * 1.000.000 * 3 + 2 * (10KB * 1.000.000 * 3)) * 3 = 270.000.000KB ~= 260GB
 </code></pre>
 <p>The resulting size represents the total disk space of the data nodes in the cluster; a 5 data node cluster with the data volume in the example above would have to be configured with 60GB disks per node.</p>
-<h2><a href="#kafka-and-zookeeper" name="kafka-and-zookeeper" class="anchor"><span class="anchor-link"></span></a>Kafka and ZooKeeper</h2>
-<p>Nexus uses <a href="https://kafka.apache.org/">Kafka</a> for asynchronous communication between services, usually exposing the event log directly with simple transformations (internal service event representation to public representation). Kafka is also used to provide an integration point such that custom / specialized services can be built to run on top of Nexus. It offers replication out of the box and while the event log can be rebuilt from the <em>primary store</em> whether it requires backup or not is a decision that depends on how quickly a restore needs to be performed in case of failure.</p>
-<p>The system is not used at its full potential in terms of throughput, a small cluster will work on most Nexus deployments. It was chosen because of its similarity with the Nexus service event based <a href="../../architecture/systematic-service-design.html">persistence model</a>. </p>
-<p>Nexus doesn&rsquo;t use <a href="https://zookeeper.apache.org/">ZooKeeper</a> directly, but just as a dependency for Kafka which in turn is used solely for coordinating the Kafka cluster. A 3 node 0.5 CPU / 1.5GB RAM cluster should be sufficient for most use cases.</p>
-<p>The Kafka <a href="https://kafka.apache.org/documentation/#config">configuration section</a> in its <a href="https://kafka.apache.org/documentation/">documentation</a> list a series of recommendations and instructions for a production deployment.</p>
-<p>The ZooKeeper&rsquo;s <a href="https://zookeeper.apache.org/doc/current/zookeeperStarted.html">Getting Started</a> and <a href="https://zookeeper.apache.org/doc/current/zookeeperAdmin.html">Administrator</a> guides are a good place to start.</p>
-<p>Nexus pushes to Kafka each service event log, so the allocated disk space is an important aspect to take into consideration. As with previous sizing instructions the disk size depends on the number of resources, their size and the configured replication factor:</p>
-<pre><code>total = (resource_size + nexus_metadata_size) * count * replication_factor
-</code></pre>
-<p>An example, assuming:</p>
-<ul>
-  <li>10KB per resource</li>
-  <li>1.000.000 distinct resources</li>
-  <li>10 updates per resource</li>
-  <li>replication factor of 3</li>
-</ul>
-<p>&hellip; the total required disk size would be:</p>
-<pre><code>(10KB + 10KB) * 1.000.000 * 3 = 60.000.000KB ~= 60GB
-</code></pre>
-<p>The resulting size represents the total disk space of the cluster; a 3 data node cluster with the data volume in the example above would have to be configured with 20GB disks per node.</p><div class="callout note "><div class="callout-title">Note</div>
-<p>Nexus stores its entire event log in Kafka so it&rsquo;s important to configure Kafka with <em>permanent log retention</em>. Make sure the following configuration values are set:</p>
-<pre><code>log.retention.bytes=-1
-log.retention.hours=-1
-</code></pre></div>
 <h2><a href="#blazegraph" name="blazegraph" class="anchor"><span class="anchor-link"></span></a>BlazeGraph</h2>
 <p>Nexus uses <a href="https://www.blazegraph.com/">BlazeGraph</a> as an RDF (triple) store to provide a advanced querying capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and ElasticSearch in case of failures, the system can be fully restored from the primary store. While the technology is advertised to support <a href="https://wiki.blazegraph.com/wiki/index.php/HAJournalServer">High Availability</a> and <a href="https://wiki.blazegraph.com/wiki/index.php/ClusterGuide">Scaleout</a> deployment configurations, we have yet to be able to setup a deployment in this fashion.</p>
 <p>We currently recommend deploying BlazeGraph using the prepackaged <em>tar.gz</em> distribution available to download from <a href="https://sourceforge.net/projects/bigdata/files/bigdata/2.1.4/">sourceforge</a>.</p><div class="callout note "><div class="callout-title">Note</div>
