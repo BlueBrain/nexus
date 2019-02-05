@@ -132,8 +132,7 @@ A command line interface (CLI) to operate basic operation on a Nexus deployment.
 
 ### Nexus Python SDK
 
-The Human Brain Project has developed an open source library called Pyxus to facilitate the use of Nexus with Python. 
-This library will help Python users to integrate their tools with the Blue Brain Nexus platform. Initially, it will
-mainly enable the interface with the Knowledge Graph service.
+This library will help Python users to integrate their tools with the Blue Brain Nexus platform.
 
-[Source Code](https://github.com/HumanBrainProject/pyxus)
+[Source Code](https://github.com/BlueBrain/nexus-python-sdk) | [Documentation](https://bluebrain.github.io/nexus-python-sdk/)
+
