@@ -1,0 +1,1 @@
+list-res-cmd.sh

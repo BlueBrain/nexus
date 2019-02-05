@@ -7,13 +7,13 @@ Each view...
 
 - belongs to a `project` identifier by the label `{project_label}` 
 - inside an `organization` identifier by the label `{org_label}` 
-- it is validated against the [view schema](https://bluebrain.github.io/nexus/schemas/view).
+- it is validated against the [view schema](https://bluebrain.github.io/nexus/schemas/view.json).
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Running examples with Postman" }
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [views collection](../assets/view-postman.json).
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [views collection](../assets/views/view-postman.json).
 
 If your deployment is protected by an access token: 
 
@@ -23,7 +23,7 @@ Edit the imported collection -> Click on the `Authorization` tab -> Fill the tok
 
 ## View types
 
-![view defaults](../assets/view-defaults.png "View defaults")
+![view defaults](../assets/views/view-defaults.png "View defaults")
 
 
 There are several types of views, which relies on different technology to perform the indexing
@@ -43,7 +43,7 @@ This view gets automatically created when the project is created and it cannot b
 }
 ```
 
-### ElasticView
+### ElasticSearchView
 
 @@@ note
 
@@ -55,11 +55,11 @@ This view creates an ElasticSearch `index` where it stores the selected resource
 
 A default view gets automatically created when the project is created but other views can be created.
 
-**ElasticView payload**
+**ElasticSearchView payload**
 ```
 {
   "@id": "{someid}",
-  "@type": [ "View", "ElasticView", "Alpha" ],
+  "@type": [ "View", "ElasticSearchView", "Alpha" ],
   "resourceSchemas": [ "{resourceSchema}", ...],
   "resourceTag": "{tag}",
   "sourceAsText": {sourceAsText},
@@ -78,7 +78,44 @@ where...
 - `{someid}`: Iri - the @id value for this view.
 
 
-## Create an ElasticView using POST
+### AggregateElasticSearchView
+
+@@@ note
+
+The described features are in `@Alpha` phase of development. The operations might change in the future.
+
+@@@
+
+This view is an aggregate of ElasticSearchViews. The view itself does not create any index, but it reference to the already existing indices of the linked ElasticSearchViews.
+
+When performing queries on the `_search` endpoint, this view will make use of the [multi-index](https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html) query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.
+
+If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset of indices (or none) will be selecting, respecting the defined permissions.
+
+![Aggregate ElasticSearchView](../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
+
+**AggregateElasticSearchView payload**
+```
+{
+  "@id": "{someid}",
+  "@type": [ "View", "AggregateElasticSearchView", "Alpha" ],
+  "views": [ 
+    {
+        "project": "{project}",
+        "viewId": "{viewId}"
+    },
+    ...
+  ]
+}
+```
+
+where...
+ 
+- `{project}`: String - the project, defined as `{org_label}/{project_label}`, where the `{viewId}` is located.
+- `{viewId}`: Iri - The view @id value to be aggregated.
+
+
+## Create an ElasticSearchView using POST
 
 ```
 POST /v1/view/{org_label}/{project_label}
@@ -93,16 +130,16 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [view-elastic.sh](../assets/view-elastic.sh)
+:   @@snip [view-elastic.sh](../assets/views/view-elastic.sh)
 
 Payload
-:   @@snip [view-elastic.json](../assets/view-elastic.json)
+:   @@snip [view-elastic.json](../assets/views/view-elastic.json)
 
 Response
-:   @@snip [view-elastic-ref-new.json](../assets/view-elastic-ref-new.json)
+:   @@snip [view-elastic-ref-new.json](../assets/views/view-elastic-ref-new.json)
 
 
-## Create an ElasticView using PUT
+## Create an ElasticSearchView using PUT
 
 This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
@@ -115,16 +152,16 @@ Note that if the payload contains an @id different from the `{view_id}`, the req
 **Example**
 
 Request
-:   @@snip [view-elastic-put.sh](../assets/view-elastic-put.sh)
+:   @@snip [view-elastic-put.sh](../assets/views/view-elastic-put.sh)
 
 Payload
-:   @@snip [view-elastic-put.json](../assets/view-elastic-put.json)
+:   @@snip [view-elastic-put.json](../assets/views/view-elastic-put.json)
 
 Response
-:   @@snip [view-elastic-ref-new.json](../assets/view-elastic-ref-new.json)
+:   @@snip [view-elastic-ref-new.json](../assets/views/view-elastic-ref-new.json)
 
 
-## Update an ElasticView
+## Update an ElasticSearchView
 
 This operation overrides the payload.
 
@@ -141,16 +178,37 @@ PUT /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-elastic-update.sh](../assets/view-elastic-update.sh)
+:   @@snip [view-elastic-update.sh](../assets/views/view-elastic-update.sh)
 
 Payload
-:   @@snip [view-elastic-put.json](../assets/view-elastic-put.json)
+:   @@snip [view-elastic-put.json](../assets/views/view-elastic-put.json)
 
 Response
-:   @@snip [view-elastic-ref-updated.json](../assets/view-elastic-ref-updated.json)
+:   @@snip [view-elastic-ref-updated.json](../assets/views/view-elastic-ref-updated.json)
+
+## Create an AggregateElasticSearchView using PUT
+
+This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}
+  {...}
+```
+ 
+Note that if the payload contains an @id different from the `{view_id}`, the request will fail.
+
+**Example**
+
+Request
+:   @@snip [view-agg-put.sh](../assets/views/view-agg-put.sh)
+
+Payload
+:   @@snip [view-agg-put.json](../assets/views/view-agg-put.json)
+
+Response
+:   @@snip [view-agg-ref-new.json](../assets/views/view-agg-ref-new.json)
 
 
-## Tag an ElasticView
+## Tag a View
 
 Links a view's revision to a specific name. 
 
@@ -172,93 +230,13 @@ PUT /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-tag.sh](../assets/view-tag.sh)
+:   @@snip [view-tag.sh](../assets/views/view-tag.sh)
 
 Payload
 :   @@snip [tag.json](../assets/tag.json)
 
 Response
-:   @@snip [view-elastic-ref-tagged.json](../assets/view-elastic-ref-tagged.json)
-
-## Add attachment to a view
-
-Adds a binary to an already existing view
-
-```
-PUT /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?rev={previous_rev}
-```
-...where
-
-- `{previous_rev}`: is the last known revision number for the view.
-- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
-
-**Example**
-
-Request
-:   @@snip [view-attach.sh](../assets/view-attach.sh)
-
-Response
-:   @@snip [view-elastic-ref-attached.json](../assets/view-elastic-ref-attached.json)
-
-## Delete attachment from a view
-
-Deletes the attachment metadata from the latest revision of the view. The attachment will still be accessible accessing the previous revision.
-
-```
-DELETE /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?rev={previous_rev}
-```
-...where
-
-- `{previous_rev}`: is the last known revision number for the view.
-- `{name}`: String - the attachment identifier. This value is uniquely identifying the attachment per project.
-
-**Example**
-
-Request
-:   @@snip [view-unattach.sh](../assets/view-unattach.sh)
-
-Response
-:   @@snip [view-elastic-ref-unattached.json](../assets/view-elastic-ref-unattached.json)
-
-## Fetch attachment from a view (current revision)
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}
-```
-...where `{name}` is the attachment identifier.
-
-**Example**
-
-Request
-:   @@snip [view-attach-fetch.sh](../assets/view-attach-fetch.sh)
-
-## Fetch attachment from a view (specific revision)
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?rev={rev}
-```
-... where 
-- `{name}` - String:  is the attachment identifier.
-- `{rev}` - Long: is the revision number of the view to be retrieved.
-
-**Example**
-
-Request
-:   @@snip [view-attach-fetch-rev.sh](../assets/view-attach-fetch-rev.sh)
-
-## Fetch attachment from a view (specific tag)
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/atachments/{name}?tag={tag}
-```
-... where 
-- `{name}` - String:  is the attachment identifier.
-- `{tag}` - String: is the tag of the view to be retrieved.
-
-**Example**
-
-Request
-:   @@snip [view-attach-fetch-tag.sh](../assets/view-attach-fetch-tag.sh)
+:   @@snip [view-elastic-ref-tagged.json](../assets/views/view-elastic-ref-tagged.json)
 
 ## Deprecate a view
 
@@ -275,10 +253,10 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-deprecate.sh](../assets/view-deprecate.sh)
+:   @@snip [view-deprecate.sh](../assets/views/view-deprecate.sh)
 
 Response
-:   @@snip [view-elastic-ref-deprecated.json](../assets/view-elastic-ref-deprecated.json)
+:   @@snip [view-elastic-ref-deprecated.json](../assets/views/view-elastic-ref-deprecated.json)
 
 
 ## Fetch a view (current version)
@@ -290,10 +268,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}
 **Example**
 
 Request
-:   @@snip [view-fetch.sh](../assets/view-fetch.sh)
+:   @@snip [view-fetch.sh](../assets/views/view-fetch.sh)
 
 Response
-:   @@snip [view-fetched.json](../assets/view-fetched.json)
+:   @@snip [view-fetched.json](../assets/views/view-fetched.json)
 
 
 ## Fetch a view (specific version)
@@ -306,10 +284,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}
 **Example**
 
 Request
-:   @@snip [view-fetch-revision.sh](../assets/view-fetch-revision.sh)
+:   @@snip [view-fetch-revision.sh](../assets/views/view-fetch-revision.sh)
 
 Response
-:   @@snip [view-fetched.json](../assets/view-fetched.json)
+:   @@snip [view-fetched.json](../assets/views/view-fetched.json)
 
 
 ## Fetch a view (specific tag)
@@ -324,16 +302,16 @@ GET /v1/views/{org_label}/{project_label}/{view_id}?tag={tag}
 **Example**
 
 Request
-:   @@snip [view-fetch-tag.sh](../assets/view-fetch-tag.sh)
+:   @@snip [view-fetch-tag.sh](../assets/views/view-fetch-tag.sh)
 
 Response
-:   @@snip [view-fetched-tag.json](../assets/view-fetched-tag.json)
+:   @@snip [view-fetched-tag.json](../assets/views/view-fetched-tag.json)
 
 
 ## List views
 
 ```
-GET /v1/views/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
+GET /v1/views/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
 ```
 
 where...
@@ -342,20 +320,24 @@ where...
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting views based on their deprecation status
+- `{rev}`: Number - can be used to filter the resulting views based on their revision value
+- `{type}`: Iri - can be used to filter the resulting views based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{createdBy}`: Iri - can be used to filter the resulting views based on their creator
+- `{updatedBy}`: Iri - can be used to filter the resulting views based on the person which performed the last update
 
 
 **Example**
 
 Request
-:   @@snip [view-list.sh](../assets/view-list.sh)
+:   @@snip [view-list.sh](../assets/views/view-list.sh)
 
 Response
-:   @@snip [view-list.json](../assets/view-list.json)
+:   @@snip [view-list.json](../assets/views/view-list.json)
 
 
 ## ElasticSearch query
 
-Provides search functionality on the `ElasticView` content.
+Provides search functionality on the `ElasticSearchView` or `AggregateElasticSearchView` content.
 
 ```
 POST /v1/views/{org_label}/{project_label}/{view_id}/_search
@@ -368,10 +350,10 @@ The string `documents` is used as a prefix of the default ElasticSearch `view_id
 **Example**
 
 Request
-:   @@snip [elastic-view-search.sh](../assets/elastic-view-search.sh)
+:   @@snip [elastic-view-search.sh](../assets/views/elastic-view-search.sh)
 
 Response
-:   @@snip [elastic-view-search.json](../assets/elastic-view-search.json)
+:   @@snip [elastic-view-search.json](../assets/views/elastic-view-search.json)
 
 ## SparQL query
 
@@ -387,10 +369,10 @@ The `Content-Type` HTTP header for this request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [sparql-view-search.sh](../assets/sparql-view-search.sh)
+:   @@snip [sparql-view-search.sh](../assets/views/sparql-view-search.sh)
 
 Response
-:   @@snip [sparql-view-search.json](../assets/sparql-view-search.json)
+:   @@snip [sparql-view-search.json](../assets/views/sparql-view-search.json)
 
 ## Views internals
 
@@ -398,5 +380,5 @@ When an asynchronous process that reads the view events from the Primary Store g
 
 The view provides the configuration of the index and defines which Events are going to be indexed.
 
-![View internals](../assets/views-internals.png "View internals")
+![View internals](../assets/views/views-internals.png "View internals")
 

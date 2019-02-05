@@ -1,0 +1,692 @@
+{
+  "id": "a7582198-a4ab-4663-940d-c280337e5ba8",
+  "name": "View",
+  "description": "",
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": ""
+      }
+    ]
+  },
+  "events": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "id": "f9e139b3-dfd6-4a3a-bd75-c3d5a8ef8bc3",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "id": "a204a388-1429-413a-a328-7407e0aa7111",
+        "type": "text\/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variables": [],
+  "order": [
+    "c7cfba71-8fe9-4b7f-8346-c178ea28d413",
+    "b43e885a-1f7e-4167-9811-f40eac3d0a90",
+    "6f58cb2c-ecd7-4fd1-af1f-0a59400caa7c",
+    "2fa0712d-be4c-4f1f-ae5f-547039d9fb5f",
+    "d9946f74-76c3-481b-b99a-ae91e7c04330",
+    "e0d7b648-85ac-4973-947c-3a43d9953501",
+    "4e3bbb62-d8a5-403f-b5f6-4d582958b289",
+    "ff98d896-b385-4205-a009-d6464a08662b",
+    "822dc65f-b07d-4fe0-9285-96b8b88d9cd0",
+    "b6ce66d3-aa50-4e33-8012-8a4314876872",
+    "0332bb4b-2943-4d9d-ad9d-d950cbbf9ce9",
+    "72c90491-664f-4415-a89c-f400b64e5260",
+    "6c9e52ec-3a1d-4272-8ebd-c0494baf8bb5",
+    "0ed31fee-887f-4766-bf33-e01dc8af4998",
+    "d894d796-5302-4c38-9113-5da8e49cb893",
+    "807934b5-9e82-44cd-9081-df757ff0e70d",
+    "722862e7-cd87-4041-9536-08eeee5c8ad5",
+    "f3a676e9-63db-4383-8354-0497ff88c833",
+    "93ce3c7b-1b31-48b0-b135-cea12c941651"
+  ],
+  "folders_order": [],
+  "folders": [],
+  "requests": [
+    {
+      "id": "0332bb4b-2943-4d9d-ad9d-d950cbbf9ce9",
+      "name": "Delete attachment from a view",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?rev=4",
+      "description": "Deletes the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "value": "",
+          "description": "",
+          "type": "file",
+          "enabled": true
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "DELETE",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "0ed31fee-887f-4766-bf33-e01dc8af4998",
+      "name": "Fetch a view (specific revision)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview?rev=1",
+      "description": "Fetches the view with id 'ex:myview' on revision '1' on the project 'myproject' inside the organization 'myorg'",
+      "data": null,
+      "dataMode": null,
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "1",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "2fa0712d-be4c-4f1f-ae5f-547039d9fb5f",
+      "name": "Create an ElasticSearch view using POST",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject",
+      "description": "Creates an ElasticSearch view with an auto-generated id on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "POST",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": false,\n  \"sourceAsText\": false,\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "4e3bbb62-d8a5-403f-b5f6-4d582958b289",
+      "name": "Add attachment to view",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?rev=3",
+      "description": "Add attachment with name 'myFile.jpg' to the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [
+        {
+          "key": "file",
+          "value": "",
+          "description": "",
+          "type": "file",
+          "enabled": true
+        }
+      ],
+      "dataMode": "params",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "3",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "6c9e52ec-3a1d-4272-8ebd-c0494baf8bb5",
+      "name": "Fetch a view (current revision)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview",
+      "description": "Fetches the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": null,
+      "dataMode": null,
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "6f58cb2c-ecd7-4fd1-af1f-0a59400caa7c",
+      "name": "Create an Aggregate ElasticSearch view using POST",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject2",
+      "description": "Creates an Aggregate ElasticSearch view with auto-generated id on the project 'myproject2' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "POST",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/\"\n  },\n  \"@type\": [\n    \"View\",\n    \"AggregateElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"views\": [\n    {\n      \"project\": \"myorg\/myproject\",\n      \"viewId\": \"ex:myview\"\n    },\n    {\n      \"project\": \"myorg\/myproject-other\",\n      \"viewId\": \"ex:my-other-view\"\n    }\n  ]\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "722862e7-cd87-4041-9536-08eeee5c8ad5",
+      "name": "SparQL query",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/graph\/sparql",
+      "description": "Execute a query against the sparql endpoint for the project 'myproject' on the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/sparql-query"
+        }
+      ],
+      "method": "POST",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "SELECT ?s where {?s ?p ?o} LIMIT 2",
+      "headers": "Content-Type: application\/sparql-query\n",
+      "pathVariables": []
+    },
+    {
+      "id": "72c90491-664f-4415-a89c-f400b64e5260",
+      "name": "Deprecate a view",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview?rev=3",
+      "description": "Deprecates the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "DELETE",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "3",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "807934b5-9e82-44cd-9081-df757ff0e70d",
+      "name": "List views",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject",
+      "description": "List all views on the project 'myproject' inside the organization 'myorg'",
+      "data": null,
+      "dataMode": null,
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "822dc65f-b07d-4fe0-9285-96b8b88d9cd0",
+      "name": "Fetch attachment from a view (specific revision)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?rev=4",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on revision '4' on the project 'myproject' inside the organization 'myorg'",
+      "data": null,
+      "dataMode": null,
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "4",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "93ce3c7b-1b31-48b0-b135-cea12c941651",
+      "name": "Aggregate ElasticSearch query",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject2\/ex:myagg\/_search",
+      "description": "Execute a query against the ElasticSearch endpoint for the view 'ex:myagg', on the project 'myproject2' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "POST",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"query\": {\n    \"term\": {\n      \"_deprecated\": true\n    }\n  }\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "b43e885a-1f7e-4167-9811-f40eac3d0a90",
+      "name": "Create an Aggregate ElasticSearch view using PUT",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject2\/ex:myagg",
+      "description": "Creates an Aggregate ElasticSearch view with id 'ex:myagg' on the project 'myproject2' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"@context\": {\n    \"ex\": \"http:\/\/example.com\/\"\n  },\n  \"@type\": [\n    \"View\",\n    \"AggregateElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"views\": [\n    {\n      \"project\": \"myorg\/myproject\",\n      \"viewId\": \"ex:myview\"\n    },\n    {\n      \"project\": \"myorg\/myproject-other\",\n      \"viewId\": \"ex:my-other-view\"\n    }\n  ]\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "b6ce66d3-aa50-4e33-8012-8a4314876872",
+      "name": "Fetch attachment from a view (specific tag)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg?tag=mytag",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "data": null,
+      "dataMode": null,
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "tag",
+          "value": "mytag",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "c7cfba71-8fe9-4b7f-8346-c178ea28d413",
+      "name": "Create an ElasticSearch view using PUT",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview",
+      "description": "Creates an ElasticSearch view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "value": "application\/json",
+          "description": "",
+          "type": "text"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": false,\n  \"sourceAsText\": false,\n  \"resourceSchemas\": \"https://bluebrain.github.io/nexus/schemas/myschema\",\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "d894d796-5302-4c38-9113-5da8e49cb893",
+      "name": "Fetch a view (specific tag)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview?tag=mytag",
+      "description": "Fetches the view with id 'ex:myview' on tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "data": null,
+      "dataMode": null,
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "tag",
+          "value": "mytag",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "d9946f74-76c3-481b-b99a-ae91e7c04330",
+      "name": "Updates a view",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview?rev=1",
+      "description": "Updates the ElasticSearch view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "1",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"@type\": [\n    \"View\",\n    \"ElasticSearchView\",\n    \"Alpha\"\n  ],\n  \"includeMetadata\": true,\n  \"sourceAsText\": false,\n  \"mapping\": {\n    \"dynamic\": false,\n    \"properties\": {\n      \"@id\": {\n        \"type\": \"keyword\"\n      },\n      \"@type\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"number\": {\n        \"type\": \"long\"\n      },\n      \"bool\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "e0d7b648-85ac-4973-947c-3a43d9953501",
+      "name": "Tag a view",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/tags?rev=2",
+      "description": "Tags the view with id 'ex:myview' on the revision '1' with the tag 'mytag' on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "PUT",
+      "pathVariableData": [],
+      "queryParams": [
+        {
+          "key": "rev",
+          "value": "2",
+          "equals": true,
+          "description": "",
+          "enabled": true
+        }
+      ],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"tag\": \"mytag\",\n  \"rev\": 1\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "f3a676e9-63db-4383-8354-0497ff88c833",
+      "name": "ElasticSearch query",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/_search",
+      "description": "Execute a query against the ElasticSearch endpoint for the view 'ex:myview', on the project 'myproject' inside the organization 'myorg'",
+      "data": [],
+      "dataMode": "raw",
+      "headerData": [
+        {
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "value": "application\/json",
+          "description": "",
+          "type": "text"
+        }
+      ],
+      "method": "POST",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "rawModeData": "{\n  \"query\": {\n    \"term\": {\n      \"_deprecated\": true\n    }\n  }\n}",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    },
+    {
+      "id": "ff98d896-b385-4205-a009-d6464a08662b",
+      "name": "Fetch attachment from a view (current revision)",
+      "url": "{{host}}\/v1\/views\/myorg\/myproject\/ex:myview\/attachments\/myFile.jpg",
+      "description": "Fetch the attachment with name 'myFile.jpg' from the view with id 'ex:myview' on the project 'myproject' inside the organization 'myorg'",
+      "data": null,
+      "dataMode": null,
+      "headerData": [
+        {
+          "description": "",
+          "key": "Content-Type",
+          "name": "Content-Type",
+          "type": "text",
+          "value": "application\/json"
+        }
+      ],
+      "method": "GET",
+      "pathVariableData": [],
+      "queryParams": [],
+      "auth": null,
+      "events": [],
+      "folder": null,
+      "currentHelper": null,
+      "helperAttributes": null,
+      "collectionId": "a7582198-a4ab-4663-940d-c280337e5ba8",
+      "headers": "Content-Type: application\/json\n",
+      "pathVariables": []
+    }
+  ]
+}

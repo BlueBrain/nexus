@@ -4,10 +4,11 @@
 * [Authentication](authentication.md)
 * [Permissions](iam-permissions-api.md)
 * [ACLs](iam-acls-api.md)
+* [Identities](iam-identities.md)
 
 @@@
 
-# IAM API
+# Identity & Access Management API
 
 The IAM API provides operations on three types of resources, `realms`, `permissions` and `acls`.
 
@@ -25,10 +26,15 @@ A permission is the basic unit to provide a way to limit applications' access to
 
 In order to restrict applications' access to data by placing restrictions on them, three parameters are important:
 
-- permission: the value used to limit application's access to information.
-- identity: the way to identify individuals.
-- path: the URIs' path where to apply those access data restrictions.
+- permission: the value used to limit a client (user, group) access to resources.
+- identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.
+- path: the location where to apply the restrictions
 
 An ACL defines the set of **permissions** that certain **identities** have on a concrete **path**.
 
 @ref:[Operations on ACLs](iam-acls-api.md)
+
+## Identities
+Identities endpoint can be used to fetch user identities.
+
+@ref:[Operations on identities](iam-identities.md)

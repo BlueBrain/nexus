@@ -1,34 +1,35 @@
 # Projects
 
-Projects are rooted in the `/v1/projects/{org_label}` and are used to group and categorize its sub-resources. Relevant roles of a projects are:
+Projects belong to an `organization` and are rooted in the corresponding `/v1/projects/{org_label}` path.
+The purposes of projects are:
 
-- Defining settings which can be used for operations on sub-resources. 
-- Providing (by default) isolation from resources inside other projects. This isolation can be avoided by defining @ref:[resolvers](../kg/kg-resolvers-api.md)
+- Group and categorize sub-resources.
+- Define settings that apply for operations on all sub-resources. 
+- Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](../kg/kg-resolvers-api.md)
 
-Each project... 
-
-- belongs to an `organization` identifier by the label `{org_label}` 
-- it is validated against the [project schema](https://bluebrain.github.io/nexus/schemas/project).
-
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. A caller may need to prove its
+identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
+Please visit @ref:[Authentication](../iam/authentication.md) to learn more about retrieving access tokens.
 
 @@@ note { .tip title="Running examples with Postman" }
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [projects collection](../assets/project-postman.json).
+The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the
+[projects collection](../assets/project-postman.json).
 
 If your deployment is protected by an access token: 
 
-Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+Edit the imported collection -> Click on the `Authorization` tab -> Fill in the token field.
 
 @@@
 
-## Projects payload
+## Project payload
 
 ```
 {
-  "name": "{name}",
+  "description": "{description}",
   "base": "{base}",
-  "prefixMappings": [
+  "vocab": "{vocab}",
+  "apiMappings": [
    {
       "prefix": "{prefix}",
       "namespace": "{namespace}"
@@ -40,18 +41,20 @@ Edit the imported collection -> Click on the `Authorization` tab -> Fill the tok
 
 where...
  
-- `{name}`: String - the name for this project.
-- `{base}`: Iri - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a [resource is created using POST](../kg/kg-resources-api.html#create-a-resource-using-post) and no `@id` is present on the payload, the platform will generate and @id which will look like `http://example.com/{UUID}`. This field is optional and it will default to `{{base}}/v1/{org_label}/{project_label}`.
-- `{prefixMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.
+- `{description}`: String - an optional description for this project.
+- `{base}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a [resource is created](../kg/kg-resources-api.html#create-a-resource-using-post) and no `@id` is present in the payload, the platform will generate an @id which will look like `http://example.com/{UUID}`. This field is optional and will default to `{{base}}/v1/resources/{org_label}/{project_label}/_/`.
+- `{vocab}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) prefix for all unqualified predicates in children resources. E.g. if the vocab is set to `https://schema.org/`, when a field a resource is created and a field `name` is present in the payload, it will be expanded to `http://schema.org/name` by the system during indexing and fetch operations. This field is optional and will default to `{{base}}/v1/vocabs/{org_label}/{project_label}/`.
+- `{apiMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.
 
-### Prefix Mappings
-The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be used. Let's see an example.
+### API Mappings
+The `apiMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
+used. Let's see an example.
 
-Having the following `prefixMappings`:
+Having the following `apiMappings`:
 
 ```
 {
-  "prefixMappings": [
+  "apiMappings": [
    {
       "prefix": "{prefix}",
       "namespace": "{namespace}"
@@ -64,13 +67,14 @@ Having the following `prefixMappings`:
 where...
 
 - `{prefix}`: String - the left hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName).
-- `{namespace}`: Iri - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
+- `{namespace}`: IRI - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
 
-The `prefixMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be used. Let's see an example:
+The `apiMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
+used. Let's see an example:
  
  ```json
  {
-   "prefixMappings": [
+   "apiMappings": [
     {
        "prefix": "person",
        "namespace": "http://example.com/some/person"
@@ -95,7 +99,8 @@ PUT /v1/projects/{org_label}/{label}
   {...}
 ```
 
-...where  `{label}` is the user friendly name assigned to this project. The semantics of the `label` should be consistent with the type of data provided by its sub-resources, since they are exposed on the URI of the sub-resource's operations.
+...where  `{label}` is the user friendly name assigned to this project. The semantics of the `label` should be
+consistent with the type of data provided by its sub-resources, since it'll be a part of the sub-resources' URI.
 
 **Example**
 
@@ -113,7 +118,8 @@ Response
 
 This operation overrides the payload.
 
-In order to ensure a client does not perform any changes to a project without having had seen the previous revision of the project, the last revision needs to be passed as a query parameter.
+In order to ensure a client does not perform any changes to a project without having had seen the previous revision of
+the project, the last revision needs to be passed as a query parameter.
 
 ```
 PUT /v1/projects/{org_label}/{label}?rev={previous_rev}
@@ -134,38 +140,6 @@ Payload
 
 Response
 :   @@snip [project-ref-updated.json](../assets/project-ref-updated.json)
-
-
-## Tag a project
-
-Links a project revision to a specific name. 
-
-Tagging a project is considered to be an update as well.
-
-```
-PUT /v1/projects/{org_label}/{label}/tags?rev={previous_rev}
-  {
-    "tag": "{name}",
-    "rev": {rev}
-  }
-```
-... where 
-
-- `{name}`: String -  label given the project at specific revision.
-- `{rev}`: Number - the revision to link the provided `{name}`.
-- `{previous_rev}`: Number - the last known revision for the organization.
-- `{label}`: String - the user friendly name that identifies this project.
-
-**Example**
-
-Request
-:   @@snip [project-tag.sh](../assets/project-tag.sh)
-
-Payload
-:   @@snip [tag.json](../assets/tag.json)
-
-Response
-:   @@snip [project-ref-tagged.json](../assets/project-ref-tagged.json)
 
 
 ## Deprecate a project
@@ -230,57 +204,16 @@ Response
 :   @@snip [project-fetched.json](../assets/project-fetched.json)
 
 
-## Fetch a project (specific tag)
-
-```
-GET /v1/projects/{org_label}/{label}?tag={tag}
-```
-
-... where 
-
-- `{label}`: String - the user friendly name that identifies this project.
-- `{tag}`: String - the tag of the project to be retrieved.
-
-**Example**
-
-Request
-:   @@snip [project-fetch-tag.sh](../assets/project-fetch-tag.sh)
-
-Response
-:   @@snip [project-fetched-tag.json](../assets/project-fetched-tag.json)
-
-
-## Get the ACLs for a project
-
-```
-GET /v1/projects/{org_label}/{label}/acls?self=true&parents={parents}
-```
-... where 
-
-- `{label}`: String - the user friendly name that identifies this project.
-- `{parents}`: Boolean - if true, the response includes the ACLs for the parent `organization` of the current project. If false, the response only includes the project ACLs.
-
-**Example**
-
-Request
-:   @@snip [project-fetch-acls.sh](../assets/project-fetch-acls.sh)
-
-Response
-:   @@snip [project-acls-fetched.json](../assets/project-acls-fetched.json)
-
-
 ## List projects
 
 ```
-GET /v1/projects?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
+GET /v1/projects?from={from}&size={size}
 ```
 
 where...
 
-- `{full_text_search_query}`: String - can be provided to select only the projects in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
 
 
 **Example**
@@ -300,10 +233,8 @@ GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}&q={
 
 where...
 
-- `{full_text_search_query}`: String - can be provided to select only the projects in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
 
 
 **Example**

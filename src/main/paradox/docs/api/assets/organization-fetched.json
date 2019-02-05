@@ -1,16 +1,17 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/organization",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/admin.json"
+  ],
   "@id": "https://nexus.example.com/v1/orgs/myorg",
-  "@type": "nxv:Organization",
-  "name": "myname",
+  "@type": "Organization",
+  "description": "My Organization",
   "_label": "myorg",
-  "_uuid": "659aed73-4cde-4016-93ec-67cbd308ac25",
-  "_self": "https://nexus.example.com/v1/orgs/myorg",
-  "_constrainedBy": "nxs:organization",
+  "_uuid": "bc0eba71-2a7f-40e8-ac90-5c97fc6f37d7",
+  "_rev": 4,
+  "_deprecated": true,
   "_createdAt": "2018-09-18T09:58:00.801Z",
   "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
   "_updatedAt": "2018-09-18T10:01:00.801Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_rev": 4,
-  "_deprecated": true
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
 }
