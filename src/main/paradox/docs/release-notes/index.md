@@ -323,7 +323,7 @@ general availability. In between nodes, when services are deployed as a cluster,
 [Akka Distributed Data]: https://doc.akka.io/docs/akka/2.5/distributed-data.html
 [gitter]: https://gitter.im/BlueBrain/nexus
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
-[Nexus Web]: https://github.com/bluebrain/nexus-explorer
+[Nexus Web]: https://github.com/bluebrain/nexus-web
 [Javascript SDK for Nexus]: https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js
 [Neuroshapes]: https://incf.github.io/neuroshapes/
 [CouchDB]: http://docs.couchdb.org/en/stable/api/document/common.html#attachments
