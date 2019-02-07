@@ -13,7 +13,7 @@ The goal is to go over some capabilities of Blue Brain Nexus enabling:
 * Sharing a dataset by making it public
 
 For that we will work with the small version of the [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip) containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
-An overview of this dataset can be found [here](../dataset/index.html) but it's not required to read it to follow this quick start tutorial.
+An overview of this dataset can be found [here](../dataset/index.html).
 
 @@@ note
 * This tutorial makes use of an AWS deployment of Blue Brain Nexus available at https://nexus-sandbox.io/v1.
@@ -27,7 +27,7 @@ Let's get started.
 
 ### Install and setup the Nexus CLI
 
-Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+Since the CLI is written in python, you may want to create a virtualenv for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 ```shell
 conda create -n nexus-cli python=3.5
@@ -38,7 +38,7 @@ pip install git+https://github.com/BlueBrain/nexus-cli
 
 ### Create and select a 'tutorial' profile
 
-To ease the usage of the CLI, we will create a profile named 'tutorial' storing locally various configurations such as the the Nexus deployment url.
+To ease the usage of the CLI, we will create a profile named 'tutorial' storing locally various configurations such as the Nexus deployment url.
 
 Command
 :   @@snip [create-profile-cmd.sh](../assets/create-profile-cmd.sh)
@@ -97,9 +97,9 @@ Output
 
 Projects in BlueBrain Nexus are spaces where data can be:
 
-* **managed**: created, updated, deprecated, validated, secured,
-* **accessed**: directly by ids or through various search interfaces.
-* **shared**: through fine grain Access Control List
+* **managed**: created, updated, deprecated, validated, secured;
+* **accessed**: directly by ids or through various search interfaces;
+* **shared**: through fine grain Access Control List.
 
 A **project** is always created within an **organization** just like a git repository is created in a github organization. Organizations can be understood as accounts hosting multiple projects.
 
@@ -109,7 +109,7 @@ A **project** is always created within an **organization** just like a git repos
 A public organization named **tutorialnexus** is already created for the purpose of this tutorial. All projects will be created under this organization.
 @@@
 
-The following command should list the organizations you have access to. The **tutorialnexus** orgnization should be listed and tagged as non deprecated in the output.
+The following command should list the organizations you have access to. The **tutorialnexus** organization should be listed and tagged as non-deprecated in the output.
 
 Command
 :   @@snip [list-orgs-cmd.sh](../assets/list-orgs-cmd.sh)
@@ -140,7 +140,7 @@ Command
 Output
 :   @@snip [create-project-out.sh](../assets/create-project-out.sh)
 
-By default created projects are private meaning that only the project creator (you) has read and write access to it. We'll [see below](#share-data) how to make a project public.
+By default, created projects are private meaning that only the project creator (you) has read and write access to it. We'll [see below](#share-data) how to make a project public.
 
 The output of the previous command shows the list of projects you have read access to. The project you just created should be the only one listed at this point. Let select it.
 
@@ -246,12 +246,12 @@ As an exercise try to filter by tag to only retrieve resources of type Tag.
 
 ### Query data
 
-Listing is usually not enough to select specific subset of the data. Data ingested within each project can be searched through two complementary search interfaces called [views](https://bluebrain.github.io/nexus/docs/api/kg/kg-views-api.html).
+Listing is usually not enough to select specific subset of data. Data ingested within each project can be searched through two complementary search interfaces called [views](https://bluebrain.github.io/nexus/docs/api/kg/kg-views-api.html).
 
 View              | Description
 ------------------|---------------
-ElasticSearchView | Exposes data in [ElasticSearch]() a document oriented search engine and provide access to it using the [ElasticSearch query langugage](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
-SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the [W3C Sparql query langugage](https://www.w3.org/TR/sparql11-query/).
+ElasticSearchView | Exposes data in [ElasticSearch]() a document oriented search engine and provide access to it using the [ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
+SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the [W3C Sparql query language](https://www.w3.org/TR/sparql11-query/).
 
 #### Query data using the ElasticSearchView
 
