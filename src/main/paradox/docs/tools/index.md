@@ -18,4 +18,4 @@ You can find the list of all supported operation directly from the `nexus-sdk` [
 
 The SDK is written in Typescript, so type declarations for all operations are included in the package.
 
-Yoou can generated documentation using `npm run documentation` or with `docker` by running `make documentation`. More information can be found [here](https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js#development)
+You can generated documentation using `npm run documentation` or with `docker` by running `make documentation`. More information can be found [here](https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js#development)
