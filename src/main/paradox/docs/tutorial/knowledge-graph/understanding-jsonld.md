@@ -38,21 +38,20 @@ It does that by adding to a json document a @context object where every key is a
 For example with the payload below machine and human agents can look up the context to find out which JAVA are this data talking about.
 
 ```json
-{
   [
   	 {
   	    "@context":"https://json-ld.org/contexts/programminglanguage.jsonld",
-  		“name”:”python”,
-  		“loadedFrom”:”java”
+  		"name":"python",
+  		"loadedFrom":"java"
   	 },
   	{
   	    "@context":"https://json-ld.org/contexts/programminglanguage.jsonld",
-  		“name”:”java”,
-  		“testedFrom”:”java”
+  		"name":"java",
+  		"testedFrom":"java"
   	 }
 
-  ]
-}
+  ] 
+  
 ```
 
 Let go the [JSON-LD playground](https://json-ld.org/playground/) to have a closer look at its data model.
