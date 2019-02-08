@@ -29,7 +29,40 @@ On macOS and Windows, Docker effectively runs containers inside a VM created by 
 Nexus requires at least **2 CPUs** and **8 GiB** of memory in total. You can increase the limits
 in Docker settings in the menu *Preferences* > *Advanced*.
 
-### Initialize Docker Swarm
+## Option 1: Docker Compose
+
+While not recommended, we provide a [Docker Compose template](./docker-compose/docker-compose.yaml)
+in the old *version 2* format. Download the file into a directory of your choice, for instance `~/docker/nexus/`.
+You can then simply run `docker-compose up` within this directory:
+
+Command
+:  
+```
+docker-compose up
+```
+
+Example
+:  
+```
+$ docker-compose up
+Creating network "nexus_default" with the default driver
+Pulling cassandra (cassandra:3)...
+[...]
+Creating nexus_admin_1         ... done
+Creating nexus_blazegraph_1    ... done
+Creating nexus_router_1        ... done
+Creating nexus_iam_1           ... done
+Creating nexus_web_1           ... done
+Creating nexus_cassandra_1     ... done
+Creating nexus_kg_1            ... done
+Creating nexus_elasticsearch_1 ... done
+Attaching to nexus_iam_1, nexus_kg_1, nexus_blazegraph_1, nexus_cassandra_1, nexus_elasticsearch_1, nexus_admin_1, nexus_router_1, nexus_web_1
+[...]
+```
+
+## Option 2: Docker Swarm
+
+Docker Swarm is the native orchestrator shipped with Docker. It provides a more robust way to run Nexus.
 
 If you've never used Docker Swarm or Docker Stacks before, you first need to create a swarm cluster
 on your local machine:
@@ -53,9 +86,9 @@ To add a worker to this swarm, run the following command:
 To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
 ```
 
-## Deployment
+### Deployment
 
-Download the [Docker Compose template](./docker/docker-compose.yaml) into a directory of your choice.
+Download the [Docker Compose template](./docker-swarm/docker-compose.yaml) into a directory of your choice.
 For instance `~/docker/nexus/`.
 
 ### Starting Nexus
@@ -98,21 +131,6 @@ $ curl http://localhost/kg
 {"name":"kg","version":"1.0.0"}
 ```
 
-## Endpoints
-
-The provided reverse proxy (the `nexus-router` image) exposes several endpoints:
-
-* [root](http://localhost): Nexus web interface
-* [v1](http://localhost/v1): API root
-* [admin](http://localhost/admin): Admin service descriptor
-* [iam](http://localhost/iam): IAM service descriptor
-* [kg](http://localhost/kg): KG service descriptor
-* [elasticsearch](http://localhost/elasticsearch): Elasticsearch endpoint
-* [blazegraph](http://localhost/blazegraph): Blazegraph web interface
-
-If you'd like to customize the listening port or remove unnecessary endpoints, you can build your own
-Nginx based Docker image. See the [reference configuration](./docker/nginx.conf).
-
 ### Administration
 
 To list running services or access logs, please refer to the official Docker
@@ -152,3 +170,18 @@ deployment. If you'd like help with creating persistent volumes, feel free to co
 [Gitter channel](https://gitter.im/BlueBrain/nexus).
 
 @@@
+
+## Endpoints
+
+The provided reverse proxy (the `nexus-router` image) exposes several endpoints:
+
+* [root](http://localhost): Nexus web interface
+* [v1](http://localhost/v1): API root
+* [admin](http://localhost/admin): Admin service descriptor
+* [iam](http://localhost/iam): IAM service descriptor
+* [kg](http://localhost/kg): KG service descriptor
+* [elasticsearch](http://localhost/elasticsearch): Elasticsearch endpoint
+* [blazegraph](http://localhost/blazegraph): Blazegraph web interface
+
+If you'd like to customize the listening port or remove unnecessary endpoints, you can build your own
+Nginx based Docker image. See the [reference configuration](./docker-swarm/nginx.conf).
