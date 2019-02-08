@@ -12,7 +12,7 @@ have properties that describes it, for example, a person could have a first name
 age. These properties are also refered to as the entity's metadata.
 
  Relations between entities are first class citizen, consequently, it becomes easy to traverse and discover related
-entities. Examples of relations could be a person is friend with an other person (john --friend--> Ann)  or a person works
+entities. Examples of relations could be a person is friend with an other person (John --friend--> Ann)  or a person works
 for a company (Eric --works for--> EPFL).
 
  Furthermore, a graph data structure makes it easy to merge new data in existing graph.
@@ -22,8 +22,8 @@ for a company (Eric --works for--> EPFL).
 ### It is semantic
 
  The metadata definition is encoded, alongside the metadata, in an
-[ontology][1] This is a formal description that both a human
-and a computer can understand and process. The metadata is said to be self descriptive.
+[ontology][1]. This is a formal description that both humans
+and computers can understand and process. The metadata is said to be self descriptive.
 
  In the example below, you can see that the entity **Bob** is a **Person** (also known as the **type** of the entity)
 and he has a property **was born on** for this the value is **14 July 1990**.
@@ -35,7 +35,7 @@ and he has a property **was born on** for this the value is **14 July 1990**.
 
 ### It is smart
 
- Since all this information is representd in an ontologies, it enables us to run a tool called an inference engine on
+ Since all this information is represented in an ontology, it enables us to run a tool called an inference engine on
 the data and derive new information from explicitly asserted data. This inference can make information easier to
 discover.
 
@@ -55,9 +55,9 @@ continually be added to help serve new usecases.
  The illustration below shows how the initial graph representing **Bob** can be augmented to capture many other related
 domains such as:
 
-  - Bob's social network (e.g. Friends)
- - People's tourism destinations (e.g. Eifel Tower)
- - Towns and tourism lamdmarks (e.g. Louvre)
+ - Bob's social network (e.g. Friends)
+ - People's tourism destinations (e.g. Eiffel Tower)
+ - Towns and tourism landmarks (e.g. Louvre)
  - Pieces of arts and where they are located (e.g. Mona Lisa)
 
 
