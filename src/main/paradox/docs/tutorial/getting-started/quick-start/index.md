@@ -255,7 +255,7 @@ SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-
 
 #### Query data using the ElasticSearchView
 
-The ElasticSearchView URL is available at the address https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search.
+The ElasticSearchView URL is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].
 
 Select queries
 :   @@snip [select_elastic.sh](../assets/select_elastic.sh)
@@ -267,7 +267,7 @@ Graph navigation queries
 
 #### Query data using the SparqlView
 
-The SparqlView is available at the address https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql
+The SparqlView is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql].
 
 Select queries
 :   @@snip [select_sparql.sh](../assets/select_sparql.sh)
