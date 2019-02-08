@@ -183,6 +183,8 @@ BlueBrain/nexus
     <li><a href="../../docs/architecture/components.html" class="page">Components</a></li>
     <li><a href="../../docs/architecture/integration.html" class="page">Integration</a></li>
   </ul></li>
+  <li><a href="../../docs/webapps/index.html" class="page">Web applications</a></li>
+  <li><a href="../../docs/tools/index.html" class="page">Tools</a></li>
   <li><a href="../../docs/benchmarks/index.html" class="page">Benchmarks</a>
   <ul>
     <li><a href="../../docs/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
@@ -263,7 +265,7 @@ BlueBrain/nexus
 <h3><a href="#functionality-behaviour" name="functionality-behaviour" class="anchor"><span class="anchor-link"></span></a>Functionality &amp; Behaviour</h3>
 <h4><a href="#nexus-web-interface" name="nexus-web-interface" class="anchor"><span class="anchor-link"></span></a>Nexus web interface</h4>
 <p><img src="./assets/img/nexus-web.png" alt="Nexus Web" /></p>
-<p>Previously, the web interface was dubbed <em>Nexus Explorer</em>, and could only be used to browse the data stored in your Nexus instance. For the <em>Nexus V1</em> release, we decided to build a new web application, called <em><a href="https://github.com/bluebrain/nexus-explorer">Nexus Web</a></em>, that also enables operational management, data management and search capabilities on the system.</p>
+<p>Previously, the web interface was dubbed <em>Nexus Explorer</em>, and could only be used to browse the data stored in your Nexus instance. For the <em>Nexus V1</em> release, we decided to build a new web application, called <em><a href="https://github.com/bluebrain/nexus-web">Nexus Web</a></em>, that also enables operational management, data management and search capabilities on the system.</p>
 <p>The web application is set to offer most of the features you can get with the raw API, as well as additional conveniences for Nexus users.</p>
 <p>At the time of the <em>Nexus V1</em> release, you can use it to:</p>
 <ul>
@@ -374,6 +376,10 @@ BlueBrain/nexus
 <p><img src="./assets/img/nexus-js-logo.png" alt="Logo of JS SDK for Nexus" /></p>
 <p>We released a <a href="https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js">Javascript SDK for Nexus</a> that helps integrating with the Blue Brain Nexus API from Javascript and Typescript code. It aims at giving easy access to all the features offered by the API. It also offers Typescript declarations.</p>
 <p>This is the library of top of which the Nexus Web interface is built, but it remains framework-agnostic.</p>
+<h4><a href="#introduced-python-sdk-for-nexus" name="introduced-python-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced Python SDK for Nexus</h4>
+<p>We released a <a href="https://github.com/BlueBrain/nexus-python-sdk">Python SDK for Nexus</a> that helps integrating with the Blue Brain Nexus API from Python. It aims at giving easy access to all the features offered by the API.</p>
+<h4><a href="#introduced-a-command-line-interface-cli-for-nexus" name="introduced-a-command-line-interface-cli-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced a Command Line Interface (CLI) for Nexus</h4>
+<p>We released a <a href="https://github.com/BlueBrain/nexus-cli">Nexus CLI</a> that helps interaction with Nexus from the command line. This tool is built on top of the <a href="https://github.com/BlueBrain/nexus-python-sdk">Python SDK for Nexus</a>. It aims at giving easy access to all the features offered by the API and faciliate your data management with Nexus. The use of the CLI is extensively demonstrated in our <a href="https://bluebrain.github.io/nexus/docs/tutorial">Nexus Tutorial</a>.</p>
 <h4><a href="#migration-from-v0-y-z-series" name="migration-from-v0-y-z-series" class="anchor"><span class="anchor-link"></span></a>Migration from v0.y.z series</h4>
 <p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://gitter.im/BlueBrain/nexus">gitter</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
 <h4><a href="#removed-of-dependency-on-kafka" name="removed-of-dependency-on-kafka" class="anchor"><span class="anchor-link"></span></a>Removed of dependency on Kafka</h4>

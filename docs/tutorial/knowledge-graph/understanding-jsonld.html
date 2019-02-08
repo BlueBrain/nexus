@@ -224,21 +224,20 @@ BlueBrain/nexus
 </code></pre>
 <p>What this data is about ? Programming languages or particular snake type and coffee you would find in the Java Indonesia ? There is clearly a lack of context resulting in an ambiguity. JSON-LD allows to solve the ambiguity problem by enabling a semantic-preserving data exchange. It does that by adding to a json document a @context object where every key is associated with an identifier.</p>
 <p>For example with the payload below machine and human agents can look up the context to find out which JAVA are this data talking about.</p>
-<pre class="prettyprint"><code class="language-json">{
-  [
+<pre class="prettyprint"><code class="language-json">  [
   	 {
   	    &quot;@context&quot;:&quot;https://json-ld.org/contexts/programminglanguage.jsonld&quot;,
-  		“name”:”python”,
-  		“loadedFrom”:”java”
+  		&quot;name&quot;:&quot;python&quot;,
+  		&quot;loadedFrom&quot;:&quot;java&quot;
   	 },
   	{
   	    &quot;@context&quot;:&quot;https://json-ld.org/contexts/programminglanguage.jsonld&quot;,
-  		“name”:”java”,
-  		“testedFrom”:”java”
+  		&quot;name&quot;:&quot;java&quot;,
+  		&quot;testedFrom&quot;:&quot;java&quot;
   	 }
 
-  ]
-}
+  ] 
+  
 </code></pre>
 <p>Let go the <a href="https://json-ld.org/playground/">JSON-LD playground</a> to have a closer look at its data model.</p>
 </div>
