@@ -226,7 +226,7 @@ Whenever a resource is created, Nexus injects some useful metadata. The table be
 | \_createdAt          | The resource creation date.                                                                                                          | DateTime   |
 | \_createdBy          | The resource creator.                                                                                                                | DateTime   |
 
-Note that Nexus uses [JSON-LD]() as data exchange format.
+Note that Nexus uses [JSON-LD](../../knowledge-graph/understanding-jsonld.html) as data exchange format.
 
 Filters are available to list specific resources. For example a list of resources of type Rating can be retrieved by running the following command:
 
