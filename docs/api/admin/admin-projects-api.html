@@ -266,7 +266,10 @@ BlueBrain/nexus
   <li>Define settings that apply for operations on all sub-resources.</li>
   <li>Provide isolation from resources inside other projects. This behavior can be changed by defining <a href="../kg/kg-resolvers-api.html">resolvers</a></li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p>
+<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When creating projects, the caller must have <code>projects/create</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>When updating projects, the caller must have <code>projects/write</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>When reading projects, the caller must have <code>projects/read</code> permissions on the current path of the project or the ancestor paths.</p></div>
 <h2><a href="#project-payload" name="project-payload" class="anchor"><span class="anchor-link"></span></a>Project payload</h2>
 <pre><code>{
   &quot;description&quot;: &quot;{description}&quot;,

@@ -251,7 +251,10 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h1>
 <p>Organizations are rooted in the <code>/v1/orgs</code> path and are used to group and categorize sub-resources.</p>
-<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p>
+<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When creating organizations, the caller must have <code>organizations/create</code> permissions on the current path of the organization or <code>/</code>.</p>
+<p>When updating organizations, the caller must have <code>organizations/write</code> permissions on the current path of the organization or <code>/</code>.</p>
+<p>When reading organizations, the caller must have <code>organizations/read</code> permissions on the current path of the organization or <code>/</code>.</p></div>
 <h2><a href="#create-an-organization" name="create-an-organization" class="anchor"><span class="anchor-link"></span></a>Create an organization</h2>
 <pre><code>PUT /v1/orgs/{label}
   {...}

@@ -254,7 +254,9 @@ BlueBrain/nexus
 <h1><a href="#permissions" name="permissions" class="anchor"><span class="anchor-link"></span></a>Permissions</h1>
 <p>Permissions are rooted in the <code>/v1/permissions</code> collection.</p>
 <p>Each permission is the basic unit to provide a way to limit applications&rsquo; access to sensitive information. </p>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When modifying permissions, the caller must have <code>permissions/write</code> permissions on the path <code>/</code>.</p>
+<p>When reading permissions, the caller must have <code>permissions/read</code> permissions on the path <code>/</code>.</p></div>
 <h2><a href="#minimum-permissions" name="minimum-permissions" class="anchor"><span class="anchor-link"></span></a>Minimum permissions</h2>
 <p>IAM is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are necessary for correct functioning of Nexus.</p>
 <p>Currently the following permissions are required:</p>
@@ -302,13 +304,10 @@ BlueBrain/nexus
     <ul>
       <li><code>resources/read</code></li>
       <li><code>resources/write</code></li>
-      <li><code>resolvers/read</code></li>
       <li><code>resolvers/write</code></li>
-      <li><code>views/read</code></li>
+      <li><code>views/query</code></li>
       <li><code>views/write</code></li>
-      <li><code>schemas/read</code></li>
       <li><code>schemas/write</code></li>
-      <li><code>files/read</code></li>
       <li><code>files/write</code></li>
     </ul>
   </li>
@@ -483,7 +482,6 @@ BlueBrain/nexus
     &quot;acls/read&quot;,
     &quot;acls/write&quot;,
     &quot;events/read&quot;,
-    &quot;files/read&quot;,
     &quot;files/write&quot;,
     &quot;organizations/create&quot;,
     &quot;organizations/read&quot;,
@@ -495,13 +493,11 @@ BlueBrain/nexus
     &quot;projects/write&quot;,
     &quot;realms/read&quot;,
     &quot;realms/write&quot;,
-    &quot;resolvers/read&quot;,
     &quot;resolvers/write&quot;,
     &quot;resources/read&quot;,
     &quot;resources/write&quot;,
-    &quot;schemas/read&quot;,
     &quot;schemas/write&quot;,
-    &quot;views/read&quot;,
+    &quot;views/query&quot;,
     &quot;views/write&quot;
   ],
   &quot;_rev&quot;: 10,
@@ -532,7 +528,6 @@ BlueBrain/nexus
     &quot;acls/read&quot;,
     &quot;acls/write&quot;,
     &quot;events/read&quot;,
-    &quot;files/read&quot;,
     &quot;files/write&quot;,
     &quot;organizations/create&quot;,
     &quot;organizations/read&quot;,
@@ -544,13 +539,11 @@ BlueBrain/nexus
     &quot;projects/write&quot;,
     &quot;realms/read&quot;,
     &quot;realms/write&quot;,
-    &quot;resolvers/read&quot;,
     &quot;resolvers/write&quot;,
     &quot;resources/read&quot;,
     &quot;resources/write&quot;,
-    &quot;schemas/read&quot;,
     &quot;schemas/write&quot;,
-    &quot;views/read&quot;,
+    &quot;views/query&quot;,
     &quot;views/write&quot;
   ],
   &quot;_rev&quot;: 3,

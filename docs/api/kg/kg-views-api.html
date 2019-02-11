@@ -283,7 +283,10 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/view.json">view schema</a>.</li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When modifying views, the caller must have <code>views/write</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>When querying views, the caller must have <code>views/query</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>When reading views, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p></div>
 <h2><a href="#view-types" name="view-types" class="anchor"><span class="anchor-link"></span></a>View types</h2>
 <p><img src="../assets/views/view-defaults.png" alt="view defaults" title="View defaults" /></p>
 <p>There are several types of views, which relies on different technology to perform the indexing</p>

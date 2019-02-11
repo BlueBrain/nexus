@@ -252,6 +252,9 @@ BlueBrain/nexus
 <h1><a href="#realms" name="realms" class="anchor"><span class="anchor-link"></span></a>Realms</h1>
 <p>Realms are rooted in <code>/v1/realms</code> collection.</p>
 <p>Each realm defines a specific authentication provider. Any of the authentication providers can be used to obtain access tokens that can be used with Nexus.</p>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When modifying realms, the caller must have <code>realms/write</code> permissions on the path <code>/</code>.</p>
+<p>When reading realms, the caller must have <code>realms/read</code> permissions on the path <code>/</code>.</p></div>
 <h2><a href="#create-a-realm" name="create-a-realm" class="anchor"><span class="anchor-link"></span></a>Create a realm</h2>
 <p>This operation creates a realm.</p>
 <pre><code>PUT /v1/realms/{realm}

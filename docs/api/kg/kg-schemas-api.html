@@ -263,7 +263,9 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl">shacl schema</a> (version 20170720).</li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When modifying schemas, the caller must have <code>schemas/write</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>When reading schemas, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p></div>
 <h2><a href="#create-a-schema-using-post" name="create-a-schema-using-post" class="anchor"><span class="anchor-link"></span></a>Create a schema using POST</h2>
 <pre><code>POST /v1/schemas/{org_label}/{project_label}
   {...}

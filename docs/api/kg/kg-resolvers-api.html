@@ -277,7 +277,9 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/resolver.json">resolver schema</a>.</li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When modifying resolvers, the caller must have <code>resolvers/write</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>When reading resolvers, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p></div>
 <h2><a href="#resolver-types" name="resolver-types" class="anchor"><span class="anchor-link"></span></a>Resolver types</h2>
 <p>There are several types of resolvers, which perform resolution in different scopes.</p>
 <h3><a href="#inproject-resolver" name="inproject-resolver" class="anchor"><span class="anchor-link"></span></a>InProject resolver</h3>
@@ -298,8 +300,8 @@ BlueBrain/nexus
 <h3><a href="#crossproject-resolver" name="crossproject-resolver" class="anchor"><span class="anchor-link"></span></a>CrossProject resolver</h3>
 <p>The scope of the resolution is the collections of projects <code>P</code> defined on the resolver. CrossProject resolution also defines a collection of identities <code>I</code> to enforce ACLs. In other words:</p>
 <ul>
-  <li>Schema <code>A</code> can import schema <code>B</code> using the <code>owl:import</code> as long as schema <code>B</code> is located on some of the projects from the collection <code>P</code> and as long <code>I</code> have <code>schemas/read</code> permissions on the schema <code>B</code> project.</li>
-  <li>Resource <code>A</code> can reference resource&rsquo;s context <code>B</code> (inside <code>@context</code>) as long as resource <code>B</code> is located on some of the projects from the collection <code>P</code> and as long as <code>I</code> have <code>schemas/read</code> permissions on the schema <code>B</code> project.</li>
+  <li>Schema <code>A</code> can import schema <code>B</code> using the <code>owl:import</code> as long as schema <code>B</code> is located on some of the projects from the collection <code>P</code> and as long <code>I</code> have <code>resources/read</code> permissions on the schema <code>B</code> project.</li>
+  <li>Resource <code>A</code> can reference resource&rsquo;s context <code>B</code> (inside <code>@context</code>) as long as resource <code>B</code> is located on some of the projects from the collection <code>P</code> and as long as <code>I</code> have <code>resources/read</code> permissions on the schema <code>B</code> project.</li>
 </ul>
 <p><strong>CrossProject resolver payload</strong></p>
 <pre><code>{

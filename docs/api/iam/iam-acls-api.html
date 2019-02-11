@@ -263,7 +263,9 @@ BlueBrain/nexus
   <li>identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.</li>
   <li>path: the location where to apply the restrictions. Examples of paths are: <code>/</code>, <code>/myorg</code> or <code>/myorg/myproject</code></li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>When modifying ACLs, the caller must have <code>acls/write</code> permissions on the path where the ACLs are being modified or its ancestors.</p>
+<p>When reading ACLs, the caller must have <code>acls/read</code> permissions on the path where the ACLs are being modified or its ancestors.</p></div>
 <h2><a href="#default-permissions" name="default-permissions" class="anchor"><span class="anchor-link"></span></a>Default permissions</h2>
 <p>When IAM starts for the first time, it applies the default permissions to <code>/</code>. This gives all permissions to the anonymous user to enable setting up realms. It is recommended to replace these permissions once user has setup an authorization realm.</p>
 <h2><a href="#acls-hierarchy" name="acls-hierarchy" class="anchor"><span class="anchor-link"></span></a>ACLs Hierarchy</h2>
@@ -630,7 +632,7 @@ BlueBrain/nexus
   <li><code>{rev}</code>: Number - the revision of the ACL to be retrieved. This parameter is optional and it defaults to the current revision.</li>
   <li><code>{self}</code>: Boolean - if <code>true</code>, only the ACLs containing the identities found on the auth. token are included in the response. If <code>false</code> all the ACLs on the current <code>{path}</code> are included. This parameter is optional and it defaults to <code>true</code>.</li>
 </ul>
-<p>The ability to use the query parameter <code>self=false</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its parents. For further details, check <a href="#acls-hierarchy">ACLs hierarchy</a>.</p>
+<p>The ability to use the query parameter <code>self=false</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its ancestors. For further details, check <a href="#acls-hierarchy">ACLs hierarchy</a>.</p>
 <dl>
   <dt>Request</dt>
   <dd>
