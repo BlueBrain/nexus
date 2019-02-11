@@ -268,6 +268,9 @@ Graph navigation queries
 #### Query data using the SparqlView
 
 The SparqlView is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql].
+The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.
+
+![Movielens-default_nexus_graph.png](../assets/Movielens-default_nexus_graph.png)
 
 Select queries
 :   @@snip [select_sparql.sh](../assets/select_sparql.sh)
