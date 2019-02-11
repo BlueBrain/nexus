@@ -292,6 +292,18 @@ declarations.
 
 This is the library of top of which the Nexus Web interface is built, but it remains framework-agnostic.
 
+#### Introduced Python SDK for Nexus
+
+We released a [Python SDK for Nexus] that helps integrating with the Blue Brain Nexus API from Python. 
+It aims at giving easy access to all the features offered by the API.
+
+#### Introduced a Command Line Interface (CLI) for Nexus
+
+We released a [Nexus CLI] that helps interaction with Nexus from the command line. 
+This tool is built on top of the [Python SDK for Nexus].
+It aims at giving easy access to all the features offered by the API and faciliate your data management with Nexus. 
+The use of the CLI is extensively demonstrated in our [Nexus Tutorial].
+
 #### Migration from v0.y.z series
 
 The semantics of the API and managed resources in between the `v0.y.z` and `v1.y.z` series has changed considerably
@@ -323,7 +335,10 @@ general availability. In between nodes, when services are deployed as a cluster,
 [Akka Distributed Data]: https://doc.akka.io/docs/akka/2.5/distributed-data.html
 [gitter]: https://gitter.im/BlueBrain/nexus
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
-[Nexus Web]: https://github.com/bluebrain/nexus-explorer
+[Nexus Web]: https://github.com/bluebrain/nexus-web
 [Javascript SDK for Nexus]: https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js
+[Python SDK for Nexus]: https://github.com/BlueBrain/nexus-python-sdk
+[Nexus CLI]: https://github.com/BlueBrain/nexus-cli
+[Nexus Tutorial]: https://bluebrain.github.io/nexus/docs/tutorial
 [Neuroshapes]: https://incf.github.io/neuroshapes/
 [CouchDB]: http://docs.couchdb.org/en/stable/api/document/common.html#attachments
