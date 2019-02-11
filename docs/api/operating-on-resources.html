@@ -348,12 +348,11 @@ BlueBrain/nexus
   <li><strong>409 Conflict</strong>: the provided revision is not the current resource revision number</li>
 </ul>
 <h2><a href="#listing" name="listing" class="anchor"><span class="anchor-link"></span></a>Listing</h2>
-<pre><code>GET /v1/{collection_address}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;q={full_text_search_query}
+<pre><code>GET /v1/{collection_address}?from={from}&amp;size={size}&amp;deprecated={deprecated}
 </code></pre>
 <p>&hellip; where all of the query parameters are individually optional.</p>
 <ul>
   <li><code>{collection_address}</code> Path - the selected collection to list, filter or search; for example: <code>/v1/projects/</code>, <code>/v1/schemas/{org_label}/{project}</code>,</li>
-  <li><code>{full_text_search_query}</code>: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
   <li><code>{from}</code>: Number - the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>

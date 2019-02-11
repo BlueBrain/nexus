@@ -277,10 +277,7 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against the <a href="https://bluebrain.github.io/nexus/schemas/resolver.json">resolver schema</a>.</li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
-<p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/resolvers/resolver-postman.json">resolvers collection</a>.</p>
-<p>If your deployment is protected by an access token: </p>
-<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
 <h2><a href="#resolver-types" name="resolver-types" class="anchor"><span class="anchor-link"></span></a>Resolver types</h2>
 <p>There are several types of resolvers, which perform resolution in different scopes.</p>
 <h3><a href="#inproject-resolver" name="inproject-resolver" class="anchor"><span class="anchor-link"></span></a>InProject resolver</h3>

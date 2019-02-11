@@ -266,10 +266,7 @@ BlueBrain/nexus
   <li>Define settings that apply for operations on all sub-resources.</li>
   <li>Provide isolation from resources inside other projects. This behavior can be changed by defining <a href="../kg/kg-resolvers-api.html">resolvers</a></li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
-<p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/project-postman.json">projects collection</a>.</p>
-<p>If your deployment is protected by an access token: </p>
-<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill in the token field.</p></div>
+<p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about retrieving access tokens.</p>
 <h2><a href="#project-payload" name="project-payload" class="anchor"><span class="anchor-link"></span></a>Project payload</h2>
 <pre><code>{
   &quot;description&quot;: &quot;{description}&quot;,

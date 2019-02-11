@@ -265,10 +265,7 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
   <li>it is validated against a <code>schema</code> with id <code>{schema_id}</code>. In case of using <code>_</code> for this segment, the schema segment reads as <code>irrelevant</code>.</li>
 </ul>
-<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Running examples with Postman</div>
-<p>The simplest way to explore our API is using <a href="https://www.getpostman.com/apps">Postman</a>. Once downloaded, import the <a href="../assets/resources/resource-postman.json">resources collection</a>.</p>
-<p>If your deployment is protected by an access token: </p>
-<p>Edit the imported collection -&gt; Click on the <code>Authorization</code> tab -&gt; Fill the token field.</p></div>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
 <h2><a href="#create-a-resource-using-post" name="create-a-resource-using-post" class="anchor"><span class="anchor-link"></span></a>Create a resource using POST</h2>
 <pre><code>POST /v1/resources/{org_label}/{project_label}/{schema_id}
   {...}
