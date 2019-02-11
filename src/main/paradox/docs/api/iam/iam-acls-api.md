@@ -11,6 +11,14 @@ An ACL defines the applications' data access restriction using the following thr
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
 
+@@@ note { .tip title="Authorization notes" }	
+
+When  modifying ACLs, the caller must have `acls/write` permissions on the path where the ACLs are being modified or its ancestors.
+
+When  reading ACLs, the caller must have `acls/read` permissions on the path where the ACLs are being modified or its ancestors.
+
+@@@
+ 
 ## Default permissions
 
 When IAM starts for the first time, it applies the default permissions to `/`. This gives all permissions to the anonymous user to enable setting up realms. It is recommended to replace these permissions once user has setup an authorization realm.
@@ -166,7 +174,7 @@ GET /v1/acls/{path}?rev={rev}&self={self}
 - `{rev}`: Number - the revision of the ACL to be retrieved. This parameter is optional and it defaults to the current revision.
 - `{self}`: Boolean - if `true`, only the ACLs containing the identities found on the auth. token are included in the response. If `false` all the ACLs on the current `{path}` are included. This parameter is optional and it defaults to `true`.
 
-The ability to use the query parameter `self=false` depends on whether or not any of the identities found on the auth. token contains the `acls:read` permission on the provided `{path}` or its parents. For further details, check [ACLs hierarchy](#acls-hierarchy).
+The ability to use the query parameter `self=false` depends on whether or not any of the identities found on the auth. token contains the `acls:read` permission on the provided `{path}` or its ancestors. For further details, check [ACLs hierarchy](#acls-hierarchy).
 
 Request
 :   @@snip [acls-get.sh](../assets/acls/acls-get.sh)
