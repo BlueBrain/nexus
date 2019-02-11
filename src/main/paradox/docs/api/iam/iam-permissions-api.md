@@ -6,6 +6,14 @@ Each permission is the basic unit to provide a way to limit applications' access
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
 
+@@@ note { .tip title="Authorization notes" }	
+
+When  modifying permissions, the caller must have `permissions/write` permissions on the path `/`.
+
+When  reading permissions, the caller must have `permissions/read` permissions on the path `/`.
+
+@@@
+
 ## Minimum permissions
 
 IAM is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are necessary for correct functioning of Nexus.
@@ -38,13 +46,10 @@ Currently the following permissions are required:
 - KG specific permissions
     - `resources/read`
     - `resources/write`
-    - `resolvers/read`
     - `resolvers/write`
-    - `views/read`
+    - `views/query`
     - `views/write`
-    - `schemas/read`
     - `schemas/write`
-    - `files/read`
     - `files/write`
 
 

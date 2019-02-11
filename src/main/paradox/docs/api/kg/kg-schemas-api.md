@@ -10,13 +10,11 @@ Each schema...
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 
-@@@ note { .tip title="Running examples with Postman" }
+@@@ note { .tip title="Authorization notes" }	
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [schemas collection](../assets/schemas/schema-postman.json).
+When  modifying schemas, the caller must have `schemas/write` permissions on the current path of the project or the ancestor paths.
 
-If your deployment is protected by an access token: 
-
-Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+When  reading schemas, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
 
 @@@
 

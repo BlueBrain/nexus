@@ -5,7 +5,15 @@ Realms are rooted in `/v1/realms` collection.
 Each realm defines a specific authentication provider.
 Any of the authentication providers can be used to obtain access tokens that can be used with Nexus.
 
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
 
+@@@ note { .tip title="Authorization notes" }	
+
+When  modifying realms, the caller must have `realms/write` permissions on the path `/`.
+
+When  reading realms, the caller must have `realms/read` permissions on the path `/`.
+
+@@@
 
 ## Create a realm
  This operation creates a realm.

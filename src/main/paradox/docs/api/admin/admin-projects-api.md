@@ -7,18 +7,16 @@ The purposes of projects are:
 - Define settings that apply for operations on all sub-resources. 
 - Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](../kg/kg-resolvers-api.md)
 
-Access to resources in the system depends on the access control list set for them. A caller may need to prove its
-identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
+Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
 Please visit @ref:[Authentication](../iam/authentication.md) to learn more about retrieving access tokens.
 
-@@@ note { .tip title="Running examples with Postman" }
+@@@ note { .tip title="Authorization notes" }	
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the
-[projects collection](../assets/project-postman.json).
+When  creating projects, the caller must have `projects/create` permissions on the current path of the project or the ancestor paths.
 
-If your deployment is protected by an access token: 
+When  updating projects, the caller must have `projects/write` permissions on the current path of the project or the ancestor paths.
 
-Edit the imported collection -> Click on the `Authorization` tab -> Fill in the token field.
+When  reading projects, the caller must have `projects/read` permissions on the current path of the project or the ancestor paths.
 
 @@@
 

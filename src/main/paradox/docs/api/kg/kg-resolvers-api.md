@@ -13,13 +13,11 @@ Each resolver...
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 
-@@@ note { .tip title="Running examples with Postman" }
+@@@ note { .tip title="Authorization notes" }	
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [resolvers collection](../assets/resolvers/resolver-postman.json).
+When  modifying resolvers, the caller must have `resolvers/write` permissions on the current path of the project or the ancestor paths.
 
-If your deployment is protected by an access token: 
-
-Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+When  reading resolvers, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
 
 @@@
 
@@ -51,8 +49,8 @@ where `{priority}` is a numeric value (from 1 - 100) which defines the resolutio
 
 The scope of the resolution is the collections of projects `P` defined on the resolver. CrossProject resolution also defines a collection of identities `I` to enforce ACLs. In other words:
 
-- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on some of the projects from the collection `P` and as long `I` have `schemas/read` permissions on the schema `B` project.
-- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on some of the projects from the collection `P` and as long as `I` have `schemas/read` permissions on the schema `B` project.
+- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on some of the projects from the collection `P` and as long `I` have `resources/read` permissions on the schema `B` project.
+- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on some of the projects from the collection `P` and as long as `I` have `resources/read` permissions on the schema `B` project.
 
 
 **CrossProject resolver payload**

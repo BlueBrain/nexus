@@ -11,13 +11,13 @@ Each view...
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 
-@@@ note { .tip title="Running examples with Postman" }
+@@@ note { .tip title="Authorization notes" }	
 
-The simplest way to explore our API is using [Postman](https://www.getpostman.com/apps). Once downloaded, import the [views collection](../assets/views/view-postman.json).
+When  modifying views, the caller must have `views/write` permissions on the current path of the project or the ancestor paths.
 
-If your deployment is protected by an access token: 
+When  querying views, the caller must have `views/query` permissions on the current path of the project or the ancestor paths.
 
-Edit the imported collection -> Click on the `Authorization` tab -> Fill the token field.
+When  reading views, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
 
 @@@
 
