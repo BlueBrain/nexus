@@ -249,7 +249,7 @@ BlueBrain/nexus
   <li>Querying a dataset to retrieve various information</li>
   <li>Sharing a dataset by making it public</li>
 </ul>
-<p>For that we will work with the small version of the <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users. An overview of this dataset can be found <a href="../dataset/index.html">here</a> but it&rsquo;s not required to read it to follow this quick start tutorial.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>For that we will work with the small version of the <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users. An overview of this dataset can be found <a href="../dataset/index.html">here</a>.</p><div class="callout note "><div class="callout-title">Note</div>
 <ul>
   <li>This tutorial makes use of an AWS deployment of Blue Brain Nexus available at <a href="https://nexus-sandbox.io/v1">https://nexus-sandbox.io/v1</a>.</li>
   <li>We will be using <a href="https://github.com/BlueBrain/nexus-cli">Nexus CLI</a>, a python client, to interact with the deployment.</li>
@@ -257,13 +257,13 @@ BlueBrain/nexus
 <p>Let&rsquo;s get started.</p>
 <h2><a href="#set-up" name="set-up" class="anchor"><span class="anchor-link"></span></a>Set up</h2>
 <h3><a href="#install-and-setup-the-nexus-cli" name="install-and-setup-the-nexus-cli" class="anchor"><span class="anchor-link"></span></a>Install and setup the Nexus CLI</h3>
-<p>Since the CLI is written in python, you may want to create a virtual env for a clean set up. To do so, Conda can be used. If you don&rsquo;t have it installed follow the instructions <a href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">here</a>.</p>
+<p>Since the CLI is written in python, you may want to create a virtual environment for a clean set up. To do so, Conda can be used. If you don&rsquo;t have it installed follow the instructions <a href="https://conda.io/projects/conda/en/latest/user-guide/install/index.html">here</a>.</p>
 <pre class="prettyprint"><code class="language-shell">conda create -n nexus-cli python=3.5
 conda activate nexus-cli
 pip install git+https://github.com/BlueBrain/nexus-cli
 </code></pre>
 <h3><a href="#create-and-select-a-profile" name="create-and-select-a-profile" class="anchor"><span class="anchor-link"></span></a>Create and select a &lsquo;tutorial&rsquo; profile</h3>
-<p>To ease the usage of the CLI, we will create a profile named &lsquo;tutorial&rsquo; storing locally various configurations such as the the Nexus deployment url.</p>
+<p>To ease the usage of the CLI, we will create a profile named &lsquo;tutorial&rsquo; storing locally various configurations such as the Nexus deployment url.</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -326,14 +326,14 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 <h2><a href="#create-a-project" name="create-a-project" class="anchor"><span class="anchor-link"></span></a>Create a project</h2>
 <p>Projects in BlueBrain Nexus are spaces where data can be:</p>
 <ul>
-  <li><strong>managed</strong>: created, updated, deprecated, validated, secured,</li>
-  <li><strong>accessed</strong>: directly by ids or through various search interfaces.</li>
-  <li><strong>shared</strong>: through fine grain Access Control List</li>
+  <li><strong>managed</strong>: created, updated, deprecated, validated, secured;</li>
+  <li><strong>accessed</strong>: directly by ids or through various search interfaces;</li>
+  <li><strong>shared</strong>: through fine grain Access Control List.</li>
 </ul>
 <p>A <strong>project</strong> is always created within an <strong>organization</strong> just like a git repository is created in a github organization. Organizations can be understood as accounts hosting multiple projects.</p>
 <h3><a href="#select-an-organization" name="select-an-organization" class="anchor"><span class="anchor-link"></span></a>Select an organization</h3><div class="callout note "><div class="callout-title">Note</div>
 <p>A public organization named <strong>tutorialnexus</strong> is already created for the purpose of this tutorial. All projects will be created under this organization.</p></div>
-<p>The following command should list the organizations you have access to. The <strong>tutorialnexus</strong> orgnization should be listed and tagged as non deprecated in the output.</p>
+<p>The following command should list the organizations you have access to. The <strong>tutorialnexus</strong> organization should be listed and tagged as non-deprecated in the output.</p>
 <dl>
   <dt>Command</dt>
   <dd>
@@ -370,7 +370,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 | $PROJECTLABEL |             | https://nexus-sandbox.io/v1/projects/tutorialnexus/$PROJECTLABEL | False      |
 +---------------+-------------+------------------------------------------------------------------------+------------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/create-project-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<p>By default created projects are private meaning that only the project creator (you) has read and write access to it. We&rsquo;ll <a href="#share-data">see below</a> how to make a project public.</p>
+<p>By default, created projects are private meaning that only the project creator (you) has read and write access to it. We&rsquo;ll <a href="#share-data">see below</a> how to make a project public.</p>
 <p>The output of the previous command shows the list of projects you have read access to. The project you just created should be the only one listed at this point. Let select it.</p>
 <dl>
   <dt>Command</dt>
@@ -500,7 +500,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
     </tr>
   </tbody>
 </table>
-<p>Note that Nexus uses <a href="">JSON-LD</a> as data exchange format.</p>
+<p>Note that Nexus uses <a href="../../knowledge-graph/understanding-jsonld.html">JSON-LD</a> as data exchange format.</p>
 <p>Filters are available to list specific resources. For example a list of resources of type Rating can be retrieved by running the following command:</p>
 <dl>
   <dt>Command</dt>
@@ -520,7 +520,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 </dl><div class="callout note tip"><div class="callout-title">Listing with various filters using the CLI</div>
 <p>As an exercise try to filter by tag to only retrieve resources of type Tag.</p></div>
 <h3><a href="#query-data" name="query-data" class="anchor"><span class="anchor-link"></span></a>Query data</h3>
-<p>Listing is usually not enough to select specific subset of the data. Data ingested within each project can be searched through two complementary search interfaces called <a href="https://bluebrain.github.io/nexus/docs/api/kg/kg-views-api.html">views</a>.</p>
+<p>Listing is usually not enough to select specific subset of data. Data ingested within each project can be searched through two complementary search interfaces called <a href="https://bluebrain.github.io/nexus/docs/api/kg/kg-views-api.html">views</a>.</p>
 <table>
   <thead>
     <tr>
@@ -531,16 +531,16 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   <tbody>
     <tr>
       <td>ElasticSearchView </td>
-      <td>Exposes data in <a href="">ElasticSearch</a> a document oriented search engine and provide access to it using the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch query langugage</a>.</td>
+      <td>Exposes data in <a href="https://www.elastic.co/products/elasticsearch">ElasticSearch</a> a document oriented search engine and provide access to it using the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch query language</a>.</td>
     </tr>
     <tr>
       <td>SparqlView </td>
-      <td>Exposes data as a <a href="../../knowledge-graph/thinking-in-graph.html">graph</a> and allows to navigate and explore the data using the <a href="https://www.w3.org/TR/sparql11-query/">W3C Sparql query langugage</a>.</td>
+      <td>Exposes data as a <a href="../../knowledge-graph/thinking-in-graph.html">graph</a> and allows to navigate and explore the data using the <a href="https://www.w3.org/TR/sparql11-query/">W3C Sparql query language</a>.</td>
     </tr>
   </tbody>
 </table>
 <h4><a href="#query-data-using-the-elasticsearchview" name="query-data-using-the-elasticsearchview" class="anchor"><span class="anchor-link"></span></a>Query data using the ElasticSearchView</h4>
-<p>The ElasticSearchView URL is available at the address <a href="https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search">https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search</a>.</p>
+<p>The ElasticSearchView URL is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].</p>
 <dl>
   <dt>Select queries</dt>
   <dd>
@@ -566,7 +566,7 @@ nexus views query-es --data \
 </code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/graph_elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h4><a href="#query-data-using-the-sparqlview" name="query-data-using-the-sparqlview" class="anchor"><span class="anchor-link"></span></a>Query data using the SparqlView</h4>
-<p>The SparqlView is available at the address <a href="https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql">https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql</a></p>
+<p>The SparqlView is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql].</p>
 <dl>
   <dt>Select queries</dt>
   <dd>
