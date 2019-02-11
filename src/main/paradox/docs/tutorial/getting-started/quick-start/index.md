@@ -27,7 +27,7 @@ Let's get started.
 
 ### Install and setup the Nexus CLI
 
-Since the CLI is written in python, you may want to create a virtualenv for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+Since the CLI is written in python, you may want to create a virtual environment for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 ```shell
 conda create -n nexus-cli python=3.5
