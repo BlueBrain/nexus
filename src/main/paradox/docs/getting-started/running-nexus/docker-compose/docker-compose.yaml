@@ -1,0 +1,67 @@
+version: "2"
+services:
+  kg:
+    image: bluebrain/nexus-kg:1.0
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
+    environment:
+      CASSANDRA_CONTACT_POINT1: "cassandra:9042"
+      BIND_INTERFACE: "0.0.0.0"
+      PUBLIC_URI: "http://localhost"
+      SERVICE_DESCRIPTION_URI: "http://localhost"
+      IAM_INTERNAL_IRI: "http://iam:8080/v1"
+      IAM_PUBLIC_IRI: "http://localhost/v1"
+      ADMIN_INTERNAL_IRI: "http://admin:8080/v1"
+      ADMIN_PUBLIC_IRI: "http://localhost/v1"
+      SPARQL_BASE_URI: "http://blazegraph:9999/blazegraph"
+      ELASTIC_SEARCH_BASE_URI: "http://elasticsearch:9200"
+      JAVA_OPTS: "-XX:+UseG1GC -XX:+UseStringDeduplication -Xms2G -Xmx2G"
+
+  iam:
+    image: bluebrain/nexus-iam:1.0
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
+    environment:
+      CASSANDRA_CONTACT_POINT1: "cassandra:9042"
+      BIND_INTERFACE: "0.0.0.0"
+      PUBLIC_URI: "http://localhost"
+      SERVICE_DESCRIPTION_URI: "http://localhost/iam"
+      JAVA_OPTS: "-XX:+UseG1GC -Xms1G -Xmx1G"
+
+  admin:
+    image: bluebrain/nexus-admin:1.0
+    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
+    environment:
+      CASSANDRA_CONTACT_POINT1: "cassandra:9042"
+      BIND_INTERFACE: "0.0.0.0"
+      PUBLIC_URI: "http://localhost"
+      SERVICE_DESCRIPTION_URI: "http://localhost/admin"
+      IAM_INTERNAL_IRI: "http://iam:8080/v1"
+      IAM_PUBLIC_IRI: "http://localhost/v1"
+      JAVA_OPTS: "-XX:+UseG1GC -Xms1G -Xmx1G"
+
+  elasticsearch:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:6.4.3"
+    environment:
+      discovery.type: "single-node"
+      bootstrap.memory_lock: "true"
+
+  cassandra:
+    image: "cassandra:3"
+    environment:
+      MAX_HEAP_SIZE: "2G"
+      HEAP_NEWSIZE: "256m"
+      CASSANDRA_BROADCAST_ADDRESS: cassandra
+
+  blazegraph:
+    image: "nawer/blazegraph:2.1.5"
+
+  web:
+    image: "bluebrain/nexus-web"
+    environment:
+      BASE_PATH: "/"
+      HOST_NAME: "http://localhost"
+      API_ENDPOINT: "http://localhost/v1"
+
+  router:
+    image: "bluebrain/nexus-router:1.0"
+    ports:
+      - 80:80
