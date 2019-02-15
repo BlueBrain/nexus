@@ -1,19 +1,6 @@
 {
   "@context": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "nxs": "https://bluebrain.github.io/nexus/schemas/",
-    "nxc": "https://bluebrain.github.io/nexus/contexts/",
-    "xsd": "http://www.w3.org/2001/XMLSchema#",
-    "owl": "http://www.w3.org/2002/07/owl#",
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-    "skos": "http://www.w3.org/2004/02/skos/core#",
-    "prov": "http://www.w3.org/ns/prov#",
-    "sh": "http://www.w3.org/ns/shacl#",
-    "shsh": "http://www.w3.org/ns/shacl-shacl#",
-    "dcterms": "http://purl.org/dc/terms/",
-    "schema": "http://schema.org/",
-    "dcat": "http://www.w3.org/ns/dcat#",
     "_total": "nxv:total",
     "_results": {
       "@id": "nxv:results",

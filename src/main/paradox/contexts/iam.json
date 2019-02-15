@@ -1,0 +1,59 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "logo": {
+      "@type": "@id",
+      "@id": "nxv:logo"
+    },
+    "openIdConfig": {
+      "@id": "nxv:openIdConfig",
+      "@type": "@id"
+    },
+    "name": "nxv:name",
+    "_label": "nxv:label",
+    "_keys": "nxv:keys",
+    "_grantTypes": "nxv:grantTypes",
+    "_issuer": "nxv:issuer",
+    "_authorizationEndpoint": {
+      "@id": "nxv:authorizationEndpoint",
+      "@type": "@id"
+    },
+    "_tokenEndpoint": {
+      "@id": "nxv:tokenEndpoint",
+      "@type": "@id"
+    },
+    "_userInfoEndpoint": {
+      "@id": "nxv:userInfoEndpoint",
+      "@type": "@id"
+    },
+    "_revocationEndpoint": {
+      "@id": "nxv:revocationEndpoint",
+      "@type": "@id"
+    },
+    "_endSessionEndpoint": {
+      "@id": "nxv:endSessionEndpoint",
+      "@type": "@id"
+    },
+    "permissions": {
+      "@id": "nxv:permissions",
+      "@container": "@set"
+    },
+    "acl": {
+      "@id": "nxv:acl",
+      "@container": "@set"
+    },
+    "_path": "nxv:path",
+    "identity": "nxv:identity",
+    "realm": "nxv:realm",
+    "subject": "nxv:subject",
+    "group": "nxv:group",
+    "Realm": "nxv:Realm",
+    "Permissions": "nxv:Permissions",
+    "AccessControlList": "nxv:AccessControlList",
+    "Authenticated": "nxv:Authenticated",
+    "Anonymous": "nxv:Anonymous",
+    "User": "nxv:User",
+    "Group": "nxv:Group"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/iam.json"
+}
