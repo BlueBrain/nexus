@@ -1,0 +1,30 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "description": "nxv:description",
+    "_label": "nxv:label",
+    "_uuid": "nxv:uuid",
+    "base": {
+      "@id": "nxv:base",
+      "@type": "@id"
+    },
+    "vocab": {
+      "@id": "nxv:vocab",
+      "@type": "@id"
+    },
+    "apiMappings": {
+      "@id": "nxv:apiMappings",
+      "@container": "@set"
+    },
+    "prefix": "nxv:prefix",
+    "namespace": {
+      "@id": "nxv:namespace",
+      "@type": "@id"
+    },
+    "_organizationUuid": "nxv:organizationUuid",
+    "_organizationLabel": "nxv:organizationLabel",
+    "Organization": "nxv:Organization",
+    "Project": "nxv:Project"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/admin.json"
+}
