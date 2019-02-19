@@ -13,6 +13,30 @@
 	<link href="assets/css/style.e2443695.css" rel="stylesheet">
 	<script defer="" src="https://use.fontawesome.com/releases/v5.0.9/js/all.js" integrity="sha384-8iPTk2s/jMVj81dnzb/iFR2sdA7u06vHJyyLlAd4snFpCl/SnyUjRrbdJsw1pGIl" crossorigin="anonymous">
 	</script>
+	<!-- Cookie consent snippet from https://cookieconsent.insites.com for GDPR compliance, similar to epfl.ch one -->
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+	<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+	<script>
+	  window.addEventListener("load", function(){
+	  window.cookieconsent.initialise({
+	  	"palette": {
+	  		"popup": {
+	  			"background": "#252e39"
+	  		},
+	  		"button": {
+	  			"background": "#14a7d0"
+	  		}
+	  	},
+	  	"position": "top",
+	  	"static": true,
+	  	"content": {
+	  		"message": "By continuing your browsing on this site, you agree to the use of cookies to improve your user experience and to make statistics of visits.",
+	  		"dismiss": "OK",
+	  		"link": "Read the legal notice",
+	  		"href": "https://www.epfl.ch/about/overview/overview/regulations-and-guidelines/"
+	  	}
+	  })});
+	</script>
 </head>
 
 <body>
@@ -736,7 +760,19 @@
 	</div>
 
 	<script>window.BASE_URI = "${BASE_URI}";</script>
-  <script src="assets/js/js.66a54537.js"></script>
+	<script src="assets/js/js.66a54537.js"></script>
+	<!-- Google Analytics -->
+    <script>
+	    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+	    ga('create', 'UA-134702595-1', 'auto');
+			ga('set', 'anonymizeIp', true);
+	    ga('send', 'pageview');
+	  </script>
+  <!-- End Google Analytics -->
 </body>
 
 </html>
