@@ -51,22 +51,20 @@
       "href": "https://www.epfl.ch/about/overview/overview/regulations-and-guidelines/"
     },
     "onInitialise": function (status) {
-      var type = this.options.type;
       var didConsent = this.hasConsented();
-      if (type == 'opt-in' && didConsent) {
+      if (didConsent) {
         enableTracking();
       }
-      if (type == 'opt-out' && !didConsent) {
+      if (!didConsent) {
         disableTracking();
       }
     },
     "onStatusChange": function(status, chosenBefore) {
-      var type = this.options.type;
       var didConsent = this.hasConsented();
-      if (type == 'opt-in' && didConsent) {
+      if (didConsent) {
         enableTracking();
       }
-      if (type == 'opt-out' && !didConsent) {
+      if (!didConsent) {
         disableTracking();
       }
     },
