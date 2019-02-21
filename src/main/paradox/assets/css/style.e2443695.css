@@ -490,8 +490,11 @@ header nav:first-child {
 }
 
 .menu-block a:hover svg path,
-.menu-block a.active svg path {
+.menu-block a:active svg path,
+.menu-block a:hover .bluer,
+.menu-block a:active .bluer {
   fill: #44c7f4;
+  color: #44c7f4;
 }
 
 #app-links {
