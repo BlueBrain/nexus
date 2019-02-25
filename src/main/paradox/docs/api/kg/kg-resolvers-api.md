@@ -87,7 +87,7 @@ Response
 ## Create a resolver using POST
 
 ```
-POST /v1/resolver/{org_label}/{project_label}
+POST /v1/resolvers/{org_label}/{project_label}
   {...}
 ```
 
