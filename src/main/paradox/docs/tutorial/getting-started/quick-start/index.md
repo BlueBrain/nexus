@@ -171,21 +171,21 @@ Output
 Let first load the movies and merge them with the links.
 
 ```shell
-nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv --idcolumn movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId --thread 4
+nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv --idcolumn movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId --max-connections 4
 
 ```
 
 Then we can load the tags.
 
 ```shell
-nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --thread 4
+nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --max-connections 50
 ```
 
 And finally load the ratings. Loading 100837 resources might take some time and also it is not needed to load them all to follow this tutorial.
-The number of threads can be increased for better loading performance.
+The maximum number of concurrent connections (--max-connections) can be increased for better loading performance.
 
 ```shell
-nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --thread 4
+nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --max-connections 50
 ```
 
 
