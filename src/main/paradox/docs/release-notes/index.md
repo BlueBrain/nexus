@@ -294,14 +294,14 @@ This is the library of top of which the Nexus Web interface is built, but it rem
 
 #### Introduced Python SDK for Nexus
 
-We released a [Python SDK for Nexus] that helps integrating with the Blue Brain Nexus API from Python. 
+We released a [Python SDK for Nexus] that helps integrating with the Blue Brain Nexus API from Python.
 It aims at giving easy access to all the features offered by the API.
 
 #### Introduced a Command Line Interface (CLI) for Nexus
 
-We released a [Nexus CLI] that helps interaction with Nexus from the command line. 
+We released a [Nexus CLI] that helps interaction with Nexus from the command line.
 This tool is built on top of the [Python SDK for Nexus].
-It aims at giving easy access to all the features offered by the API and faciliate your data management with Nexus. 
+It aims at giving easy access to all the features offered by the API and faciliate your data management with Nexus.
 The use of the CLI is extensively demonstrated in our [Nexus Tutorial].
 
 #### Migration from v0.y.z series
@@ -336,7 +336,7 @@ general availability. In between nodes, when services are deployed as a cluster,
 [gitter]: https://gitter.im/BlueBrain/nexus
 [BBP Nexus Search]: https://github.com/bluebrain/nexus-search-webapp
 [Nexus Web]: https://github.com/bluebrain/nexus-web
-[Javascript SDK for Nexus]: https://github.com/BlueBrain/nexus-webapp-commons/tree/master/nexus-sdk-js
+[Javascript SDK for Nexus]: https://github.com/BlueBrain/nexus-sdk-js
 [Python SDK for Nexus]: https://github.com/BlueBrain/nexus-python-sdk
 [Nexus CLI]: https://github.com/BlueBrain/nexus-cli
 [Nexus Tutorial]: https://bluebrain.github.io/nexus/docs/tutorial
