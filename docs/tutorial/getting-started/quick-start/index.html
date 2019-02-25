@@ -400,14 +400,14 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 </dl>
 <h3><a href="#load-the-dataset" name="load-the-dataset" class="anchor"><span class="anchor-link"></span></a>Load the dataset</h3>
 <p>Let first load the movies and merge them with the links.</p>
-<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv --idcolumn movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId --thread 4
+<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/movies.csv -t Movie --format csv --idcolumn movieId --mergewith ~/ml-latest-small/links.csv --mergeon movieId --max-connections 4
 
 </code></pre>
 <p>Then we can load the tags.</p>
-<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --thread 4
+<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/tags.csv -t Tag --format csv --max-connections 50
 </code></pre>
-<p>And finally load the ratings. Loading 100837 resources might take some time and also it is not needed to load them all to follow this tutorial. The number of threads can be increased for better loading performance.</p>
-<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --thread 4
+<p>And finally load the ratings. Loading 100837 resources might take some time and also it is not needed to load them all to follow this tutorial. The maximum number of concurrent connections (&ndash;max-connections) can be increased for better loading performance.</p>
+<pre class="prettyprint"><code class="language-shell">nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv --max-connections 50
 </code></pre>
 <h2><a href="#access-data" name="access-data" class="anchor"><span class="anchor-link"></span></a>Access data</h2>
 <h3><a href="#view-data-in-nexus-web" name="view-data-in-nexus-web" class="anchor"><span class="anchor-link"></span></a>View data in Nexus Web</h3>
