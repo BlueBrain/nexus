@@ -7,9 +7,12 @@
 * [Recommender](build-recommender/index.md)
 @@@
 
-# Blue Brain Nexus tutorials
+# Tutorials
 
 
-## Overview
+This documentation contains a set of example-driven tutorials and guides showing how to quickly start with, understand and use the Blue Brain Nexus Knowledge Graph.
 
-This documentation contains a set of pages and notebooks demonstrating Blue Brain Nexus features and capabilities.
+* [Quick Start guide](./getting-started/index.html)
+* [Querying Blue Brain Nexus Knowledge Graph](./knowledge-graph/querying-knowledge-graph.html)
+* [Extending and Linking entities in the Knowledge Graph](./linking-data/index.html)
+* [Building a Data Pipeline for a Recommender System](./build-recommender/index.html)
