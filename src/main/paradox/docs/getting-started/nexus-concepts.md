@@ -8,7 +8,7 @@ The following concepts will be addressed in this paragraph: **Organizations, Pro
 
 For instance, let’s imagine you have some data from your latest clinical research study, and Blue Brain Nexus is your data management platform of choice. You want to store your data - e.g. the files and metadata for each study participant - in a structured manner that makes sense to you, your collaborators and your research field, update the data (e.g. to correct a typo) and search for them in a meaningful way (e.g. to retrieve only the data which was collected from female study participants). 
 
-The concept of **Organizations** and **Projects** in Nexus both help you structure the data you want to 
+Both concepts of **Organizations** and **Projects** in Nexus help you structure the data you want to 
 store - a bit like the folder structure of an operating system which allows you to group data.  
 Organizations are the highest level under which you can group your data. You could e.g. create an organization for the 
 department you are working in to help you collect all the data from your department under this organization. 
