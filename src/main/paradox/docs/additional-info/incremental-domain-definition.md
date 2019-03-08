@@ -1,3 +1,0 @@
-# Incremental domain definition
-
-TBC.
