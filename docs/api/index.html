@@ -242,13 +242,13 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#api-reference" name="api-reference" class="anchor"><span class="anchor-link"></span></a>API Reference</h1>
 <p>All Nexus services expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically <a href="https://json-ld.org/">JSON-LD</a>.</p>
-<p>The services operates on 3 primary types of resources: Organizations, Projects and Resources. Each of them is constrain by a set of <a href="https://www.w3.org/TR/shacl/">SHACL</a> rules, grouped in what is called a Schema.</p>
+<p>The services operates on 3 primary types of resources: Organizations, Projects and Resources. Each of them is constrained by a set of <a href="https://www.w3.org/TR/shacl/">SHACL</a> constraints, grouped in what is called a Schema.</p>
 <p><img src="./assets/resources-tree.png" alt="Resources tree" title="Resources tree" /></p>
 <ul>
   <li>An <strong><a href="admin/admin-orgs-api.html">organization</a></strong> is used to organize and categorize its sub-resources.</li>
   <li>A <strong><a href="admin/admin-projects-api.html">project</a></strong> is rooted on a given <code>organization</code>. It is used to organize and categorize its sub-resources while providing a way to <a href="https://bluebrain.github.io/nexus/docs/api/admin/admin-projects-api.html#prefix-mappings">interact with its sub-resources conveniently</a>.</li>
   <li>A <strong><a href="kg/kg-resources-api.html">resource</a></strong> is rooted on a given <code>project</code>. In this level of the hierarchy, multiple types of resources can be found. Each of them has a different purpose:</li>
-  <li>A <strong><a href="kg/kg-schemas-api.html">schema</a></strong> is a resource that defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/">SHACL</a>.</li>
+  <li>A <strong><a href="kg/kg-schemas-api.html">schema</a></strong> is a resource that defines a set of constraints using <a href="https://www.w3.org/TR/shacl/">SHACL</a>.</li>
   <li>A <strong><a href="kg/kg-resolvers-api.html">resolvers</a></strong>: is a resource that defines the way ids are retrieved inside a project.</li>
   <li>A <strong><a href="kg/kg-views-api.html">views</a></strong>: is a resource that describes the way indexing is applied to certain resources inside a project.</li>
   <li>A <strong><a href="kg/kg-files-api.html">file</a></strong>: is a binary resource.</li>
