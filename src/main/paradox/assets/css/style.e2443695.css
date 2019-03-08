@@ -81,6 +81,20 @@ section {
   background-size: 24px 24px;
 }
 
+img[alt="EPFL"].epfl-logo {
+  padding: 3px;
+  height: 50px;
+  width: auto;
+  margin: 0;
+  transition: all 0.3s ease;
+}
+
+img[alt="EPFL"].epfl-logo:hover {
+  background-color: white;
+  -webkit-filter: grayscale(90%);
+  filter: invert(0%);
+}
+
 .call-to-action {
   font-size: 1em;
   background-size: 1px 100px;
@@ -473,8 +487,11 @@ header nav:first-child {
 }
 
 .menu-block a:hover svg path,
-.menu-block a.active svg path {
+.menu-block a:active svg path,
+.menu-block a:hover .bluer,
+.menu-block a:active .bluer {
   fill: #44c7f4;
+  color: #44c7f4;
 }
 
 #app-links {
@@ -747,10 +764,8 @@ footer p > a {
 }
 
 img[alt="EPFL"] {
-  width: 10em;
-  margin-top: 2em;
-  -webkit-filter: grayscale(100%);
-  filter: grayscale(100%);
+  -webkit-filter: invert(90%);
+  filter: invert(90%);
 }
 
 img[alt="blue Brain Project logo"] {
