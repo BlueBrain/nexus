@@ -1,6 +1,7 @@
 @@@ index
 
 * [Getting Started](getting-started/index.md)
+* [Tutorials](tutorial/index.md)
 * [API Reference](api/index.md)
 * [System Architecture](architecture/index.md)
 * [Web applications](webapps/index.md)
@@ -68,7 +69,7 @@ This service manages the platform wide scopes for data and their configuration (
 This service manages the access to data within the platform. It makes use of configurable downstream OpenID Connect
 compliant identity providers to authenticate clients and manages the access controls for the entire platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-iam) | [Documentation](https://bbp-nexus.epfl.ch/staging/docs/iam/api-reference/index.html)
+[Source Code](https://github.com/BlueBrain/nexus-iam) | [Documentation](./api/iam/index.md)
 
 ## Nexus Web Applications
 

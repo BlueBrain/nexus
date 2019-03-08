@@ -2,11 +2,10 @@
 
 * [Nexus concepts](nexus-concepts.md)
 * [Running Nexus](running-nexus/index.md)
-* [Tutorials](tutorials.md)
 
 @@@
 
-# Getting Started Guide
+# Getting Started
 
 ## Overview
 
