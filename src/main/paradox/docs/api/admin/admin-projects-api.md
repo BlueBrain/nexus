@@ -46,7 +46,7 @@ where...
 
 ### API Mappings
 The `apiMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
-used. Let's see an example.
+used.
 
 Having the following `apiMappings`:
 
@@ -67,8 +67,7 @@ where...
 - `{prefix}`: String - the left hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName).
 - `{namespace}`: IRI - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
 
-The `apiMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
-used. Let's see an example:
+Let's see an example:
  
  ```json
  {

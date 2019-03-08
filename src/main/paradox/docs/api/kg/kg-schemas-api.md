@@ -1,6 +1,6 @@
 # Schemas
 
-Schemas are rooted in the `/v1/schemas/{org_label}/{project_label}` collection. They define a set of rules and constrains using [SHACL](https://www.w3.org/TR/shacl/). Once those schemas are present, other resources can be created against them. Those resources won't be successfully created unless they match the required constrains defined on the schema.
+Schemas are rooted in the `/v1/schemas/{org_label}/{project_label}` collection. They define a set of rules and constraints using [SHACL](https://www.w3.org/TR/shacl/). Once those schemas are present, other resources can be created against them. Those resources won't be successfully created unless they match the required constraints defined on the schema.
 
 Each schema... 
 
