@@ -1,3 +1,0 @@
-# Data management example
-
-TBC.
