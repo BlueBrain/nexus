@@ -210,35 +210,6 @@ BlueBrain/nexus
   <li><a href="../docs/release-notes/index.html" class="page">Release Notes</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../docs/index.html#blue-brain-nexus" class="header">Blue Brain Nexus</a>
-  <ul>
-    <li><a href="../docs/index.html#nexus-components" class="header">Nexus Components</a></li>
-    <li><a href="../docs/index.html#nexus-services" class="header">Nexus Services</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-knowledgegraph" class="header">Nexus KnowledgeGraph</a></li>
-      <li><a href="../docs/index.html#nexus-admin" class="header">Nexus Admin</a></li>
-      <li><a href="../docs/index.html#nexus-iam" class="header">Nexus IAM</a></li>
-    </ul></li>
-    <li><a href="../docs/index.html#nexus-web-applications" class="header">Nexus Web Applications</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-web" class="header">Nexus Web</a></li>
-      <li><a href="../docs/index.html#nexus-docs" class="header">Nexus Docs</a></li>
-    </ul></li>
-    <li><a href="../docs/index.html#domains-schemas-vocabularies-" class="header">Domains (Schemas, Vocabularies)</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-core-schemas" class="header">Nexus Core Schemas</a></li>
-      <li><a href="../docs/index.html#nexus-domain-specific-components" class="header">Nexus domain specific components</a></li>
-    </ul></li>
-    <li><a href="../docs/index.html#nexus-tools" class="header">Nexus tools</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-cli" class="header">Nexus CLI</a></li>
-      <li><a href="../docs/index.html#nexus-python-sdk" class="header">Nexus Python SDK</a></li>
-      <li><a href="../docs/index.html#js-sdk-for-nexus" class="header">JS SDK for Nexus</a></li>
-    </ul></li>
-  </ul></li>
-</ul>
 </nav>
 
 </nav>
@@ -249,44 +220,6 @@ BlueBrain/nexus
 </label>
 </li>
 </ul>
-</div>
-</div>
-</div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../docs/index.html#blue-brain-nexus" class="header">Blue Brain Nexus</a>
-  <ul>
-    <li><a href="../docs/index.html#nexus-components" class="header">Nexus Components</a></li>
-    <li><a href="../docs/index.html#nexus-services" class="header">Nexus Services</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-knowledgegraph" class="header">Nexus KnowledgeGraph</a></li>
-      <li><a href="../docs/index.html#nexus-admin" class="header">Nexus Admin</a></li>
-      <li><a href="../docs/index.html#nexus-iam" class="header">Nexus IAM</a></li>
-    </ul></li>
-    <li><a href="../docs/index.html#nexus-web-applications" class="header">Nexus Web Applications</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-web" class="header">Nexus Web</a></li>
-      <li><a href="../docs/index.html#nexus-docs" class="header">Nexus Docs</a></li>
-    </ul></li>
-    <li><a href="../docs/index.html#domains-schemas-vocabularies-" class="header">Domains (Schemas, Vocabularies)</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-core-schemas" class="header">Nexus Core Schemas</a></li>
-      <li><a href="../docs/index.html#nexus-domain-specific-components" class="header">Nexus domain specific components</a></li>
-    </ul></li>
-    <li><a href="../docs/index.html#nexus-tools" class="header">Nexus tools</a>
-    <ul>
-      <li><a href="../docs/index.html#nexus-cli" class="header">Nexus CLI</a></li>
-      <li><a href="../docs/index.html#nexus-python-sdk" class="header">Nexus Python SDK</a></li>
-      <li><a href="../docs/index.html#js-sdk-for-nexus" class="header">JS SDK for Nexus</a></li>
-    </ul></li>
-  </ul></li>
-</ul>
-</nav>
-
 </div>
 </div>
 </div>
@@ -305,50 +238,6 @@ BlueBrain/nexus
   <p>Search, discover, reuse and derive high-quality neuroscience data generated within and outside the platform for the purpose of driving their own scientific endeavours. Data can be examined by species, contributing laboratory, methodology, brain region, and data type, thereby allowing functionality not currently available elsewhere. The data are predominantly organized into atlases (e.g. Allen CCF, Waxholm) and linked to the KnowledgeSpace – a collaborative community-based encyclopedia linking brain research concepts to the latest data, models and literature.</p></li>
 </ol>
 <p>It is to be noted that many other scientific fields (Astronomy, Agriculture, Bioinformatics, Pharmaceutical Industry, &hellip;) are in need of such a technology. Consequently, BlueBrain Nexus core technology is being developed to be <strong>agnostic of the domain</strong> it might be applied to.</p>
-<h2><a href="#nexus-components" name="nexus-components" class="anchor"><span class="anchor-link"></span></a>Nexus Components</h2>
-<p>The Nexus platform is made up of a collection of services and web applications that work together to manage data stored within the system. The services and web applications are powered by a collection of libraries and tools built specifically to address the needs of the platform. Underneath it all there are popular open source technologies that we all know and love.</p>
-<h2><a href="#nexus-services" name="nexus-services" class="anchor"><span class="anchor-link"></span></a>Nexus Services</h2>
-<h3><a href="#nexus-knowledgegraph" name="nexus-knowledgegraph" class="anchor"><span class="anchor-link"></span></a>Nexus KnowledgeGraph</h3>
-<p>This service is the heart of the BlueBrain Nexus platform. It allows users to define their domain, populate the knowledge graph with data, attach files to data. It also provides semantic search facilities to discover similar and relevant data in the platform.</p>
-<p><a href="https://github.com/BlueBrain/nexus-kg">Source Code</a> | <a href="api/kg/index.html">Documentation</a></p>
-<h3><a href="#nexus-admin" name="nexus-admin" class="anchor"><span class="anchor-link"></span></a>Nexus Admin</h3>
-<p>This service manages the platform wide scopes for data and their configuration (i.e.: the API mapping).</p>
-<p><a href="https://github.com/BlueBrain/nexus-admin">Source Code</a> | <a href="api/admin/index.html">Documentation</a></p>
-<h3><a href="#nexus-iam" name="nexus-iam" class="anchor"><span class="anchor-link"></span></a>Nexus IAM</h3>
-<p>This service manages the access to data within the platform. It makes use of configurable downstream OpenID Connect compliant identity providers to authenticate clients and manages the access controls for the entire platform.</p>
-<p><a href="https://github.com/BlueBrain/nexus-iam">Source Code</a> | <a href="./api/iam/index.md">Documentation</a></p>
-<h2><a href="#nexus-web-applications" name="nexus-web-applications" class="anchor"><span class="anchor-link"></span></a>Nexus Web Applications</h2>
-<h3><a href="#nexus-web" name="nexus-web" class="anchor"><span class="anchor-link"></span></a>Nexus Web</h3>
-<p>This is the web interface to the platform. It allows users to browse the data within the system and perform administration tasks.</p>
-<p><a href="https://github.com/BlueBrain/nexus-web">Source Code</a> | <a href="webapps/index.html#nexus-web">Documentation</a></p>
-<h3><a href="#nexus-docs" name="nexus-docs" class="anchor"><span class="anchor-link"></span></a>Nexus Docs</h3>
-<p>Generated documentation for the platform (this website).</p>
-<p><a href="https://github.com/BlueBrain/nexus">Source Code</a> | <a href="./">Website</a></p>
-<h2><a href="#domains-schemas-vocabularies-" name="domains-schemas-vocabularies-" class="anchor"><span class="anchor-link"></span></a>Domains (Schemas, Vocabularies)</h2>
-<h3><a href="#nexus-core-schemas" name="nexus-core-schemas" class="anchor"><span class="anchor-link"></span></a>Nexus Core Schemas</h3>
-<h4><a href="#nexus-schemaorg" name="nexus-schemaorg" class="anchor"><span class="anchor-link"></span></a>nexus-schemaorg</h4>
-<p><a href="https://www.w3.org/TR/shacl/">SHACL</a> version of a subset of schemas defined by <a href="http://schema.org/docs/full.html">schema.org</a> that are commonly used in Blue Brain Nexus.</p>
-<p><a href="https://github.com/BlueBrain/nexus-schemaorg">Source Code</a></p>
-<h4><a href="#nexus-prov" name="nexus-prov" class="anchor"><span class="anchor-link"></span></a>nexus-prov</h4>
-<p>Data management oriented <a href="https://www.w3.org/TR/shacl/">SHACL</a> version of <a href="http://www.w3.org/ns/prov-o-20130430">W3C PROV-O</a>.</p>
-<p><a href="https://github.com/BlueBrain/nexus-prov">Source Code</a></p>
-<h3><a href="#nexus-domain-specific-components" name="nexus-domain-specific-components" class="anchor"><span class="anchor-link"></span></a>Nexus domain specific components</h3>
-<h4><a href="#nexus-bbp-data-models" name="nexus-bbp-data-models" class="anchor"><span class="anchor-link"></span></a>Nexus BBP Data models</h4>
-<p>Data models that Blue Brain has developed in order to facilitate the integration of specific neuroscience data.</p>
-<p><a href="https://github.com/BlueBrain/nexus-bbp-domains">Source Code</a></p>
-<h4><a href="#neuroshapes" name="neuroshapes" class="anchor"><span class="anchor-link"></span></a>Neuroshapes</h4>
-<p>A community effort to develop open SHACL schemas for FAIR (Findable, Accessible, Interoperable, Reproducible) neuroscience data.</p>
-<p><a href="https://github.com/INCF/neuroshapes">Source Code</a></p>
-<h2><a href="#nexus-tools" name="nexus-tools" class="anchor"><span class="anchor-link"></span></a>Nexus tools</h2>
-<h3><a href="#nexus-cli" name="nexus-cli" class="anchor"><span class="anchor-link"></span></a>Nexus CLI</h3>
-<p>A command line interface (CLI) to operate basic operation on a Nexus deployment.</p>
-<p><a href="https://github.com/BlueBrain/nexus-cli">Source Code</a></p>
-<h3><a href="#nexus-python-sdk" name="nexus-python-sdk" class="anchor"><span class="anchor-link"></span></a>Nexus Python SDK</h3>
-<p>This library will help Python users to integrate their tools with the Blue Brain Nexus platform.</p>
-<p><a href="https://github.com/BlueBrain/nexus-python-sdk">Source Code</a> | <a href="https://bluebrain.github.io/nexus-python-sdk/">Documentation</a></p>
-<h3><a href="#js-sdk-for-nexus" name="js-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>JS SDK for Nexus</h3>
-<p>A set of helpers to abstract the Nexus API and build Javascript / Typescript applications.</p>
-<p><a href="https://github.com/BlueBrain/nexus-sdk-js">Source Code</a> | <a href="tools/index.html#js-sdk-for-nexus">Documentation</a></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/index.md" title="Edit this page" class="md-source-file md-edit">
