@@ -78,7 +78,7 @@ Let's see an example:
      },
      {
        "prefix": "schemas",
-       "namespace": "https://bluebrain.github.io/nexus/schemas/"
+       "namespace": "https://bluebrainnexus.io/schemas/"
      }
    ]
  }
@@ -87,7 +87,7 @@ Let's see an example:
 The previous payload allows us to [create a schema](../kg/kg-schemas-api.html##create-a-schema-using-put) using the following endpoints:
 
 - `/v1/schemas/{org_label}/{project_label}/person`. The `@id` of the resulting schema will be `http://example.com/some/person`
-- `/v1/schemas/{org_label}/{project_label}/schema:other`. The `@id` of the resulting schema will be `https://bluebrain.github.io/nexus/schemas/other`
+- `/v1/schemas/{org_label}/{project_label}/schema:other`. The `@id` of the resulting schema will be `https://bluebrainnexus.io/schemas/other`
 
 ## Create a project
 

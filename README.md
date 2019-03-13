@@ -1,4 +1,4 @@
-[![View our technology page](https://img.shields.io/badge/technology-Nexus-03ABE9.svg)](https://bluebrain.github.io/nexus/)
+[![View our technology page](https://img.shields.io/badge/technology-Nexus-03ABE9.svg)](https://bluebrainnexus.io/)
 [![Join the chat at https://gitter.im/BlueBrain/nexus](https://badges.gitter.im/BlueBrain/nexus.svg)](https://gitter.im/BlueBrain/nexus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 # Blue Brain Nexus - A knowledge graph for data-driven science
@@ -40,12 +40,12 @@ introductory material to [Linked Data] and the [Shapes Constraint Language].
 
 For more details, you can talk with the development team directly on [Gitter].
 
-[documentation]: https://bluebrain.github.io/nexus/docs/
-[components]: https://bluebrain.github.io/nexus/docs/index.html#nexus-components
-[getting started]: https://bluebrain.github.io/nexus/docs/getting-started/
-[api reference]: https://bluebrain.github.io/nexus/docs/api/
-[architecture]: https://bluebrain.github.io/nexus/docs/architecture/
-[roadmap]: https://bluebrain.github.io/nexus/docs/roadmap/
+[documentation]: https://bluebrainnexus.io/docs/
+[components]: https://bluebrainnexus.io/docs/index.html#nexus-components
+[getting started]: https://bluebrainnexus.io/docs/getting-started/
+[api reference]: https://bluebrainnexus.io/docs/api/
+[architecture]: https://bluebrainnexus.io/docs/architecture/
+[roadmap]: https://bluebrainnexus.io/docs/roadmap/
 
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/

@@ -42,7 +42,7 @@ Here is an example of a simple SHACL schema.
 
 ```json
 {
-  "context":"https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+  "@context":"https://bluebrainnexus.io/contexts/shacl-20170720.json",
   "@id":"schemaId_uri",
   "@type" : "nxv:Schema",
   "shapes": [
@@ -96,7 +96,7 @@ The following shape assesses that, to be valid, each movie data **must satisfy**
 
 ```json
 {
-  "context":"http://example.org/shaclcontext",
+  "@context":"http://example.org/shaclcontext",
   "@id" : "ex:PersonShape",
   "targetClass" : "schema:Person",
   "property":[
@@ -122,7 +122,7 @@ In Neuroshapes a **schema** is an object of type nxv:Schema and enables the abov
 
 ```json
 {
-  "context":"http://example.org/shaclcontext",
+  "@context":"http://example.org/shaclcontext",
   "@id" : "ex:SchemaID",
   "@type":"nxv:Schema",
   "imports":"ex:AnImportedShape",
@@ -179,7 +179,7 @@ which enforces a name property.
 
 ```json
 {
-  "context":"http://example.org/shaclcontext",
+  "@context":"http://example.org/shaclcontext",
   "@id" : "ex:PersonSchema",
   "@type":"nxv:Schema",
   "shapes" : [{
@@ -204,7 +204,7 @@ latter in a different shape and import it within the ex:PersonSchema using the *
 
 ```json
 {
-  "context":"http://example.org/shaclcontext",
+  "@context":"http://example.org/shaclcontext",
   "@id" : "ex:PersonSchema",
   "@type":"nxv:Schema",
   "imports":"ex:OrganizationShape",

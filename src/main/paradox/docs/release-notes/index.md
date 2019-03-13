@@ -339,6 +339,6 @@ general availability. In between nodes, when services are deployed as a cluster,
 [Javascript SDK for Nexus]: https://github.com/BlueBrain/nexus-sdk-js
 [Python SDK for Nexus]: https://github.com/BlueBrain/nexus-python-sdk
 [Nexus CLI]: https://github.com/BlueBrain/nexus-cli
-[Nexus Tutorial]: https://bluebrain.github.io/nexus/docs/tutorial
+[Nexus Tutorial]: https://bluebrainnexus.io/docs/tutorial
 [Neuroshapes]: https://incf.github.io/neuroshapes/
 [CouchDB]: http://docs.couchdb.org/en/stable/api/document/common.html#attachments

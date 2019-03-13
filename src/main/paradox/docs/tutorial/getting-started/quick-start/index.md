@@ -246,7 +246,7 @@ As an exercise try to filter by tag to only retrieve resources of type Tag.
 
 ### Query data
 
-Listing is usually not enough to select specific subset of data. Data ingested within each project can be searched through two complementary search interfaces called [views](https://bluebrain.github.io/nexus/docs/api/kg/kg-views-api.html).
+Listing is usually not enough to select specific subset of data. Data ingested within each project can be searched through two complementary search interfaces called [views](https://bluebrainnexus.io/docs/api/kg/kg-views-api.html).
 
 View              | Description
 ------------------|---------------

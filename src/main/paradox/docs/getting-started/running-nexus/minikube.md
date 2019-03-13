@@ -10,7 +10,7 @@ This section makes use of static assets hosted on this website; to remove the cl
 documentation to `$MINI` env var:
 
 ```
-export MINI="https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/minikube"
+export MINI="https://bluebrainnexus.io/docs/getting-started/running-nexus/minikube"
 ```
 
 @@@
