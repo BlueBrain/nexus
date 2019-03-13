@@ -16,7 +16,7 @@ For that we will work with the small version of the [MovieLens dataset](http://f
 An overview of this dataset can be found [here](../dataset/index.html).
 
 @@@ note
-* This tutorial makes use of an AWS deployment of Blue Brain Nexus available at https://nexus-sandbox.io/v1.
+* This tutorial makes use of an AWS deployment of Blue Brain Nexus available at https://sandbox.bluebrainnexus.io/v1.
 * We will be using [Nexus CLI](https://github.com/BlueBrain/nexus-cli), a python client,  to interact with the deployment.
 @@@
 
@@ -194,7 +194,7 @@ nexus resources create -f ~/ml-latest-small/ratings.csv -t Rating --format csv -
 ### View data in Nexus Web
 
 Nexus is deployed with a web application allowing to browse organizations, projects, data and schemas you have access to.
-You can go to the address https://nexus-sandbox.io/web and browse the data you just loaded.
+You can go to the address https://sandbox.bluebrainnexus.io/web and browse the data you just loaded.
 
 ### List data
 
@@ -255,7 +255,7 @@ SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-
 
 #### Query data using the ElasticSearchView
 
-The ElasticSearchView URL is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].
+The ElasticSearchView URL is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].
 
 Select queries
 :   @@snip [select_elastic.sh](../assets/select_elastic.sh)
@@ -267,7 +267,7 @@ Graph navigation queries
 
 #### Query data using the SparqlView
 
-The SparqlView is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql].
+The SparqlView is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql].
 The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.
 
 ![Movielens-default_nexus_graph.png](../assets/Movielens-default_nexus_graph.png)

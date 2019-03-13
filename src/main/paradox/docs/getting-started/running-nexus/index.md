@@ -10,10 +10,10 @@
 
 ## Using the public sandbox
 
-A public instance of Nexus is running at [https://nexus-sandbox.io/web](https://nexus-sandbox.io/web). You
+A public instance of Nexus is running at [https://sandbox.bluebrainnexus.io/web](https://sandbox.bluebrainnexus.io/web). You
 can log in with a GitHub account. It's provided for evaluation purposes only, without any guarantees.
 
-The API root is [https://nexus-sandbox.io/v1](https://nexus-sandbox.io/v1).
+The API root is [https://sandbox.bluebrainnexus.io/v1](https://sandbox.bluebrainnexus.io/v1).
 
 @@@ note
 

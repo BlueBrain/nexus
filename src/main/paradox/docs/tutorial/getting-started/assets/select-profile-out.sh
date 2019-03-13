@@ -2,5 +2,5 @@ Selected profile: tutorial
 +------------+----------+-------------------------------------+-------+
 | Profile    | Selected | URL                                 | Token |
 +------------+----------+-------------------------------------+-------+
-| tutorial   |   Yes    | https://nexus-sandbox.io/v1         |  None |
+| tutorial   |   Yes    | https://sandbox.bluebrainnexus.io/v1         |  None |
 +------------+----------+-------------------------------------+-------+

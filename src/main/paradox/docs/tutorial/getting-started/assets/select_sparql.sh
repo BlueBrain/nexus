@@ -1,7 +1,7 @@
 # Select 5 ratings sorted by creation date in descending order
 nexus views query-sparql --data \
 '
-PREFIX vocab: <https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/>
+PREFIX vocab: <https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/>
 PREFIX nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 
 Select ?userId ?moviedId ?rating ?createdAt

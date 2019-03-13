@@ -8,7 +8,7 @@ nexus views query-es --data \
        }
      ],
      "query": {
-     	"terms" : {"@type":["https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating"]}
+     	"terms" : {"@type":["https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating"]}
      }
  }'
 

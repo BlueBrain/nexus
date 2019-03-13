@@ -1,1 +1,1 @@
-nexus profiles create tutorial https://nexus-sandbox.io/v1 && nexus profiles list
+nexus profiles create tutorial https://sandbox.bluebrainnexus.io/v1 && nexus profiles list
