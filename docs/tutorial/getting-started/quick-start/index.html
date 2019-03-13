@@ -311,7 +311,7 @@ BlueBrain/nexus
 </ul>
 <p>For that we will work with the small version of the <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users. An overview of this dataset can be found <a href="../dataset/index.html">here</a>.</p><div class="callout note "><div class="callout-title">Note</div>
 <ul>
-  <li>This tutorial makes use of an AWS deployment of Blue Brain Nexus available at <a href="https://nexus-sandbox.io/v1">https://nexus-sandbox.io/v1</a>.</li>
+  <li>This tutorial makes use of an AWS deployment of Blue Brain Nexus available at <a href="https://sandbox.bluebrainnexus.io/v1">https://sandbox.bluebrainnexus.io/v1</a>.</li>
   <li>We will be using <a href="https://github.com/BlueBrain/nexus-cli">Nexus CLI</a>, a python client, to interact with the deployment.</li>
 </ul></div>
 <p>Let&rsquo;s get started.</p>
@@ -327,14 +327,14 @@ pip install git+https://github.com/BlueBrain/nexus-cli
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">nexus profiles create tutorial https://nexus-sandbox.io/v1 &amp;&amp; nexus profiles list</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/create-profile-cmd.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">nexus profiles create tutorial https://sandbox.bluebrainnexus.io/v1 &amp;&amp; nexus profiles list</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/create-profile-cmd.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Output</dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh">Profile created.
 +------------+----------+-------------------------------------+-------+
 | Profile    | Selected | URL                                 | Token |
 +------------+----------+-------------------------------------+-------+
-| tutorial   |   Yes    | https://nexus-sandbox.io/v1         |  None |
+| tutorial   |   Yes    | https://sandbox.bluebrainnexus.io/v1         |  None |
 +------------+----------+-------------------------------------+-------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/create-profile-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <p>Let select the tutorial profile we just created.</p>
@@ -348,7 +348,7 @@ pip install git+https://github.com/BlueBrain/nexus-cli
 +------------+----------+-------------------------------------+-------+
 | Profile    | Selected | URL                                 | Token |
 +------------+----------+-------------------------------------+-------+
-| tutorial   |   Yes    | https://nexus-sandbox.io/v1         |  None |
+| tutorial   |   Yes    | https://sandbox.bluebrainnexus.io/v1         |  None |
 +------------+----------+-------------------------------------+-------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/select-profile-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h3><a href="#login" name="login" class="anchor"><span class="anchor-link"></span></a>Login</h3>
@@ -380,7 +380,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   <pre class="prettyprint"><code class="language-sh">+--------------+----------+-------------------------------------+-----------------------------+
 | Profile      | Selected | URL                                 |            Token            |
 +--------------+----------+-------------------------------------+-----------------------------+
-| tutorial     |   Yes    | https://nexus-sandbox.io/v1         | Expiry: YYYY-MM-DD HH:mm:s |
+| tutorial     |   Yes    | https://sandbox.bluebrainnexus.io/v1         | Expiry: YYYY-MM-DD HH:mm:s |
 +--------------+----------+-------------------------------------+-----------------------------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/settoken-auth-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#create-a-project" name="create-a-project" class="anchor"><span class="anchor-link"></span></a>Create a project</h2>
@@ -403,7 +403,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   <pre class="prettyprint"><code class="language-sh">+----------------+-------------------+-----------------------------------------------------+------------+
 | Name           | Description       | Id                                                  | Deprecated |
 +----------------+-------------------+-----------------------------------------------------+------------+
-| tutorialnexus  | Nexus sandbox     | https://nexus-sandbox.io/v1/tutorialnexus     | False      |</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/list-orgs-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+| tutorialnexus  | Nexus sandbox     | https://sandbox.bluebrainnexus.io/v1/tutorialnexus     | False      |</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/list-orgs-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <p>Let select the <strong>tutorialnexus</strong> organization.</p>
 <dl>
@@ -423,11 +423,11 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   <pre class="prettyprint"><code class="language-sh">nexus projects create $PROJECTLABEL &amp;&amp; nexus projects list</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/create-project-cmd.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Output</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">Project created (id: https://nexus-sandbox.io/v1/projects/tutorialnexus/$PROJECTLABEL)
+  <pre class="prettyprint"><code class="language-sh">Project created (id: https://sandbox.bluebrainnexus.io/v1/projects/tutorialnexus/$PROJECTLABEL)
 +---------------+-------------+------------------------------------------------------------------------+------------+
 | Label         | Description | Id                                                                     | Deprecated |
 +---------------+-------------+------------------------------------------------------------------------+------------+
-| $PROJECTLABEL |             | https://nexus-sandbox.io/v1/projects/tutorialnexus/$PROJECTLABEL | False      |
+| $PROJECTLABEL |             | https://sandbox.bluebrainnexus.io/v1/projects/tutorialnexus/$PROJECTLABEL | False      |
 +---------------+-------------+------------------------------------------------------------------------+------------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/create-project-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <p>By default, created projects are private meaning that only the project creator (you) has read and write access to it. We&rsquo;ll <a href="#share-data">see below</a> how to make a project public.</p>
@@ -442,7 +442,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 +---------------+-------------+------------------------------------------------------------------------+------------+
 | Label         | Description | Id                                                                     | Deprecated |
 +---------------+-------------+------------------------------------------------------------------------+------------+
-| $PROJECTLABEL |             | https://nexus-sandbox.io/v1/projects/tutorialnexus/$PROJECTLABEL | False      |
+| $PROJECTLABEL |             | https://sandbox.bluebrainnexus.io/v1/projects/tutorialnexus/$PROJECTLABEL | False      |
 +---------------+-------------+------------------------------------------------------------------------+------------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/select-project-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <p>We are all set to bring some data within the project we just created.</p>
@@ -471,7 +471,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
 </code></pre>
 <h2><a href="#access-data" name="access-data" class="anchor"><span class="anchor-link"></span></a>Access data</h2>
 <h3><a href="#view-data-in-nexus-web" name="view-data-in-nexus-web" class="anchor"><span class="anchor-link"></span></a>View data in Nexus Web</h3>
-<p>Nexus is deployed with a web application allowing to browse organizations, projects, data and schemas you have access to. You can go to the address <a href="https://nexus-sandbox.io/web">https://nexus-sandbox.io/web</a> and browse the data you just loaded.</p>
+<p>Nexus is deployed with a web application allowing to browse organizations, projects, data and schemas you have access to. You can go to the address <a href="https://sandbox.bluebrainnexus.io/web">https://sandbox.bluebrainnexus.io/web</a> and browse the data you just loaded.</p>
 <h3><a href="#list-data" name="list-data" class="anchor"><span class="anchor-link"></span></a>List data</h3>
 <p>The simplest way to accessed data within Nexus is by listing them. The following command lists 5 resources:</p>
 <dl>
@@ -483,25 +483,25 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   <pre class="prettyprint"><code class="language-sh">+------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
 | Id                                                                                 | Type                                                                       | Revision | Deprecated |
 +------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_1  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_9  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_12 | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_7  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_8  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_1  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_9  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_12 | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_7  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_8  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Movie | 1        | False      |
 +------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/list-res-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <p>The full payload of the resources are not retrieved when listing them: only identifier, type as well as Nexus added metadata are. But the result list can be scrolled and each resource fetched by identifier.</p>
 <dl>
   <dt>Command</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">nexus resources fetch https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_1</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/fetch-res-id-cmd.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">nexus resources fetch https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Movie_1</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/fetch-res-id-cmd.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Output</dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh">{
   &quot;@context&quot;: [
     {
-      &quot;@base&quot;: &quot;https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/&quot;,
-      &quot;@vocab&quot;: &quot;https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/&quot;
+      &quot;@base&quot;: &quot;https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/&quot;,
+      &quot;@vocab&quot;: &quot;https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/&quot;
     },
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
   ],
@@ -571,11 +571,11 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   <pre class="prettyprint"><code class="language-sh">+------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
 | Id                                                                                 | Type                                                                       | Revision | Deprecated |
 +------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_1  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_9  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_12 | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_7  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
-| https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_8  | https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_1  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_9  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_12 | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_7  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
+| https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/Rating_8  | https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating | 1        | False      |
 +------------------------------------------------------------------------------------+----------------------------------------------------------------------------+----------+------------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/list-res-filter-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl><div class="callout note tip"><div class="callout-title">Listing with various filters using the CLI</div>
 <p>As an exercise try to filter by tag to only retrieve resources of type Tag.</p></div>
@@ -600,7 +600,7 @@ Press ENTER to continue...</code></pre><a href="https://github.com/BlueBrain/nex
   </tbody>
 </table>
 <h4><a href="#query-data-using-the-elasticsearchview" name="query-data-using-the-elasticsearchview" class="anchor"><span class="anchor-link"></span></a>Query data using the ElasticSearchView</h4>
-<p>The ElasticSearchView URL is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].</p>
+<p>The ElasticSearchView URL is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].</p>
 <dl>
   <dt>Select queries</dt>
   <dd>
@@ -614,7 +614,7 @@ nexus views query-es --data \
        }
      ],
      &quot;query&quot;: {
-     	&quot;terms&quot; : {&quot;@type&quot;:[&quot;https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating&quot;]}
+     	&quot;terms&quot; : {&quot;@type&quot;:[&quot;https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/Rating&quot;]}
      }
  }&#39;
 </code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/select_elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
@@ -626,7 +626,7 @@ nexus views query-es --data \
 </code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/graph_elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h4><a href="#query-data-using-the-sparqlview" name="query-data-using-the-sparqlview" class="anchor"><span class="anchor-link"></span></a>Query data using the SparqlView</h4>
-<p>The SparqlView is available at the address [https://nexus-sandbox.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql]. The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.</p>
+<p>The SparqlView is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql]. The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.</p>
 <p><img src="../assets/Movielens-default_nexus_graph.png" alt="Movielens-default_nexus_graph.png" /></p>
 <dl>
   <dt>Select queries</dt>
@@ -634,7 +634,7 @@ nexus views query-es --data \
   <pre class="prettyprint"><code class="language-sh"># Select 5 ratings sorted by creation date in descending order
 nexus views query-sparql --data \
 &#39;
-PREFIX vocab: &lt;https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/&gt;
+PREFIX vocab: &lt;https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/&gt;
 PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
 
 Select ?userId ?moviedId ?rating ?createdAt
@@ -653,7 +653,7 @@ LIMIT 5&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master
   <pre class="prettyprint"><code class="language-sh"># Average rating score for movies tagged as funny
 nexus views query-sparql --data \
 &#39;
-PREFIX vocab: &lt;https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/&gt;
+PREFIX vocab: &lt;https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/&gt;
 PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
 
 Select (AVG(?ratingvalue) AS ?score)
@@ -694,8 +694,8 @@ Select (AVG(?ratingvalue) AS ?score)
 +-------------------+----------+-------------------------------------+------------------+
 | Profile           | Selected | URL                                 |       Token      |
 +-------------------+----------+-------------------------------------+------------------+
-| tutorial          |          | https://nexus-sandbox.io/v1         |  Expiry: 2019... |
-| public-tutorial   |   Yes    | https://nexus-sandbox.io/v1         |       None       |
+| tutorial          |          | https://sandbox.bluebrainnexus.io/v1         |  Expiry: 2019... |
+| public-tutorial   |   Yes    | https://sandbox.bluebrainnexus.io/v1         |       None       |
 +-------------------+----------+-------------------------------------+------------------+</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/getting-started/assets/select-profile-public-out.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <ul>

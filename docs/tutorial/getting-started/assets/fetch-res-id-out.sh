@@ -1,8 +1,8 @@
 {
   "@context": [
     {
-      "@base": "https://nexus-sandbox.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/",
-      "@vocab": "https://nexus-sandbox.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/"
+      "@base": "https://sandbox.bluebrainnexus.io/v1/resources/tutorialnexus/$PROJECTLABEL/_/",
+      "@vocab": "https://sandbox.bluebrainnexus.io/v1/vocabs/tutorialnexus/$PROJECTLABEL/"
     },
     "https://bluebrain.github.io/nexus/contexts/resource.json"
   ],

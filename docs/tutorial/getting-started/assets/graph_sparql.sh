@@ -1,6 +1,6 @@
 # Average rating score for movies tagged as funny
 
-PREFIX vocab: <https://nexus-sandbox.io/v1/vocabs/testamld2019/movielens2/>
+PREFIX vocab: <https://sandbox.bluebrainnexus.io/v1/vocabs/testamld2019/movielens2/>
 PREFIX nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 
 Select  DISTINCT ?movieId (AVG(?rating) AS ?score)
