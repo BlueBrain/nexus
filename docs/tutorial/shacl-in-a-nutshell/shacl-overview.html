@@ -231,7 +231,7 @@ BlueBrain/nexus
 <h3><a href="#shacl-validation-flow" name="shacl-validation-flow" class="anchor"><span class="anchor-link"></span></a>SHACL Validation Flow</h3>
 <p>Here is an example of a simple SHACL schema.</p>
 <pre class="prettyprint"><code class="language-json">{
-  &quot;context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/shacl-20170720.json&quot;,
+  &quot;@context&quot;:&quot;https://bluebrainnexus.io/contexts/shacl-20170720.json&quot;,
   &quot;@id&quot;:&quot;schemaId_uri&quot;,
   &quot;@type&quot; : &quot;nxv:Schema&quot;,
   &quot;shapes&quot;: [
@@ -265,7 +265,7 @@ BlueBrain/nexus
   <li>it <strong>has at most one (zero or one)</strong> release date</li>
 </ul>
 <pre class="prettyprint"><code class="language-json">{
-  &quot;context&quot;:&quot;http://example.org/shaclcontext&quot;,
+  &quot;@context&quot;:&quot;http://example.org/shaclcontext&quot;,
   &quot;@id&quot; : &quot;ex:PersonShape&quot;,
   &quot;targetClass&quot; : &quot;schema:Person&quot;,
   &quot;property&quot;:[
@@ -284,7 +284,7 @@ BlueBrain/nexus
 </ul>
 <p>In Neuroshapes a <strong>schema</strong> is an object of type nxv:Schema and enables the above capabilities by using the following json syntax:</p>
 <pre class="prettyprint"><code class="language-json">{
-  &quot;context&quot;:&quot;http://example.org/shaclcontext&quot;,
+  &quot;@context&quot;:&quot;http://example.org/shaclcontext&quot;,
   &quot;@id&quot; : &quot;ex:SchemaID&quot;,
   &quot;@type&quot;:&quot;nxv:Schema&quot;,
   &quot;imports&quot;:&quot;ex:AnImportedShape&quot;,
@@ -352,7 +352,7 @@ BlueBrain/nexus
   <li>to enforce the ex:OrganizationShape through the <strong>node</strong> property: every value of a person&rsquo;s affiliation must conform to the ex:OrganizationShape which enforces a name property.</li>
 </ul>
 <pre class="prettyprint"><code class="language-json">{
-  &quot;context&quot;:&quot;http://example.org/shaclcontext&quot;,
+  &quot;@context&quot;:&quot;http://example.org/shaclcontext&quot;,
   &quot;@id&quot; : &quot;ex:PersonSchema&quot;,
   &quot;@type&quot;:&quot;nxv:Schema&quot;,
   &quot;shapes&quot; : [{
@@ -373,7 +373,7 @@ BlueBrain/nexus
 </code></pre>
 <p>It is possible to organize the ex:PersonShape and the ex:OrganizationShape differently by defining the latter in a different shape and import it within the ex:PersonSchema using the <strong>imports</strong> property.</p>
 <pre class="prettyprint"><code class="language-json">{
-  &quot;context&quot;:&quot;http://example.org/shaclcontext&quot;,
+  &quot;@context&quot;:&quot;http://example.org/shaclcontext&quot;,
   &quot;@id&quot; : &quot;ex:PersonSchema&quot;,
   &quot;@type&quot;:&quot;nxv:Schema&quot;,
   &quot;imports&quot;:&quot;ex:OrganizationShape&quot;,
