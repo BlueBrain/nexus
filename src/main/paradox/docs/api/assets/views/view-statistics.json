@@ -1,0 +1,11 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/view.json",
+  "delayInSeconds": 699451,
+  "discardedEvents": 3,
+  "evaluatedEvents": 263,
+  "lastEventDateTime": "2019-03-12T16:59:20.296Z",
+  "lastProcessedEventDateTime": "2019-03-04T14:41:49.545Z",
+  "processedEvents": 266,
+  "remainingEvents": 31214,
+  "totalEvents": 31480
+}
