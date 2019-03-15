@@ -28,7 +28,7 @@ This service manages the platform wide scopes for data and their configuration (
 This service manages the access to data within the platform. It makes use of configurable downstream OpenID Connect
 compliant identity providers to authenticate clients and manages the access controls for the entire platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-iam) | [Documentation](../api/iam/index.md)
+[Source Code](https://github.com/BlueBrain/nexus-iam) | @ref:[Documentation](../api/iam/index.md)
 
 ## Nexus Web Applications
 
