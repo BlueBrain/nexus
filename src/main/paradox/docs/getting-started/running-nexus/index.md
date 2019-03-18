@@ -742,7 +742,7 @@ OpenShift.
 ### Choice of hardware
 
 Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please
-take a look at the [benchmarks section](../../benchmarks/index.html) to get an idea of what you should expect in terms
+take a look at the [benchmarks section](../../additional-info/benchmarks/index.html) to get an idea of what you should expect in terms
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
