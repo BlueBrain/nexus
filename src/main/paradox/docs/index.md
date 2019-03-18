@@ -4,7 +4,6 @@
 * [Tutorials](tutorial/index.md)
 * [API Reference](api/index.md)
 * [System Architecture](architecture/index.md)
-* [Web applications](webapps/index.md)
 * [Tools](tools/index.md)
 * [Benchmarks](benchmarks/index.md)
 * [Additional Information](additional-info/index.md)
