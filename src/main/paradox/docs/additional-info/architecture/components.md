@@ -15,20 +15,20 @@ This service is the heart of the BlueBrain Nexus platform. It allows users to de
 knowledge graph with data, attach files to data. It also provides semantic search facilities to discover similar and
 relevant data in the platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-kg) | @ref:[Documentation](../api/kg/index.md)
+[Source Code](https://github.com/BlueBrain/nexus-kg) | @ref:[Documentation](../../api/kg/index.md)
 
 ### Nexus Admin
 
 This service manages the platform wide scopes for data and their configuration (i.e.: the API mapping).
 
-[Source Code](https://github.com/BlueBrain/nexus-admin) | @ref:[Documentation](../api/admin/index.md)
+[Source Code](https://github.com/BlueBrain/nexus-admin) | @ref:[Documentation](../../api/admin/index.md)
 
 ### Nexus IAM
 
 This service manages the access to data within the platform. It makes use of configurable downstream OpenID Connect
 compliant identity providers to authenticate clients and manages the access controls for the entire platform.
 
-[Source Code](https://github.com/BlueBrain/nexus-iam) | @ref:[Documentation](../api/iam/index.md)
+[Source Code](https://github.com/BlueBrain/nexus-iam) | @ref:[Documentation](../../api/iam/index.md)
 
 ## Nexus Web Applications
 
@@ -36,13 +36,13 @@ compliant identity providers to authenticate clients and manages the access cont
 
 This is the web interface to the platform. It allows users to browse the data within the system and perform administration tasks.
 
-[Source Code](https://github.com/BlueBrain/nexus-web) | @ref:[Documentation](../getting-started/webapps.md#nexus-web)
+[Source Code](https://github.com/BlueBrain/nexus-web) | @ref:[Documentation](../../getting-started/webapps.md#nexus-web)
 
 ### Nexus Docs
 
 Generated documentation for the platform (this website).
 
-[Source Code](https://github.com/BlueBrain/nexus) | [Website](../)
+[Source Code](https://github.com/BlueBrain/nexus) | [Website](../../)
 
 ## Domains (Schemas, Vocabularies)
 
@@ -95,4 +95,4 @@ This library will help Python users to integrate their tools with the Blue Brain
 
 A set of helpers to abstract the Nexus API and build Javascript / Typescript applications.
 
-[Source Code](https://github.com/BlueBrain/nexus-sdk-js) | @ref:[Documentation](../additional-info/sdk.md#js-sdk-for-nexus)
+[Source Code](https://github.com/BlueBrain/nexus-sdk-js) | @ref:[Documentation](../sdk.md#js-sdk-for-nexus)

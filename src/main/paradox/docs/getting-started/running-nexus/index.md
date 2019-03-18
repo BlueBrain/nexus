@@ -780,7 +780,7 @@ mere indexing systems.
 Please have a look at the [Planning and Testing](https://docs.datastax.com/en/dse-planning/doc/) section in the
 DataStax documentation as it contains recommendations in terms of hardware and capacity.
 
-As described in the [architecture section](../../architecture/systematic-service-design.html) the generally adopted
+As described in the [architecture section](../../additional-info/architecture/systematic-service-design.html) the generally adopted
 persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
 implications to the total amount of disk used by the primary store.
 
