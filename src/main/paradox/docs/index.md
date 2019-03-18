@@ -8,6 +8,7 @@
 * [Benchmarks](benchmarks/index.md)
 * [Additional Information](additional-info/index.md)
 * [Release Notes](release-notes/index.md)
+* [Frequently asked questions](faq.md)
 
 @@@
 
