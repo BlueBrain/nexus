@@ -4,7 +4,7 @@
 
 The [Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js) provides many features to help you build web applications that integrate with Blue Brain Nexus.
 
-![Nexus JS logo](./assets/img/nexus-js-logo.png)
+![Nexus JS logo](./sdk/img/nexus-js-logo.png)
 
 ### How to install
 

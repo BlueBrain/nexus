@@ -95,4 +95,4 @@ This library will help Python users to integrate their tools with the Blue Brain
 
 A set of helpers to abstract the Nexus API and build Javascript / Typescript applications.
 
-[Source Code](https://github.com/BlueBrain/nexus-sdk-js) | @ref:[Documentation](../tools/index.md#js-sdk-for-nexus)
+[Source Code](https://github.com/BlueBrain/nexus-sdk-js) | @ref:[Documentation](../additional-info/sdk.md#js-sdk-for-nexus)
