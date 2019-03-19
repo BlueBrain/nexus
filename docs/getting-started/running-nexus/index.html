@@ -144,6 +144,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/getting-started/nexus-concepts.html" class="page">Brief introduction of Nexus concepts</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="active page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/webapps.html" class="page">Web applications</a></li>
   </ul></li>
   <li><a href="../../../docs/tutorial/index.html" class="page">Tutorials</a>
   <ul>
@@ -188,26 +189,25 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../docs/api/error-signaling.html" class="page">Error Signaling</a></li>
   </ul></li>
-  <li><a href="../../../docs/architecture/index.html" class="page">System Architecture</a>
-  <ul>
-    <li><a href="../../../docs/architecture/use-cases.html" class="page">Use Cases</a></li>
-    <li><a href="../../../docs/architecture/components.html" class="page">Components</a></li>
-    <li><a href="../../../docs/architecture/integration.html" class="page">Integration</a></li>
-  </ul></li>
-  <li><a href="../../../docs/webapps/index.html" class="page">Web applications</a></li>
-  <li><a href="../../../docs/tools/index.html" class="page">Tools</a></li>
-  <li><a href="../../../docs/benchmarks/index.html" class="page">Benchmarks</a>
-  <ul>
-    <li><a href="../../../docs/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
-    <li><a href="../../../docs/benchmarks/data-volume-and-scenarios.html" class="page">Data volume and scenarios</a></li>
-    <li><a href="../../../docs/benchmarks/results.html" class="page">Results</a></li>
-  </ul></li>
+  <li><a href="../../../docs/release-notes/index.html" class="page">Release Notes</a></li>
+  <li><a href="../../../docs/faq.html" class="page">Frequently asked questions</a></li>
   <li><a href="../../../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
+    <li><a href="../../../docs/additional-info/sdk.html" class="page">SDKs for Nexus</a></li>
+    <li><a href="../../../docs/additional-info/architecture/index.html" class="page">System Architecture</a>
+    <ul>
+      <li><a href="../../../docs/additional-info/architecture/use-cases.html" class="page">Use Cases</a></li>
+      <li><a href="../../../docs/additional-info/architecture/components.html" class="page">Components</a></li>
+      <li><a href="../../../docs/additional-info/architecture/integration.html" class="page">Integration</a></li>
+    </ul></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../../docs/additional-info/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/data-volume-and-scenarios.html" class="page">Data volume and scenarios</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/results.html" class="page">Results</a></li>
+    </ul></li>
     <li><a href="../../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
-    <li><a href="../../../docs/additional-info/faq.html" class="page">Frequently asked questions</a></li>
   </ul></li>
-  <li><a href="../../../docs/release-notes/index.html" class="page">Release Notes</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
@@ -748,7 +748,7 @@ $
 <p>The decision to go with single node deployments or clustered deployments can be revisited later on and mixed setups (some services single node while others clustered) are also possible.</p>
 <p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/">Kubernetes</a>, <a href="https://www.openshift.com/">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
 <h3><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h3>
-<p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../../benchmarks/index.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
+<p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../../additional-info/benchmarks/index.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
 <ol>
   <li>Nexus uses a collection of data stores (<a href="http://cassandra.apache.org/">Cassandra</a>, <a href="https://www.elastic.co/products/elasticsearch">ElasticSearch</a>, <a href="https://www.blazegraph.com/">BlazeGraph</a>) which depend performance wise to the underlying disk access, so:
     <ul>
@@ -764,7 +764,7 @@ $
 <p>Nexus uses <a href="http://cassandra.apache.org/">Cassandra</a> as its <em>primary store</em> as it scales well in terms of reads with the number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be available in case of node failures or network partitions.</p>
 <p>Since this is the <em>primary store</em> it is the most important system to be <a href="https://docs.datastax.com/en/cassandra/3.0/cassandra/operations/opsBackupRestore.html">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as mere indexing systems.</p>
 <p>Please have a look at the <a href="https://docs.datastax.com/en/dse-planning/doc/">Planning and Testing</a> section in the DataStax documentation as it contains recommendations in terms of hardware and capacity.</p>
-<p>As described in the <a href="../../architecture/systematic-service-design.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
+<p>As described in the <a href="../../additional-info/architecture/systematic-service-design.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
 <p>A formula for computing the required disk space:</p>
 <pre><code>total = (resource_size + nexus_metadata_size) * count * number_updates * replication_factor * 2 (compaction requirement)
 </code></pre>
@@ -851,13 +851,13 @@ Brief introduction of Nexus concepts
 </span>
 </div>
 </a>
-<a href="../../../docs/tutorial/index.html" title="Tutorials" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/getting-started/webapps.html" title="Web applications" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Tutorials
+Web applications
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Admin API · Blue Brain Nexus</title>
+<title>Results · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Admin API
+Results
 </span>
 </div>
 </div>
@@ -166,7 +166,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/api/anatomy.html" class="page">Services anatomy</a></li>
     <li><a href="../../../docs/api/operating-on-resources.html" class="page">Operating on resources</a></li>
-    <li><a href="../../../docs/api/admin/index.html" class="active page">Admin API</a>
+    <li><a href="../../../docs/api/admin/index.html" class="page">Admin API</a>
     <ul>
       <li><a href="../../../docs/api/admin/admin-orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/api/admin/admin-projects-api.html" class="page">Projects</a></li>
@@ -204,7 +204,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/additional-info/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
       <li><a href="../../../docs/additional-info/benchmarks/data-volume-and-scenarios.html" class="page">Data volume and scenarios</a></li>
-      <li><a href="../../../docs/additional-info/benchmarks/results.html" class="page">Results</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/results.html" class="active page">Results</a></li>
     </ul></li>
     <li><a href="../../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
   </ul></li>
@@ -212,10 +212,15 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/api/admin/index.html#admin-api" class="header">Admin API</a>
+  <li><a href="../../../docs/additional-info/benchmarks/results.html#results" class="header">Results</a>
   <ul>
-    <li><a href="../../../docs/api/admin/index.html#organizations" class="header">Organizations</a></li>
-    <li><a href="../../../docs/api/admin/index.html#projects" class="header">Projects</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#create-simulation" class="header">Create Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#create-simulation-no-validation-" class="header">Create Simulation (no validation)</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#fetch-simulation" class="header">Fetch Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#mixed-simulation" class="header">Mixed Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#tag-simulation" class="header">Tag Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#getbytag-simulation" class="header">GetByTag Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#conclusions" class="header">Conclusions</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -237,10 +242,15 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/api/admin/index.html#admin-api" class="header">Admin API</a>
+  <li><a href="../../../docs/additional-info/benchmarks/results.html#results" class="header">Results</a>
   <ul>
-    <li><a href="../../../docs/api/admin/index.html#organizations" class="header">Organizations</a></li>
-    <li><a href="../../../docs/api/admin/index.html#projects" class="header">Projects</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#create-simulation" class="header">Create Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#create-simulation-no-validation-" class="header">Create Simulation (no validation)</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#fetch-simulation" class="header">Fetch Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#mixed-simulation" class="header">Mixed Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#tag-simulation" class="header">Tag Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#getbytag-simulation" class="header">GetByTag Simulation</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/results.html#conclusions" class="header">Conclusions</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -251,17 +261,325 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#admin-api" name="admin-api" class="anchor"><span class="anchor-link"></span></a>Admin API</h1>
-<p>The Admin API provides operations on two types of resources, <code>organizations</code> and <code>projects</code>. Those resources define the tree-like structure or grouping of the platform</p>
-<h2><a href="#organizations" name="organizations" class="anchor"><span class="anchor-link"></span></a>Organizations</h2>
-<p>The top level resources in the platform. They are used to group and categorize projects.</p>
-<p><a href="admin-orgs-api.html">Operations on organizations</a></p>
-<h2><a href="#projects" name="projects" class="anchor"><span class="anchor-link"></span></a>Projects</h2>
-<p>The 2nd level resources in the platform. They are used to group and categorize any sub-resources supported by the Knowledge Graph.</p>
-<p><a href="admin-projects-api.html">Operations on projects</a></p>
+<h1><a href="#results" name="results" class="anchor"><span class="anchor-link"></span></a>Results</h1>
+<h2><a href="#create-simulation" name="create-simulation" class="anchor"><span class="anchor-link"></span></a>Create Simulation</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>36 </td>
+      <td>513 </td>
+      <td>681 </td>
+      <td>820 </td>
+      <td>999 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>51 </td>
+      <td>572 </td>
+      <td>706 </td>
+      <td>1107 </td>
+      <td>1191 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>106 </td>
+      <td>586 </td>
+      <td>722 </td>
+      <td>1033 </td>
+      <td>1423 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>148 </td>
+      <td>589 </td>
+      <td>802 </td>
+      <td>1209 </td>
+      <td>1741 </td>
+    </tr>
+  </tbody>
+</table>
+<h2><a href="#create-simulation-no-validation-" name="create-simulation-no-validation-" class="anchor"><span class="anchor-link"></span></a>Create Simulation (no validation)</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>456 </td>
+      <td>11 </td>
+      <td>72 </td>
+      <td>85 </td>
+      <td>198 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>490 </td>
+      <td>33 </td>
+      <td>74 </td>
+      <td>239 </td>
+      <td>403 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>1063 </td>
+      <td>26 </td>
+      <td>77 </td>
+      <td>180 </td>
+      <td>366 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>891 </td>
+      <td>59 </td>
+      <td>113 </td>
+      <td>431 </td>
+      <td>546 </td>
+    </tr>
+  </tbody>
+</table>
+<h2><a href="#fetch-simulation" name="fetch-simulation" class="anchor"><span class="anchor-link"></span></a>Fetch Simulation</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>1849 </td>
+      <td>4 </td>
+      <td>4 </td>
+      <td>55 </td>
+      <td>68 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>2826 </td>
+      <td>5 </td>
+      <td>6 </td>
+      <td>47 </td>
+      <td>93 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>3440 </td>
+      <td>10 </td>
+      <td>13 </td>
+      <td>53 </td>
+      <td>116 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>3860 </td>
+      <td>15 </td>
+      <td>21 </td>
+      <td>57 </td>
+      <td>127 </td>
+    </tr>
+  </tbody>
+</table>
+<h2><a href="#mixed-simulation" name="mixed-simulation" class="anchor"><span class="anchor-link"></span></a>Mixed Simulation</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>467 </td>
+      <td>14 </td>
+      <td>29 </td>
+      <td>80 </td>
+      <td>269 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>566 </td>
+      <td>15 </td>
+      <td>25 </td>
+      <td>89 </td>
+      <td>1076 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>567 </td>
+      <td>16 </td>
+      <td>27 </td>
+      <td>128 </td>
+      <td>3552 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>506 </td>
+      <td>16 </td>
+      <td>26 </td>
+      <td>154 </td>
+      <td>7182 </td>
+    </tr>
+  </tbody>
+</table>
+<h2><a href="#tag-simulation" name="tag-simulation" class="anchor"><span class="anchor-link"></span></a>Tag Simulation</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>508 </td>
+      <td>7 </td>
+      <td>69 </td>
+      <td>95 </td>
+      <td>195 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>699 </td>
+      <td>16 </td>
+      <td>76 </td>
+      <td>100 </td>
+      <td>199 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>1107 </td>
+      <td>15 </td>
+      <td>80 </td>
+      <td>163 </td>
+      <td>276 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>1661 </td>
+      <td>26 </td>
+      <td>72 </td>
+      <td>144 </td>
+      <td>257 </td>
+    </tr>
+  </tbody>
+</table>
+<h2><a href="#getbytag-simulation" name="getbytag-simulation" class="anchor"><span class="anchor-link"></span></a>GetByTag Simulation</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>156 </td>
+      <td>86 </td>
+      <td>116 </td>
+      <td>298 </td>
+      <td>418 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>189 </td>
+      <td>118 </td>
+      <td>215 </td>
+      <td>406 </td>
+      <td>586 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>192 </td>
+      <td>200 </td>
+      <td>460 </td>
+      <td>975 </td>
+      <td>1381 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>285 </td>
+      <td>202 </td>
+      <td>477 </td>
+      <td>988 </td>
+      <td>1409 </td>
+    </tr>
+  </tbody>
+</table>
+<h1><a href="#conclusions" name="conclusions" class="anchor"><span class="anchor-link"></span></a>Conclusions</h1>
+<p>The &ldquo;<em>Create Simulation</em>&rdquo; and &ldquo;<em>Create Simulation (no validation)</em>&rdquo; shows the impact of SHACL validation for resources on the throughput an latency. Most of the CPU cycles (~ 90%) are spent running the validation.</p>
+<p>The system scales fairly well with the number of nodes allocated, but depends on each of the operations. Although the number of concurrent requests is generally higher with more nodes, the penalty of node to node communication can have a fairly big impact. For example: assembling schemas (following <code>owl:import</code> and <code>@context</code> references) implies a lot of cross node communication; for &ldquo;<em>Create Simulation</em>&rdquo; increasing the cluster size from 1 to 2, while it shows an increase in the total throughput, the value is not double to that of a single node.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/admin/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/additional-info/benchmarks/results.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -277,7 +595,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/api/operating-on-resources.html" title="Operating on resources" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/additional-info/benchmarks/data-volume-and-scenarios.html" title="Data volume and scenarios" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -286,17 +604,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Operating on resources
+Data volume and scenarios
 </span>
 </div>
 </a>
-<a href="../../../docs/api/admin/admin-orgs-api.html" title="Organizations" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/additional-info/web-applications-standards.html" title="Web applications development best practices" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Organizations
+Web applications development best practices
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
