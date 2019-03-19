@@ -742,7 +742,7 @@ OpenShift.
 ### Choice of hardware
 
 Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please
-take a look at the [benchmarks section](../../benchmarks/index.html) to get an idea of what you should expect in terms
+take a look at the [benchmarks section](../../additional-info/benchmarks/index.html) to get an idea of what you should expect in terms
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
@@ -780,7 +780,7 @@ mere indexing systems.
 Please have a look at the [Planning and Testing](https://docs.datastax.com/en/dse-planning/doc/) section in the
 DataStax documentation as it contains recommendations in terms of hardware and capacity.
 
-As described in the [architecture section](../../architecture/systematic-service-design.html) the generally adopted
+As described in the [architecture section](../../additional-info/architecture/systematic-service-design.html) the generally adopted
 persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
 implications to the total amount of disk used by the primary store.
 
