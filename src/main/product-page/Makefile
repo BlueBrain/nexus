@@ -4,6 +4,10 @@ install:
 	@echo "Installing project's dependencies... 🚀"
 	@docker-compose run --rm nexus-product-page install
 
+dev:
+	@echo "Launching dev mode 🍄"
+	@docker-compose run --rm --service-port nexus-product-page run dev
+
 build:
 	@echo "Building project... 👷"
 	@docker-compose run --rm nexus-product-page

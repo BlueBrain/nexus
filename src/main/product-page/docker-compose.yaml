@@ -1,11 +1,15 @@
-version: '3'
+version: "3"
 
 services:
-  nexus-sdk:
+  nexus-product-page:
     image: node:11-slim
     working_dir: /app
     tty: true
     volumes:
       - .:/app
     entrypoint: npm
-    command: ['run', 'build']
+    ports:
+      - "127.0.0.1:8000:8000"
+    expose:
+      - "8000"
+    command: ["run", "build"]
