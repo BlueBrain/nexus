@@ -17,7 +17,7 @@ architectural decisions which have been made on the system.
 A one hour talk was given at the Scala Romandie meetup
 [Building a knowledge graph for data driven science](https://www.meetup.com/Scala-Romandie/events/258897390/).
 
-It goes through key design decisions behind building Nexus and highlights their concrete implementation in our Scala
+It goes through key design decisions behind building Nexus and highlights from the concrete implementation in our Scala
 codebase.
 
 You can see [the original slides](meetup/index.html) or a [PDF export](meetup/slides.pdf).
