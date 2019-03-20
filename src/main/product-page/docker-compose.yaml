@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  nexus-sdk:
+    image: node:11-slim
+    working_dir: /app
+    tty: true
+    volumes:
+      - .:/app
+    entrypoint: npm
+    command: ['run', 'build']
