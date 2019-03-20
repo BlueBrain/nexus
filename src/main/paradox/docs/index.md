@@ -18,7 +18,7 @@ digitally reconstruct and simulate the brain.
 
 At the heart of the BlueBrain Nexus platform lies the Knowledge Graph; at BlueBrain, it will allow scientists to:
 
-1. Register and manage neuroscience relevant entity types through schemas that can reuse or extend community defined
+1. Register and manage neuroscience relevant entity types through schemas that can reuse or extend community decd ~fined
 schemas (e.g. schema.org, bioschema.org, W3C-PROV) and ontologies (e.g. brain parcellation schemes, cell types,
 taxonomy).
 
