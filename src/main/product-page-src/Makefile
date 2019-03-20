@@ -12,6 +12,10 @@ build:
 	@echo "Building project... 👷"
 	@docker-compose run --rm nexus-product-page
 
+open:
+	@echo "Opening output html in your browser... 🏖"
+	@open ../paradox/test/index.html
+
 test:
 	@echo "Running tests... 🧪"
 	@docker-compose run --rm nexus-product-page test
