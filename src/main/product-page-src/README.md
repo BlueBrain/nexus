@@ -29,14 +29,16 @@ This section shows how to build output files and verify that everything's okay t
 
 Run the build command, which will:
 
-- compile the assets.
-- Then copy the dist folder to src/main/paradox.
+- clean previous assets found in `src/main/paradox/public`.
+- compile the assets and put them in `src/main/paradox/public`.
+- Move the `index.html` to the root of `src/main/paradox/`
+- open your browser to the resulting things
 
-Make sure to make a PR having saved the changes to src/main/paradox. After a merge, this folder will be set up on github pages.
+Make sure to make a PR having saved the changes to `src/main/paradox`. After a merge, this folder will be served with github pages.
 
 Build: `make build`
 
-you can open the resulting files in your browser to make sure everything works correctly with the `Open` command
+This will cause your browser to open to view the resulting website, or you can call open manually with the `Open` command
 
 Open: `make open`
 

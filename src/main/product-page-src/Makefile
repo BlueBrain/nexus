@@ -9,12 +9,18 @@ start:
 	@docker-compose run --rm --service-port nexus-product-page start
 
 build:
+	@echo "Cleaning old output... 🧼"
+	@rm -rf ../paradox/public
 	@echo "Building project... 👷"
 	@docker-compose run --rm nexus-product-page
+	@echo "Copying index.html to paradox root folder... 📋"
+	@mv ../paradox/public/index.html ../paradox/index.html
+	@rm -rf public
+	$(MAKE) open
 
 open:
 	@echo "Opening output html in your browser... 🏖"
-	@open ../paradox/test/index.html
+	@open ../paradox/index.html
 
 test:
 	@echo "Running tests... 🧪"

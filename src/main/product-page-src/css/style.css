@@ -688,7 +688,7 @@ footer nav a:not([href]) {
   position: relative;
   padding: 2em 1em 2.5em;
   background-color: #eef2f4;
-  background-image: url("../static/img/blizzard.png");
+  background-image: url("../img/blizzard.png");
 }
 
 .legalese .links {
@@ -1181,7 +1181,7 @@ ul.menu {
 }
 
 .card ul li:before {
-  background-image: url("../static/img/check-circle.svg");
+  background-image: url("../img/check-circle.svg");
   content: "";
   background-position: center;
   height: 24px;

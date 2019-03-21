@@ -7,7 +7,7 @@ services:
     tty: true
     volumes:
       - .:/app
-      - ../paradox/test:/app/test
+      - ../paradox/public:/app/public
     entrypoint: npm
     ports:
       - "127.0.0.1:8000:8000"
