@@ -15,6 +15,8 @@ You want to change some text or add an image? just clone me and make your change
 
 Make sure you have already installed both [Docker Engine](https://docs.docker.com/install/) and [Docker Compose](https://docs.docker.com/compose/install/).
 
+> The instructions assume GNU Make, or you can use BSD make port `gmake` instead.
+
 - Install: `make install` (installs necessary packages)
 - Dev Mode: `make start` (starts serving the page in dev mode at [localhost:8000](http://localhost:8000))
 

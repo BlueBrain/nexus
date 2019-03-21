@@ -9,8 +9,7 @@ start:
 	@docker-compose run --rm --service-port nexus-product-page start
 
 build:
-	@echo "Cleaning old output... 🧼"
-	@rm -rf ../paradox/public
+	$(MAKE) clean
 	@echo "Building project... 👷"
 	@docker-compose run --rm nexus-product-page
 	@echo "Copying index.html to paradox root folder... 📋"
@@ -31,6 +30,5 @@ lint:
 	@docker-compose run --rm nexus-product-page run lint
 
 clean:
-	@echo "Cleaning... 🧹"
-	@docker-compose run --rm nexus-product-page run clean
-	@sudo rm -fr node_modules/
+	@echo "Cleaning old output... 🧼"
+	@rm -rf ../paradox/public
