@@ -1,6 +1,7 @@
 @@@ index
 
 * [Nexus concepts](nexus-concepts.md)
+* [Understanding Knowledge graphs](knowledge-graph/index.md)
 * [Running Nexus](running-nexus/index.md)
 * [Web Applications](webapps.md)
 

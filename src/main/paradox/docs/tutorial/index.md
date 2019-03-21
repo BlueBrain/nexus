@@ -1,8 +1,7 @@
 
 @@@ index
 
-* [Getting Started](getting-started/index.md)
-* [Understanding Knowledge graphs](knowledge-graph/index.md)
+* [Overview](getting-started/index.md)
 * [Linked Data](linking-data/index.md)
 * [Recommender](build-recommender/index.md)
 @@@
