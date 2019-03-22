@@ -81,18 +81,11 @@ section {
   background-size: 24px 24px;
 }
 
-img[alt="EPFL"].epfl-logo {
+.svg.epfl-logo {
   padding: 3px;
-  height: 50px;
-  width: auto;
+  width: 7em;
   margin: 0;
   transition: all 0.3s ease;
-}
-
-img[alt="EPFL"].epfl-logo:hover {
-  background-color: white;
-  -webkit-filter: grayscale(90%);
-  filter: invert(0%);
 }
 
 .call-to-action {
@@ -413,7 +406,7 @@ section {
   text-align: center;
 }
 
-canvas.lines {
+#lines {
   opacity: 0;
   position: absolute;
   width: 100%;
@@ -427,7 +420,7 @@ canvas.lines {
   animation-fill-mode: forwards;
 }
 
-.hero canvas.lines {
+.hero #lines {
   -webkit-animation: fadeInBarely 1s ease-in;
   animation: fadeInBarely 1s ease-in;
   -webkit-animation-fill-mode: forwards;
@@ -486,8 +479,8 @@ header nav:first-child {
   transition: all 150ms ease-out;
 }
 
-.menu-block a:hover svg path,
-.menu-block a:active svg path,
+.menu-block a:hover svg path:not(.epfl-link .svg path),
+.menu-block a:active svg path:not(.epfl-link .svg path),
 .menu-block a:hover .bluer,
 .menu-block a:active .bluer {
   fill: #44c7f4;
@@ -771,8 +764,6 @@ img[alt="EPFL"] {
 img[alt="blue Brain Project logo"] {
   width: 10em;
   margin-top: 2em;
-  -webkit-filter: grayscale(100%) contrast(90%);
-  filter: grayscale(100%) contrast(90%);
 }
 
 .icon {
