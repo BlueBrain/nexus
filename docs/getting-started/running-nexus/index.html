@@ -308,6 +308,41 @@ Docker version 18.09.1, build 4c52b90
 </code></pre>
 <h4><a href="#memory-and-cpu-limits" name="memory-and-cpu-limits" class="anchor"><span class="anchor-link"></span></a>Memory and CPU limits</h4>
 <p>On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least <strong>2 CPUs</strong> and <strong>8 GiB</strong> of memory in total. You can increase the limits in Docker settings in the menu <em>Preferences</em> &gt; <em>Advanced</em>.</p>
+<p>For a proper evaluation using Docker Swarm or Minikube/Kubernetes, at least <strong>16GiB</strong> of RAM is needed to run the provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost of a slower startup and a decreased overall performance, you should be able to go as low as:</p>
+<table>
+  <thead>
+    <tr>
+      <th align="center">Service </th>
+      <th align="center">Memory [MiB] </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td align="center">Cassandra </td>
+      <td align="center">512 </td>
+    </tr>
+    <tr>
+      <td align="center">Elasticsearch </td>
+      <td align="center">512 </td>
+    </tr>
+    <tr>
+      <td align="center">Blazegraph </td>
+      <td align="center">1024 </td>
+    </tr>
+    <tr>
+      <td align="center">KG </td>
+      <td align="center">1024 </td>
+    </tr>
+    <tr>
+      <td align="center">IAM </td>
+      <td align="center">512 </td>
+    </tr>
+    <tr>
+      <td align="center">Admin </td>
+      <td align="center">512 </td>
+    </tr>
+  </tbody>
+</table>
 <h3><a href="#recommended-docker-swarm" name="recommended-docker-swarm" class="anchor"><span class="anchor-link"></span></a>Recommended: Docker Swarm</h3>
 <p>Docker Swarm is the native orchestrator shipped with Docker. It provides a more robust way to run Nexus.</p>
 <p>If you&rsquo;ve never used Docker Swarm or Docker Stacks before, you first need to create a swarm cluster on your local machine:</p>
@@ -372,7 +407,7 @@ Removing network nexus_default
 </code></pre><div class="callout note "><div class="callout-title">Note</div>
 <p>As no data is persisted outside the containers, <strong>everything will be lost</strong> once you remove the Nexus deployment. If you&rsquo;d like help with creating persistent volumes, feel free to contact us on our <a href="https://gitter.im/BlueBrain/nexus">Gitter channel</a>.</p></div>
 <h3><a href="#legacy-docker-compose" name="legacy-docker-compose" class="anchor"><span class="anchor-link"></span></a>Legacy: Docker Compose</h3>
-<p>While not recommended, we provide a <a href="./docker-compose/docker-compose.yaml">Docker Compose template</a> in the old <em>version 2</em> format. Download the file into a directory of your choice, for instance <code>~/docker/nexus/</code>. You can then simply run <code>docker-compose up</code> within this directory:</p>
+<p>While not recommended, we provide a <a href="./docker-compose/docker-compose.yaml">Docker Compose template</a> in the old <em>version 2</em> format. It comes with lower memory settings and it&rsquo;s a convenient way to quickly try out Nexus on your own computer. Download the file into a directory of your choice, for instance <code>~/docker/nexus/</code>. You can then simply run <code>docker-compose up</code> within this directory:</p>
 <p>Command :</p>
 <pre><code>docker-compose up
 </code></pre>
