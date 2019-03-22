@@ -1,25 +1,16 @@
-import paper from 'paper';
+import SVG from "svgjs";
 
 const numPaths = 25;
 
-/* globals view*/
-/* globals Path*/
-/* globals Point*/
-/* globals window*/
+const colors = ["#8de2ff", "#f8ceec", "#E7EDF3"];
 
-const colors = [
-  '#8de2ff',
-  '#f8ceec',
-  '#E7EDF3'
-];
-
-function getCanvasBounds() {
+function getCanvasBounds(elm) {
   return {
-    canvasWidth: view.size.width,
-    canvasHeight:  view.size.height,
-    canvasMiddleX:  view.size.width / 2,
-    canvasMiddleY:  view.size.height / 2,
-  }
+    canvasWidth: elm.clientWidth,
+    canvasHeight: elm.clientHeight,
+    canvasMiddleX: elm.clientWidth / 2,
+    canvasMiddleY: elm.clientHeight / 2
+  };
 }
 
 function getRandomArbitraryRange(min, max) {
@@ -29,7 +20,7 @@ function getRandomArbitraryRange(min, max) {
 function generatePoint(bounds) {
   let w = bounds.canvasWidth;
   let h = bounds.canvasHeight;
-  let perimeter = (2*w) + (2*h);
+  let perimeter = 2 * w + 2 * h;
   let point = getRandomArbitraryRange(50, perimeter - 50);
   if (point < h) {
     return [0, point];
@@ -46,32 +37,25 @@ function generatePoint(bounds) {
   return [point, 0];
 }
 
-function generatePath (bounds) {
-  var myPath = new Path();
-  let selectedColorIndex = Math.floor(Math.random() * colors.length);
-  myPath.strokeColor = colors[selectedColorIndex];
-  let entryPoint = new Point(...generatePoint(bounds));
-  let exitPoint = new Point(...generatePoint(bounds));
-  myPath.add(entryPoint);
-  myPath.add(exitPoint);
-  return myPath;
+function generatePath(draw, bounds) {
+  const selectedColorIndex = Math.floor(Math.random() * colors.length);
+  const strokeColor = colors[selectedColorIndex];
+  const entryPoint = generatePoint(bounds);
+  const exitPoint = generatePoint(bounds);
+  draw
+    .line(entryPoint[0], entryPoint[1], exitPoint[0], exitPoint[1])
+    .stroke({ width: 1, color: strokeColor });
 }
 
-function generatePaths () {
-  let bounds = getCanvasBounds();
+function generatePaths(id) {
+  const elm = document.getElementById(id);
+  const bounds = getCanvasBounds(elm);
+  const draw = SVG(id).size(bounds.canvasWidth, bounds.canvasHeight);
   for (let i = 0; i <= numPaths; i++) {
-    generatePath(bounds);
+    generatePath(draw, bounds);
   }
 }
 
-function init (selector) {
-  paper.install(window);
-  document.querySelectorAll(selector).forEach(elm => {
-    paper.setup(elm);
-    generatePaths();
-  })
-}
-
-export default selector => {
-  init(selector);
+export default id => {
+  generatePaths(id);
 };

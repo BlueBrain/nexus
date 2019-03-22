@@ -406,7 +406,7 @@ section {
   text-align: center;
 }
 
-canvas.lines {
+#lines {
   opacity: 0;
   position: absolute;
   width: 100%;
@@ -420,7 +420,7 @@ canvas.lines {
   animation-fill-mode: forwards;
 }
 
-.hero canvas.lines {
+.hero #lines {
   -webkit-animation: fadeInBarely 1s ease-in;
   animation: fadeInBarely 1s ease-in;
   -webkit-animation-fill-mode: forwards;

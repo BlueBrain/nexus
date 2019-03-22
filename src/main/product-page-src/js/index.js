@@ -1,10 +1,10 @@
-// import lines from "./lines";
+import lines from "./lines";
 import svgify from "./libs/svg";
 import emailCatch from "./email-catch";
 import ScrollText from "./text-scrolling";
 
 svgify();
-// lines(".lines");
+lines("lines");
 // strange jquery setup to avoid
 // package shinnanigans
 const jquery = require("jquery");
