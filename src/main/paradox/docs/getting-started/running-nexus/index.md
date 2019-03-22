@@ -47,7 +47,7 @@ On macOS and Windows, Docker effectively runs containers inside a VM created by 
 Nexus requires at least **2 CPUs** and **8 GiB** of memory in total. You can increase the limits
 in Docker settings in the menu *Preferences* > *Advanced*.
 
-For a proper evaluation using Docker Swarm or Minikube/Kubernetes, at leat **16GiB** is needed to run the
+For a proper evaluation using Docker Swarm or Minikube/Kubernetes, at least **16GiB** of RAM is needed to run the
 provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost
 of a slower startup and a decreased overall performance, you should be able to go as low as:
 
