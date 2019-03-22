@@ -81,18 +81,11 @@ section {
   background-size: 24px 24px;
 }
 
-img[alt="EPFL"].epfl-logo {
+.svg.epfl-logo {
   padding: 3px;
-  height: 50px;
-  width: auto;
+  width: 7em;
   margin: 0;
   transition: all 0.3s ease;
-}
-
-img[alt="EPFL"].epfl-logo:hover {
-  background-color: white;
-  -webkit-filter: grayscale(90%);
-  filter: invert(0%);
 }
 
 .call-to-action {
@@ -486,8 +479,8 @@ header nav:first-child {
   transition: all 150ms ease-out;
 }
 
-.menu-block a:hover svg path,
-.menu-block a:active svg path,
+.menu-block a:hover svg path:not(.epfl-link .svg path),
+.menu-block a:active svg path:not(.epfl-link .svg path),
 .menu-block a:hover .bluer,
 .menu-block a:active .bluer {
   fill: #44c7f4;
