@@ -771,8 +771,6 @@ img[alt="EPFL"] {
 img[alt="blue Brain Project logo"] {
   width: 10em;
   margin-top: 2em;
-  -webkit-filter: grayscale(100%) contrast(90%);
-  filter: grayscale(100%) contrast(90%);
 }
 
 .icon {
