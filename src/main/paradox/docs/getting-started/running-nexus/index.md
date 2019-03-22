@@ -47,6 +47,18 @@ On macOS and Windows, Docker effectively runs containers inside a VM created by 
 Nexus requires at least **2 CPUs** and **8 GiB** of memory in total. You can increase the limits
 in Docker settings in the menu *Preferences* > *Advanced*.
 
+For a proper evaluation using Docker Swarm or Minikube/Kubernetes, at least **16GiB** of RAM is needed to run the
+provided templates. Feel free to tweak memory limits in order to fit your hardware constraints. At the cost
+of a slower startup and a decreased overall performance, you should be able to go as low as:
+
+|    Service    | Memory [MiB] |
+|:-------------:|:------------:|
+| Cassandra     |          512 |
+| Elasticsearch |          512 |
+| Blazegraph    |         1024 |
+| KG            |         1024 |
+| IAM           |          512 |
+| Admin         |          512 |
 
 ### Recommended: Docker Swarm
 
@@ -162,7 +174,8 @@ deployment. If you'd like help with creating persistent volumes, feel free to co
 ### Legacy: Docker Compose
 
 While not recommended, we provide a [Docker Compose template](./docker-compose/docker-compose.yaml)
-in the old *version 2* format. Download the file into a directory of your choice, for instance `~/docker/nexus/`.
+in the old *version 2* format. It comes with lower memory settings and it's a convenient way to quickly try
+out Nexus on your own computer. Download the file into a directory of your choice, for instance `~/docker/nexus/`.
 You can then simply run `docker-compose up` within this directory:
 
 Command
