@@ -3,7 +3,7 @@
 
 * [Thinking in Graph](thinking-in-graph.md)
 * [RDF and JSON-LD](understanding-jsonld.md)
-* [Querying KG](querying-knowledge-graph.md)
+
 @@@
 
 # Understanding knowledge graphs
