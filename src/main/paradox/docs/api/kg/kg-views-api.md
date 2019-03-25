@@ -30,26 +30,31 @@ There are several types of views, which relies on different technology to perfor
 
 ### SparqlView
 
-This view creates a SPARQL `namespace` where it stores all the resource's graph inside the view `project`.
+This view creates a SPARQL `namespace` where it stores the selected resources inside the view `project`.
 
-This view gets automatically created when the project is created and it cannot be modified.
+A default view gets automatically created when the project is created but other views can be created.
 
 
 **SparqlView payload**
 ```
 {
   "@id": "nxv:defaultSparqlIndex",
-  "@type": [ "View", "SparqlView" ]
+  "@type": [ "View", "SparqlView" ],
+  "resourceSchemas": [ "{resourceSchema}", ...],
+  "resourceTag": "{tag}",
+  "includeMetadata": {includeMetadata}
 }
 ```
 
+where...
+
+- `{resourceSchema}`: Iri - It selects the resources that are validated against the provided schema Iri. This field is optional.
+- `{tag}`: String - It selects the resources with the provided tag. This field is optional.
+- `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be stored in the Sparql graph. Otherwise it won't. The default value is `false`.
+
+
 ### ElasticSearchView
 
-@@@ note
-
-The described features are in `@Alpha` phase of development. The operations might change in the future.
-
-@@@
 
 This view creates an ElasticSearch `index` where it stores the selected resources inside the view `project`.
 
@@ -59,7 +64,7 @@ A default view gets automatically created when the project is created but other 
 ```
 {
   "@id": "{someid}",
-  "@type": [ "View", "ElasticSearchView", "Alpha" ],
+  "@type": [ "View", "ElasticSearchView"],
   "resourceSchemas": [ "{resourceSchema}", ...],
   "resourceTag": "{tag}",
   "sourceAsText": {sourceAsText},
@@ -80,17 +85,12 @@ where...
 
 ### AggregateElasticSearchView
 
-@@@ note
-
-The described features are in `@Alpha` phase of development. The operations might change in the future.
-
-@@@
 
 This view is an aggregate of ElasticSearchViews. The view itself does not create any index, but it reference to the already existing indices of the linked ElasticSearchViews.
 
 When performing queries on the `_search` endpoint, this view will make use of the [multi-index](https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html) query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.
 
-If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset of indices (or none) will be selecting, respecting the defined permissions.
+If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset ofindices (or none) will be selected, respecting the defined permissions.
 
 ![Aggregate ElasticSearchView](../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
 
@@ -98,7 +98,38 @@ If the caller does not have the permission `views/query` on all the projects def
 ```
 {
   "@id": "{someid}",
-  "@type": [ "View", "AggregateElasticSearchView", "Alpha" ],
+  "@type": [ "View", "AggregateElasticSearchView"],
+  "views": [ 
+    {
+        "project": "{project}",
+        "viewId": "{viewId}"
+    },
+    ...
+  ]
+}
+```
+
+where...
+ 
+- `{project}`: String - the project, defined as `{org_label}/{project_label}`, where the `{viewId}` is located.
+- `{viewId}`: Iri - The view @id value to be aggregated.
+
+
+
+### AggregateSparqlView
+
+
+This view is an aggregate of SparqlViews. The view itself does not create any index, but it reference to the already existing indices of the linked SparqlViews.
+
+When performing queries on the `_sparql` endpoint, this view will query all the underlying SparqlViews and then aggregate the results. The order how the results across the different SparqlView gets merged it is not deterministic.
+
+If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset ofindices (or none) will be selected, respecting the defined permissions.
+
+**AggregateSparqlView payload**
+```
+{
+  "@id": "{someid}",
+  "@type": [ "View", "AggregateSparqlView"],
   "views": [ 
     {
         "project": "{project}",
@@ -215,7 +246,7 @@ Links a view's revision to a specific name.
 Tagging a view is considered to be an update as well.
 
 ```
-PUT /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
+POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
   {
     "tag": "{name}",
     "rev": {rev}

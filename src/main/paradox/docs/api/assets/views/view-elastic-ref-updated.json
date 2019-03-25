@@ -4,7 +4,6 @@
   "@type": [
     "ElasticSearchView",
     "View",
-    "Alpha"
   ],
   "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",

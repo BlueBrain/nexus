@@ -1,8 +1,7 @@
 curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/views/myorg/myproj/nxv:myview?rev=1" -d \
 '{
   "@type": [
-    "ElasticSearchView",
-    "Alpha"
+    "ElasticSearchView"
   ],
   "mapping": {
     "dynamic": false,

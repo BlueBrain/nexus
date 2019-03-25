@@ -97,7 +97,7 @@ Links a resource revision to a specific name.
 Tagging a resource is considered to be an update as well.
 
 ```
-PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/tags?rev={previous_rev}
+POST /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/tags?rev={previous_rev}
   {
     "tag": "{name}",
     "rev": {rev}

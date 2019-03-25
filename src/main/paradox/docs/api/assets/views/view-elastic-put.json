@@ -1,7 +1,6 @@
 {
   "@type": [
-    "ElasticSearchView",
-    "Alpha"
+    "ElasticSearchView"
   ],
   "mapping": {
     "dynamic": false,

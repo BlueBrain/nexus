@@ -7,7 +7,6 @@
   "@type": [
     "ElasticSearchView",
     "View",
-    "Alpha"
   ],
   "includeMetadata": false,
   "mapping": {

@@ -3,8 +3,7 @@
   "@id": "nxv:myview",
   "@type": [
     "ElasticSearchView",
-    "View",
-    "Alpha"
+    "View"
   ],
   "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",

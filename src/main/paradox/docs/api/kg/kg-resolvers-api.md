@@ -162,7 +162,7 @@ Links a resolver revision to a specific name.
 Tagging a resolver is considered to be an update as well.
 
 ```
-PUT /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={previous_rev}
+POST /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={previous_rev}
   {
     "tag": "{name}",
     "rev": {rev}

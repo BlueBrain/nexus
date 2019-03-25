@@ -96,7 +96,7 @@ Links a schema revision to a specific name.
 Tagging a schema is considered to be an update as well.
 
 ```
-PUT /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={previous_rev}
+POST /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={previous_rev}
   {
     "tag": "{name}",
     "rev": {rev}

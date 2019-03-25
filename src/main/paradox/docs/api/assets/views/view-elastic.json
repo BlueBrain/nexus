@@ -1,8 +1,7 @@
 {
   "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
   "@type": [
-    "ElasticSearchView",
-    "Alpha"
+    "ElasticSearchView"
   ],
   "mapping": {
     "dynamic": false,

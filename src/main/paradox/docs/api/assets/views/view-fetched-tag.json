@@ -6,8 +6,7 @@
   "@id": "nxv:myview2",
   "@type": [
     "ElasticSearchView",
-    "View",
-    "Alpha"
+    "View"
   ],
   "includeMetadata": false,
   "mapping": {

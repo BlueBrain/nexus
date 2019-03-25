@@ -2,7 +2,6 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/vie
 '{
   "@type": [
     "ElasticSearchView",
-    "Alpha"
   ],
   "mapping": {
     "dynamic": false,

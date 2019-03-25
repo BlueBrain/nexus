@@ -22,6 +22,9 @@
         },
         {
           "node": "this:AggregateElasticSearchViewShape"
+        },
+        {
+          "node": "this:AggregateSparqlViewShape"
         }
       ]
     },
@@ -37,15 +40,6 @@
           "nodeKind": "sh:IRI",
           "sh:hasValue": {
             "@id": "nxv:ElasticSearchView"
-          }
-        },
-        {
-          "path": "rdf:type",
-          "name": "RDF type Alpha",
-          "description": "The Alpha RDF type.",
-          "nodeKind": "sh:IRI",
-          "sh:hasValue": {
-            "@id": "nxv:Alpha"
           }
         },
         {
@@ -115,6 +109,24 @@
           "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
           "minCount": 1,
           "maxCount": 1
+        },
+        {
+          "path": "nxv:resourceSchemas",
+          "name": "Resource schemas",
+          "description": "The set of schemas absolute iris used in the view.",
+          "nodeKind": "sh:IRI"
+        },
+        {
+          "path": "nxv:resourceTag",
+          "name": "Resource tag",
+          "description": "The tag for which indexing will be triggered",
+          "datatype": "xsd:string"
+        },
+        {
+          "path": "nxv:includeMetadata",
+          "name": "Include metadata",
+          "description": "flag to include or exclude metadata on the indexed Document",
+          "datatype": "xsd:boolean"
         }
       ]
     },
@@ -131,6 +143,39 @@
           "nodeKind": "sh:IRI",
           "sh:hasValue": {
             "@id": "nxv:AggregateElasticSearchView"
+          }
+        },
+        {
+          "path": "nxv:uuid",
+          "name": "UUID",
+          "description": "The underlying uuid generated for this view.",
+          "datatype": "xsd:string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}$",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:views",
+          "name": "viewsref",
+          "description": "the collection of views references.",
+          "node": "this:ViewRefShape",
+          "minCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:AggregateSparqlViewShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF types",
+          "description": "The rdf types.",
+          "nodeKind": "sh:IRI",
+          "sh:hasValue": {
+            "@id": "nxv:AggregateSparqlView"
           }
         },
         {

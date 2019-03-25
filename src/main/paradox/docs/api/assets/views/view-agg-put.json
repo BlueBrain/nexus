@@ -3,8 +3,7 @@
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
   },
   "@type": [
-    "AggregateElasticSearchView",
-    "Alpha"
+    "AggregateElasticSearchView"
   ],
   "views": [
     {

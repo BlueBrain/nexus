@@ -8,7 +8,11 @@
     "CrossProject": "nxv:CrossProject",
     "View": "nxv:View",
     "ElasticSearchView": "nxv:ElasticSearchView",
+    "Storage": "nxv:Storage",
+    "DiskStorage": "nxv:DiskStorage",
+    "S3Storage": "nxv:S3Storage",
     "AggregateElasticSearchView": "nxv:AggregateElasticSearchView",
+    "AggregateSparqlView": "nxv:AggregateSparqlView",
     "SparqlView":  "nxv:SparqlView",
     "Alpha": "nxv:Alpha",
     "_deprecated": "nxv:deprecated",
@@ -29,6 +33,10 @@
     },
     "_constrainedBy": {
       "@id": "nxv:constrainedBy",
+      "@type": "@id"
+    },
+    "_storageId": {
+      "@id": "nxv:storageId",
       "@type": "@id"
     },
     "_rev": "nxv:rev",

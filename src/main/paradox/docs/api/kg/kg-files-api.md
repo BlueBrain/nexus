@@ -83,7 +83,7 @@ Links a file revision to a specific name.
 Tagging a file is considered to be an update as well.
 
 ```
-PUT /v1/files/{org_label}/{project_label}/{file_id}/tags?rev={previous_rev}
+POST /v1/files/{org_label}/{project_label}/{file_id}/tags?rev={previous_rev}
   {
     "tag": "{name}",
     "rev": {rev}
