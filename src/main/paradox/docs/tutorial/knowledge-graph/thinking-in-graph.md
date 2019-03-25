@@ -25,10 +25,10 @@ for a company (Eric --works for--> EPFL).
 [ontology][1]. This is a formal description that both humans
 and computers can understand and process. The metadata is said to be self descriptive.
 
- In the example below, you can see that the entity **Bob** is a **Person** (also known as the **type** of the entity)
-and he has a property **was born on** for this the value is **14 July 1990**.
+ In the example below, you can see that the entity **Toy Story** is an **Animated movie** (also known as the **type** of the entity)
+and he has a property **Release date** for this the value is **March 29th, 1995**.
 
- ![Graph Structure](./assets/kg-graph_structure.png)
+ ![Graph Structure](./assets/kg-structure0.png)
 
  [1]: https://en.wikipedia.org/wiki/Ontology_(information_science)
 
@@ -39,12 +39,11 @@ and he has a property **was born on** for this the value is **14 July 1990**.
 the data and derive new information from explicitly asserted data. This inference can make information easier to
 discover.
 
- In the example below, we have **Bob**, he has parents (using the relation called **parent**) and we have asserted that
-his father also has parents. Having define this, we can now define a rule that instructs the inference engine to create
-new relations **grand parent** whenever we find the **parent** of a **parent**. This enables us to query the graph
-and directly get **Bob**'s grand parents without having to navigate through his parents first.
+ In the example below, we have **Toy Story**, it has characters (using the relation called **Character**) and we have asserted the cast of characters. Having define this, we can now define a rule that instructs the inference engine to create
+new relations **Voice Cast** whenever we find the **Cast** of a **Character**. This enables us to query the graph
+and directly get **Toy Story**'s voices cast without having to navigate through its cast first.
 
- ![Graph Structure](./assets/kg-smart.png)
+ ![Graph Structure](./assets/kg_inferred-relation0.png)
 
 
 ### It is alive
@@ -52,13 +51,12 @@ and directly get **Bob**'s grand parents without having to navigate through his 
  A graph is a flexible data structure, and an ontology can evolve as new data comes in. As a result, Data can be
 continually be added to help serve new usecases.
 
- The illustration below shows how the initial graph representing **Bob** can be augmented to capture many other related
+ The illustration below shows how the initial graph representing **Toy Story** can be augmented to capture many other related
 domains such as:
 
- - Bob's social network (e.g. Friends)
- - People's tourism destinations (e.g. Eiffel Tower)
- - Towns and tourism landmarks (e.g. Louvre)
- - Pieces of arts and where they are located (e.g. Mona Lisa)
+ - Toy Story's similar movies (e.g. Cars)
+ - Cities and associations related to motion picture production (e.g. Motion Picture Association of America)
+ - Places and people connected to animation movies (e.g. Steve Jobs)
 
 
- ![Graph Structure](./assets/kg-alive.png)
+ ![Graph Structure](./assets/kg_alive-structure0.png)
