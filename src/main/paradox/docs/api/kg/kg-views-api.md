@@ -86,7 +86,7 @@ where...
 ### AggregateElasticSearchView
 
 
-This view is an aggregate of ElasticSearchViews. The view itself does not create any index, but it reference to the already existing indices of the linked ElasticSearchViews.
+This view is an aggregate of ElasticSearchViews. The view itself does not create any index, but it references the already existing indices of the linked ElasticSearchViews.
 
 When performing queries on the `_search` endpoint, this view will make use of the [multi-index](https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html) query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.
 
@@ -119,9 +119,9 @@ where...
 ### AggregateSparqlView
 
 
-This view is an aggregate of SparqlViews. The view itself does not create any index, but it reference to the already existing indices of the linked SparqlViews.
+This view is an aggregate of SparqlViews. The view itself does not create any index, but it references the already existing indices of the linked SparqlViews.
 
-When performing queries on the `_sparql` endpoint, this view will query all the underlying SparqlViews and then aggregate the results. The order how the results across the different SparqlView gets merged it is not deterministic.
+When performing queries on the `sparql` endpoint, this view will query all the underlying SparqlViews and then aggregate the results. The order how the results across the different SparqlView gets merged it is not deterministic.
 
 If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset ofindices (or none) will be selected, respecting the defined permissions.
 
