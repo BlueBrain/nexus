@@ -1,30 +1,20 @@
 {
   "@context": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "View": "nxv:View",
-    "ElasticSearchView": "nxv:ElasticSearchView",
-    "SparqlView": "nxv:SparqlView",
-    "AggregateElasticSearchView": "nxv:AggregateElasticSearchView",
-    "AggregateSparqlView": "nxv:AggregateSparqlView",
-    "_uuid": "nxv:uuid",
-    "resourceSchemas": {
-      "@id": "nxv:resourceSchemas",
-      "@type": "@id",
-      "@container": "@set"
-    },
-    "views": {
-      "@id": "nxv:views",
-      "@container": "@set"
-    },
-    "project": "nxv:project",
-    "viewId": {
-      "@id": "nxv:viewId",
-      "@type": "@id"
-    },
-    "resourceTag": "nxv:resourceTag",
-    "includeMetadata": "nxv:includeMetadata",
-    "sourceAsText": "nxv:sourceAsText",
-    "mapping": "nxv:mapping"
+    "Alpha": "nxv:Alpha",
+    "Storage": "nxv:Storage",
+    "DiskStorage": "nxv:DiskStorage",
+    "S3Storage": "nxv:S3Storage",
+    "default": "nxv:default",
+    "volume": "nxv:volume",
+    "readPermission": "nxv:readPermission",
+    "writePermission": "nxv:writePermission",
+    "bucket": "nxv:bucket",
+    "endpoint": "nxv:endpoint",
+    "region": "nxv:region",
+    "accessKey": "nxv:accessKey",
+    "secretKey": "nxv:secretKey",
+    "_algorithm": "nxv:algorithm"
   },
-  "@id": "https://bluebrain.github.io/nexus/contexts/view.json"
+  "@id": "https://bluebrain.github.io/nexus/contexts/storage.json"
 }
