@@ -279,8 +279,14 @@ BlueBrain/nexus
 <p><img src="./webapps/img/list-resources.png" alt="List resources" /></p>
 <p>You can search resources using the ElasticSearch query syntax.</p>
 <p><img src="./webapps/img/search-resources.png" alt="Search resources" /></p>
-<p>Click on a resource and you&rsquo;ll see its full payload in a side panel, in the JSON-LD format.</p>
+<h6><a href="#details-view" name="details-view" class="anchor"><span class="anchor-link"></span></a>Details View</h6>
+<p>Click on a resource and you&rsquo;ll see a more detailed view with important metadata displayed on a card on the top, as well as a JSON-lD form that may or not be editable, depending on the selected resource&rsquo;s schema (uploaded files cannot be edited, for example.)</p>
 <p><img src="./webapps/img/view-resource.png" alt="View resource" /></p>
+<h6><a href="#links-view" name="links-view" class="anchor"><span class="anchor-link"></span></a>Links View</h6>
+<p>Inside the Details View you&rsquo;ll find a tab called Links. Here you can find two lists, one for Incoming Links and one for Outgoing Links. Incoming Links are other datasets that reference this dataset. Outgoing links are other datasets that are referenced inside this one. This is very helpful to navigate down the chains of references you have, by clicking on a link you&rsquo;ll be taken to that resource&rsquo;s details page, or brought to the web url if it&rsquo;s an external resource (a referenced URI, but not a resource integrated into the platform)</p>
+<h6><a href="#graph-view" name="graph-view" class="anchor"><span class="anchor-link"></span></a>Graph View</h6>
+<p>Inside the Details View you&rsquo;ll also find a tab that contains a WIP graph visualizer. This will be more useful as navigation functionalities are implemented, but for now it&rsquo;s helpful to visualize how the dataset is a collection of nodes (subjects) linking predicates (the yellow lines) to objects (other nodes).</p>
+<p><img src="./webapps/img/view-graph.png" alt="View graph" /></p>
 <h5><a href="#advanced-use-cases" name="advanced-use-cases" class="anchor"><span class="anchor-link"></span></a>Advanced use-cases</h5>
 <p>If you want to have several filtered lists of resources side by side, you can create additional filterable lists by using the &ldquo;New Query&rdquo; button in the side panel. It can be handy to make comparisons, or to build a set of ElasticSearch queries we want to reuse in an IPython Notebook or in a script.</p>
 <p><img src="./webapps/img/new-query-button.png" alt="New query button" /> <img src="./webapps/img/new-query.png" alt="New query" /></p>
