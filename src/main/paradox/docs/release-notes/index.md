@@ -41,7 +41,7 @@ The behaviour of the system is described across the documentation, but here are 
 
 Previously, the web interface was dubbed _Nexus Explorer_, and could only be used to browse the data stored in your
 Nexus instance. For the _Nexus V1_ release, we decided to build a new web application, called _[Nexus Web]_, that also
-enables operational management, data management and search capabilities on the system.
+enables operational management, data management and search capabilities on the system. At this stage of development, this application is likely to be most useful to technical users who work on integrating their data into Nexus.
 
 The web application is set to offer most of the features you can get with the raw API, as well as additional
 conveniences for Nexus users.
