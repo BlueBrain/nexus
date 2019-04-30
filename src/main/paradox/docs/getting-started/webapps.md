@@ -38,9 +38,24 @@ You can search resources using the ElasticSearch query syntax.
 
 ![Search resources](./webapps/img/search-resources.png)
 
-Click on a resource and you'll see its full payload in a side panel, in the JSON-LD format.
+###### Details View
+
+Click on a resource and you'll see a more detailed view with important metadata displayed on a card on the top, as well as a JSON-lD form that may or not be editable, depending on the selected resource's schema (uploaded files cannot be edited, for example.)
 
 ![View resource](./webapps/img/view-resource.png)
+
+###### Links View
+
+Inside the Details View you'll find a tab called Links. Here you can find two lists,
+one for Incoming Links and one for Outgoing Links. Incoming Links are other datasets that reference this dataset. Outgoing links are other datasets that are referenced inside this one. This is very helpful to navigate down the chains of references you have, by clicking on a link you'll be taken to that resource's details page, or brought to the web url if it's an external resource (a referenced URI, but not a resource integrated into the platform)
+
+###### Graph View
+
+Inside the Details View you'll also find a tab that contains a WIP graph visualizer.
+This will be more useful as navigation functionalities are implemented, but for now
+it's helpful to visualize how the dataset is a collection of nodes (subjects) linking predicates (the yellow lines) to objects (other nodes).
+
+![View graph](./webapps/img/view-graph.png)
 
 ##### Advanced use-cases
 
