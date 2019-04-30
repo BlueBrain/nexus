@@ -228,7 +228,7 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#deployment-configuration" name="deployment-configuration" class="anchor"><span class="anchor-link"></span></a>Deployment Configuration</h1>
 <p>The tests were performed against Nexus services deployed in Kubernetes cluster provisioned by <a href="https://aws.amazon.com/eks/">Amazon EKS</a>. The deployment configuration and the number of nodes assigned to each Nexus service are presented in the following diagram:</p>
-<p><img src="../../assets/img/performance_tests_environment.png" alt="deployment configuration" /></p>
+<p><img src="/assets/img/performance_tests_environment.png" alt="deployment configuration" /></p>
 <p>The benchmarks were run on a AWS EC2 <code>m5.large</code> server outside of the Kubernetes cluster.</p>
 <p>Preliminary tests shows that KG service is the most critical component of the system (as expected) and it has the most impact of the performance aspects of the system. Thus, during the tests the KG service cluster size was scaled to 1, 2, 4 and 6 replicas along with the number of concurrent connections (using the same multiplier) during the test executions.</p>
 </div>
