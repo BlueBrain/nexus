@@ -26,7 +26,7 @@ for a company (Eric --works for--> EPFL).
 and computers can understand and process. The metadata is said to be self descriptive.
 
  In the example below, you can see that the entity **Toy Story** is an **Animated movie** (also known as the **type** of the entity)
-and he has a property **Release date** for this the value is **March 29th, 1995**.
+and it has a property **Release date** for this the value is **March 29th, 1995**.
 
  ![Graph Structure](./assets/kg-structure0.png)
 
