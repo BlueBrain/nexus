@@ -3,7 +3,7 @@
 The tests were performed against Nexus services deployed in Kubernetes cluster provisioned by [Amazon EKS](https://aws.amazon.com/eks/).
 The deployment configuration and the number of nodes assigned to each Nexus service are presented in the following diagram:
 
-![deployment configuration](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/assets/img/performance_tests_environment.png)
+![deployment configuration](/assets/img/performance_tests_environment.png)
 
 The benchmarks were run on a AWS EC2 `m5.large` server outside of the Kubernetes cluster.
 
