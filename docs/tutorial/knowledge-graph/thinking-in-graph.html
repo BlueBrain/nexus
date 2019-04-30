@@ -271,22 +271,21 @@ BlueBrain/nexus
 <p><img src="./assets/kg-entity_relation.png" alt="Graph Structure" /></p>
 <h3><a href="#it-is-semantic" name="it-is-semantic" class="anchor"><span class="anchor-link"></span></a>It is semantic</h3>
 <p>The metadata definition is encoded, alongside the metadata, in an <a href="https://en.wikipedia.org/wiki/Ontology_(information_science)">ontology</a>. This is a formal description that both humans and computers can understand and process. The metadata is said to be self descriptive.</p>
-<p>In the example below, you can see that the entity <strong>Bob</strong> is a <strong>Person</strong> (also known as the <strong>type</strong> of the entity) and he has a property <strong>was born on</strong> for this the value is <strong>14 July 1990</strong>.</p>
-<p><img src="./assets/kg-graph_structure.png" alt="Graph Structure" /></p>
+<p>In the example below, you can see that the entity <strong>Toy Story</strong> is an <strong>Animated movie</strong> (also known as the <strong>type</strong> of the entity) and it has a property <strong>Release date</strong> for this the value is <strong>March 29th, 1995</strong>.</p>
+<p><img src="./assets/kg-structure0.png" alt="Graph Structure" /></p>
 <h3><a href="#it-is-smart" name="it-is-smart" class="anchor"><span class="anchor-link"></span></a>It is smart</h3>
 <p>Since all this information is represented in an ontology, it enables us to run a tool called an inference engine on the data and derive new information from explicitly asserted data. This inference can make information easier to discover.</p>
-<p>In the example below, we have <strong>Bob</strong>, he has parents (using the relation called <strong>parent</strong>) and we have asserted that his father also has parents. Having define this, we can now define a rule that instructs the inference engine to create new relations <strong>grand parent</strong> whenever we find the <strong>parent</strong> of a <strong>parent</strong>. This enables us to query the graph and directly get <strong>Bob</strong>&rsquo;s grand parents without having to navigate through his parents first.</p>
-<p><img src="./assets/kg-smart.png" alt="Graph Structure" /></p>
+<p>In the example below, we have <strong>Toy Story</strong>, it has characters (using the relation called <strong>Character</strong>) and we have asserted the cast of characters. Having define this, we can now define a rule that instructs the inference engine to create new relations <strong>Voice Cast</strong> whenever we find the <strong>Cast</strong> of a <strong>Character</strong>. This enables us to query the graph and directly get <strong>Toy Story</strong>&rsquo;s voices cast without having to navigate through its cast first.</p>
+<p><img src="./assets/kg_inferred-relation0.png" alt="Graph Structure" /></p>
 <h3><a href="#it-is-alive" name="it-is-alive" class="anchor"><span class="anchor-link"></span></a>It is alive</h3>
 <p>A graph is a flexible data structure, and an ontology can evolve as new data comes in. As a result, Data can be continually be added to help serve new usecases.</p>
-<p>The illustration below shows how the initial graph representing <strong>Bob</strong> can be augmented to capture many other related domains such as:</p>
+<p>The illustration below shows how the initial graph representing <strong>Toy Story</strong> can be augmented to capture many other related domains such as:</p>
 <ul>
-  <li>Bob&rsquo;s social network (e.g. Friends)</li>
-  <li>People&rsquo;s tourism destinations (e.g. Eiffel Tower)</li>
-  <li>Towns and tourism landmarks (e.g. Louvre)</li>
-  <li>Pieces of arts and where they are located (e.g. Mona Lisa)</li>
+  <li>Toy Story&rsquo;s similar movies (e.g. Cars)</li>
+  <li>Cities and associations related to motion picture production (e.g. Motion Picture Association of America)</li>
+  <li>Places and people connected to animation movies (e.g. Steve Jobs)</li>
 </ul>
-<p><img src="./assets/kg-alive.png" alt="Graph Structure" /></p>
+<p><img src="./assets/kg_alive-structure0.png" alt="Graph Structure" /></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/thinking-in-graph.md" title="Edit this page" class="md-source-file md-edit">
