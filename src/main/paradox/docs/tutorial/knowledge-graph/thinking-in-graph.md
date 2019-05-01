@@ -43,7 +43,7 @@ discover.
 new relations **Voice Cast** whenever we find the **Cast** of a **Character**. This enables us to query the graph
 and directly get **Toy Story**'s voices cast without having to navigate through its cast first.
 
- ![Graph Structure](./assets/kg_inferred-relation0.png)
+ ![Graph Structure](./assets/kg_inferred-relation.png)
 
 
 ### It is alive
