@@ -38,7 +38,6 @@ and it has a property **Release date** for this the value is **March 29th, 1995*
  Since all this information is represented in an ontology, it enables us to run a tool called an inference engine on
 the data and derive new information from explicitly asserted data. This inference can make information easier to
 discover.
-git push 
  In the example below, we have **Toy Story**, it has characters (using the relation called **Character**) and we have asserted the cast of characters. Having define this, we can now define a rule that instructs the inference engine to create
 new relations **Voice Cast** whenever we find the **Cast** of a **Character**. This enables us to query the graph
 and directly get **Toy Story**'s voices cast without having to navigate through its cast first.
