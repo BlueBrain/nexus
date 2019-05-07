@@ -1,0 +1,2 @@
+curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/realms/realm1" \
+    -d '{"name":"Nexus Dev","openIdConfig":"https://nexus.example.com/auth/realms/bbp-test/.well-known/openid-configuration","logo":"http://nexus.example.com/logo.png"}'

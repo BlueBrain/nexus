@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "ex": "http://example.com/",
+    "@vocab": "http://example.com/"
+  },
+  "@type": "ex:Custom",
+  "name": "Alex",
+  "number": 24,
+  "bool": false
+}

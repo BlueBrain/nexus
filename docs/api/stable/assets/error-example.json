@@ -1,0 +1,8 @@
+{
+  "@context": {
+    "@vocab": "{{base}}/voc/nexus/core"
+  },
+  "code": "IllegalFilterFormat",
+  "message": "Unable to parse 'path' as an uri",
+  "field": "DownField(filter)/DownField(path)"
+}
