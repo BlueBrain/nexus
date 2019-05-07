@@ -1,1 +1,0 @@
-curl -XDELETE "https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/tags?rev=3"
