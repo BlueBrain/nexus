@@ -20,4 +20,4 @@ A one hour talk was given at the Scala Romandie meetup
 It goes through key design decisions behind building Nexus and highlights from the concrete implementation in our Scala
 codebase.
 
-You can see [the original slides](https://bluebrainnexus.io/docs/architecture/meetup/index.html#1) or a [PDF export](https://bluebrainnexus.io/docs/architecture/meetup/slides.pdf).
+You can see [the original slides](meetup/index.html#1) or a [PDF export](meetup/slides.pdf).

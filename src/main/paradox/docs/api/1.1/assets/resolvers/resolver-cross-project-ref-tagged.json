@@ -1,0 +1,17 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@id": "nxv:myresolver",
+  "@type": [
+    "Resolver",
+    "CrossProject"
+  ],
+  "_self": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:myresolver",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver",
+  "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+  "_rev": 3,
+  "_deprecated": false,
+  "_createdAt": "2018-09-18T09:58:00.801Z",
+  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+  "_updatedAt": "2018-09-18T10:25:00.801Z",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+}
