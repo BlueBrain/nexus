@@ -48,7 +48,7 @@ lazy val root = project
             |© 2017-2019 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
             |""".stripMargin)
     },
-    paradoxNavigationDepth in Paradox := 3,
+    paradoxNavigationDepth in Paradox := 4,
     paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
     // gh pages settings
     git.remoteRepo  := "git@github.com:BlueBrain/nexus.git",
