@@ -73,7 +73,7 @@ There are several channels provided to address different issues:
 
 **What are the clients I can use with Nexus? What are the requirements to run Nexus locally?**
 
-On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GiB of memory in total. You can increase the limits in Docker settings in the menu *Preferences > Advanced*. Further information [here](https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/docker.html).
+On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GiB of memory in total. You can increase the limits in Docker settings in the menu *Preferences > Advanced*. More datails are in the dedicated [page](https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/docker.html).
 
 **What is JSON-LD?**
 
@@ -118,4 +118,5 @@ The permissions for anonymous are preset in the [ACLs](https://bluebrainnexus.io
 
 **Can I use Nexus from Jupyter Notebooks?**
 
+Nexus can be used from Jupyter Notebooks using [Nexus Python SDK](https://github.com/BlueBrain/nexus-python-sdk/). Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook. Few examples are provided in the folder [Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks) or in the [page](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb) dedicated to create a recommendation engine using Blue Brain Nexus.
 
