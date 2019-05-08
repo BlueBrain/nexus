@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "<a machine readable unique identifier>",
+  "reason": "<a human readable description of the error>"
+}

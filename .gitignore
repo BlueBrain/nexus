@@ -16,6 +16,7 @@ target/
 # IDE
 .settings
 .idea
+.vscode
 *.iml
 **/nbproject/
 **/logs/

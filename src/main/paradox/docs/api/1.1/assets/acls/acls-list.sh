@@ -1,0 +1,1 @@
+curl "https://nexus.example.com/v1/acls/*?ancestors=true&self=true"

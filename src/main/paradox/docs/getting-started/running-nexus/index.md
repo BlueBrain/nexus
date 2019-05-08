@@ -540,7 +540,7 @@ $
 IAM is the service that manages identities and tokens via OIDC providers and manages the permissions to
 arbitrary resources in the system. By default, anonymous users will be granted enough permissions to
 fully manage resources in the system. If you'd like to change this behavior, you must set up
-[realms and permissions](../../api/iam/index.html) manually.
+[realms and permissions](../../api/1.0/iam/index.html) manually.
 
 Command
 :
@@ -764,7 +764,7 @@ should narrow the scope:
     depend performance wise to the underlying disk access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
     *   prefer SSD over HDDs because random access speed is more important than sequential access,
-    *   one exception is the file storage ([attachments to resources](../../api/kg/index.html) which are stored as
+    *   one exception is the file storage ([attachments to resources](../../api/1.0/kg/index.html) which are stored as
         binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access
         speed; this assumes that accessing attachments is not the at the top in the usage profile
 2.  All of Nexus services and most of the "off the shelf" products are built to run on top of the JVM which usually
@@ -793,7 +793,7 @@ mere indexing systems.
 Please have a look at the [Planning and Testing](https://docs.datastax.com/en/dse-planning/doc/) section in the
 DataStax documentation as it contains recommendations in terms of hardware and capacity.
 
-As described in the [architecture section](../../additional-info/architecture/systematic-service-design.html) the generally adopted
+As described in the [architecture section](../../additional-info/architecture/index.html) the generally adopted
 persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
 implications to the total amount of disk used by the primary store.
 
@@ -840,7 +840,7 @@ An example, assuming:
 
 *   10KB per resource
 *   1.000.000 distinct resources
-*   3 documents per resource (the number of documents depends on the configured [views](../../api/kg/index.html)
+*   3 documents per resource (the number of documents depends on the configured [views](../../api/1.0/kg/index.html)
     in the system)
 *   2 additional shard replicas (replication factor of 3)
 
