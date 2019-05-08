@@ -41,7 +41,6 @@ All resources in the system generally follow the very same lifecycle, as depicte
 
 ![Resource Lifecycle](./assets/resources/resource-lifecycle.png "Resource Lifecycle")
 
-
 Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the deprecation flag may have various semantics:
 
 - **Organizations**: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this organization will not be considered during indexing and resolution processes.
@@ -55,7 +54,3 @@ Data is never removed from the system, but rather is marked as deprecated. Depen
 Future policies may use this flag to determine if or when the deprecated data may be archived.
 
 [SHACL]: https://www.w3.org/TR/shacl/
-
-
-
-

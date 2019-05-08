@@ -190,7 +190,7 @@ Response
 ```
 GET /v1/files/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
 ```
-                                          
+
 where...
 
 - `{full_text_search_query}`: String - can be provided to select only the files in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
@@ -201,27 +201,6 @@ where...
 - `{type}`: Iri - can be used to filter the resulting files based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting files based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting files based on the person which performed the last update
-
-
-**Example**
-
-Request
-:   @@snip [resolver-list.sh](../assets/resolvers/resolver-list.sh)
-
-Response
-:   @@
-
-```
-GET /v1/files/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
-```
-
-where...
-
-- `{full_text_search_query}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
-- `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
-- `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
-
 
 **Example**
 
