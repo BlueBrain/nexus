@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "IllegalFilterFormat",
+  "reason": "Unable to parse 'path' as an uri",
+  "field": "DownField(filter)/DownField(path)"
+}
