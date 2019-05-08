@@ -77,7 +77,7 @@ On macOS and Windows, Docker effectively runs containers inside a VM created by 
 
 **What is JSON-LD?**
 
-JSON-LD is a JavaScript Object Notation for Linked Data. It is a set of W3C standards specifications which enable a semantic-preserving data exchange and allows to solve the ambiguity problem, including a @context object.
+JSON-LD is a JavaScript Object Notation for Linked Data. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph.
 
 **What is RDF?**
 
@@ -104,7 +104,7 @@ In Neuroshape related [page on github](https://github.com/INCF/neuroshapes) are 
 
 **Why are RDF and JSON-LD important for Nexus?**
 
-RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is fully compatible with the RDF data model, and it is the main format we use for messages exchange. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph.
+RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is fully compatible with the RDF data model, and it is the main format we use for messages exchange. It is also the preferred format for message exchanges for APIs. The choice of JSON-LD is due to the fact that is as plain JSON but with some special [keywords](https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords). 
 
 **Can I connect any SPARQL client to Nexus’ SPARQL endpoint?**
 
