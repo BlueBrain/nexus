@@ -1,7 +1,5 @@
 {
-  "@context": {
-    "@vocab": "{{base}}/voc/nexus/core"
-  },
-  "code": "<a machine readable unique code>",
-  "message": "<a human readable description of the error>"
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "<a machine readable unique identifier>",
+  "reason": "<a human readable description of the error>"
 }

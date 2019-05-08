@@ -257,29 +257,25 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#error-signaling" name="error-signaling" class="anchor"><span class="anchor-link"></span></a>Error Signaling</h1>
-<p>The services makes use of the HTTP Status Codes to report the outcome of each API call. The status codes are complemented by a consistent response data model for reporting client and system level failures.</p>
+<p>The services makes use of the HTTP status codes to report the outcome of each API call. The status codes are complemented by a consistent response data model for reporting client and system level failures.</p>
 <dl>
   <dt>Format</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: {
-    &quot;@vocab&quot;: &quot;{{base}}/voc/nexus/core&quot;
-  },
-  &quot;code&quot;: &quot;&lt;a machine readable unique code&gt;&quot;,
-  &quot;message&quot;: &quot;&lt;a human readable description of the error&gt;&quot;
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,
+  &quot;@type&quot;: &quot;&lt;a machine readable unique identifier&gt;&quot;,
+  &quot;reason&quot;: &quot;&lt;a human readable description of the error&gt;&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/error.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Example</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: {
-    &quot;@vocab&quot;: &quot;{{base}}/voc/nexus/core&quot;
-  },
-  &quot;code&quot;: &quot;IllegalFilterFormat&quot;,
-  &quot;message&quot;: &quot;Unable to parse &#39;path&#39; as an uri&quot;,
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/error.json&quot;,
+  &quot;@type&quot;: &quot;IllegalFilterFormat&quot;,
+  &quot;reason&quot;: &quot;Unable to parse &#39;path&#39; as an uri&quot;,
   &quot;field&quot;: &quot;DownField(filter)/DownField(path)&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/error-example.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<p>While the format only specifies <code>_code</code> and <code>_message</code> fields, additional fields may be presented for additional information in certain scenarios.</p>
+<p>In addition to mandatory <code>@type</code> and <code>reason</code> fields, arbitrary fields may be present for extra information in certain scenarios.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/error-signaling.md" title="Edit this page" class="md-source-file md-edit">
