@@ -12,7 +12,7 @@ Yes, Nexus is a free, Open Source platform released under [Apache Licence 2.0](h
 
 **How to run Nexus?**
 
-There are many ways to run Nexus: a public instance is running at the [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install [Docker](/getting-started/running-nexus/index.html#docker) or [Minikube](/getting-started/running-nexus/index.html#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](/getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster.
+There are many ways to run Nexus: a public instance is running at the [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install [Docker](getting-started/running-nexus/index.html#docker) or [Minikube](getting-started/running-nexus/index.html#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster.
 
 
 **How can I try Nexus without installing it? What is the difference with a relational database like PostgreSQL?**
@@ -29,20 +29,20 @@ Just to mention some of the Nexus features:
 
 **Is there a cloud deployment of Nexus?**
 
-There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following [page](/getting-started/webapps.html) is explained how to interact with Blue Brain Nexus web interface. 
+There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following @ref:[page](getting-started/webapps.md) is explained how to interact with Blue Brain Nexus web interface. 
 
 
 **Is there a limit on the number of resources Nexus can store?**
 
 Blue Brain Nexus leverages scalable open source technologies, therefore limitations and performance depends heavily on the deployment setup where Nexus is running.
 
-To get an idea about the ingestion capabilities, we have run [Benchmarks](/additional-info/benchmarks/data-volume-and-scenarios.html) where we were able to ingest more than 115 million resources.
+To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](additional-info/benchmarks/data-volume-and-scenarios.md) where we were able to ingest more than 115 million resources.
 
 
 **What is a Knowledge Graph?**
 
 Knowledge Graph is an innovative tool Google launched in May 2012 to enhance its search engine results, gathering informations from a variety of sources. It serves as data integration hub, connecting data by their semantic meaning in the ontology form, and allowing a flexible formal data structure organising them as a graph.
-As you can see in 'Understanding Knowledge Graph' [page](/tutorial/knowledge-graph/index.html), at the heart of Blue Brain Nexus platform lies Knowledge Graph, that provide knowledge representation to enable FAIR principles at Blue Brain and in neuroscience community.
+As you can see in 'Understanding Knowledge Graph' @ref:[page](tutorial/knowledge-graph/index.md), at the heart of Blue Brain Nexus platform lies Knowledge Graph, that provide knowledge representation to enable FAIR principles at Blue Brain and in neuroscience community.
 Indeed, Knowledge Graph Nexus allow scientists to: 
 1. register and manage neuroscience relevant entity types; 
 2. Submit data to the platform and describe their provenance using the W3C PROV model; 
@@ -52,6 +52,7 @@ Indeed, Knowledge Graph Nexus allow scientists to:
 **How do I report a bug? Which support Nexus team provide?**
 
 There are several channels provided to address different issues:
+
 - **Bug report**: If you have found a bug while using some of the Nexus services, please create an issue [here](https://github.com/BlueBrain/nexus/issues/new?labels=bug).
 - **Questions**: if you need support, we will be reachable through the [Nexus Gitter channel](https://gitter.im/BlueBrain/nexus)
 - **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found [here](https://bluebrain.github.io/nexus/docs)
@@ -62,7 +63,7 @@ There are several channels provided to address different issues:
 
 **What are the clients I can use with Nexus? What are the requirements to run Nexus locally?**
 
-On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GiB of memory in total. You can increase the limits in Docker settings in the menu *Preferences > Advanced*. More datails are in the dedicated [page](/getting-started/running-nexus/index.html).
+On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GiB of memory in total. You can increase the limits in Docker settings in the menu *Preferences > Advanced*. More datails are in the dedicated @ref:[page](getting-started/running-nexus/index.md).
 
 
 **What is JSON-LD?**
@@ -108,7 +109,7 @@ Yes. As long as the client supports the ability to provide a ```Authentication``
 
 **How I can create a Organizations as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?**
 
-The permissions for anonymous are preset in the [ACLs](/api/1.0/iam/iam-permissions-api.html) and should be replaced by the standard authentication. More details [here](/api/1.0/iam/iam-permissions-api.html).
+The permissions for anonymous are preset in the @ref:[ACLs](api/1.0/iam/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](api/1.0/iam/iam-permissions-api.md).
 
 
 **Can I use Nexus from Jupyter Notebooks?**
