@@ -39,6 +39,7 @@ Blue Brain Nexus leverages scalable open source technologies, therefore limitati
 
 To get an idea about the ingestion capabilities, we have run [Benchmarks](https://bluebrainnexus.io/docs/additional-info/benchmarks/data-volume-and-scenarios.html) where we were able to ingest more than 115 million resources.
 
+
 **What is a Knowledge Graph?**
 
 Knowledge Graph is an innovative tool Google launched in May 2012 to enhance its search engine results, gathering informations from a variety of sources. It serves as data integration hub, connecting data by their semantic meaning in the ontology form, and allowing a flexible formal data structure organising them as a graph.
@@ -47,12 +48,6 @@ Indeed, Knowledge Graph Nexus allow scientists to:
 1. register and manage neuroscience relevant entity types; 
 2. Submit data to the platform and describe their provenance using the W3C PROV model; 
 3. Search, discover, reuse and derive high-quality neuroscience data generated within and outside the platform for the purpose of driving their own scientific endeavours.
-
-
-**How Nexus support data governance?**
-
-
-**What has to be configured and how an instance can be integrated with Nexus v1?**
 
 
 **How do I report a bug? Which support Nexus team provide?**
@@ -65,27 +60,26 @@ There are several channels provided to address different issues:
 
 ## Technical
 
-**How can I configure my project?**
-
-**How to ingest my data into Nexus**
-
-(csv, json, json-ld, no schema needed)
 
 **What are the clients I can use with Nexus? What are the requirements to run Nexus locally?**
 
 On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GiB of memory in total. You can increase the limits in Docker settings in the menu *Preferences > Advanced*. More datails are in the dedicated [page](https://bluebrain.github.io/nexus/docs/getting-started/running-nexus/docker.html).
 
+
 **What is JSON-LD?**
 
 JSON-LD is a JavaScript Object Notation for Linked Data. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph.
+
 
 **What is RDF?**
 
 The Resource Description Framework (RDF) is a graph-based data model used for representing information in the Web. The basic structure of any expression in RDF is in triples, an extremely easy segmentation of any kind of knowledge in subject-predicate-object. It is a family of W3C specifications, and was originally design as a metadata model.
  
+ 
 **What is Elasticsearch?**
 
 Elasticsearch is a document oriented search engine with an HTTP web interface and schema-free JSON document. It’s able to aggregate data based on specific queries enabling the exploration of trends and pattern.
+
 
 **What is a SHACL schema?**
 
@@ -102,9 +96,11 @@ No. SHACL schemas provides with an extra layer of quality control for the data t
 
 In Neuroshape related [page on github](https://github.com/INCF/neuroshapes) are available shared validated data models based on open use cases.
 
+
 **Why are RDF and JSON-LD important for Nexus?**
 
 RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is fully compatible with the RDF data model, and it is the main format we use for messages exchange. It is also the preferred format for message exchanges for APIs. The choice of JSON-LD is due to the fact that is as plain JSON but with some special [keywords](https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords). 
+
 
 **Can I connect any SPARQL client to Nexus’ SPARQL endpoint?**
 
