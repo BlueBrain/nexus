@@ -20,6 +20,7 @@ There are many ways to run Nexus: a public instance is running at the [Sandbox](
 You can use the cloud deployment.
 Although Nexus can be used as a regular database, it's flexibility and feature set are well beyond that. 
 Just to mention some of the Nexus features:
+
 * Allows to define different constraints to different set of data at runtime;
 * Provides automatic indexing into several indexers (currently ElasticSearch and Sparql), dealing with reindexing strategies, retries and progress;
 * Provides authentication;
@@ -45,7 +46,7 @@ Knowledge Graph is an innovative tool Google launched in May 2012 to enhance its
 As you can see in 'Understanding Knowledge Graph' @ref:[page](tutorial/knowledge-graph/index.md), at the heart of Blue Brain Nexus platform lies Knowledge Graph, that provide knowledge representation to enable FAIR principles at Blue Brain and in neuroscience community.
 Indeed, Knowledge Graph Nexus allow scientists to: 
 
-1. register and manage neuroscience relevant entity types; 
+1. Register and manage neuroscience relevant entity types; 
 
 2. Submit data to the platform and describe their provenance using the W3C PROV model; 
 
