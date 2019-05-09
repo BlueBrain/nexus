@@ -2,7 +2,7 @@
 
 **What is Nexus?**
 
-Nexus is an Open Source, data and knowledge management platform designed to enable the definition of arbitrary applications domains for which there is a need to create and manage entities as well as their relations (e.g. provenance) by the FAIR principles. Indeed, Nexus enable data to be Findable, Accessible, Interoperable and Re-usable, as well as able to track data provenance and supporting data longevity in a secure and scalable manner.
+Nexus is an Open Source, data and knowledge management platform designed to enable ingestion, integration and search of virtually any time of data. Entities (real world data) are described using well defined and validatable schemas (using JSON-LD and optionally SHACL). Nexus can be used with existing data schemas from http://schema.org or new ones custom created for your own applications. For neuroscience data, http://Neuroshapes.org provides open, community-developed schemas.  While Nexus is engineered to support rich semantics, it is not obligatory. In fact, data can be ingested from existing data sources such as CSV files and SQL databases, and iteratively reshaped into well defined data schemas. Nexus creating and managing entities as well as their relations (e.g. provenance) by the FAIR principles. Indeed, Nexus enables data to be Findable, Accessible, Interoperable and Re-usable, as well as able to track data provenance and supporting data longevity in a secure and scalable manner.
 
 
 **Is Nexus free to use?**
