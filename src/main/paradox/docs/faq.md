@@ -20,11 +20,11 @@ There are many ways to run Nexus: a public instance is running at the [Sandbox](
 You can use the cloud deployment.
 Although Nexus can be used as a regular database, it's flexibility and feature set are well beyond that. 
 Just to mention some of the Nexus features:
-- Allows to define different constraints to different set of data at runtime;
-- Provides automatic indexing into several indexers (currently ElasticSearch and Sparql), dealing with reindexing strategies, retries and progress;
-- Provides authentication;
-- Comes with a flexible and granular authorization mechanism;
-- Guarantees resources immutability, keeping track of a history of changes.
+* Allows to define different constraints to different set of data at runtime;
+* Provides automatic indexing into several indexers (currently ElasticSearch and Sparql), dealing with reindexing strategies, retries and progress;
+* Provides authentication;
+* Comes with a flexible and granular authorization mechanism;
+* Guarantees resources immutability, keeping track of a history of changes.
 
 
 **Is there a cloud deployment of Nexus?**
@@ -44,8 +44,11 @@ To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](a
 Knowledge Graph is an innovative tool Google launched in May 2012 to enhance its search engine results, gathering informations from a variety of sources. It serves as data integration hub, connecting data by their semantic meaning in the ontology form, and allowing a flexible formal data structure organising them as a graph.
 As you can see in 'Understanding Knowledge Graph' @ref:[page](tutorial/knowledge-graph/index.md), at the heart of Blue Brain Nexus platform lies Knowledge Graph, that provide knowledge representation to enable FAIR principles at Blue Brain and in neuroscience community.
 Indeed, Knowledge Graph Nexus allow scientists to: 
+
 1. register and manage neuroscience relevant entity types; 
+
 2. Submit data to the platform and describe their provenance using the W3C PROV model; 
+
 3. Search, discover, reuse and derive high-quality neuroscience data generated within and outside the platform for the purpose of driving their own scientific endeavours.
 
 
@@ -53,10 +56,11 @@ Indeed, Knowledge Graph Nexus allow scientists to:
 
 There are several channels provided to address different issues:
 
-- **Bug report**: If you have found a bug while using some of the Nexus services, please create an issue [here](https://github.com/BlueBrain/nexus/issues/new?labels=bug).
-- **Questions**: if you need support, we will be reachable through the [Nexus Gitter channel](https://gitter.im/BlueBrain/nexus)
-- **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found [here](https://bluebrain.github.io/nexus/docs)
-- **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the [list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature). In case there isn't already one, please [open a feature request](https://github.com/BlueBrain/nexus/issues/new?labels=feature) describing your feature with as much detail as possible.
+
+* **Bug report**: If you have found a bug while using some of the Nexus services, please create an issue [here](https://github.com/BlueBrain/nexus/issues/new?labels=bug).
+* **Questions**: if you need support, we will be reachable through the [Nexus Gitter channel](https://gitter.im/BlueBrain/nexus)
+* **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found [here](https://bluebrain.github.io/nexus/docs)
+* **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the [list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature). In case there isn't already one, please [open a feature request](https://github.com/BlueBrain/nexus/issues/new?labels=feature) describing your feature with as much detail as possible.
 
 ## Technical
 
