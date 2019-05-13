@@ -1,0 +1,8 @@
+{
+    "@type": "S3Storage",
+    "default": true,
+    "bucket": "bucketName",
+    "endpoint": "https://s3.us-west-1.amazonaws.com",
+    "accessKey": "AKIAIOSFODNN7EXAMPLE",
+    "secretKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+}

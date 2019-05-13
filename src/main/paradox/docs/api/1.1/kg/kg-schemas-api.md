@@ -43,6 +43,7 @@ Response
 
 
 ## Create a schema using PUT
+
 This alternative endpoint to create a schema is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
 PUT /v1/schemas/{org_label}/{project_label}/{schema_id}

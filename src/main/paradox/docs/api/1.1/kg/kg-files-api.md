@@ -9,11 +9,11 @@ Each file...
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
 
-@@@ note { .tip title="Authorization notes" }	
+@@@ note { .tip title="Authorization notes" }
 
-When  modifying files, the caller must have `projects/write` permissions on the current path of the project or the ancestor paths.
+When modifying files, the caller must have `files/write` permissions on the current path of the project or the ancestor paths.
 
-When  reading files, the caller must have `projects/read` permissions on the current path of the project or the ancestor paths.
+When reading files, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
 
 @@@
 
