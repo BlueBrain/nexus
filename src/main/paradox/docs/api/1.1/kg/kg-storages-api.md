@@ -64,9 +64,9 @@ These tables summarize mandatory and optional fields for each storage type:
 |---------------------|----------|-----------|-----------|----------------|-----------------|
 | DiskStorage         | optional | mandatory | mandatory | optional       | optional        |
 
-| @type               | @id      | default   | folder    | endpoint  | credentials | readPermission | writePermission |
-|---------------------|----------|-----------|-----------|-----------|-------------|----------------|-----------------|
-| ExternalDiskStorage | optional | mandatory | mandatory | mandatory | optional    | optional       | optional        |
+| @type               | @id      | default   | folder    | endpoint | credentials | readPermission | writePermission |
+|---------------------|----------|-----------|-----------|----------|-------------|----------------|-----------------|
+| ExternalDiskStorage | optional | mandatory | mandatory | optional | optional    | optional       | optional        |
 
 | @type               | @id      | default   | bucket    | endpoint  | accessKey | secretKey | readPermission | writePermission |
 |---------------------|----------|-----------|-----------|-----------|-----------|-----------|----------------|-----------------|

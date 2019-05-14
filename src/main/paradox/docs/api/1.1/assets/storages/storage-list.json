@@ -27,7 +27,7 @@
                 "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
                 "https://bluebrain.github.io/nexus/vocabulary/Storage"
             ],
-            "_self": "https://nexus.example.com/v1/storages/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fminio",
+            "_self": "https://nexus.example.com/v1/storages/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%myoldstorage",
             "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storage.json",
             "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
             "_rev": 2,
