@@ -10,7 +10,7 @@
     ],
     "bucket": "mybucket",
     "default": true,
-    "endpoint": "http://minio.dev.nexus.ocp.bbp.epfl.ch",
+    "endpoint": "https://s3.us-west-1.amazonaws.com",
     "readPermission": "resources/read",
     "writePermission": "files/write",
     "_algorithm": "SHA-256",

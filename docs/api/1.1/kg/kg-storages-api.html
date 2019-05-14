@@ -379,7 +379,7 @@ BlueBrain/nexus
       <td>optional </td>
       <td>mandatory </td>
       <td>mandatory </td>
-      <td>mandatory </td>
+      <td>optional </td>
       <td>optional </td>
       <td>optional </td>
       <td>optional </td>
@@ -633,12 +633,12 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><code class="language-json">{
     &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-    &quot;@id&quot;: &quot;nxv:minio&quot;,
+    &quot;@id&quot;: &quot;nxv:mys3storage&quot;,
     &quot;@type&quot;: [
         &quot;S3Storage&quot;,
         &quot;Storage&quot;
     ],
-    &quot;_self&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:minio&quot;,
+    &quot;_self&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage&quot;,
     &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storage.json&quot;,
     &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
     &quot;_rev&quot;: 4,
@@ -671,7 +671,7 @@ BlueBrain/nexus
     ],
     &quot;bucket&quot;: &quot;mybucket&quot;,
     &quot;default&quot;: true,
-    &quot;endpoint&quot;: &quot;http://minio.dev.nexus.ocp.bbp.epfl.ch&quot;,
+    &quot;endpoint&quot;: &quot;https://s3.us-west-1.amazonaws.com&quot;,
     &quot;readPermission&quot;: &quot;resources/read&quot;,
     &quot;writePermission&quot;: &quot;files/write&quot;,
     &quot;_algorithm&quot;: &quot;SHA-256&quot;,
@@ -709,7 +709,7 @@ BlueBrain/nexus
     ],
     &quot;bucket&quot;: &quot;mybucket&quot;,
     &quot;default&quot;: false,
-    &quot;endpoint&quot;: &quot;http://minio.dev.nexus.ocp.bbp.epfl.ch&quot;,
+    &quot;endpoint&quot;: &quot;https://s3.us-west-1.amazonaws.com&quot;,
     &quot;readPermission&quot;: &quot;resources/read&quot;,
     &quot;writePermission&quot;: &quot;files/write&quot;,
     &quot;_algorithm&quot;: &quot;SHA-256&quot;,
@@ -747,7 +747,7 @@ BlueBrain/nexus
     ],
     &quot;bucket&quot;: &quot;mybucket&quot;,
     &quot;default&quot;: false,
-    &quot;endpoint&quot;: &quot;http://minio.dev.nexus.ocp.bbp.epfl.ch&quot;,
+    &quot;endpoint&quot;: &quot;https://s3.us-west-1.amazonaws.com&quot;,
     &quot;readPermission&quot;: &quot;resources/read&quot;,
     &quot;writePermission&quot;: &quot;files/write&quot;,
     &quot;_algorithm&quot;: &quot;SHA-256&quot;,
@@ -811,7 +811,7 @@ BlueBrain/nexus
                 &quot;https://bluebrain.github.io/nexus/vocabulary/S3Storage&quot;,
                 &quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;
             ],
-            &quot;_self&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fminio&quot;,
+            &quot;_self&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%myoldstorage&quot;,
             &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storage.json&quot;,
             &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
             &quot;_rev&quot;: 2,
