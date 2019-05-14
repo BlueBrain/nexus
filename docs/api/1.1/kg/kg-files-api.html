@@ -205,6 +205,7 @@ BlueBrain/nexus
         <li><a href="../../../../docs/api/1.1/kg/kg-schemas-api.html" class="page">Schemas</a></li>
         <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
         <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html" class="page">Views</a></li>
+        <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html" class="page">Storages</a></li>
         <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html" class="active page">Files</a></li>
         <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html" class="page">Resources</a></li>
       </ul></li>
@@ -245,7 +246,10 @@ BlueBrain/nexus
   <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#files" class="header">Files</a>
   <ul>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-file-using-post" class="header">Create a file using POST</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-resource-using-put" class="header">Create a resource using PUT</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-file-using-put" class="header">Create a file using PUT</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-file-specific-storage-" class="header">Create a file (specific storage)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#link-an-existing-file-using-post" class="header">Link an existing file using POST</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#link-an-existing-file-using-put" class="header">Link an existing file using PUT</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#update-a-file" class="header">Update a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#tag-a-file" class="header">Tag a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#deprecate-a-file" class="header">Deprecate a file</a></li>
@@ -277,7 +281,10 @@ BlueBrain/nexus
   <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#files" class="header">Files</a>
   <ul>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-file-using-post" class="header">Create a file using POST</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-resource-using-put" class="header">Create a resource using PUT</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-file-using-put" class="header">Create a file using PUT</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#create-a-file-specific-storage-" class="header">Create a file (specific storage)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#link-an-existing-file-using-post" class="header">Link an existing file using POST</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#link-an-existing-file-using-put" class="header">Link an existing file using PUT</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#update-a-file" class="header">Update a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#tag-a-file" class="header">Tag a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#deprecate-a-file" class="header">Deprecate a file</a></li>
@@ -308,7 +315,7 @@ BlueBrain/nexus
 <h2><a href="#create-a-file-using-post" name="create-a-file-using-post" class="anchor"><span class="anchor-link"></span></a>Create a file using POST</h2>
 <pre><code>POST /v1/files/{org_label}/{project_label}
 </code></pre>
-<p>The json payload: </p>
+<p>The json payload:</p>
 <ul>
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
   <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
@@ -342,7 +349,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-created.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#create-a-resource-using-put" name="create-a-resource-using-put" class="anchor"><span class="anchor-link"></span></a>Create a resource using PUT</h2>
+<h2><a href="#create-a-file-using-put" name="create-a-file-using-put" class="anchor"><span class="anchor-link"></span></a>Create a file using PUT</h2>
 <p>This alternative endpoint to create a resource is useful in case the json payload does not contain an <code>@id</code> but you want to specify one. The @id will be specified in the last segment of the endpoint URI.</p>
 <pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}
 </code></pre>
@@ -375,6 +382,147 @@ BlueBrain/nexus
   &quot;_updatedAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-put-created.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#create-a-file-specific-storage-" name="create-a-file-specific-storage-" class="anchor"><span class="anchor-link"></span></a>Create a file (specific storage)</h2>
+<pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}
+</code></pre>
+<p>Or</p>
+<pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+</code></pre>
+<p>&hellip; where <code>{storageId}</code> selects a specific storage backend where the file will be uploaded.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -F &quot;file=@/path/to/myfile.jpg;type=image/jpeg&quot; &quot;https://nexus.example.com/v1/files/myorg/myproj?storage=nxv:mys3storage&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-post-storageid.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;@type&quot;: &quot;File&quot;,
+  &quot;_bytes&quot;: 670,
+  &quot;_digest&quot;: {
+    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
+    &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
+  },
+  &quot;_filename&quot;: &quot;myfile.jpg&quot;,
+  &quot;_mediaType&quot;: &quot;image/jpeg&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/file.json&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;,
+  &quot;_updatedAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-created.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#link-an-existing-file-using-post" name="link-an-existing-file-using-post" class="anchor"><span class="anchor-link"></span></a>Link an existing file using POST</h2>
+<p>Creates a resource from an existing file, provided that the storage backend where it is located supports the operation.</p>
+<pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}
+  {
+    &quot;filename&quot;: &quot;myfile.png&quot;,
+    &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+    &quot;mediaType&quot;: &quot;image/png&quot;
+  }
+</code></pre>
+<p>&hellip; where <code>{storageId}</code> selects a specific storage backend that supports linking existing files.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST &quot;https://nexus.example.com/v1/files/myorg/myproj?storage=nxv:mys3storage&quot; -d \
+&#39;{
+    &quot;filename&quot;: &quot;myfile.png&quot;,
+    &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+    &quot;mediaType&quot;: &quot;image/png&quot;
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-link.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+    &quot;filename&quot;: &quot;myfile.png&quot;,
+    &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+    &quot;mediaType&quot;: &quot;image/png&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-link.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;@type&quot;: &quot;File&quot;,
+  &quot;_bytes&quot;: 670,
+  &quot;_digest&quot;: {
+    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
+    &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
+  },
+  &quot;_filename&quot;: &quot;myfile.png&quot;,
+  &quot;_location&quot;: &quot;https://s3.us-west-1.amazonaws.com/mybucket/relative/path/to/myfile.png&quot;,
+  &quot;_mediaType&quot;: &quot;image/png&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/file.json&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;,
+  &quot;_updatedAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-link-created.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#link-an-existing-file-using-put" name="link-an-existing-file-using-put" class="anchor"><span class="anchor-link"></span></a>Link an existing file using PUT</h2>
+<p>Creates a resource from an existing file, provided that the storage backend where it is located supports the operation.</p>
+<p>This alternative endpoint allows to specify the resource <code>@id</code>.</p>
+<pre><code>PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+  {
+    &quot;filename&quot;: &quot;myfile.png&quot;,
+    &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+    &quot;mediaType&quot;: &quot;image/png&quot;
+  }
+</code></pre>
+<p>&hellip; where <code>{storageId}</code> selects a specific storage backend that supports linking existing files.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPUT &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile.png?storage=nxv:mys3storage&quot; -d \
+&#39;{
+    &quot;filename&quot;: &quot;myfile.png&quot;,
+    &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+    &quot;mediaType&quot;: &quot;image/png&quot;
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-link-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+    &quot;filename&quot;: &quot;myfile.png&quot;,
+    &quot;path&quot;: &quot;relative/path/to/myfile.png&quot;,
+    &quot;mediaType&quot;: &quot;image/png&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-link.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
+  &quot;@id&quot;: &quot;base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;@type&quot;: &quot;File&quot;,
+  &quot;_bytes&quot;: 670,
+  &quot;_digest&quot;: {
+    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
+    &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
+  },
+  &quot;_filename&quot;: &quot;myfile.png&quot;,
+  &quot;_location&quot;: &quot;https://s3.us-west-1.amazonaws.com/mybucket/relative/path/to/myfile.png&quot;,
+  &quot;_mediaType&quot;: &quot;image/png&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/file.json&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 1,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;,
+  &quot;_updatedAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-link-created.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#update-a-file" name="update-a-file" class="anchor"><span class="anchor-link"></span></a>Update a file</h2>
 <p>This operation overrides the payload.</p>
@@ -412,7 +560,7 @@ BlueBrain/nexus
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-updated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#tag-a-file" name="tag-a-file" class="anchor"><span class="anchor-link"></span></a>Tag a file</h2>
-<p>Links a file revision to a specific name. </p>
+<p>Links a file revision to a specific name.</p>
 <p>Tagging a file is considered to be an update as well.</p>
 <pre><code>POST /v1/files/{org_label}/{project_label}/{file_id}/tags?rev={previous_rev}
   {
@@ -420,7 +568,7 @@ BlueBrain/nexus
     &quot;rev&quot;: {rev}
   }
 </code></pre>
-<p>&hellip; where </p>
+<p>&hellip; where</p>
 <ul>
   <li><code>{previous_rev}</code>: is the last known revision number for the file.</li>
   <li><code>{name}</code>: String - label given to the file at specific revision.</li>
@@ -702,7 +850,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../../docs/api/1.1/kg/kg-views-api.html" title="Views" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../../docs/api/1.1/kg/kg-storages-api.html" title="Storages" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -711,7 +859,7 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Views
+Storages
 </span>
 </div>
 </a>
