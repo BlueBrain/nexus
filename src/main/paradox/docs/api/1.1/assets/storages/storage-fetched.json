@@ -8,7 +8,7 @@
         "S3Storage",
         "Storage"
     ],
-    "bucket": "bucketName",
+    "bucket": "mybucket",
     "default": true,
     "endpoint": "http://minio.dev.nexus.ocp.bbp.epfl.ch",
     "readPermission": "resources/read",

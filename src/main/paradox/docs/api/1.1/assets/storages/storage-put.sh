@@ -2,7 +2,7 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/sto
 '{
   "@type": "S3Storage",
   "default": false,
-  "bucket": "bucketName",
+  "bucket": "mybucket",
   "endpoint": "https://s3.us-west-1.amazonaws.com",
   "accessKey": "AKIAIOSFODNN7EXAMPLE",
   "secretKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"

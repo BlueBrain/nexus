@@ -1,0 +1,5 @@
+{
+    "filename": "myfile.png",
+    "path": "relative/path/to/myfile.png",
+    "mediaType": "image/png"
+}
