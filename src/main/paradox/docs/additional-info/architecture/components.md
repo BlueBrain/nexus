@@ -1,6 +1,6 @@
 # Components
 
-![Component View](components.png)
+![Component View](components1.png )
 
 The Nexus platform is made up of a collection of services and web applications that work together to manage data stored
 within the system. The services and web applications are powered by a collection of libraries and tools built
