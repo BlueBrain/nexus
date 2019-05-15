@@ -2,7 +2,7 @@
 
 **What is Nexus?**
 
-Nexus is an Open Source, data and knowledge management platform designed to enable the definition of arbitrary applications domains for which there is a need to create and manage entities as well as their relations (e.g. provenance) by the FAIR principles. Indeed, Nexus enable data to be Findable, Accessible, Interoperable and Re-usable, as well as able to track data provenance and supporting data longevity in a secure and scalable manner.
+Nexus is an Open Source, data and knowledge management platform designed to enable ingestion, integration and search of virtually any kind of data. Entities (real world data) are described using well defined and validatable schemas (using JSON-LD and optionally SHACL). Nexus can be used with existing data schemas from http://schema.org or new ones custom created for your own applications. For neuroscience data, http://Neuroshapes.org provides open, community-developed schemas.  While Nexus is engineered to support rich semantics, it is not obligatory. In fact, data can be ingested from existing data sources such as CSV files and SQL databases, and iteratively reshaped into well defined data schemas. Nexus creating and managing entities as well as their relations (e.g. provenance) by the FAIR principles. Indeed, Nexus enables data to be Findable, Accessible, Interoperable and Re-usable, as well as able to track data provenance and supporting data longevity in a secure and scalable manner.
 
 
 **Is Nexus free to use?**
@@ -12,12 +12,13 @@ Yes, Nexus is a free, Open Source platform released under [Apache Licence 2.0](h
 
 **How to run Nexus?**
 
-There are many ways to run Nexus: a public instance is running at the [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install [Docker](getting-started/running-nexus/index.html#docker) or [Minikube](getting-started/running-nexus/index.html#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster.
+There are many ways to run Nexus: a public instance is running in a [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install [Docker](getting-started/running-nexus/index.html#docker) or [Minikube](getting-started/running-nexus/index.html#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
 
 
 **How can I try Nexus without installing it? What is the difference with a relational database like PostgreSQL?**
 
-You can use the cloud deployment.
+The [Sandbox](https://sandbox.bluebrainnexus.io/web/) provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.
+
 Although Nexus can be used as a regular database, it's flexibility and feature set are well beyond that. 
 Just to mention some of the Nexus features:
 
@@ -30,27 +31,31 @@ Just to mention some of the Nexus features:
 
 **Is there a cloud deployment of Nexus?**
 
-There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following @ref:[page](getting-started/webapps.md) is explained how to interact with Blue Brain Nexus web interface. 
+There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following @ref:[page](getting-started/webapps.md) is explained how to interact with Blue Brain Nexus web interface. It is possible to deploy Nexus on Amazon's AWS infrastructure. Instructions for how to do so will be made available shortly.
 
 
 **Is there a limit on the number of resources Nexus can store?**
 
 Blue Brain Nexus leverages scalable open source technologies, therefore limitations and performance depends heavily on the deployment setup where Nexus is running.
 
-To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](additional-info/benchmarks/data-volume-and-scenarios.md) where we were able to ingest more than 115 million resources.
+To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](additional-info/benchmarks/data-volume-and-scenarios.md) where we were able to ingest over 2 billion triples representing 115 million resources.
 
 
 **What is a Knowledge Graph?**
 
-Knowledge Graph is an innovative tool Google launched in May 2012 to enhance its search engine results, gathering informations from a variety of sources. It serves as data integration hub, connecting data by their semantic meaning in the ontology form, and allowing a flexible formal data structure organising them as a graph.
-As you can see in 'Understanding Knowledge Graph' @ref:[page](tutorial/knowledge-graph/index.md), at the heart of Blue Brain Nexus platform lies Knowledge Graph, that provide knowledge representation to enable FAIR principles at Blue Brain and in neuroscience community.
-Indeed, Knowledge Graph Nexus allow scientists to: 
+A Knowledge Graph is a modern approach to enabling the interlinked representations of entities (real-world objects, activities or concepts). Knowledge Graphs combine properties of databases (enabling structured queries), graphs (finding and analysing data via entity relationships) and knowledge bases (that enable navigating knowledge and inferring facts).
 
-1. Register and manage neuroscience relevant entity types; 
+Nexus employs a Knowledge Graph to enable validation, search, analysis and integration of data.
+
+As you can see in 'Understanding the Knowledge Graph' @ref:[page](tutorial/knowledge-graph/index.md), at the heart of Blue Brain Nexus platform lies a Knowledge Graph, that provides knowledge representation to enable data integration and FAIR principles at Blue Brain and across the neuroscience community.
+
+Indeed, Nexus allow scientists to: 
+
+1. Register and manage relevant entity types; 
 
 2. Submit data to the platform and describe their provenance using the W3C PROV model; 
 
-3. Search, discover, reuse and derive high-quality neuroscience data generated within and outside the platform for the purpose of driving their own scientific endeavours.
+3. Search, discover, reuse and derive data generated within and outside the platform for the purpose of driving their own scientific endeavours.
 
 
 **How do I report a bug? Which support Nexus team provide?**
@@ -68,7 +73,7 @@ There are several channels provided to address different issues:
 
 **What are the clients I can use with Nexus? What are the requirements to run Nexus locally?**
 
-On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GiB of memory in total. You can increase the limits in Docker settings in the menu *Preferences > Advanced*. More datails are in the dedicated @ref:[page](getting-started/running-nexus/index.md).
+On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GB of memory in total. You can increase the limits in Docker settings in the menu *Preferences > Advanced*. More datails are in the dedicated @ref:[page](getting-started/running-nexus/index.md).
 
 
 **What is JSON-LD?**
@@ -88,8 +93,7 @@ Elasticsearch is a document oriented search engine with an HTTP web interface an
 
 **What is a SHACL schema?**
 
-SHACL (Shapes Constraint Language) is a language for validating RDF graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form of an RDF graph.
-SHACL is used in Nexus to constrain and control the payload that can be pushed into Nexus.
+SHACL (Shapes Constraint Language) is a language for validating RDF graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form of an RDF graph. SHACL is used in Nexus to constrain and control the payload that can be pushed into Nexus.
 
 
 **Do I need to define SHACL schemas to bring data in?**
@@ -99,7 +103,7 @@ No. SHACL schemas provides with an extra layer of quality control for the data t
 
 **Where can I find SHACL shapes I can reuse (point to resources, like schema.org)?**
 
-In Neuroshape related [page on github](https://github.com/INCF/neuroshapes) are available shared validated data models based on open use cases.
+Datashapes.org provides an automated conversion of schema.org as SHACL entities. A neuroscience community effort and INCF Special Interest Group - Neuroshapes [page on github](https://github.com/INCF/neuroshapes), provides open schemas for neuroscience data based on common use cases.
 
 
 **Why are RDF and JSON-LD important for Nexus?**
@@ -112,7 +116,7 @@ RDF is the data model used to ingest data into the Knowledge Graph and it is als
 Yes. As long as the client supports the ability to provide a ```Authentication``` HTTP Header (for authentication purposes) on the request, any SPARQL client should work.
 
 
-**How I can create a Organizations as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?**
+**How can I create a Organizations as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?**
 
 The permissions for anonymous are preset in the @ref:[ACLs](api/1.0/iam/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](api/1.0/iam/iam-permissions-api.md).
 
