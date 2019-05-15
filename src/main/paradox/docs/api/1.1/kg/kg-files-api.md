@@ -23,7 +23,7 @@ When  reading files, the caller must have `projects/read` permissions on the cur
 POST /v1/files/{org_label}/{project_label}
 ```
 
-The json payload: 
+The json payload:
 
 - If the `@id` value is found on the payload, this @id will be used.
 - If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resource's project (`{project_label}`).
@@ -36,13 +36,15 @@ Request
 Response
 :   @@snip [file-created.json](../assets/files/file-created.json)
 
+## Create a file using PUT
 
-## Create a resource using PUT
-This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want
+to specify one. The @id will be specified in the last segment of the endpoint URI.
+
 ```
 PUT /v1/files/{org_label}/{project_label}/{file_id}
 ```
- 
+
 Note that if the payload contains an @id different from the `{file_id}`, the request will fail.
 
 **Example**
@@ -53,6 +55,81 @@ Request
 Response
 :   @@snip [file-put-created.json](../assets/files/file-put-created.json)
 
+## Create a file (specific storage)
+
+```
+POST /v1/files/{org_label}/{project_label}?storage={storageId}
+```
+
+Or
+
+```
+PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+```
+
+... where `{storageId}` selects a specific storage backend where the file will be uploaded.
+
+**Example**
+
+Request
+:   @@snip [file-post-storageid.sh](../assets/files/file-post-storageid.sh)
+
+Response
+:   @@snip [file-created.json](../assets/files/file-created.json)
+
+## Link an existing file using POST
+
+Creates a resource from an existing file, provided that the storage backend where it is located supports the operation.
+
+```
+POST /v1/files/{org_label}/{project_label}?storage={storageId}
+  {
+    "filename": "myfile.png",
+    "path": "relative/path/to/myfile.png",
+    "mediaType": "image/png"
+  }
+```
+
+... where `{storageId}` selects a specific storage backend that supports linking existing files.
+
+**Example**
+
+Request
+:   @@snip [file-link.sh](../assets/files/file-link.sh)
+
+Payload
+:   @@snip [file-link.json](../assets/files/file-link.json)
+
+Response
+:   @@snip [file-link-created.json](../assets/files/file-link-created.json)
+
+## Link an existing file using PUT
+
+Creates a resource from an existing file, provided that the storage backend where it is located supports the operation.
+
+This alternative endpoint allows to specify the resource `@id`.
+
+```
+PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
+  {
+    "filename": "myfile.png",
+    "path": "relative/path/to/myfile.png",
+    "mediaType": "image/png"
+  }
+```
+
+... where `{storageId}` selects a specific storage backend that supports linking existing files.
+
+**Example**
+
+Request
+:   @@snip [file-link-put.sh](../assets/files/file-link-put.sh)
+
+Payload
+:   @@snip [file-link.json](../assets/files/file-link.json)
+
+Response
+:   @@snip [file-link-created.json](../assets/files/file-link-created.json)
 
 ## Update a file
 
@@ -64,6 +141,7 @@ the file, the last revision needs to be passed as a query parameter.
 ```
 PUT /v1/files/{org_label}/{project_label}/{resource_id}?rev={previous_rev}
 ```
+
 ... where `{previous_rev}` is the last known revision number for the resource.
 
 
@@ -78,7 +156,7 @@ Response
 
 ## Tag a file
 
-Links a file revision to a specific name. 
+Links a file revision to a specific name.
 
 Tagging a file is considered to be an update as well.
 
@@ -89,7 +167,8 @@ POST /v1/files/{org_label}/{project_label}/{file_id}/tags?rev={previous_rev}
     "rev": {rev}
   }
 ```
-... where 
+
+... where
 
 - `{previous_rev}`: is the last known revision number for the file.
 - `{name}`: String - label given to the file at specific revision.
@@ -104,7 +183,7 @@ Payload
 :   @@snip [tag.json](../assets/files/file-tag.json)
 
 Response
-:   @@snip [resource-ref-new-tagged.json](../assets/files/file-tagged.json)
+:   @@snip [file-tagged.json](../assets/files/file-tagged.json)
 
 ## Deprecate a file
 
