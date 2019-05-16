@@ -38,7 +38,7 @@ internal way.
 While typically not necessary, you can manage and create additional disk storages, provided you are aware of the
 local file-system structure and that Nexus has read and write access to the target folder.
 
-### External disk storage
+### Remote disk storage
 
 This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system.
 This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph,
@@ -66,7 +66,7 @@ These tables summarize mandatory and optional fields for each storage type:
 
 | @type               | @id      | default   | folder    | endpoint | credentials | readPermission | writePermission |
 |---------------------|----------|-----------|-----------|----------|-------------|----------------|-----------------|
-| ExternalDiskStorage | optional | mandatory | mandatory | optional | optional    | optional       | optional        |
+| RemoteDiskStorage | optional | mandatory | mandatory | optional | optional    | optional       | optional        |
 
 | @type               | @id      | default   | bucket    | endpoint  | accessKey | secretKey | readPermission | writePermission |
 |---------------------|----------|-----------|-----------|-----------|-----------|-----------|----------------|-----------------|
