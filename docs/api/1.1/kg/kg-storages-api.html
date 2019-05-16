@@ -248,7 +248,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#storage-types" class="header">Storage types</a>
     <ul>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#local-disk-storage" class="header">Local disk storage</a></li>
-      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#external-disk-storage" class="header">External disk storage</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#changing-the-default-storage" class="header">Changing the default storage</a></li>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#resource-format" class="header">Resource format</a></li>
@@ -288,7 +288,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#storage-types" class="header">Storage types</a>
     <ul>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#local-disk-storage" class="header">Local disk storage</a></li>
-      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#external-disk-storage" class="header">External disk storage</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#changing-the-default-storage" class="header">Changing the default storage</a></li>
       <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#resource-format" class="header">Resource format</a></li>
@@ -329,7 +329,7 @@ BlueBrain/nexus
 <p>Upon project creation, a default disk storage is initialized automatically, so that users can start uploading resource attachments right away. This resource has the @id <code>nxv:diskStorageDefault</code>.</p>
 <p>Its behavior is similar to earlier versions of the Nexus API: files are stored and managed by the system in an opaque, internal way.</p>
 <p>While typically not necessary, you can manage and create additional disk storages, provided you are aware of the local file-system structure and that Nexus has read and write access to the target folder.</p>
-<h3><a href="#external-disk-storage" name="external-disk-storage" class="anchor"><span class="anchor-link"></span></a>External disk storage</h3>
+<h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3>
 <p>This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system. This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph, Gluster, GPFS, Lustre, &hellip;) that you don&rsquo;t want to mount directly on the system where Nexus runs.</p>
 <p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus-storage">Nexus remote storage service</a>.</p>
 <h3><a href="#amazon-s3-compatible-storage" name="amazon-s3-compatible-storage" class="anchor"><span class="anchor-link"></span></a>Amazon S3 compatible storage</h3>
@@ -375,7 +375,7 @@ BlueBrain/nexus
   </thead>
   <tbody>
     <tr>
-      <td>ExternalDiskStorage </td>
+      <td>RemoteDiskStorage </td>
       <td>optional </td>
       <td>mandatory </td>
       <td>mandatory </td>

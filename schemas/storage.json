@@ -21,7 +21,7 @@
                     "node": "this:S3Storage"
                 },
                 {
-                    "node": "this:ExternalDiskStorage"
+                    "node": "this:RemoteDiskStorage"
                 }
             ]
         },
@@ -74,17 +74,17 @@
             ]
         },
         {
-            "@id": "this:ExternalDiskStorage",
+            "@id": "this:RemoteDiskStorage",
             "nodeKind": "sh:BlankNodeOrIRI",
             "sh:closed": true,
             "property": [
                 {
                     "path": "rdf:type",
-                    "name": "RDF type ExternalDiskStorage",
-                    "description": "The ExternalDiskStorage RDF type.",
+                    "name": "RDF type RemoteDiskStorage",
+                    "description": "The RemoteDiskStorage RDF type.",
                     "nodeKind": "sh:IRI",
                     "sh:hasValue": {
-                        "@id": "nxv:ExternalDiskStorage"
+                        "@id": "nxv:RemoteDiskStorage"
                     }
                 },
                 {
@@ -96,25 +96,25 @@
                     "maxCount": 1
                 },
                 {
-                    "path": "nxv:endpoint",
-                    "name": "endpoint",
-                    "description": "The endpoint to communicate with the external storage",
+                    "path": "nxv:folder",
+                    "name": "folder",
+                    "description": "The remote storage folder (similar concept to bucket in the S3)",
                     "datatype": "xsd:string",
                     "minCount": 1,
                     "maxCount": 1
                 },
                 {
-                    "path": "nxv:folder",
+                    "path": "nxv:endpoint",
                     "name": "endpoint",
-                    "description": "The external storage folder (similar concept to bucket in the S3)",
+                    "description": "The endpoint to communicate with the remote storage",
                     "datatype": "xsd:string",
-                    "minCount": 1,
+                    "minCount": 0,
                     "maxCount": 1
                 },
                 {
                     "path": "nxv:credentials",
                     "name": "credentials",
-                    "description": "The external storage optional Bearer Token",
+                    "description": "The remote storage optional Bearer Token",
                     "datatype": "xsd:string",
                     "minCount": 0,
                     "maxCount": 1
