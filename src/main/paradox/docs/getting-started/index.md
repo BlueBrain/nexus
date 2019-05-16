@@ -6,7 +6,7 @@
 
 @@@
 
-# Getting Started Guide
+# Getting Started
 
 ## Overview
 
