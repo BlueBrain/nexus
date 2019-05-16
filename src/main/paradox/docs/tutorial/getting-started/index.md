@@ -5,7 +5,7 @@
 
 @@@
 
-# Getting Started
+# Quick Start Guide
 
 
 ## Overview
