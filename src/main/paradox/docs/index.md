@@ -1,6 +1,6 @@
 @@@ index
 
-* [Getting Started](getting-started/index.md)
+* [Getting Started Guide](getting-started/index.md)
 * [Tutorials](tutorial/index.md)
 * [API Reference](api/index.md)
 * [Release Notes](release-notes/index.md)
