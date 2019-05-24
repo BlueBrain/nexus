@@ -25,6 +25,10 @@ curl -XPOST -H "Content-Type: application/json" "https://nexus.example.com/v1/vi
     }
   },
   "includeMetadata": false,
+  "includeDeprecated": false,
   "sourceAsText": false,
-  "resourceSchemas": "https://bluebrain.github.io/nexus/schemas/myschema"
+  "resourceSchemas": [
+    "https://bluebrain.github.io/nexus/schemas/myschema"
+  ],
+  "resourceTypes": []
 }'
