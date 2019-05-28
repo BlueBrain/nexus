@@ -11,6 +11,8 @@
         "https://bluebrain.github.io/nexus/vocabulary/Resolver",
         "https://bluebrain.github.io/nexus/vocabulary/InProject"
       ],
+      "_incoming": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:InProject/incoming",
+      "_outgoing": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:InProject/outgoing",
       "_self": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:InProject",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
@@ -27,6 +29,8 @@
         "https://bluebrain.github.io/nexus/vocabulary/Resolver",
         "https://bluebrain.github.io/nexus/vocabulary/CrossProject"
       ],
+      "_incoming": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:myresolver/incoming",
+      "_outgoing": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:myresolver/outgoing",
       "_self": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:myresolver",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
@@ -37,5 +41,6 @@
       "_rev": 4,
       "_deprecated": true
     }
-  ]
+  ],
+  "_next": "https://nexus.example.com/v1/resolvers/myorg/myproj?after=%5B1559045718752,%22https://bluebrain.github.io/nexus/vocabulary/myresolver29%22%5D"
 }

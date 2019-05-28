@@ -62,8 +62,9 @@ Response
  :   @@snip [realm-replaced-ref.json](../assets/realms/realm-replaced-ref.json)
 
 
-## Delete a realm
-  This operation deletes a realm.
+## Deprecate a realm
+
+This operation deprecates a realm. After deprecation, realms loose their metadata
 
   ```
  DELETE /v1/realms/{realm}?rev={previous_rev}
@@ -84,8 +85,15 @@ Response
  Lists all available realms.
 
 ```
- GET /v1/realms
+ GET /v1/realms?deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
 ```
+where...
+
+- `{deprecated}`: Boolean - can be used to filter the resulting realms based on their deprecation status
+- `{rev}`: Number - can be used to filter the resulting realms based on their revision value
+- `{type}`: Iri - can be used to filter the resulting realms based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{createdBy}`: Iri - can be used to filter the resulting realms based on their creator
+- `{updatedBy}`: Iri - can be used to filter the resulting realms based on the person which performed the last update
 
 Request
  :   @@snip [realms-list.sh](../assets/realms/realms-list.sh)

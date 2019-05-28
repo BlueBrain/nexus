@@ -12,6 +12,8 @@
         "https://bluebrain.github.io/nexus/vocabulary/Alpha",
         "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView"
       ],
+      "_incoming": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultElasticIndex/incoming",
+      "_outgoing": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultElasticIndex/outgoing",
       "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultElasticIndex",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
@@ -28,6 +30,8 @@
         "https://bluebrain.github.io/nexus/vocabulary/View",
         "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
       ],
+      "_incoming": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex/incoming",
+      "_outgoing": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex/outgoing",
       "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:defaultSparqlIndex",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
@@ -45,6 +49,8 @@
         "https://bluebrain.github.io/nexus/vocabulary/View",
         "https://bluebrain.github.io/nexus/vocabulary/Alpha"
       ],
+      "_incoming": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming",
+      "_outgoing": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/outgoing",
       "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
@@ -55,5 +61,6 @@
       "_updatedAt": "2018-09-18T17:10:22.748Z",
       "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
     }
-  ]
+  ],
+  "_next": "https://nexus.example.com/v1/views/myorg/myproj?after=%5B1559045718752,%22https://bluebrain.github.io/nexus/vocabulary/myview29%22%5D"
 }

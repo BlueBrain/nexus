@@ -19,6 +19,8 @@
             "https://bluebrain.github.io/nexus/vocabulary/Alpha"
           ],
           "_original_source": "{\"mapping\":\"{\\\"dynamic\\\":false,\\\"properties\\\":{\\\"@id\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"@type\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"name\\\":{\\\"type\\\":\\\"keyword\\\"},\\\"number\\\":{\\\"type\\\":\\\"long\\\"},\\\"bool\\\":{\\\"type\\\":\\\"boolean\\\"}}}\",\"_uuid\":\"89dd9858-cf87-4c46-94c2-24da0fcae0aa\",\"@context\":\"https://bluebrain.github.io/nexus/contexts/view\",\"@type\":[\"View\",\"ElasticSearchView\"],\"includeMetadata\":true,\"sourceAsText\":false}",
+          "_incoming": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming",
+          "_outgoing": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/outgoing",
           "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
           "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
           "_project": "https://nexus.example.com/v1/projects/myorg/myproj",

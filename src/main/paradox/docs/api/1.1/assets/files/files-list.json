@@ -15,6 +15,8 @@
       },
       "_filename": "myfile.jpg",
       "_mediaType": "image/jpeg",
+      "_incoming": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyfile/incoming",
+      "_outgoing": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyfile/outgoing",
       "_self": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyfile",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
@@ -35,6 +37,8 @@
       },
       "_filename": "myfile2.png",
       "_mediaType": "image/png",
+      "_incoming": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fnexus.example.com%2Fmybase%2Fd8848d4c-68f7-4ffd-952f-63a8cbcb86a9/incoming",
+      "_outgoing": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fnexus.example.com%2Fmybase%2Fd8848d4c-68f7-4ffd-952f-63a8cbcb86a9/outgoing",
       "_self": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fnexus.example.com%2Fmybase%2Fd8848d4c-68f7-4ffd-952f-63a8cbcb86a9",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
       "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
@@ -45,5 +49,6 @@
       "_updatedAt": "2019-12-28T12:15:33.238Z",
       "_updatedBy": "https://nexus.example.com/v1/anonymous"
     }
-  ]
+  ],
+  "_next": "https://nexus.example.com/v1/files/myorg/myproj?after=%5B1559045718752,%22https://nexus.example.com/mybase/d8848d4c-68f7-4ffd-952f-63a8cbcb86a9%22%5D"
 }
