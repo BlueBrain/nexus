@@ -128,7 +128,7 @@ DELETE /v1/{address}?rev={previous_rev}
 ## Listing
 
 ```
-GET /v1/{collection_address}?from={from}&size={size}&deprecated={deprecated}
+GET /v1/{collection_address}?from={from}&size={size}&{deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
 ```
 
 ... where all of the query parameters are individually optional.
@@ -137,6 +137,12 @@ GET /v1/{collection_address}?from={from}&size={size}&deprecated={deprecated}
 - `{from}`: Number - the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
+- `{rev}`: Number - can be used to filter the resulting resources based on their revision value
+- `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
+- `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
+
+- **Note**: Some endpoints might not support some of the above query parameters. Please check the specific section of the documentation related tot he endpoint you want to consume for more details.
 
 ### List response format
 
@@ -146,7 +152,6 @@ The response to any search requests follows the described format:
   "_total": {hits},
   "_maxScore": {maxScore},
   "_next": "{next_page_address}",
-  "_previous": "{previous_page_address}",
   "_results": [
     {
       "@id": "{resource_id}",
@@ -165,6 +170,6 @@ The response to any search requests follows the described format:
 - `{maxScore}` Float - the maximum score found across all hits.
 - `{resource_id}` Iri - the qualified id for one of the results.
 
-The relationships `_next` and `_previous` at the top level offer discovery of more resources, in terms of navigation/pagination. 
+The relationship `_next` at the top level offer discovery of more resources, in terms of navigation/pagination. 
 
 The fields `{maxScore}` and `{score_id}` are optional fields and will only be present whenever a `q` query parameter is provided on the request.

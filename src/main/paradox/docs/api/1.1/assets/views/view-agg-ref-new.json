@@ -5,6 +5,8 @@
     "AggregateElasticSearchView",
     "View"
   ],
+  "_incoming": "https://nexus.example.com/v1/schemas/myorg/myproj3/nxv:myagg/incoming",
+  "_outgoing": "https://nexus.example.com/v1/schemas/myorg/myproj3/nxv:myagg/outgoing",
   "_self": "https://nexus.example.com/v1/schemas/myorg/myproj3/nxv:myagg",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj3",

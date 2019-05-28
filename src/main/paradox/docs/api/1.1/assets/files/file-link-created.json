@@ -10,6 +10,8 @@
   "_filename": "myfile.png",
   "_location": "https://s3.us-west-1.amazonaws.com/mybucket/relative/path/to/myfile.png",
   "_mediaType": "image/png",
+  "_incoming": "https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9/incoming",
+  "_outgoing": "https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9/outgoing",
   "_self": "https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
