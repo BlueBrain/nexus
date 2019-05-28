@@ -18,6 +18,8 @@
       "_originalFileName": "myfile.jpg"
     }
   ],
+  "_incoming": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:myresolver/incoming",
+  "_outgoing": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:myresolver/outgoing",
   "_self": "https://nexus.example.com/v1/resolvers/myorg/myproject/nxv:myresolver",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",

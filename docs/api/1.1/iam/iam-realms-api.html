@@ -247,7 +247,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#create-a-realm" class="header">Create a realm</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#update-a-realm" class="header">Update a realm</a></li>
-    <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#delete-a-realm" class="header">Delete a realm</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#deprecate-a-realm" class="header">Deprecate a realm</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#list-realms" class="header">List realms</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-current-version-" class="header">Fetch a realm (current version)</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-specific-version-" class="header">Fetch a realm (specific version)</a></li>
@@ -276,7 +276,7 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#create-a-realm" class="header">Create a realm</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#update-a-realm" class="header">Update a realm</a></li>
-    <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#delete-a-realm" class="header">Delete a realm</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#deprecate-a-realm" class="header">Deprecate a realm</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#list-realms" class="header">List realms</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-current-version-" class="header">Fetch a realm (current version)</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-specific-version-" class="header">Fetch a realm (specific version)</a></li>
@@ -370,8 +370,8 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/realms/realm-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#delete-a-realm" name="delete-a-realm" class="anchor"><span class="anchor-link"></span></a>Delete a realm</h2>
-<p>This operation deletes a realm.</p>
+<h2><a href="#deprecate-a-realm" name="deprecate-a-realm" class="anchor"><span class="anchor-link"></span></a>Deprecate a realm</h2>
+<p>This operation deprecates a realm. After deprecation, realms loose their metadata</p>
 <p><code>
  DELETE /v1/realms/{realm}?rev={previous_rev}
    {...}
@@ -401,8 +401,16 @@ BlueBrain/nexus
 </dl>
 <h2><a href="#list-realms" name="list-realms" class="anchor"><span class="anchor-link"></span></a>List realms</h2>
 <p>Lists all available realms.</p>
-<pre><code> GET /v1/realms
+<pre><code> GET /v1/realms?deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}
 </code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting realms based on their deprecation status</li>
+  <li><code>{rev}</code>: Number - can be used to filter the resulting realms based on their revision value</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting realms based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{createdBy}</code>: Iri - can be used to filter the resulting realms based on their creator</li>
+  <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting realms based on the person which performed the last update</li>
+</ul>
 <dl>
   <dt>Request</dt>
   <dd>

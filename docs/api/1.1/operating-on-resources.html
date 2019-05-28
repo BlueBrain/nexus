@@ -389,7 +389,7 @@ BlueBrain/nexus
   <li><strong>409 Conflict</strong>: the provided revision is not the current resource revision number</li>
 </ul>
 <h2><a href="#listing" name="listing" class="anchor"><span class="anchor-link"></span></a>Listing</h2>
-<pre><code>GET /v1/{collection_address}?from={from}&amp;size={size}&amp;deprecated={deprecated}
+<pre><code>GET /v1/{collection_address}?from={from}&amp;size={size}&amp;{deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}
 </code></pre>
 <p>&hellip; where all of the query parameters are individually optional.</p>
 <ul>
@@ -397,13 +397,18 @@ BlueBrain/nexus
   <li><code>{from}</code>: Number - the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
+  <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
+  <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
+  <li>
+  <p><strong>Note</strong>: Some endpoints might not support some of the above query parameters. Please check the specific section of the documentation related tot he endpoint you want to consume for more details.</p></li>
 </ul>
 <h3><a href="#list-response-format" name="list-response-format" class="anchor"><span class="anchor-link"></span></a>List response format</h3>
 <p>The response to any search requests follows the described format:</p>
 <pre><code>  &quot;_total&quot;: {hits},
   &quot;_maxScore&quot;: {maxScore},
   &quot;_next&quot;: &quot;{next_page_address}&quot;,
-  &quot;_previous&quot;: &quot;{previous_page_address}&quot;,
   &quot;_results&quot;: [
     {
       &quot;@id&quot;: &quot;{resource_id}&quot;,
@@ -421,7 +426,7 @@ BlueBrain/nexus
   <li><code>{maxScore}</code> Float - the maximum score found across all hits.</li>
   <li><code>{resource_id}</code> Iri - the qualified id for one of the results.</li>
 </ul>
-<p>The relationships <code>_next</code> and <code>_previous</code> at the top level offer discovery of more resources, in terms of navigation/pagination. </p>
+<p>The relationship <code>_next</code> at the top level offer discovery of more resources, in terms of navigation/pagination. </p>
 <p>The fields <code>{maxScore}</code> and <code>{score_id}</code> are optional fields and will only be present whenever a <code>q</code> query parameter is provided on the request.</p>
 </div>
 <div>

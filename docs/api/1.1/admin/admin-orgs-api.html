@@ -468,12 +468,17 @@ BlueBrain/nexus
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/organization-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-organizations" name="list-organizations" class="anchor"><span class="anchor-link"></span></a>List organizations</h2>
-<pre><code>GET /v1/orgs?from={from}&amp;size={size}
+<pre><code>GET /v1/orgs?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}
 </code></pre>
 <p>where&hellip;</p>
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
+  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting organizations based on their deprecation status</li>
+  <li><code>{rev}</code>: Number - can be used to filter the resulting organizations based on their revision value</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting organizations based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{createdBy}</code>: Iri - can be used to filter the resulting organizations based on their creator</li>
+  <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting organizations based on the person which performed the last update</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>

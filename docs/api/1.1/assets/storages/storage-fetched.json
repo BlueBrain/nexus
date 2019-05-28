@@ -14,6 +14,8 @@
     "readPermission": "resources/read",
     "writePermission": "files/write",
     "_algorithm": "SHA-256",
+    "_incoming": "https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage/incoming",
+    "_outgoing": "https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage/outgoing",
     "_self": "https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage",
     "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storage.json",
     "_project": "https://nexus.example.com/v1/projects/myorg/myproj",

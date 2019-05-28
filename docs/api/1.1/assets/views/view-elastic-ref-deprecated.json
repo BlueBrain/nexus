@@ -5,6 +5,8 @@
     "ElasticSearchView",
     "View"
   ],
+  "_incoming": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming",
+  "_outgoing": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/outgoing",
   "_self": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
