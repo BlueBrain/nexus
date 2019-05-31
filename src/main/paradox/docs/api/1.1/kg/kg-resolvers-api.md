@@ -279,3 +279,68 @@ Request
 
 Response
 :   @@snip [resolver-list.json](../assets/resolvers/resolver-list.json)
+
+
+## Fetch resource using resolvers (current version)
+
+Fetches a resource using the provided resolver. 
+
+If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
+
+```
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}
+```
+... where `{resource_id}` is the @id value of the resource to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [resolver-fetch-resource.sh](../assets/resolvers/resolver-fetch-resource.sh)
+
+Response
+:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
+
+## Fetch resource using resolvers (specific version)
+
+Fetches a resource using the provided resolver. 
+
+If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
+
+```
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={rev}
+```
+... where 
+
+-`{resource_id}`: Iri - is the @id value of the resource to be retrieved.
+-`{rev}`: Number - the revision number of the resolver to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [resolver-fetch-resource-rev.sh](../assets/resolvers/resolver-fetch-resource-rev.sh)
+
+Response
+:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
+
+
+## Fetch resource using resolvers (specific tag)
+
+Fetches a resource using the provided resolver. 
+
+If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
+
+```
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?tag={tag}
+```
+... where 
+
+-`{resource_id}`: Iri - is the @id value of the resource to be retrieved.
+-`{tag}`: String - the tag of the resource to be retrieved.
+
+**Example**
+
+Request
+:   @@snip [resolver-fetch-resource-tag.sh](../assets/resolvers/resolver-fetch-resource-tag.sh)
+
+Response
+:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
