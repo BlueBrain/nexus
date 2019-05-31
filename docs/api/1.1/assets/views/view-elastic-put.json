@@ -23,6 +23,10 @@
     }
   },
   "includeMetadata": false,
+  "includeDeprecated": false,
   "sourceAsText": false,
-  "resourceSchemas": "https://bluebrain.github.io/nexus/schemas/myschema"
+  "resourceSchemas": [
+    "https://bluebrain.github.io/nexus/schemas/myschema"
+  ],
+  "resourceTypes": []
 }

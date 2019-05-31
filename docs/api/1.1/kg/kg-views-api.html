@@ -343,15 +343,19 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:defaultSparqlIndex&quot;,
   &quot;@type&quot;: [ &quot;View&quot;, &quot;SparqlView&quot; ],
   &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
+  &quot;resourceTypes&quot;: [ &quot;{resourceType}&quot;, ...],
   &quot;resourceTag&quot;: &quot;{tag}&quot;,
-  &quot;includeMetadata&quot;: {includeMetadata}
+  &quot;includeMetadata&quot;: {includeMetadata},
+  &quot;includeDeprecated&quot;: {includeDeprecated}
 }
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{resourceSchema}</code>: Iri - It selects the resources that are validated against the provided schema Iri. This field is optional.</li>
-  <li><code>{tag}</code>: String - It selects the resources with the provided tag. This field is optional.</li>
+  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.</li>
+  <li><code>{resourceType}</code>: Iri - Selects only resources of the provided type Iri. This field is optional.</li>
+  <li><code>{tag}</code>: String - Selects the resources with the provided tag. This field is optional.</li>
   <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be stored in the Sparql graph. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
+  <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resourcess are also indexed. The default value is <code>false</code>.</li>
 </ul>
 <h3><a href="#elasticsearchview" name="elasticsearchview" class="anchor"><span class="anchor-link"></span></a>ElasticSearchView</h3>
 <p>This view creates an ElasticSearch <code>index</code> where it stores the selected resources inside the view <code>project</code>.</p>
@@ -361,20 +365,24 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: [ &quot;View&quot;, &quot;ElasticSearchView&quot;],
   &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
+  &quot;resourceTypes&quot;: [ &quot;{resourceType}&quot;, ...],
   &quot;resourceTag&quot;: &quot;{tag}&quot;,
   &quot;sourceAsText&quot;: {sourceAsText},
   &quot;includeMetadata&quot;: {includeMetadata},
+  &quot;includeDeprecated&quot;: {includeDeprecated},
   &quot;mapping&quot;: _elasticsearch mapping_
 }
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{resourceSchema}</code>: Iri - It selects the resources that are validated against the provided schema Iri. This field is optional.</li>
-  <li><code>{tag}</code>: String - It selects the resources with the provided tag. This field is optional.</li>
-  <li><code>_elasticsearch mapping_</code>: Json object - It defines the value types for the Json keys, as stated at the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping">ElasticSearch mapping documentation</a>.</li>
+  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.</li>
+  <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri. This field is optional.</li>
+  <li><code>{tag}</code>: String - Selects only resources with the provided tag. This field is optional.</li>
+  <li><code>_elasticsearch mapping_</code>: Json object - Defines the value types for the Json keys, as stated at the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping">ElasticSearch mapping documentation</a>.</li>
   <li><code>{sourceAsText}</code>: Boolean - If true, the resource&rsquo;s payload will be stored in the ElasticSearch document as a single escaped string value of the key <code>_original_source</code>. If false, the resource&rsquo;s payload will be stored normally in the ElasticSearch document. The default value is <code>false</code>.</li>
   <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
-  <li><code>{someid}</code>: Iri - the @id value for this view.</li>
+  <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resourcess are also indexed. The default value is <code>false</code>.</li>
+  <li><code>{someid}</code>: Iri - The @id value for this view.</li>
 </ul>
 <h3><a href="#aggregateelasticsearchview" name="aggregateelasticsearchview" class="anchor"><span class="anchor-link"></span></a>AggregateElasticSearchView</h3>
 <p>This view is an aggregate of ElasticSearchViews. The view itself does not create any index, but it references the already existing indices of the linked ElasticSearchViews.</p>
@@ -396,7 +404,7 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{project}</code>: String - the project, defined as <code>{org_label}/{project_label}</code>, where the <code>{viewId}</code> is located.</li>
+  <li><code>{project}</code>: String - The project, defined as <code>{org_label}/{project_label}</code>, where the <code>{viewId}</code> is located.</li>
   <li><code>{viewId}</code>: Iri - The view @id value to be aggregated.</li>
 </ul>
 <h3><a href="#aggregatesparqlview" name="aggregatesparqlview" class="anchor"><span class="anchor-link"></span></a>AggregateSparqlView</h3>
@@ -407,7 +415,7 @@ BlueBrain/nexus
 <pre><code>{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: [ &quot;View&quot;, &quot;AggregateSparqlView&quot;],
-  &quot;views&quot;: [ 
+  &quot;views&quot;: [
     {
         &quot;project&quot;: &quot;{project}&quot;,
         &quot;viewId&quot;: &quot;{viewId}&quot;
@@ -461,8 +469,12 @@ BlueBrain/nexus
     }
   },
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;sourceAsText&quot;: false,
-  &quot;resourceSchemas&quot;: &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  &quot;resourceSchemas&quot;: [
+    &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  ],
+  &quot;resourceTypes&quot;: []
 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-elastic.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
@@ -492,8 +504,12 @@ BlueBrain/nexus
     }
   },
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;sourceAsText&quot;: false,
-  &quot;resourceSchemas&quot;: &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  &quot;resourceSchemas&quot;: [
+    &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  ],
+  &quot;resourceTypes&quot;: []
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-elastic.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
@@ -553,8 +569,12 @@ BlueBrain/nexus
     }
   },
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;sourceAsText&quot;: false,
-  &quot;resourceSchemas&quot;: &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  &quot;resourceSchemas&quot;: [
+    &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  ],
+  &quot;resourceTypes&quot;: []
 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-elastic-put.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
@@ -583,8 +603,12 @@ BlueBrain/nexus
     }
   },
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;sourceAsText&quot;: false,
-  &quot;resourceSchemas&quot;: &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  &quot;resourceSchemas&quot;: [
+    &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  ],
+  &quot;resourceTypes&quot;: []
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-elastic-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
@@ -645,8 +669,12 @@ BlueBrain/nexus
     }
   },
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;sourceAsText&quot;: false,
-  &quot;resourceSchemas&quot;: &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  &quot;resourceSchemas&quot;: [
+    &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  ],
+  &quot;resourceTypes&quot;: []
 }&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-elastic-update.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Payload</dt>
   <dd>
@@ -675,8 +703,12 @@ BlueBrain/nexus
     }
   },
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;sourceAsText&quot;: false,
-  &quot;resourceSchemas&quot;: &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  &quot;resourceSchemas&quot;: [
+    &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
+  ],
+  &quot;resourceTypes&quot;: []
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-elastic-put.json" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
@@ -874,9 +906,10 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:myview2&quot;,
   &quot;@type&quot;: [
     &quot;ElasticSearchView&quot;,
-    &quot;View&quot;,
+    &quot;View&quot;
   ],
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;mapping&quot;: {
     &quot;dynamic&quot;: false,
     &quot;properties&quot;: {
@@ -900,6 +933,7 @@ BlueBrain/nexus
   &quot;resourceSchemas&quot;: [
     &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
   ],
+  &quot;resourceTypes&quot;: [],
   &quot;sourceAsText&quot;: false,
   &quot;_uuid&quot;: &quot;4f90ceff-45b7-442d-8536-d41705321d50&quot;,
   &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming&quot;,
@@ -934,9 +968,10 @@ BlueBrain/nexus
   &quot;@id&quot;: &quot;nxv:myview2&quot;,
   &quot;@type&quot;: [
     &quot;ElasticSearchView&quot;,
-    &quot;View&quot;,
+    &quot;View&quot;
   ],
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;mapping&quot;: {
     &quot;dynamic&quot;: false,
     &quot;properties&quot;: {
@@ -960,6 +995,7 @@ BlueBrain/nexus
   &quot;resourceSchemas&quot;: [
     &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
   ],
+  &quot;resourceTypes&quot;: [],
   &quot;sourceAsText&quot;: false,
   &quot;_uuid&quot;: &quot;4f90ceff-45b7-442d-8536-d41705321d50&quot;,
   &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming&quot;,
@@ -997,6 +1033,7 @@ BlueBrain/nexus
     &quot;View&quot;
   ],
   &quot;includeMetadata&quot;: false,
+  &quot;includeDeprecated&quot;: false,
   &quot;mapping&quot;: {
     &quot;dynamic&quot;: false,
     &quot;properties&quot;: {
@@ -1020,6 +1057,7 @@ BlueBrain/nexus
   &quot;resourceSchemas&quot;: [
     &quot;https://bluebrain.github.io/nexus/schemas/myschema&quot;
   ],
+  &quot;resourceTypes&quot;: [],
   &quot;sourceAsText&quot;: false,
   &quot;_uuid&quot;: &quot;4f90ceff-45b7-442d-8536-d41705321d50&quot;,
   &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming&quot;,
