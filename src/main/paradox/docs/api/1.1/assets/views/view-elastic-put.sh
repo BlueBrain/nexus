@@ -24,6 +24,10 @@ curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/vie
     }
   },
   "includeMetadata": false,
+  "includeDeprecated": false,
   "sourceAsText": false,
-  "resourceSchemas": "https://bluebrain.github.io/nexus/schemas/myschema"
+  "resourceSchemas": [
+    "https://bluebrain.github.io/nexus/schemas/myschema"
+  ],
+  "resourceTypes": []
 }'

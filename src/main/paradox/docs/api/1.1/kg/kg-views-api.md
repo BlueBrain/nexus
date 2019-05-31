@@ -36,21 +36,26 @@ A default view gets automatically created when the project is created but other 
 
 
 **SparqlView payload**
+
 ```
 {
   "@id": "nxv:defaultSparqlIndex",
   "@type": [ "View", "SparqlView" ],
   "resourceSchemas": [ "{resourceSchema}", ...],
+  "resourceTypes": [ "{resourceType}", ...],
   "resourceTag": "{tag}",
-  "includeMetadata": {includeMetadata}
+  "includeMetadata": {includeMetadata},
+  "includeDeprecated": {includeDeprecated}
 }
 ```
 
 where...
 
-- `{resourceSchema}`: Iri - It selects the resources that are validated against the provided schema Iri. This field is optional.
-- `{tag}`: String - It selects the resources with the provided tag. This field is optional.
+- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.
+- `{resourceType}`: Iri - Selects only resources of the provided type Iri. This field is optional.
+- `{tag}`: String - Selects the resources with the provided tag. This field is optional.
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be stored in the Sparql graph. Otherwise it won't. The default value is `false`.
+- `{includeDeprecated}`: Boolean - If true, deprecated resourcess are also indexed. The default value is `false`.
 
 
 ### ElasticSearchView
@@ -61,26 +66,31 @@ This view creates an ElasticSearch `index` where it stores the selected resource
 A default view gets automatically created when the project is created but other views can be created.
 
 **ElasticSearchView payload**
+
 ```
 {
   "@id": "{someid}",
   "@type": [ "View", "ElasticSearchView"],
   "resourceSchemas": [ "{resourceSchema}", ...],
+  "resourceTypes": [ "{resourceType}", ...],
   "resourceTag": "{tag}",
   "sourceAsText": {sourceAsText},
   "includeMetadata": {includeMetadata},
+  "includeDeprecated": {includeDeprecated},
   "mapping": _elasticsearch mapping_
 }
 ```
 
 where...
- 
-- `{resourceSchema}`: Iri - It selects the resources that are validated against the provided schema Iri. This field is optional.
-- `{tag}`: String - It selects the resources with the provided tag. This field is optional.
-- `_elasticsearch mapping_`: Json object - It defines the value types for the Json keys, as stated at the [ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping).
+
+- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.
+- `{resourceType}`: Iri - Select only resources of the provided type Iri. This field is optional.
+- `{tag}`: String - Selects only resources with the provided tag. This field is optional.
+- `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the [ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping).
 - `{sourceAsText}`: Boolean - If true, the resource's payload will be stored in the ElasticSearch document as a single escaped string value of the key `_original_source`. If false, the resource's payload will be stored normally in the ElasticSearch document. The default value is `false`.
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
-- `{someid}`: Iri - the @id value for this view.
+- `{includeDeprecated}`: Boolean - If true, deprecated resourcess are also indexed. The default value is `false`.
+- `{someid}`: Iri - The @id value for this view.
 
 
 ### AggregateElasticSearchView
@@ -95,6 +105,7 @@ If the caller does not have the permission `views/query` on all the projects def
 ![Aggregate ElasticSearchView](../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
 
 **AggregateElasticSearchView payload**
+
 ```
 {
   "@id": "{someid}",
@@ -111,7 +122,7 @@ If the caller does not have the permission `views/query` on all the projects def
 
 where...
  
-- `{project}`: String - the project, defined as `{org_label}/{project_label}`, where the `{viewId}` is located.
+- `{project}`: String - The project, defined as `{org_label}/{project_label}`, where the `{viewId}` is located.
 - `{viewId}`: Iri - The view @id value to be aggregated.
 
 
@@ -126,11 +137,12 @@ When performing queries on the `sparql` endpoint, this view will query all the u
 If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset ofindices (or none) will be selected, respecting the defined permissions.
 
 **AggregateSparqlView payload**
+
 ```
 {
   "@id": "{someid}",
   "@type": [ "View", "AggregateSparqlView"],
-  "views": [ 
+  "views": [
     {
         "project": "{project}",
         "viewId": "{viewId}"

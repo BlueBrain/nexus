@@ -6,9 +6,10 @@
   "@id": "nxv:myview2",
   "@type": [
     "ElasticSearchView",
-    "View",
+    "View"
   ],
   "includeMetadata": false,
+  "includeDeprecated": false,
   "mapping": {
     "dynamic": false,
     "properties": {
@@ -32,6 +33,7 @@
   "resourceSchemas": [
     "https://bluebrain.github.io/nexus/schemas/myschema"
   ],
+  "resourceTypes": [],
   "sourceAsText": false,
   "_uuid": "4f90ceff-45b7-442d-8536-d41705321d50",
   "_incoming": "https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming",
