@@ -255,6 +255,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#fetch-a-resource-specific-tag-" class="header">Fetch a resource (specific tag)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-resources" class="header">List resources</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-resources-belonging-to-a-schema" class="header">List resources belonging to a schema</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-incoming-links" class="header">List incoming links</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-outgoing-links" class="header">List outgoing links</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -288,6 +290,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#fetch-a-resource-specific-tag-" class="header">Fetch a resource (specific tag)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-resources" class="header">List resources</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-resources-belonging-to-a-schema" class="header">List resources belonging to a schema</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-incoming-links" class="header">List incoming links</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-outgoing-links" class="header">List outgoing links</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -660,7 +664,6 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{full_text_search_query}</code>: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
@@ -708,7 +711,6 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{full_text_search_query}</code>: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result</li>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
@@ -749,6 +751,129 @@ BlueBrain/nexus
   ],
   &quot;_next&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj?after=%5B1559045718752,%22https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b029%22%5D&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/resources-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#list-incoming-links" name="list-incoming-links" class="anchor"><span class="anchor-link"></span></a>List incoming links</h2>
+<p>Provides a list of resources where the current resource <code>{resource_id}</code> is being referenced in the payload.</p>
+<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/incoming?from={from}&amp;size={size}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
+  <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/incoming.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
+  ],
+  &quot;_total&quot;: 1,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/reconstruction1&quot;,
+      &quot;@type&quot;: [
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Entity&quot;,
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Dataset&quot;,
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/ReconstructedPatchedCell&quot;
+      ],
+      &quot;paths&quot;: &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/subject&quot;,
+      &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproject/_/https://bluebrain.github.io/nexus/vocabulary/reconstruction1&quot;,
+      &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,
+      &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
+      &quot;_rev&quot;: 4,
+      &quot;_deprecated&quot;: false,
+      &quot;_createdAt&quot;: &quot;2019-05-28T13:28:00.186Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_updatedAt&quot;: &quot;2019-05-29T13:41:45.357Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/incoming.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#list-outgoing-links" name="list-outgoing-links" class="anchor"><span class="anchor-link"></span></a>List outgoing links</h2>
+<p>Provides a list of resources that are being used in the current resource <code>{resource_id}</code> payload. It also offers information </p>
+<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing?from={from}&amp;size={size}&amp;includeExternalLinks={includeExternalLinks}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
+  <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
+  <li><code>{includeExternalLinks}</code>: Boolean - flag to decide whether or not external links are to be included. External links are references to resources in other projects, or even resources external to Nexus; defaults to <code>true</code></li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing?includeExternalLinks=true&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/outgoing.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
+  ],
+  &quot;_total&quot;: 4,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/mouse1&quot;,
+      &quot;@type&quot;: [
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Entity&quot;,
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Subject&quot;
+      ],
+      &quot;paths&quot;: &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/subject&quot;,
+      &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproject/_/https://bluebrain.github.io/nexus/vocabulary/mouse1&quot;,
+      &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,
+      &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
+      &quot;_rev&quot;: 1,
+      &quot;_deprecated&quot;: false,
+      &quot;_createdAt&quot;: &quot;2019-05-28T13:27:42.707Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_updatedAt&quot;: &quot;2019-05-28T13:27:42.707Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+    },
+    {
+      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/jane&quot;,
+      &quot;@type&quot;: [
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Agent&quot;,
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Person&quot;
+      ],
+      &quot;paths&quot;: [
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/contribution&quot;,
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/agent&quot;
+      ],
+      &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproject/_/https://bluebrain.github.io/nexus/vocabulary/jane&quot;,
+      &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,
+      &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproject&quot;,
+      &quot;_rev&quot;: 1,
+      &quot;_deprecated&quot;: false,
+      &quot;_createdAt&quot;: &quot;2019-05-28T13:26:27.627Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_updatedAt&quot;: &quot;2019-05-28T13:26:27.627Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+    },
+    {
+      &quot;@id&quot;: &quot;http://uri.interlex.org/base/ilx_0383233&quot;,
+      &quot;@type&quot;: &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/MType&quot;,
+      &quot;paths&quot;: [
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/annotation&quot;,
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/hasBody&quot;
+      ]
+    },
+    {
+      &quot;@id&quot;: &quot;http://purl.obolibrary.org/obo/UBERON_0008933&quot;,
+      &quot;paths&quot;: [
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/brainLocation&quot;,
+        &quot;https://nexus.example.com/v1/vocabs/myorg/myproject/brainRegion&quot;
+      ]
+    }
+  ]
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/outgoing.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
