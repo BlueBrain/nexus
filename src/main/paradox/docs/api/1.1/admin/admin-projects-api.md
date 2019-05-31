@@ -230,7 +230,7 @@ Response
 ## List projects belonging to an organization
 
 ```
-GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
+GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}
 ```
 
 where...

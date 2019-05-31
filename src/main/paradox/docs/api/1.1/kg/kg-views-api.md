@@ -377,7 +377,6 @@ GET /v1/views/{org_label}/{project_label}?from={from}&size={size}&deprecated={de
 
 where...
 
-- `{full_text_search_query}`: String - can be provided to select only the views in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting views based on their deprecation status
