@@ -1,0 +1,27 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/reconstruction1",
+      "@type": [
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/Entity",
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/Dataset",
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/ReconstructedPatchedCell"
+      ],
+      "paths": "https://nexus.example.com/v1/vocabs/myorg/myproject/subject",
+      "_self": "https://nexus.example.com/v1/resources/myorg/myproject/_/https://bluebrain.github.io/nexus/vocabulary/reconstruction1",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_project": "https://nexus.example.com/v1/projects/myorg/myproject",
+      "_rev": 4,
+      "_deprecated": false,
+      "_createdAt": "2019-05-28T13:28:00.186Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_updatedAt": "2019-05-29T13:41:45.357Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+    }
+  ]
+}

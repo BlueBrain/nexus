@@ -199,7 +199,6 @@ GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated
                                           
 where...
 
-- `{full_text_search_query}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
@@ -227,7 +226,6 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}&size={size}
 
 where...
 
-- `{full_text_search_query}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided token; when this field is provided the results will also include score values for each result
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
@@ -244,3 +242,46 @@ Request
 
 Response
 :   @@snip [resources-list.json](../assets/resources/resources-list.json)
+
+## List incoming links
+
+Provides a list of resources where the current resource `{resource_id}` is being referenced in the payload.
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/incoming?from={from}&size={size}
+```
+
+where...
+
+- `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
+- `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+
+**Example**
+
+Request
+:   @@snip [resources-incoming.sh](../assets/resources/incoming.sh)
+
+Response
+:   @@snip [resources-incoming.json](../assets/resources/incoming.json)
+
+## List outgoing links
+
+Provides a list of resources that are being used in the current resource `{resource_id}` payload. It also offers information 
+
+```
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing?from={from}&size={size}&includeExternalLinks={includeExternalLinks}
+```
+
+where...
+
+- `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
+- `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+- `{includeExternalLinks}`: Boolean - flag to decide whether or not external links are to be included. External links are references to resources in other projects, or even resources external to Nexus; defaults to `true`
+
+**Example**
+
+Request
+:   @@snip [resources-outgoing.sh](../assets/resources/outgoing.sh)
+
+Response
+:   @@snip [resources-outgoing.json](../assets/resources/outgoing.json)

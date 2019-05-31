@@ -204,13 +204,18 @@ Response
 ## List projects
 
 ```
-GET /v1/projects?from={from}&size={size}
+GET /v1/projects?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
 ```
 
 where...
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+- `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
+- `{rev}`: Number - can be used to filter the resulting projects based on their revision value
+- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
+- `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
 
 
 **Example**
@@ -225,7 +230,7 @@ Response
 ## List projects belonging to an organization
 
 ```
-GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}&q={full_text_search_query}
+GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}
 ```
 
 where...

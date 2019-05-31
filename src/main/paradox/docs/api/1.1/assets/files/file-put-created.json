@@ -9,6 +9,8 @@
   },
   "_filename": "myfile.jpg",
   "_mediaType": "image/jpeg",
+  "_incoming": "https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/incoming",
+  "_outgoing": "https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/outgoing",
   "_self": "https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",

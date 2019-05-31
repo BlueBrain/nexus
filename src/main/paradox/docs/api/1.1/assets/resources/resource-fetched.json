@@ -11,6 +11,8 @@
   "bool": false,
   "name": "Alex",
   "number": 24,
+  "_incoming": "https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming",
+  "_outgoing": "https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing",
   "_self": "https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resource",
   "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
