@@ -259,6 +259,9 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-a-resolver-specific-version-" class="header">Fetch a resolver (specific version)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-a-resolver-specific-tag-" class="header">Fetch a resolver (specific tag)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#list-resolvers" class="header">List resolvers</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-resource-using-resolvers-current-version-" class="header">Fetch resource using resolvers (current version)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-resource-using-resolvers-specific-version-" class="header">Fetch resource using resolvers (specific version)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-resource-using-resolvers-specific-tag-" class="header">Fetch resource using resolvers (specific tag)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -296,6 +299,9 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-a-resolver-specific-version-" class="header">Fetch a resolver (specific version)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-a-resolver-specific-tag-" class="header">Fetch a resolver (specific tag)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#list-resolvers" class="header">List resolvers</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-resource-using-resolvers-current-version-" class="header">Fetch resource using resolvers (current version)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-resource-using-resolvers-specific-version-" class="header">Fetch resource using resolvers (specific version)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resolvers-api.html#fetch-resource-using-resolvers-specific-tag-" class="header">Fetch resource using resolvers (specific tag)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -923,6 +929,125 @@ BlueBrain/nexus
   ],
   &quot;_next&quot;: &quot;https://nexus.example.com/v1/resolvers/myorg/myproj?after=%5B1559045718752,%22https://bluebrain.github.io/nexus/vocabulary/myresolver29%22%5D&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resolvers/resolver-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-resource-using-resolvers-current-version-" name="fetch-resource-using-resolvers-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch resource using resolvers (current version)</h2>
+<p>Fetches a resource using the provided resolver. </p>
+<p>If the resolver segment (<code>{resolver_id}</code>) is <code>_</code> the resource is fetched from the first resolver in the requested project (<code>{org_label}/{project_label}</code>). The resolvers are ordered by its priority field.</p>
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}
+</code></pre>
+<p>&hellip; where <code>{resource_id}</code> is the @id value of the resource to be retrieved.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resolvers/resolver-fetch-resource.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    {
+      &quot;@vocab&quot;: &quot;http://example.com/&quot;,
+      &quot;ex&quot;: &quot;http://example.com/&quot;
+    },
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;Custom&quot;,
+  &quot;bool&quot;: false,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/resource-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-resource-using-resolvers-specific-version-" name="fetch-resource-using-resolvers-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch resource using resolvers (specific version)</h2>
+<p>Fetches a resource using the provided resolver. </p>
+<p>If the resolver segment (<code>{resolver_id}</code>) is <code>_</code> the resource is fetched from the first resolver in the requested project (<code>{org_label}/{project_label}</code>). The resolvers are ordered by its priority field.</p>
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={rev}
+</code></pre>
+<p>&hellip; where </p>
+<p>-<code>{resource_id}</code>: Iri - is the @id value of the resource to be retrieved. -<code>{rev}</code>: Number - the revision number of the resolver to be retrieved.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resolvers/resolver-fetch-resource-rev.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    {
+      &quot;@vocab&quot;: &quot;http://example.com/&quot;,
+      &quot;ex&quot;: &quot;http://example.com/&quot;
+    },
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;Custom&quot;,
+  &quot;bool&quot;: false,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/resource-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#fetch-resource-using-resolvers-specific-tag-" name="fetch-resource-using-resolvers-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch resource using resolvers (specific tag)</h2>
+<p>Fetches a resource using the provided resolver. </p>
+<p>If the resolver segment (<code>{resolver_id}</code>) is <code>_</code> the resource is fetched from the first resolver in the requested project (<code>{org_label}/{project_label}</code>). The resolvers are ordered by its priority field.</p>
+<pre><code>GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?tag={tag}
+</code></pre>
+<p>&hellip; where </p>
+<p>-<code>{resource_id}</code>: Iri - is the @id value of the resource to be retrieved. -<code>{tag}</code>: String - the tag of the resource to be retrieved.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resolvers/myorg/myproj/nxv:myresolver/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?tag=myTag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resolvers/resolver-fetch-resource-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    {
+      &quot;@vocab&quot;: &quot;http://example.com/&quot;,
+      &quot;ex&quot;: &quot;http://example.com/&quot;
+    },
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
+  ],
+  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;Custom&quot;,
+  &quot;bool&quot;: false,
+  &quot;name&quot;: &quot;Alex&quot;,
+  &quot;number&quot;: 24,
+  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
+  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
+  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/resource-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
