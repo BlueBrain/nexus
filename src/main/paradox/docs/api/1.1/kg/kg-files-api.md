@@ -267,7 +267,7 @@ Response
 ## List files
 
 ```
-GET /v1/files/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
+GET /v1/files/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}
 ```
 
 where...
@@ -279,6 +279,7 @@ where...
 - `{type}`: Iri - can be used to filter the resulting files based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting files based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting files based on the person which performed the last update
+- `{search}`: String - can be provided to select only the files in the collection that have attribute values matching (containing) the provided string
 
 **Example**
 

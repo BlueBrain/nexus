@@ -194,7 +194,7 @@ Response
 ## List resources
 
 ```
-GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&schema={schema}
+GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&schema={schema}&q={search}
 ```
                                           
 where...
@@ -207,6 +207,7 @@ where...
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
 - `{schema}`: Iri - can be used to filter the resulting resources based on the conformant schema
+- `{search}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided string
 
 
 **Example**
