@@ -1108,7 +1108,7 @@ BlueBrain/nexus
   <li><code>delayInSeconds</code> - number of seconds between the last processed event timestamp and the last known event timestamp</li>
 </ul>
 <h2><a href="#list-views" name="list-views" class="anchor"><span class="anchor-link"></span></a>List views</h2>
-<pre><code>GET /v1/views/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}
+<pre><code>GET /v1/views/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;q={search}
 </code></pre>
 <p>where&hellip;</p>
 <ul>
@@ -1119,6 +1119,7 @@ BlueBrain/nexus
   <li><code>{type}</code>: Iri - can be used to filter the resulting views based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting views based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting views based on the person which performed the last update</li>
+  <li><code>{search}</code>: String - can be provided to select only the views in the collection that have attribute values matching (containing) the provided string</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>

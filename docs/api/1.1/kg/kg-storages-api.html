@@ -779,7 +779,7 @@ BlueBrain/nexus
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/storages/storage-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-storages" name="list-storages" class="anchor"><span class="anchor-link"></span></a>List storages</h2>
-<pre><code>GET /v1/storages/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}
+<pre><code>GET /v1/storages/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;q={search}
 </code></pre>
 <p>where&hellip;</p>
 <ul>
@@ -790,6 +790,7 @@ BlueBrain/nexus
   <li><code>{type}</code>: Iri - can be used to filter the resulting storages based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting storages based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting storages based on the person which performed the last update</li>
+  <li><code>{search}</code>: String - can be provided to select only the storages in the collection that have attribute values matching (containing) the provided string</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>

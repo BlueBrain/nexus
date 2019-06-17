@@ -660,7 +660,7 @@ BlueBrain/nexus
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/resource-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-resources" name="list-resources" class="anchor"><span class="anchor-link"></span></a>List resources</h2>
-<pre><code>GET /v1/resources/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;schema={schema}
+<pre><code>GET /v1/resources/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;schema={schema}&amp;q={search}
 </code></pre>
 <p>where&hellip;</p>
 <ul>
@@ -672,6 +672,7 @@ BlueBrain/nexus
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
   <li><code>{schema}</code>: Iri - can be used to filter the resulting resources based on the conformant schema</li>
+  <li><code>{search}</code>: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided string</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
