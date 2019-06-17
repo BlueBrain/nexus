@@ -1,0 +1,11 @@
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"PermissionsAppended","permissions":["resources/write","views/query"],"_rev":1,"_instant":"2019-06-14T11:57:04.039Z","_subject":"https://nexus.example.com/v1/realms/nexusdev/users/myuser"}
+event:PermissionsAppended
+id:8693f7b0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"PermissionsSubtracted","permissions":["views/query"],"_rev":2,"_instant":"2019-06-14T11:57:05.771Z","_subject":"https://nexus.example.com/v1/realms/nexusdev/users/myuser"}
+event:PermissionsSubtracted
+id:879c3ff0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"PermissionsReplaced","permissions":["schemas/write","views/write","files/write","permissions/write","acls/write","realms/write","projects/read","acls/read","organizations/create","tcmbsyeq/rcxpdxng","organizations/write","resources/write","realms/read","projects/create","storages/write","permissions/read","resources/read","organizations/read","resolvers/write","events/read","views/query","projects/write"],"_rev":3,"_instant":"2019-06-14T11:57:07.277Z","_subject":"https://nexus.example.com/v1/realms/nexusdev/users/myuser"}
+event:PermissionsReplaced
+id:88820c10-8e9b-11e9-a8f6-c5c16f2312d6

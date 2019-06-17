@@ -165,3 +165,36 @@ Request
 
 Response
 :   @@snip [permissions-get-rev.json](../assets/permissions/permissions-get-rev.json)
+
+
+## Permissions Server Sent Events
+
+This endpoint allows clients to receive automatic updates from the permissions in a streaming fashion.
+
+```
+GET /v1/permissions/events?Last-Event-Id={last}
+```
+
+where `{last}` is an optional field that identifies the last consumed permission event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+The response contains a series of permission events, represented in the following way
+
+```
+data:{payload}
+event:{type}
+id:{id}
+```
+
+where...
+
+- `{payload}`: Json - is the actual payload of the current permission
+- `{type}`: String - is a type identifier for the current permission. Possible types are: PermissionsAppended, PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted
+- `{id}`: String - is the identifier of the permission event. It can be used in the `Last-Event-Id` query parameter
+
+**Example**
+
+Request
+:   @@snip [permission-event.sh](../assets/permissions/event.sh)
+
+Response
+:   @@snip [permission-event.json](../assets/permissions/event.json)

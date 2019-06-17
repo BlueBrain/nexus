@@ -219,3 +219,35 @@ Request (with ancestors)
 
 Response (with ancestors)
 :   @@snip [acls-listed-ancestors.json](../assets/acls/acls-listed-ancestors.json)
+
+## ACL Server Sent Events
+
+This endpoint allows clients to receive automatic updates from the ACLs in a streaming fashion.
+
+```
+GET /v1/acls/events?Last-Event-Id={last}
+```
+
+where `{last}` is an optional field that identifies the last consumed ACL event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+The response contains a series of ACL events, represented in the following way
+
+```
+data:{payload}
+event:{type}
+id:{id}
+```
+
+where...
+
+- `{payload}`: Json - is the actual payload of the current ACL
+- `{type}`: String - is a type identifier for the current ACL. Possible types are: AclAppended, AclSubtracted, AclReplaced, AclDeleted
+- `{id}`: String - is the identifier of the ACL event. It can be used in the `Last-Event-Id` query parameter
+
+**Example**
+
+Request
+:   @@snip [acl-event.sh](../assets/acls/event.sh)
+
+Response
+:   @@snip [acl-event.json](../assets/acls/event.json)
