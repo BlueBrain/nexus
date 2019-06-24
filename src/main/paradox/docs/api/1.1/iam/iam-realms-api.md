@@ -130,3 +130,36 @@ Request
 
 Response
 :   @@snip [realm-fetch.json](../assets/realms/realm-fetch.json)
+
+
+## Realms Server Sent Events
+
+This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.
+
+```
+GET /v1/realms/events
+```
+
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed realm event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+The response contains a series of realm events, represented in the following way
+
+```
+data:{payload}
+event:{type}
+id:{id}
+```
+
+where...
+
+- `{payload}`: Json - is the actual payload of the current realm
+- `{type}`: String - is a type identifier for the current realm. Possible types are: RealmCreated, RealmUpdated and RealmDeprecated
+- `{id}`: String - is the identifier of the realm event. It can be used in the `Last-Event-Id` HTTP Header
+
+**Example**
+
+Request
+:   @@snip [realm-event.sh](../assets/realms/event.sh)
+
+Response
+:   @@snip [realm-event.json](../assets/realms/event.json)

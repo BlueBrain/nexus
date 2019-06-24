@@ -151,3 +151,36 @@ Request
 
 Response
 :   @@snip [organization-list.json](../assets/organization-list.json)
+
+
+## Organization Server Sent Events
+
+This endpoint allows clients to receive automatic updates from the organizations in a streaming fashion.
+
+```
+GET /v1/orgs/events
+```
+
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed organization event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+The response contains a series of organization events, represented in the following way
+
+```
+data:{payload}
+event:{type}
+id:{id}
+```
+
+where...
+
+- `{payload}`: Json - is the actual payload of the current organization
+- `{type}`: String - is a type identifier for the current organization. Possible types are: OrganizationCreated, OrganizationUpdated and OrganizationDeprecated
+- `{id}`: String - is the identifier of the organization event. It can be used in the `Last-Event-Id` HTTP Header
+
+**Example**
+
+Request
+:   @@snip [organization-event.sh](../assets/organization-event.sh)
+
+Response
+:   @@snip [organization-event.json](../assets/organization-event.json)
