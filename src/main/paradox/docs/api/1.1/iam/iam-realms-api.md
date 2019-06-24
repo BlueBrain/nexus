@@ -137,10 +137,10 @@ Response
 This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.
 
 ```
-GET /v1/realms/events?Last-Event-Id={last}
+GET /v1/realms/events
 ```
 
-where `{last}` is an optional field that identifies the last consumed realm event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header `{last}` that identifies the last consumed realm event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of realm events, represented in the following way
 
@@ -154,7 +154,7 @@ where...
 
 - `{payload}`: Json - is the actual payload of the current realm
 - `{type}`: String - is a type identifier for the current realm. Possible types are: RealmCreated, RealmUpdated and RealmDeprecated
-- `{id}`: String - is the identifier of the realm event. It can be used in the `Last-Event-Id` query parameter
+- `{id}`: String - is the identifier of the realm event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**
 

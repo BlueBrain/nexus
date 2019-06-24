@@ -260,10 +260,10 @@ Response
 This endpoint allows clients to receive automatic updates from the projects in a streaming fashion.
 
 ```
-GET /v1/projects/events?Last-Event-Id={last}
+GET /v1/projects/events
 ```
 
-where `{last}` is an optional field that identifies the last consumed project event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header `{last}` that identifies the last consumed project event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of project events, represented in the following way
 
@@ -277,7 +277,7 @@ where...
 
 - `{payload}`: Json - is the actual payload of the current project
 - `{type}`: String - is a type identifier for the current project. Possible types are: ProjectCreated, ProjectUpdated and ProjectDeprecated
-- `{id}`: String - is the identifier of the project event. It can be used in the `Last-Event-Id` query parameter
+- `{id}`: String - is the identifier of the project event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**
 

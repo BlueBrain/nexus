@@ -225,10 +225,10 @@ Response (with ancestors)
 This endpoint allows clients to receive automatic updates from the ACLs in a streaming fashion.
 
 ```
-GET /v1/acls/events?Last-Event-Id={last}
+GET /v1/acls/events
 ```
 
-where `{last}` is an optional field that identifies the last consumed ACL event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header `{last}` that identifies the last consumed ACL event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of ACL events, represented in the following way
 
@@ -242,7 +242,7 @@ where...
 
 - `{payload}`: Json - is the actual payload of the current ACL
 - `{type}`: String - is a type identifier for the current ACL. Possible types are: AclAppended, AclSubtracted, AclReplaced, AclDeleted
-- `{id}`: String - is the identifier of the ACL event. It can be used in the `Last-Event-Id` query parameter
+- `{id}`: String - is the identifier of the ACL event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**
 
