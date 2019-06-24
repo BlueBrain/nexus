@@ -257,6 +257,12 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-resources-belonging-to-a-schema" class="header">List resources belonging to a schema</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-incoming-links" class="header">List incoming links</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-outgoing-links" class="header">List outgoing links</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#resources-server-sent-events" class="header">Resources Server Sent Events</a>
+    <ul>
+      <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#server-sent-events-all-resources" class="header">Server Sent Events all resources</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#server-sent-events-organization-resources" class="header">Server Sent Events organization resources</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#server-sent-events-project-resources" class="header">Server Sent Events project resources</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -292,6 +298,12 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-resources-belonging-to-a-schema" class="header">List resources belonging to a schema</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-incoming-links" class="header">List incoming links</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#list-outgoing-links" class="header">List outgoing links</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#resources-server-sent-events" class="header">Resources Server Sent Events</a>
+    <ul>
+      <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#server-sent-events-all-resources" class="header">Server Sent Events all resources</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#server-sent-events-organization-resources" class="header">Server Sent Events organization resources</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-resources-api.html#server-sent-events-project-resources" class="header">Server Sent Events project resources</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -875,6 +887,101 @@ BlueBrain/nexus
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/outgoing.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#resources-server-sent-events" name="resources-server-sent-events" class="anchor"><span class="anchor-link"></span></a>Resources Server Sent Events</h2>
+<p>This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.</p>
+<p>The server sent events response contains a series of resource events, represented in the following way</p>
+<pre><code>data:{payload}
+event:{type}
+id:{id}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{payload}</code>: Json - is the actual payload of the current resource</li>
+  <li><code>{type}</code>: String - is a type identifier for the current realm. Possible types are: Created, Updated, Deprecated, TagAdded, FileCreated, FileUpdated</li>
+  <li><code>{id}</code>: String - is the identifier of the resource event. It can be used in the <code>Last-Event-Id</code> query parameter</li>
+</ul>
+<h3><a href="#server-sent-events-all-resources" name="server-sent-events-all-resources" class="anchor"><span class="anchor-link"></span></a>Server Sent Events all resources</h3>
+<pre><code>GET /v1/resources/events
+</code></pre>
+<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/event-all.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Created&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:23,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_instant&quot;:&quot;2019-06-24T07:35:47.447631Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Created
+id:aebbf8f4-9652-11e9-89a7-6d3c5701d287
+
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Updated&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:25,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-24T07:36:27.130185Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Updated
+id:c6642f90-9652-11e9-89a7-6d3c5701d287
+
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Deprecated&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_rev&quot;:3,&quot;_instant&quot;:&quot;2019-06-24T07:36:40.558514Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Deprecated
+id:ce6549e0-9652-11e9-89a7-6d3c5701d287
+
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;FileCreated&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/otherorg/myproject/_/myfile&quot;,&quot;_attributes&quot;:{&quot;_bytes&quot;:48144,&quot;_digest&quot;:{&quot;_value&quot;:&quot;721d03056b82a22c54f30fd3c68b41dfe5f53828911984e47182d82cfbac9f36&quot;,&quot;_algorithm&quot;:&quot;SHA-256&quot;},&quot;_filename&quot;:&quot;brain.jpg&quot;,&quot;_location&quot;:&quot;file:///opt/binaries/1089947c-dc76-4cbc-8b04-3f919b436828/b/8/4/a/b/f/9/c/brain.jpg&quot;,&quot;_mediaType&quot;:&quot;image/jpeg&quot;},&quot;_storage&quot;:{&quot;@type&quot;:&quot;DiskStorage&quot;,&quot;_storageId&quot;:&quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;,&quot;default&quot;:true,&quot;volume&quot;:&quot;/opt/binaries&quot;,&quot;readPermission&quot;:&quot;resources/read&quot;,&quot;writePermission&quot;:&quot;files/write&quot;},&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;aa7053ba-54ea-41b6-baab-96ec1acd7a44&quot;,&quot;_instant&quot;:&quot;2019-06-24T07:37:10.311391Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:FileCreated
+id:e024e5f0-9652-11e9-89a7-6d3c5701d287</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/event-all.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h3><a href="#server-sent-events-organization-resources" name="server-sent-events-organization-resources" class="anchor"><span class="anchor-link"></span></a>Server Sent Events organization resources</h3>
+<pre><code>GET /v1/resources/{org_label}/events
+</code></pre>
+<p>where </p>
+<ul>
+  <li><code>{org_label}</code>: String - the selected organization for which the events are going to be filtered</li>
+  <li><code>Last-Event-Id</code>: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myorg/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/event-org.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Created&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:23,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_instant&quot;:&quot;2019-06-24T07:35:47.447631Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Created
+id:aebbf8f4-9652-11e9-89a7-6d3c5701d287
+
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Updated&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:25,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-24T07:36:27.130185Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Updated
+id:c6642f90-9652-11e9-89a7-6d3c5701d287
+
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Deprecated&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_rev&quot;:3,&quot;_instant&quot;:&quot;2019-06-24T07:36:40.558514Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Deprecated
+id:ce6549e0-9652-11e9-89a7-6d3c5701d287</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/event-org.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h3><a href="#server-sent-events-project-resources" name="server-sent-events-project-resources" class="anchor"><span class="anchor-link"></span></a>Server Sent Events project resources</h3>
+<pre><code>GET /v1/resources/{org_label}/{project_label}/events
+</code></pre>
+<p>where </p>
+<ul>
+  <li><code>{org_label}</code>: String - the selected organization for which the events are going to be filtered</li>
+  <li><code>{project_label}</code>: String - the selected project for which the events are going to be filtered</li>
+  <li><code>Last-Event-Id</code>: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myorg/myproject/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/event-project.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Created&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:23,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/unconstrained.json&quot;,&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_instant&quot;:&quot;2019-06-24T07:35:47.447631Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Created
+id:aebbf8f4-9652-11e9-89a7-6d3c5701d287
+
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Updated&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_source&quot;:{&quot;@type&quot;:&quot;Hobbit&quot;,&quot;age&quot;:25,&quot;name&quot;:&quot;Frodo&quot;},&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-24T07:36:27.130185Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Updated
+id:c6642f90-9652-11e9-89a7-6d3c5701d287
+
+data:{&quot;@context&quot;:&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,&quot;@type&quot;:&quot;Deprecated&quot;,&quot;_resourceId&quot;:&quot;https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94&quot;,&quot;_types&quot;:[&quot;https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit&quot;],&quot;_projectUuid&quot;:&quot;1089947c-dc76-4cbc-8b04-3f919b436828&quot;,&quot;_organizationUuid&quot;:&quot;ba7053ba-54ea-41b6-baab-96ec1acd7ad4&quot;,&quot;_rev&quot;:3,&quot;_instant&quot;:&quot;2019-06-24T07:36:40.558514Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/github/users/myuser&quot;}
+event:Deprecated
+id:ce6549e0-9652-11e9-89a7-6d3c5701d287</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/resources/event-project.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>

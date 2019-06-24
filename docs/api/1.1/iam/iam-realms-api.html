@@ -251,6 +251,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#list-realms" class="header">List realms</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-current-version-" class="header">Fetch a realm (current version)</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-specific-version-" class="header">Fetch a realm (specific version)</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#realms-server-sent-events" class="header">Realms Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -280,6 +281,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#list-realms" class="header">List realms</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-current-version-" class="header">Fetch a realm (current version)</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#fetch-a-realm-specific-version-" class="header">Fetch a realm (specific version)</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-realms-api.html#realms-server-sent-events" class="header">Realms Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -550,6 +552,41 @@ BlueBrain/nexus
   &quot;_updatedAt&quot;: &quot;2019-01-22T12:24:13.029Z&quot;,
   &quot;_updatedBy&quot;: &quot;http://nexus.example.com/v1/anonymous&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/realms/realm-fetch.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#realms-server-sent-events" name="realms-server-sent-events" class="anchor"><span class="anchor-link"></span></a>Realms Server Sent Events</h2>
+<p>This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.</p>
+<pre><code>GET /v1/realms/events
+</code></pre>
+<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed realm event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
+<p>The response contains a series of realm events, represented in the following way</p>
+<pre><code>data:{payload}
+event:{type}
+id:{id}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{payload}</code>: Json - is the actual payload of the current realm</li>
+  <li><code>{type}</code>: String - is a type identifier for the current realm. Possible types are: RealmCreated, RealmUpdated and RealmDeprecated</li>
+  <li><code>{id}</code>: String - is the identifier of the realm event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/realms/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/realms/event.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@id&quot;:&quot;http://nexus.example.com/v1/realms/github&quot;,&quot;@type&quot;:&quot;RealmCreated&quot;,&quot;name&quot;:&quot;Github&quot;,&quot;openIdConfig&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/.well-known/openid-configuration&quot;,&quot;_label&quot;:&quot;github&quot;,&quot;_grantTypes&quot;:[&quot;password&quot;,&quot;clientCredentials&quot;,&quot;refreshToken&quot;,&quot;authorizationCode&quot;,&quot;implicit&quot;],&quot;_issuer&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev&quot;,&quot;_keys&quot;:[{&quot;alg&quot;:&quot;RS256&quot;,&quot;e&quot;:&quot;AQAB&quot;,&quot;kid&quot;:&quot;*****&quot;,&quot;kty&quot;:&quot;RSA&quot;,&quot;n&quot;:&quot;***&quot;,&quot;use&quot;:&quot;sig&quot;}],&quot;_authorizationEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/auth&quot;,&quot;_tokenEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/token&quot;,&quot;_userInfoEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/userinfo&quot;,&quot;_endSessionEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/logout&quot;,&quot;_rev&quot;:1,&quot;_instant&quot;:&quot;2019-06-11T11:31:52.278Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/anonymous&quot;}
+event:RealmCreated
+id:83bf27a2-8c3c-11e9-a8f6-c5c16f2312d6
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@id&quot;:&quot;http://nexus.example.com/v1/realms/github&quot;,&quot;@type&quot;:&quot;RealmUpdated&quot;,&quot;logo&quot;:&quot;http://nexus.example.com/logo.png&quot;,&quot;name&quot;:&quot;Github&quot;&quot;openIdConfig&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/.well-known/openid-configuration&quot;,&quot;_label&quot;:&quot;github&quot;,&quot;_grantTypes&quot;:[&quot;password&quot;,&quot;clientCredentials&quot;,&quot;refreshToken&quot;,&quot;authorizationCode&quot;,&quot;implicit&quot;],&quot;_issuer&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev&quot;,&quot;_keys&quot;:[{&quot;alg&quot;:&quot;RS256&quot;,&quot;e&quot;:&quot;AQAB&quot;,&quot;kid&quot;:&quot;*****&quot;,&quot;kty&quot;:&quot;RSA&quot;,&quot;n&quot;:&quot;***&quot;,&quot;use&quot;:&quot;sig&quot;}],&quot;_authorizationEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/auth&quot;,&quot;_tokenEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/token&quot;,&quot;_userInfoEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/userinfo&quot;,&quot;_endSessionEndpoint&quot;:&quot;https://nexus.example.com/nexus/auth/realms/github-dev/protocol/openid-connect/logout&quot;,&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-14T11:56:58.372Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/anonymous&quot;}
+event:RealmUpdated
+id:835128c0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@id&quot;:&quot;http://nexus.example.com/v1/realms/github&quot;,&quot;@type&quot;:&quot;RealmDeprecated&quot;,&quot;_label&quot;:&quot;internal&quot;,&quot;_rev&quot;:3,&quot;_instant&quot;:&quot;2019-06-14T11:57:01.426Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
+event:RealmDeprecated
+id:85054160-8e9b-11e9-a8f6-c5c16f2312d6</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/realms/event.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>

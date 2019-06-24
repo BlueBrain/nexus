@@ -256,6 +256,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#fetch-a-project-specific-version-" class="header">Fetch a project (specific version)</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#list-projects" class="header">List projects</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#list-projects-belonging-to-an-organization" class="header">List projects belonging to an organization</a></li>
+    <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#project-server-sent-events" class="header">Project Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -290,6 +291,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#fetch-a-project-specific-version-" class="header">Fetch a project (specific version)</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#list-projects" class="header">List projects</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#list-projects-belonging-to-an-organization" class="header">List projects belonging to an organization</a></li>
+    <li><a href="../../../../docs/api/1.1/admin/admin-projects-api.html#project-server-sent-events" class="header">Project Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -745,6 +747,45 @@ BlueBrain/nexus
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/project-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#project-server-sent-events" name="project-server-sent-events" class="anchor"><span class="anchor-link"></span></a>Project Server Sent Events</h2>
+<p>This endpoint allows clients to receive automatic updates from the projects in a streaming fashion.</p>
+<pre><code>GET /v1/projects/events
+</code></pre>
+<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed project event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
+<p>The response contains a series of project events, represented in the following way</p>
+<pre><code>data:{payload}
+event:{type}
+id:{id}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{payload}</code>: Json - is the actual payload of the current project</li>
+  <li><code>{type}</code>: String - is a type identifier for the current project. Possible types are: ProjectCreated, ProjectUpdated and ProjectDeprecated</li>
+  <li><code>{id}</code>: String - is the identifier of the project event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/projects/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/project-event.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;ProjectCreated&quot;,&quot;description&quot;:&quot;rel07bd3x7ux7xy/3g2tp5jdtj2bii7 project&quot;,&quot;base&quot;:&quot;http://nexus.example.com/v1/resources/rel07bd3x7ux7xy/3g2tp5jdtj2bii7/_/&quot;,&quot;vocab&quot;:&quot;http://nexus.example.com/v1/vocabs/rel07bd3x7ux7xy/3g2tp5jdtj2bii7/&quot;,&quot;apiMappings&quot;:[{&quot;prefix&quot;:&quot;nxv&quot;,&quot;namespace&quot;:&quot;https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/&quot;},{&quot;prefix&quot;:&quot;person&quot;,&quot;namespace&quot;:&quot;https://shapes-registry.org/commons/person&quot;}],&quot;_uuid&quot;:&quot;0ccd8bb7-e2d6-468b-bf35-2d01f3ddaedf&quot;,&quot;_label&quot;:&quot;3g2tp5jdtj2bii7&quot;,&quot;_organizationUuid&quot;:&quot;cfd51482-294f-4f52-be78-8edce0775c42&quot;,&quot;_organizationLabel&quot;:&quot;rel07bd3x7ux7xy&quot;,&quot;_rev&quot;:1,&quot;_instant&quot;:&quot;2019-06-14T11:59:14.684Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:ProjectCreated
+id:d47715c0-8e9b-11e9-81dd-338cb949d9cb
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;ProjectUpdated&quot;,&quot;description&quot;:&quot;rel07bd3x7ux7xy/3g2tp5jdtj2bii7 project update 1&quot;,&quot;base&quot;:&quot;http://nexus.example.com/v1/tmynbseodckawgit/&quot;,&quot;vocab&quot;:&quot;http://nexus.example.com/v1/iwspaxkdbrpfsbni/&quot;,&quot;apiMappings&quot;:[{&quot;prefix&quot;:&quot;nxv&quot;,&quot;namespace&quot;:&quot;https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/&quot;},{&quot;prefix&quot;:&quot;person&quot;,&quot;namespace&quot;:&quot;https://shapes-registry.org/commons/person&quot;},{&quot;prefix&quot;:&quot;xsd&quot;,&quot;namespace&quot;:&quot;http://www.w3.org/2001/XMLSchema#&quot;}],&quot;_uuid&quot;:&quot;0ccd8bb7-e2d6-468b-bf35-2d01f3ddaedf&quot;,&quot;_label&quot;:&quot;3g2tp5jdtj2bii7&quot;,&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-14T11:59:19.544Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:ProjectUpdated
+id:d7602bf0-8e9b-11e9-81dd-338cb949d9cb
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;ProjectUpdated&quot;,&quot;description&quot;:&quot;rel07bd3x7ux7xy/3g2tp5jdtj2bii7 project update 2&quot;,&quot;base&quot;:&quot;http://nexus.example.com/v1/wwpeuyhtqbsesfxl/&quot;,&quot;vocab&quot;:&quot;http://nexus.example.com/v1/xqbfndagddjerwwc/&quot;,&quot;apiMappings&quot;:[{&quot;prefix&quot;:&quot;nxv&quot;,&quot;namespace&quot;:&quot;https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/&quot;},{&quot;prefix&quot;:&quot;person&quot;,&quot;namespace&quot;:&quot;https://shapes-registry.org/commons/person&quot;},{&quot;prefix&quot;:&quot;xsd&quot;,&quot;namespace&quot;:&quot;http://www.w3.org/2001/XMLSchema#&quot;}],&quot;_uuid&quot;:&quot;0ccd8bb7-e2d6-468b-bf35-2d01f3ddaedf&quot;,&quot;_label&quot;:&quot;3g2tp5jdtj2bii7&quot;,&quot;_rev&quot;:3,&quot;_instant&quot;:&quot;2019-06-14T11:59:20.094Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:ProjectUpdated
+id:d7b66240-8e9b-11e9-81dd-338cb949d9cb
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;ProjectDeprecated&quot;,&quot;_uuid&quot;:&quot;0ccd8bb7-e2d6-468b-bf35-2d01f3ddaedf&quot;,&quot;_rev&quot;:4,&quot;_instant&quot;:&quot;2019-06-14T11:59:23.722Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:ProjectDeprecated
+id:d9de7260-8e9b-11e9-81dd-338cb949d9cb</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/project-event.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>

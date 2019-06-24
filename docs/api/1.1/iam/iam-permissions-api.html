@@ -252,6 +252,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#delete-all-permissions" class="header">Delete all permissions</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#fetch-permissions-latest-revision-" class="header">Fetch permissions (latest revision)</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#fetch-permissions-specific-revision-" class="header">Fetch permissions (specific revision)</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#permissions-server-sent-events" class="header">Permissions Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -282,6 +283,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#delete-all-permissions" class="header">Delete all permissions</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#fetch-permissions-latest-revision-" class="header">Fetch permissions (latest revision)</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#fetch-permissions-specific-revision-" class="header">Fetch permissions (specific revision)</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-permissions-api.html#permissions-server-sent-events" class="header">Permissions Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -593,6 +595,41 @@ BlueBrain/nexus
   &quot;_updatedAt&quot;: &quot;2019-01-22T13:22:03.007Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/permissions/permissions-get-rev.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#permissions-server-sent-events" name="permissions-server-sent-events" class="anchor"><span class="anchor-link"></span></a>Permissions Server Sent Events</h2>
+<p>This endpoint allows clients to receive automatic updates from the permissions in a streaming fashion.</p>
+<pre><code>GET /v1/permissions/events
+</code></pre>
+<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed permission event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
+<p>The response contains a series of permission events, represented in the following way</p>
+<pre><code>data:{payload}
+event:{type}
+id:{id}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{payload}</code>: Json - is the actual payload of the current permission</li>
+  <li><code>{type}</code>: String - is a type identifier for the current permission. Possible types are: PermissionsAppended, PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted</li>
+  <li><code>{id}</code>: String - is the identifier of the permission event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/permissions/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/permissions/event.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;PermissionsAppended&quot;,&quot;permissions&quot;:[&quot;resources/write&quot;,&quot;views/query&quot;],&quot;_rev&quot;:1,&quot;_instant&quot;:&quot;2019-06-14T11:57:04.039Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
+event:PermissionsAppended
+id:8693f7b0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;PermissionsSubtracted&quot;,&quot;permissions&quot;:[&quot;views/query&quot;],&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-14T11:57:05.771Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
+event:PermissionsSubtracted
+id:879c3ff0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;PermissionsReplaced&quot;,&quot;permissions&quot;:[&quot;schemas/write&quot;,&quot;views/write&quot;,&quot;files/write&quot;,&quot;permissions/write&quot;,&quot;acls/write&quot;,&quot;realms/write&quot;,&quot;projects/read&quot;,&quot;acls/read&quot;,&quot;organizations/create&quot;,&quot;tcmbsyeq/rcxpdxng&quot;,&quot;organizations/write&quot;,&quot;resources/write&quot;,&quot;realms/read&quot;,&quot;projects/create&quot;,&quot;storages/write&quot;,&quot;permissions/read&quot;,&quot;resources/read&quot;,&quot;organizations/read&quot;,&quot;resolvers/write&quot;,&quot;events/read&quot;,&quot;views/query&quot;,&quot;projects/write&quot;],&quot;_rev&quot;:3,&quot;_instant&quot;:&quot;2019-06-14T11:57:07.277Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
+event:PermissionsReplaced
+id:88820c10-8e9b-11e9-a8f6-c5c16f2312d6</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/permissions/event.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>

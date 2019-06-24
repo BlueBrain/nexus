@@ -254,6 +254,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#delete-acls" class="header">Delete ACLs</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#fetch-acls" class="header">Fetch ACLs</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#list-acls" class="header">List ACLs</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#acl-server-sent-events" class="header">ACL Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -286,6 +287,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#delete-acls" class="header">Delete ACLs</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#fetch-acls" class="header">Fetch ACLs</a></li>
     <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#list-acls" class="header">List ACLs</a></li>
+    <li><a href="../../../../docs/api/1.1/iam/iam-acls-api.html#acl-server-sent-events" class="header">ACL Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -900,6 +902,41 @@ BlueBrain/nexus
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/acls/acls-listed-ancestors.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#acl-server-sent-events" name="acl-server-sent-events" class="anchor"><span class="anchor-link"></span></a>ACL Server Sent Events</h2>
+<p>This endpoint allows clients to receive automatic updates from the ACLs in a streaming fashion.</p>
+<pre><code>GET /v1/acls/events
+</code></pre>
+<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed ACL event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
+<p>The response contains a series of ACL events, represented in the following way</p>
+<pre><code>data:{payload}
+event:{type}
+id:{id}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{payload}</code>: Json - is the actual payload of the current ACL</li>
+  <li><code>{type}</code>: String - is a type identifier for the current ACL. Possible types are: AclAppended, AclSubtracted, AclReplaced, AclDeleted</li>
+  <li><code>{id}</code>: String - is the identifier of the ACL event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/acls/event.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;AclAppended&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/test&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;nexusdev&quot;,&quot;subject&quot;:&quot;test&quot;},&quot;permissions&quot;:[&quot;organizations/create&quot;]}],&quot;_path&quot;:&quot;/&quot;,&quot;_rev&quot;:5,&quot;_instant&quot;:&quot;2019-06-14T11:54:52.379Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
+event:AclAppended
+id:381a17e0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;AclReplaced&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/test&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;nexusdev&quot;,&quot;subject&quot;:&quot;test&quot;},&quot;permissions&quot;:[&quot;schemas/write&quot;,&quot;views/write&quot;,&quot;files/write&quot;,&quot;acls/write&quot;,&quot;projects/read&quot;,&quot;acls/read&quot;,&quot;organizations/create&quot;,&quot;organizations/write&quot;,&quot;resources/write&quot;,&quot;projects/create&quot;,&quot;storages/write&quot;,&quot;resources/read&quot;,&quot;organizations/read&quot;,&quot;resolvers/write&quot;,&quot;views/query&quot;,&quot;projects/write&quot;]}],&quot;_path&quot;:&quot;/imw5ta2pjjvxjxm&quot;,&quot;_rev&quot;:1,&quot;_instant&quot;:&quot;2019-06-14T11:54:53.133Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/anonymous&quot;}
+event:AclReplaced
+id:388cfdf0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;AclSubtracted&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/test&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;nexusdev&quot;,&quot;subject&quot;:&quot;test&quot;},&quot;permissions&quot;:[&quot;organizations/create&quot;]}],&quot;_path&quot;:&quot;/&quot;,&quot;_rev&quot;:6,&quot;_instant&quot;:&quot;2019-06-14T11:56:55.963Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
+event:AclSubtracted
+id:81c3d200-8e9b-11e9-a8f6-c5c16f2312d6</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/acls/event.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>

@@ -251,6 +251,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#fetch-an-organization-current-version-" class="header">Fetch an organization (current version)</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#fetch-an-organization-specific-version-" class="header">Fetch an organization (specific version)</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#list-organizations" class="header">List organizations</a></li>
+    <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#organization-server-sent-events" class="header">Organization Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -280,6 +281,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#fetch-an-organization-current-version-" class="header">Fetch an organization (current version)</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#fetch-an-organization-specific-version-" class="header">Fetch an organization (specific version)</a></li>
     <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#list-organizations" class="header">List organizations</a></li>
+    <li><a href="../../../../docs/api/1.1/admin/admin-orgs-api.html#organization-server-sent-events" class="header">Organization Server Sent Events</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -524,6 +526,50 @@ BlueBrain/nexus
     }
   ]
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/organization-list.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
+<h2><a href="#organization-server-sent-events" name="organization-server-sent-events" class="anchor"><span class="anchor-link"></span></a>Organization Server Sent Events</h2>
+<p>This endpoint allows clients to receive automatic updates from the organizations in a streaming fashion.</p>
+<pre><code>GET /v1/orgs/events
+</code></pre>
+<p>where <code>Last-Event-Id</code> is an optional HTTP Header that identifies the last consumed organization event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</p>
+<p>The response contains a series of organization events, represented in the following way</p>
+<pre><code>data:{payload}
+event:{type}
+id:{id}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{payload}</code>: Json - is the actual payload of the current organization</li>
+  <li><code>{type}</code>: String - is a type identifier for the current organization. Possible types are: OrganizationCreated, OrganizationUpdated and OrganizationDeprecated</li>
+  <li><code>{id}</code>: String - is the identifier of the organization event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/orgs/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/organization-event.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;OrganizationCreated&quot;,&quot;description&quot;:&quot;l3dd4frl6axlueb organization&quot;,&quot;_uuid&quot;:&quot;3a793ee4-e973-4181-98f5-1eb3ac87d6f6&quot;,&quot;_label&quot;:&quot;l3dd4frl6axlueb&quot;,&quot;_rev&quot;:1,&quot;_instant&quot;:&quot;2019-06-14T11:58:46.509Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:OrganizationCreated
+id:c3abebd0-8e9b-11e9-81dd-338cb949d9cb
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;OrganizationCreated&quot;,&quot;description&quot;:&quot;43rl0svyk8fcfki organization&quot;,&quot;_uuid&quot;:&quot;d8ed8e9f-6d4a-4cf7-8f9f-9ed6ed62838c&quot;,&quot;_label&quot;:&quot;43rl0svyk8fcfki&quot;,&quot;_rev&quot;:1,&quot;_instant&quot;:&quot;2019-06-14T11:58:53.744Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:OrganizationCreated
+id:c7fbe500-8e9b-11e9-81dd-338cb949d9cb
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;OrganizationUpdated&quot;,&quot;description&quot;:&quot;43rl0svyk8fcfki organization update 1&quot;,&quot;_uuid&quot;:&quot;d8ed8e9f-6d4a-4cf7-8f9f-9ed6ed62838c&quot;,&quot;_label&quot;:&quot;43rl0svyk8fcfki&quot;,&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-14T11:58:59.458Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:OrganizationUpdated
+id:cb680de0-8e9b-11e9-81dd-338cb949d9cb
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;OrganizationUpdated&quot;,&quot;description&quot;:&quot;43rl0svyk8fcfki organization update 2&quot;,&quot;_uuid&quot;:&quot;d8ed8e9f-6d4a-4cf7-8f9f-9ed6ed62838c&quot;,&quot;_label&quot;:&quot;43rl0svyk8fcfki&quot;,&quot;_rev&quot;:3,&quot;_instant&quot;:&quot;2019-06-14T11:59:00.057Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:OrganizationUpdated
+id:cbc6a8a0-8e9b-11e9-81dd-338cb949d9cb
+        
+
+data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/admin.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;OrganizationDeprecated&quot;,&quot;_uuid&quot;:&quot;eb50c21d-3dc7-45e4-94ed-5b2a62f44907&quot;,&quot;_rev&quot;:2,&quot;_instant&quot;:&quot;2019-06-14T11:59:05.790Z&quot;,&quot;_subject&quot;:&quot;http://nexus.example.com/v1/realms/nexusdev/users/test&quot;}
+event:OrganizationDeprecated
+id:cf2d2c30-8e9b-11e9-81dd-338cb949d9cb</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/organization-event.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 </div>
 <div>
