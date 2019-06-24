@@ -161,7 +161,7 @@ This endpoint allows clients to receive automatic updates from the organizations
 GET /v1/orgs/events
 ```
 
-where `Last-Event-Id` is an optional HTTP Header `{last}` that identifies the last consumed organization event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed organization event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of organization events, represented in the following way
 

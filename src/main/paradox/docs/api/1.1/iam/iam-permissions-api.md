@@ -175,7 +175,7 @@ This endpoint allows clients to receive automatic updates from the permissions i
 GET /v1/permissions/events
 ```
 
-where `Last-Event-Id` is an optional HTTP Header `{last}` that identifies the last consumed permission event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed permission event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of permission events, represented in the following way
 
