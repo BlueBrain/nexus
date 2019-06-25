@@ -32,7 +32,7 @@ It is to be noted that many other scientific fields (Astronomy, Agriculture, Bio
 
 ## More information
 
-The Blue Brain Nexus [documentation] offers more information about the software, its [architecture](https://bluebrainnexus.io//docs/additional-info/architecture/index.html), an [api reference]
+The Blue Brain Nexus [documentation] offers more information about the software, its [architecture](https://bluebrainnexus.io/docs/additional-info/architecture/index.html), an [api reference]
 and the current [roadmap].
 
 Please head over to the [getting started] section for a description of various options on running Nexus and
