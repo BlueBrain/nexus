@@ -194,7 +194,7 @@ Response
 ## List resources
 
 ```
-GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&schema={schema}
+GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&schema={schema}&q={search}
 ```
                                           
 where...
@@ -207,6 +207,7 @@ where...
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
 - `{schema}`: Iri - can be used to filter the resulting resources based on the conformant schema
+- `{search}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided string
 
 
 **Example**
@@ -285,3 +286,79 @@ Request
 
 Response
 :   @@snip [resources-outgoing.json](../assets/resources/outgoing.json)
+
+## Resources Server Sent Events
+
+This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.
+
+The server sent events response contains a series of resource events, represented in the following way
+
+```
+data:{payload}
+event:{type}
+id:{id}
+```
+
+where...
+
+- `{payload}`: Json - is the actual payload of the current resource
+- `{type}`: String - is a type identifier for the current realm. Possible types are: Created, Updated, Deprecated, TagAdded, FileCreated, FileUpdated
+- `{id}`: String - is the identifier of the resource event. It can be used in the `Last-Event-Id` query parameter
+
+
+### Server Sent Events all resources
+
+
+```
+GET /v1/resources/events
+```
+
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+**Example**
+
+Request
+:   @@snip [resources-event-all.sh](../assets/resources/event-all.sh)
+
+Response
+:   @@snip [resources-event-all.json](../assets/resources/event-all.json)
+
+
+### Server Sent Events organization resources
+
+```
+GET /v1/resources/{org_label}/events
+```
+
+where 
+
+- `{org_label}`: String - the selected organization for which the events are going to be filtered
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+**Example**
+
+Request
+:   @@snip [resources-event-org.sh](../assets/resources/event-org.sh)
+
+Response
+:   @@snip [resources-event-org.json](../assets/resources/event-org.json)
+
+### Server Sent Events project resources
+
+```
+GET /v1/resources/{org_label}/{project_label}/events
+```
+
+where 
+
+- `{org_label}`: String - the selected organization for which the events are going to be filtered
+- `{project_label}`: String - the selected project for which the events are going to be filtered
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+**Example**
+
+Request
+:   @@snip [resources-event-project.sh](../assets/resources/event-project.sh)
+
+Response
+:   @@snip [resources-event-project.json](../assets/resources/event-project.json)

@@ -204,7 +204,7 @@ Response
 ## List projects
 
 ```
-GET /v1/projects?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
+GET /v1/projects?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&label=label
 ```
 
 where...
@@ -216,6 +216,7 @@ where...
 - `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
+- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any project's label that contains the string `my`. `label='my'` will match any project where label is equal to `my`. 
 
 
 **Example**
@@ -230,13 +231,19 @@ Response
 ## List projects belonging to an organization
 
 ```
-GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}
+GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&label=label
 ```
 
 where...
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
+- `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
+- `{rev}`: Number - can be used to filter the resulting projects based on their revision value
+- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
+- `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
+- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any project's label that contains the string `my`. `label='my'` will match any project where label is equal to `my`. 
 
 
 **Example**
@@ -246,3 +253,36 @@ Request
 
 Response
 :   @@snip [project-list.json](../assets/project-list.json)
+
+
+## Project Server Sent Events
+
+This endpoint allows clients to receive automatic updates from the projects in a streaming fashion.
+
+```
+GET /v1/projects/events
+```
+
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed project event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+The response contains a series of project events, represented in the following way
+
+```
+data:{payload}
+event:{type}
+id:{id}
+```
+
+where...
+
+- `{payload}`: Json - is the actual payload of the current project
+- `{type}`: String - is a type identifier for the current project. Possible types are: ProjectCreated, ProjectUpdated and ProjectDeprecated
+- `{id}`: String - is the identifier of the project event. It can be used in the `Last-Event-Id` HTTP Header
+
+**Example**
+
+Request
+:   @@snip [project-event.sh](../assets/project-event.sh)
+
+Response
+:   @@snip [project-event.json](../assets/project-event.json)

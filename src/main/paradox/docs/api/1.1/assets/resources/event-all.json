@@ -1,0 +1,15 @@
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/resource.json","@type":"Created","_resourceId":"https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94","_source":{"@type":"Hobbit","age":23,"name":"Frodo"},"_types":["https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit"],"_constrainedBy":"https://bluebrain.github.io/nexus/schemas/unconstrained.json","_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"ba7053ba-54ea-41b6-baab-96ec1acd7ad4","_instant":"2019-06-24T07:35:47.447631Z","_subject":"https://nexus.example.com/v1/realms/github/users/myuser"}
+event:Created
+id:aebbf8f4-9652-11e9-89a7-6d3c5701d287
+
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/resource.json","@type":"Updated","_resourceId":"https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94","_source":{"@type":"Hobbit","age":25,"name":"Frodo"},"_types":["https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit"],"_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"ba7053ba-54ea-41b6-baab-96ec1acd7ad4","_rev":2,"_instant":"2019-06-24T07:36:27.130185Z","_subject":"https://nexus.example.com/v1/realms/github/users/myuser"}
+event:Updated
+id:c6642f90-9652-11e9-89a7-6d3c5701d287
+
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/resource.json","@type":"Deprecated","_resourceId":"https://nexus.example.com/v1/resources/myorg/myproject/_/7887416b-d501-4508-a625-2a6664dfca94","_types":["https://nexus.example.com/v1/vocabs/myorg/myproject/Hobbit"],"_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"ba7053ba-54ea-41b6-baab-96ec1acd7ad4","_rev":3,"_instant":"2019-06-24T07:36:40.558514Z","_subject":"https://nexus.example.com/v1/realms/github/users/myuser"}
+event:Deprecated
+id:ce6549e0-9652-11e9-89a7-6d3c5701d287
+
+data:{"@context":"https://bluebrain.github.io/nexus/contexts/resource.json","@type":"FileCreated","_resourceId":"https://nexus.example.com/v1/resources/otherorg/myproject/_/myfile","_attributes":{"_bytes":48144,"_digest":{"_value":"721d03056b82a22c54f30fd3c68b41dfe5f53828911984e47182d82cfbac9f36","_algorithm":"SHA-256"},"_filename":"brain.jpg","_location":"file:///opt/binaries/1089947c-dc76-4cbc-8b04-3f919b436828/b/8/4/a/b/f/9/c/brain.jpg","_mediaType":"image/jpeg"},"_storage":{"@type":"DiskStorage","_storageId":"https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault","default":true,"volume":"/opt/binaries","readPermission":"resources/read","writePermission":"files/write"},"_projectUuid":"1089947c-dc76-4cbc-8b04-3f919b436828","_organizationUuid":"aa7053ba-54ea-41b6-baab-96ec1acd7a44","_instant":"2019-06-24T07:37:10.311391Z","_subject":"https://nexus.example.com/v1/realms/github/users/myuser"}
+event:FileCreated
+id:e024e5f0-9652-11e9-89a7-6d3c5701d287
