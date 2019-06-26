@@ -243,7 +243,7 @@ where...
 - `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
-- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any project's label that contains the string `my`. `label='my'` will match any project where label is equal to `my`. 
+- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any project's label that contains the string `my`.
 
 
 **Example**
