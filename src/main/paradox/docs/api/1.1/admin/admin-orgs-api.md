@@ -142,7 +142,7 @@ where...
 - `{type}`: Iri - can be used to filter the resulting organizations based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting organizations based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting organizations based on the person which performed the last update
-- `{label}`: String - can be used to filter the resulting organizations based on its label. E.g.: `label=my` will match any organization's label that contains the string `my`. `label='my'` will match any organization where label is equal to `my`. 
+- `{label}`: String - can be used to filter the resulting organizations based on its label. E.g.: `label=my` will match any organization's label that contains the string `my`. 
 
 **Example**
 
