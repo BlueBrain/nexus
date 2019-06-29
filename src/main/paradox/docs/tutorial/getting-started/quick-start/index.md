@@ -7,91 +7,27 @@
 This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple [knowledge graph](../../knowledge-graph/thinking-in-graph.html).
 The goal is to go over some capabilities of Blue Brain Nexus enabling:
 
-* The creation of a project as a protected data space to work with
-* An easy ingestion of dataset and management of it's lifecycle
-* Querying a dataset to retrieve various information
+* The creation of a project as a protected data space to work in
+* An easy ingestion of a dataset within a given project
+* The listing and querying of a dataset
 * Sharing a dataset by making it public
 
-For that we will work with the small version of the [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip) containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
-An overview of this dataset can be found [here](../dataset/index.html).
 
 @@@ note
-* This tutorial makes use of an AWS deployment of Blue Brain Nexus available at https://sandbox.bluebrainnexus.io/v1.
-* We will be using [Nexus CLI](https://github.com/BlueBrain/nexus-cli), a python client,  to interact with the deployment.
+This quick start tutorial tutorial makes use of:
+
+* an AWS deployment of Blue Brain Nexus available at https://sandbox.bluebrainnexus.io.
+* [Nexus CLI](https://github.com/BlueBrain/nexus-cli), a python Command Line Interface.
 @@@
 
 Let's get started.
 
+
 ## Set up
 
-
-### Install and setup the Nexus CLI
-
-Since the CLI is written in python, you may want to create a virtual environment for a clean set up. To do so, Conda can be used. If you don't have it installed follow the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
-
-```shell
-conda create -n nexus-cli python=3.5
-conda activate nexus-cli
-pip install git+https://github.com/BlueBrain/nexus-cli
-```
-
-
-### Create and select a 'tutorial' profile
-
-To ease the usage of the CLI, we will create a profile named 'tutorial' storing locally various configurations such as the Nexus deployment url.
-
-Command
-:   @@snip [create-profile-cmd.sh](../assets/create-profile-cmd.sh)
-
-Output
-:   @@snip [create-profile-out.sh](../assets/create-profile-out.sh)
-
-Let select the tutorial profile we just created.
-
-Command
-:   @@snip [select-profile-cmd.sh](../assets/select-profile-cmd.sh)
-
-Output
-:   @@snip [select-profile-out.sh](../assets/select-profile-out.sh)
-
-
-
-### Login
-
-A bearer token is needed to authenticate to Nexus. For the purpose of this tutorial, you'll login using your github account.
-
 @@@ note
-* If you don't have a github account, please follow the instructions on this [page](https://github.com/join?source=header-home) to create one.
+* Follow the Nexus CLI [set up instructions](../setup/index.html)
 @@@
-
-
-The following command will open a browser window from where you can login using your github account.
-
-
-Command
-:   @@snip [login-auth-cmd.sh](../assets/login-auth-cmd.sh)
-
-Output
-:   @@snip [login-auth-out.sh](../assets/login-auth-out.sh)
-
-From the opened web page, click on the login button on the right corner and follow the instructions.
-
-
-![login-ui](../assets/login-ui.png)
-
-At the end you'll see a token button on the right corner. Click on it to copy the token.
-
-![login-ui](../assets/copy-token.png)
-
-The token can now be added to the tutorial profile. In the output of the following command you should see that the token column has now an expiry date.
-
-Command
-:   @@snip [settoken-auth-cmd.sh](../assets/settoken-auth-cmd.sh)
-
-Output
-:   @@snip [settoken-auth-out.sh](../assets/settoken-auth-out.sh)
-
-
 
 ## Create a project
 
@@ -127,6 +63,14 @@ Output
 :   @@snip [select-orgs-out.sh](../assets/select-orgs-out.sh)
 
 
+In case the tutorialnexus organization is not available, pick an organization label (value of $ORGLABEL) and create an organization using the following command:
+
+Command
+:   @@snip [create-org-cmd.sh](../assets/create-org-cmd.sh)
+
+Output
+:   @@snip [create-org-out.sh](../assets/create-org-out.sh)
+
 ### Create a project
 
 A project is created with a label and within an organization. The label should be made of alphanumerical characters and its length should be between 3 and 32 (it should match the regex: [a-zA-Z0-9-_]{3,32}).
@@ -154,7 +98,79 @@ We are all set to bring some data within the project we just created.
 
 ## Ingest data
 
-### Download the dataset
+The CLI supports the ingestion of datasets in two formats: JSON and CSV.
+
+
+### Ingest JSON
+ 
+#### Ingest JSON from a payload
+
+Command
+:   @@snip [downloadmovielens-cmd.sh](../assets/create_from_json.sh)
+
+
+@@@ note
+* Note that ingesting a JSON array is not supported. 
+@@@
+
+By default Nexus generates an identifier (in fact a URI) for a created resource as shown in the output of the above command.
+Furthermore, it is possible to provide:
+ 
+* a specific identifier by setting the **-\-id** option 
+* and a type by setting the **-\-type** option
+    
+Command
+  :   @@snip [create_from_json_with_id.sh](../assets/create_from_json_with_id.sh)
+
+Output
+:   @@snip [create_from_json-out.sh](../assets/create_from_json-out.sh)
+
+
+Identifiers and types can also be provided directly in the JSON payload using respectively: the **@id** and **@type** keys.
+
+
+The created resource identified by https://movies.com/movieId/1 can then be fetched using the following command :
+
+Command
+:   @@snip [fetch-create-json-cmd.sh](../assets/fetch-create-json-cmd.sh)
+
+Output
+:   @@snip [fetch-create-json-out.sh](../assets/fetch-create-json-out.sh)
+
+
+
+
+#### Ingest JSON from a file
+
+A JSON payload can be ingested from a file.
+
+```shell
+nexus resources create --file /path/to/file.json
+```
+
+
+
+A directory (/path/to/dir) of JSON files can be ingested by using the following looping command: 
+
+```shell
+find /path/to/dir -name '*.json' -exec  nexus resources create --file {} \;
+```
+
+Ingested resources can be listed using the following command:
+
+```shell
+nexus resources list --size 10
+```
+
+
+### Ingest CSV files
+
+To illustrate how to load CSV files we will work with the small version of the [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip)
+containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
+An overview of this dataset can be found [here](../dataset/index.html).
+
+#### Download the dataset
+
 
 The [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip) can be downloaded either directly on a browser or using a curl command as shown below.
 
@@ -167,7 +183,7 @@ Output
 :   @@snip [downloadmovielens-out.sh](../assets/downloadmovielens-out.sh)
 
 
-### Load the dataset
+#### Load the dataset
 Let first load the movies and merge them with the links.
 
 ```shell
@@ -253,6 +269,14 @@ View              | Description
 ElasticSearchView | Exposes data in [ElasticSearch](https://www.elastic.co/products/elasticsearch) a document oriented search engine and provide access to it using the [ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
 SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the [W3C Sparql query language](https://www.w3.org/TR/sparql11-query/).
 
+
+@@@ note
+
+Note that the following queries (ElasticSearch and SPARQL) contain the variable $PROJECTLABEL. It should be replaced by the current project.
+Please copy each query and use a text editor to replace $PROJECTLABEL.
+@@@
+
+
 #### Query data using the ElasticSearchView
 
 The ElasticSearchView URL is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].
@@ -271,6 +295,9 @@ The SparqlView is available at the address [https://sandbox.bluebrainnexus.io/v1
 The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.
 
 ![Movielens-default_nexus_graph.png](../assets/Movielens-default_nexus_graph.png)
+
+
+
 
 Select queries
 :   @@snip [select_sparql.sh](../assets/select_sparql.sh)
