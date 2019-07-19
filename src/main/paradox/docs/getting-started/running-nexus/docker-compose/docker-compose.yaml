@@ -1,7 +1,7 @@
 version: "2"
 services:
   kg:
-    image: bluebrain/nexus-kg:1.0
+    image: bluebrain/nexus-kg:1.1
     entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
@@ -14,20 +14,20 @@ services:
       ADMIN_PUBLIC_IRI: "http://localhost/v1"
       SPARQL_BASE_URI: "http://blazegraph:9999/blazegraph"
       ELASTIC_SEARCH_BASE_URI: "http://elasticsearch:9200"
-      JAVA_OPTS: "-XX:+UseG1GC -XX:+UseStringDeduplication -Xms512m -Xmx2G"
+      JAVA_OPTS: "-XX:+UseStringDeduplication -Xms512m -Xmx2G"
 
   iam:
-    image: bluebrain/nexus-iam:1.0
+    image: bluebrain/nexus-iam:1.1
     entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
       PUBLIC_URI: "http://localhost"
       SERVICE_DESCRIPTION_URI: "http://localhost/iam"
-      JAVA_OPTS: "-XX:+UseG1GC -Xms512m -Xmx1G"
+      JAVA_OPTS: "-Xms512m -Xmx1G"
 
   admin:
-    image: bluebrain/nexus-admin:1.0
+    image: bluebrain/nexus-admin:1.1
     entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
@@ -36,10 +36,10 @@ services:
       SERVICE_DESCRIPTION_URI: "http://localhost/admin"
       IAM_INTERNAL_IRI: "http://iam:8080/v1"
       IAM_PUBLIC_IRI: "http://localhost/v1"
-      JAVA_OPTS: "-XX:+UseG1GC -Xms512m -Xmx512m"
+      JAVA_OPTS: "-Xms512m -Xmx512m"
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:6.4.3"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.2.0"
     environment:
       ES_JAVA_OPTS: "-Xms512m -Xmx512m"
       discovery.type: "single-node"
@@ -56,7 +56,7 @@ services:
     image: "nawer/blazegraph:2.1.5"
 
   web:
-    image: "bluebrain/nexus-web"
+    image: "bluebrain/nexus-web:1.1.1"
     environment:
       BASE_PATH: "/"
       HOST_NAME: "http://localhost"

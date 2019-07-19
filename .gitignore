@@ -17,6 +17,7 @@ target/
 .settings
 .idea
 .vscode
+.metals
 *.iml
 **/nbproject/
 **/logs/
