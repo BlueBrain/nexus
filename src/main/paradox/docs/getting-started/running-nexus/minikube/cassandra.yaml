@@ -48,7 +48,7 @@ items:
         terminationGracePeriodSeconds: 180
         containers:
         - name: cassandra
-          image: cassandra:3.11.3
+          image: cassandra:3
           imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: storage

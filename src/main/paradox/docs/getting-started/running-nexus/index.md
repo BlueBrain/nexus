@@ -128,7 +128,7 @@ Example
 :
 ```
 $ curl http://localhost/kg
-{"name":"kg","version":"1.0.0"}
+{"name":"kg","version":"1.1.0"}
 ```
 
 #### Administration
@@ -540,7 +540,7 @@ $
 IAM is the service that manages identities and tokens via OIDC providers and manages the permissions to
 arbitrary resources in the system. By default, anonymous users will be granted enough permissions to
 fully manage resources in the system. If you'd like to change this behavior, you must set up
-[realms and permissions](../../api/1.0/iam/index.html) manually.
+[realms and permissions](../../api/1.1/iam/index.html) manually.
 
 Command
 :
@@ -563,7 +563,7 @@ pod/iam-0 condition met
 $ curl -s "http://$NEXUS/iam" | jq
 {
   "name": "iam",
-  "version": "1.0.1"
+  "version": "1.1.0"
 }
 $ curl -s "http://$NEXUS/v1/acls/" | jq
 {
@@ -644,7 +644,7 @@ pod/admin-0 condition met
 $ curl -s "http://$NEXUS/admin" | jq
 {
   "name": "admin",
-  "version": "1.0.2"
+  "version": "1.1.0"
 }
 $ curl -s "http://$NEXUS/v1/projects" | jq
 {
@@ -685,7 +685,7 @@ pod/kg-0 condition met
 $ curl -s "http://$NEXUS/kg" | jq
 {
   "name": "kg",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }
 $ curl -s "http://$NEXUS/v1/resources/org/proj" | jq # the 404 error is expected
 {
@@ -764,7 +764,7 @@ should narrow the scope:
     depend performance wise to the underlying disk access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
     *   prefer SSD over HDDs because random access speed is more important than sequential access,
-    *   one exception is the file storage ([attachments to resources](../../api/1.0/kg/index.html) which are stored as
+    *   one exception is the file storage ([attachments to resources](../../api/1.1/kg/index.html) which are stored as
         binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access
         speed; this assumes that accessing attachments is not the at the top in the usage profile
 2.  All of Nexus services and most of the "off the shelf" products are built to run on top of the JVM which usually
@@ -840,7 +840,7 @@ An example, assuming:
 
 *   10KB per resource
 *   1.000.000 distinct resources
-*   3 documents per resource (the number of documents depends on the configured [views](../../api/1.0/kg/index.html)
+*   3 documents per resource (the number of documents depends on the configured [views](../../api/1.1/kg/index.html)
     in the system)
 *   2 additional shard replicas (replication factor of 3)
 
