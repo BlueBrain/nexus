@@ -60,17 +60,17 @@ no storage id is provided picks the **last created** storage with `default` set 
 
 These tables summarize mandatory and optional fields for each storage type:
 
-| @type               | @id      | default   | volume    | readPermission | writePermission |
-|---------------------|----------|-----------|-----------|----------------|-----------------|
-| DiskStorage         | optional | mandatory | mandatory | optional       | optional        |
+| @type               | @id      | default   | volume    | readPermission | writePermission | maxFileSize |
+|---------------------|----------|-----------|-----------|----------------|-----------------|-------------|
+| DiskStorage         | optional | mandatory | mandatory | optional       | optional        | optional    |
 
-| @type               | @id      | default   | folder    | endpoint | credentials | readPermission | writePermission |
-|---------------------|----------|-----------|-----------|----------|-------------|----------------|-----------------|
-| RemoteDiskStorage | optional | mandatory | mandatory | optional | optional    | optional       | optional        |
+| @type               | @id      | default   | folder    | endpoint | credentials | readPermission | writePermission | maxFileSize |
+|---------------------|----------|-----------|-----------|----------|-------------|----------------|-----------------|-------------|
+| RemoteDiskStorage | optional | mandatory | mandatory | optional | optional    | optional       | optional        | optional    |
 
-| @type               | @id      | default   | bucket    | endpoint  | accessKey | secretKey | readPermission | writePermission |
-|---------------------|----------|-----------|-----------|-----------|-----------|-----------|----------------|-----------------|
-| S3Storage           | optional | mandatory | mandatory | optional  | optional  | optional  | optional       | optional        |
+| @type               | @id      | default   | bucket    | endpoint  | accessKey | secretKey | readPermission | writePermission | maxFileSize |
+|---------------------|----------|-----------|-----------|-----------|-----------|-----------|----------------|-----------------|-------------|
+| S3Storage           | optional | mandatory | mandatory | optional  | optional  | optional  | optional       | optional        | optional    |
 
 @@@ note { .warning }
 
