@@ -42,7 +42,7 @@ items:
       spec:
         containers:
           - name: nexus-web
-            image: 'bluebrain/nexus-web:latest'
+            image: 'bluebrain/nexus-web:1.1.1'
             ports:
               - containerPort: 8000
                 protocol: TCP

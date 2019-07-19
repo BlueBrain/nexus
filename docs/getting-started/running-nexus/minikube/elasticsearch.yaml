@@ -65,7 +65,7 @@ items:
             privileged: true
         containers:
         - name: elasticsearch
-          image: hygt/elasticsearch:6.4.3
+          image: hygt/elasticsearch:7.2.0
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:
