@@ -3,7 +3,7 @@
 * [Getting Started](getting-started/index.md)
 * [Tutorials](tutorial/index.md)
 * [API Reference](api/index.md)
-* [Release Notes](release-notes/index.md)
+* [Releases](releases/index.md)
 * [Frequently asked questions](faq.md)
 * [Additional Information](additional-info/index.md)
 

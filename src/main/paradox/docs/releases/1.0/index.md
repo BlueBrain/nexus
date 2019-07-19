@@ -1,8 +1,8 @@
-# Release Notes
+# 1.0
 
 This part of the documentation lists the significant changes to the system for every version.
 
-## Nexus 1.0.x
+## Release Notes
 
 This is the first major release of Blue Brain Nexus after almost two years of development.
 
@@ -37,7 +37,7 @@ The behaviour of the system is described across the documentation, but here are 
 
 #### Nexus web interface
 
-![Nexus Web](./assets/img/nexus-web.png)
+![Nexus Web](../assets/img/nexus-web.png)
 
 Previously, the web interface was dubbed _Nexus Explorer_, and could only be used to browse the data stored in your
 Nexus instance. For the _Nexus V1_ release, we decided to build a new web application, called _[Nexus Web]_, that also
@@ -284,7 +284,7 @@ removing the need to index these definitions along with the data in their respec
 
 #### Introduced Javascript SDK for Nexus
 
-![Logo of JS SDK for Nexus](./assets/img/nexus-js-logo.png)
+![Logo of JS SDK for Nexus](../assets/img/nexus-js-logo.png)
 
 We released a [Javascript SDK for Nexus] that helps integrating with the Blue Brain Nexus API from Javascript and
 Typescript code. It aims at giving easy access to all the features offered by the API. It also offers Typescript

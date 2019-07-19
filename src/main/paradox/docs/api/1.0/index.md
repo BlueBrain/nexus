@@ -9,7 +9,7 @@
 
 @@@
 
-# 1.0 (stable)
+# 1.0
 
 All Nexus services expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically [JSON-LD](https://json-ld.org/).
 
