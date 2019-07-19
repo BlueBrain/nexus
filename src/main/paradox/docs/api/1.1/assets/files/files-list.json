@@ -14,6 +14,10 @@
         "_value": "25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e"
       },
       "_filename": "myfile.jpg",
+      "_storage": {
+        "@id": "https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage",
+        "_rev": 1
+      },
       "_mediaType": "image/jpeg",
       "_incoming": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyfile/incoming",
       "_outgoing": "https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyfile/outgoing",
@@ -34,6 +38,10 @@
       "_digest": {
         "_algorithm": "SHA-256",
         "_value": "25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e"
+      },
+      "_storage": {
+        "@id": "https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage",
+        "_rev": 1
       },
       "_filename": "myfile2.png",
       "_mediaType": "image/png",
