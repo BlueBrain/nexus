@@ -224,7 +224,7 @@ Response
 :   @@snip [file-fetched-meta.json](../assets/files/file-fetched-meta.json)
 
 
-## Fetch a resource (specific version)
+## Fetch a file (specific version)
 
 ```
 GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}
@@ -243,7 +243,7 @@ Response
 :   @@snip [file-fetched-meta.json](../assets/files/file-fetched-meta.json)
 
 
-## Fetch a resource (specific tag)
+## Fetch a file (specific tag)
 
 ```
 GET /v1/files/{org_label}/{project_label}/{file_id}?tag={tag}
@@ -261,7 +261,7 @@ Request (metadata)
 :   @@snip [file-fetch-tag-meta.sh](../assets/files/file-fetch-tag-meta.sh)
 
 Response
-:   @@snip [file-created.json](../assets/files/file-created.json)
+:   @@snip [file-created.json](../assets/files/file-fetched-meta.json)
 
 
 ## List files

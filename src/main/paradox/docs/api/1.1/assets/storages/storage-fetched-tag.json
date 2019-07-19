@@ -11,6 +11,7 @@
     "bucket": "mybucket",
     "default": false,
     "endpoint": "https://s3.us-west-1.amazonaws.com",
+    "maxFileSize": 10737418240,
     "readPermission": "resources/read",
     "writePermission": "files/write",
     "_algorithm": "SHA-256",
