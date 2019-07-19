@@ -165,7 +165,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../../docs/api/index.html" class="page">API reference</a>
   <ul>
-    <li><a href="../../../../docs/api/1.0/index.html" class="page">1.0 (stable)</a>
+    <li><a href="../../../../docs/api/1.0/index.html" class="page">1.0</a>
     <ul>
       <li><a href="../../../../docs/api/1.0/anatomy.html" class="page">Services anatomy</a></li>
       <li><a href="../../../../docs/api/1.0/operating-on-resources.html" class="page">Operating on resources</a></li>
@@ -192,7 +192,7 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../../../docs/api/1.0/error-signaling.html" class="page">Error Signaling</a></li>
     </ul></li>
-    <li><a href="../../../../docs/api/1.1/index.html" class="page">1.1 (preview)</a>
+    <li><a href="../../../../docs/api/1.1/index.html" class="page">1.1 (stable)</a>
     <ul>
       <li><a href="../../../../docs/api/1.1/anatomy.html" class="page">Services anatomy</a></li>
       <li><a href="../../../../docs/api/1.1/operating-on-resources.html" class="page">Operating on resources</a></li>
@@ -221,7 +221,16 @@ BlueBrain/nexus
       <li><a href="../../../../docs/api/1.1/error-signaling.html" class="page">Error Signaling</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../../../docs/release-notes/index.html" class="page">Release Notes</a></li>
+  <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../../../docs/releases/1.0/index.html" class="page">1.0</a></li>
+    <li><a href="../../../../docs/releases/1.1/index.html" class="page">1.1 (stable)</a>
+    <ul>
+      <li><a href="../../../../docs/releases/1.1/release.html" class="page">Release Notes</a></li>
+      <li><a href="../../../../docs/releases/1.1/changelog.html" class="page">Changelog</a></li>
+      <li><a href="../../../../docs/releases/1.1/migration.html" class="page">Migration from v1.0 to v1.1</a></li>
+    </ul></li>
+  </ul></li>
   <li><a href="../../../../docs/faq.html" class="page">Frequently asked questions</a></li>
   <li><a href="../../../../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
@@ -255,8 +264,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#tag-a-file" class="header">Tag a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#deprecate-a-file" class="header">Deprecate a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-file-current-version-" class="header">Fetch a file (current version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-resource-specific-version-" class="header">Fetch a resource (specific version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-resource-specific-tag-" class="header">Fetch a resource (specific tag)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-file-specific-version-" class="header">Fetch a file (specific version)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-file-specific-tag-" class="header">Fetch a file (specific tag)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#list-files" class="header">List files</a></li>
   </ul></li>
 </ul>
@@ -290,8 +299,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#tag-a-file" class="header">Tag a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#deprecate-a-file" class="header">Deprecate a file</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-file-current-version-" class="header">Fetch a file (current version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-resource-specific-version-" class="header">Fetch a resource (specific version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-resource-specific-tag-" class="header">Fetch a resource (specific tag)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-file-specific-version-" class="header">Fetch a file (specific version)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#fetch-a-file-specific-tag-" class="header">Fetch a file (specific tag)</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-files-api.html#list-files" class="header">List files</a></li>
   </ul></li>
 </ul>
@@ -691,6 +700,10 @@ BlueBrain/nexus
   },
   &quot;_filename&quot;: &quot;myfile2.png&quot;,
   &quot;_mediaType&quot;: &quot;image/png&quot;,
+  &quot;_storage&quot;: {
+    &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage&quot;,
+    &quot;_rev&quot;: 1
+  },
   &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/incoming&quot;,
   &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/outgoing&quot;,
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile&quot;,
@@ -704,7 +717,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-fetched-meta.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-resource-specific-version-" name="fetch-a-resource-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a resource (specific version)</h2>
+<h2><a href="#fetch-a-file-specific-version-" name="fetch-a-file-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a file (specific version)</h2>
 <pre><code>GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}
 </code></pre>
 <p>&hellip; where <code>{rev}</code> is the revision number of the file to be retrieved.</p>
@@ -731,6 +744,10 @@ BlueBrain/nexus
   },
   &quot;_filename&quot;: &quot;myfile2.png&quot;,
   &quot;_mediaType&quot;: &quot;image/png&quot;,
+  &quot;_storage&quot;: {
+    &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage&quot;,
+    &quot;_rev&quot;: 1
+  },
   &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/incoming&quot;,
   &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/outgoing&quot;,
   &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile&quot;,
@@ -744,7 +761,7 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-fetched-meta.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-resource-specific-tag-" name="fetch-a-resource-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a resource (specific tag)</h2>
+<h2><a href="#fetch-a-file-specific-tag-" name="fetch-a-file-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a file (specific tag)</h2>
 <pre><code>GET /v1/files/{org_label}/{project_label}/{file_id}?tag={tag}
 </code></pre>
 <p>&hellip; where <code>{tag}</code> is the tag of the file to be retrieved.</p>
@@ -762,27 +779,31 @@ BlueBrain/nexus
   <dd>
   <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-  &quot;@id&quot;: &quot;base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;@id&quot;: &quot;nxv:myfile&quot;,
   &quot;@type&quot;: &quot;File&quot;,
-  &quot;_bytes&quot;: 670,
+  &quot;_bytes&quot;: 2670,
   &quot;_digest&quot;: {
     &quot;_algorithm&quot;: &quot;SHA-256&quot;,
     &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
   },
-  &quot;_filename&quot;: &quot;myfile.jpg&quot;,
-  &quot;_mediaType&quot;: &quot;image/jpeg&quot;,
-  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9/outgoing&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/base:d8848d4c-68f7-4ffd-952f-63a8cbcb86a9&quot;,
+  &quot;_filename&quot;: &quot;myfile2.png&quot;,
+  &quot;_mediaType&quot;: &quot;image/png&quot;,
+  &quot;_storage&quot;: {
+    &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage&quot;,
+    &quot;_rev&quot;: 1
+  },
+  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/outgoing&quot;,
+  &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile&quot;,
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/file.json&quot;,
   &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false,
+  &quot;_rev&quot;: 4,
+  &quot;_deprecated&quot;: true,
   &quot;_createdAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;,
-  &quot;_updatedAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
+  &quot;_updatedAt&quot;: &quot;2019-12-28T12:15:33.238Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-created.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/files/file-fetched-meta.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-files" name="list-files" class="anchor"><span class="anchor-link"></span></a>List files</h2>
 <pre><code>GET /v1/files/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;q={search}
@@ -821,6 +842,10 @@ BlueBrain/nexus
         &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
       },
       &quot;_filename&quot;: &quot;myfile.jpg&quot;,
+      &quot;_storage&quot;: {
+        &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage&quot;,
+        &quot;_rev&quot;: 1
+      },
       &quot;_mediaType&quot;: &quot;image/jpeg&quot;,
       &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyfile/incoming&quot;,
       &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/https%3A%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fmyfile/outgoing&quot;,
@@ -841,6 +866,10 @@ BlueBrain/nexus
       &quot;_digest&quot;: {
         &quot;_algorithm&quot;: &quot;SHA-256&quot;,
         &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
+      },
+      &quot;_storage&quot;: {
+        &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage&quot;,
+        &quot;_rev&quot;: 1
       },
       &quot;_filename&quot;: &quot;myfile2.png&quot;,
       &quot;_mediaType&quot;: &quot;image/png&quot;,

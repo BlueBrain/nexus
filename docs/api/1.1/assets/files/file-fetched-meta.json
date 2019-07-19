@@ -9,6 +9,10 @@
   },
   "_filename": "myfile2.png",
   "_mediaType": "image/png",
+  "_storage": {
+    "@id": "https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage",
+    "_rev": 1
+  },
   "_incoming": "https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/incoming",
   "_outgoing": "https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/outgoing",
   "_self": "https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile",

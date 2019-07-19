@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Linking data on the web · Blue Brain Nexus</title>
+<title>1.1 (stable) · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Linking data on the web
+1.1 (stable)
 </span>
 </div>
 </div>
@@ -160,7 +160,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="page">Understanding JSON-LD</a></li>
       <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="page">Querying knowledge graph</a></li>
     </ul></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html" class="active page">Linking data on the web</a></li>
+    <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
     <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
   </ul></li>
   <li><a href="../../../docs/api/index.html" class="page">API reference</a>
@@ -224,7 +224,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../../docs/releases/1.0/index.html" class="page">1.0</a></li>
-    <li><a href="../../../docs/releases/1.1/index.html" class="page">1.1 (stable)</a>
+    <li><a href="../../../docs/releases/1.1/index.html" class="active page">1.1 (stable)</a>
     <ul>
       <li><a href="../../../docs/releases/1.1/release.html" class="page">Release Notes</a></li>
       <li><a href="../../../docs/releases/1.1/changelog.html" class="page">Changelog</a></li>
@@ -251,17 +251,6 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../../docs/tutorial/linking-data/index.html#linking-data-on-the-web" class="header">Linking data on the web</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#overview" class="header">Overview</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
-  </ul></li>
-</ul>
 </nav>
 
 </nav>
@@ -275,58 +264,16 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
-<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
-<div class="md-sidebar__scrollwrap">
-<div class="md-sidebar__inner">
-<nav class="md-nav md-nav--secondary">
-<label class="md-nav__title" for="__toc">Table of contents</label>
-<ul>
-  <li><a href="../../../docs/tutorial/linking-data/index.html#linking-data-on-the-web" class="header">Linking data on the web</a>
-  <ul>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#overview" class="header">Overview</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
-  </ul></li>
-</ul>
-</nav>
-
-</div>
-</div>
-</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#linking-data-on-the-web" name="linking-data-on-the-web" class="anchor"><span class="anchor-link"></span></a>Linking data on the web</h1>
-<h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
-<p>In this tutorial, we demonstrate how to consume structured data published on the web according to the Linked data principles to extend and enrich a knowledge graph.</p>
-<p><img src="./assets/linked-data.jpg" alt="linked-data" /></p>
-<h2><a href="#what-youll-build" name="what-youll-build" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll build</h2>
-<ul>
-  <li>A simple pipeline to query entities managed within Blue Brain Nexus, connect them with entities available on the web as structured data and extend and enrich their metadata.</li>
-</ul>
-<h2><a href="#what-youll-learn" name="what-youll-learn" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll learn</h2>
-<ul>
-  <li>An understanding of linked data principles</li>
-  <li>How to query data stored in a Nexus SparqlView.</li>
-  <li>How to query structured data on the web.</li>
-  <li>How to extend the metadata of entities managed within Blue Brain Nexus with external structured data on the web. We target <a href="https://www.wikidata.org/wiki/Wikidata:Main_Page">Wikidata</a> as an example.</li>
-  <li>How to update entities within Blue Brain Nexus using the <a href="https://github.com/BlueBrain/nexus-python-sdk">SDK</a> and enrich their metadata</li>
-</ul>
-<h2><a href="#what-youll-need" name="what-youll-need" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll need</h2>
-<ul>
-  <li>A Python 3.5 or higher environment with support of Jupyter notebook</li>
-</ul>
-<h2><a href="#get-the-tutorial-code" name="get-the-tutorial-code" class="anchor"><span class="anchor-link"></span></a>Get the tutorial code</h2>
-<p>This tutorial code is available:</p>
-<ul>
-  <li>at <a href="https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Linking%20data%20on%20the%20web.ipynb">Github</a></li>
-  <li>on <a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Linking%20data%20on%20the%20web.ipynb">Google Colab</a></li>
-</ul>
+<h1><a href="#1-1-stable-" name="1-1-stable-" class="anchor"><span class="anchor-link"></span></a>1.1 (stable)</h1>
+<p><a href="release.html">Release notes</a></p>
+<p><a href="changelog.html">Changelog</a></p>
+<p><a href="migration.html">Migration from v1.0 to v1.1</a></p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/linking-data/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/releases/1.1/index.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -342,7 +289,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" title="Querying knowledge graph" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/releases/1.0/index.html" title="1.0" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -351,17 +298,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Querying knowledge graph
+1.0
 </span>
 </div>
 </a>
-<a href="../../../docs/tutorial/build-recommender/index.html" title="Building a Data Pipeline for a Recommender System" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/releases/1.1/release.html" title="Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Building a Data Pipeline for a Recommender System
+Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Linking data on the web · Blue Brain Nexus</title>
+<title>Migration from v1.0 to v1.1 · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Linking data on the web
+Migration from v1.0 to v1.1
 </span>
 </div>
 </div>
@@ -160,7 +160,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="page">Understanding JSON-LD</a></li>
       <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="page">Querying knowledge graph</a></li>
     </ul></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html" class="active page">Linking data on the web</a></li>
+    <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
     <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
   </ul></li>
   <li><a href="../../../docs/api/index.html" class="page">API reference</a>
@@ -228,7 +228,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/releases/1.1/release.html" class="page">Release Notes</a></li>
       <li><a href="../../../docs/releases/1.1/changelog.html" class="page">Changelog</a></li>
-      <li><a href="../../../docs/releases/1.1/migration.html" class="page">Migration from v1.0 to v1.1</a></li>
+      <li><a href="../../../docs/releases/1.1/migration.html" class="active page">Migration from v1.0 to v1.1</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../../docs/faq.html" class="page">Frequently asked questions</a></li>
@@ -253,13 +253,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/linking-data/index.html#linking-data-on-the-web" class="header">Linking data on the web</a>
+  <li><a href="../../../docs/releases/1.1/migration.html#migration-from-v1-0-to-v1-1" class="header">Migration from v1.0 to v1.1</a>
   <ul>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#overview" class="header">Overview</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
+    <li><a href="../../../docs/releases/1.1/migration.html#migration-process" class="header">Migration process</a>
+    <ul>
+      <li><a href="../../../docs/releases/1.1/migration.html#iam-and-admin-migration-process" class="header">Iam and admin migration process</a></li>
+      <li><a href="../../../docs/releases/1.1/migration.html#kg-migration-process" class="header">Kg migration process</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -281,13 +281,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/linking-data/index.html#linking-data-on-the-web" class="header">Linking data on the web</a>
+  <li><a href="../../../docs/releases/1.1/migration.html#migration-from-v1-0-to-v1-1" class="header">Migration from v1.0 to v1.1</a>
   <ul>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#overview" class="header">Overview</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/linking-data/index.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
+    <li><a href="../../../docs/releases/1.1/migration.html#migration-process" class="header">Migration process</a>
+    <ul>
+      <li><a href="../../../docs/releases/1.1/migration.html#iam-and-admin-migration-process" class="header">Iam and admin migration process</a></li>
+      <li><a href="../../../docs/releases/1.1/migration.html#kg-migration-process" class="header">Kg migration process</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -298,35 +298,35 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#linking-data-on-the-web" name="linking-data-on-the-web" class="anchor"><span class="anchor-link"></span></a>Linking data on the web</h1>
-<h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
-<p>In this tutorial, we demonstrate how to consume structured data published on the web according to the Linked data principles to extend and enrich a knowledge graph.</p>
-<p><img src="./assets/linked-data.jpg" alt="linked-data" /></p>
-<h2><a href="#what-youll-build" name="what-youll-build" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll build</h2>
+<h1><a href="#migration-from-v1-0-to-v1-1" name="migration-from-v1-0-to-v1-1" class="anchor"><span class="anchor-link"></span></a>Migration from v1.0 to v1.1</h1>
+<p>In order to migrate your service from v1.0 to v1.1 you will need to do the following:</p>
 <ul>
-  <li>A simple pipeline to query entities managed within Blue Brain Nexus, connect them with entities available on the web as structured data and extend and enrich their metadata.</li>
+  <li>Stop the 3 services: iam, admin and kg.</li>
+  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html">Backup</a> your cassandra store. This step is a safeguard against anything which could go wrong during migration scripts.</li>
+  <li>Wipe the current Elasticsearch data.</li>
+  <li>Wipe the current Blazegraph data.</li>
+  <li>Update Elasticsearch software from 6.x to 7.2 or above.</li>
+  <li>Use the new <a href="https://hub.docker.com/r/bluebrain/nexus-iam">iam</a>, <a href="https://hub.docker.com/r/bluebrain/nexus-admin">admin</a> and <a href="https://hub.docker.com/r/bluebrain/nexus-kg">kg</a> docker images, tagged at the version <code>1.1.0</code>. We recommend you following the <a href="../../getting-started/running-nexus/index.html">running nexus</a> documentation in order to run nexus, since it packages all the services you need to run nexus (cassandra, elasticsearch, blazegraph).</li>
+  <li>When running iam and admin services for the first time in v1.1, set the environment variable <code>REPAIR_FROM_MESSAGES</code> to <code>true</code>. This environment variable should be removed in subsequent runs.</li>
+  <li>When running kg service for the first time in v1.1, set the environment variable <code>MIGRATE_V10_TO_V11</code> to <code>true</code>. This environment variable should be removed in subsequent runs.</li>
 </ul>
-<h2><a href="#what-youll-learn" name="what-youll-learn" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll learn</h2>
+<h2><a href="#migration-process" name="migration-process" class="anchor"><span class="anchor-link"></span></a>Migration process</h2>
+<p>This section explains what happens during the migration process. Although the knowledge of what is happening behind the scenes should not be necessary to successfully migrate to v1.1, it might be of interest.</p>
+<h3><a href="#iam-and-admin-migration-process" name="iam-and-admin-migration-process" class="anchor"><span class="anchor-link"></span></a>Iam and admin migration process</h3>
+<p>The migration for those services is straight forward since the changes introduced did not affect the main models in the cassandra store. </p>
+<p>In this case we needed to make sure that every row which should be present in the <code>tag_views</code> cassandra table, is indeed there. To achieve that, we run the service and retrieve all the resources from the <code>messages</code> table. </p>
+<h3><a href="#kg-migration-process" name="kg-migration-process" class="anchor"><span class="anchor-link"></span></a>Kg migration process</h3>
+<p>The migration for this service includes several steps, since the content on the cassandra store <code>messages</code> table is going to be modified. This is required because we have introduced some changes on the representation of the main models.</p>
+<p>The following steps are executed:</p>
 <ul>
-  <li>An understanding of linked data principles</li>
-  <li>How to query data stored in a Nexus SparqlView.</li>
-  <li>How to query structured data on the web.</li>
-  <li>How to extend the metadata of entities managed within Blue Brain Nexus with external structured data on the web. We target <a href="https://www.wikidata.org/wiki/Wikidata:Main_Page">Wikidata</a> as an example.</li>
-  <li>How to update entities within Blue Brain Nexus using the <a href="https://github.com/BlueBrain/nexus-python-sdk">SDK</a> and enrich their metadata</li>
-</ul>
-<h2><a href="#what-youll-need" name="what-youll-need" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll need</h2>
-<ul>
-  <li>A Python 3.5 or higher environment with support of Jupyter notebook</li>
-</ul>
-<h2><a href="#get-the-tutorial-code" name="get-the-tutorial-code" class="anchor"><span class="anchor-link"></span></a>Get the tutorial code</h2>
-<p>This tutorial code is available:</p>
-<ul>
-  <li>at <a href="https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Linking%20data%20on%20the%20web.ipynb">Github</a></li>
-  <li>on <a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Linking%20data%20on%20the%20web.ipynb">Google Colab</a></li>
+  <li>the <code>messages</code> table suffers modifications for the file, storages and default views related events.</li>
+  <li>the <code>projections</code> related tables are dropped in order to wipe the indices progress. Once the progress is wiped, indexing in Elasticsearch and Blazegraph will start from the beginning.</li>
+  <li>the <code>tab_views</code> related tables are truncated, since it&rsquo;s content is not up to date anymore.</li>
+  <li>all the resources on the <code>messages</code> table are retrieved one by one in order to populate the <code>tag_views</code> related tables.</li>
 </ul>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/linking-data/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/releases/1.1/migration.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -342,7 +342,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" title="Querying knowledge graph" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/releases/1.1/changelog.html" title="Changelog" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -351,17 +351,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Querying knowledge graph
+Changelog
 </span>
 </div>
 </a>
-<a href="../../../docs/tutorial/build-recommender/index.html" title="Building a Data Pipeline for a Recommender System" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/faq.html" title="Frequently asked questions" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Building a Data Pipeline for a Recommender System
+Frequently asked questions
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
