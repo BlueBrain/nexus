@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Querying knowledge graph</title>
+<title>Querying knowledge graph using Elasticsearch · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -48,7 +48,7 @@ data-md-color-accent="cyan"
 <nav class="md-header-nav md-grid">
 <div class="md-flex">
 <div class="md-flex__cell md-flex__cell--shrink">
-<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html" title="Querying knowledge graph" class="md-header-nav__button md-logo">
+<a href="../../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
 </div>
@@ -57,7 +57,12 @@ data-md-color-accent="cyan"
 </div>
 <div class="md-flex__cell md-flex__cell--stretch">
 <div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
-Querying knowledge graph
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+Querying knowledge graph using Elasticsearch
+</span>
 </div>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -112,12 +117,12 @@ BlueBrain/nexus
 <div class="md-sidebar__inner">
 <nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
 <label class="md-nav__title md-nav__title--site" for="drawer">
-<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html" title="Querying knowledge graph" class="md-nav__button md-logo">
+<a href="../../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
 <span class="md-nav__button md-logo">
 <img src="../../.././assets/img/logo.png" width="24" height="24">
 </a>
-<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html" title="Querying knowledge graph">
-Querying knowledge graph
+<a href="../../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
 </a>
 </label>
 <div class="md-nav__source">
@@ -135,11 +140,121 @@ BlueBrain/nexus
 
 </div>
 <ul>
+  <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../../docs/getting-started/nexus-concepts.html" class="page">Brief introduction of Nexus concepts</a></li>
+    <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
+    <li><a href="../../../docs/getting-started/webapps.html" class="page">Web applications</a></li>
+  </ul></li>
+  <li><a href="../../../docs/tutorial/index.html" class="page">Tutorials</a>
+  <ul>
+    <li><a href="../../../docs/tutorial/getting-started/index.html" class="page">Quick Start Guide</a>
+    <ul>
+      <li><a href="../../../docs/tutorial/getting-started/setup/index.html" class="page">Set up</a></li>
+      <li><a href="../../../docs/tutorial/getting-started/quick-start/index.html" class="page">Quick Start</a></li>
+      <li><a href="../../../docs/tutorial/getting-started/dataset/index.html" class="page">The MovieLens Dataset</a></li>
+    </ul></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/index.html" class="page">Understanding knowledge graphs</a>
+    <ul>
+      <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in graph</a></li>
+      <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="page">Understanding JSON-LD</a></li>
+      <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html" class="page">Querying knowledge graph using SPARQL</a></li>
+      <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html" class="active page">Querying knowledge graph using Elasticsearch</a></li>
+    </ul></li>
+    <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
+    <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
+  </ul></li>
+  <li><a href="../../../docs/api/index.html" class="page">API reference</a>
+  <ul>
+    <li><a href="../../../docs/api/1.0/index.html" class="page">1.0</a>
+    <ul>
+      <li><a href="../../../docs/api/1.0/anatomy.html" class="page">Services anatomy</a></li>
+      <li><a href="../../../docs/api/1.0/operating-on-resources.html" class="page">Operating on resources</a></li>
+      <li><a href="../../../docs/api/1.0/admin/index.html" class="page">Admin API</a>
+      <ul>
+        <li><a href="../../../docs/api/1.0/admin/admin-orgs-api.html" class="page">Organizations</a></li>
+        <li><a href="../../../docs/api/1.0/admin/admin-projects-api.html" class="page">Projects</a></li>
+      </ul></li>
+      <li><a href="../../../docs/api/1.0/kg/index.html" class="page">Knowledge Graph API</a>
+      <ul>
+        <li><a href="../../../docs/api/1.0/kg/kg-schemas-api.html" class="page">Schemas</a></li>
+        <li><a href="../../../docs/api/1.0/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
+        <li><a href="../../../docs/api/1.0/kg/kg-views-api.html" class="page">Views</a></li>
+        <li><a href="../../../docs/api/1.0/kg/kg-files-api.html" class="page">Files</a></li>
+        <li><a href="../../../docs/api/1.0/kg/kg-resources-api.html" class="page">Resources</a></li>
+      </ul></li>
+      <li><a href="../../../docs/api/1.0/iam/index.html" class="page">Identity &amp; Access Management API</a>
+      <ul>
+        <li><a href="../../../docs/api/1.0/iam/iam-realms-api.html" class="page">Realms</a></li>
+        <li><a href="../../../docs/api/1.0/iam/authentication.html" class="page">Authentication</a></li>
+        <li><a href="../../../docs/api/1.0/iam/iam-permissions-api.html" class="page">Permissions</a></li>
+        <li><a href="../../../docs/api/1.0/iam/iam-acls-api.html" class="page">Access Control Lists</a></li>
+        <li><a href="../../../docs/api/1.0/iam/iam-identities.html" class="page">Identities</a></li>
+      </ul></li>
+      <li><a href="../../../docs/api/1.0/error-signaling.html" class="page">Error Signaling</a></li>
+    </ul></li>
+    <li><a href="../../../docs/api/1.1/index.html" class="page">1.1 (stable)</a>
+    <ul>
+      <li><a href="../../../docs/api/1.1/anatomy.html" class="page">Services anatomy</a></li>
+      <li><a href="../../../docs/api/1.1/operating-on-resources.html" class="page">Operating on resources</a></li>
+      <li><a href="../../../docs/api/1.1/admin/index.html" class="page">Admin API</a>
+      <ul>
+        <li><a href="../../../docs/api/1.1/admin/admin-orgs-api.html" class="page">Organizations</a></li>
+        <li><a href="../../../docs/api/1.1/admin/admin-projects-api.html" class="page">Projects</a></li>
+      </ul></li>
+      <li><a href="../../../docs/api/1.1/kg/index.html" class="page">Knowledge Graph API</a>
+      <ul>
+        <li><a href="../../../docs/api/1.1/kg/kg-schemas-api.html" class="page">Schemas</a></li>
+        <li><a href="../../../docs/api/1.1/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
+        <li><a href="../../../docs/api/1.1/kg/kg-views-api.html" class="page">Views</a></li>
+        <li><a href="../../../docs/api/1.1/kg/kg-storages-api.html" class="page">Storages</a></li>
+        <li><a href="../../../docs/api/1.1/kg/kg-files-api.html" class="page">Files</a></li>
+        <li><a href="../../../docs/api/1.1/kg/kg-resources-api.html" class="page">Resources</a></li>
+      </ul></li>
+      <li><a href="../../../docs/api/1.1/iam/index.html" class="page">Identity &amp; Access Management API</a>
+      <ul>
+        <li><a href="../../../docs/api/1.1/iam/iam-realms-api.html" class="page">Realms</a></li>
+        <li><a href="../../../docs/api/1.1/iam/authentication.html" class="page">Authentication</a></li>
+        <li><a href="../../../docs/api/1.1/iam/iam-permissions-api.html" class="page">Permissions</a></li>
+        <li><a href="../../../docs/api/1.1/iam/iam-acls-api.html" class="page">Access Control Lists</a></li>
+        <li><a href="../../../docs/api/1.1/iam/iam-identities.html" class="page">Identities</a></li>
+      </ul></li>
+      <li><a href="../../../docs/api/1.1/error-signaling.html" class="page">Error Signaling</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../../docs/releases/1.0/index.html" class="page">1.0</a></li>
+    <li><a href="../../../docs/releases/1.1/index.html" class="page">1.1 (stable)</a>
+    <ul>
+      <li><a href="../../../docs/releases/1.1/release.html" class="page">Release Notes</a></li>
+      <li><a href="../../../docs/releases/1.1/changelog.html" class="page">Changelog</a></li>
+      <li><a href="../../../docs/releases/1.1/migration.html" class="page">Migration from v1.0 to v1.1</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../../docs/faq.html" class="page">Frequently asked questions</a></li>
+  <li><a href="../../../docs/additional-info/index.html" class="page">Additional Information</a>
+  <ul>
+    <li><a href="../../../docs/additional-info/sdk.html" class="page">SDKs for Nexus</a></li>
+    <li><a href="../../../docs/additional-info/architecture/index.html" class="page">System Architecture</a>
+    <ul>
+      <li><a href="../../../docs/additional-info/architecture/use-cases.html" class="page">Use Cases</a></li>
+      <li><a href="../../../docs/additional-info/architecture/components.html" class="page">Components</a></li>
+      <li><a href="../../../docs/additional-info/architecture/integration.html" class="page">Integration</a></li>
+    </ul></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../../docs/additional-info/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/data-volume-and-scenarios.html" class="page">Data volume and scenarios</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/results.html" class="page">Results</a></li>
+    </ul></li>
+    <li><a href="../../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
+  </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#querying-knowledge-graph" class="header">Querying knowledge graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#querying-knowledge-graph-using-elasticsearch" class="header">Querying knowledge graph using Elasticsearch</a>
   <ul>
     <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#overview" class="header">Overview</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
@@ -167,7 +282,7 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#querying-knowledge-graph" class="header">Querying knowledge graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#querying-knowledge-graph-using-elasticsearch" class="header">Querying knowledge graph using Elasticsearch</a>
   <ul>
     <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#overview" class="header">Overview</a></li>
     <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
@@ -184,9 +299,9 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#querying-knowledge-graph" name="querying-knowledge-graph" class="anchor"><span class="anchor-link"></span></a>Querying knowledge graph</h1>
+<h1><a href="#querying-knowledge-graph-using-elasticsearch" name="querying-knowledge-graph-using-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Querying knowledge graph using Elasticsearch</h1>
 <h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
-<p>The goal of this notebook is to learn how to connect to an Elasticsearch view and run queries against it. It is not a tutorial about the Elasticsearch DSL language for which many well written <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html">learning resources are available</a> are available.</p>
+<p>The goal of this notebook is to learn how to connect to an Elasticsearch view and run queries against it. It is not a tutorial about the Elasticsearch DSL language for which many well written <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html">learning resources are available</a>.</p>
 <h2><a href="#what-youll-build" name="what-youll-build" class="anchor"><span class="anchor-link"></span></a>What you&rsquo;ll build</h2>
 <ul>
   <li>A simple python client to connect to a Nexus ElasticSearchView and query a knowledge graph using Elasticsearch DSL</li>
@@ -221,6 +336,36 @@ Edit this page
 </div>
 </main>
 <footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html" title="Querying knowledge graph using SPARQL" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+Querying knowledge graph using SPARQL
+</span>
+</div>
+</a>
+<a href="../../../docs/tutorial/linking-data/index.html" title="Linking data on the web" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+Linking data on the web
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
 <div class="md-footer-meta md-typeset">
 <div class="md-footer-meta__inner md-grid">
 <div class="md-footer-copyright">

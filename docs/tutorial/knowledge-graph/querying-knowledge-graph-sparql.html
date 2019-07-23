@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Querying knowledge graph · Blue Brain Nexus</title>
+<title>Querying knowledge graph using SPARQL · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Querying knowledge graph
+Querying knowledge graph using SPARQL
 </span>
 </div>
 </div>
@@ -158,7 +158,8 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/tutorial/knowledge-graph/thinking-in-graph.html" class="page">Thinking in graph</a></li>
       <li><a href="../../../docs/tutorial/knowledge-graph/understanding-jsonld.html" class="page">Understanding JSON-LD</a></li>
-      <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html" class="active page">Querying knowledge graph</a></li>
+      <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html" class="active page">Querying knowledge graph using SPARQL</a></li>
+      <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html" class="page">Querying knowledge graph using Elasticsearch</a></li>
     </ul></li>
     <li><a href="../../../docs/tutorial/linking-data/index.html" class="page">Linking data on the web</a></li>
     <li><a href="../../../docs/tutorial/build-recommender/index.html" class="page">Building a Data Pipeline for a Recommender System</a></li>
@@ -253,13 +254,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#querying-knowledge-graph" class="header">Querying knowledge graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#querying-knowledge-graph-using-sparql" class="header">Querying knowledge graph using SPARQL</a>
   <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#overview" class="header">Overview</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#overview" class="header">Overview</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -281,13 +282,13 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#querying-knowledge-graph" class="header">Querying knowledge graph</a>
+  <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#querying-knowledge-graph-using-sparql" class="header">Querying knowledge graph using SPARQL</a>
   <ul>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#overview" class="header">Overview</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
-    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#overview" class="header">Overview</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#what-youll-build" class="header">What you&rsquo;ll build</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#what-youll-learn" class="header">What you&rsquo;ll learn</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#what-youll-need" class="header">What you&rsquo;ll need</a></li>
+    <li><a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.html#get-the-tutorial-code" class="header">Get the tutorial code</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -298,7 +299,7 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#querying-knowledge-graph" name="querying-knowledge-graph" class="anchor"><span class="anchor-link"></span></a>Querying knowledge graph</h1>
+<h1><a href="#querying-knowledge-graph-using-sparql" name="querying-knowledge-graph-using-sparql" class="anchor"><span class="anchor-link"></span></a>Querying knowledge graph using SPARQL</h1>
 <h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
 <p>This tutorial introduces the basics of SPARQL, a query language for querying RDF based knowledge graph. It also demonstrates how to query a Nexus SparqlView.</p>
 <p><img src="./assets/toy-story.png" alt="Toy story search" /></p>
@@ -323,7 +324,7 @@ BlueBrain/nexus
 </ul>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/querying-knowledge-graph.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/tutorial/knowledge-graph/querying-knowledge-graph-sparql.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -352,13 +353,13 @@ Understanding JSON-LD
 </span>
 </div>
 </a>
-<a href="../../../docs/tutorial/linking-data/index.html" title="Linking data on the web" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/tutorial/knowledge-graph/querying-knowledge-graph-elasticsearch.html" title="Querying knowledge graph using Elasticsearch" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Linking data on the web
+Querying knowledge graph using Elasticsearch
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
