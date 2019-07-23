@@ -3,7 +3,7 @@
 ## Overview
 
 The goal of this notebook is to learn how to connect to an Elasticsearch view and run queries against it. 
-It is not a tutorial about the Elasticsearch DSL language for which many well written [learning resources are available](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html) are available.
+It is not a tutorial about the Elasticsearch DSL language for which many well written [learning resources are available](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html).
 
 
 ## What you'll build
