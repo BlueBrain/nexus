@@ -3,7 +3,8 @@
 
 * [Thinking in Graph](thinking-in-graph.md)
 * [RDF and JSON-LD](understanding-jsonld.md)
-* [Querying KG](querying-knowledge-graph.md)
+* [Querying KG SPARQL](querying-knowledge-graph-sparql.md)
+* [Querying KG ES](querying-knowledge-graph-elasticsearch.md)
 @@@
 
 # Understanding knowledge graphs

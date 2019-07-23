@@ -1,4 +1,4 @@
-# Querying knowledge graph
+# Querying knowledge graph using Elasticsearch
 
 ## Overview
 
