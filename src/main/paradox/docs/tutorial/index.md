@@ -14,6 +14,8 @@ This documentation contains a set of example-driven tutorials and guides showing
 
 
 * [Quick Start guide](./getting-started/index.html)
-* [Querying Blue Brain Nexus Knowledge Graph](./knowledge-graph/querying-knowledge-graph.html)
+* Querying Blue Brain Nexus Knowledge Graph
+    * [Using SPARQL for graph queries](./knowledge-graph/querying-knowledge-graph.html)
+    * [Using ElasticSearch for document queries](./knowledge-graph/querying-knowledge-graph-elasticsearch.html)
 * [Extending and Linking entities in the Knowledge Graph](./linking-data/index.html)
 * [Building a Data Pipeline for a Recommender System](./build-recommender/index.html)
