@@ -18,7 +18,7 @@ Let's get started.
 Since the CLI is written in python, you may want to create a virtual environment for a clean set up. To do so, [Conda](https://conda.io/en/latest/) can be used. If you don't have it installed follow the instructions [here](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
 
 ```shell
-conda create -n nexus-cli python=3.5
+conda create -n nexus-cli python=3.6
 ```
 
 ```shell
@@ -49,9 +49,6 @@ Command
 
 Output
 :   @@snip [create-profile-out.sh](../assets/create-profile-out.sh)
-
-
-
 
 
 ### Login
