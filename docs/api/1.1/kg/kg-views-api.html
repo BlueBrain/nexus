@@ -269,9 +269,12 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#create-an-aggregateelasticsearchview-using-put" class="header">Create an AggregateElasticSearchView using PUT</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#tag-a-view" class="header">Tag a View</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#deprecate-a-view" class="header">Deprecate a view</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view-current-version-" class="header">Fetch a view (current version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view-specific-version-" class="header">Fetch a view (specific version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view-specific-tag-" class="header">Fetch a view (specific tag)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view" class="header">Fetch a view</a>
+    <ul>
+      <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#current-version" class="header">Current version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#specific-version" class="header">Specific version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#specific-tag" class="header">Specific tag</a></li>
+    </ul></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-view-statistics" class="header">Fetch view statistics</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#list-views" class="header">List views</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#elasticsearch-query" class="header">ElasticSearch query</a></li>
@@ -313,9 +316,12 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#create-an-aggregateelasticsearchview-using-put" class="header">Create an AggregateElasticSearchView using PUT</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#tag-a-view" class="header">Tag a View</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#deprecate-a-view" class="header">Deprecate a view</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view-current-version-" class="header">Fetch a view (current version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view-specific-version-" class="header">Fetch a view (specific version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view-specific-tag-" class="header">Fetch a view (specific tag)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-a-view" class="header">Fetch a view</a>
+    <ul>
+      <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#current-version" class="header">Current version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#specific-version" class="header">Specific version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#specific-tag" class="header">Specific tag</a></li>
+    </ul></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#fetch-view-statistics" class="header">Fetch view statistics</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#list-views" class="header">List views</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-views-api.html#elasticsearch-query" class="header">ElasticSearch query</a></li>
@@ -899,7 +905,17 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-elastic-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-view-current-version-" name="fetch-a-view-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a view (current version)</h2>
+<h2><a href="#fetch-a-view" name="fetch-a-view" class="anchor"><span class="anchor-link"></span></a>Fetch a view</h2>
+<p>When fetching a view, the response format can be chosen through HTTP content negotiation, using the <strong>Accept</strong> HTTP header.</p>
+<ul>
+  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code> will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form">compacted document form</a> or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form">expanded document form</a>.</li>
+  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/">w3</a>.</li>
+  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html">DOT response</a>.</li>
+</ul>
+<p>If <code>Accept: */*</code> HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.</p>
+<p>Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the <code>/source</code> segment to endpoints described below. </p>
+<h3><a href="#current-version" name="current-version" class="anchor"><span class="anchor-link"></span></a>Current version</h3>
+<p>Fetches a view at the latest revision.</p>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}
 </code></pre>
 <p><strong>Example</strong></p>
@@ -960,7 +976,8 @@ BlueBrain/nexus
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-view-specific-version-" name="fetch-a-view-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a view (specific version)</h2>
+<h3><a href="#specific-version" name="specific-version" class="anchor"><span class="anchor-link"></span></a>Specific version</h3>
+<p>Fetches a view at the provided revision.</p>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}
 </code></pre>
 <p>&hellip; where <code>{rev}</code> is the revision number of the view to be retrieved.</p>
@@ -1022,7 +1039,8 @@ BlueBrain/nexus
   &quot;_deprecated&quot;: true
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/views/view-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-view-specific-tag-" name="fetch-a-view-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a view (specific tag)</h2>
+<h3><a href="#specific-tag" name="specific-tag" class="anchor"><span class="anchor-link"></span></a>Specific tag</h3>
+<p>Fetches a view at the provided tag. A tag is linked to a specific revision.</p>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}?tag={tag}
 </code></pre>
 <p>&hellip; where <code>{tag}</code> is the tag of the view to be retrieved.</p>

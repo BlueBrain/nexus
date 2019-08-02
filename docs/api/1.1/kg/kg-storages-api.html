@@ -269,9 +269,12 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#update-a-storage" class="header">Update a storage</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#tag-a-storage" class="header">Tag a storage</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#deprecate-a-storage" class="header">Deprecate a storage</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage-current-version-" class="header">Fetch a storage (current version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage-specific-version-" class="header">Fetch a storage (specific version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage-specific-tag-" class="header">Fetch a storage (specific tag)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage" class="header">Fetch a storage</a>
+    <ul>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#current-version" class="header">Current version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#specific-version" class="header">Specific version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#specific-tag" class="header">Specific tag</a></li>
+    </ul></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#list-storages" class="header">List storages</a></li>
   </ul></li>
 </ul>
@@ -309,9 +312,12 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#update-a-storage" class="header">Update a storage</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#tag-a-storage" class="header">Tag a storage</a></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#deprecate-a-storage" class="header">Deprecate a storage</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage-current-version-" class="header">Fetch a storage (current version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage-specific-version-" class="header">Fetch a storage (specific version)</a></li>
-    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage-specific-tag-" class="header">Fetch a storage (specific tag)</a></li>
+    <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#fetch-a-storage" class="header">Fetch a storage</a>
+    <ul>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#current-version" class="header">Current version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#specific-version" class="header">Specific version</a></li>
+      <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#specific-tag" class="header">Specific tag</a></li>
+    </ul></li>
     <li><a href="../../../../docs/api/1.1/kg/kg-storages-api.html#list-storages" class="header">List storages</a></li>
   </ul></li>
 </ul>
@@ -676,7 +682,17 @@ BlueBrain/nexus
     &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/storages/storage-ref-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-storage-current-version-" name="fetch-a-storage-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a storage (current version)</h2>
+<h2><a href="#fetch-a-storage" name="fetch-a-storage" class="anchor"><span class="anchor-link"></span></a>Fetch a storage</h2>
+<p>When fetching a storage, the response format can be chosen through HTTP content negotiation, using the <strong>Accept</strong> HTTP header.</p>
+<ul>
+  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code> will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form">compacted document form</a> or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form">expanded document form</a>.</li>
+  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/">w3</a>.</li>
+  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html">DOT response</a>.</li>
+</ul>
+<p>If <code>Accept: */*</code> HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.</p>
+<p>Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the <code>/source</code> segment to endpoints described below. </p>
+<h3><a href="#current-version" name="current-version" class="anchor"><span class="anchor-link"></span></a>Current version</h3>
+<p>Fetches a storage at the latest revision.</p>
 <pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}
 </code></pre>
 <p><strong>Example</strong></p>
@@ -716,7 +732,8 @@ BlueBrain/nexus
     &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/storages/storage-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-storage-specific-version-" name="fetch-a-storage-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a storage (specific version)</h2>
+<h3><a href="#specific-version" name="specific-version" class="anchor"><span class="anchor-link"></span></a>Specific version</h3>
+<p>Fetches a storage at the provided revision.</p>
 <pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}
 </code></pre>
 <p>&hellip; where <code>{rev}</code> is the revision number of the storage to be retrieved.</p>
@@ -757,7 +774,8 @@ BlueBrain/nexus
     &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/1.1/assets/storages/storage-fetched-rev.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-storage-specific-tag-" name="fetch-a-storage-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a storage (specific tag)</h2>
+<h3><a href="#specific-tag" name="specific-tag" class="anchor"><span class="anchor-link"></span></a>Specific tag</h3>
+<p>Fetches a storage at the provided tag. A tag is linked to a specific revision.</p>
 <pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}?tag={tag}
 </code></pre>
 <p>&hellip; where <code>{tag}</code> is the tag of the storage to be retrieved.</p>
