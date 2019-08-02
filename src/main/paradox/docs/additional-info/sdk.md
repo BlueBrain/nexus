@@ -1,5 +1,24 @@
 # SDKs for Nexus
 
+## Python SDK for Nexus
+A Python wrapper for the Blue Brain Nexus REST API.
+
+### How to install
+
+pip install nexus-sdk
+
+### Usage
+import nexussdk as nexus
+
+nexus.config.set_environment(DEPLOYMENT)
+nexus.config.set_token(TOKEN)
+
+nexus.permissions.fetch()
+
+### List of supported operations
+
+You can find the list of all supported operations at this [location](https://bluebrain.github.io/nexus-python-sdk/)
+
 ## JS SDK for Nexus
 
 The [Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js) provides many features to help you build web applications that integrate with Blue Brain Nexus.
