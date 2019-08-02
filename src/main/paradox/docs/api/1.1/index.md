@@ -11,14 +11,6 @@
 
 # 1.1 (stable)
 
-@@@ note { .warning title="API preview" }
-
-The following documentation applies to the next version of Nexus, which is currently under active development.
-
-The API is subject to changes until its official release.
-
-@@@
-
 All Nexus services expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically [JSON-LD](https://json-ld.org/).
 
 The services operates on 3 primary types of resources: Organizations, Projects and Resources. Each of them is constrained by a set of [SHACL] constraints, grouped in what is called a Schema.

@@ -140,8 +140,21 @@ Request
 Response
 :   @@snip [schema-ref-new-deprecated.json](../assets/schemas/schema-ref-new-deprecated.json)
 
+## Fetch a schema
 
-## Fetch a schema (current version)
+When fetching a schema, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
+
+- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
+- **application/n-triples**: RDF n-triples response, as defined by the [w3](https://www.w3.org/TR/n-triples/).
+- **text/vnd.graphviz**: A [DOT response](https://www.graphviz.org/doc/info/lang.html).
+
+If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
+
+Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the `/source` segment to endpoints described below. 
+
+### Current version
+
+Fetches a schema at the latest revision.
 
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}
@@ -156,7 +169,9 @@ Response
 :   @@snip [schema-fetched.json](../assets/schemas/schema-fetched.json)
 
 
-## Fetch a schema (specific version)
+### Specific version
+
+Fetches a schema at the provided revision.
 
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={rev}
@@ -172,7 +187,9 @@ Response
 :   @@snip [schema-fetched.json](../assets/schemas/schema-fetched.json)
 
 
-## Fetch a schema (specific tag)
+### Specific tag
+
+Fetches a schema at the provided tag. A tag is linked to a specific revision.
 
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}?tag={tag}
