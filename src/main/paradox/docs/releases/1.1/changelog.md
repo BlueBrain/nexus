@@ -12,7 +12,7 @@ List of changes from v1.0 to v1.1
 - Added statistics endpoint to views in order to obtain indexing progress metrics
 - Extended the listings' filtering capabilities, being able to filter by: `rev`, `deprecated`, `type`, `createdBy`, `updatedBy`
 - Allowed to call the API using organization and project labels and UUIDs indistinguishably
-- Supported several representations for resources using HTTP content negotiation (Accept header). Supported: `text/vnd.graphviz`, `application/ntriples`, `application/ld+json` 
+- Supported several representations for resources using HTTP content negotiation (Accept header). Supported: `text/vnd.graphviz`, `application/n-triples`, `application/ld+json` 
 - Supported several Json-LD representations for resources through a `format` query parameter. Supported: `compacted`, `expanded`
 - Added resolution endpoint in order to resolve resources using a series of resolvers
 - Supported listings over 10.000 resources using the link on the `next` field from the response payload
