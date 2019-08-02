@@ -11,6 +11,14 @@
 
 # 1.0
 
+@@@ note { .warning title="API deprecated" }
+
+The following documentation applies to the deprecated version of Nexus.
+
+Please consider moving to the API v1.1. Find more information about how to migrate @ref:[here](../../releases/1.1/migration.md)
+
+@@@
+
 All Nexus services expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically [JSON-LD](https://json-ld.org/).
 
 The services operates on 3 primary types of resources: Organizations, Projects and Resources. Each of them is constrained by a set of [SHACL] constraints, grouped in what is called a Schema.
