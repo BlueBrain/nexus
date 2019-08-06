@@ -15,7 +15,7 @@
 
 The following documentation applies to the deprecated version of Nexus.
 
-Please consider moving to the API v1.1. Find more information about how to migrate @ref:[here](../../releases/1.1/migration.md)
+Please consider moving to the API v1.1. Find more information about how to migrate @ref:[here](../../releases/v1.0-to-v1.1-migration.md)
 
 @@@
 
