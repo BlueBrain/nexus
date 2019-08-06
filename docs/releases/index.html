@@ -224,13 +224,9 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="active page">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/1.0/index.html" class="page">1.0</a></li>
-    <li><a href="../../docs/releases/1.1/index.html" class="page">1.1 (stable)</a>
-    <ul>
-      <li><a href="../../docs/releases/1.1/release.html" class="page">Release Notes</a></li>
-      <li><a href="../../docs/releases/1.1/changelog.html" class="page">Changelog</a></li>
-      <li><a href="../../docs/releases/1.1/migration.html" class="page">Migration from v1.0 to v1.1</a></li>
-    </ul></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
   </ul></li>
   <li><a href="../../docs/faq.html" class="page">Frequently asked questions</a></li>
   <li><a href="../../docs/additional-info/index.html" class="page">Additional Information</a>
@@ -256,8 +252,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#v1-0-release-25-01-2019-" class="header">v1.0 release (25.01.2019)</a></li>
-    <li><a href="../../docs/releases/index.html#v1-1-release-19-07-2019-" class="header">v1.1 release (19.07.2019)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-1-19-07-2019-" class="header">v1.1 (19.07.2019)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-0-25-01-2019-" class="header">v1.0 (25.01.2019)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -281,8 +277,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#v1-0-release-25-01-2019-" class="header">v1.0 release (25.01.2019)</a></li>
-    <li><a href="../../docs/releases/index.html#v1-1-release-19-07-2019-" class="header">v1.1 release (19.07.2019)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-1-19-07-2019-" class="header">v1.1 (19.07.2019)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-0-25-01-2019-" class="header">v1.0 (25.01.2019)</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -294,13 +290,53 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
-<p>There have been two major releases of Nexus v1.x</p>
-<h2><a href="#v1-0-release-25-01-2019-" name="v1-0-release-25-01-2019-" class="anchor"><span class="anchor-link"></span></a>v1.0 release (25.01.2019)</h2>
-<p><a href="1.0/index.html">Release notes</a></p>
-<h2><a href="#v1-1-release-19-07-2019-" name="v1-1-release-19-07-2019-" class="anchor"><span class="anchor-link"></span></a>v1.1 release (19.07.2019)</h2>
-<p><a href="1.1/release.html">Release notes</a></p>
-<p><a href="1.1/changelog.html">Changelog</a></p>
-<p><a href="1.1/migration.html">Migration from v1.0 to v1.1</a></p>
+<p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
+<p>The latest stable release is <strong>v1.1</strong> released on <strong>19.07.2019</strong>.</p>
+<h2><a href="#v1-1-19-07-2019-" name="v1-1-19-07-2019-" class="anchor"><span class="anchor-link"></span></a>v1.1 (19.07.2019)</h2>
+<p>The release is backwards compatible with v1.0 in terms of API. If you&rsquo;re upgrading from v1.0 please visit the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
+<p>Summary of the significant changes:</p>
+<ul>
+  <li>Exposed the service event logs over a stable API via <a href="https://www.w3.org/TR/eventsource/">Server Sent Events</a>.</li>
+  <li>Introduced configurable storage backends for files with local, remote and S3 implementations.</li>
+  <li>ElasticSearchView | AggregateElasticSearchView have been promoted to stable.</li>
+  <li>Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and aggregates the results.</li>
+  <li>ElasticSearchView and SparqlView support additional configuration options: resourceSchemas, resourceTypes, resourceTag, includeDeprecated, includeMetadata.</li>
+  <li>API improvements:
+    <ul>
+      <li>Support for additional filtering criteria when listing resources via query params: rev, deprecated, createdBy, updatedBy.</li>
+      <li>The organization and project segments when exercising the API now accept their unique ids (UUID).</li>
+      <li>Content negotiation for resources, supporting: dot, ntriples, json-ld expanded and compacted formats.</li>
+      <li>Ability to resolve resource ids via configured project resolvers.</li>
+      <li>Pagination of resources over 10,000 using the &rsquo;&rsquo;_next&rsquo;&rsquo; link in the listing response.
+</li>
+      <li>Resource metadata includes &rsquo;&rsquo;_incoming&rsquo;&lsquo; and &rsquo;&rsquo;_outgoing&rsquo;&rsquo; links and the API now includes their respective endpoints.
+</li>
+      <li>View indexing progress as a &lsquo;&lsquo;statistics&rsquo;&rsquo; sub-resource of each view.</li>
+    </ul>
+  </li>
+  <li>Nexus Web improvements:
+    <ul>
+      <li>Better OpenIdConnect integration, ability to authenticate to multiple configured realms.</li>
+      <li>Ability to discriminate between Nexus specific resources and user managed resources.</li>
+      <li>Display the current ACLs and their source for the logged in user.</li>
+      <li>Ability to query user defined views.</li>
+      <li>Display the indexing progress for the active view.</li>
+    </ul>
+  </li>
+  <li>Exposed view indexing progress metrics for Prometheus.</li>
+  <li>Bumped ElasticSearch compatibility to 7.x.</li>
+</ul>
+<p>A detailed list of changes included in the release can be found in the <a href="v1.1-release-notes.html">release notes</a>.</p>
+<h2><a href="#v1-0-25-01-2019-" name="v1-0-25-01-2019-" class="anchor"><span class="anchor-link"></span></a>v1.0 (25.01.2019)</h2>
+<p>This is the first major release of Blue Brain Nexus after almost two years of development.</p>
+<p>Also referred to as &ldquo;<em>Nexus V1</em>&rdquo;, this initial release is our first big milestone in our quest to build a Knowledge Graph platform uniquely combining flexible graph database, powerful search engine and scalable data store to enable:</p>
+<ul>
+  <li>Easy unification and integration of fragmented and disparate data from heterogeneous domains to break data and metadata silos</li>
+  <li>Better data governance with the ability to specify and enforce organization’s best practices for data collection, storage and description through high quality metadata</li>
+  <li>Data lineage and provenance recording and description</li>
+  <li>FAIR (Findable, Accessible, Interoperable, Re-usable) data and metadata management</li>
+</ul>
+<p>A detailed list of changes included in the release can be found in the <a href="v1.0-release-notes.html">release notes</a>.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/releases/index.md" title="Edit this page" class="md-source-file md-edit">
@@ -332,13 +368,13 @@ Error Signaling
 </span>
 </div>
 </a>
-<a href="../../docs/releases/1.0/index.html" title="1.0" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.1-release-notes.html" title="v1.1 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-1.0
+v1.1 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
