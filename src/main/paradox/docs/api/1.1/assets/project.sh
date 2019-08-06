@@ -1,4 +1,4 @@
-curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/orgs/myorg/myproject" -d \
+curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/projects/myorg/myproject" -d \
 '{
   "description": "example project creation",
   "base": "https://nexus.example.com/v1/projects/myorg/myproject/",
