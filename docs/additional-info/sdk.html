@@ -313,11 +313,15 @@ BlueBrain/nexus
 <h2><a href="#python-sdk-for-nexus" name="python-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>Python SDK for Nexus</h2>
 <p>A Python wrapper for the Blue Brain Nexus REST API.</p>
 <h3><a href="#how-to-install" name="how-to-install" class="anchor"><span class="anchor-link"></span></a>How to install</h3>
-<p>pip install nexus-sdk</p>
+<p><code>pip install nexus-sdk</code></p>
 <h3><a href="#usage" name="usage" class="anchor"><span class="anchor-link"></span></a>Usage</h3>
-<p>import nexussdk as nexus</p>
-<p>nexus.config.set_environment(DEPLOYMENT) nexus.config.set_token(TOKEN)</p>
-<p>nexus.permissions.fetch()</p>
+<pre><code>import nexussdk as nexus
+
+nexus.config.set_environment(DEPLOYMENT)
+nexus.config.set_token(TOKEN)
+
+nexus.permissions.fetch()
+</code></pre>
 <h3><a href="#list-of-supported-operations" name="list-of-supported-operations" class="anchor"><span class="anchor-link"></span></a>List of supported operations</h3>
 <p>You can find the list of all supported operations at this <a href="https://bluebrain.github.io/nexus-python-sdk/">location</a></p>
 <h2><a href="#js-sdk-for-nexus" name="js-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>JS SDK for Nexus</h2>
