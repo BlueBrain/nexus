@@ -276,7 +276,11 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.1-release-notes.html#paginate-over-10-000" class="header">Paginate over 10,000</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#organization-and-project-uuids" class="header">Organization and Project UUIDs</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/v1.1-release-notes.html#nexus-web-improvements" class="header">Nexus Web improvements</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html#nexus-web-improvements" class="header">Nexus Web improvements</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.1-release-notes.html#" class="header"><a href="https://github.com/BlueBrain/nexus-web/releases/tag/v1.1.0">v1.1 Release Notes</a></a></li>
+      <li><a href="../../docs/releases/v1.1-release-notes.html#feature-highlights" class="header">Feature highlights</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html#other-changes" class="header">Other changes</a></li>
   </ul></li>
 </ul>
@@ -325,7 +329,11 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.1-release-notes.html#paginate-over-10-000" class="header">Paginate over 10,000</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#organization-and-project-uuids" class="header">Organization and Project UUIDs</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/v1.1-release-notes.html#nexus-web-improvements" class="header">Nexus Web improvements</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html#nexus-web-improvements" class="header">Nexus Web improvements</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.1-release-notes.html#" class="header"><a href="https://github.com/BlueBrain/nexus-web/releases/tag/v1.1.0">v1.1 Release Notes</a></a></li>
+      <li><a href="../../docs/releases/v1.1-release-notes.html#feature-highlights" class="header">Feature highlights</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html#other-changes" class="header">Other changes</a></li>
   </ul></li>
 </ul>
@@ -358,21 +366,21 @@ data:
 <h3><a href="#full-service-event-logs" name="full-service-event-logs" class="anchor"><span class="anchor-link"></span></a>Full service event logs</h3>
 <p>Designed primarily for applications that represent extensions to Nexus, the following service specific endpoints have been added. It is assumed that these endpoints would not be consumed by browsers or command line clients, but rather stateful applications that run within the same network. If that not the case, the deployment requires a proxy that does URL rewriting to avoid the path collision.</p>
 <ul>
-  <li><code>http(s)://{kg_service_address}/v1/events</code>; exposes the entire event log of the KG service; requires <code>events/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{admin_service_address}/v1/events</code>; exposes the entire event log of the Admin service; requires <code>events/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{iam_service_address}/v1/events</code>; exposes the entire event log of the KG service; requires <code>events/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{nexus_address}/v1/events</code>; exposes the entire event log of the KG service; requires <code>events/read</code> permission on <code>/</code>.</li>
+  <li><code>http(s)://{kg_service_address}/v1/events</code>; exposes the entire event log of the KG service; requires <code>events/read</code>  permission on <code>/</code>.</li>
+  <li><code>http(s)://{admin_service_address}/v1/events</code>; exposes the entire event log of the Admin service; requires  <code>events/read</code> permission on <code>/</code>.</li>
+  <li><code>http(s)://{iam_service_address}/v1/events</code>; exposes the entire event log of the KG service; requires <code>events/read</code>  permission on <code>/</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/events</code>; exposes the entire event log of the KG service; requires <code>events/read</code>  permission on <code>/</code>.</li>
 </ul>
 <h3><a href="#resource-specific-event-logs" name="resource-specific-event-logs" class="anchor"><span class="anchor-link"></span></a>Resource specific event logs</h3>
 <p>Designed primarily for applications that target a single resource type or a specific scope, the following endpoints have been added:</p>
 <ul>
-  <li><code>http(s)://{nexus_address}/v1/permissions/events</code>; exposes the event log for permissions; requires <code>permissions/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{nexus_address}/v1/realms/events</code>; exposes the event log for realms; requires <code>realms/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{nexus_address}/v1/acls/events</code>; exposes the event log for access control lists; requires <code>acls/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{nexus_address}/v1/orgs/events</code>; exposes the event log for organizations; requires <code>organizations/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{nexus_address}/v1/projects/events</code>; exposes the event log for projects; requires <code>projects/read</code> permission on <code>/</code>.</li>
-  <li><code>http(s)://{nexus_address}/v1/resources/{org}/events</code>; exposes the event log for all resources in the selected organization; requires <code>resources/read</code> permission on <code>/{org}</code>.</li>
-  <li><code>http(s)://{nexus_address}/v1/resources/{org}/{project}/events</code>; exposes the event log for all resources in the selected project; requires <code>resources/read</code> permission on <code>/{org}/{project}</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/permissions/events</code>; exposes the event log for permissions; requires <code>permissions/read</code>  permission on <code>/</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/realms/events</code>; exposes the event log for realms; requires <code>realms/read</code>  permission on <code>/</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/acls/events</code>; exposes the event log for access control lists; requires <code>acls/read</code>  permission on <code>/</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/orgs/events</code>; exposes the event log for organizations; requires <code>organizations/read</code>  permission on <code>/</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/projects/events</code>; exposes the event log for projects; requires <code>projects/read</code>  permission on <code>/</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/resources/{org}/events</code>; exposes the event log for all resources in the selected  organization; requires <code>resources/read</code> permission on <code>/{org}</code>.</li>
+  <li><code>http(s)://{nexus_address}/v1/resources/{org}/{project}/events</code>; exposes the event log for all resources in the  selected project; requires <code>resources/read</code> permission on <code>/{org}/{project}</code>.</li>
 </ul>
 <h2><a href="#configurable-storage-backends" name="configurable-storage-backends" class="anchor"><span class="anchor-link"></span></a>Configurable storage backends</h2>
 <p>Prior to this release the KG service used an implicit storage medium, a filesystem directory (either local or mounted) accessible by the service. We&rsquo;ve noticed, however, both internally and through questions raised by organizations using Nexus that certain usecases require a higher degree of control on how data is stored and managed by the system.</p>
@@ -394,8 +402,8 @@ data:
   <li><code>default</code>: boolean, mandatory, whether the storage resource is the default one for a project</li>
   <li><code>volume</code>: string, mandatory, the root filesystem directory where Nexus can store files for this project</li>
   <li><code>maxFileSize</code>: int, optional, the maximum file size allowed for clients to upload</li>
-  <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from this storage medium</li>
-  <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to this storage medium</li>
+  <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
+  <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to  this storage medium</li>
 </ul>
 <p>Arbitrary permissions can be used as values for <code>readPermission</code> and <code>writePermission</code> as long as they are defined in the global permission collection (<code>/v1/permissions</code>).</p>
 <h3><a href="#remotediskstorage" name="remotediskstorage" class="anchor"><span class="anchor-link"></span></a>RemoteDiskStorage</h3>
@@ -403,12 +411,12 @@ data:
 <p>The following configuration options are available for this storage type:</p>
 <ul>
   <li><code>default</code>: boolean, mandatory, whether the storage resource is the default one for a project</li>
-  <li><code>endpoint</code>: string, optional, the base address of the remote disk storage integration service, defaults to the value set in the environment variables of KG</li>
-  <li><code>credentials</code>: string, optional, the oauth2 bearer token to be used for authenticating to the remote disk storage integration service, defaults to the value set in the environment variables of KG</li>
+  <li><code>endpoint</code>: string, optional, the base address of the remote disk storage integration service, defaults to the value  set in the environment variables of KG</li>
+  <li><code>credentials</code>: string, optional, the oauth2 bearer token to be used for authenticating to the remote disk storage  integration service, defaults to the value set in the environment variables of KG</li>
   <li><code>folder</code>: string, mandatory, the name of the folder where files are to be stored</li>
   <li><code>maxFileSize</code>: int, optional, the maximum file size allowed for clients to upload</li>
-  <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from this storage medium</li>
-  <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to this storage medium</li>
+  <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
+  <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to  this storage medium</li>
 </ul>
 <h3><a href="#s3storage" name="s3storage" class="anchor"><span class="anchor-link"></span></a>S3Storage</h3>
 <p>This storage type (<code>S3Storage</code>) allows the use S3 compatible object storage as a backend.</p>
@@ -418,10 +426,10 @@ data:
   <li><code>bucket</code>: string, mandatory, the name of the s3 bucket where files are to be stored</li>
   <li><code>endpoint</code>: string, optional, the s3 storage endpoint, defaulting to <code>s3.amazonaws.com</code></li>
   <li><code>accessKey</code>: string, optional, the access key to be used for authenticating to the service</li>
-  <li><code>secretKey</code>: string, optional, the secret key to be used for authenticating to the service integration service, defaults to the value set in the environment variables of KG</li>
+  <li><code>secretKey</code>: string, optional, the secret key to be used for authenticating to the service  integration service, defaults to the value set in the environment variables of KG</li>
   <li><code>maxFileSize</code>: int, optional, the maximum file size allowed for clients to upload</li>
-  <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from this storage medium</li>
-  <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to this storage medium</li>
+  <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
+  <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to  this storage medium</li>
 </ul>
 <h2><a href="#stable-elasticsearch-views" name="stable-elasticsearch-views" class="anchor"><span class="anchor-link"></span></a>Stable ElasticSearch views</h2>
 <p>Both <code>ElasticSearchView</code> and <code>AggregateElasticSearchView</code> have been promoted from <em>alpha</em> to <em>stable</em>. Creation or update no longer require the use of the <code>Alpha</code> type to be provided.</p>
@@ -430,11 +438,11 @@ data:
 <p>The <code>SparqlView</code> has been promoted from <em>alpha</em> to <em>stable</em>. Creation or update no longer require the use of the <code>Alpha</code> type to be provided.</p>
 <p>Configuration options have been introduced such that it&rsquo;s consistent with the <code>ElasticSearchView</code>:</p>
 <ul>
-  <li><code>resourceSchemas</code>: array of ids, optional, defaults to empty, configures the view to consider for indexing only the resources constrained by any of the specified schemas; an empty array implies all resources.</li>
-  <li><code>resourceTypes</code>: array of ids, optional, defaults to empty, configures the view to consider for indexing only the the resources that have at least one of the specified types at the revision selected by the <code>tag</code> option; if a <code>tag</code> is not specified, the latest revision is assumed.</li>
-  <li><code>tag</code>: string, optional, selects only the resources that are tagged with the provided value; the tagged revision is considered for indexing.</li>
-  <li><code>includeMetadata</code>: boolean, optional, defaults to false, configures the view to index resources without injecting the resource metadata in the resource graph.</li>
-  <li><code>includeDeprecated</code>: boolean, optional, defaults to true, configures the view to include or exclude the deprecated resources.</li>
+  <li><code>resourceSchemas</code>: array of ids, optional, defaults to empty, configures the view to consider for indexing only  the resources constrained by any of the specified schemas; an empty array implies all resources.</li>
+  <li><code>resourceTypes</code>: array of ids, optional, defaults to empty, configures the view to consider for indexing only the  the resources that have at least one of the specified types at the revision selected by the <code>tag</code> option; if a <code>tag</code>  is not specified, the latest revision is assumed.</li>
+  <li><code>tag</code>: string, optional, selects only the resources that are tagged with the provided value; the tagged revision is  considered for indexing.</li>
+  <li><code>includeMetadata</code>: boolean, optional, defaults to false, configures the view to index resources without injecting  the resource metadata in the resource graph.</li>
+  <li><code>includeDeprecated</code>: boolean, optional, defaults to true, configures the view to include or exclude the deprecated  resources.</li>
 </ul>
 <h2><a href="#aggregatesparqlview" name="aggregatesparqlview" class="anchor"><span class="anchor-link"></span></a>AggregateSparqlView</h2>
 <p>A new view type has been introduced (<code>AggregateSparqlView</code>), the dual of <code>AggregateElasticSearchView</code> that allows for query time aggregation of results. The configuration is mostly identical to the <code>AggregateElasticSearchView</code> which is merely a set of <code>SparqlView</code> references:</p>
@@ -458,7 +466,7 @@ data:
   <li>reduces the latency of write operations</li>
   <li>requests succeed regardless of the availability of the secondary stores</li>
   <li>transient failures while indexing can be retried</li>
-  <li>indices can be rebuilt at will (through project, view updates or by resetting the indexing progress and restarting the service)</li>
+  <li>indices can be rebuilt at will (through project, view updates or by resetting the indexing progress and restarting  the service)</li>
   <li>no synchronization is needed between view management and resource write operations</li>
 </ul>
 <p>Unfortunately the index progress for each view was not made available to clients which meant users had no way of knowing if their queries hit an index while it was rebuilt or stale.</p>
@@ -501,7 +509,7 @@ kg_indexer_gauge{instance=&quot;localhost:9095&quot;,job=&quot;kg&quot;,organiza
 <p>The release contains numerous improvements to the API, the most significant being the following.</p>
 <h3><a href="#resource-content-negotiation" name="resource-content-negotiation" class="anchor"><span class="anchor-link"></span></a>Resource content negotiation</h3>
 <p>Added DOT, n-triples formats and compacted/expanded variants for json-ld. The selection of the format is done via the <code>Accept</code> header value and in case of <code>application/ld+json</code> the query param <code>format</code> with <code>compacted</code> or <code>expanded</code> values.</p>
-<p>DOT representation is requested using the <code>text/vnd.graphviz</code> value for the <code>Accept</code> header: </p>
+<p>DOT representation is requested using the <code>text/vnd.graphviz</code> value for the <code>Accept</code> header:</p>
 <pre class="prettyprint"><code class="language-bash">curl -s -H &quot;Authorization: Bearer $TOKEN&quot; \
 -H &quot;Accept: text/vnd.graphviz&quot; \
 &quot;http://localhost/v1/resources/myorg/myproj/_/7fb43a6a-33f2-4106-8cb3-531f2d67c1e3&quot;
@@ -581,11 +589,11 @@ digraph {
   <li><code>{size}</code>: number, the parameter that limits the number of results; defaults to 20</li>
   <li><code>{deprecated}</code>: boolean, can be used to filter the resulting resources based on their deprecation status</li>
   <li><code>{rev}</code>: number, can be used to filter the resulting resources based on their revision value</li>
-  <li><code>{type}</code>: iri, can be used to filter the resulting resources based on their @type value. This parameter can appear multiple times, filtering further the @type value.</li>
+  <li><code>{type}</code>: iri, can be used to filter the resulting resources based on their @type value. This parameter can appear  multiple times, filtering further the @type value.</li>
   <li><code>{createdBy}</code>: iri, can be used to filter the resulting resources based on their creator</li>
-  <li><code>{updatedBy}</code>: iri, can be used to filter the resulting resources based on the person which performed the last update</li>
+  <li><code>{updatedBy}</code>: iri, can be used to filter the resulting resources based on the person which performed the last  update</li>
   <li><code>{schema}</code>: iri, can be used to filter the resulting resources based on the conformant schema</li>
-  <li><code>{q}</code>: string, can be provided to select only the resources in the collection that have attribute values matching (containing) the provided string</li>
+  <li><code>{q}</code>: string, can be provided to select only the resources in the collection that have attribute values matching  (containing) the provided string</li>
 </ul>
 <h3><a href="#incoming-and-outgoing-links" name="incoming-and-outgoing-links" class="anchor"><span class="anchor-link"></span></a>Incoming and Outgoing links</h3>
 <p>The <code>incoming</code> and <code>outgoing</code> sub-resources have been added to all resources in KG such that the provide a listing of known relationships of the current resource.</p>
@@ -597,7 +605,7 @@ GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
 <ul>
   <li><code>{from}</code>: number, the parameter that describes the offset for the current query; defaults to 0</li>
   <li><code>{size}</code>: number, the parameter that limits the number of results; defaults to 20</li>
-  <li><code>{includeExternalLinks}</code>: boolean, flag to decide whether or not external links are to be included; external links are references to resources in other projects, or even resources external to Nexus; defaults to true</li>
+  <li><code>{includeExternalLinks}</code>: boolean, flag to decide whether or not external links are to be included; external links  are references to resources in other projects, or even resources external to Nexus; defaults to true</li>
 </ul>
 <p>Additionally, the resource metadata now includes links (<code>_incoming</code> and <code>_outgoing</code>) for these endpoints.</p>
 <p>For example, considering the following resource:</p>
@@ -774,6 +782,9 @@ GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
 
 </code></pre>
 <h2><a href="#nexus-web-improvements" name="nexus-web-improvements" class="anchor"><span class="anchor-link"></span></a>Nexus Web improvements</h2>
+<p>This is the first fully supported version of Nexus Web, now freshly graduated from beta. Its v1.1 version reflects the feature set supporting the Nexus v1.1 release and will be kept in step with that project.</p>
+<h4><a href="#" name="" class="anchor"><span class="anchor-link"></span></a><a href="https://github.com/BlueBrain/nexus-web/releases/tag/v1.1.0">v1.1 Release Notes</a></h4>
+<h3><a href="#feature-highlights" name="feature-highlights" class="anchor"><span class="anchor-link"></span></a>Feature highlights</h3>
 <p>The login page now allows users to select the OpenId Connect provider:</p><div class="half">
 <p><img src="assets/img/nexus-web-login.png" alt="Select Provider" /></p></div>
 <p>Ability to discriminate between Nexus specific resources and user managed resources:</p><div class="half">
@@ -786,9 +797,9 @@ GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
 <h2><a href="#other-changes" name="other-changes" class="anchor"><span class="anchor-link"></span></a>Other changes</h2>
 <ul>
   <li>The Javascript and Python SDKs and the CLI have been updated to support the additionally introduced functionality.</li>
-  <li>The http client in the Python SDK / CLI has been configured to use connection pooling which brings a 4x+ performance boost due to removing the latency penalty for opening new connections.</li>
-  <li>The CLI has been updated such that a user can login with username and password if the selected realm and provided client id supports Direct Access Grants. By convention the CLI defaults to <code>nexus-public</code> client.</li>
-  <li>ElasticSearch compatibility has been updated to 7.x, please see the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</li>
+  <li>The http client in the Python SDK / CLI has been configured to use connection pooling which brings a 4x+ performance  boost due to removing the latency penalty for opening new connections.</li>
+  <li>The CLI has been updated such that a user can login with username and password if the selected realm and provided  client id supports Direct Access Grants. By convention the CLI defaults to <code>nexus-public</code> client.</li>
+  <li>ElasticSearch compatibility has been updated to 7.x, please see the  <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</li>
   <li>Other <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+milestone%3AV1.1+label%3Abug+label%3Aservices">Bug Fixes</a>.</li>
 </ul>
 </div>
