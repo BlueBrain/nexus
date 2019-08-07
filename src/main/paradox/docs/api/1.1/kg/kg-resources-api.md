@@ -141,8 +141,21 @@ Request
 Response
 :   @@snip [resource-ref-new-deprecated.json](../assets/resources/resource-ref-new-deprecated.json)
 
+## Fetch a resource
 
-## Fetch a resource (current version)
+When fetching a resource, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
+
+- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
+- **application/n-triples**: RDF n-triples response, as defined by the [w3](https://www.w3.org/TR/n-triples/).
+- **text/vnd.graphviz**: A [DOT response](https://www.graphviz.org/doc/info/lang.html).
+
+If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
+
+Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the `/source` segment to endpoints described below. 
+
+### Current version
+
+Fetches a resource at the latest revision.
 
 ```
 GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
@@ -157,7 +170,9 @@ Response
 :   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
 
 
-## Fetch a resource (specific version)
+### Specific version
+
+Fetches a resource at the provided revision.
 
 ```
 GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}
@@ -173,7 +188,9 @@ Response
 :   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
 
 
-## Fetch a resource (specific tag)
+### Specific tag
+
+Fetches a resource at the provided tag. A tag is linked to a specific revision.
 
 ```
 GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?tag={tag}
@@ -189,7 +206,6 @@ Request
 
 Response
 :   @@snip [resource-fetched-tag.json](../assets/resources/resource-fetched-tag.json)
-
 
 ## List resources
 

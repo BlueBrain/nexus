@@ -15,3 +15,11 @@ a.md-logo {
 .md-version {
     display: none !important;
 }
+
+.half {
+    width: 50%;
+}
+
+.center {
+    margin: 0 auto;
+}
