@@ -273,7 +273,7 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.1-release-notes.html#additional-query-params-in-listings" class="header">Additional query params in listings</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#incoming-and-outgoing-links" class="header">Incoming and Outgoing links</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#resource-id-resolution" class="header">Resource id resolution</a></li>
-      <li><a href="../../docs/releases/v1.1-release-notes.html#paginate-over-10-000" class="header">Paginate over 10,000</a></li>
+      <li><a href="../../docs/releases/v1.1-release-notes.html#paginate-beyond-10-000-results" class="header">Paginate beyond 10,000 results</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#organization-and-project-uuids" class="header">Organization and Project UUIDs</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html#nexus-web-improvements" class="header">Nexus Web improvements</a>
@@ -326,7 +326,7 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.1-release-notes.html#additional-query-params-in-listings" class="header">Additional query params in listings</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#incoming-and-outgoing-links" class="header">Incoming and Outgoing links</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#resource-id-resolution" class="header">Resource id resolution</a></li>
-      <li><a href="../../docs/releases/v1.1-release-notes.html#paginate-over-10-000" class="header">Paginate over 10,000</a></li>
+      <li><a href="../../docs/releases/v1.1-release-notes.html#paginate-beyond-10-000-results" class="header">Paginate beyond 10,000 results</a></li>
       <li><a href="../../docs/releases/v1.1-release-notes.html#organization-and-project-uuids" class="header">Organization and Project UUIDs</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html#nexus-web-improvements" class="header">Nexus Web improvements</a>
@@ -346,10 +346,10 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#v1-1-release-notes" name="v1-1-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.1 Release Notes</h1>
-<p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.0 but the cassandra store and indices require a migration due to changes in the underlying event model and resource representation. If you&rsquo;re updating from v1.0 please follow the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
+<p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.0 but the cassandra store and indices require a migration due to changes in the underlying event model and resource representation. If you are updating from v1.0 please follow the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
 <h2><a href="#service-event-logs" name="service-event-logs" class="anchor"><span class="anchor-link"></span></a>Service event logs</h2>
 <p>Services now expose new API endpoints to replay their global event log or the virtual event logs specific to certain resource types or scope (organization, project). This new API allows building applications that integrate with Nexus to provide custom functionality for the data stored in the system. It allows applications to listen to events as they are emitted and react accordingly.</p>
-<p>An example application would be a custom index for data within a project where as new resources or updates are recorded in Nexus the application is notified and updates the appropriate index.</p>
+<p>An example application would be a custom index for data within a project where as new resources or updates are recorded in Nexus, the application is notified and updates the appropriate index.</p>
 <p>The implementation follows the <a href="https://www.w3.org/TR/eventsource/">Server Sent Events</a> specification and gives clients the responsibility of maintaining a cursor while replaying an event log. The event log is exposed over HTTP in a JSON-LD event representation.</p>
 <p>The new endpoints require proof of identity by passing within the <code>Authorization</code> header a &lsquo;&lsquo;Bearer&rsquo;&rsquo; token. An <code>Anonymous</code> identity is assumed if the client does not pass a token.</p>
 <p>Example:</p>
@@ -364,7 +364,7 @@ data:
 ^C
 </code></pre>
 <h3><a href="#full-service-event-logs" name="full-service-event-logs" class="anchor"><span class="anchor-link"></span></a>Full service event logs</h3>
-<p>Designed primarily for applications that represent extensions to Nexus, the following service specific endpoints have been added. It is assumed that these endpoints would not be consumed by browsers or command line clients, but rather stateful applications that run within the same network. If that not the case, the deployment requires a proxy that does URL rewriting to avoid the path collision.</p>
+<p>Designed primarily for applications that aim to be extensions to Nexus, the following service specific endpoints have been added. It is assumed that these endpoints would not be consumed by browsers or command line clients, but rather stateful applications that run within the same network. If that not the case, the deployment requires a proxy that does URL rewriting to avoid the path collision.</p>
 <ul>
   <li><code>http(s)://{kg_service_address}/v1/events</code>; exposes the entire event log of the KG service; requires <code>events/read</code>  permission on <code>/</code>.</li>
   <li><code>http(s)://{admin_service_address}/v1/events</code>; exposes the entire event log of the Admin service; requires  <code>events/read</code> permission on <code>/</code>.</li>
@@ -388,7 +388,7 @@ data:
 <p>To address this issue the new release introduces a new resource type specific to KG that controls the configuration of storage mediums in Nexus on a project basis. The new resource type is called <code>Storage</code> with three sub-types: <code>DiskStorage</code>, <code>RemoteDiskStorage</code>, <code>S3Storage</code> and uses the <code>/v1/storage</code> resource type specific endpoint.</p>
 <p>Each project can be configured with multiple storage resources. Creating a storage resource requires <code>storages/write</code> permission on the target project or inherited from the parent organization or <code>/</code>.</p>
 <p>See the <a href="../api/1.1/kg/kg-storages-api.html">storages API</a> for more information.</p>
-<p>Additionally, a new file operation has been introduced that allows registering an existing file into the system just by specifying its <code>name</code>, <code>path</code>, <code>mediaType</code> and optionally a <code>storage</code> identifier to be used:</p>
+<p>Additionally, a new file operation has been introduced that allows registering an existing file (already present on that storage) into the system just by specifying its <code>name</code>, <code>path</code>, <code>mediaType</code> and optionally a <code>storage</code> identifier to be used:</p>
 <pre class="prettyprint"><code class="language-bash">curl -s -XPUT &quot;http://localhost/v1/files/myorg/myproj/myfile.png?storage=mystorage&quot; -d \
 &#39;{
     &quot;filename&quot;: &quot;myfile.png&quot;,
@@ -397,11 +397,11 @@ data:
 }&#39;
 </code></pre>
 <h3><a href="#diskstorage" name="diskstorage" class="anchor"><span class="anchor-link"></span></a>DiskStorage</h3>
-<p>When new projects are being created a new <code>DiskStorage</code> resource is automatically created for that project and set as default thus preserving the previous behaviour. Additionally new configuration options have been implemented:</p>
+<p>When new projects are being created, a new <code>DiskStorage</code> resource is automatically created for that project and set as default, thus preserving the previous behaviour. Additionally new configuration options have been implemented:</p>
 <ul>
   <li><code>default</code>: boolean, mandatory, whether the storage resource is the default one for a project</li>
   <li><code>volume</code>: string, mandatory, the root filesystem directory where Nexus can store files for this project</li>
-  <li><code>maxFileSize</code>: int, optional, the maximum file size allowed for clients to upload</li>
+  <li><code>maxFileSize</code>: int, optional, the maximum file size (in bytes) allowed for clients to upload</li>
   <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
   <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to  this storage medium</li>
 </ul>
@@ -411,10 +411,10 @@ data:
 <p>The following configuration options are available for this storage type:</p>
 <ul>
   <li><code>default</code>: boolean, mandatory, whether the storage resource is the default one for a project</li>
-  <li><code>endpoint</code>: string, optional, the base address of the remote disk storage integration service, defaults to the value  set in the environment variables of KG</li>
-  <li><code>credentials</code>: string, optional, the oauth2 bearer token to be used for authenticating to the remote disk storage  integration service, defaults to the value set in the environment variables of KG</li>
-  <li><code>folder</code>: string, mandatory, the name of the folder where files are to be stored</li>
-  <li><code>maxFileSize</code>: int, optional, the maximum file size allowed for clients to upload</li>
+  <li><code>endpoint</code>: string, optional, the base address of the remote disk storage integration service, defaults to the value  set in the <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf">environment variables of KG</a></li>
+  <li><code>credentials</code>: string, optional, the oauth2 bearer token to be used for authenticating to the remote disk storage  integration service, defaults to the value set in the  <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf">environment variables of KG</a></li>
+  <li><code>folder</code>: string, mandatory, the name of the folder where files are to be stored for this project</li>
+  <li><code>maxFileSize</code>: int, optional, the maximum file size (in bytes) allowed for clients to upload</li>
   <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
   <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to  this storage medium</li>
 </ul>
@@ -426,8 +426,8 @@ data:
   <li><code>bucket</code>: string, mandatory, the name of the s3 bucket where files are to be stored</li>
   <li><code>endpoint</code>: string, optional, the s3 storage endpoint, defaulting to <code>s3.amazonaws.com</code></li>
   <li><code>accessKey</code>: string, optional, the access key to be used for authenticating to the service</li>
-  <li><code>secretKey</code>: string, optional, the secret key to be used for authenticating to the service  integration service, defaults to the value set in the environment variables of KG</li>
-  <li><code>maxFileSize</code>: int, optional, the maximum file size allowed for clients to upload</li>
+  <li><code>secretKey</code>: string, optional, the secret key to be used for authenticating to the service,  defaults to the value set in the  <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf">environment variables of KG</a></li>
+  <li><code>maxFileSize</code>: int, optional, the maximum file size (in bytes) allowed for clients to upload</li>
   <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
   <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to  this storage medium</li>
 </ul>
@@ -436,7 +436,7 @@ data:
 <p>New configuration options have been introduced for <code>ElasticSearchView</code>: <code>resourceTypes</code> and <code>includeDeprecated</code>. These options allow a finer grain filtering of the resources considered for indexing by the view.</p>
 <h2><a href="#configurable-sparqlview" name="configurable-sparqlview" class="anchor"><span class="anchor-link"></span></a>Configurable SparqlView</h2>
 <p>The <code>SparqlView</code> has been promoted from <em>alpha</em> to <em>stable</em>. Creation or update no longer require the use of the <code>Alpha</code> type to be provided.</p>
-<p>Configuration options have been introduced such that it&rsquo;s consistent with the <code>ElasticSearchView</code>:</p>
+<p>Configuration options have been introduced such that it is consistent with the <code>ElasticSearchView</code>:</p>
 <ul>
   <li><code>resourceSchemas</code>: array of ids, optional, defaults to empty, configures the view to consider for indexing only  the resources constrained by any of the specified schemas; an empty array implies all resources.</li>
   <li><code>resourceTypes</code>: array of ids, optional, defaults to empty, configures the view to consider for indexing only the  the resources that have at least one of the specified types at the revision selected by the <code>tag</code> option; if a <code>tag</code>  is not specified, the latest revision is assumed.</li>
@@ -458,7 +458,7 @@ data:
   ]
 }
 </code></pre>
-<p><strong>Note:</strong> this is not implemented in terms of SPARQL Federation but just simple result aggregation. The query sent to this view is dispatched to all BlazeGraph namespaces and the results are aggregated without preserving the view order. The implication is that triples in one namespace cannot be filtered using predicates from another nor path traversals can be performed between the selected namespaces.</p>
+<p><strong>Note:</strong> this is not implemented in terms of SPARQL Federation but just simple result aggregation. The query sent to this view is dispatched to all BlazeGraph namespaces and the results are aggregated without preserving the view order. The implication is that triples in one namespace cannot be filtered using predicates from another namespace, furthermore, path traversals cannot be performed between the selected namespaces.</p>
 <p>As with the <code>AggregateElasticSearchView</code> since the subject that creates an aggregate view may be different than the subject that queries the view, before dispatching the query the target namespaces are filtered based on the permissions of the caller for each individual view. This behaviour is completely transparent to the client.</p>
 <h2><a href="#index-progress" name="index-progress" class="anchor"><span class="anchor-link"></span></a>Index progress</h2>
 <p>Indexing in Nexus is asynchronous, meaning once a resource is created or modified the change is not immediately visible in the respective indices (maintained by the views). The reason for this asynchrony is to break the coupling between the stores (Cassandra, ElasticSearch, BlazeGraph) during a client request. This provides many benefits:</p>
@@ -712,7 +712,7 @@ GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
 }
 </code></pre>
 <p>See <a href="../api/1.1/kg/kg-resolvers-api.html">resolvers API</a> for more details.</p>
-<h3><a href="#paginate-over-10-000" name="paginate-over-10-000" class="anchor"><span class="anchor-link"></span></a>Paginate over 10,000</h3>
+<h3><a href="#paginate-beyond-10-000-results" name="paginate-beyond-10-000-results" class="anchor"><span class="anchor-link"></span></a>Paginate beyond 10,000 results</h3>
 <p>The KG service uses ElasticSearch with a default project view to power listing of resources within a project. Due to the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html#request-body-search-from-size">restriction</a> set by this store when using <code>from</code> and <code>size</code> resources could not be listed after reaching 10,000 with the applied additional filters.</p>
 <p>To address this issue, a new link (<code>_next</code>) has been added to all listing results such that following this link will continue the pagination over the imposed limit; the implementation relies on the searchAfter API which does not suffer from this restriction:</p>
 <pre class="prettyprint"><code class="language-bash">curl -s -H &quot;Authorization: Bearer $TOKEN&quot; &quot;http://localhost/v1/resources/myorg/myproj?size=2&quot; | jq
@@ -787,7 +787,7 @@ GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
 <h3><a href="#feature-highlights" name="feature-highlights" class="anchor"><span class="anchor-link"></span></a>Feature highlights</h3>
 <p>The login page now allows users to select the OpenId Connect provider:</p><div class="half">
 <p><img src="assets/img/nexus-web-login.png" alt="Select Provider" /></p></div>
-<p>Ability to discriminate between Nexus specific resources and user managed resources:</p><div class="half">
+<p>Ability to discriminate between Nexus specific resources (eg. Views, Resolvers) and user created resources:</p><div class="half">
 <p><img src="assets/img/nexus-web-mgmt-resources.png" alt="Management Resources" /></p></div>
 <p>Display the project ACLs via <em>View Project&rsquo;s permissions</em> link in the right panel:</p><div class="half">
 <p><img src="assets/img/nexus-web-right-panel.png" alt="Right Panel" /></p></div><div>
