@@ -1,1 +1,1 @@
-nexus auth login
+nexus auth web
