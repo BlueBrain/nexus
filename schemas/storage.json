@@ -40,6 +40,14 @@
                     }
                 },
                 {
+                    "path": "nxv:maxFileSize",
+                    "name": "maxFileSize",
+                    "description": "the maximum file size for uploaded entities",
+                    "datatype": "xsd:long",
+                    "minCount": 0,
+                    "maxCount": 1
+                },
+                {
                     "path": "nxv:default",
                     "name": "default",
                     "description": "Flag to determine whether or not the storage is a default storage",
@@ -86,6 +94,14 @@
                     "sh:hasValue": {
                         "@id": "nxv:RemoteDiskStorage"
                     }
+                },
+                {
+                    "path": "nxv:maxFileSize",
+                    "name": "maxFileSize",
+                    "description": "the maximum file size for uploaded entities",
+                    "datatype": "xsd:long",
+                    "minCount": 0,
+                    "maxCount": 1
                 },
                 {
                     "path": "nxv:default",
@@ -150,6 +166,14 @@
                     "sh:hasValue": {
                         "@id": "nxv:S3Storage"
                     }
+                },
+                {
+                    "path": "nxv:maxFileSize",
+                    "name": "maxFileSize",
+                    "description": "the maximum file size for uploaded entities",
+                    "datatype": "xsd:long",
+                    "minCount": 0,
+                    "maxCount": 1
                 },
                 {
                     "path": "nxv:default",
