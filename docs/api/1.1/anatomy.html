@@ -269,7 +269,7 @@ BlueBrain/nexus
 <ul>
   <li><strong>Write Model</strong>: This component is executed when a customer performs a write API operation (create, update, tag, &hellip;). The business logic is triggered (validation, state computation, Json and Graph manipulations, etc). As a result, an Event gets stored into the Primary Store or a rejection is delivered to the client.</li>
   <li><strong>Event Stream</strong>: This is an asynchronous process that gets triggered as soon as there are elements to be read from the Primary Store. The stream runs several operations that take the stored Events and transform them. The result is then saved into a target index.</li>
-  <li><strong>Write Model</strong>: This component gets triggered when a customer performs a read API operation (get, list). A call to the index is performed. The resulting data is transformed if required and delivered to the client.</li>
+  <li><strong>Read Model</strong>: This component gets triggered when a customer performs a read API operation (get, list). A call to the index is performed. The resulting data is transformed if required and delivered to the client.</li>
 </ul>
 <p>The service structure and workflow has been designed following the <a href="https://martinfowler.com/bliki/CQRS.html">CQRS</a> and [Event sourcing](<a href="https://martinfowler.com/eaaDev/EventSourcing.html">Event sourcing</a>) strategies. The distinction between the write and read model, as well as the use of event streams is a perfect match to CQRS and Event Sourcing.</p>
 <p><img src="./assets/infrastructure-Anatomy.png" alt="Services anatomy" title="Services anatomy" /></p>
