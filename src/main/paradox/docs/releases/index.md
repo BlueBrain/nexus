@@ -10,7 +10,45 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.1** released on **19.07.2019**.
+The latest stable release is **v1.1.2** released on **24.09.2019**.
+
+## v1.1.2 (24.09.2019)
+
+The release addresses bug fixing and is backwards compatible with v1.0 in terms of API. If you're upgrading from v1.0 please visit the
+@ref:[migration instructions](v1.0-to-v1.1-migration.md).
+
+Summary of the significant changes:
+
+Storage service related updates:
+
+* Added async computation of the file digest.
+* Before an action gets executed against the storage, checks that the resource created is valid (is not deprecated, has the correct revision, etc...)
+
+KG Fixes:
+
+* When project is not present in the cache but it is present in the underlying admin service, adds it directly to the cache (before the cache was populated from the SSE, which can be very slow).
+* `ProjectViewCoordinator` and `DigestViewCoordinator` actors now create child actors (better management of actors lifecycle).
+* Prevented from creating unnecessary indices/namespaces.
+
+Fixed library dependency issues:
+
+* Corrected Iri to Akka.Uri conversion
+* Corrected pct encoding (Iri.asString and Iri.asUri)
+* Bumped akka and kamon dependencies, amongst others
+
+## v1.1.1 (24.07.2019)
+
+The release addresses bug fixing and is backwards compatible with v1.0 in terms of API. If you're upgrading from v1.0 please visit the
+@ref:[migration instructions](v1.0-to-v1.1-migration.md).
+
+Summary of the significant changes:
+
+* Migration script correctly updates views with the expected defaults
+* Migration script jumps over event deserialization errors
+* Metric tag value fix for elasticsearch indexer
+* Kamon disabled by default
+* Kamon agent is loaded as a JVM argument
+* Updated library dependencies
 
 ## v1.1 (19.07.2019)
 
