@@ -252,6 +252,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-1-2-24-09-2019-" class="header">v1.1.2 (24.09.2019)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-1-1-24-07-2019-" class="header">v1.1.1 (24.07.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-19-07-2019-" class="header">v1.1 (19.07.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-0-25-01-2019-" class="header">v1.0 (25.01.2019)</a></li>
   </ul></li>
@@ -277,6 +279,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-1-2-24-09-2019-" class="header">v1.1.2 (24.09.2019)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-1-1-24-07-2019-" class="header">v1.1.1 (24.07.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-19-07-2019-" class="header">v1.1 (19.07.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-0-25-01-2019-" class="header">v1.0 (25.01.2019)</a></li>
   </ul></li>
@@ -291,7 +295,38 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.1</strong> released on <strong>19.07.2019</strong>.</p>
+<p>The latest stable release is <strong>v1.1.2</strong> released on <strong>24.09.2019</strong>.</p>
+<h2><a href="#v1-1-2-24-09-2019-" name="v1-1-2-24-09-2019-" class="anchor"><span class="anchor-link"></span></a>v1.1.2 (24.09.2019)</h2>
+<p>The release addresses bug fixing and is backwards compatible with v1.0 in terms of API. If you&rsquo;re upgrading from v1.0 please visit the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
+<p>Summary of the significant changes:</p>
+<p>Storage service related updates:</p>
+<ul>
+  <li>Added async computation of the file digest.</li>
+  <li>Before an action gets executed against the storage, checks that the resource created is valid (is not deprecated, has the correct revision, etc&hellip;)</li>
+</ul>
+<p>KG Fixes:</p>
+<ul>
+  <li>When project is not present in the cache but it is present in the underlying admin service, adds it directly to the cache (before the cache was populated from the SSE, which can be very slow).</li>
+  <li><code>ProjectViewCoordinator</code> and <code>DigestViewCoordinator</code> actors now create child actors (better management of actors lifecycle).</li>
+  <li>Prevented from creating unnecessary indices/namespaces.</li>
+</ul>
+<p>Fixed library dependency issues:</p>
+<ul>
+  <li>Corrected Iri to Akka.Uri conversion</li>
+  <li>Corrected pct encoding (Iri.asString and Iri.asUri)</li>
+  <li>Bumped akka and kamon dependencies, amongst others</li>
+</ul>
+<h2><a href="#v1-1-1-24-07-2019-" name="v1-1-1-24-07-2019-" class="anchor"><span class="anchor-link"></span></a>v1.1.1 (24.07.2019)</h2>
+<p>The release addresses bug fixing and is backwards compatible with v1.0 in terms of API. If you&rsquo;re upgrading from v1.0 please visit the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
+<p>Summary of the significant changes:</p>
+<ul>
+  <li>Migration script correctly updates views with the expected defaults</li>
+  <li>Migration script jumps over event deserialization errors</li>
+  <li>Metric tag value fix for elasticsearch indexer</li>
+  <li>Kamon disabled by default</li>
+  <li>Kamon agent is loaded as a JVM argument</li>
+  <li>Updated library dependencies</li>
+</ul>
 <h2><a href="#v1-1-19-07-2019-" name="v1-1-19-07-2019-" class="anchor"><span class="anchor-link"></span></a>v1.1 (19.07.2019)</h2>
 <p>The release is backwards compatible with v1.0 in terms of API. If you&rsquo;re upgrading from v1.0 please visit the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
 <p>Summary of the significant changes:</p>
