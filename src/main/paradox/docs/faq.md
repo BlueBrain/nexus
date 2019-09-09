@@ -132,7 +132,7 @@ Yes. As long as the client supports the ability to provide a ```Authentication``
 
 ### How can I create an Organizations as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
 
-The permissions for anonymous are pre-set in the @ref:[ACLs](api/1.0/iam/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](api/1.0/iam/iam-permissions-api.md).
+The permissions for anonymous are pre-set in the @ref:[ACLs](api/current/iam/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](api/current/iam/iam-permissions-api.md).
 
 
 ### Can I use Nexus from Jupyter Notebooks?

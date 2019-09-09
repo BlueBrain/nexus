@@ -9,15 +9,7 @@
 
 @@@
 
-# 1.0
-
-@@@ note { .warning title="API deprecated" }
-
-The following documentation applies to the deprecated version of Nexus.
-
-Please consider moving to the API v1.1. Find more information about how to migrate @ref:[here](../../releases/v1.0-to-v1.1-migration.md)
-
-@@@
+# API reference
 
 All Nexus services expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically [JSON-LD](https://json-ld.org/).
 
@@ -31,6 +23,7 @@ The services operates on 3 primary types of resources: Organizations, Projects a
   - A **@ref:[schema](./kg/kg-schemas-api.md)** is a resource that defines a set of constraints using [SHACL].
   - A **@ref:[resolvers](./kg/kg-resolvers-api.md)**: is a resource that defines the way ids are retrieved inside a project.
   - A **@ref:[views](./kg/kg-views-api.md)**: is a resource that describes the way indexing is applied to certain resources inside a project.
+  - A **@ref:[storage](./kg/kg-storages-api.md)**: is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.
   - A **@ref:[file](./kg/kg-files-api.md)**: is a binary resource.
 
 ## Resource Lifecycle
@@ -41,7 +34,6 @@ All resources in the system generally follow the very same lifecycle, as depicte
 
 ![Resource Lifecycle](./assets/resources/resource-lifecycle.png "Resource Lifecycle")
 
-
 Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the deprecation flag may have various semantics:
 
 - **Organizations**: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this organization will not be considered during indexing and resolution processes.
@@ -49,13 +41,10 @@ Data is never removed from the system, but rather is marked as deprecated. Depen
 - **Schemas**: the resource itself cannot be updated and new data conformant to it cannot be created
 - **Resolvers**: the resource itself will not be considered during the resolution process
 - **Views**: the resource itself will not be considered during the indexing process
+- **Storages**: no new files can be created against the deprecated storage
 - **Files**: attachments cannot be added/deleted
 - **Data**: the resource itself cannot be updated
 
 Future policies may use this flag to determine if or when the deprecated data may be archived.
 
 [SHACL]: https://www.w3.org/TR/shacl/
-
-
-
-
