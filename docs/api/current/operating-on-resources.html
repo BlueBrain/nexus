@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Data volume and scenarios · Blue Brain Nexus</title>
+<title>Operating on resources · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Data volume and scenarios
+Operating on resources
 </span>
 </div>
 </div>
@@ -167,7 +167,7 @@ BlueBrain/nexus
   <li><a href="../../../docs/api/current/index.html" class="page">API reference</a>
   <ul>
     <li><a href="../../../docs/api/current/anatomy.html" class="page">Services anatomy</a></li>
-    <li><a href="../../../docs/api/current/operating-on-resources.html" class="page">Operating on resources</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html" class="active page">Operating on resources</a></li>
     <li><a href="../../../docs/api/current/admin/index.html" class="page">Admin API</a>
     <ul>
       <li><a href="../../../docs/api/current/admin/admin-orgs-api.html" class="page">Organizations</a></li>
@@ -211,13 +211,30 @@ BlueBrain/nexus
     <li><a href="../../../docs/additional-info/benchmarks/index.html" class="page">Benchmarks</a>
     <ul>
       <li><a href="../../../docs/additional-info/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
-      <li><a href="../../../docs/additional-info/benchmarks/data-volume-and-scenarios.html" class="active page">Data volume and scenarios</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/data-volume-and-scenarios.html" class="page">Data volume and scenarios</a></li>
       <li><a href="../../../docs/additional-info/benchmarks/results.html" class="page">Results</a></li>
     </ul></li>
     <li><a href="../../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/api/current/operating-on-resources.html#operating-on-resources" class="header">Operating on resources</a>
+  <ul>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#fetch-the-current-revision-of-the-resource" class="header">Fetch the current revision of the resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#fetch-a-specific-revision-of-the-resource" class="header">Fetch a specific revision of the resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#fetch-a-specific-tag-of-the-resource" class="header">Fetch a specific tag of the resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#create-a-new-resource" class="header">Create a new resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#update-a-resource" class="header">Update a resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#tag-a-resource" class="header">Tag a resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#listing" class="header">Listing</a>
+    <ul>
+      <li><a href="../../../docs/api/current/operating-on-resources.html#list-response-format" class="header">List response format</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -231,37 +248,166 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/api/current/operating-on-resources.html#operating-on-resources" class="header">Operating on resources</a>
+  <ul>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#fetch-the-current-revision-of-the-resource" class="header">Fetch the current revision of the resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#fetch-a-specific-revision-of-the-resource" class="header">Fetch a specific revision of the resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#fetch-a-specific-tag-of-the-resource" class="header">Fetch a specific tag of the resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#create-a-new-resource" class="header">Create a new resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#update-a-resource" class="header">Update a resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#tag-a-resource" class="header">Tag a resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
+    <li><a href="../../../docs/api/current/operating-on-resources.html#listing" class="header">Listing</a>
+    <ul>
+      <li><a href="../../../docs/api/current/operating-on-resources.html#list-response-format" class="header">List response format</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#data-volume-and-scenarios" name="data-volume-and-scenarios" class="anchor"><span class="anchor-link"></span></a>Data volume and scenarios</h1>
-<p>Prior to the test execution a reasonable amount of data was injected into the system to ensure the system behaves well under a typical volume. Specifically:</p>
+<h1><a href="#operating-on-resources" name="operating-on-resources" class="anchor"><span class="anchor-link"></span></a>Operating on resources</h1>
+<p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p>
+<p>All resources in the system share a base set of operations. Assuming a nexus deployment at <code>http(s)://nexus.example.com</code> resource address of <code>/v1/{address}</code> the following operations should apply to most (all) resources:</p>
+<h3><a href="#fetch-the-current-revision-of-the-resource" name="fetch-the-current-revision-of-the-resource" class="anchor"><span class="anchor-link"></span></a>Fetch the current revision of the resource</h3>
+<pre><code>GET /v1/{address}
+</code></pre>
+<p><strong>Status Codes</strong></p>
 <ul>
-  <li>Total number of resources: 115,690,687</li>
-  <li>Total number of triples (edges): 2,493,134,304</li>
-  <li>Total number of entities (nodes): 352,856,595</li>
-  <li>Total number of property types: 74</li>
-  <li>Total number of classes (distinct values of <code>@type</code>): 24</li>
+  <li><strong>200 OK</strong>: the resource is found and returned successfully</li>
+  <li><strong>404 Not Found</strong>: the resource was not found</li>
 </ul>
-<p>The data was generated by replicating a collection of <em>provenance patterns</em>, each spanning several resources:</p>
+<h3><a href="#fetch-a-specific-revision-of-the-resource" name="fetch-a-specific-revision-of-the-resource" class="anchor"><span class="anchor-link"></span></a>Fetch a specific revision of the resource</h3>
+<pre><code>GET /v1/{address}?rev={rev}
+</code></pre>
+<p>&hellip; where <code>{rev}</code> is the revision number, starting at <code>1</code>.</p>
+<p><strong>Status Codes</strong></p>
 <ul>
-  <li>resource <a href="https://github.com/BlueBrain/nexus-tests/tree/master/src/main/resources/bbp">examples</a></li>
-  <li>corresponding SHACL <a href="https://github.com/BlueBrain/nexus-tests/tree/master/scripts/schemas">schemas</a></li>
+  <li><strong>200 OK</strong>: the resource revision is found and returned successfully</li>
+  <li><strong>404 Not Found</strong>: the resource revision was not found</li>
 </ul>
-<p>The full collection of scenarios can be found <a href="https://github.com/BlueBrain/nexus-tests/tree/master/src/it/scala/ch/epfl/bluebrain/nexus/perf">here</a> each within its own file.</p>
-<p>Several scenarios were executed to verify the behaviour of the system, most notably:</p>
+<h3><a href="#fetch-a-specific-tag-of-the-resource" name="fetch-a-specific-tag-of-the-resource" class="anchor"><span class="anchor-link"></span></a>Fetch a specific tag of the resource</h3>
+<pre><code>GET /v1/{address}?tag={tag}
+</code></pre>
+<p>&hellip; where <code>{tag}</code> is the tag name linked to a certain revision number.</p>
+<p><strong>Status Codes</strong></p>
 <ul>
-  <li>create resource (with validation)</li>
-  <li>create resource (without validation)</li>
-  <li>get resource by id</li>
-  <li>tag resource</li>
-  <li>get resource by revision, get resource by tag</li>
-  <li>mixed operations: list resources, get resource by id, ElasticSearch query, BlazeGraph query, update resource</li>
+  <li><strong>200 OK</strong>: the resource tag is found and returned successfully</li>
+  <li><strong>404 Not Found</strong>: the resource tag was not found</li>
 </ul>
-<p>Please head over to the <a href="results.html">results</a> section for a summary of the results and conclusions.</p>
+<h3><a href="#create-a-new-resource" name="create-a-new-resource" class="anchor"><span class="anchor-link"></span></a>Create a new resource</h3>
+<p>Depending on whether the resource is a singleton resource or is part of a wider collection of resources of the same type the verbs <code>POST</code> and <code>PUT</code> are used.</p>
+<p>For a singleton resource:</p>
+<pre><code>PUT /v1/{address}
+{...}
+</code></pre>
+<p>For a collection resources:</p>
+<pre><code>POST /v1/{collection_address}
+{...}
+</code></pre>
+<p>&hellip; where <code>{collection_address}</code> is the address of the collection the resource belongs to.</p>
+<p><strong>Status Codes</strong></p>
+<ul>
+  <li><strong>201 Created</strong>: the resource was created successfully</li>
+  <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be created at this time</li>
+  <li><strong>409 Conflict</strong>: the resource already exists</li>
+</ul>
+<h3><a href="#update-a-resource" name="update-a-resource" class="anchor"><span class="anchor-link"></span></a>Update a resource</h3>
+<p>In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of the resource, the last revision needs to be passed as a query parameter.</p>
+<pre><code>PUT /v1/{address}?rev={previous_rev}
+{...}
+</code></pre>
+<p><strong>Status Codes</strong></p>
+<ul>
+  <li><strong>200 OK</strong>: the resource was created successfully</li>
+  <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be updated at this time</li>
+  <li><strong>409 Conflict</strong>: the provided revision is not the current resource revision number</li>
+</ul>
+<h3><a href="#tag-a-resource" name="tag-a-resource" class="anchor"><span class="anchor-link"></span></a>Tag a resource</h3>
+<p>Links a resource revision to a specific name. </p>
+<p>Tagging a resource is considered to be an update as well.</p>
+<pre><code>PUT /v1/{address}/tags?rev={previous_rev}
+{
+   &quot;tag&quot;: &quot;{name}&quot;,
+   &quot;rev&quot;: {rev}
+}
+</code></pre>
+<p>&hellip; where:</p>
+<ul>
+  <li><code>{name}</code>: String - the name given to the resource at specific revision.</li>
+  <li><code>{rev}</code>: Number - the revision to link the provided <code>{name}</code>.</li>
+</ul>
+<h3><a href="#deprecate-a-resource" name="deprecate-a-resource" class="anchor"><span class="anchor-link"></span></a>Deprecate a resource</h3>
+<p>Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying results.</p>
+<p>Deprecating a resource is considered to be an update as well. </p>
+<pre><code>DELETE /v1/{address}?rev={previous_rev}
+</code></pre>
+<p><strong>Status Codes</strong></p>
+<ul>
+  <li><strong>200 OK</strong>: the resource was created successfully</li>
+  <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be deprecated at this time</li>
+  <li><strong>409 Conflict</strong>: the provided revision is not the current resource revision number</li>
+</ul>
+<p><strong>Status Codes</strong></p>
+<ul>
+  <li><strong>200 OK</strong>: the resource was created successfully</li>
+  <li><strong>400 Bad Request</strong>: the resource is not valid or cannot be created at this time</li>
+  <li><strong>409 Conflict</strong>: the provided revision is not the current resource revision number</li>
+</ul>
+<h2><a href="#listing" name="listing" class="anchor"><span class="anchor-link"></span></a>Listing</h2>
+<pre><code>GET /v1/{collection_address}?from={from}&amp;size={size}&amp;{deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}
+</code></pre>
+<p>&hellip; where all of the query parameters are individually optional.</p>
+<ul>
+  <li><code>{collection_address}</code> Path - the selected collection to list, filter or search; for example: <code>/v1/projects/</code>, <code>/v1/schemas/{org_label}/{project}</code>,</li>
+  <li><code>{from}</code>: Number - the parameter that describes the offset for the current query; defaults to <code>0</code></li>
+  <li><code>{size}</code>: Number - the parameter that limits the number of results; defaults to <code>20</code></li>
+  <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
+  <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
+  <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
+  <li>
+  <p><strong>Note</strong>: Some endpoints might not support some of the above query parameters. Please check the specific section of the documentation related tot he endpoint you want to consume for more details.</p></li>
+</ul>
+<h3><a href="#list-response-format" name="list-response-format" class="anchor"><span class="anchor-link"></span></a>List response format</h3>
+<p>The response to any search requests follows the described format:</p>
+<pre><code>  &quot;_total&quot;: {hits},
+  &quot;_maxScore&quot;: {maxScore},
+  &quot;_next&quot;: &quot;{next_page_address}&quot;,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;{resource_id}&quot;,
+      ...
+    },
+    {
+      &quot;@id&quot;: &quot;{resource_id}&quot;,
+      ...
+    }
+  ]
+</code></pre>
+<p>&hellip; where:</p>
+<ul>
+  <li><code>{hits}</code>: Number - the total number of results found for the requested search.</li>
+  <li><code>{maxScore}</code> Float - the maximum score found across all hits.</li>
+  <li><code>{resource_id}</code> Iri - the qualified id for one of the results.</li>
+</ul>
+<p>The relationship <code>_next</code> at the top level offer discovery of more resources, in terms of navigation/pagination. </p>
+<p>The fields <code>{maxScore}</code> and <code>{score_id}</code> are optional fields and will only be present whenever a <code>q</code> query parameter is provided on the request.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/additional-info/benchmarks/data-volume-and-scenarios.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/operating-on-resources.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -277,7 +423,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/additional-info/benchmarks/deployment-configuration.html" title="Deployment Configuration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/api/current/anatomy.html" title="Services anatomy" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -286,17 +432,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Deployment Configuration
+Services anatomy
 </span>
 </div>
 </a>
-<a href="../../../docs/additional-info/benchmarks/results.html" title="Results" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/api/current/admin/index.html" title="Admin API" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Results
+Admin API
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

@@ -1,1 +1,0 @@
-curl -XDELETE "https://nexus.example.com/v1/permissions?rev=4"
