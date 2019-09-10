@@ -2,7 +2,7 @@
 
 * [Getting Started](getting-started/index.md)
 * [Tutorials](tutorial/index.md)
-* [API Reference](api/index.md)
+* [API Reference](api/current/index.md)
 * [Releases](releases/index.md)
 * [Frequently asked questions](faq.md)
 * [Additional Information](additional-info/index.md)
