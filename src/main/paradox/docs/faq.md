@@ -2,7 +2,9 @@
 
 ### What is Blue Brain Nexus?
 
-Nexus is an Open Source, data and knowledge management platform designed to enable ingestion, integration and search of virtually any kind of data. Entities (real world data) are described using well defined and validatable schemas (using JSON-LD and optionally SHACL). Nexus can be used with existing data schemas from http://schema.org or new ones custom created for your own applications. For neuroscience data, http://Neuroshapes.org provides open, community-developed schemas.  While Nexus is engineered to support rich semantics, it is not obligatory. In fact, data can be ingested from existing data sources such as CSV files and SQL databases, and iteratively reshaped into well defined data schemas. Nexus creating and managing entities as well as their relations (e.g. provenance) by the FAIR principles. Indeed, Nexus enables data to be Findable, Accessible, Interoperable and Re-usable, as well as able to track data provenance and supporting data longevity in a secure and scalable manner.
+Blue Brain Nexus is an Open Source, data and knowledge management platform designed to enable ingestion, integration and search of virtually any kind of data. Entities (real world data) are described using well defined and validatable schemas (using JSON-LD and optionally SHACL). Nexus can be used with existing data schemas from http://schema.org or new ones custom created for your own applications. For neuroscience data, http://Neuroshapes.org provides open, community-developed schemas.  While Nexus is engineered to support rich semantics, it is not obligatory. In fact, data can be ingested from existing data sources such as CSV files and SQL databases, and iteratively reshaped into well defined data schemas.
+
+Nexus creates and manages entities in accordance with the FAIR (Findable, Accessible, Interoperable and Re-usable) Principles. The FAIR principles are also applied to data where Nexus provides the ability to track data provenance and supports data longevity in a secure and scalable manner.
 
 
 ### Is Blue Brain Nexus free to use?
@@ -10,22 +12,21 @@ Nexus is an Open Source, data and knowledge management platform designed to enab
 Yes, Nexus is a free, Open Source platform released under [Apache Licence 2.0](https://opensource.org/licenses/Apache-2.0)
 
 
-### How to run Blue Brain Nexus?
+### How do I run Blue Brain Nexus?
 
-There are many ways to run Nexus: a public instance is running in a [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install [Docker](getting-started/running-nexus/index.html#docker) or [Minikube](getting-started/running-nexus/index.html#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
+There are many ways to run Nexus. The public instance is running in a [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install [Docker](getting-started/running-nexus/index.html#docker) or [Minikube](getting-started/running-nexus/index.html#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
 
 
 ### How can I try Blue Brain Nexus without installing it? What is the difference with a relational database like PostgreSQL?
 
 The [Sandbox](https://sandbox.bluebrainnexus.io/web/) provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.
 
-Although Nexus can be used as a regular database, it's flexibility and feature set are well beyond that. 
-Just to mention some of the Nexus features:
+Although Blue Brain Nexus can be used as a regular database, it's flexibility and feature set are well beyond that. Just to mention some of the Nexus features:
 
-* Allows to define different constraints to different set of data at runtime;
-* Provides automatic indexing into several indexers (currently ElasticSearch and Sparql), dealing with reindexing strategies, retries and progress;
-* Provides authentication;
-* Comes with a flexible and granular authorization mechanism;
+* Allows the user to define different constraints to different set of data at runtime
+* Provides automatic indexing into several indexers (currently ElasticSearch and Sparql), dealing with reindexing strategies, retries and progress
+* Provides authentication
+* Comes with a flexible and granular authorization mechanism
 * Guarantees resources immutability, keeping track of a history of changes.
 
 
@@ -45,17 +46,17 @@ To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](a
 
 A Knowledge Graph is a modern approach to enabling the interlinked representations of entities (real-world objects, activities or concepts). Knowledge Graphs combine properties of databases (enabling structured queries), graphs (finding and analysing data via entity relationships) and knowledge bases (that enable navigating knowledge and inferring facts).
 
-Nexus employs a Knowledge Graph to enable validation, search, analysis and integration of data.
+Blue Brain Nexus employs a Knowledge Graph to enable validation, search, analysis and integration of data.
 
 As you can see in 'Understanding the Knowledge Graph' @ref:[page](tutorial/knowledge-graph/index.md), at the heart of Blue Brain Nexus platform lies a Knowledge Graph, that provides knowledge representation to enable data integration and FAIR principles at Blue Brain and across the neuroscience community.
 
 Indeed, Nexus allow scientists to: 
 
-1. Register and manage relevant entity types; 
+* Register and manage relevant entity types 
 
-2. Submit data to the platform and describe their provenance using the W3C PROV model; 
+* Submit data to the platform and describe their provenance using the W3C PROV model 
 
-3. Search, discover, reuse and derive data generated within and outside the platform for the purpose of driving their own scientific endeavours.
+* Search, discover, reuse and derive data generated within and outside the platform for the purpose of driving their own scientific endeavours.
 
 
 ### How do I report a bug? Which support Blue Brain Nexus team provide?
@@ -107,7 +108,7 @@ Elasticsearch is a document oriented search engine with an HTTP web interface an
 
 ### What is a SHACL schema?
 
-SHACL (Shapes Constraint Language) is a language for validating RDF graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form of an RDF graph. SHACL is used in Nexus to constrain and control the payload that can be pushed into Nexus.
+SHACL (Shapes Constraint Language) is a language for validating RDF graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form of an RDF graph. SHACL is used in Blue Brain Nexus to constrain and control the payload that can be pushed into Nexus.
 
 
 ### Do I need to define SHACL schemas to bring data in?
@@ -120,7 +121,7 @@ No. SHACL schemas provide an extra layer of quality control for the data that is
 Datashapes.org provides an automated conversion of schema.org as SHACL entities. A neuroscience community effort and INCF Special Interest Group - Neuroshapes [page on github](https://github.com/INCF/neuroshapes), provides open schemas for neuroscience data based on common use cases.
 
 
-### Why are RDF and JSON-LD important for Nexus?
+### Why are RDF and JSON-LD important for Blue Brain Nexus?
 
 RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is fully compatible with the RDF data model, and it is the main format we use for messages exchange. It is also the preferred format for message exchanges for APIs. The choice of JSON-LD is due to the fact that is as plain JSON but with some special [keywords](https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords). 
 
@@ -135,6 +136,6 @@ Yes. As long as the client supports the ability to provide a ```Authentication``
 The permissions for anonymous are pre-set in the @ref:[ACLs](api/current/iam/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](api/current/iam/iam-permissions-api.md).
 
 
-### Can I use Nexus from Jupyter Notebooks?
+### Can I use Blue Brain Nexus from Jupyter Notebooks?
 
-Nexus can be used from Jupyter Notebooks using [Nexus Python SDK](https://github.com/BlueBrain/nexus-python-sdk/). Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook. Few examples are provided in the folder [Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks) or in the [page](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb) dedicated to create a recommendation engine using Blue Brain Nexus.
+Blue Brain Nexus can be used from Jupyter Notebooks using [Nexus Python SDK](https://github.com/BlueBrain/nexus-python-sdk/). Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook. Few examples are provided in the folder [Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks) or in the [page](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb) dedicated to create a recommendation engine using Blue Brain Nexus.
