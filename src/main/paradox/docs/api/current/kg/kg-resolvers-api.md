@@ -217,15 +217,16 @@ When fetching a resolver, the response format can be chosen through HTTP content
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
-Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the `/source` segment to endpoints described below. 
-
-### Current version
-
-Fetches a resolver at the latest revision.
-
 ```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}&tag={tag}
 ```
+
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -236,42 +237,25 @@ Response
 :   @@snip [resolver-fetched.json](../assets/resolvers/resolver-fetched.json)
 
 
-### Specific version
-
-Fetches a resolver at the provided revision.
+## Fetch a resolver original payload
 
 ```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={rev}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/source?rev={rev}&tag={tag}
 ```
-... where `{rev}` is the revision number of the resolver to be retrieved.
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
 Request
-:   @@snip [resolver-fetch-revision.sh](../assets/resolvers/resolver-fetch-revision.sh)
+:   @@snip [resolver-fetch.sh](../assets/resolvers/resolver-fetch-source.sh)
 
 Response
-:   @@snip [resolver-fetched.json](../assets/resolvers/resolver-fetched.json)
-
-
-### Specific tag
-
-Fetches a resolver at the provided tag. A tag is linked to a specific revision.
-
-```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}?tag={tag}
-```
-
-... where `{tag}` is the tag of the resolver to be retrieved.
-
-
-**Example**
-
-Request
-:   @@snip [resolver-fetch-tag.sh](../assets/resolvers/resolver-fetch-tag.sh)
-
-Response
-:   @@snip [resolver-fetched-tag.json](../assets/resolvers/resolver-fetched-tag.json)
+:   @@snip [resolver-fetched.json](../assets/resolvers/resolver-fetched-source.json)
 
 ## List resolvers
 
@@ -300,66 +284,27 @@ Response
 :   @@snip [resolver-list.json](../assets/resolvers/resolver-list.json)
 
 
-## Fetch resource using resolvers (current version)
+## Fetch resource using resolvers
 
 Fetches a resource using the provided resolver. 
 
 If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
 
 ```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}
+GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={rev}&tag={tag}
 ```
-... where `{resource_id}` is the @id value of the resource to be retrieved.
+... where
+
+- `{resource_id}`: Iri - the @id value of the resource to be retrieved.
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
 Request
 :   @@snip [resolver-fetch-resource.sh](../assets/resolvers/resolver-fetch-resource.sh)
-
-Response
-:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
-
-## Fetch resource using resolvers (specific version)
-
-Fetches a resource using the provided resolver. 
-
-If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
-
-```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={rev}
-```
-... where 
-
--`{resource_id}`: Iri - is the @id value of the resource to be retrieved.
--`{rev}`: Number - the revision number of the resolver to be retrieved.
-
-**Example**
-
-Request
-:   @@snip [resolver-fetch-resource-rev.sh](../assets/resolvers/resolver-fetch-resource-rev.sh)
-
-Response
-:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
-
-
-## Fetch resource using resolvers (specific tag)
-
-Fetches a resource using the provided resolver. 
-
-If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
-
-```
-GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?tag={tag}
-```
-... where 
-
--`{resource_id}`: Iri - is the @id value of the resource to be retrieved.
--`{tag}`: String - the tag of the resource to be retrieved.
-
-**Example**
-
-Request
-:   @@snip [resolver-fetch-resource-tag.sh](../assets/resolvers/resolver-fetch-resource-tag.sh)
 
 Response
 :   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)

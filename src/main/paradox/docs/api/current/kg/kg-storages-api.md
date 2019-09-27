@@ -214,15 +214,15 @@ When fetching a storage, the response format can be chosen through HTTP content 
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
-Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the `/source` segment to endpoints described below. 
-
-### Current version
-
-Fetches a storage at the latest revision.
-
 ```
-GET /v1/storages/{org_label}/{project_label}/{storage_id}
+GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}&tag={tag}
 ```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -233,43 +233,26 @@ Response
 :   @@snip [storage-fetched.json](../assets/storages/storage-fetched.json)
 
 
-### Specific version
-
-Fetches a storage at the provided revision.
+## Fetch a storage original payload
 
 ```
-GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}
+GET /v1/storages/{org_label}/{project_label}/{storage_id}/source?rev={rev}&tag={tag}
 ```
 
-... where `{rev}` is the revision number of the storage to be retrieved.
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
 Request
-:   @@snip [storage-fetch-revision.sh](../assets/storages/storage-fetch-rev.sh)
+:   @@snip [storage-fetch.sh](../assets/storages/storage-fetch-source.sh)
 
 Response
-:   @@snip [storage-fetched.json](../assets/storages/storage-fetched-rev.json)
-
-
-### Specific tag
-
-Fetches a storage at the provided tag. A tag is linked to a specific revision.
-
-```
-GET /v1/storages/{org_label}/{project_label}/{storage_id}?tag={tag}
-```
-
-... where `{tag}` is the tag of the storage to be retrieved.
-
-
-**Example**
-
-Request
-:   @@snip [storage-fetch-tag.sh](../assets/storages/storage-fetch-tag.sh)
-
-Response
-:   @@snip [storage-fetched-tag.json](../assets/storages/storage-fetched-tag.json)
+:   @@snip [storage-fetched.json](../assets/storages/storage-fetched-source.json)
 
 ## List storages
 

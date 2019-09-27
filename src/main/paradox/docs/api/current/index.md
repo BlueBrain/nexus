@@ -25,6 +25,7 @@ The services operates on 3 primary types of resources: Organizations, Projects a
   - A **@ref:[views](./kg/kg-views-api.md)**: is a resource that describes the way indexing is applied to certain resources inside a project.
   - A **@ref:[storage](./kg/kg-storages-api.md)**: is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.
   - A **@ref:[file](./kg/kg-files-api.md)**: is a binary resource.
+  - A **@ref:[archive](./kg/kg-archives-api.md)**: is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
 
 ## Resource Lifecycle
 
@@ -44,6 +45,8 @@ Data is never removed from the system, but rather is marked as deprecated. Depen
 - **Storages**: no new files can be created against the deprecated storage
 - **Files**: attachments cannot be added/deleted
 - **Data**: the resource itself cannot be updated
+
+`Archives` resources are an exception. Those resources are ephemeral. They will be automatically removed from the system after certain time. This time is configurable (env. variable `ARCHIVES_CACHE_INVALIDATE_AFTER`) and it defaults to 5 hours.
 
 Future policies may use this flag to determine if or when the deprecated data may be archived.
 

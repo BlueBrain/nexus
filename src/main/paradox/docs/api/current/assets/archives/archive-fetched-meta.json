@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/archive.json"
+  ],
+  "@id": "myarchive",
+  "@type": "Archive",
+  "resources" : [
+    {
+      "@type": "Resource",
+      "resourceId": "https://nexus.example.com/resource1",
+      "rev": 2
+    },
+    {
+      "@type": "Resource",
+      "resourceId": "https://nexus.example.com/resource2",
+      "project": "myorg/myproject2",
+      "originalSource": false
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://nexus.example.com/resource2",
+      "project": "myorg/myproject2",
+      "path": "my/custom/path/resource2.json"
+    }
+  ],
+  "_self": "https://nexus.example.com/v1/archives/myorg/myproj/myarchive",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/archive",
+  "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "2018-09-17T14:54:42.939Z",
+  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+  "_updatedAt": "2018-09-17T14:54:42.939Z",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+  "_expiresInSeconds": 17530
+}
