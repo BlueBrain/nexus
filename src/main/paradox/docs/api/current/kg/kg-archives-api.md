@@ -126,15 +126,8 @@ When fetching an archive, the response format can be chosen through HTTP content
 - **application/x-tar**: retrieves the archive content.
 
 ```
-GET /v1/archives/{org_label}/{project_label}/{archive_id}?rev={rev}&tag={tag}
+GET /v1/archives/{org_label}/{project_label}/{archive_id}
 ```
-
-where ...
-
-- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
-- `{tag}`: String - the targeted tag to be fetched. This field is optional.
-
-`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
