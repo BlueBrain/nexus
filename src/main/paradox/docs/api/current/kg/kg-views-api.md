@@ -312,15 +312,14 @@ When fetching a view, the response format can be chosen through HTTP content neg
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
-Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the `/source` segment to endpoints described below. 
-
-### Current version
-
-Fetches a view at the latest revision.
-
 ```
-GET /v1/views/{org_label}/{project_label}/{view_id}
+GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}&tag={tag}
 ```
+
+where ...
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -330,44 +329,24 @@ Request
 Response
 :   @@snip [view-fetched.json](../assets/views/view-fetched.json)
 
-
-### Specific version
-
-Fetches a view at the provided revision.
-
+## Fetch a view original payload
 
 ```
-GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}
+GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}&tag={tag}
 ```
-... where `{rev}` is the revision number of the view to be retrieved.
+where ...
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
 Request
-:   @@snip [view-fetch-revision.sh](../assets/views/view-fetch-revision.sh)
+:   @@snip [view-fetch.sh](../assets/views/view-fetch-source.sh)
 
 Response
-:   @@snip [view-fetched.json](../assets/views/view-fetched.json)
+:   @@snip [view-fetched.json](../assets/views/view-fetched-source.json)
 
-
-### Specific tag
-
-Fetches a view at the provided tag. A tag is linked to a specific revision.
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}?tag={tag}
-```
-
-... where `{tag}` is the tag of the view to be retrieved.
-
-
-**Example**
-
-Request
-:   @@snip [view-fetch-tag.sh](../assets/views/view-fetch-tag.sh)
-
-Response
-:   @@snip [view-fetched-tag.json](../assets/views/view-fetched-tag.json)
 
 ## Fetch view statistics
 

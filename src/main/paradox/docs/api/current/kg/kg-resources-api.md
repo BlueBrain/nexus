@@ -151,15 +151,16 @@ When fetching a resource, the response format can be chosen through HTTP content
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
-Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the `/source` segment to endpoints described below. 
-
-### Current version
-
-Fetches a resource at the latest revision.
-
 ```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}&tag={tag}
 ```
+
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -169,43 +170,25 @@ Request
 Response
 :   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
 
-
-### Specific version
-
-Fetches a resource at the provided revision.
+## Fetch a resource original payload
 
 ```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}
+GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/source?rev={rev}&tag={tag}
 ```
-... where `{rev}` is the revision number of the resource to be retrieved.
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
 Request
-:   @@snip [resource-fetch-revision.sh](../assets/resources/resource-fetch-revision.sh)
+:   @@snip [resource-fetch.sh](../assets/resources/resource-fetch-source.sh)
 
 Response
-:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
-
-
-### Specific tag
-
-Fetches a resource at the provided tag. A tag is linked to a specific revision.
-
-```
-GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?tag={tag}
-```
-
-... where `{tag}` is the tag of the resource to be retrieved.
-
-
-**Example**
-
-Request
-:   @@snip [resource-fetch-tag.sh](../assets/resources/resource-fetch-tag.sh)
-
-Response
-:   @@snip [resource-fetched-tag.json](../assets/resources/resource-fetched-tag.json)
+:   @@snip [resource-fetched.json](../assets/resources/resource-fetched-source.json)
 
 ## List resources
 

@@ -1,0 +1,1 @@
+curl "https://nexus.example.com/v1/archives/myorg/myproject/myarchive" -H "Accept: application/json"

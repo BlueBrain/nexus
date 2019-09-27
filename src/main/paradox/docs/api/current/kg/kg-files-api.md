@@ -11,9 +11,9 @@ Access to resources in the system depends on the access control list set for the
 
 @@@ note { .tip title="Authorization notes" }	
 
-When  modifying files, the caller must have `projects/write` permissions on the current path of the project or the ancestor paths.
+When modifying files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.
 
-When  reading files, the caller must have `projects/read` permissions on the current path of the project or the ancestor paths.
+When  reading files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.
 
 @@@
 
@@ -205,12 +205,24 @@ Request
 Response
 :   @@snip [file-deprecated.json](../assets/files/file-deprecated.json)
 
+## Fetch a file
 
-## Fetch a file (current version)
+When fetching a file, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
+
+- **application/ld+json**: JSON-LD output response to retrieve the file metadata. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
+- **\*/\***: retrieves the file content.
+- for any other Content-Type that matches the file Content-Type, the file content will be fetched as well.
 
 ```
-GET /v1/files/{org_label}/{project_label}/{file_id}
+GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}&tag={tag}
 ```
+
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
 
 **Example**
 
@@ -222,47 +234,6 @@ Request (metadata)
 
 Response
 :   @@snip [file-fetched-meta.json](../assets/files/file-fetched-meta.json)
-
-
-## Fetch a file (specific version)
-
-```
-GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}
-```
-... where `{rev}` is the revision number of the file to be retrieved.
-
-**Example**
-
-Request (binary)
-:   @@snip [file-fetch-revision.sh](../assets/files/file-fetch-revision.sh)
-
-Request (metadata)
-:   @@snip [file-fetch-revision-meta.sh](../assets/files/file-fetch-revision-meta.sh)
-
-Response
-:   @@snip [file-fetched-meta.json](../assets/files/file-fetched-meta.json)
-
-
-## Fetch a file (specific tag)
-
-```
-GET /v1/files/{org_label}/{project_label}/{file_id}?tag={tag}
-```
-
-... where `{tag}` is the tag of the file to be retrieved.
-
-
-**Example**
-
-Request (binary)
-:   @@snip [file-fetch-tag.sh](../assets/files/file-fetch-tag.sh)
-
-Request (metadata)
-:   @@snip [file-fetch-tag-meta.sh](../assets/files/file-fetch-tag-meta.sh)
-
-Response
-:   @@snip [file-created.json](../assets/files/file-fetched-meta.json)
-
 
 ## List files
 

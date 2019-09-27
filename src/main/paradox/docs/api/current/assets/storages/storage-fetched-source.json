@@ -1,0 +1,18 @@
+{
+    "@context": [
+        "https://bluebrain.github.io/nexus/contexts/storage.json",
+        "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "@id": "nxv:mys3storage",
+    "@type": [
+        "S3Storage",
+        "Storage"
+    ],
+    "bucket": "mybucket",
+    "default": true,
+    "endpoint": "https://s3.us-west-1.amazonaws.com",
+    "maxFileSize": 10737418240,
+    "readPermission": "resources/read",
+    "writePermission": "files/write",
+    "_algorithm": "SHA-256"
+}

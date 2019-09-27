@@ -5,6 +5,7 @@
 * [Views](kg-views-api.md)
 * [Storages](kg-storages-api.md)
 * [Files](kg-files-api.md)
+* [Archives](kg-archives-api.md)
 * [Resources](kg-resources-api.md)
 
 @@@
@@ -40,6 +41,12 @@ A storage is a resource which represents a backend where files are stored. It de
 A file is a binary attachment resource.
 
 @ref:[Operations on files](kg-files-api.md)
+
+## Archives
+
+An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
+
+@ref:[Operations on archives](kg-archives-api.md)
 
 ## Resources
 
