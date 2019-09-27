@@ -180,6 +180,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/api/current/kg/kg-views-api.html" class="page">Views</a></li>
       <li><a href="../../../docs/api/current/kg/kg-storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../docs/api/current/kg/kg-files-api.html" class="page">Files</a></li>
+      <li><a href="../../../docs/api/current/kg/kg-archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../docs/api/current/kg/kg-resources-api.html" class="page">Resources</a></li>
     </ul></li>
     <li><a href="../../../docs/api/current/iam/index.html" class="page">Identity &amp; Access Management API</a>
@@ -270,6 +271,7 @@ BlueBrain/nexus
   <li>A <strong><a href="kg/kg-views-api.html">views</a></strong>: is a resource that describes the way indexing is applied to certain resources inside a project.</li>
   <li>A <strong><a href="kg/kg-storages-api.html">storage</a></strong>: is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.</li>
   <li>A <strong><a href="kg/kg-files-api.html">file</a></strong>: is a binary resource.</li>
+  <li>A <strong><a href="kg/kg-archives-api.html">archive</a></strong>: is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).</li>
 </ul>
 <h2><a href="#resource-lifecycle" name="resource-lifecycle" class="anchor"><span class="anchor-link"></span></a>Resource Lifecycle</h2>
 <p>Our services are build using the <a href="https://martinfowler.com/eaaDev/EventSourcing.html">event sourcing</a> approach. This strategy captures all changes to an application state as a sequence of events.</p>
@@ -286,6 +288,7 @@ BlueBrain/nexus
   <li><strong>Files</strong>: attachments cannot be added/deleted</li>
   <li><strong>Data</strong>: the resource itself cannot be updated</li>
 </ul>
+<p><code>Archives</code> resources are an exception. Those resources are ephemeral. They will be automatically removed from the system after certain time. This time is configurable (env. variable <code>ARCHIVES_CACHE_INVALIDATE_AFTER</code>) and it defaults to 5 hours.</p>
 <p>Future policies may use this flag to determine if or when the deprecated data may be archived.</p>
 </div>
 <div>

@@ -180,6 +180,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/api/current/kg/kg-views-api.html" class="page">Views</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-files-api.html" class="page">Files</a></li>
+      <li><a href="../../../../docs/api/current/kg/kg-archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-resources-api.html" class="active page">Resources</a></li>
     </ul></li>
     <li><a href="../../../../docs/api/current/iam/index.html" class="page">Identity &amp; Access Management API</a>
@@ -227,12 +228,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#update-a-resource" class="header">Update a resource</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#tag-a-resource" class="header">Tag a resource</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#fetch-a-resource" class="header">Fetch a resource</a>
-    <ul>
-      <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#current-version" class="header">Current version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#specific-version" class="header">Specific version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#specific-tag" class="header">Specific tag</a></li>
-    </ul></li>
+    <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#fetch-a-resource" class="header">Fetch a resource</a></li>
+    <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#fetch-a-resource-original-payload" class="header">Fetch a resource original payload</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#list-resources" class="header">List resources</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#list-resources-belonging-to-a-schema" class="header">List resources belonging to a schema</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#list-incoming-links" class="header">List incoming links</a></li>
@@ -271,12 +268,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#update-a-resource" class="header">Update a resource</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#tag-a-resource" class="header">Tag a resource</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#deprecate-a-resource" class="header">Deprecate a resource</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#fetch-a-resource" class="header">Fetch a resource</a>
-    <ul>
-      <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#current-version" class="header">Current version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#specific-version" class="header">Specific version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#specific-tag" class="header">Specific tag</a></li>
-    </ul></li>
+    <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#fetch-a-resource" class="header">Fetch a resource</a></li>
+    <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#fetch-a-resource-original-payload" class="header">Fetch a resource original payload</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#list-resources" class="header">List resources</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#list-resources-belonging-to-a-schema" class="header">List resources belonging to a schema</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-resources-api.html#list-incoming-links" class="header">List incoming links</a></li>
@@ -555,11 +548,14 @@ BlueBrain/nexus
   <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html">DOT response</a>.</li>
 </ul>
 <p>If <code>Accept: */*</code> HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.</p>
-<p>Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the <code>/source</code> segment to endpoints described below. </p>
-<h3><a href="#current-version" name="current-version" class="anchor"><span class="anchor-link"></span></a>Current version</h3>
-<p>Fetches a resource at the latest revision.</p>
-<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
+<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}&amp;tag={tag}
 </code></pre>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+</ul>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -593,16 +589,20 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/resources/resource-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h3><a href="#specific-version" name="specific-version" class="anchor"><span class="anchor-link"></span></a>Specific version</h3>
-<p>Fetches a resource at the provided revision.</p>
-<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}
+<h2><a href="#fetch-a-resource-original-payload" name="fetch-a-resource-original-payload" class="anchor"><span class="anchor-link"></span></a>Fetch a resource original payload</h2>
+<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/source?rev={rev}&amp;tag={tag}
 </code></pre>
-<p>&hellip; where <code>{rev}</code> is the revision number of the resource to be retrieved.</p>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+</ul>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/resources/resource-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/resources/resource-fetch-source.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -617,54 +617,8 @@ BlueBrain/nexus
   &quot;@type&quot;: &quot;Custom&quot;,
   &quot;bool&quot;: false,
   &quot;name&quot;: &quot;Alex&quot;,
-  &quot;number&quot;: 24,
-  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true,
-  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/resources/resource-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
-<h3><a href="#specific-tag" name="specific-tag" class="anchor"><span class="anchor-link"></span></a>Specific tag</h3>
-<p>Fetches a resource at the provided tag. A tag is linked to a specific revision.</p>
-<pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?tag={tag}
-</code></pre>
-<p>&hellip; where <code>{tag}</code> is the tag of the resource to be retrieved.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/resources/resource-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: [
-    {
-      &quot;@vocab&quot;: &quot;http://example.com/&quot;,
-      &quot;ex&quot;: &quot;http://example.com/&quot;
-    },
-    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
-  ],
-  &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
-  &quot;@type&quot;: &quot;Custom&quot;,
-  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
-  &quot;_rev&quot;: 1,
-  &quot;_deprecated&quot;: false,
-  &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-  &quot;_updatedAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/resources/resource-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  &quot;number&quot;: 24
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/resources/resource-fetched-source.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-resources" name="list-resources" class="anchor"><span class="anchor-link"></span></a>List resources</h2>
 <pre><code>GET /v1/resources/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;schema={schema}&amp;q={search}
@@ -996,7 +950,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../../docs/api/current/kg/kg-files-api.html" title="Files" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../../docs/api/current/kg/kg-archives-api.html" title="Archives" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -1005,7 +959,7 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Files
+Archives
 </span>
 </div>
 </a>

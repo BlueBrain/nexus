@@ -180,6 +180,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/api/current/kg/kg-views-api.html" class="page">Views</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-storages-api.html" class="active page">Storages</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-files-api.html" class="page">Files</a></li>
+      <li><a href="../../../../docs/api/current/kg/kg-archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-resources-api.html" class="page">Resources</a></li>
     </ul></li>
     <li><a href="../../../../docs/api/current/iam/index.html" class="page">Identity &amp; Access Management API</a>
@@ -235,12 +236,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#update-a-storage" class="header">Update a storage</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#tag-a-storage" class="header">Tag a storage</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#deprecate-a-storage" class="header">Deprecate a storage</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#fetch-a-storage" class="header">Fetch a storage</a>
-    <ul>
-      <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#current-version" class="header">Current version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#specific-version" class="header">Specific version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#specific-tag" class="header">Specific tag</a></li>
-    </ul></li>
+    <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#fetch-a-storage" class="header">Fetch a storage</a></li>
+    <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#fetch-a-storage-original-payload" class="header">Fetch a storage original payload</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#list-storages" class="header">List storages</a></li>
   </ul></li>
 </ul>
@@ -278,12 +275,8 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#update-a-storage" class="header">Update a storage</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#tag-a-storage" class="header">Tag a storage</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#deprecate-a-storage" class="header">Deprecate a storage</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#fetch-a-storage" class="header">Fetch a storage</a>
-    <ul>
-      <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#current-version" class="header">Current version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#specific-version" class="header">Specific version</a></li>
-      <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#specific-tag" class="header">Specific tag</a></li>
-    </ul></li>
+    <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#fetch-a-storage" class="header">Fetch a storage</a></li>
+    <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#fetch-a-storage-original-payload" class="header">Fetch a storage original payload</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-storages-api.html#list-storages" class="header">List storages</a></li>
   </ul></li>
 </ul>
@@ -656,11 +649,14 @@ BlueBrain/nexus
   <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html">DOT response</a>.</li>
 </ul>
 <p>If <code>Accept: */*</code> HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.</p>
-<p>Additionally, the original payload (without JSON-LD logic applied and without metadata) can be retrieved appending the <code>/source</code> segment to endpoints described below. </p>
-<h3><a href="#current-version" name="current-version" class="anchor"><span class="anchor-link"></span></a>Current version</h3>
-<p>Fetches a storage at the latest revision.</p>
-<pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}
+<pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}&amp;tag={tag}
 </code></pre>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+</ul>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -698,16 +694,20 @@ BlueBrain/nexus
     &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/storages/storage-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h3><a href="#specific-version" name="specific-version" class="anchor"><span class="anchor-link"></span></a>Specific version</h3>
-<p>Fetches a storage at the provided revision.</p>
-<pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}
+<h2><a href="#fetch-a-storage-original-payload" name="fetch-a-storage-original-payload" class="anchor"><span class="anchor-link"></span></a>Fetch a storage original payload</h2>
+<pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}/source?rev={rev}&amp;tag={tag}
 </code></pre>
-<p>&hellip; where <code>{rev}</code> is the revision number of the storage to be retrieved.</p>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+</ul>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage?rev=1&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/storages/storage-fetch-rev.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage/source?rev=1&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/storages/storage-fetch-source.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -721,66 +721,13 @@ BlueBrain/nexus
         &quot;Storage&quot;
     ],
     &quot;bucket&quot;: &quot;mybucket&quot;,
-    &quot;default&quot;: false,
+    &quot;default&quot;: true,
     &quot;endpoint&quot;: &quot;https://s3.us-west-1.amazonaws.com&quot;,
     &quot;maxFileSize&quot;: 10737418240,
     &quot;readPermission&quot;: &quot;resources/read&quot;,
     &quot;writePermission&quot;: &quot;files/write&quot;,
-    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
-    &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage/incoming&quot;,
-    &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage/outgoing&quot;,
-    &quot;_self&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage&quot;,
-    &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storage.json&quot;,
-    &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
-    &quot;_rev&quot;: 1,
-    &quot;_deprecated&quot;: false,
-    &quot;_createdAt&quot;: &quot;2019-05-13T14:38:51.190Z&quot;,
-    &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-    &quot;_updatedAt&quot;: &quot;2019-05-13T14:38:51.190Z&quot;,
-    &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/storages/storage-fetched-rev.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
-<h3><a href="#specific-tag" name="specific-tag" class="anchor"><span class="anchor-link"></span></a>Specific tag</h3>
-<p>Fetches a storage at the provided tag. A tag is linked to a specific revision.</p>
-<pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}?tag={tag}
-</code></pre>
-<p>&hellip; where <code>{tag}</code> is the tag of the storage to be retrieved.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/storages/storage-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-    &quot;@context&quot;: [
-        &quot;https://bluebrain.github.io/nexus/contexts/storage.json&quot;,
-        &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
-    ],
-    &quot;@id&quot;: &quot;nxv:mys3storage&quot;,
-    &quot;@type&quot;: [
-        &quot;S3Storage&quot;,
-        &quot;Storage&quot;
-    ],
-    &quot;bucket&quot;: &quot;mybucket&quot;,
-    &quot;default&quot;: false,
-    &quot;endpoint&quot;: &quot;https://s3.us-west-1.amazonaws.com&quot;,
-    &quot;maxFileSize&quot;: 10737418240,
-    &quot;readPermission&quot;: &quot;resources/read&quot;,
-    &quot;writePermission&quot;: &quot;files/write&quot;,
-    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
-    &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage/incoming&quot;,
-    &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage/outgoing&quot;,
-    &quot;_self&quot;: &quot;https://nexus.example.com/v1/storages/myorg/myproj/nxv:mys3storage&quot;,
-    &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/storage.json&quot;,
-    &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
-    &quot;_rev&quot;: 1,
-    &quot;_deprecated&quot;: false,
-    &quot;_createdAt&quot;: &quot;2019-05-13T14:38:51.190Z&quot;,
-    &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
-    &quot;_updatedAt&quot;: &quot;2019-05-13T14:38:51.190Z&quot;,
-    &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/storages/storage-fetched-tag.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+    &quot;_algorithm&quot;: &quot;SHA-256&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/storages/storage-fetched-source.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h2><a href="#list-storages" name="list-storages" class="anchor"><span class="anchor-link"></span></a>List storages</h2>
 <pre><code>GET /v1/storages/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;q={search}

@@ -180,6 +180,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/api/current/kg/kg-views-api.html" class="page">Views</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-files-api.html" class="active page">Files</a></li>
+      <li><a href="../../../../docs/api/current/kg/kg-archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/api/current/kg/kg-resources-api.html" class="page">Resources</a></li>
     </ul></li>
     <li><a href="../../../../docs/api/current/iam/index.html" class="page">Identity &amp; Access Management API</a>
@@ -230,9 +231,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#update-a-file" class="header">Update a file</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#tag-a-file" class="header">Tag a file</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#deprecate-a-file" class="header">Deprecate a file</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file-current-version-" class="header">Fetch a file (current version)</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file-specific-version-" class="header">Fetch a file (specific version)</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file-specific-tag-" class="header">Fetch a file (specific tag)</a></li>
+    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file" class="header">Fetch a file</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#list-files" class="header">List files</a></li>
   </ul></li>
 </ul>
@@ -265,9 +264,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#update-a-file" class="header">Update a file</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#tag-a-file" class="header">Tag a file</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#deprecate-a-file" class="header">Deprecate a file</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file-current-version-" class="header">Fetch a file (current version)</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file-specific-version-" class="header">Fetch a file (specific version)</a></li>
-    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file-specific-tag-" class="header">Fetch a file (specific tag)</a></li>
+    <li><a href="../../../../docs/api/current/kg/kg-files-api.html#fetch-a-file" class="header">Fetch a file</a></li>
     <li><a href="../../../../docs/api/current/kg/kg-files-api.html#list-files" class="header">List files</a></li>
   </ul></li>
 </ul>
@@ -287,8 +284,8 @@ BlueBrain/nexus
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
 </ul>
 <p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="../iam/authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
-<p>When modifying files, the caller must have <code>projects/write</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>When reading files, the caller must have <code>projects/read</code> permissions on the current path of the project or the ancestor paths.</p></div>
+<p>When modifying files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.</p>
+<p>When reading files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.</p></div>
 <h2><a href="#create-a-file-using-post" name="create-a-file-using-post" class="anchor"><span class="anchor-link"></span></a>Create a file using POST</h2>
 <pre><code>POST /v1/files/{org_label}/{project_label}
 </code></pre>
@@ -641,9 +638,21 @@ BlueBrain/nexus
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-deprecated.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
-<h2><a href="#fetch-a-file-current-version-" name="fetch-a-file-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a file (current version)</h2>
-<pre><code>GET /v1/files/{org_label}/{project_label}/{file_id}
+<h2><a href="#fetch-a-file" name="fetch-a-file" class="anchor"><span class="anchor-link"></span></a>Fetch a file</h2>
+<p>When fetching a file, the response format can be chosen through HTTP content negotiation, using the <strong>Accept</strong> HTTP header.</p>
+<ul>
+  <li><strong>application/ld+json</strong>: JSON-LD output response to retrieve the file metadata. Further specifying the query parameter <code>format=compacted|expanded</code> will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form">compacted document form</a> or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form">expanded document form</a>.</li>
+  <li><strong>*/*</strong>: retrieves the file content.</li>
+  <li>for any other Content-Type that matches the file Content-Type, the file content will be fetched as well.</li>
+</ul>
+<pre><code>GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}&amp;tag={tag}
 </code></pre>
+<p>where &hellip;</p>
+<ul>
+  <li><code>{rev}</code>: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.</li>
+  <li><code>{tag}</code>: String - the targeted tag to be fetched. This field is optional.</li>
+</ul>
+<p><code>{rev}</code> and <code>{tag}</code> fields cannot be simultaneously present.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request (binary)
@@ -654,94 +663,6 @@ BlueBrain/nexus
   </dt>
   <dd>
   <pre class="prettyprint"><code class="language-sh">curl -H &quot;Accept: application/json&quot; &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile.jpg&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-fetch-meta.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-  &quot;@id&quot;: &quot;nxv:myfile&quot;,
-  &quot;@type&quot;: &quot;File&quot;,
-  &quot;_bytes&quot;: 2670,
-  &quot;_digest&quot;: {
-    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
-    &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
-  },
-  &quot;_filename&quot;: &quot;myfile2.png&quot;,
-  &quot;_mediaType&quot;: &quot;image/png&quot;,
-  &quot;_storage&quot;: {
-    &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage&quot;,
-    &quot;_rev&quot;: 1
-  },
-  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/outgoing&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile&quot;,
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/file.json&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true,
-  &quot;_createdAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;,
-  &quot;_updatedAt&quot;: &quot;2019-12-28T12:15:33.238Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-fetched-meta.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
-<h2><a href="#fetch-a-file-specific-version-" name="fetch-a-file-specific-version-" class="anchor"><span class="anchor-link"></span></a>Fetch a file (specific version)</h2>
-<pre><code>GET /v1/files/{org_label}/{project_label}/{file_id}?rev={rev}
-</code></pre>
-<p>&hellip; where <code>{rev}</code> is the revision number of the file to be retrieved.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request (binary)
-  </dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile.jpg?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-fetch-revision.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Request (metadata)
-  </dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -H &quot;Accept: application/json&quot; &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile.jpg/rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-fetch-revision-meta.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-  &quot;@id&quot;: &quot;nxv:myfile&quot;,
-  &quot;@type&quot;: &quot;File&quot;,
-  &quot;_bytes&quot;: 2670,
-  &quot;_digest&quot;: {
-    &quot;_algorithm&quot;: &quot;SHA-256&quot;,
-    &quot;_value&quot;: &quot;25fc54fba0beec17a598b5a68420ded1595b2f76f0a0b7c6077792ece828bc2e&quot;
-  },
-  &quot;_filename&quot;: &quot;myfile2.png&quot;,
-  &quot;_mediaType&quot;: &quot;image/png&quot;,
-  &quot;_storage&quot;: {
-    &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/_/myStorage&quot;,
-    &quot;_rev&quot;: 1
-  },
-  &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/incoming&quot;,
-  &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile/outgoing&quot;,
-  &quot;_self&quot;: &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile&quot;,
-  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/file.json&quot;,
-  &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;_deprecated&quot;: true,
-  &quot;_createdAt&quot;: &quot;2019-01-28T12:15:33.238Z&quot;,
-  &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;,
-  &quot;_updatedAt&quot;: &quot;2019-12-28T12:15:33.238Z&quot;,
-  &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/anonymous&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-fetched-meta.json" class="snippet-full-source github">Full source at GitHub</a></dd>
-</dl>
-<h2><a href="#fetch-a-file-specific-tag-" name="fetch-a-file-specific-tag-" class="anchor"><span class="anchor-link"></span></a>Fetch a file (specific tag)</h2>
-<pre><code>GET /v1/files/{org_label}/{project_label}/{file_id}?tag={tag}
-</code></pre>
-<p>&hellip; where <code>{tag}</code> is the tag of the file to be retrieved.</p>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request (binary)
-  </dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile.jpg?tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-fetch-tag.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
-  <dt>Request (metadata)
-  </dt>
-  <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -H &quot;Accept: application/json&quot; &quot;https://nexus.example.com/v1/files/myorg/myproj/nxv:myfile.jpg/tag=mytag&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/files/file-fetch-tag-meta.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
@@ -887,13 +808,13 @@ Storages
 </span>
 </div>
 </a>
-<a href="../../../../docs/api/current/kg/kg-resources-api.html" title="Resources" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../../docs/api/current/kg/kg-archives-api.html" title="Archives" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Resources
+Archives
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
