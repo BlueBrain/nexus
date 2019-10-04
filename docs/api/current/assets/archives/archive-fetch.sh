@@ -1,1 +1,1 @@
-curl "https://nexus.example.com/v1/archives/myorg/myproject/myarchive" -H "Accept: application/x-tar"
+curl "https://nexus.example.com/v1/archives/myorg/myproject/myarchive" -H "Accept: application/x-tar" -o output.tar

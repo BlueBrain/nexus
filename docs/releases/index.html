@@ -195,6 +195,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="active page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
     <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
@@ -223,6 +224,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-2-0-04-10-2019-" class="header">v1.2.0 (04.10.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-2-24-09-2019-" class="header">v1.1.2 (24.09.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-1-24-07-2019-" class="header">v1.1.1 (24.07.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-19-07-2019-" class="header">v1.1 (19.07.2019)</a></li>
@@ -250,6 +252,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-2-0-04-10-2019-" class="header">v1.2.0 (04.10.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-2-24-09-2019-" class="header">v1.1.2 (24.09.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-1-24-07-2019-" class="header">v1.1.1 (24.07.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-19-07-2019-" class="header">v1.1 (19.07.2019)</a></li>
@@ -266,7 +269,30 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.1.2</strong> released on <strong>24.09.2019</strong>.</p>
+<p>The latest stable release is <strong>v1.2.0</strong> released on <strong>04.10.2019</strong>.</p>
+<h2><a href="#v1-2-0-04-10-2019-" name="v1-2-0-04-10-2019-" class="anchor"><span class="anchor-link"></span></a>v1.2.0 (04.10.2019)</h2>
+<p>The release adds two major features:</p>
+<ul>
+  <li>endpoint to fetch the original payload of a resource.</li>
+  <li>ability to retrieve multiple resources in one request as an archive.</li>
+</ul>
+<p>The API is backwards compatible with v1.1.</p>
+<p>Summary of the significant changes:</p>
+<p>Storage service related updates:</p>
+<ul>
+  <li>Updated async computation of to return not only the digest information but all the attributes (bytes, digest, mediaType and location).</li>
+</ul>
+<p>KG updates:</p>
+<ul>
+  <li>Added <a href="../api/current/kg/kg-archives-api.html">archives resources</a>.</li>
+  <li>Added <a href="../api/current/kg/kg-resources-api.html#fetch-a-resource-original-payload">/source</a> sub-resource.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/issues/750">Fixed issue</a> with resource retrieval when linked context changes.</li>
+  <li>Updated <code>DigestViewCoordinator</code> to <code>AttributesViewCoordinator</code>. This async process now updates all the FileAttributes.</li>
+</ul>
+<p>Dependency updates:</p>
+<ul>
+  <li>SHACL validator, akka-http, cats, cats-effects amongst others</li>
+</ul>
 <h2><a href="#v1-1-2-24-09-2019-" name="v1-1-2-24-09-2019-" class="anchor"><span class="anchor-link"></span></a>v1.1.2 (24.09.2019)</h2>
 <p>The release addresses bug fixing and is backwards compatible with v1.0 in terms of API. If you&rsquo;re upgrading from v1.0 please visit the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
 <p>Summary of the significant changes:</p>
@@ -374,13 +400,13 @@ Error Signaling
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.1-release-notes.html" title="v1.1 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.2-release-notes.html" title="v1.2 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.1 Release Notes
+v1.2 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
