@@ -1,5 +1,6 @@
 @@@ index
 
+* [v1.2 Release Notes](v1.2-release-notes.md)
 * [v1.1 Release Notes](v1.1-release-notes.md)
 * [v1.0 To v1.1 Migration](v1.0-to-v1.1-migration.md)
 * [v1.0 Release Notes](v1.0-release-notes.md)
@@ -10,7 +11,33 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.1.2** released on **24.09.2019**.
+The latest stable release is **v1.2.0** released on **04.10.2019**.
+
+## v1.2.0 (04.10.2019)
+
+The release adds two major features:
+ 
+- endpoint to fetch the original payload of a resource.
+- ability to retrieve multiple resources in one request as an archive. 
+ 
+The API is backwards compatible with v1.1.
+
+Summary of the significant changes:
+
+Storage service related updates:
+
+* Updated async computation of to return not only the digest information but all the attributes (bytes, digest, mediaType and location).
+
+KG updates:
+
+* Added @ref:[archives resources](../api/current/kg/kg-archives-api.md).
+* Added [/source](../api/current/kg/kg-resources-api.html#fetch-a-resource-original-payload) sub-resource.
+* [Fixed issue](https://github.com/BlueBrain/nexus/issues/750) with resource retrieval when linked context changes.
+* Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
+
+Updated dependency issues:
+
+* Bumped shacl validator, akka-http, cats, cats-effects amongst others
 
 ## v1.1.2 (24.09.2019)
 
