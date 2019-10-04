@@ -35,9 +35,9 @@ KG updates:
 * [Fixed issue](https://github.com/BlueBrain/nexus/issues/750) with resource retrieval when linked context changes.
 * Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
 
-Updated dependency issues:
+Dependency updates:
 
-* Bumped shacl validator, akka-http, cats, cats-effects amongst others
+* SHACL validator, akka-http, cats, cats-effects amongst others
 
 ## v1.1.2 (24.09.2019)
 
