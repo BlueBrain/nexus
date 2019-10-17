@@ -210,16 +210,33 @@ BlueBrain/nexus
       <li><a href="../../../docs/additional-info/architecture/components.html" class="page">Components</a></li>
       <li><a href="../../../docs/additional-info/architecture/integration.html" class="page">Integration</a></li>
     </ul></li>
-    <li><a href="../../../docs/additional-info/benchmarks/index.html" class="active page">Benchmarks</a>
-    <ul>
-      <li><a href="../../../docs/additional-info/benchmarks/deployment-configuration.html" class="page">Deployment Configuration</a></li>
-      <li><a href="../../../docs/additional-info/benchmarks/data-volume-and-scenarios.html" class="page">Data volume and scenarios</a></li>
-      <li><a href="../../../docs/additional-info/benchmarks/results.html" class="page">Results</a></li>
-    </ul></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html" class="active page">Benchmarks</a></li>
     <li><a href="../../../docs/additional-info/web-applications-standards.html" class="page">Web applications development best practices</a></li>
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/additional-info/benchmarks/index.html#benchmarks" class="header">Benchmarks</a>
+  <ul>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#environment" class="header">Environment</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#data-volume" class="header">Data volume</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#scenarios" class="header">Scenarios</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#results" class="header">Results</a>
+    <ul>
+      <li><a href="../../../docs/additional-info/benchmarks/index.html#highlights-and-conclusions" class="header">Highlights and conclusions</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/index.html#raw-results" class="header">Raw results</a>
+      <ul>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-no-validation" class="header">Create Resource, No Validation</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-validation-crossproject-resolution-modular-schema" class="header">Create Resource, Validation, CrossProject Resolution, Modular Schema</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-validation-inproject-resolution-modular-schema" class="header">Create Resource, Validation, InProject Resolution, Modular Schema</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-validation-inproject-resolution-single-schema" class="header">Create Resource, Validation, InProject Resolution, Single Schema</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#fetch-resource" class="header">Fetch Resource</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#fetch-resource-source" class="header">Fetch Resource Source</a></li>
+      </ul></li>
+    </ul></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -233,23 +250,455 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../docs/additional-info/benchmarks/index.html#benchmarks" class="header">Benchmarks</a>
+  <ul>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#environment" class="header">Environment</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#data-volume" class="header">Data volume</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#scenarios" class="header">Scenarios</a></li>
+    <li><a href="../../../docs/additional-info/benchmarks/index.html#results" class="header">Results</a>
+    <ul>
+      <li><a href="../../../docs/additional-info/benchmarks/index.html#highlights-and-conclusions" class="header">Highlights and conclusions</a></li>
+      <li><a href="../../../docs/additional-info/benchmarks/index.html#raw-results" class="header">Raw results</a>
+      <ul>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-no-validation" class="header">Create Resource, No Validation</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-validation-crossproject-resolution-modular-schema" class="header">Create Resource, Validation, CrossProject Resolution, Modular Schema</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-validation-inproject-resolution-modular-schema" class="header">Create Resource, Validation, InProject Resolution, Modular Schema</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#create-resource-validation-inproject-resolution-single-schema" class="header">Create Resource, Validation, InProject Resolution, Single Schema</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#fetch-resource" class="header">Fetch Resource</a></li>
+        <li><a href="../../../docs/additional-info/benchmarks/index.html#fetch-resource-source" class="header">Fetch Resource Source</a></li>
+      </ul></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#benchmarks" name="benchmarks" class="anchor"><span class="anchor-link"></span></a>Benchmarks</h1>
-<p>The main goal of the benchmarks was to analyze the hardware requirements for a Nexus deployment and to find potential bottlenecks. In particular, we were most interested in the following metrics:</p>
+<p>The main goal of the benchmarks is to analyze the hardware requirements for a Nexus deployment and to find potential issues and / or bottlenecks. In particular, we are most interested in the following metrics:</p>
 <ul>
   <li><strong>throughput</strong> - how many requests per second the system can handle</li>
   <li><strong>latency</strong> - the time the system needed to provide response to the requests</li>
 </ul>
-<p>and how they were affected by different factors, especially:</p>
+<p>&hellip; and how they were affected by different factors, especially:</p>
 <ul>
   <li><strong>data volume</strong> - how does the volume of the data in the system affect the performance</li>
   <li><strong>hardware configuration and scalability</strong> - does assigning more hardware increase the performance of the system and can the system scale both horizontally and vertically.</li>
   <li><strong>clustering</strong> - what&rsquo;s the effect of changing from a single node to clustered deployment, as well as, what&rsquo;s the effect of adding more nodes to the cluster.</li>
 </ul>
-<p>The description of the test scenarios can be found <a href="data-volume-and-scenarios.html">here</a>. The test scenarios and scripts can be found in <a href="https://github.com/BlueBrain/nexus-tests">nexus-tests</a> repository. The results of the benchmarks are described in detail in the <a href="results.html">Results section</a>.</p>
-<p>The benchmarks were run on a Kubernetes cluster deployed on AWS. Fore more details see <a href="deployment-configuration.html">deployment configuration</a>. The tests were run against v1 API of Nexus in November 2018 using <a href="https://gatling.io/">Gatling</a> version 3.0.0.</p>
+<p>The test scenarios and scripts can be found in the <a href="https://github.com/BlueBrain/nexus-benchmarks">nexus-benchmarks</a> repository.</p>
+<p>The tests were run against version 1.2.1 in October 2019 using <a href="https://gatling.io/">Gatling</a> version 3.2.1.</p>
+<h1><a href="#environment" name="environment" class="anchor"><span class="anchor-link"></span></a>Environment</h1>
+<p>The system was deployed on AWS EKS using the following basic configuration:</p>
+<ul>
+  <li>8 compute nodes of 16 vCPU, 64 GB RAM, 2 x 300 GB NVMe disks</li>
+  <li>nginx ingress controller</li>
+  <li>1 Keycloak pod using MariaDB as its storage</li>
+  <li>6 Cassandra pods each with 4 vCPU, 6 GB HEAP, local NVMe storage, replication factor of 3</li>
+  <li>3 Elasticsearch pods each with 4 vCPU, 8 GB HEAP, local NVMe storage</li>
+  <li>1 Blazegraph pod with 8 vCPU, 16 GB HEAP, local NVMe storage</li>
+  <li>1 Prometheus pod and 1 Jaeger pod</li>
+</ul>
+<p>The services were deployed as follows:</p>
+<ul>
+  <li>3 pod IAM cluster, each node using 4 vCPU, 4 GB HEAP</li>
+  <li>3 pod Admin cluster, each node using 4 vCPU, 4 GB HEAP</li>
+  <li>1 to 6 pods KG cluster, each node with 8 vCPU, 8 GB HEAP</li>
+</ul>
+<h1><a href="#data-volume" name="data-volume" class="anchor"><span class="anchor-link"></span></a>Data volume</h1>
+<p>Prior to the test execution a reasonable amount of data was injected into the system to ensure the system behaves well under a typical volume, specifically 120,000,000 resources were created across 27 projects using an exponential distribution. The total number of triples (22 for each resource + 11 system metadata) was approximately: 4,000,000,000.</p>
+<p>The following resource template was used for both pre-created resources and the resources created during the tests:</p>
+<pre><code>{
+  &quot;@type&quot;: [
+    &quot;http://www.w3.org/ns/prov#Activity&quot;,
+    &quot;https://neuroshapes.org/StimulusExperiment&quot;
+  ],
+  &quot;http://www.w3.org/ns/prov#used&quot;: {
+    &quot;@id&quot;: &quot;https://nexus-sandbox.io/neurosciencegraph/data/049b569d-98ba-4a54-a9cb-45f5c5cd3b40&quot;,
+    &quot;@type&quot;: [
+      &quot;http://www.w3.org/ns/prov#Entity&quot;,
+      &quot;https://neuroshapes.org/PatchedCell&quot;
+    ],
+    &quot;http://schema.org/name&quot;: &quot;Some PatchedCell&quot;
+  },
+  &quot;http://www.w3.org/ns/prov#wasAssociatedWith&quot;: {
+    &quot;@id&quot;: &quot;https://nexus-sandbox.io/v1/realms/random/users/someuser&quot;,
+    &quot;@type&quot;: &quot;http://www.w3.org/ns/prov#Agent&quot;
+  },
+  &quot;https://neuroshapes.org/hadProtocol&quot;: {
+    &quot;@id&quot;: &quot;https://nexus-sandbox.io/neurosciencegraph/data/3f189851-c3de-470d-894e-68abe116bfe4&quot;,
+    &quot;@type&quot;: [
+      &quot;https://neuroshapes.org/Protocol&quot;,
+      &quot;https://neuroshapes.org/ExperimentalProtocol&quot;,
+      &quot;http://www.w3.org/ns/prov#Entity&quot;
+    ],
+    &quot;http://schema.org/name&quot;: &quot;Some Protocol&quot;
+  },
+  &quot;https://neuroshapes.org/stimulus&quot;: {
+    &quot;https://neuroshapes.org/stimulusType&quot;: {
+      &quot;@id&quot;: &quot;http://stimulusont.org/H20S8&quot;,
+      &quot;http://www.w3.org/2000/01/rdf-schema#label&quot;: &quot;H20S8&quot;
+    }
+  }
+}
+</code></pre>
+<h1><a href="#scenarios" name="scenarios" class="anchor"><span class="anchor-link"></span></a>Scenarios</h1>
+<p>The main focus of the tests is to identify the throughput and latency for the primary operations as most of the secondary operations would either have the same results or be irrelevant. For example:</p>
+<ul>
+  <li>tagging or deprecating a resource is equivalent to performing a create without validation</li>
+  <li>updating a resource is equivalent to creating a new one (with or without validation)</li>
+  <li>accessing the incoming or outgoing link is irrelevant as the system just delegates the operation to the triple store</li>
+</ul>
+<p>The primary operations are:</p>
+<ul>
+  <li>create without validation</li>
+  <li>create with validation using a schema that imports others as transitive dependencies</li>
+  <li>create with validation using a schema with the same collection of shapes but without any dependencies</li>
+  <li>fetch a resource by id while injecting the metadata in the resource RDF graph representation and returning it as json</li>
+  <li>fetch a resource source json representation</li>
+</ul>
+<p>Each test has been run for 5 minutes using a concurrency level (users) of 16 for each KG node (e.g.: 6 KG nodes -&gt; 96 users).</p>
+<h1><a href="#results" name="results" class="anchor"><span class="anchor-link"></span></a>Results</h1>
+<h2><a href="#highlights-and-conclusions" name="highlights-and-conclusions" class="anchor"><span class="anchor-link"></span></a>Highlights and conclusions</h2>
+<p>The system scales almost linearly with the number of nodes in terms of throughput and the latency remains within acceptable values.</p>
+<p>In most cases the increase of latency is minimal as adding additional nodes to the cluster increases the necessary data exchange between nodes when handling requests. The chance for the required data to be handled by the node that accepts each request decreases from 100% (single node) to ~16% (6 node cluster) and if executing the request implies interaction with multiple resources (like in the case of creating a resource with validation where the schema has import definitions) the chances drop close to 1%.</p>
+<p>The latency increase for creating resources with validation using a self contained (single) schema is caused by the fact that the system is CPU bound while performing heavy operations. The the values for the 50 and 95 percentiles show that there&rsquo;s a higher deviation in the values for this operation. This is explained by nodes processing different number of validations depending on how requests are distributed between the members of the cluster.</p>
+<p><img src="read-throughput.png" alt="Read - Throughput (requests / second) for varied number of nodes" /></p>
+<p><img src="read-latency.png" alt="Read - Latency (ms) for varied number of nodes" /></p>
+<p><img src="write-novalidation-throughput.png" alt="Write no validation - Throughput (requests / second) for varied number of nodes" /></p>
+<p><img src="write-novalidation-latency.png" alt="Write no validation - Latency (ms) for varied number of nodes" /></p>
+<p><img src="write-throughput.png" alt="Write - Throughput (requests / second) for varied number of nodes" /></p>
+<p><img src="write-latency.png" alt="Write - Latency (ms) for varied number of nodes" /></p>
+<h2><a href="#raw-results" name="raw-results" class="anchor"><span class="anchor-link"></span></a>Raw results</h2>
+<p>The following sections show the exact numbers for throughput and latency of the system for each test configuration.</p>
+<h3><a href="#create-resource-no-validation" name="create-resource-no-validation" class="anchor"><span class="anchor-link"></span></a>Create Resource, No Validation</h3>
+<p>The test evaluates the throughput and latency at 50, 75, 95 and 99 percentiles when creating new unconstrained resources.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>781 </td>
+      <td>16 </td>
+      <td>21 </td>
+      <td>42 </td>
+      <td>57 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>1281 </td>
+      <td>20 </td>
+      <td>29 </td>
+      <td>50 </td>
+      <td>66 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>2044 </td>
+      <td>25 </td>
+      <td>37 </td>
+      <td>65 </td>
+      <td>89 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>2730 </td>
+      <td>40 </td>
+      <td>62 </td>
+      <td>96 </td>
+      <td>130 </td>
+    </tr>
+  </tbody>
+</table>
+<h3><a href="#create-resource-validation-crossproject-resolution-modular-schema" name="create-resource-validation-crossproject-resolution-modular-schema" class="anchor"><span class="anchor-link"></span></a>Create Resource, Validation, CrossProject Resolution, Modular Schema</h3>
+<p>The test evaluates the throughput and latency at 50, 75, 95 and 99 percentiles when creating new resources constrained by schemas hosted in a separate project than the one used for creation. The schema uses transitive imports of other schemas and contexts.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>26 </td>
+      <td>618 </td>
+      <td>638 </td>
+      <td>666 </td>
+      <td>699 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>46 </td>
+      <td>682 </td>
+      <td>712 </td>
+      <td>768 </td>
+      <td>977 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>88 </td>
+      <td>719 </td>
+      <td>753 </td>
+      <td>822 </td>
+      <td>1067 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>127 </td>
+      <td>743 </td>
+      <td>806 </td>
+      <td>898 </td>
+      <td>1051 </td>
+    </tr>
+  </tbody>
+</table>
+<h3><a href="#create-resource-validation-inproject-resolution-modular-schema" name="create-resource-validation-inproject-resolution-modular-schema" class="anchor"><span class="anchor-link"></span></a>Create Resource, Validation, InProject Resolution, Modular Schema</h3>
+<p>The test evaluates the throughput and latency at 50, 75, 95 and 99 percentiles when creating new resources constrained by schemas hosted in the same project as the one used for creation. The schema uses transitive imports of other schemas and contexts.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>28 </td>
+      <td>569 </td>
+      <td>590 </td>
+      <td>620 </td>
+      <td>650 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>48 </td>
+      <td>655 </td>
+      <td>685 </td>
+      <td>736 </td>
+      <td>926 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>97 </td>
+      <td>658 </td>
+      <td>687 </td>
+      <td>739 </td>
+      <td>867 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>125 </td>
+      <td>758 </td>
+      <td>799 </td>
+      <td>879 </td>
+      <td>977 </td>
+    </tr>
+  </tbody>
+</table>
+<h3><a href="#create-resource-validation-inproject-resolution-single-schema" name="create-resource-validation-inproject-resolution-single-schema" class="anchor"><span class="anchor-link"></span></a>Create Resource, Validation, InProject Resolution, Single Schema</h3>
+<p>The test evaluates the throughput and latency at 50, 75, 95 and 99 percentiles when creating new resources constrained by a schema hosted in the same project as the one used for creation. The schema has all the necessary shapes defined in the same resource and does not reference other schemas or contexts.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>82 </td>
+      <td>201 </td>
+      <td>228 </td>
+      <td>272 </td>
+      <td>316 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>138 </td>
+      <td>211 </td>
+      <td>301 </td>
+      <td>410 </td>
+      <td>504 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>258 </td>
+      <td>153 </td>
+      <td>317 </td>
+      <td>668 </td>
+      <td>838 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>364 </td>
+      <td>147 </td>
+      <td>273 </td>
+      <td>879 </td>
+      <td>1198 </td>
+    </tr>
+  </tbody>
+</table>
+<h3><a href="#fetch-resource" name="fetch-resource" class="anchor"><span class="anchor-link"></span></a>Fetch Resource</h3>
+<p>The test evaluates the throughput and latency at 50, 75, 95 and 99 percentiles when getting a resource by its id. It shows the impact of transforming the original json representation into an RDF graph, injecting the system metadata (e.g. rev, deprecated, project, org etc.) and presenting the result in a JSON-LD representation.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>777 </td>
+      <td>20 </td>
+      <td>21 </td>
+      <td>28 </td>
+      <td>33 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>1518 </td>
+      <td>20 </td>
+      <td>22 </td>
+      <td>28 </td>
+      <td>45 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>3000 </td>
+      <td>20 </td>
+      <td>22 </td>
+      <td>30 </td>
+      <td>47 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>4393 </td>
+      <td>19 </td>
+      <td>25 </td>
+      <td>40 </td>
+      <td>61 </td>
+    </tr>
+  </tbody>
+</table>
+<h3><a href="#fetch-resource-source" name="fetch-resource-source" class="anchor"><span class="anchor-link"></span></a>Fetch Resource Source</h3>
+<p>The test evaluates the throughput and latency at 50, 75, 95 and 99 percentiles when getting a resource by its id in its original representation.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Nodes </th>
+      <th>Users </th>
+      <th>Throughput (req/s) </th>
+      <th>p50 (ms) </th>
+      <th>p75 (ms) </th>
+      <th>p95 (ms) </th>
+      <th>p99 (ms) </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1 </td>
+      <td>16 </td>
+      <td>1050 </td>
+      <td>15 </td>
+      <td>16 </td>
+      <td>17 </td>
+      <td>26 </td>
+    </tr>
+    <tr>
+      <td>2 </td>
+      <td>32 </td>
+      <td>2103 </td>
+      <td>15 </td>
+      <td>16 </td>
+      <td>18 </td>
+      <td>30 </td>
+    </tr>
+    <tr>
+      <td>4 </td>
+      <td>64 </td>
+      <td>3821 </td>
+      <td>16 </td>
+      <td>17 </td>
+      <td>19 </td>
+      <td>37 </td>
+    </tr>
+    <tr>
+      <td>6 </td>
+      <td>96 </td>
+      <td>5648 </td>
+      <td>16 </td>
+      <td>17 </td>
+      <td>21 </td>
+      <td>37 </td>
+    </tr>
+  </tbody>
+</table>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/additional-info/benchmarks/index.md" title="Edit this page" class="md-source-file md-edit">
@@ -281,13 +730,13 @@ Integration
 </span>
 </div>
 </a>
-<a href="../../../docs/additional-info/benchmarks/deployment-configuration.html" title="Deployment Configuration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/additional-info/web-applications-standards.html" title="Web applications development best practices" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Deployment Configuration
+Web applications development best practices
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
