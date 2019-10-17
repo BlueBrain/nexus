@@ -39,7 +39,7 @@ There is a sandbox for you to try Nexus, it has limited resources and it is regu
 
 Blue Brain Nexus leverages scalable open source technologies, therefore limitations and performance depends heavily on the deployment setup where Nexus is running.
 
-To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](additional-info/benchmarks/data-volume-and-scenarios.md) where we were able to ingest over 2 billion triples representing 115 million resources.
+To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](additional-info/benchmarks/index.md) where we were able to ingest over 3.5 billion triples representing 120 million resources.
 
 
 ### What is a Knowledge Graph?
