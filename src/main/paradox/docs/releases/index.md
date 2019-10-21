@@ -13,6 +13,15 @@ This section of the documentation lists the significant BlueBrain Nexus releases
 
 The latest stable release is **v1.2.0** released on **04.10.2019**.
 
+## v1.2.1 (07.10.2019)
+
+This is a bugfix release, addressing two specific issues:
+
+* Fix `FileAttributesUpdated` event deserialization which was causing indexing problems for situations where the
+  deployment included a remote storage service to handle files.
+* Removed `kamon-akka-remote` dependency which was causing problems in clustered deployments due to binary compatibility
+  issues.
+
 ## v1.2.0 (04.10.2019)
 
 The release adds two major features:
