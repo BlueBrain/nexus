@@ -10,7 +10,7 @@
 
 # Identity & Access Management API
 
-The IAM API provides operations on three types of resources, `realms`, `permissions` and `acls`.
+The IAM API provides operations on four types of resources, `realms`, `permissions`, `acls` and `identities`.
 
 ## Realms 
 A realm provides with the necessary information to perform authentication against a certain [OIDC](https://en.wikipedia.org/wiki/OpenID_Connect) provider .  
