@@ -419,7 +419,8 @@ To add a worker to this swarm, run the following command:
 To add a manager to this swarm, run &#39;docker swarm join-token manager&#39; and follow the instructions.
 </code></pre>
 <h4><a href="#deployment" name="deployment" class="anchor"><span class="anchor-link"></span></a>Deployment</h4>
-<p>Download the <a href="./docker-swarm/docker-compose.yaml">Docker Compose template</a> into a directory of your choice. For instance <code>~/docker/nexus/</code>.</p>
+<p>Download the <a href="./docker-swarm/docker-compose.yaml">Docker Compose template</a> into a directory of your choice, for instance <code>~/docker/nexus/</code>.</p>
+<p>Download the <a href="./docker-swarm/nginx.conf">http proxy configuration</a> to the same directory.</p>
 <h4><a href="#starting-nexus" name="starting-nexus" class="anchor"><span class="anchor-link"></span></a>Starting Nexus</h4>
 <p>Create a <em>nexus</em> deployment with Docker Stacks:</p>
 <p>Command :</p>
@@ -466,7 +467,10 @@ Removing network nexus_default
 </code></pre><div class="callout note "><div class="callout-title">Note</div>
 <p>As no data is persisted outside the containers, <strong>everything will be lost</strong> once you remove the Nexus deployment. If you&rsquo;d like help with creating persistent volumes, feel free to contact us on our <a href="https://gitter.im/BlueBrain/nexus">Gitter channel</a>.</p></div>
 <h3><a href="#legacy-docker-compose" name="legacy-docker-compose" class="anchor"><span class="anchor-link"></span></a>Legacy: Docker Compose</h3>
-<p>While not recommended, we provide a <a href="./docker-compose/docker-compose.yaml">Docker Compose template</a> in the old <em>version 2</em> format. It comes with lower memory settings and it&rsquo;s a convenient way to quickly try out Nexus on your own computer. Download the file into a directory of your choice, for instance <code>~/docker/nexus/</code>. You can then simply run <code>docker-compose up</code> within this directory:</p>
+<p>While not recommended, we provide a <a href="./docker-compose/docker-compose.yaml">Docker Compose template</a> in the old <em>version 2</em> format. It comes with lower memory settings and it&rsquo;s a convenient way to quickly try out Nexus on your own computer.</p>
+<p>Download the file into a directory of your choice, for instance <code>~/docker/nexus/</code>.</p>
+<p>Download the <a href="./docker-swarm/nginx.conf">http proxy configuration</a> to the same directory.</p>
+<p>You can then simply run <code>docker-compose up</code> within this directory:</p>
 <p>Command :</p>
 <pre><code>docker-compose up
 </code></pre>
@@ -487,7 +491,7 @@ Attaching to nexus_iam_1, nexus_kg_1, nexus_blazegraph_1, nexus_cassandra_1, nex
 [...]
 </code></pre>
 <h3><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h3>
-<p>The provided reverse proxy (the <code>nexus-router</code> image) exposes several endpoints:</p>
+<p>The provided reverse proxy (the <code>nginx</code> image) exposes several endpoints:</p>
 <ul>
   <li><a href="http://localhost">root</a>: Nexus web interface</li>
   <li><a href="http://localhost/v1">v1</a>: API root</li>
@@ -497,7 +501,7 @@ Attaching to nexus_iam_1, nexus_kg_1, nexus_blazegraph_1, nexus_cassandra_1, nex
   <li><a href="http://localhost/elasticsearch">elasticsearch</a>: Elasticsearch endpoint</li>
   <li><a href="http://localhost/blazegraph">blazegraph</a>: Blazegraph web interface</li>
 </ul>
-<p>If you&rsquo;d like to customize the listening port or remove unnecessary endpoints, you can build your own Nginx based Docker image. See the <a href="./docker-swarm/nginx.conf">reference configuration</a>.</p>
+<p>If you&rsquo;d like to customize the listening port or remove unnecessary endpoints, you can simply modify the <code>nginx.conf</code> file.</p>
 <h2><a href="#run-nexus-locally-with-minikube" name="run-nexus-locally-with-minikube" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Minikube</h2>
 <p><a href="https://github.com/kubernetes/minikube">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your machine for users looking to try out Kubernetes or develop with it day-to-day.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>This section makes use of static assets hosted on this website; to remove the clutter please export the base of the documentation to <code>$MINI</code> env var:</p>
