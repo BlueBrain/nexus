@@ -88,8 +88,10 @@ To add a manager to this swarm, run 'docker swarm join-token manager' and follow
 
 #### Deployment
 
-Download the [Docker Compose template](./docker-swarm/docker-compose.yaml) into a directory of your choice.
-For instance `~/docker/nexus/`.
+Download the [Docker Compose template](./docker-swarm/docker-compose.yaml) into a directory of your choice, for instance
+`~/docker/nexus/`.
+
+Download the [http proxy configuration](./docker-swarm/nginx.conf) to the same directory.
 
 #### Starting Nexus
 
@@ -175,7 +177,12 @@ deployment. If you'd like help with creating persistent volumes, feel free to co
 
 While not recommended, we provide a [Docker Compose template](./docker-compose/docker-compose.yaml)
 in the old *version 2* format. It comes with lower memory settings and it's a convenient way to quickly try
-out Nexus on your own computer. Download the file into a directory of your choice, for instance `~/docker/nexus/`.
+out Nexus on your own computer.
+
+Download the file into a directory of your choice, for instance `~/docker/nexus/`.
+
+Download the [http proxy configuration](./docker-swarm/nginx.conf) to the same directory.
+
 You can then simply run `docker-compose up` within this directory:
 
 Command
@@ -205,7 +212,7 @@ Attaching to nexus_iam_1, nexus_kg_1, nexus_blazegraph_1, nexus_cassandra_1, nex
 
 ### Endpoints
 
-The provided reverse proxy (the `nexus-router` image) exposes several endpoints:
+The provided reverse proxy (the `nginx` image) exposes several endpoints:
 
 * [root](http://localhost): Nexus web interface
 * [v1](http://localhost/v1): API root
@@ -215,8 +222,8 @@ The provided reverse proxy (the `nexus-router` image) exposes several endpoints:
 * [elasticsearch](http://localhost/elasticsearch): Elasticsearch endpoint
 * [blazegraph](http://localhost/blazegraph): Blazegraph web interface
 
-If you'd like to customize the listening port or remove unnecessary endpoints, you can build your own
-Nginx based Docker image. See the [reference configuration](./docker-swarm/nginx.conf).
+If you'd like to customize the listening port or remove unnecessary endpoints, you can simply modify the `nginx.conf`
+file.
 
 ## Run Nexus locally with Minikube
 
