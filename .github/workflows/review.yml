@@ -12,4 +12,4 @@ jobs:
       with:
         java-version: adopt@1.11
     - name: Review
-      run: sbt review
+      run: sbt clean scalafmtCheck scalafmtSbtCheck paradox
