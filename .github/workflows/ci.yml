@@ -1,0 +1,46 @@
+name: Continuous Integration
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+    - uses: actions/checkout@v1
+    - uses: olafurpg/setup-scala@v5
+      with:
+        java-version: adopt@1.11
+    - name: Review
+      run: sbt clean scalafmtCheck scalafmtSbtCheck paradox
+
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    env:
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
+      BUILD_BOT_SSH_PRIVATE_KEY: ${{ secrets.BUILD_BOT_SSH_PRIVATE_KEY }}
+    steps:
+    - uses: actions/checkout@v1
+    - uses: olafurpg/setup-scala@v5
+      with:
+        java-version: adopt@1.11
+    - name: Publish
+      run: |
+        git config --global user.email "noreply@epfl.ch"
+        git config --global user.name "BBP Nexus Build Bot"
+        mkdir "$HOME/.ssh"
+        chmod 700 "$HOME/.ssh"
+        echo "$BUILD_BOT_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_rsa"
+        chmod 400 "$HOME/.ssh/id_rsa"
+        ssh-keyscan -t rsa github.com >> "$HOME/.ssh/known_hosts"
+        sbt clean makeSite ghpagesPushSite
+
