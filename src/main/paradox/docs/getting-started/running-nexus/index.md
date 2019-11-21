@@ -88,8 +88,10 @@ To add a manager to this swarm, run 'docker swarm join-token manager' and follow
 
 #### Deployment
 
-Download the [Docker Compose template](./docker-swarm/docker-compose.yaml) into a directory of your choice.
-For instance `~/docker/nexus/`.
+Download the [Docker Compose template](./docker-swarm/docker-compose.yaml) into a directory of your choice, for instance
+`~/docker/nexus/`.
+
+Download the [http proxy configuration](./docker-swarm/nginx.conf) to the same directory.
 
 #### Starting Nexus
 
