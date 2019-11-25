@@ -65,7 +65,7 @@ items:
             privileged: true
         containers:
         - name: elasticsearch
-          image: hygt/elasticsearch:7.2.0
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
           imagePullPolicy: IfNotPresent
           securityContext:
             capabilities:
@@ -85,23 +85,16 @@ items:
           - name: bootstrap.memory_lock
             value: 'true'
           - name: PROCESSORS
-            valueFrom:
-              resourceFieldRef:
-                resource: limits.cpu
+            value: '1'
+          - name: path.data
+            value: '/usr/share/elasticsearch/data'
           - name: ES_JAVA_OPTS
-            value: -Xms512m -Xmx512m
+            value: '-Xms1G -Xmx1G'
           ports:
           - containerPort: 9200
             name: http
           - containerPort: 9300
             name: transport
-          resources:
-            limits:
-              cpu: '1'
-              memory: 1Gi
-            requests:
-              cpu: 200m
-              memory: 1Gi
           livenessProbe:
             tcpSocket:
               port: transport
@@ -114,7 +107,8 @@ items:
             httpGet:
               path: /_cluster/health
               port: http
-            initialDelaySeconds: 60
+            failureThreshold: 30
+            initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 5
     volumeClaimTemplates:
