@@ -42,7 +42,7 @@ items:
       spec:
         containers:
           - name: nexus-web
-            image: 'bluebrain/nexus-web:1.1.1'
+            image: 'bluebrain/nexus-web:1.1.2'
             ports:
               - containerPort: 8000
                 protocol: TCP
@@ -58,16 +58,9 @@ items:
                 value: 'http://$(PUBLIC_IP)'
               - name: API_ENDPOINT
                 value: 'http://$(PUBLIC_IP)/v1'
-            resources:
-              limits:
-                cpu: 200m
-                memory: 200Mi
-              requests:
-                cpu: 100m
-                memory: 100Mi
             imagePullPolicy: Always
             livenessProbe:
-              failureThreshold: 3
+              failureThreshold: 5
               initialDelaySeconds: 5
               periodSeconds: 5
               successThreshold: 1

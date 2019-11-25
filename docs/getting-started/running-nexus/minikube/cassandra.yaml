@@ -69,7 +69,7 @@ items:
           - name: CASSANDRA_CLUSTER_NAME
             value: 'nexus-cluster'
           - name: MAX_HEAP_SIZE
-            value: '512m'
+            value: '1g'
           - name: HEAP_NEWSIZE
             value: '100m'
           - name: CASSANDRA_DATA_FILE_DIRECTORY
@@ -89,13 +89,6 @@ items:
             name: cql
           - containerPort: 9160
             name: thrift
-          resources:
-            requests:
-              cpu: 200m
-              memory: 1Gi
-            limits:
-              cpu: 500m
-              memory: 1Gi
           securityContext:
             capabilities:
               add:

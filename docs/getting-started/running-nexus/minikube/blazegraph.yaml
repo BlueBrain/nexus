@@ -43,26 +43,17 @@ items:
       spec:
         containers:
         - name: blazegraph
-          image: nawer/blazegraph:2.1.5
+          image: bluebrain/blazegraph-nexus:2.1.5
           imagePullPolicy: IfNotPresent
           volumeMounts:
           - name: storage
-            mountPath: /var/lib/blazegraph
+            mountPath: /var/lib/blazegraph/data
           env:
-          - name: JAVA_XMS
-            value: '512m'
-          - name: JAVA_XMX
-            value: '1024m'
+            - name: JAVA_OPTS
+              value: '-Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms1024m -Xmx2048m -XX:+UseG1GC'
           ports:
           - containerPort: 9999
             name: http
-          resources:
-            limits:
-              cpu: '1'
-              memory: 2Gi
-            requests:
-              cpu: 200m
-              memory: 1Gi
           livenessProbe:
             tcpSocket:
               port: http
@@ -74,7 +65,8 @@ items:
           readinessProbe:
             tcpSocket:
               port: http
-            initialDelaySeconds: 60
+            failureThreshold: 30
+            initialDelaySeconds: 15
             periodSeconds: 5
             timeoutSeconds: 5
         volumes:
