@@ -11,19 +11,26 @@
 	<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32x32.png">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css">
 	<link href="css/style.css" rel="stylesheet">
-	<!-- Global site tag (gtag.js) - Google Analytics -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-134702595-1"></script>
+	<!-- Google Tag Manager -->
 	<script>
 		disableTracking();
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
+		window.dataLayer = window.dataLayer || [];
+		var tag = "GTM-NDSVJ4D";
     function enableTracking(){
-      window['ga-disable-UA-134702595-1'] = false;
-      gtag('js', new Date());
-      gtag('config', 'UA-134702595-1', { 'anonymize_ip': true });
+			window['ga-disable-' + tag + '-1'] = false;
+
+			var layerVar = "dataLayer"
+			window[layerVar].push({ "gtm.start": new Date().getTime(), event: "gtm.js" });
+			var f = document.getElementsByTagName("script")[0];
+			var j = document.createElement("script");
+			var dl = layerVar != "dataLayer" ? "&l=" + layerVar : "";
+			j.async = true;
+			j.src = "https://www.googletagmanager.com/gtm.js?id=" + tag + dl;
+			f.parentNode.insertBefore(j, f);
+
     };
     function disableTracking(){
-      window['ga-disable-UA-134702595-1'] = true;
+			window['ga-disable-' + tag + '-1'] = true;
     };
   </script>
 	<!-- End Google Analytics -->
@@ -31,53 +38,57 @@
 	<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
 	<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
 	<script>
-		window.addEventListener("load", function(){
-  window.cookieconsent.initialise({
-    "palette": {
-      "popup": {
-        "background": "#252e39"
-      },
-      "button": {
-        "background": "#14a7d0"
-      }
-    },
-    "position": "top",
-    "static": true,
-    "type": "opt-out",
-    "content": {
-      "message": "By continuing your browsing on this site, you agree to the use of cookies to improve your user experience and to make statistics of visits.",
-      "dismiss": "OK",
-      "link": "Read the legal notice",
-      "href": "https://www.epfl.ch/about/overview/overview/regulations-and-guidelines/"
-    },
-    "onInitialise": function (status) {
-      var didConsent = this.hasConsented();
-      if (didConsent) {
-        enableTracking();
-      }
-      if (!didConsent) {
-        disableTracking();
-      }
-    },
-    "onStatusChange": function(status, chosenBefore) {
-      var didConsent = this.hasConsented();
-      if (didConsent) {
-        enableTracking();
-      }
-      if (!didConsent) {
-        disableTracking();
-      }
-    },
-    "onRevokeChoice": function() {
-      var type = this.options.type;
-      if (type == 'opt-in') {
-        disableTracking();
-      }
-      if (type == 'opt-out') {
-        enableTracking();
-      }
-    },
-  })});
+		window.addEventListener("load", function() {
+		window.cookieconsent.initialise({
+			palette: {
+				popup: {
+					background: "#252e39"
+				},
+				button: {
+					background: "#14a7d0"
+				}
+			},
+			position: "top",
+			static: true,
+			type: "opt-out",
+			content: {
+				message:
+					"By continuing your browsing on this site, you agree to the use of cookies to improve your user experience and to make statistics of visits.",
+				dismiss: "OK",
+				link: "Read the legal notice",
+				href:
+					"https://www.epfl.ch/about/overview/overview/regulations-and-guidelines/"
+			},
+			onInitialise: function(status) {
+				var didConsent = this.hasConsented();
+				if (didConsent) {
+					enableTracking();
+				}
+				if (!didConsent) {
+					disableTracking();
+				}
+			},
+			onStatusChange: function(status, chosenBefore) {
+				var didConsent = this.hasConsented();
+				if (didConsent) {
+					enableTracking();
+				}
+				if (!didConsent) {
+					disableTracking();
+					location.reload();
+				}
+			},
+			onRevokeChoice: function() {
+				var type = this.options.type;
+				if (type == "opt-in") {
+					disableTracking();
+				}
+				if (type == "opt-out") {
+					enableTracking();
+				}
+			}
+		});
+	});
   </script>
 	<!-- End Cookie Consent -->
 	<script defer="" src="https://use.fontawesome.com/releases/v5.0.9/js/all.js" integrity="sha384-8iPTk2s/jMVj81dnzb/iFR2sdA7u06vHJyyLlAd4snFpCl/SnyUjRrbdJsw1pGIl"
@@ -801,7 +812,7 @@
 			<div class="container row full">
 				<div class="container full legalese">
 					<div class="">
-						<p>Blue Brain Nexus is Open Source and available under the 
+						<p>Blue Brain Nexus is Open Source and available under the
 							<a href="https://opensource.org/licenses/Apache-2.0">Apache License 2.0</a>
 						</p>
 						<small>&copy; Blue Brain Project/EPFL 2005 – 2020. All rights reserved.</small>
