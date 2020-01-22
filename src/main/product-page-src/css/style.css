@@ -29,7 +29,6 @@ html {
 }
 
 body {
-  -webkit-perspective: 100vw;
   perspective: 100vw;
   min-height: 100vh;
   box-sizing: border-box;
@@ -69,11 +68,8 @@ section {
   bottom: 0;
   left: -20%;
   height: 256px;
-  -webkit-transform: rotateX(70deg);
   transform: rotateX(70deg);
-  -webkit-transform-origin: center bottom;
   transform-origin: center bottom;
-  -webkit-animation: grid 1s linear infinite;
   animation: grid 1s linear infinite;
   background-image: linear-gradient(#333 0px, #333 1px, transparent 2px),
     linear-gradient(90deg, #333 0px, #333 1px, transparent 2px);
@@ -334,9 +330,7 @@ header h1 {
 
 .slant-top-reverse::before {
   top: 0;
-  -webkit-transform: skewY(-1.5deg);
   transform: skewY(-1.5deg);
-  -webkit-transform-origin: 0 0;
   transform-origin: 0 0;
 }
 
@@ -357,12 +351,10 @@ header h1 {
   position: absolute;
   right: 0;
   z-index: -1;
-  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
 .slant-bottom {
-  -webkit-clip-path: polygon(0 10%, 100% 0%, 100% 70%, 0 100%);
   clip-path: polygon(0 10%, 100% 0%, 100% 70%, 0 100%);
 }
 
@@ -383,8 +375,6 @@ section {
   padding-bottom: 14rem;
   padding-top: 10rem;
   position: relative;
-  width: 100%;
-  height: 100%;
   color: white;
 }
 
@@ -414,16 +404,12 @@ section {
   left: 0;
   top: 0;
   z-index: 1;
-  -webkit-animation: fadeInAlmost 1s ease-in;
   animation: fadeInAlmost 1s ease-in;
-  -webkit-animation-fill-mode: forwards;
   animation-fill-mode: forwards;
 }
 
 .hero #lines {
-  -webkit-animation: fadeInBarely 1s ease-in;
   animation: fadeInBarely 1s ease-in;
-  -webkit-animation-fill-mode: forwards;
   animation-fill-mode: forwards;
 }
 
@@ -566,6 +552,12 @@ table td,
 table th {
   border: 1px solid #2c3e50;
   padding: 10px;
+}
+
+/* override consent banner css */
+.cc-banner.cc-top {
+  position: fixed !important;
+  z-index: 5 !important;
 }
 
 .up {
@@ -757,7 +749,6 @@ footer p > a {
 }
 
 img[alt="EPFL"] {
-  -webkit-filter: invert(90%);
   filter: invert(90%);
 }
 
@@ -979,7 +970,6 @@ footer form {
 button {
   cursor: pointer;
   padding: 1em;
-  -webkit-appearance: none;
   border: none;
   border-radius: 2px;
   color: grey;
@@ -1103,7 +1093,6 @@ ul.menu {
   left: 0;
   top: 0;
   background-color: #fafbfc;
-  -webkit-clip-path: polygon(0 10%, 100% 0%, 100% 70%, 0 100%);
   clip-path: polygon(0 10%, 100% 0%, 100% 70%, 0 100%);
 }
 
@@ -1112,7 +1101,6 @@ ul.menu {
   width: 1em;
   display: inline-block;
   background-image: linear-gradient(45deg, #1b75ba 0%, #44c7f4 74%);
-  -webkit-clip-path: polygon(0 0, 30% 0, 100% 100%, 70% 100%);
   clip-path: polygon(0 0, 30% 0, 100% 100%, 70% 100%);
 }
 
@@ -1123,22 +1111,15 @@ ul.menu {
 .slide-in {
   opacity: 0;
   position: relative;
-  -webkit-animation-name: slideIn;
   animation-name: slideIn;
-  -webkit-animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  -webkit-animation-iteration-count: 1;
   animation-iteration-count: 1;
-  -webkit-animation-delay: 0.2s;
   animation-delay: 0.2s;
-  -webkit-animation-duration: 0.7s;
   animation-duration: 0.7s;
-  -webkit-animation-fill-mode: forwards;
   animation-fill-mode: forwards;
 }
 
 .slide-in.first {
-  -webkit-animation-delay: 0s;
   animation-delay: 0s;
 }
 
@@ -1275,7 +1256,6 @@ ul.menu {
 }
 
 .emph.in::before {
-  -webkit-transform: scale3d(1, 1, 1);
   transform: scale3d(1, 1, 1);
   opacity: 0.5;
 }
@@ -1290,29 +1270,10 @@ ul.menu {
   width: 80%;
   height: 50%;
   opacity: 0.3;
-  -webkit-transform: scale3d(0, 1, 1);
   transform: scale3d(0, 1, 1);
-  -webkit-transform-origin: 0% 50%;
   transform-origin: 0% 50%;
-  transition: -webkit-transform 0.5s;
   transition: transform 0.5s;
-  transition: transform 0.5s, -webkit-transform 0.5s;
   transition-timing-function: cubic-bezier(0.2, 1, 0.3, 1);
-}
-
-@-webkit-keyframes emphasis {
-  0% {
-    opacity: 0;
-  }
-  20% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
 }
 
 @keyframes emphasis {
@@ -1330,25 +1291,7 @@ ul.menu {
   }
 }
 
-@-webkit-keyframes fadeInAlmost {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 0.2;
-  }
-}
-
 @keyframes fadeInAlmost {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 0.2;
-  }
-}
-
-@-webkit-keyframes fadeInBarely {
   0% {
     opacity: 0;
   }
@@ -1366,54 +1309,24 @@ ul.menu {
   }
 }
 
-@-webkit-keyframes slideIn {
-  0% {
-    opacity: 0;
-    -webkit-transform: translateY(40px);
-    transform: translateY(40px);
-  }
-  100% {
-    opacity: 1;
-    -webkit-transform: translateY(0);
-    transform: translateY(0);
-  }
-}
-
 @keyframes slideIn {
   0% {
     opacity: 0;
-    -webkit-transform: translateY(40px);
     transform: translateY(40px);
   }
   100% {
     opacity: 1;
-    -webkit-transform: translateY(0);
     transform: translateY(0);
-  }
-}
-
-@-webkit-keyframes slideIn1 {
-  0% {
-    opacity: 0;
-    -webkit-transform: translateY(40px);
-    transform: translateY(40px) rotateY(90deg);
-  }
-  100% {
-    opacity: 1;
-    -webkit-transform: translateY(0);
-    transform: translateY(0) rotateY(0deg);
   }
 }
 
 @keyframes slideIn1 {
   0% {
     opacity: 0;
-    -webkit-transform: translateY(40px);
     transform: translateY(40px) rotateY(90deg);
   }
   100% {
     opacity: 1;
-    -webkit-transform: translateY(0);
     transform: translateY(0) rotateY(0deg);
   }
 }
