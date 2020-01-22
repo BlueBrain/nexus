@@ -279,6 +279,7 @@ article {
 header {
   box-sizing: border-box;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   height: 60px;
@@ -723,10 +724,11 @@ nav a {
   display: flex;
   justify-content: flex-start;
   flex-direction: row;
+  text-align: center;
 }
 
 nav a span {
-  margin-right: 5px;
+  margin: 5px;
 }
 
 footer p {
@@ -1331,6 +1333,9 @@ ul.menu {
 }
 
 @media only screen and (max-width: 768px) {
+  .introducing .new {
+    display: none;
+  }
   .emph {
     width: auto;
   }
