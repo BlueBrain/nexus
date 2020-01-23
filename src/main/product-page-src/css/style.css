@@ -554,12 +554,6 @@ table th {
   padding: 10px;
 }
 
-/* override consent banner css */
-.cc-banner.cc-top {
-  position: fixed !important;
-  z-index: 5 !important;
-}
-
 .up {
   color: #4caf50;
 }
