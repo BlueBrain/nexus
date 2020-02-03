@@ -22,7 +22,7 @@ The services operates on 3 primary types of resources: Organizations, Projects a
 * A **@ref:[resource](./kg/kg-resources-api.md)** is rooted on a given `project`. In this level of the hierarchy, multiple types of resources can be found. Each of them has a different purpose:
   - A **@ref:[schema](./kg/kg-schemas-api.md)** is a resource that defines a set of constraints using [SHACL].
   - A **@ref:[resolvers](./kg/kg-resolvers-api.md)**: is a resource that defines the way ids are retrieved inside a project.
-  - A **@ref:[views](./kg/kg-views-api.md)**: is a resource that describes the way indexing is applied to certain resources inside a project.
+  - A **@ref:[views](./kg/views/index.md)**: is a resource that describes the way indexing is applied to certain resources inside a project.
   - A **@ref:[storage](./kg/kg-storages-api.md)**: is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.
   - A **@ref:[file](./kg/kg-files-api.md)**: is a binary resource.
   - A **@ref:[archive](./kg/kg-archives-api.md)**: is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).

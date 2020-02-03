@@ -1,0 +1,9 @@
+{
+    "query": {
+        "term": {
+            "name": {
+                "value": "Muse"
+            }
+        }
+    }
+}
