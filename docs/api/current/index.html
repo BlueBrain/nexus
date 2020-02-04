@@ -177,7 +177,14 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/api/current/kg/kg-schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/api/current/kg/kg-resolvers-api.html" class="page">Resolvers</a></li>
-      <li><a href="../../../docs/api/current/kg/kg-views-api.html" class="page">Views</a></li>
+      <li><a href="../../../docs/api/current/kg/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../../docs/api/current/kg/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../../docs/api/current/kg/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../../docs/api/current/kg/views/composite-view-api.html" class="page">CompositeView</a></li>
+        <li><a href="../../../docs/api/current/kg/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../../docs/api/current/kg/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+      </ul></li>
       <li><a href="../../../docs/api/current/kg/kg-storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../docs/api/current/kg/kg-files-api.html" class="page">Files</a></li>
       <li><a href="../../../docs/api/current/kg/kg-archives-api.html" class="page">Archives</a></li>
@@ -264,7 +271,7 @@ BlueBrain/nexus
   <li>A <strong><a href="kg/kg-resources-api.html">resource</a></strong> is rooted on a given <code>project</code>. In this level of the hierarchy, multiple types of resources can be found. Each of them has a different purpose:</li>
   <li>A <strong><a href="kg/kg-schemas-api.html">schema</a></strong> is a resource that defines a set of constraints using <a href="https://www.w3.org/TR/shacl/">SHACL</a>.</li>
   <li>A <strong><a href="kg/kg-resolvers-api.html">resolvers</a></strong>: is a resource that defines the way ids are retrieved inside a project.</li>
-  <li>A <strong><a href="kg/kg-views-api.html">views</a></strong>: is a resource that describes the way indexing is applied to certain resources inside a project.</li>
+  <li>A <strong><a href="kg/views/index.html">views</a></strong>: is a resource that describes the way indexing is applied to certain resources inside a project.</li>
   <li>A <strong><a href="kg/kg-storages-api.html">storage</a></strong>: is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.</li>
   <li>A <strong><a href="kg/kg-files-api.html">file</a></strong>: is a binary resource.</li>
   <li>A <strong><a href="kg/kg-archives-api.html">archive</a></strong>: is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).</li>
