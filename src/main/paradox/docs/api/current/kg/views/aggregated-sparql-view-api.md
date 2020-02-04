@@ -8,7 +8,7 @@ If the caller does not have the permission `views/query` on all the projects def
 
 **AggregateSparqlView payload**
 
-```
+```json
 {
   "@id": "{someid}",
   "@type": "AggregateSparqlView",

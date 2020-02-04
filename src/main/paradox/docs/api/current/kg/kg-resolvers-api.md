@@ -35,7 +35,8 @@ The scope of the resolution is the current project where the resource resides. I
 This resolver gets automatically created when the project is created and it cannot be modified.
 
 **InProject resolver payload**
-```
+
+```json
 {
     "@id": "nxv:InProject",
     "@type": [ "InProject", "Resolver" ],
@@ -54,7 +55,8 @@ The scope of the resolution is the collections of projects `P` defined on the re
 
 
 **CrossProject resolver payload**
-```
+
+```json
 {
   "@id": "{someid}",
   "@type": ["Resolver", "CrossProject"],
