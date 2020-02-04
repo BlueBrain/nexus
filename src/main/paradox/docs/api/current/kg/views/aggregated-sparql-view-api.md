@@ -1,0 +1,41 @@
+# AggregateSparqlView
+
+This view is an aggregate of SparqlViews. The view itself does not create any index, but it references the already existing indices of the linked SparqlViews.
+
+When performing queries on the `sparql` endpoint, this view will query all the underlying SparqlViews and then aggregate the results. The order how the results across the different SparqlView gets merged it is not deterministic.
+
+If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset of indices (or none) will be selected, respecting the defined permissions.
+
+**AggregateSparqlView payload**
+
+```
+{
+  "@id": "{someid}",
+  "@type": "AggregateSparqlView",
+  "views": [
+    {
+        "project": "{project}",
+        "viewId": "{viewId}"
+    },
+    ...
+  ]
+}
+```
+
+where...
+ 
+- `{project}`: String - the project, defined as `{org_label}/{project_label}`, where the `{viewId}` is located.
+- `{viewId}`: Iri - The view @id value to be aggregated.
+
+@@@ note
+
+This approach to aggregate data from Sparql does not circumvend the fact that each namespace is isolated. Neither it deals with sorting or filtering in an aggregated manner.
+
+For that reason, path traversals will not work out of the scope of the single namespace (even using an aggregate view).
+
+Ordering and DISTINCT selection won't work either, due to the fact that the query is executed on each namespace independently.
+
+In order to have a more robust Sparql aggregation support, please make us of CompositeView.
+
+@@@
+

@@ -1,0 +1,7 @@
+{
+  "query": {
+    "term": {
+      "_deprecated": true
+    }
+  }
+}

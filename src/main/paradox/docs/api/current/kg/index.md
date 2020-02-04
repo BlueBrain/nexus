@@ -2,7 +2,7 @@
 
 * [Schemas](kg-schemas-api.md)
 * [Resolvers](kg-resolvers-api.md)
-* [Views](kg-views-api.md)
+* [Views](views/index.md)
 * [Storages](kg-storages-api.md)
 * [Files](kg-files-api.md)
 * [Archives](kg-archives-api.md)
@@ -28,7 +28,7 @@ A resolver is a resource which defines the way ids are retrieved inside a projec
 
 A view is a resource which defines the way indexing is applied to certain resources inside a project.
 
-@ref:[Operations on views](kg-views-api.md)
+@ref:[Operations on views](views/index.md)
 
 ## Storages
 
