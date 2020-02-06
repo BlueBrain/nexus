@@ -222,6 +222,17 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#aggregatesparqlview" class="header">AggregateSparqlView</a>
+  <ul>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#payload" class="header">Payload</a></li>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#endpoints" class="header">Endpoints</a>
+    <ul>
+      <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#sparql-query" class="header">SPARQL query</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -235,6 +246,26 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#aggregatesparqlview" class="header">AggregateSparqlView</a>
+  <ul>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#payload" class="header">Payload</a></li>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#endpoints" class="header">Endpoints</a>
+    <ul>
+      <li><a href="../../../../../docs/api/current/kg/views/aggregated-sparql-view-api.html#sparql-query" class="header">SPARQL query</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
@@ -242,7 +273,7 @@ BlueBrain/nexus
 <p>This view is an aggregate of SparqlViews. The view itself does not create any index, but it references the already existing indices of the linked SparqlViews.</p>
 <p>When performing queries on the <code>sparql</code> endpoint, this view will query all the underlying SparqlViews and then aggregate the results. The order how the results across the different SparqlView gets merged it is not deterministic.</p>
 <p>If the caller does not have the permission <code>views/query</code> on all the projects defined on the aggregated view, only a subset of indices (or none) will be selected, respecting the defined permissions.</p>
-<p><strong>AggregateSparqlView payload</strong></p>
+<h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
 <pre><code>{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: &quot;AggregateSparqlView&quot;,
@@ -264,6 +295,51 @@ BlueBrain/nexus
 <p>For that reason, path traversals will not work out of the scope of the single namespace (even using an aggregate view).</p>
 <p>Ordering and DISTINCT selection won&rsquo;t work either, due to the fact that the query is executed on each namespace independently.</p>
 <p>In order to have a more robust SPARQL aggregation support, please make us of CompositeView.</p></div>
+<h2><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h2>
+<p>The following sections describe the endpoints that are specific to an AggregateSparqlView.</p>
+<p>The general view endpoints are described on the <a href="index.html#endpoints">parent page</a>.</p>
+<h3><a href="#sparql-query" name="sparql-query" class="anchor"><span class="anchor-link"></span></a>SPARQL query</h3>
+<p>Provides aggregated search functionality across all the <code>SparqlView</code>s referenced from the target <code>view_id</code>.</p>
+<pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/sparql
+  {query}
+</code></pre>
+<p>or</p>
+<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
+</code></pre>
+<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns">SPARQL documentation</a></p>
+<p>The <code>Content-Type</code> HTTP header for POST request is <code>application/sparql-query</code>.</p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/graph/sparql&quot; -d \
+&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/sparql-view-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;head&quot;: {
+    &quot;vars&quot;: [
+      &quot;s&quot;
+    ]
+  },
+  &quot;results&quot;: {
+    &quot;bindings&quot;: [
+      {
+        &quot;s&quot;: {
+          &quot;type&quot;: &quot;uri&quot;,
+          &quot;value&quot;: &quot;http://example.com/myview&quot;
+        }
+      },
+      {
+        &quot;s&quot;: {
+          &quot;type&quot;: &quot;uri&quot;,
+          &quot;value&quot;: &quot;http://example.com/other&quot;
+        }
+      }
+    ]
+  }
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/sparql-view-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/kg/views/aggregated-sparql-view-api.md" title="Edit this page" class="md-source-file md-edit">

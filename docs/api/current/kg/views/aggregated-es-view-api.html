@@ -222,6 +222,17 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#aggregateelasticsearchview" class="header">AggregateElasticSearchView</a>
+  <ul>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#payload" class="header">Payload</a></li>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#endpoints" class="header">Endpoints</a>
+    <ul>
+      <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#search-documents" class="header">Search Documents</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -235,6 +246,26 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#aggregateelasticsearchview" class="header">AggregateElasticSearchView</a>
+  <ul>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#payload" class="header">Payload</a></li>
+    <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#endpoints" class="header">Endpoints</a>
+    <ul>
+      <li><a href="../../../../../docs/api/current/kg/views/aggregated-es-view-api.html#search-documents" class="header">Search Documents</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
@@ -243,7 +274,7 @@ BlueBrain/nexus
 <p>When performing queries on the <code>_search</code> endpoint, this view will make use of the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html">multi-index</a> query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.</p>
 <p>If the caller does not have the permission <code>views/query</code> on all the projects defined on the aggregated view, only a subset of indices (or none) will be selected, respecting the defined permissions.</p>
 <p><img src="../../assets/views/aggregate-view.png" alt="Aggregate ElasticSearchView" title="Aggregate ElasticSearchView" /></p>
-<p><strong>AggregateElasticSearchView payload</strong></p>
+<h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
 <pre><code>{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: &quot;AggregateElasticSearchView&quot;,
@@ -261,6 +292,82 @@ BlueBrain/nexus
   <li><code>{project}</code>: String - The project, defined as <code>{org_label}/{project_label}</code>, where the <code>{viewId}</code> is located.</li>
   <li><code>{viewId}</code>: Iri - The view @id value to be aggregated.</li>
 </ul>
+<h2><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h2>
+<p>The following sections describe the endpoints that are specific to an AggregateElasticSearchView.</p>
+<p>The general view endpoints are described on the <a href="index.html#endpoints">parent page</a>.</p>
+<h3><a href="#search-documents" name="search-documents" class="anchor"><span class="anchor-link"></span></a>Search Documents</h3>
+<p>Provides aggregated search functionality across all the <code>ElasticSearchView</code>s referenced from the target <code>view_id</code>.</p>
+<pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/_search
+  {...}
+</code></pre>
+<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch documentation</a></p>
+<p>The string <code>documents</code> is used as a prefix of the default ElasticSearch <code>view_id</code></p>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/_search&quot; -d \
+&#39;{
+  &quot;query&quot;: {
+    &quot;term&quot;: {
+      &quot;_deprecated&quot;: true
+    }
+  }
+}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/elastic-view-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Payload</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;query&quot;: {
+    &quot;term&quot;: {
+      &quot;_deprecated&quot;: true
+    }
+  }
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/elastic-view-search-payload.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;_shards&quot;: {
+    &quot;failed&quot;: 0,
+    &quot;skipped&quot;: 0,
+    &quot;successful&quot;: 0,
+    &quot;total&quot;: 0
+  },
+  &quot;hits&quot;: {
+    &quot;hits&quot;: [
+      {
+        &quot;_score&quot;: 1.2039728,
+        &quot;_id&quot;: &quot;http://example.com/myview&quot;,
+        &quot;_index&quot;: &quot;kg_v1_803da242-d510-4e1a-a12d-d0e0b7018a41_684bd815-9273-46f4-ac1c-0383d4a98254_1&quot;,
+        &quot;_source&quot;: {
+          &quot;@id&quot;: &quot;http://example.com/myview&quot;,
+          &quot;@type&quot;: [
+            &quot;https://bluebrain.github.io/nexus/vocabulary/View&quot;,
+            &quot;https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView&quot;,
+            &quot;https://bluebrain.github.io/nexus/vocabulary/Alpha&quot;
+          ],
+          &quot;_original_source&quot;: &quot;{\&quot;mapping\&quot;:\&quot;{\\\&quot;dynamic\\\&quot;:false,\\\&quot;properties\\\&quot;:{\\\&quot;@id\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;keyword\\\&quot;},\\\&quot;@type\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;keyword\\\&quot;},\\\&quot;name\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;keyword\\\&quot;},\\\&quot;number\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;long\\\&quot;},\\\&quot;bool\\\&quot;:{\\\&quot;type\\\&quot;:\\\&quot;boolean\\\&quot;}}}\&quot;,\&quot;_uuid\&quot;:\&quot;89dd9858-cf87-4c46-94c2-24da0fcae0aa\&quot;,\&quot;@context\&quot;:\&quot;https://bluebrain.github.io/nexus/contexts/view\&quot;,\&quot;@type\&quot;:[\&quot;View\&quot;,\&quot;ElasticSearchView\&quot;],\&quot;includeMetadata\&quot;:true,\&quot;sourceAsText\&quot;:false}&quot;,
+          &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/incoming&quot;,
+          &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview/outgoing&quot;,
+          &quot;_self&quot;: &quot;https://nexus.example.com/v1/schemas/myorg/myproj/nxv:myview&quot;,
+          &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/view&quot;,
+          &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+          &quot;_rev&quot;: 6,
+          &quot;_deprecated&quot;: true,
+          &quot;_createdAt&quot;: &quot;2018-09-18T16:39:22.748Z&quot;,
+          &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+          &quot;_updatedAt&quot;: &quot;2018-09-18T17:10:22.748Z&quot;,
+          &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+        },
+        &quot;_type&quot;: &quot;doc&quot;
+      }
+    ],
+    &quot;max_score&quot;: 1.2039728,
+    &quot;total&quot;: 1
+  },
+  &quot;timed_out&quot;: false,
+  &quot;took&quot;: 11
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/elastic-view-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/kg/views/aggregated-es-view-api.md" title="Edit this page" class="md-source-file md-edit">
