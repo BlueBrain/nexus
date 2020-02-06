@@ -29,13 +29,13 @@ where...
 
 @@@ note
 
-This approach to aggregate data from Sparql does not circumvend the fact that each namespace is isolated. Neither it deals with sorting or filtering in an aggregated manner.
+This approach to aggregate data from SPARQL does not circumvent the fact that each namespace is isolated. Neither it deals with sorting or filtering in an aggregated manner.
 
 For that reason, path traversals will not work out of the scope of the single namespace (even using an aggregate view).
 
 Ordering and DISTINCT selection won't work either, due to the fact that the query is executed on each namespace independently.
 
-In order to have a more robust Sparql aggregation support, please make us of CompositeView.
+In order to have a more robust SPARQL aggregation support, please make us of CompositeView.
 
 @@@
 
