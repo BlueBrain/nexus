@@ -6,7 +6,7 @@ When performing queries on the `sparql` endpoint, this view will query all the u
 
 If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset of indices (or none) will be selected, respecting the defined permissions.
 
-**AggregateSparqlView payload**
+## Payload
 
 ```
 {
@@ -38,4 +38,36 @@ Ordering and DISTINCT selection won't work either, due to the fact that the quer
 In order to have a more robust SPARQL aggregation support, please make us of CompositeView.
 
 @@@
+
+
+## Endpoints
+
+The following sections describe the endpoints that are specific to an AggregateSparqlView.
+
+The general view endpoints are described on the [parent page](index.html#endpoints).
+
+### SPARQL query
+
+Provides aggregated search functionality across all the `SparqlView`s referenced from the target `view_id`.
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/sparql
+  {query}
+```
+or
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
+```
+
+In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+
+The `Content-Type` HTTP header for POST request is `application/sparql-query`.
+
+**Example**
+
+Request
+:   @@snip [sparql-view-search.sh](../../assets/views/sparql-view-search.sh)
+
+Response
+:   @@snip [sparql-view-search.json](../../assets/views/sparql-view-search.json)
 

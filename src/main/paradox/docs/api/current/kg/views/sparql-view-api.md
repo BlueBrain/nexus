@@ -65,16 +65,17 @@ The following sections describe the endpoints that are specific to an SparqlView
 
 The general view endpoints are described on the [parent page](index.html#endpoints).
 
-#### SPARQL query
+### SPARQL query
 
 Provides search functionality on the `SparqlView` content.
 
 ```
-POST /v1/views/{org_label}/{project_label}/graph/sparql
+POST /v1/views/{org_label}/{project_label}/{view_id}/sparql
   {query}
 ```
+or
 ```
-GET /v1/views/{org_label}/{project_label}/graph/sparql?query={query}
+GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
 ```
 
 In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
@@ -104,7 +105,7 @@ Request
 Response
 :   @@snip [view-fetched.json](../../assets/views/view-statistics.json)
 
-where:
+where...
 
  - `totalEvents` - total number of events in the project
  - `processedEvents` - number of events that have been considered by the view
@@ -114,11 +115,3 @@ where:
  - `lastEventDateTime` - timestamp of the last event in the project
  - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
  - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
-
-## Views internals
-
-When an asynchronous process that reads the view events from the Primary Store gets triggered, a new Blazegraph namespace gets created. 
-
-After that, for every new even received, the following pipeline gets executed:
-
-![SparqlView internals](../../assets/views/sparql_pipeline.png "SparqlView internals")

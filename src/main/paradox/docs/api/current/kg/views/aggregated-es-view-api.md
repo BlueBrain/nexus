@@ -8,7 +8,7 @@ If the caller does not have the permission `views/query` on all the projects def
 
 ![Aggregate ElasticSearchView](../../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
 
-**AggregateElasticSearchView payload**
+## Payload
 
 ```
 {
@@ -28,3 +28,32 @@ where...
  
 - `{project}`: String - The project, defined as `{org_label}/{project_label}`, where the `{viewId}` is located.
 - `{viewId}`: Iri - The view @id value to be aggregated.
+
+## Endpoints
+
+The following sections describe the endpoints that are specific to an AggregateElasticSearchView.
+
+The general view endpoints are described on the [parent page](index.html#endpoints).
+
+### Search Documents
+
+Provides aggregated search functionality across all the `ElasticSearchView`s referenced from the target `view_id`.
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/_search
+  {...}
+```
+The supported payload is defined on the [ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html)
+
+The string `documents` is used as a prefix of the default ElasticSearch `view_id`
+
+**Example**
+
+Request
+:   @@snip [elastic-view-search.sh](../../assets/views/elastic-view-search.sh)
+
+Payload
+:   @@snip [elastic-view-payload.json](../../assets/views/elastic-view-search-payload.json)
+
+Response
+:   @@snip [elastic-view-search.json](../../assets/views/elastic-view-search.json)
