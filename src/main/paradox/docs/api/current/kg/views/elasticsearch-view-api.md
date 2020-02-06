@@ -128,13 +128,13 @@ Request
 Response
 :   @@snip [view-fetched.json](../../assets/views/view-statistics.json)
 
-where:
+where...
 
- - `totalEvents` - total number of events in the project
- - `processedEvents` - number of events that have been considered by the view
- - `remainingEvents` - number of events that remain to be considered by the view
- - `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the view)
- - `evaluatedEvents` - number of events that have been used to update an index
- - `lastEventDateTime` - timestamp of the last event in the project
- - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
- - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+- `totalEvents` - total number of events in the project
+- `processedEvents` - number of events that have been considered by the view
+- `remainingEvents` - number of events that remain to be considered by the view
+- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the view)
+- `evaluatedEvents` - number of events that have been used to update an index
+- `lastEventDateTime` - timestamp of the last event in the project
+- `lastProcessedEventDateTime` - timestamp of the last event processed by the view
+- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
