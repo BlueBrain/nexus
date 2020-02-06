@@ -260,10 +260,10 @@ BlueBrain/nexus
   <li><code>{project}</code>: String - the project, defined as <code>{org_label}/{project_label}</code>, where the <code>{viewId}</code> is located.</li>
   <li><code>{viewId}</code>: Iri - The view @id value to be aggregated.</li>
 </ul><div class="callout note "><div class="callout-title">Note</div>
-<p>This approach to aggregate data from Sparql does not circumvend the fact that each namespace is isolated. Neither it deals with sorting or filtering in an aggregated manner.</p>
+<p>This approach to aggregate data from SPARQL does not circumvent the fact that each namespace is isolated. Neither it deals with sorting or filtering in an aggregated manner.</p>
 <p>For that reason, path traversals will not work out of the scope of the single namespace (even using an aggregate view).</p>
 <p>Ordering and DISTINCT selection won&rsquo;t work either, due to the fact that the query is executed on each namespace independently.</p>
-<p>In order to have a more robust Sparql aggregation support, please make us of CompositeView.</p></div>
+<p>In order to have a more robust SPARQL aggregation support, please make us of CompositeView.</p></div>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/kg/views/aggregated-sparql-view-api.md" title="Edit this page" class="md-source-file md-edit">

@@ -233,7 +233,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#endpoints" class="header">Endpoints</a>
     <ul>
-      <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#sparql-query" class="header">SparQL query</a></li>
+      <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#sparql-query" class="header">SPARQL query</a></li>
       <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
     </ul></li>
     <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#views-internals" class="header">Views internals</a></li>
@@ -267,7 +267,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#endpoints" class="header">Endpoints</a>
     <ul>
-      <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#sparql-query" class="header">SparQL query</a></li>
+      <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#sparql-query" class="header">SPARQL query</a></li>
       <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
     </ul></li>
     <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#views-internals" class="header">Views internals</a></li>
@@ -326,12 +326,15 @@ BlueBrain/nexus
 <h2><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h2>
 <p>The following sections describe the endpoints that are specific to an SparqlView.</p>
 <p>The general view endpoints are described on the <a href="index.html#endpoints">parent page</a>.</p>
-<h4><a href="#sparql-query" name="sparql-query" class="anchor"><span class="anchor-link"></span></a>SparQL query</h4>
+<h4><a href="#sparql-query" name="sparql-query" class="anchor"><span class="anchor-link"></span></a>SPARQL query</h4>
 <p>Provides search functionality on the <code>SparqlView</code> content.</p>
 <pre><code>POST /v1/views/{org_label}/{project_label}/graph/sparql
-  &quot;...&quot;
+  {query}
 </code></pre>
-<p>The supported payload is defined on the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns">SparQL documentation</a> The <code>Content-Type</code> HTTP header for this request is <code>application/sparql-query</code>.</p>
+<pre><code>GET /v1/views/{org_label}/{project_label}/graph/sparql?query={query}
+</code></pre>
+<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns">SPARQL documentation</a></p>
+<p>The <code>Content-Type</code> HTTP header for POST request is <code>application/sparql-query</code>.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
