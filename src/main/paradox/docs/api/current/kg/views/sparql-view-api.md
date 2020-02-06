@@ -65,16 +65,21 @@ The following sections describe the endpoints that are specific to an SparqlView
 
 The general view endpoints are described on the [parent page](index.html#endpoints).
 
-#### SparQL query
+#### SPARQL query
 
 Provides search functionality on the `SparqlView` content.
 
 ```
 POST /v1/views/{org_label}/{project_label}/graph/sparql
-  "..."
+  {query}
 ```
-The supported payload is defined on the [SparQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
-The `Content-Type` HTTP header for this request is `application/sparql-query`.
+```
+GET /v1/views/{org_label}/{project_label}/graph/sparql?query={query}
+```
+
+In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+
+The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
 **Example**
 

@@ -410,19 +410,24 @@ Response
 :   @@snip [composite-view-es-search.json](../../assets/views/composite-view-es-search.json)
 
 
-### Sparql query in a projection
+### SPARQL query in a projection
 
 ```
 POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/sparql
-  "..."
+  {query}
 ```
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/sparql?query={query}
+```
+
+In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
 
 where `{projection_id}` is the @id value of the target `Sparql` projection.
 
 The special character `_` allows to perform a search in every `Sparql` projection on the current view.
 
-The supported payload is defined on the [SparQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
-The `Content-Type` HTTP header for this request is `application/sparql-query`.
+The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
 
 **Example**
