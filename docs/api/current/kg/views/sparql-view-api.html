@@ -289,7 +289,7 @@ BlueBrain/nexus
 <p>The last stage takes the resource, generated through the pipeline steps, and extracts its RDF triples to store them in a Blazegraph namespace.</p>
 <p><a href="../../assets/views/sparql_pipeline.png"><img src="../../assets/views/sparql_pipeline.png" alt="SparqlView pipeline" title="SparqlView pipeline" /></a></p>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: &quot;SparqlView&quot;,
   &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
@@ -310,7 +310,7 @@ BlueBrain/nexus
 <h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
 <p>The following example creates an Sparql view that will index resources not deprecated and with tag <code>mytag</code>.</p>
 <p>The resulting RDF triples will contain the resources metadata.</p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myview&quot;,
   &quot;@type&quot;: [
     &quot;SparqlView&quot;

@@ -312,7 +312,7 @@ BlueBrain/nexus
 </ul>
 <p>This resolver gets automatically created when the project is created and it cannot be modified.</p>
 <p><strong>InProject resolver payload</strong></p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
     &quot;@id&quot;: &quot;nxv:InProject&quot;,
     &quot;@type&quot;: [ &quot;InProject&quot;, &quot;Resolver&quot; ],
     &quot;priority&quot;: {priority},
@@ -326,7 +326,7 @@ BlueBrain/nexus
   <li>Resource <code>A</code> can reference resource&rsquo;s context <code>B</code> (inside <code>@context</code>) as long as resource <code>B</code> is located on some of the projects from the collection <code>P</code> and as long as <code>I</code> have <code>resources/read</code> permissions on the schema <code>B</code> project.</li>
 </ul>
 <p><strong>CrossProject resolver payload</strong></p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: [&quot;Resolver&quot;, &quot;CrossProject&quot;],
   &quot;resourceTypes&quot;: [&quot;{resourceType}&quot;, ...],

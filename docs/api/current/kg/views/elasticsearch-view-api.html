@@ -289,7 +289,7 @@ BlueBrain/nexus
 <p>The last stage takes the JSON document, generated through the pipeline steps, and stores it as a Document in an ElasticSearch index</p>
 <p><a href="../../assets/views/elasticsearch_pipeline.png"><img src="../../assets/views/elasticsearch_pipeline.png" alt="ElasticSearchView pipeline" title="ElasticSearchView pipeline" /></a></p>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: &quot;ElasticSearchView&quot;,
   &quot;resourceSchemas&quot;: [ &quot;{resourceSchema}&quot;, ...],
@@ -315,7 +315,7 @@ BlueBrain/nexus
 <h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
 <p>The following example creates an ElasticSearch view that will index resources validated against the schema with id <code>https://bluebrain.github.io/nexus/schemas/myschema</code>. If a resource is deprecated, it won&rsquo;t be selected for indexing.</p>
 <p>The resulting ElasticSearch Documents fields will be indexed according to the provided mapping rules and they won&rsquo;t include the resource metadata fields.</p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/myview&quot;,
   &quot;@type&quot;: [
     &quot;ElasticSearchView&quot;
@@ -348,7 +348,6 @@ BlueBrain/nexus
   ],
   &quot;resourceTypes&quot;: []
 }
-
 </code></pre>
 <h2><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h2>
 <p>The following sections describe the endpoints that are specific to an ElasticSearchView.</p>

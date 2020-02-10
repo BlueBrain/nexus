@@ -322,7 +322,7 @@ BlueBrain/nexus
 <h3><a href="#projecteventstream" name="projecteventstream" class="anchor"><span class="anchor-link"></span></a>ProjectEventStream</h3>
 <p>This source will read events in a streaming fashion from the current project where the view gets created.</p>
 <p>The events will be consumed by the projections stage.</p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
    &quot;sources&quot;: [
       {
          &quot;@id&quot;: &quot;{sourceId},
@@ -345,7 +345,7 @@ BlueBrain/nexus
 <h3><a href="#crossprojecteventstream" name="crossprojecteventstream" class="anchor"><span class="anchor-link"></span></a>CrossProjectEventStream</h3>
 <p>This source will read events in a streaming fashion from any project in the current Nexus deployment. The specified list of identities will be used to retrieve the resources from the project. If the project don&rsquo;t have the <code>resources/read</code> permissions, the source will be ignored.</p>
 <p>The events will be consumed by the projections stage.</p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
    &quot;sources&quot;: [
       {
          &quot;@id&quot;: &quot;{sourceId}&quot;,
@@ -372,7 +372,7 @@ BlueBrain/nexus
 <h3><a href="#remoteprojecteventstream" name="remoteprojecteventstream" class="anchor"><span class="anchor-link"></span></a>RemoteProjectEventStream</h3>
 <p>This source will read events in a streaming fashion from any project in a remote Nexus deployment.</p>
 <p>The events will be then consumed by the projections stage.</p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
    &quot;sources&quot;: [
       {
          &quot;@id&quot;: &quot;{sourceId}&quot;,
@@ -416,7 +416,7 @@ BlueBrain/nexus
   <li>Convert the resulting RDF triples into JSON using the provided JSON-LD context.</li>
   <li>Stores the resulting JSON as a Document in an ElasticSearch index.</li>
 </ol>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
    &quot;projections&quot;: [
       {
          &quot;@id&quot;: &quot;{projectionId}&quot;,
@@ -453,7 +453,7 @@ BlueBrain/nexus
   <li>Transform the resource by executing an Sparql construct query against the intermediate Sparql space.</li>
   <li>Stores the resulting RDF Triple in a Blazegraph namespace.</li>
 </ol>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
    &quot;projections&quot;: [
       {
          &quot;@id&quot;: &quot;{projectionId}&quot;,
@@ -480,7 +480,7 @@ BlueBrain/nexus
   <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/">Sparql Query</a> - Defines the Sparql query to execute against the intermediate Sparql space for each target resource.</li>
 </ul>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: &quot;CompositeView&quot;,
   &quot;sources&quot;: [ _source_, ...],
@@ -504,7 +504,7 @@ BlueBrain/nexus
 <p>The ElasticSearch projection <code>http://music.com/bands</code> is only going to query the Sparql space with the provided query when the current resource in the pipeline has the type <code>http://music.com/Band</code>.</p>
 <p>The ElasticSearch projection <code>http://music.com/albums</code> is only going to query the Sparql space with the provided query when the current resource in the pipeline has the type <code>http://music.com/Album</code>.</p>
 <p>The view is going to be restarted every 10 minutes if there are new resources in any of the sources since the last time the view was restarted. This allows to deal with partial graph visibility issues.</p>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@type&quot;: &quot;CompositeView&quot;,
   &quot;sources&quot;: [
     {

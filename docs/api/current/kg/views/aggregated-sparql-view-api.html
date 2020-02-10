@@ -274,7 +274,7 @@ BlueBrain/nexus
 <p>When performing queries on the <code>sparql</code> endpoint, this view will query all the underlying SparqlViews and then aggregate the results. The order how the results across the different SparqlView gets merged it is not deterministic.</p>
 <p>If the caller does not have the permission <code>views/query</code> on all the projects defined on the aggregated view, only a subset of indices (or none) will be selected, respecting the defined permissions.</p>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
-<pre><code>{
+<pre class="prettyprint"><code class="language-json">{
   &quot;@id&quot;: &quot;{someid}&quot;,
   &quot;@type&quot;: &quot;AggregateSparqlView&quot;,
   &quot;views&quot;: [
