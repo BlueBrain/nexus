@@ -19,7 +19,7 @@ The last stage takes the resource, generated through the pipeline steps, and ext
 
 ## Payload
 
-```
+```json
 {
   "@id": "{someid}",
   "@type": "SparqlView",
@@ -46,7 +46,7 @@ The following example creates an Sparql view that will index resources not depre
 
 The resulting RDF triples will contain the resources metadata.
 
-```
+```json
 {
   "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
   "@type": [

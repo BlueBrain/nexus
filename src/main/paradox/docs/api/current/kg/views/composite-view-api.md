@@ -24,7 +24,7 @@ This source will read events in a streaming fashion from the current project whe
 
 The events will be consumed by the projections stage.
 
-```
+```json
 {
    "sources": [
       {
@@ -52,7 +52,7 @@ The specified list of identities will be used to retrieve the resources from the
 
 The events will be consumed by the projections stage.
 
-```
+```json
 {
    "sources": [
       {
@@ -83,7 +83,7 @@ This source will read events in a streaming fashion from any project in a remote
 
 The events will be then consumed by the projections stage.
 
-```
+```json
 {
    "sources": [
       {
@@ -134,7 +134,7 @@ This projection executes the following steps:
 3. Convert the resulting RDF triples into JSON using the provided JSON-LD context.
 4. Stores the resulting JSON as a Document in an ElasticSearch index.
 
-```
+```json
 {
    "projections": [
       {
@@ -174,7 +174,7 @@ This projection executes the following steps:
 2. Transform the resource by executing an Sparql construct query against the intermediate Sparql space.
 3. Stores the resulting RDF Triple in a Blazegraph namespace.
 
-```
+```json
 {
    "projections": [
       {
@@ -205,7 +205,7 @@ where...
 
 ## Payload
 
-```
+```json
 {
   "@id": "{someid}",
   "@type": "CompositeView",
@@ -238,7 +238,7 @@ The ElasticSearch projection `http://music.com/albums` is only going to query th
 
 The view is going to be restarted every 10 minutes if there are new resources in any of the sources since the last time the view was restarted. This allows to deal with partial graph visibility issues.
 
-```
+```json
 {
   "@type": "CompositeView",
   "sources": [

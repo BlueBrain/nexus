@@ -18,7 +18,7 @@ The last stage takes the JSON document, generated through the pipeline steps, an
 
 ## Payload
 
-```
+```json
 {
   "@id": "{someid}",
   "@type": "ElasticSearchView",
@@ -49,7 +49,7 @@ The following example creates an ElasticSearch view that will index resources va
 
 The resulting ElasticSearch Documents fields will be indexed according to the provided mapping rules and they won't include the resource metadata fields.
 
-```
+```json
 {
   "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
   "@type": [
@@ -83,7 +83,6 @@ The resulting ElasticSearch Documents fields will be indexed according to the pr
   ],
   "resourceTypes": []
 }
-
 ```
 
 ## Endpoints
