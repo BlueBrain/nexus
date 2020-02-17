@@ -1,7 +1,7 @@
 @@@ index
 
-* [v1.2 To v1.3 Migration](v1.2-to-v1.3-migration.md)
 * [v1.3 Release Notes](v1.3-release-notes.md)
+* [v1.2 To v1.3 Migration](v1.2-to-v1.3-migration.md)
 * [v1.2 Release Notes](v1.2-release-notes.md)
 * [v1.1 Release Notes](v1.1-release-notes.md)
 * [v1.0 To v1.1 Migration](v1.0-to-v1.1-migration.md)
@@ -30,7 +30,12 @@ Summary of the significant changes:
 * Allow querying SparqlViews using the GET http method;
 * Exposed a new view subresource `.../offset` that presents the current view offset, or collection of offsets in case
   of CompositeViews. The offset has the same value used with Server Sent Events as means of keeping track of the current
-  event replay progress. Deleting this resource with instruct the system to rebuild the indices of the selected view. 
+  event replay progress. Deleting this resource with instruct the system to rebuild the indices of the selected view;
+* Ordering results when doing listings can now be controlled with the repeated `sort` query param that accepts
+  ElasticSearch document field names (`...?sort=_createdAt&sort=-_createdBy`). The ordering defaults to ascending, but
+  can be switched for descending by prefixing the `-` character to the field name.
+* New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new
+  configuration yields better full text search results.
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.3-release-notes.md).
 
