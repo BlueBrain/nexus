@@ -107,11 +107,27 @@ Response
 
 where...
 
- - `totalEvents` - total number of events in the project
- - `processedEvents` - number of events that have been considered by the view
- - `remainingEvents` - number of events that remain to be considered by the view
- - `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the view)
- - `evaluatedEvents` - number of events that have been used to update an index
- - `lastEventDateTime` - timestamp of the last event in the project
- - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
- - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+- `totalEvents` - total number of events in the project
+- `processedEvents` - number of events that have been considered by the view
+- `remainingEvents` - number of events that remain to be considered by the view
+- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the view)
+- `evaluatedEvents` - number of events that have been used to update an index
+- `lastEventDateTime` - timestamp of the last event in the project
+- `lastProcessedEventDateTime` - timestamp of the last event processed by the view
+- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+ 
+### Restart view
+
+This endpoint restarts the view indexing process. It does not delete the created namespaces but it overrides the resource GRAPH when going through the event log.
+
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
+```
+
+**Example**
+
+Request
+:   @@snip [view-restart.sh](../../assets/views/view-restart.sh)
+
+Response
+:   @@snip [view-restart.json](../../assets/views/view-restart.json)

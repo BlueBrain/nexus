@@ -1,0 +1,21 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/offset.json",
+  "@type": "CompositeViewOffset",
+  "values": [
+    {
+      "@type": "NoOffset",
+      "sourceId": "http://music.com/sources/local",
+      "projectionId": "http://music.com/albums"
+    },
+    {
+      "@type": "NoOffset",
+      "sourceId": "http://music.com/sources/songs",
+      "projectionId": "http://music.com/albums"
+    },
+    {
+      "@type": "NoOffset",
+      "sourceId": "http://music.com/sources/albums",
+      "projectionId": "http://music.com/albums"
+    }
+  ]
+}
