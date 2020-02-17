@@ -28,7 +28,7 @@ Summary of the significant changes:
 * Added the ability to generate tabular views on the data available to a specific project (using any SparqlView defined
   in the project - default SparqlView or AggregateSparqlViews) by means of Studios and Dashboards in Nexus Web;
 * Allow querying SparqlViews using the GET http method;
-* Exposed a new view subresource `.../offset` that exposes the current view offset, or collection of offsets in case
+* Exposed a new view subresource `.../offset` that presents the current view offset, or collection of offsets in case
   of CompositeViews. The offset has the same value used with Server Sent Events as means of keeping track of the current
   event replay progress. Deleting this resource with instruct the system to rebuild the indices of the selected view. 
 
