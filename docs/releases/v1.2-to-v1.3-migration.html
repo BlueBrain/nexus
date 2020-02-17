@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Additional Information · Blue Brain Nexus</title>
+<title>v1.2 To v1.3 Migration · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Additional Information
+v1.2 To v1.3 Migration
 </span>
 </div>
 </div>
@@ -203,14 +203,14 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="active page">v1.2 To v1.3 Migration</a></li>
     <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
     <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
   </ul></li>
   <li><a href="../../docs/faq.html" class="page">Frequently asked questions</a></li>
-  <li><a href="../../docs/additional-info/index.html" class="active page">Additional Information</a>
+  <li><a href="../../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
     <li><a href="../../docs/additional-info/sdk.html" class="page">SDKs for Nexus</a></li>
     <li><a href="../../docs/additional-info/architecture/index.html" class="page">System Architecture</a>
@@ -240,11 +240,38 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#additional-information" name="additional-information" class="anchor"><span class="anchor-link"></span></a>Additional Information</h1>
-<p>Everything you want to know about the technical details regarding how Blue Brain Nexus works and how to build your own applications on top of it.</p>
+<h1><a href="#v1-2-to-v1-3-migration" name="v1-2-to-v1-3-migration" class="anchor"><span class="anchor-link"></span></a>v1.2 To v1.3 Migration</h1>
+<p>As part of the v1.3 release <a href="../api/current/kg/views/composite-view-api.html">CompositeViews</a> were introduced requiring a change in the data model used to record the indexing progress of a View. The change is not backwards compatible, it requires dropping two Cassandra tables and a rebuilding all indices.</p>
+<p>The migration steps are as follows:</p>
+<ol>
+  <li>Stop the 3 services: iam, admin and kg.</li>
+  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html">Backup</a> the  cassandra store.</li>
+  <li>Delete all ElasticSearch indices:
+    <pre><code>curl -XDELETE &#39;http://{elasticsearch_host}/kg_*&#39;
+</code></pre>
+  </li>
+  <li>
+    <p>Delete all BlazeGraph namespaces:</p>
+    <pre><code>for i in `curl -s &#39;http://{blazegraph_host}/blazegraph/namespace?describe-each-named-graph=false&#39; | grep sparqlEndpoint | grep -o --color &quot;rdf:resource=\&quot;[^\&quot;]*&quot; | sed &#39;s/rdf:resource=&quot;//&#39; | sed &#39;s#/sparql$##&#39; | grep -v kb | grep -v LBS`
+   do curl -X DELETE &quot;$i&quot;
+done
+</code></pre>
+  </li>
+  <li>
+    <p>Drop the <code>kg.projections_progress</code> and the <code>kg.projections_failures</code> tables:</p>
+    <pre><code>drop table kg.projections_progress;
+drop table kg.projections_failures;
+</code></pre>
+  </li>
+  <li>
+  <p>Deploy the new service images (tag <code>1.3</code>): <a href="https://hub.docker.com/r/bluebrain/nexus-iam">iam</a>,  <a href="https://hub.docker.com/r/bluebrain/nexus-admin">admin</a> and <a href="https://hub.docker.com/r/bluebrain/nexus-kg">kg</a>;  make sure to start the iam, admin and kg services one by one in order.</p></li>
+</ol>
+<p>Once the services are restarted with the new images all ElasticSearch and BlazeGraph indices will be rebuilt automatically. The progress for each view can be tracked either in Nexus Web or using the <a href="../api/current/kg/views/elasticsearch-view-api.html#fetch-statistics">statistics endpoint</a> for each view:</p>
+<pre><code>    GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
+</code></pre>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/additional-info/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/releases/v1.2-to-v1.3-migration.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -260,7 +287,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/faq.html" title="Frequently asked questions" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/v1.3-release-notes.html" title="v1.3 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -269,17 +296,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Frequently asked questions
+v1.3 Release Notes
 </span>
 </div>
 </a>
-<a href="../../docs/additional-info/sdk.html" title="SDKs for Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.2-release-notes.html" title="v1.2 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-SDKs for Nexus
+v1.2 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

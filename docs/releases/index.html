@@ -202,6 +202,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="active page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
     <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
@@ -226,6 +228,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-3-0-18-02-2020-" class="header">v1.3.0 (18.02.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-2-1-07-10-2019-" class="header">v1.2.1 (07.10.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-2-0-04-10-2019-" class="header">v1.2.0 (04.10.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-2-24-09-2019-" class="header">v1.1.2 (24.09.2019)</a></li>
@@ -255,6 +258,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-3-0-18-02-2020-" class="header">v1.3.0 (18.02.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-2-1-07-10-2019-" class="header">v1.2.1 (07.10.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-2-0-04-10-2019-" class="header">v1.2.0 (04.10.2019)</a></li>
     <li><a href="../../docs/releases/index.html#v1-1-2-24-09-2019-" class="header">v1.1.2 (24.09.2019)</a></li>
@@ -273,7 +277,19 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.2.1</strong> released on <strong>07.10.2019</strong>.</p>
+<p>The latest stable release is <strong>v1.3.0</strong> released on <strong>18.02.2020</strong>.</p>
+<h2><a href="#v1-3-0-18-02-2020-" name="v1-3-0-18-02-2020-" class="anchor"><span class="anchor-link"></span></a>v1.3.0 (18.02.2020)</h2>
+<p>The release is backwards compatible with v1.x.y releases in terms of API. If you&rsquo;re upgrading from v1.2.x please visit the <a href="v1.2-to-v1.3-migration.html">migration instructions</a>.</p>
+<p>Summary of the significant changes:</p>
+<ul>
+  <li>Introduced a <a href="../api/current/kg/views/composite-view-api.html">new type of view</a> (_CompositeView_, currently as a  Beta feature) that expands on the indexing capabilities of the system through the ability to consume multiple sources  (multiple projects in the same Nexus deployment and projects in different Nexus deployments);</li>
+  <li>Added the ability to generate tabular views on the data available to a specific project (using any SparqlView defined  in the project - default SparqlView or AggregateSparqlViews) by means of Studios and Dashboards in Nexus Web;</li>
+  <li>Allow querying SparqlViews using the GET http method;</li>
+  <li>Exposed a new view subresource <code>.../offset</code> that presents the current view offset, or collection of offsets in case  of CompositeViews. The offset has the same value used with Server Sent Events as means of keeping track of the current  event replay progress. Deleting this resource with instruct the system to rebuild the indices of the selected view;</li>
+  <li>Ordering results when doing listings can now be controlled with the repeated <code>sort</code> query param that accepts  ElasticSearch document field names (<code>...?sort=_createdAt&amp;sort=-_createdBy</code>). The ordering defaults to ascending, but  can be switched for descending by prefixing the <code>-</code> character to the field name.</li>
+  <li>New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new  configuration yields better full text search results.</li>
+</ul>
+<p>A detailed list of changes included in the release can be found in the <a href="v1.3-release-notes.html">release notes</a>.</p>
 <h2><a href="#v1-2-1-07-10-2019-" name="v1-2-1-07-10-2019-" class="anchor"><span class="anchor-link"></span></a>v1.2.1 (07.10.2019)</h2>
 <p>This is a bugfix release, addressing two specific issues:</p>
 <ul>
@@ -410,13 +426,13 @@ Error Signaling
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.2-release-notes.html" title="v1.2 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.3-release-notes.html" title="v1.3 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.2 Release Notes
+v1.3 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

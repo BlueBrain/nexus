@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Additional Information · Blue Brain Nexus</title>
+<title>v1.3 Release Notes · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Additional Information
+v1.3 Release Notes
 </span>
 </div>
 </div>
@@ -202,7 +202,7 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="active page">v1.3 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
     <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
@@ -210,7 +210,7 @@ BlueBrain/nexus
     <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
   </ul></li>
   <li><a href="../../docs/faq.html" class="page">Frequently asked questions</a></li>
-  <li><a href="../../docs/additional-info/index.html" class="active page">Additional Information</a>
+  <li><a href="../../docs/additional-info/index.html" class="page">Additional Information</a>
   <ul>
     <li><a href="../../docs/additional-info/sdk.html" class="page">SDKs for Nexus</a></li>
     <li><a href="../../docs/additional-info/architecture/index.html" class="page">System Architecture</a>
@@ -224,6 +224,16 @@ BlueBrain/nexus
   </ul></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.3-release-notes.html#v1-3-release-notes" class="header">v1.3 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#compositeviews" class="header">CompositeViews</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#studio" class="header">Studio</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#view-offsets" class="header">View offsets</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#other-changes" class="header">Other changes</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -237,14 +247,100 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.3-release-notes.html#v1-3-release-notes" class="header">v1.3 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#compositeviews" class="header">CompositeViews</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#studio" class="header">Studio</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#view-offsets" class="header">View offsets</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#other-changes" class="header">Other changes</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#additional-information" name="additional-information" class="anchor"><span class="anchor-link"></span></a>Additional Information</h1>
-<p>Everything you want to know about the technical details regarding how Blue Brain Nexus works and how to build your own applications on top of it.</p>
+<h1><a href="#v1-3-release-notes" name="v1-3-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.3 Release Notes</h1>
+<p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.2 but requires rebuilding all indices. Please visit the <a href="v1.2-to-v1.3-migration.html">migration instructions</a> for the exact steps necessary to upgrade.</p>
+<h2><a href="#compositeviews" name="compositeviews" class="anchor"><span class="anchor-link"></span></a>CompositeViews</h2>
+<p>CompositeViews are yet another type of view introduced (currently in Beta) to enable new indexing capabilities: </p>
+<ul>
+  <li>ability to collect data to be indexed from multiple sources (current project, other projects, remote Nexus  deployments);</li>
+  <li>ability to apply transformations to the indexed data by means of <code>SPARQL CONSTRUCT</code> queries that are executed on the  entire RDF graph generated from all data sources;</li>
+  <li>ability to project data to multiple indices;</li>
+  <li>ability to query multiple projections of the same type;</li>
+  <li>ability to query the entire RDF graph generated from all data sources.</li>
+</ul>
+<p>The name stems from its unique characteristic of aggregating data from multiple sources and managing multiple projections.</p>
+<p><a href="../api/current/assets/views/compositeview_pipeline.png"><img src="../api/current/assets/views/compositeview_pipeline.png" alt="CompositeView pipeline" title="CompositeView pipeline" /></a></p>
+<p>A CompositeView can define several sources of data of different types:</p>
+<ul>
+  <li>ProjectEventStream: the event log of the project where the CompositeView is defined</li>
+  <li>CrossProjectEventStream: the event log of an arbitrary project within the same Nexus deployment</li>
+  <li>RemoteProjectEventStream: the event log of an arbitrary project within a different Nexus deployment</li>
+</ul>
+<p>The sources are consumed as a collection of event streams, either from the primary store or via Server Sent Events in the case of the RemoteProjectEventStream. Each event is either exchanged with the resource for which it was emitted or dropped (if the filters defined in the originating source exclude it). The resource is then transformed into an RDF graph and stored in a temporary namespace of BlazeGraph.</p>
+<p>Projections are then executed by querying the temporary namespace via the <code>SPARQL CONSTRUCT</code> queries defined as part of their configuration. These queries allow constructing an arbitrary RDF graph by traversing the temporary one starting from the IRI node representing the originating resource id (the system recognizes the <code>{resource_id}</code> token in the provided query and replaces it with the corresponding value).</p>
+<p>CompositeViews allow defining multiple projections; the current supported types are:</p>
+<ul>
+  <li>ElasticSearchProjection: data is projected as documents in an ElasticSearch index</li>
+  <li>SparqlProjection: data is projected as an RDF named graph in a BlazeGraph namespace</li>
+</ul>
+<p>Projections include filtering configuration to allow resources of different types or constrained by different schemas to be indexed separately. An obvious use case is to index resources of different shapes in different ElasticSearch indices with appropriate mapping definitions for each variation.</p>
+<p>The complete configuration options can be found in the <a href="../api/current/kg/views/composite-view-api.html">api reference</a>.</p>
+<h2><a href="#studio" name="studio" class="anchor"><span class="anchor-link"></span></a>Studio</h2>
+<p>This feature (currently in beta) allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with javascript, data curators can format the presentation of the query results any way they like.</p>
+<h2><a href="#view-offsets" name="view-offsets" class="anchor"><span class="anchor-link"></span></a>View offsets</h2>
+<p>Views now expose <code>offset</code> as a sub-resource allowing the retrieval of the last consumed event id. The event id values are the same as the ones presented via <a href="../api/current/kg/kg-resources-api.html#resources-server-sent-events">Server Sent Events</a>.</p>
+<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/offset
+</code></pre>
+<p>An example response:</p>
+<pre class="prettyprint"><code class="language-json">{
+    &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/offset.json&quot;,
+    &quot;@type&quot;: &quot;TimeBasedOffset&quot;,
+    &quot;instant&quot;: &quot;2020-02-14T09:31:41.400Z&quot;,
+    &quot;value&quot;: &quot;ceaf0580-4f0c-11ea-98d9-dff6b2cf55b4&quot;
+}
+</code></pre>
+<p>Deleting the <code>offset</code> sub-resource instructs the system to rebuild the corresponding index by restarting the event replay and indexing process.</p>
+<pre><code>DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
+</code></pre>
+<p>The system acknowledges the command by providing a <code>NoOffset</code> response:</p>
+<pre class="prettyprint"><code class="language-json">{
+    &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/offset.json&quot;,
+    &quot;@type&quot;: &quot;NoOffset&quot;
+}
+</code></pre>
+<p>In the case of CompositeViews where the entire process handles multiple offsets at the same time (a product of sources and projections) dedicated endpoints have been added to select a specific offset or perform a listing:</p>
+<pre><code>/v1/views/{org_label}/{project_label}/{view_id}/sources/{source_id}/offset
+/v1/views/{org_label}/{project_label}/{view_id}/sources/_/offset
+/v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/offset
+/v1/views/{org_label}/{project_label}/{view_id}/projections/_/offset
+</code></pre>
+<p>These endpoints also accept deletion instructing the system to restart only a part of the process. For example, executing a deletion on the following endpoint will cause the system to only rebuild the projections without having to restart the collection of resources in the temporary RDF graph:</p>
+<pre><code>DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/_/offset
+</code></pre>
+<h2><a href="#other-changes" name="other-changes" class="anchor"><span class="anchor-link"></span></a>Other changes</h2>
+<p>The SparqlViews can now also <a href="../api/current/kg/views/sparql-view-api.html#sparql-query">be queried</a> using the GET HTTP method by providing the query string in the <code>query</code> parameter:</p>
+<pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
+</code></pre>
+<p>Sorting of results can be controlled now via the repeatable <code>sort</code> query parameter. The parameter accepts an ElasticSearch document field name to be used for sorting the result set ascending. The order can be reversed by prefixing the field name with a <code>-</code> character. The <code>sort</code> parameter can be repeated multiple times to specify multiple fields to be used for sorting. For example, the following call will return all resources in the specified project ordered by the user that made the last change in each resource and then by last updated time descending (more recent updates first).</p>
+<pre><code>GET /v1/resources/{org_label}/{project_label}?sort=_updatedBy&amp;sort=-_updatedAt
+</code></pre>
+<p>New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new index configuration yields better full text search results.</p>
+<p>Additional reported issues were <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+milestone%3Av1.3.0+is%3Aclosed+label%3Abug">fixed</a>.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/additional-info/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/releases/v1.3-release-notes.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -260,7 +356,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/faq.html" title="Frequently asked questions" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -269,17 +365,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Frequently asked questions
+Releases
 </span>
 </div>
 </a>
-<a href="../../docs/additional-info/sdk.html" title="SDKs for Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.2-to-v1.3-migration.html" title="v1.2 To v1.3 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-SDKs for Nexus
+v1.2 To v1.3 Migration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
