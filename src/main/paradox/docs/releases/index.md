@@ -1,5 +1,7 @@
 @@@ index
 
+* [v1.2 To v1.3 Migration](v1.2-to-v1.3-migration.md)
+* [v1.3 Release Notes](v1.3-release-notes.md)
 * [v1.2 Release Notes](v1.2-release-notes.md)
 * [v1.1 Release Notes](v1.1-release-notes.md)
 * [v1.0 To v1.1 Migration](v1.0-to-v1.1-migration.md)
@@ -11,7 +13,26 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.2.1** released on **07.10.2019**.
+The latest stable release is **v1.3.0** released on **18.02.2020**.
+
+## v1.3.0 (18.02.2020)
+
+The release is backwards compatible with v1.x.y releases in terms of API. If you're upgrading from v1.2.x please visit
+the @ref:[migration instructions](v1.2-to-v1.3-migration.md).
+
+Summary of the significant changes:
+
+* Introduced a @ref:[new type of view](../api/current/kg/views/composite-view-api.md) (_CompositeView_, currently as a
+  Beta feature) that expands on the indexing capabilities of the system through the ability to consume multiple sources
+  (multiple projects in the same Nexus deployment and projects in different Nexus deployments);
+* Added the ability to generate tabular views on the data available to a specific project (using any SparqlView defined
+  in the project - default SparqlView or AggregateSparqlViews) by means of Studios and Dashboards in Nexus Web;
+* Allow querying SparqlViews using the GET http method;
+* Exposed a new view subresource `.../offset` that exposes the current view offset, or collection of offsets in case
+  of CompositeViews. The offset has the same value used with Server Sent Events as means of keeping track of the current
+  event replay progress. Deleting this resource with instruct the system to rebuild the indices of the selected view. 
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.3-release-notes.md).
 
 ## v1.2.1 (07.10.2019)
 
@@ -26,8 +47,8 @@ This is a bugfix release, addressing two specific issues:
 
 The release adds two major features:
  
-- endpoint to fetch the original payload of a resource.
-- ability to retrieve multiple resources in one request as an archive. 
+* endpoint to fetch the original payload of a resource.
+* ability to retrieve multiple resources in one request as an archive. 
  
 The API is backwards compatible with v1.1.
 
