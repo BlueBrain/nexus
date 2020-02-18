@@ -193,7 +193,7 @@ Response
 ## List resources
 
 ```
-GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&schema={schema}&q={search}
+GET /v1/resources/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&schema={schema}&q={search}&sort={sort}
 ```
                                           
 where...
@@ -207,6 +207,7 @@ where...
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
 - `{schema}`: Iri - can be used to filter the resulting resources based on the conformant schema
 - `{search}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided string
+- `{sort}`: String - can be used to sort resources based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
 
 
 **Example**

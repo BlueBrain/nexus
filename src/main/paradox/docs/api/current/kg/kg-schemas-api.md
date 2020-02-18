@@ -192,7 +192,7 @@ Response
 ## List schemas
 
 ```
-GET /v1/schemas/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}
+GET /v1/schemas/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}&sort={sort}
 ```
                                             
 where...
@@ -205,6 +205,7 @@ where...
 - `{createdBy}`: Iri - can be used to filter the resulting schemas based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting schemas based on the person which performed the last update
 - `{search}`: String - can be provided to select only the schemas in the collection that have attribute values matching (containing) the provided string
+- `{sort}`: String - can be used to sort schemas based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
 
 
 **Example**
