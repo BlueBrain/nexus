@@ -64,7 +64,7 @@ A source defines from where to retrieve the resources. It is the input for the i
 A projection defines the type of indexing and the transformations to apply to the data.
 
 Composite views are useful when aggregating data across multiple projects (local or remote) using multiple sources. 
-Afterwards, by defining multiple projections, the data can be transformed to the client needs.
+Afterwards, by defining multiple projections, the data can be adapted to the client needs.
 
 @ref:[More information](composite-view-api.md)
 
@@ -226,7 +226,7 @@ Response
 ### List views
 
 ```
-GET /v1/views/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}
+GET /v1/views/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}&sort={sort}
 ```
 
 where...
@@ -235,10 +235,11 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting views based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting views based on their revision value
-- `{type}`: Iri - can be used to filter the resulting views based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting views based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value
 - `{createdBy}`: Iri - can be used to filter the resulting views based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting views based on the person which performed the last update
 - `{search}`: String - can be provided to select only the views in the collection that have attribute values matching (containing) the provided string
+- `{sort}`: String - can be used to sort views based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
 
 
 **Example**

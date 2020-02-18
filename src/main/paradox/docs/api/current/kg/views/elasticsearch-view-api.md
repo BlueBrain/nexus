@@ -137,3 +137,20 @@ where...
 - `lastEventDateTime` - timestamp of the last event in the project
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+
+
+### Restart view
+
+This endpoint restarts the view indexing process. It does not delete the created indices but it overrides the resource Document when going through the event log.
+
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
+```
+
+**Example**
+
+Request
+:   @@snip [view-restart.sh](../../assets/views/view-restart.sh)
+
+Response
+:   @@snip [view-restart.json](../../assets/views/view-restart.json)

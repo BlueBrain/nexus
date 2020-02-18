@@ -1,13 +1,51 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/search.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/progress.json"
+    "https://bluebrain.github.io/nexus/contexts/offset.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
   ],
-  "_total": 1,
+  "_total": 6,
   "_results": [
     {
-      "@type": "NoProgress"
+      "@type": "TimeBasedOffset",
+      "sourceId": "http://music.com/sources/albums",
+      "projectionId": "http://music.com/albums",
+      "instant": "2020-02-14T09:31:41.400Z",
+      "value": "ceaf0580-4f0c-11ea-98d9-dff6b2cf55b4"
+    },
+    {
+      "@type": "TimeBasedOffset",
+      "sourceId": "http://music.com/sources/albums",
+      "projectionId": "http://music.com/bands",
+      "instant": "2020-02-14T09:31:41.400Z",
+      "value": "ceaf0580-4f0c-11ea-98d9-dff6b2cf55b4"
+    },
+    {
+      "@type": "TimeBasedOffset",
+      "sourceId": "http://music.com/sources/local",
+      "projectionId": "http://music.com/albums",
+      "instant": "2020-02-14T09:32:44.650Z",
+      "value": "f46234a0-4f0c-11ea-98d9-dff6b2cf55b4"
+    },
+    {
+      "@type": "TimeBasedOffset",
+      "sourceId": "http://music.com/sources/local",
+      "projectionId": "http://music.com/bands",
+      "instant": "2020-02-14T09:32:44.650Z",
+      "value": "f46234a0-4f0c-11ea-98d9-dff6b2cf55b4"
+    },
+    {
+      "@type": "TimeBasedOffset",
+      "sourceId": "http://music.com/sources/songs",
+      "projectionId": "http://music.com/albums",
+      "instant": "2020-01-24T13:41:42.177Z",
+      "value": "412b3110-3eaf-11ea-8415-9b8aa8c49858"
+    },
+    {
+      "@type": "TimeBasedOffset",
+      "sourceId": "http://music.com/sources/songs",
+      "projectionId": "http://music.com/bands",
+      "instant": "2020-01-24T13:41:42.177Z",
+      "value": "412b3110-3eaf-11ea-8415-9b8aa8c49858"
     }
   ]
 }

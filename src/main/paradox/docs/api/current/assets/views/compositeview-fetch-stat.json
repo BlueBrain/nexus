@@ -1,11 +1,11 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/statistics.json",
-  "@type": "https://bluebrain.github.io/nexus/vocabulary/CompositeViewStatistics",
+  "@type": "CompositeViewStatistics",
   "totalEvents": 34,
   "processedEvents": 34,
-  "evaluatedEvents": 4,
+  "evaluatedEvents": 34,
   "remainingEvents": 0,
-  "discardedEvents": 30,
+  "discardedEvents": 0,
   "failedEvents": 0,
   "delayInSeconds": 0,
   "lastEventDateTime": "2020-02-14T09:32:44.650Z",
@@ -13,45 +13,42 @@
   "values": [
     {
       "@type": "ViewStatistics",
-      "sourceId": "http://music.com/sources/albums",
-      "projectionId": "http://music.com/albums",
-      "totalEvents": 9,
-      "processedEvents": 9,
-      "evaluatedEvents": 4,
-      "remainingEvents": 0,
-      "discardedEvents": 5,
-      "failedEvents": 0,
-      "delayInSeconds": 0,
-      "lastEventDateTime": "2020-02-14T09:31:41.400Z",
-      "lastProcessedEventDateTime": "2020-02-14T09:31:41.400Z"
-    },
-    {
-      "@type": "ViewStatistics",
       "sourceId": "http://music.com/sources/songs",
-      "projectionId": "http://music.com/albums",
       "totalEvents": 17,
       "processedEvents": 17,
-      "evaluatedEvents": 0,
+      "evaluatedEvents": 17,
       "remainingEvents": 0,
-      "discardedEvents": 17,
+      "discardedEvents": 0,
       "failedEvents": 0,
       "delayInSeconds": 0,
       "lastEventDateTime": "2020-01-24T13:41:42.177Z",
       "lastProcessedEventDateTime": "2020-01-24T13:41:42.177Z"
     },
     {
-      "@type": "ViewStatistics",
+      "@type": "hViewStatistics",
       "sourceId": "http://music.com/sources/local",
-      "projectionId": "http://music.com/albums",
       "totalEvents": 8,
       "processedEvents": 8,
-      "evaluatedEvents": 0,
+      "evaluatedEvents": 8,
       "remainingEvents": 0,
-      "discardedEvents": 8,
+      "discardedEvents": 0,
       "failedEvents": 0,
       "delayInSeconds": 0,
       "lastEventDateTime": "2020-02-14T09:32:44.650Z",
       "lastProcessedEventDateTime": "2020-02-14T09:32:44.650Z"
+    },
+    {
+      "@type": "ViewStatistics",
+      "sourceId": "http://music.com/sources/albums",
+      "totalEvents": 9,
+      "processedEvents": 9,
+      "evaluatedEvents": 9,
+      "remainingEvents": 0,
+      "discardedEvents": 0,
+      "failedEvents": 0,
+      "delayInSeconds": 0,
+      "lastEventDateTime": "2020-02-14T09:31:41.400Z",
+      "lastProcessedEventDateTime": "2020-02-14T09:31:41.400Z"
     }
   ]
 }

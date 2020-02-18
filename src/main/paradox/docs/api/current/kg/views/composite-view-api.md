@@ -14,15 +14,15 @@ The last stage takes the resulting output from the pipeline and index it on the 
 
 ## Sources
 
-A source defines from where to retrieve the resources. It is the input of the pipeline.
+A source defines the location where to retrieve the resources. It is the input of the pipeline.
 
 There are 3 types of sources available.
 
 ### ProjectEventStream
 
-This source will read events in a streaming fashion from the current project where the view gets created.
+This source reads events in a streaming fashion from the current project event log.
 
-The events will be consumed by the projections stage.
+The events are offered to the projections stage.
 
 ```json
 {
@@ -47,10 +47,11 @@ where...
 
 ### CrossProjectEventStream
 
-This source will read events in a streaming fashion from any project in the current Nexus deployment.
-The specified list of identities will be used to retrieve the resources from the project. If the project don't have the `resources/read` permissions, the source will be ignored.
+This source reads events in a streaming fashion from the defined project event log in the current Nexus deployment.
 
-The events will be consumed by the projections stage.
+The specified list of identities will be used to retrieve the resources from the project. The target project must have `resources/read` permissions in order to read events.
+
+The events are offered to the projections stage.
 
 ```json
 {
@@ -79,9 +80,9 @@ where...
 
 ### RemoteProjectEventStream
 
-This source will read events in a streaming fashion from any project in a remote Nexus deployment.
+This source reads events in a streaming fashion from the defined project event log in a remote Nexus deployment.
 
-The events will be then consumed by the projections stage.
+The events are offered to the projections stage.
 
 ```json
 {
@@ -121,11 +122,11 @@ After the events are gathered from each source, the following steps are executed
 
 ## Projections
 
-A projection defines the type of indexing and the transformations to apply to the data. It is the output of the pipeline.
+A projection defines the type of indexing and a query to transform the data. It is the output of the pipeline.
 
 There are 2 types of projections available
 
-### ElasticSearch
+### ElasticSearchProjection
 
 This projection executes the following steps:
 
@@ -139,7 +140,7 @@ This projection executes the following steps:
    "projections": [
       {
          "@id": "{projectionId}",
-         "@type": "ElasticSearch",
+         "@type": "ElasticSearchProjection",
          "mapping": _elasticsearch mapping_,
          "query": "{query}",
          "context": _context_,
@@ -166,7 +167,7 @@ where...
 - `{query}`: [Sparql Query](https://www.w3.org/TR/rdf-sparql-query/) - Defines the Sparql query to execute against the intermediate Sparql space for each target resource.
 - `_context_`: Json - the JSON-LD context value applied to the query results.
 
-### Sparql
+### SparqlProjection
 
 This projection executes the following steps:
 
@@ -179,7 +180,7 @@ This projection executes the following steps:
    "projections": [
       {
          "@id": "{projectionId}",
-         "@type": "Sparql",
+         "@type": "SparqlProjection",
          "query": "{query}",
          "resourceSchemas": [ "{resourceSchema}", ...],
          "resourceTypes": [ "{resourceType}", ...],
@@ -208,7 +209,7 @@ where...
 ```json
 {
   "@id": "{someid}",
-  "@type": "CompositeView",
+  "@type": ["CompositeView", "Beta"],
   "sources": [ _source_, ...],
   "projections": [ _projection_, ...],
   "rebuildStrategy": {
@@ -240,7 +241,7 @@ The view is going to be restarted every 10 minutes if there are new resources in
 
 ```json
 {
-  "@type": "CompositeView",
+  "@type": ["CompositeView", "Beta"],
   "sources": [
     {
       "@id": "http://music.com/sources/local",
@@ -266,7 +267,7 @@ The view is going to be restarted every 10 minutes if there are new resources in
   "projections": [
     {
       "@id": "http://music.com/bands",
-      "@type": "ElasticSearch",
+      "@type": "ElasticSearchProjection",
       "mapping": {
         "properties": {
           "@type": {
@@ -332,7 +333,7 @@ The view is going to be restarted every 10 minutes if there are new resources in
     },
     {
       "@id": "http://music.com/albums",
-      "@type": "ElasticSearch",
+      "@type": "ElasticSearchProjection",
       "mapping": {
         "properties": {
           "@type": {
@@ -393,7 +394,26 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}
 
 where `{projection_id}` is the @id value of the target `ElasticSearch` projection. 
 
-The special character `_` allows to perform a search in every `ElasticSearch` projection on the current view.
+The supported payload is defined on the [ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html)
+
+
+**Example**
+
+Request
+:   @@snip [composite-view-es-id-search.sh](../../assets/views/composite-view-es-id-search.sh)
+
+Payload
+:   @@snip [composite-view-es-payload.json](../../assets/views/composite-view-es-search-payload.json)
+
+Response
+:   @@snip [composite-view-es-search.json](../../assets/views/composite-view-es-search.json)
+
+### Search Documents in all projections
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/_search
+  {...}
+```
 
 The supported payload is defined on the [ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html)
 
@@ -425,7 +445,29 @@ In both endpoints, `{query}` is defined by the [SPARQL documentation](https://ww
 
 where `{projection_id}` is the @id value of the target `Sparql` projection.
 
-The special character `_` allows to perform a search in every `Sparql` projection on the current view.
+The `Content-Type` HTTP header for POST request is `application/sparql-query`.
+
+
+**Example**
+
+Request
+:   @@snip [composite-view-sparql-search.sh](../../assets/views/composite-view-sparql-id-search.sh)
+
+Response
+:   @@snip [composite-view-sparql-search.json](../../assets/views/composite-view-sparql-search.json)
+
+### SPARQL query in all projections
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql
+  {query}
+```
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql?query={query}
+```
+
+In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
 
 The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
@@ -433,13 +475,39 @@ The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [composite-view-sparql-search.sh](../../assets/views/composite-view-sparql-search.sh)
+:   @@snip [composite-view-sparql-projections-search.sh](../../assets/views/composite-view-sparql-projections-search.sh)
+
+Response
+:   @@snip [composite-view-sparql-search.json](../../assets/views/composite-view-sparql-search.json)
+
+### SPARQL query in the intermediate space
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/sparql
+  {query}
+```
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
+```
+
+In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+
+The `Content-Type` HTTP header for POST request is `application/sparql-query`.
+
+
+**Example**
+
+Request
+:   @@snip [composite-view-intermediate-sparql-search.sh](../../assets/views/composite-view-intermediate-sparql-search.sh)
 
 Response
 :   @@snip [composite-view-sparql-search.json](../../assets/views/composite-view-sparql-search.json)
 
 
-### Fetch sources statistics
+### Fetch statistics
+
+This endpoint displays statistical information about the intermediate Sparql space.
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
@@ -448,23 +516,86 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-stats.sh](../../assets/views/compositeview-fetch-stats.sh)
+:   @@snip [compositeview-fetch-intermediate-stats.sh](../../assets/views/compositeview-fetch-intermediate-stats.sh)
 
 Response
 :   @@snip [compositeview-fetch-stats.json](../../assets/views/compositeview-fetch-stats.json)
 
 where:
 
- - `totalEvents` - total number of events in the project
- - `processedEvents` - number of events that have been considered by the view
- - `remainingEvents` - number of events that remain to be considered by the view
- - `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the view)
- - `evaluatedEvents` - number of events that have been used to update an index
- - `lastEventDateTime` - timestamp of the last event in the project
- - `lastProcessedEventDateTime` - timestamp of the last event processed by the view
- - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+- `totalEvents` - sum of total number of events from each source
+- `processedEvents` - sum of number of events that have been considered by each source
+- `remainingEvents` - sum of number of events that remain to be considered by each source
+- `discardedEvents` - sum of number of events that have been discarded by each source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)
+- `evaluatedEvents` - sum of number of events that have been used to update the intermediate Sparql space of each source
+- `lastEventDateTime` - timestamp of the last event in the sources
+- `lastProcessedEventDateTime` - timestamp of the last event processed by the sources
+- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+- `sourceId` - the @id unique value of the source
+
+ 
+### Fetch source statistics
+
+This endpoint displays statistical information about the provided source.
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/sources/{source_id}/statistics
+```
+
+where `{source_id}` is the @id value of the source.
+
+**Example**
+
+Request
+:   @@snip [compositeview-fetch-source-id-stats.sh](../../assets/views/compositeview-fetch-source-id-stats.sh)
+
+Response
+:   @@snip [compositeview-fetch-source-stat.json](../../assets/views/compositeview-fetch-source-stat.json)
+
+where:
+
+- `totalEvents` - total number of events for the provided source
+- `processedEvents` - number of events that have been considered by the provided source
+- `remainingEvents` - number of events that remain to be considered by the provided source
+- `discardedEvents` - number of events that have been discarded by the provided source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)
+- `evaluatedEvents` - number of events that have been used to update the intermediate Sparql of the provided source
+- `lastEventDateTime` - timestamp of the last event from the provided source
+- `lastProcessedEventDateTime` - timestamp of the last event processed by the provided source
+- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+
+### Fetch all sources statistics
+
+This endpoint displays statistical information about all the sources.
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/sources/_/statistics
+```
+
+**Example**
+
+Request
+:   @@snip [compositeview-fetch-sources-stats.sh](../../assets/views/compositeview-fetch-sources-stats.sh)
+
+Response
+:   @@snip [compositeview-fetch-sources-stat.json](../../assets/views/compositeview-fetch-sources-stat.json)
+
+where:
+
+- `sourceId` - the @id unique value of the source
+- `totalEvents` - total number of events for the provided source
+- `processedEvents` - number of events that have been considered by the provided source
+- `remainingEvents` - number of events that remain to be considered by the provided source
+- `discardedEvents` - number of events that have been discarded by the provided source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)
+- `evaluatedEvents` - number of events that have been used to update the intermediate Sparql of the provided source
+- `lastEventDateTime` - timestamp of the last event from the provided source
+- `lastProcessedEventDateTime` - timestamp of the last event processed by the provided source
+- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+ 
  
 ### Fetch projection statistics
+
+This endpoint displays statistical information about the provided projection.
+
  
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/statistics
@@ -472,7 +603,35 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/
 
 where `{projection_id}` is the @id value of the projection.
 
-The special character `_` allows fetch statistics from every projection on the current view.
+
+**Example**
+
+Request
+:   @@snip [compositeview-fetch-stats.sh](../../assets/views/compositeview-fetch-id-stats.sh)
+
+Response
+:   @@snip [compositeview-fetch-stats.json](../../assets/views/compositeview-fetch-stats.json)
+
+where:
+
+- `sourceId` - the @id unique value of the source
+- `projectionId` - the @id unique value of the projection
+- `totalEvents` - total number of events for the provided source
+- `processedEvents` - number of events that have been considered by the projection
+- `remainingEvents` - number of events that remain to be considered by the projection
+- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the projection)
+- `evaluatedEvents` - number of events that have been used to update the projection index
+- `lastEventDateTime` - timestamp of the last event in the source
+- `lastProcessedEventDateTime` - timestamp of the last event processed by the projection
+- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+
+### Fetch all projections statistics
+ 
+This endpoint displays statistical information about the all projections.
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/projections/_/statistics
+```
 
 **Example**
 
@@ -480,29 +639,64 @@ Request
 :   @@snip [compositeview-fetch-stats.sh](../../assets/views/compositeview-fetch-stats.sh)
 
 Response
-:   @@snip [compositeview-fetch-stats.json](../../assets/views/compositeview-fetch-stats.json)
+:   @@snip [compositeview-fetch-all-stats.json](../../assets/views/compositeview-fetch-all-stats.json)
 
 where:
 
-- `totalEvents` - total number of events in the project
-- `processedEvents` - number of events that have been considered by the view
-- `remainingEvents` - number of events that remain to be considered by the view
-- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the view)
-- `evaluatedEvents` - number of events that have been used to update an index
-- `lastEventDateTime` - timestamp of the last event in the project
-- `lastProcessedEventDateTime` - timestamp of the last event processed by the view
+- `sourceId` - the @id unique value of the source
+- `projectionId` - the @id unique value of the projection
+- `totalEvents` - total number of events for the provided source
+- `processedEvents` - number of events that have been considered by the projection
+- `remainingEvents` - number of events that remain to be considered by the projection
+- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the projection)
+- `evaluatedEvents` - number of events that have been used to update the projection index
+- `lastEventDateTime` - timestamp of the last event in the source
+- `lastProcessedEventDateTime` - timestamp of the last event processed by the projection
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+
+### Restart view
+
+This endpoint restarts the view indexing process. It does not delete the created indices/namespaces but it overrides the graphs/documents when going through the event log.
+ 
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
+```
+
+**Example**
+
+Request
+:   @@snip [view-restart.sh](../../assets/views/view-restart.sh)
+
+Response
+:   @@snip [composite-view-restart.json](../../assets/views/composite-view-restart.json)
 
 
 ### Restart projection
+
+This endpoint restarts indexing process for the provided projection while keeping the sources (and the intermediate Sparql space) progress.
  
 ```
-DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/progress
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/offset
 ```
+
 
 where `{projection_id}` is the @id value of the projection.
 
-The special character `_` allows restart the progress from every projection on the current view.
+**Example**
+
+Request
+:   @@snip [composite-view-projection-id-restart.sh](../../assets/views/composite-view-projection-id-restart.sh)
+
+Response
+:   @@snip [composite-view-projection-id-restart.json](../../assets/views/composite-view-projection-id-restart.json)
+
+### Restart all projections
+
+This endpoint restarts indexing process for all projections while keeping the sources (and the intermediate Sparql space) progress.
+ 
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/_/offset
+```
 
 **Example**
 
