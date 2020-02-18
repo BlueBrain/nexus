@@ -326,7 +326,7 @@ BlueBrain/nexus
 <p>A view which is composed by multiple <code>sources</code> and <code>projections</code>.</p>
 <p>A source defines from where to retrieve the resources. It is the input for the indexing in a later stage.</p>
 <p>A projection defines the type of indexing and the transformations to apply to the data.</p>
-<p>Composite views are useful when aggregating data across multiple projects (local or remote) using multiple sources. Afterwards, by defining multiple projections, the data can be transformed to the client needs.</p>
+<p>Composite views are useful when aggregating data across multiple projects (local or remote) using multiple sources. Afterwards, by defining multiple projections, the data can be adapted to the client needs.</p>
 <p><a href="composite-view-api.html">More information</a></p>
 <h3><a href="#aggregateelasticsearchview" name="aggregateelasticsearchview" class="anchor"><span class="anchor-link"></span></a>AggregateElasticSearchView</h3>
 <p>This view describes an aggregation of multiple existing ElasticSearch views. This approach is useful for searching documents across multiple ElasticSearch views.</p>
@@ -567,7 +567,7 @@ BlueBrain/nexus
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-fetched-source.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <h3><a href="#list-views" name="list-views" class="anchor"><span class="anchor-link"></span></a>List views</h3>
-<pre><code>GET /v1/views/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;q={search}
+<pre><code>GET /v1/views/{org_label}/{project_label}?from={from}&amp;size={size}&amp;deprecated={deprecated}&amp;rev={rev}&amp;type={type}&amp;createdBy={createdBy}&amp;updatedBy={updatedBy}&amp;q={search}&amp;sort={sort}
 </code></pre>
 <p>where&hellip;</p>
 <ul>
@@ -575,10 +575,11 @@ BlueBrain/nexus
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting views based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting views based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting views based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting views based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting views based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting views based on the person which performed the last update</li>
   <li><code>{search}</code>: String - can be provided to select only the views in the collection that have attribute values matching (containing) the provided string</li>
+  <li><code>{sort}</code>: String - can be used to sort views based on a payloads&rsquo; field. This parameter can appear multiple times to enable sorting by multiple fields</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>

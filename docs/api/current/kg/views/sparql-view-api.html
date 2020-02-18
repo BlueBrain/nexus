@@ -237,6 +237,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#sparql-query" class="header">SPARQL query</a></li>
       <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
+      <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#restart-view" class="header">Restart view</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -270,6 +271,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#sparql-query" class="header">SPARQL query</a></li>
       <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
+      <li><a href="../../../../../docs/api/current/kg/views/sparql-view-api.html#restart-view" class="header">Restart view</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -379,25 +381,17 @@ BlueBrain/nexus
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: [
-    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
-    &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;
-  ],
-  &quot;_total&quot;: 1,
-  &quot;_results&quot;: [
-    {
-      &quot;totalEvents&quot;: 3754,
-      &quot;processedEvents&quot;: 3754,
-      &quot;evaluatedEvents&quot;: 3754,
-      &quot;remainingEvents&quot;: 0,
-      &quot;discardedEvents&quot;: 0,
-      &quot;failedEvents&quot;: 0,
-      &quot;delayInSeconds&quot;: 0,
-      &quot;lastEventDateTime&quot;: &quot;2020-01-31T15:04:44.021Z&quot;,
-      &quot;lastProcessedEventDateTime&quot;: &quot;2020-01-31T15:04:44.021Z&quot;
-    }
-  ]
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
+  &quot;@type&quot;: &quot;ViewStatistics&quot;,
+  &quot;totalEvents&quot;: 3754,
+  &quot;processedEvents&quot;: 3754,
+  &quot;evaluatedEvents&quot;: 3754,
+  &quot;remainingEvents&quot;: 0,
+  &quot;discardedEvents&quot;: 0,
+  &quot;failedEvents&quot;: 0,
+  &quot;delayInSeconds&quot;: 0,
+  &quot;lastEventDateTime&quot;: &quot;2020-01-31T15:04:44.021Z&quot;,
+  &quot;lastProcessedEventDateTime&quot;: &quot;2020-01-31T15:04:44.021Z&quot;
 }</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-statistics.json" class="snippet-full-source github">Full source at GitHub</a></dd>
 </dl>
 <p>where&hellip;</p>
@@ -411,6 +405,22 @@ BlueBrain/nexus
   <li><code>lastProcessedEventDateTime</code> - timestamp of the last event processed by the view</li>
   <li><code>delayInSeconds</code> - number of seconds between the last processed event timestamp and the last known event timestamp</li>
 </ul>
+<h3><a href="#restart-view" name="restart-view" class="anchor"><span class="anchor-link"></span></a>Restart view</h3>
+<p>This endpoint restarts the view indexing process. It does not delete the created namespaces but it overrides the resource GRAPH when going through the event log.</p>
+<pre><code>DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
+</code></pre>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/offset&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-restart.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/offset.json&quot;,
+  &quot;@type&quot;: &quot;NoOffset&quot;
+}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-restart.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/kg/views/sparql-view-api.md" title="Edit this page" class="md-source-file md-edit">
