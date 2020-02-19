@@ -6,7 +6,7 @@
 
 @@@
 
-# Studio
+# Studio _βeta_
 
 > Note: This feature is under heavy development and should be considered in Beta
 
