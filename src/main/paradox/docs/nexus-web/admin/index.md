@@ -1,4 +1,4 @@
-# Creating an Organization
+# Administrating Organizations & Projects
 
 Click on the "Create organization" icon next to the title of the homepage to create a new organization.
 

@@ -1,12 +1,15 @@
 @@@ index
 
 - [Studio](./studio/index.md)
+- [Browsing Resources](browse/index.md)
+- [Administrate your instance](admin/index.md)
+- [View a Resource](resource-view/index.md)
 
 @@@
 
 # Nexus Web
 
-Nexus Web is the web interface for Blue Brain Nexus, allowing users to interact with data and perform administration tasks. It is being actively developed and new features are regularly added.
+Nexus Web is the web interface for Blue Brain Nexus, allowing users to interact with data and perform administration tasks.
 
 Follow development at the [Blue Brain Nexus Web Github repo](https://github.com/BlueBrain/nexus-web).
 
