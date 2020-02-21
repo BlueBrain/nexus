@@ -144,7 +144,6 @@ BlueBrain/nexus
   <ul>
     <li><a href="../docs/getting-started/nexus-concepts.html" class="page">Brief introduction of Nexus concepts</a></li>
     <li><a href="../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a></li>
-    <li><a href="../docs/getting-started/webapps.html" class="page">Web applications</a></li>
   </ul></li>
   <li><a href="../docs/tutorial/index.html" class="page">Tutorials</a>
   <ul>
@@ -199,6 +198,18 @@ BlueBrain/nexus
       <li><a href="../docs/api/current/iam/iam-identities.html" class="page">Identities</a></li>
     </ul></li>
     <li><a href="../docs/api/current/error-signaling.html" class="page">Error Signaling</a></li>
+  </ul></li>
+  <li><a href="../docs/nexus-web/index.html" class="page">Nexus Web</a>
+  <ul>
+    <li><a href="../docs/nexus-web/studio/index.html" class="page">Studio</a>
+    <ul>
+      <li><a href="../docs/nexus-web/studio/workspaces.html" class="page">Workspaces</a></li>
+      <li><a href="../docs/nexus-web/studio/dashboards.html" class="page">Dashboards</a></li>
+      <li><a href="../docs/nexus-web/studio/plugin-development.html" class="page">Nexus Plugins development</a></li>
+    </ul></li>
+    <li><a href="../docs/nexus-web/browse/index.html" class="page">Browsing data</a></li>
+    <li><a href="../docs/nexus-web/admin/index.html" class="page">Administrating Organizations &amp; Projects</a></li>
+    <li><a href="../docs/nexus-web/resource-view/index.html" class="page">Resource Details View</a></li>
   </ul></li>
   <li><a href="../docs/releases/index.html" class="page">Releases</a>
   <ul>
@@ -326,7 +337,7 @@ BlueBrain/nexus
   <li>Guarantees resources immutability, keeping track of a history of changes.</li>
 </ul>
 <h3><a href="#is-there-a-cloud-deployment-of-blue-brain-nexus-" name="is-there-a-cloud-deployment-of-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>Is there a cloud deployment of Blue Brain Nexus?</h3>
-<p>There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following <a href="getting-started/webapps.html">page</a> is explained how to interact with Blue Brain Nexus web interface. It is possible to deploy Nexus on Amazon&rsquo;s AWS infrastructure. Instructions for how to do so will be made available shortly.</p>
+<p>There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following <a href="nexus-web/index.html">page</a> is explained how to interact with Blue Brain Nexus Web interface. It is possible to deploy Nexus on Amazon&rsquo;s AWS infrastructure. Instructions for how to do so will be made available shortly.</p>
 <h3><a href="#is-there-a-limit-on-the-number-of-resources-blue-brain-nexus-can-store-" name="is-there-a-limit-on-the-number-of-resources-blue-brain-nexus-can-store-" class="anchor"><span class="anchor-link"></span></a>Is there a limit on the number of resources Blue Brain Nexus can store?</h3>
 <p>Blue Brain Nexus leverages scalable open source technologies, therefore limitations and performance depends heavily on the deployment setup where Nexus is running.</p>
 <p>To get an idea about the ingestion capabilities, we have run <a href="additional-info/benchmarks/index.html">Benchmarks</a> where we were able to ingest over 3.5 billion triples representing 120 million resources.</p>
@@ -334,12 +345,12 @@ BlueBrain/nexus
 <p>A Knowledge Graph is a modern approach to enabling the interlinked representations of entities (real-world objects, activities or concepts). Knowledge Graphs combine properties of databases (enabling structured queries), graphs (finding and analysing data via entity relationships) and knowledge bases (that enable navigating knowledge and inferring facts).</p>
 <p>Blue Brain Nexus employs a Knowledge Graph to enable validation, search, analysis and integration of data.</p>
 <p>As you can see in &lsquo;Understanding the Knowledge Graph&rsquo; <a href="tutorial/knowledge-graph/index.html">page</a>, at the heart of Blue Brain Nexus platform lies a Knowledge Graph, that provides knowledge representation to enable data integration and FAIR principles at Blue Brain and across the neuroscience community.</p>
-<p>Indeed, Nexus allow scientists to: </p>
+<p>Indeed, Nexus allow scientists to:</p>
 <ul>
   <li>
   <p>Register and manage relevant entity types</p></li>
   <li>
-  <p>Submit data to the platform and describe their provenance using the W3C PROV model </p></li>
+  <p>Submit data to the platform and describe their provenance using the W3C PROV model</p></li>
   <li>
   <p>Search, discover, reuse and derive data generated within and outside the platform for the purpose of driving their own scientific endeavours.</p></li>
 </ul>
@@ -359,11 +370,11 @@ BlueBrain/nexus
 <h3><a href="#how-can-i-represent-lists-on-json-ld-" name="how-can-i-represent-lists-on-json-ld-" class="anchor"><span class="anchor-link"></span></a>How can I represent lists on JSON-LD?</h3>
 <p>Using JSON-LD, arrays are interpreted as Sets by default. If you want an array to be interpreted as a list, you&rsquo;ll have to add the proper context for it. If the field containing the array is called <code>myfield</code>, then the context to be added is</p>
 <pre class="prettyprint"><code class="language-json">{
-   &quot;@context&quot;: {
-      &quot;myfield&quot;: {
-          &quot;@container&quot;: &quot;@list&quot;
-      }
-   }
+  &quot;@context&quot;: {
+    &quot;myfield&quot;: {
+      &quot;@container&quot;: &quot;@list&quot;
+    }
+  }
 }
 </code></pre>
 <p>You can find more information about Sets and Lists in Json-LD on the <a href="https://www.w3.org/TR/json-ld/#sets-and-lists">Json-LD 1.0 specification</a></p>
@@ -378,7 +389,7 @@ BlueBrain/nexus
 <h3><a href="#where-can-i-find-shacl-shapes-i-can-reuse-point-to-resources-like-schema-org-" name="where-can-i-find-shacl-shapes-i-can-reuse-point-to-resources-like-schema-org-" class="anchor"><span class="anchor-link"></span></a>Where can I find SHACL shapes I can reuse (point to resources, like schema.org)?</h3>
 <p>Datashapes.org provides an automated conversion of schema.org as SHACL entities. A neuroscience community effort and INCF Special Interest Group - Neuroshapes <a href="https://github.com/INCF/neuroshapes">page on github</a>, provides open schemas for neuroscience data based on common use cases.</p>
 <h3><a href="#why-are-rdf-and-json-ld-important-for-blue-brain-nexus-" name="why-are-rdf-and-json-ld-important-for-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>Why are RDF and JSON-LD important for Blue Brain Nexus?</h3>
-<p>RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is fully compatible with the RDF data model, and it is the main format we use for messages exchange. It is also the preferred format for message exchanges for APIs. The choice of JSON-LD is due to the fact that is as plain JSON but with some special <a href="https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords">keywords</a>. </p>
+<p>RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is fully compatible with the RDF data model, and it is the main format we use for messages exchange. It is also the preferred format for message exchanges for APIs. The choice of JSON-LD is due to the fact that is as plain JSON but with some special <a href="https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords">keywords</a>.</p>
 <h3><a href="#can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" name="can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" class="anchor"><span class="anchor-link"></span></a>Can I connect any SPARQL client to Nexus’ SPARQL endpoint?</h3>
 <p>Yes. As long as the client supports the ability to provide a <code>Authentication</code> HTTP Header (for authentication purposes) on the request, any SPARQL client should work.</p>
 <h3><a href="#how-can-i-create-an-organizations-as-an-anonymous-user-in-the-docker-compose-file-what-needs-to-be-done-to-switch-to-mode-" name="how-can-i-create-an-organizations-as-an-anonymous-user-in-the-docker-compose-file-what-needs-to-be-done-to-switch-to-mode-" class="anchor"><span class="anchor-link"></span></a>How can I create an Organizations as an anonymous user in the docker-compose file? What needs to be done to switch to &ldquo;authenticated&rdquo; mode?</h3>
