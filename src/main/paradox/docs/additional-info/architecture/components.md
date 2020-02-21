@@ -1,6 +1,6 @@
 # Components
 
-![Component View](components1.png )
+![Component View](components1.png)
 
 The Nexus platform is made up of a collection of services and web applications that work together to manage data stored
 within the system. The services and web applications are powered by a collection of libraries and tools built
@@ -36,7 +36,7 @@ compliant identity providers to authenticate clients and manages the access cont
 
 This is the web interface to the platform. It allows users to browse the data within the system and perform administration tasks.
 
-[Source Code](https://github.com/BlueBrain/nexus-web) | @ref:[Documentation](../../getting-started/webapps.md#nexus-web)
+[Source Code](https://github.com/BlueBrain/nexus-web) | @ref:[Documentation](../../nexus-web/index.md)
 
 ### Nexus Docs
 
