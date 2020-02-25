@@ -1,4 +1,4 @@
-# Creating a Studio Step by Step
+# Creating a Studio, Step-by-step
 
 A studio is a place where you can organize your data and configure custom plugins to visualize them.
 
@@ -8,7 +8,7 @@ In this example, we'll make one that simply displays images from files.
 
 We've uploaded some nice neuron morphology images from [Neuromorpho.org](neuromorpho.org), which are showing up in our project.
 
-Now, nexus-web has out-of-the-box image preview support for images less than 3MB inside the normal project view, but in this example we have customers who want to view the data as organized inside tables.
+Now, `nexus-web` has out-of-the-box image preview support for images less than 3MB inside the normal project view, but in this example we have customers who want to view the data as organized inside tables.
 
 ![Studio set up with neuron images](../assets/studio-guide-neurons-project.png);
 
@@ -59,7 +59,9 @@ And now here's our dashboard. Now we can share this URL with other people and th
 
 But there's one problem, clicking on one of the file names will show us an error `No Plugins Configured`.
 
-Let's develop a small plugin the displays the image with a title. Here's an implementation in Typescript:
+Let's develop a small plugin that displays the image with a title. Here's an implementation in Typescript:
+
+> [Visit the plugin-development page to learn how to write a javascript plugin](./plugin-development.md)
 
 ```typescript
 import { Resource, NexusClient, NexusFile } from "@bbp/nexus-sdk";
@@ -107,7 +109,7 @@ export default ImagePlugin;
 
 ## Uploading a plugin
 
-Adding this the bundled Javascript in the `/plugins` folder of the root of your nexas web instance, such as `/plugins/nexus-image-plugin/index.js`, will allow Nexus Web to find the file and display it. Be sure to restart your nexus-web instance.
+Adding the bundled Javascript in the `/plugins` folder of the root of your `nexus-web` instance, such as `/plugins/nexus-image-plugin/index.js`, will allow `nexus-web` to find the file and display it. Be sure to restart your `nexus-web` instance.
 
 ## Configure your dashboard to use a plugin
 
