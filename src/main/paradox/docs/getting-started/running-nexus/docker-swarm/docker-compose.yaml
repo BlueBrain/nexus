@@ -1,7 +1,7 @@
 version: "3.3"
 services:
   kg:
-    image: bluebrain/nexus-kg:1.2
+    image: bluebrain/nexus-kg:1.3
     entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
@@ -16,7 +16,7 @@ services:
       JAVA_OPTS: "-XX:+UseStringDeduplication -Xms2G -Xmx4G"
 
   iam:
-    image: bluebrain/nexus-iam:1.2
+    image: bluebrain/nexus-iam:1.3
     entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
@@ -26,7 +26,7 @@ services:
       JAVA_OPTS: "-Xms1G -Xmx2G"
 
   admin:
-    image: bluebrain/nexus-admin:1.2
+    image: bluebrain/nexus-admin:1.3
     entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
@@ -54,7 +54,7 @@ services:
     image: bluebrain/blazegraph-nexus:2.1.5
 
   web:
-    image: bluebrain/nexus-web:1.1.1
+    image: bluebrain/nexus-web:1.3.1
     environment:
       BASE_PATH: "/"
       HOST_NAME: "http://localhost"
