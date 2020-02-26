@@ -20,7 +20,7 @@
 
 <meta name="description" content="nexus">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Browsing data · Blue Brain Nexus</title>
+<title>Creating a Studio, Step-by-step · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Browsing data
+Creating a Studio, Step-by-step
 </span>
 </div>
 </div>
@@ -203,12 +203,12 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../../docs/nexus-web/studio/index.html" class="page">Studio</a>
     <ul>
-      <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html" class="page">Creating a Studio, Step-by-step</a></li>
+      <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html" class="active page">Creating a Studio, Step-by-step</a></li>
       <li><a href="../../../docs/nexus-web/studio/workspaces.html" class="page">Workspaces</a></li>
       <li><a href="../../../docs/nexus-web/studio/dashboards.html" class="page">Dashboards</a></li>
       <li><a href="../../../docs/nexus-web/studio/plugin-development.html" class="page">Nexus Plugins development</a></li>
     </ul></li>
-    <li><a href="../../../docs/nexus-web/browse/index.html" class="active page">Browsing data</a></li>
+    <li><a href="../../../docs/nexus-web/browse/index.html" class="page">Browsing data</a></li>
     <li><a href="../../../docs/nexus-web/admin/index.html" class="page">Administrating Organizations &amp; Projects</a></li>
     <li><a href="../../../docs/nexus-web/resource-view/index.html" class="page">Resource Details View</a></li>
   </ul></li>
@@ -238,10 +238,14 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/nexus-web/browse/index.html#browsing-data" class="header">Browsing data</a>
+  <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#creating-a-studio-step-by-step" class="header">Creating a Studio, Step-by-step</a>
   <ul>
-    <li><a href="../../../docs/nexus-web/browse/index.html#creating-resources" class="header">Creating Resources</a></li>
-    <li><a href="../../../docs/nexus-web/browse/index.html#advanced-use-cases" class="header">Advanced use-cases</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#set-up-your-project" class="header">Set up your project</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#setting-up-your-studio" class="header">Setting up your studio</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#creating-a-dashboard" class="header">Creating a Dashboard</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#adding-a-plugin" class="header">Adding a plugin</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#uploading-a-plugin" class="header">Uploading a plugin</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#configure-your-dashboard-to-use-a-plugin" class="header">Configure your dashboard to use a plugin</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -263,10 +267,14 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/nexus-web/browse/index.html#browsing-data" class="header">Browsing data</a>
+  <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#creating-a-studio-step-by-step" class="header">Creating a Studio, Step-by-step</a>
   <ul>
-    <li><a href="../../../docs/nexus-web/browse/index.html#creating-resources" class="header">Creating Resources</a></li>
-    <li><a href="../../../docs/nexus-web/browse/index.html#advanced-use-cases" class="header">Advanced use-cases</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#set-up-your-project" class="header">Set up your project</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#setting-up-your-studio" class="header">Setting up your studio</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#creating-a-dashboard" class="header">Creating a Dashboard</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#adding-a-plugin" class="header">Adding a plugin</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#uploading-a-plugin" class="header">Uploading a plugin</a></li>
+    <li><a href="../../../docs/nexus-web/studio/creating-a-studio.html#configure-your-dashboard-to-use-a-plugin" class="header">Configure your dashboard to use a plugin</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -277,29 +285,99 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#browsing-data" name="browsing-data" class="anchor"><span class="anchor-link"></span></a>Browsing data</h1>
-<p>To group and control access to your data, Nexus provides you Organizations and Projects. Much like in Github (if you&rsquo;re familiar with it), there are Organizations which contain Projects (Repositories in Github), which in turn contain your data (files in GitHub, Resources in Nexus).</p>
-<p>In Nexus Web, the landing page will show you the list of Organizations you have access to.</p>
-<p><img src="../assets/list-orgs.png" alt="List organizations" /></p>
-<p>After selecting an organization, you will see the list of Projects you have access to inside this organization.</p>
-<p><img src="../assets/list-projects.png" alt="List projects" /></p>
-<p>Select a Project, you&rsquo;ll get to the list of its Resources.</p>
-<p><img src="../assets/list-resources.png" alt="List resources" /></p>
-<h2><a href="#creating-resources" name="creating-resources" class="anchor"><span class="anchor-link"></span></a>Creating Resources</h2>
-<p>Navigate to the project where you want to create a resource. Click on the &ldquo;Create Resource&rdquo; button in the right sidebar. Build the JSON payload with the help of the interactive editor, then hit &ldquo;Save&rdquo;.</p>
-<p><img src="../assets/create-resource-button.png" alt="Create resource button" /> <img src="../assets/create-resource.png" alt="Create resource" /></p>
-<h2><a href="#advanced-use-cases" name="advanced-use-cases" class="anchor"><span class="anchor-link"></span></a>Advanced use-cases</h2>
-<p>If you want to have several filtered lists of resources side by side, you can create additional filterable lists by using the &ldquo;New Query&rdquo; button in the side panel. It can be handy to make comparisons, or to build a set of ElasticSearch queries we want to reuse in an IPython Notebook or in a script.</p>
-<p><img src="../assets/new-query-button.png" alt="New query button" /> <img src="../assets/new-query.png" alt="New query" /></p>
-<p>You can also clone one of the active Queries to use it as a starting point.</p>
-<p><img src="../assets/clone-query.png" alt="Clone query" /></p>
-<p>If you need to make complex ElasticSearch queries or if you want to see the raw payload returned by ElasticSearch, you can click on &ldquo;ElasticSearch query editor&rdquo;. Results will be displayed in JSON-LD format.</p>
-<p><img src="../assets/es-query-button.png" alt="ElasticSearch query button" /> <img src="../assets/es-query.png" alt="ElasticSearch query" /></p>
-<p>For graph and RDF-related queries, we also offer a SPARQL query editor that runs against our triple-store. Results are displayed in a table.</p>
-<p><img src="../assets/sparql-query-button.png" alt="SPARQL query button" /> <img src="../assets/sparql-query.png" alt="SPARQL query" /></p>
+<h1><a href="#creating-a-studio-step-by-step" name="creating-a-studio-step-by-step" class="anchor"><span class="anchor-link"></span></a>Creating a Studio, Step-by-step</h1>
+<p>A studio is a place where you can organize your data and configure custom plugins to visualize them.</p>
+<p>In this example, we&rsquo;ll make one that simply displays images from files.</p>
+<h2><a href="#set-up-your-project" name="set-up-your-project" class="anchor"><span class="anchor-link"></span></a>Set up your project</h2>
+<p>We&rsquo;ve uploaded some nice neuron morphology images from <a href="neuromorpho.org">Neuromorpho.org</a>, which are showing up in our project.</p>
+<p>Now, <code>nexus-web</code> has out-of-the-box image preview support for images less than 3MB inside the normal project view, but in this example we have customers who want to view the data as organized inside tables.</p>
+<p><img src="../assets/studio-guide-neurons-project.png" alt="Studio set up with neuron images" />;</p>
+<h2><a href="#setting-up-your-studio" name="setting-up-your-studio" class="anchor"><span class="anchor-link"></span></a>Setting up your studio</h2>
+<p>You can create a studio from within a project by clicking on the Project Action Menu on the right hand side, under the Studios tab.</p>
+<p><img src="../assets/studio-guide-create-studio-button.png" alt="Create a Studio Button" />;</p>
+<p>It will prompt you to come up with a label for your project. Here we called it Neuron Studio. Think of a Studio as a landing page for all your data to be organized. In most cases you&rsquo;ll only need one Studio.</p>
+<p><img src="../assets/studio-guide-create-neuron-studio.png" alt="Create a Studio" />;</p>
+<p>Next, create a workspace. A workspace allows you to group your queries and visualizations together, you can have one or more of such groups.</p>
+<p>We&rsquo;ll create a workspace to put all our artifacts, that is files as opposed to json-ld datasets. In this case, our neuron images.</p>
+<p><img src="../assets/studio-guide-create-neuron-artifacts-workspace.png" alt="Create a Workspace" />;</p>
+<h2><a href="#creating-a-dashboard" name="creating-a-dashboard" class="anchor"><span class="anchor-link"></span></a>Creating a Dashboard</h2>
+<p>Next, we&rsquo;ll create a Dashboard. The Dashboard is where our data will be rendered and visible for us to explore, rendered for now as a table, with more options to come in future versions. Every Dashboard is essentially a saved SPARQL query, paired with a plugin to visualize each row in the table.</p>
+<p>We&rsquo;ll click on the big blue Create a Dashboard button and label it Neuron Images. Now we&rsquo;ll need to write a sparql statement to extract every file that&rsquo;s an image from the knowledge graph. Here&rsquo;s an example that will grab us that information:</p>
+<pre class="prettyprint"><code class="language-sparql"># This is a simple example query
+# You can directly edit this
+prefix nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+prefix rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+SELECT DISTINCT ?self ?fileName
+WHERE {
+?s nxv:self ?self;
+   rdf:type nxv:File;
+   nxv:mediaType &quot;image/png&quot;;
+   nxv:filename ?fileName
+}
+LIMIT 20
+</code></pre>
+<p><img src="../assets/studio-guide-create-neuron-images-dashboard-with-query.png" alt="Create a Dashboard" />;</p>
+<p>And now here&rsquo;s our dashboard. Now we can share this URL with other people and they&rsquo;ll be able to see the results of our query as well.</p>
+<p><img src="../assets/studio-guide-neurons-dashboard.png" alt="Neuron Images Dashboard" />;</p>
+<h2><a href="#adding-a-plugin" name="adding-a-plugin" class="anchor"><span class="anchor-link"></span></a>Adding a plugin</h2>
+<p>But there&rsquo;s one problem, clicking on one of the file names will show us an error <code>No Plugins Configured</code>.</p>
+<p>Let&rsquo;s develop a small plugin that displays the image with a title. Here&rsquo;s an implementation in Typescript:</p>
+<blockquote>
+  <p><a href="./plugin-development.md">Visit the plugin-development page to learn how to write a javascript plugin</a></p>
+</blockquote>
+<pre class="prettyprint"><code class="language-typescript">import { Resource, NexusClient, NexusFile } from &quot;@bbp/nexus-sdk&quot;;
+
+import &quot;./style.less&quot;;
+
+export const ImagePlugin = ({
+  ref,
+  resource,
+  nexusClient
+}: {
+  ref: HTMLElement;
+  resource: Resource;
+  nexusClient: NexusClient;
+}) =&gt; {
+  nexusClient
+    .httpGet({
+      path: resource._self,
+      context: {
+        parseAs: &quot;blob&quot;
+      }
+    })
+    .then(file =&gt; {
+      const blob = new Blob([file as string], {
+        type: (resource as NexusFile)._mediaType
+      });
+      const src = URL.createObjectURL(blob);
+      const img = document.createElement(&quot;img&quot;);
+      img.src = src;
+      img.alt = resource._filename;
+      img.title = resource._filename;
+
+      const title = document.createElement(&quot;h1&quot;);
+      title.textContent = resource._filename;
+      ref.appendChild(title);
+      ref.appendChild(img);
+    })
+    .catch(console.error);
+};
+
+export default ImagePlugin;
+</code></pre>
+<blockquote>
+  <p>A simple plugin that fetches a file from the resource metadata and appends it as an image on the document</p>
+</blockquote>
+<h2><a href="#uploading-a-plugin" name="uploading-a-plugin" class="anchor"><span class="anchor-link"></span></a>Uploading a plugin</h2>
+<p>Adding the bundled Javascript in the <code>/plugins</code> folder of the root of your <code>nexus-web</code> instance, such as <code>/plugins/nexus-image-plugin/index.js</code>, will allow <code>nexus-web</code> to find the file and display it. Be sure to restart your <code>nexus-web</code> instance.</p>
+<h2><a href="#configure-your-dashboard-to-use-a-plugin" name="configure-your-dashboard-to-use-a-plugin" class="anchor"><span class="anchor-link"></span></a>Configure your dashboard to use a plugin</h2>
+<p>Now you can navigate to your studio dashboard and click on the <code>edit</code> button next to your dashboard name. You&rsquo;ll find your plugin available in the autocomplete field under plugins. Select your plugin, and hit save.</p>
+<p><img src="../assets/studio-guide-configure-plugins.png" alt="Configuring a Dashboard Plugin" />;</p>
+<p>Now when you click on a row of your table, you should see your plugin displaying your data in its full glory.</p>
+<p><img src="../assets/studio-guide-show-plugin.png" alt="Neuron Image Plugin Example" />;</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/nexus-web/browse/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/nexus-web/studio/creating-a-studio.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -315,7 +393,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/nexus-web/studio/plugin-development.html" title="Nexus Plugins development" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/nexus-web/studio/index.html" title="Studio" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -324,17 +402,17 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Nexus Plugins development
+Studio
 </span>
 </div>
 </a>
-<a href="../../../docs/nexus-web/admin/index.html" title="Administrating Organizations & Projects" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/nexus-web/studio/workspaces.html" title="Workspaces" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Administrating Organizations & Projects
+Workspaces
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
