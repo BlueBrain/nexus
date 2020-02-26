@@ -1,5 +1,6 @@
 @@@ index
 
+- [Creating a Studio](./creating-a-studio.md)
 - [Workspaces](./workspaces.md)
 - [Dashboards](./dashboards.md)
 - [Plugin Development](./plugin-development.md)
@@ -11,6 +12,8 @@
 > Note: This feature is under heavy development and should be considered in Beta
 
 This feature allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with javascript, data curators can format the presentation of the query results any way they like.
+
+@ref:[Get started with this step-by-step example of how to create a studio](./creating-a-studio.md)
 
 ## Plugins
 
