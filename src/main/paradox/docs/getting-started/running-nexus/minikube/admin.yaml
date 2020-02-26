@@ -65,7 +65,7 @@ items:
       spec:
         containers:
         - name: admin
-          image: bluebrain/nexus-admin:1.2
+          image: bluebrain/nexus-admin:1.3
           imagePullPolicy: Always
           env:
           - name: PUBLIC_IP
