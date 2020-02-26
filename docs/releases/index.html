@@ -300,6 +300,7 @@ BlueBrain/nexus
   <li>Exposed a new view subresource <code>.../offset</code> that presents the current view offset, or collection of offsets in case  of CompositeViews. The offset has the same value used with Server Sent Events as means of keeping track of the current  event replay progress. Deleting this resource with instruct the system to rebuild the indices of the selected view;</li>
   <li>Ordering results when doing listings can now be controlled with the repeated <code>sort</code> query param that accepts  ElasticSearch document field names (<code>...?sort=_createdAt&amp;sort=-_createdBy</code>). The ordering defaults to ascending, but  can be switched for descending by prefixing the <code>-</code> character to the field name.</li>
   <li>New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new  configuration yields better full text search results.</li>
+  <li><em>Nexus Web</em> - Adds the ability to have persistent customisable queries and data visualizations for your data via the new <a href="../nexus-web/studio/index.html">Studios feature</a></li>
 </ul>
 <p>A detailed list of changes included in the release can be found in the <a href="v1.3-release-notes.html">release notes</a>.</p>
 <h2><a href="#v1-2-1-07-10-2019-" name="v1-2-1-07-10-2019-" class="anchor"><span class="anchor-link"></span></a>v1.2.1 (07.10.2019)</h2>
@@ -369,30 +370,22 @@ BlueBrain/nexus
   <li>Exposed the service event logs over a stable API via <a href="https://www.w3.org/TR/eventsource/">Server Sent Events</a>.</li>
   <li>Introduced configurable storage backends for files with local, remote and S3 implementations.</li>
   <li>ElasticSearchView | AggregateElasticSearchView have been promoted to stable.</li>
-  <li>Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and aggregates the results.</li>
+  <li>Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and  aggregates the results.</li>
   <li>ElasticSearchView and SparqlView support additional configuration options: resourceSchemas, resourceTypes, resourceTag, includeDeprecated, includeMetadata.</li>
-  <li>API improvements:
-    <ul>
-      <li>Support for additional filtering criteria when listing resources via query params: rev, deprecated, createdBy, updatedBy.</li>
-      <li>The organization and project segments when exercising the API now accept their unique ids (UUID).</li>
-      <li>Content negotiation for resources, supporting: dot, ntriples, json-ld expanded and compacted formats.</li>
-      <li>Ability to resolve resource ids via configured project resolvers.</li>
-      <li>Pagination of resources over 10,000 using the &rsquo;&rsquo;_next&rsquo;&rsquo; link in the listing response.
-</li>
-      <li>Resource metadata includes &rsquo;&rsquo;_incoming&rsquo;&lsquo; and &rsquo;&rsquo;_outgoing&rsquo;&rsquo; links and the API now includes their respective endpoints.
-</li>
-      <li>View indexing progress as a &lsquo;&lsquo;statistics&rsquo;&rsquo; sub-resource of each view.</li>
-    </ul>
-  </li>
-  <li>Nexus Web improvements:
-    <ul>
-      <li>Better OpenIdConnect integration, ability to authenticate to multiple configured realms.</li>
-      <li>Ability to discriminate between Nexus specific resources and user managed resources.</li>
-      <li>Display the current ACLs and their source for the logged in user.</li>
-      <li>Ability to query user defined views.</li>
-      <li>Display the indexing progress for the active view.</li>
-    </ul>
-  </li>
+  <li>API improvements:</li>
+  <li>Support for additional filtering criteria when listing resources via query params: rev, deprecated, createdBy, updatedBy.</li>
+  <li>The organization and project segments when exercising the API now accept their unique ids (UUID).</li>
+  <li>Content negotiation for resources, supporting: dot, ntriples, json-ld expanded and compacted formats.</li>
+  <li>Ability to resolve resource ids via configured project resolvers.</li>
+  <li>Pagination of resources over 10,000 using the &rsquo;&lsquo;_next&rsquo;&rsquo; link in the listing response.</li>
+  <li>Resource metadata includes &rsquo;&lsquo;_incoming&rsquo;&lsquo; and &rsquo;&lsquo;_outgoing&rsquo;&rsquo; links and the API now includes their respective endpoints.</li>
+  <li>View indexing progress as a &lsquo;&lsquo;statistics&rsquo;&rsquo; sub-resource of each view.</li>
+  <li>Nexus Web improvements:</li>
+  <li>Better OpenIdConnect integration, ability to authenticate to multiple configured realms.</li>
+  <li>Ability to discriminate between Nexus specific resources and user managed resources.</li>
+  <li>Display the current ACLs and their source for the logged in user.</li>
+  <li>Ability to query user defined views.</li>
+  <li>Display the indexing progress for the active view.</li>
   <li>Exposed view indexing progress metrics for Prometheus.</li>
   <li>Bumped ElasticSearch compatibility to 7.x.</li>
 </ul>
@@ -401,8 +394,8 @@ BlueBrain/nexus
 <p>This is the first major release of Blue Brain Nexus after almost two years of development.</p>
 <p>Also referred to as &ldquo;<em>Nexus V1</em>&rdquo;, this initial release is our first big milestone in our quest to build a Knowledge Graph platform uniquely combining flexible graph database, powerful search engine and scalable data store to enable:</p>
 <ul>
-  <li>Easy unification and integration of fragmented and disparate data from heterogeneous domains to break data and metadata silos</li>
-  <li>Better data governance with the ability to specify and enforce organization’s best practices for data collection, storage and description through high quality metadata</li>
+  <li>Easy unification and integration of fragmented and disparate data from heterogeneous domains to break data and  metadata silos</li>
+  <li>Better data governance with the ability to specify and enforce organization’s best practices for data collection,  storage and description through high quality metadata</li>
   <li>Data lineage and provenance recording and description</li>
   <li>FAIR (Findable, Accessible, Interoperable, Re-usable) data and metadata management</li>
 </ul>
