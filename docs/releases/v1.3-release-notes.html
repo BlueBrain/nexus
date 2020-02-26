@@ -240,10 +240,18 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/v1.3-release-notes.html#v1-3-release-notes" class="header">v1.3 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#compositeviews" class="header">CompositeViews</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#studio" class="header">Studio</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#view-offsets" class="header">View offsets</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#other-changes" class="header">Other changes</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#highlights" class="header">Highlights</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#studio" class="header">Studio</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#data-aggregation-transformation-and-projection" class="header">Data Aggregation, Transformation and Projection</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#details" class="header">Details</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#compositeviews" class="header">CompositeViews</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#view-offsets" class="header">View Offsets</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#javascript-python-sdks-and-the-cli" class="header">JavaScript, Python SDKs and the CLI</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#other-changes" class="header">Other Changes</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -267,10 +275,18 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/v1.3-release-notes.html#v1-3-release-notes" class="header">v1.3 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#compositeviews" class="header">CompositeViews</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#studio" class="header">Studio</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#view-offsets" class="header">View offsets</a></li>
-    <li><a href="../../docs/releases/v1.3-release-notes.html#other-changes" class="header">Other changes</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#highlights" class="header">Highlights</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#studio" class="header">Studio</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#data-aggregation-transformation-and-projection" class="header">Data Aggregation, Transformation and Projection</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html#details" class="header">Details</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#compositeviews" class="header">CompositeViews</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#view-offsets" class="header">View Offsets</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#javascript-python-sdks-and-the-cli" class="header">JavaScript, Python SDKs and the CLI</a></li>
+      <li><a href="../../docs/releases/v1.3-release-notes.html#other-changes" class="header">Other Changes</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -281,10 +297,31 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#v1-3-release-notes" name="v1-3-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.3 Release Notes</h1><div class="callout note "><div class="callout-title">Note</div>
-<p>This release is under development.</p></div>
-<p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.2 but requires rebuilding all indices. Please visit the <a href="v1.2-to-v1.3-migration.html">migration instructions</a> for the exact steps necessary to upgrade.</p>
-<h2><a href="#compositeviews" name="compositeviews" class="anchor"><span class="anchor-link"></span></a>CompositeViews</h2>
+<h1><a href="#v1-3-release-notes" name="v1-3-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.3 Release Notes</h1>
+<blockquote>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.2 (and the rest of the v1.x releases, i.e. v1.1 and v1.0) but requires rebuilding all indices. Please visit the <a href="v1.2-to-v1.3-migration.html">migration instructions</a> for the exact steps necessary to upgrade from the previous release.</p>
+</blockquote>
+<h2><a href="#highlights" name="highlights" class="anchor"><span class="anchor-link"></span></a>Highlights</h2>
+<p>The goal of this release is to expand on the benefits of using a fully managed data and knowledge graph system with new capabilities around data search, transformation and exchange.</p>
+<h3><a href="#studio" name="studio" class="anchor"><span class="anchor-link"></span></a>Studio</h3>
+<p><a href="../nexus-web/studio/index.html">Studio</a> (a new feature in Nexus Web) allows users to define a user interface to browse and view the data in Nexus’ knowledge graph. Multiple <a href="../nexus-web/studio/workspaces.html">Workspaces</a> can be created within a <strong>Studio</strong> allowing for arbitrary grouping of datasets to be shown. A <strong>Workspace</strong> can be configured with multiple <a href="../nexus-web/studio/dashboards.html">Dashboards</a>, each presenting data of possibly different types (and shapes within the graph).</p>
+<p>Each row in a <strong>Dashboard</strong> corresponds to a resource in the system, but the values shown can be collected from related resources. A very simple example of that would be showing a listing of <strong>Person</strong> names and the name of the <strong>Organizations</strong> that they are affiliated to (following <code>schema:affiliation</code>) where each Person and Organization are managed as independent resources in the system:</p>
+<pre><code>    +--------+               +--------------+
+    | Person +--------------&gt;+ Organization |
+    +--------+  affiliation  +--------------+
+     |                         |
+     +-&gt;name                   +-&gt;name
+</code></pre>
+<p>Selecting an entry in a Dashboard will open a detailed view of the corresponding resource that can be fully customized by means of <a href="../nexus-web/studio/plugin-development.html">plugins</a>.</p>
+<p>Please head over to the <a href="../nexus-web/studio/index.html">Studio</a> section of the documentation for more information.</p>
+<h3><a href="#data-aggregation-transformation-and-projection" name="data-aggregation-transformation-and-projection" class="anchor"><span class="anchor-link"></span></a>Data Aggregation, Transformation and Projection</h3>
+<p>One of the most important features of Nexus is to bridge the gap between the management of data and its consumption while not sacrificing on security. It does that by supporting customizable managed indices of the data (represented by <strong>View</strong> resources).</p>
+<p>Prior to this release, two main type of indices were made available ( <strong>ElasticSearchView</strong> and <strong>SparqlView</strong>) and their <strong>Aggregated*</strong> variants (for querying multiple indices at the same time). They enable fantastic search capabilities on the managed data. But while these types of indices are very powerful on their own, we found that bringing them closer together can raise the bar even further by taking advantage of their best use: an RDF graph is very powerful for data integration and exploration, while ElasticSearch is very powerful for full text and faceted search.</p>
+<p>This release introduces a new type of managed index (represented by <strong>CompositeView</strong> resources) that allows the use of these indices together at their best. It allows integrating data from multiple sources (projects) in a single RDF graph to perform queries that generate documents to be stored in one or many ElasticSearch indices. The approach is extremely flexible as it allows the use of semantic web technologies to integrate, transform and filter data (via queries) to produce arbitrary document structures in ElasticSearch. (Sparql CONSTRUCT) queries can span across graphs of multiple resources removing the coupling on the data shapes for management vs search.</p>
+<p>Additionally, the new views support sources of different (remote) Nexus projects introducing the first of many federation features. This first iteration allows collecting data from different Nexus deployments to produce local indices that enable fast local searches. For the best search user experience, data needs to be pre-indexed such that responses are delivered with minimal latency (distributed joins are significantly slower that local ones). The incremental indexing approach promoted by the system allows for near instant data synchronization between the sources and the local indices.</p>
+<p>For more details on CompositeViews, please read below.</p>
+<h2><a href="#details" name="details" class="anchor"><span class="anchor-link"></span></a>Details</h2>
+<h3><a href="#compositeviews" name="compositeviews" class="anchor"><span class="anchor-link"></span></a>CompositeViews</h3>
 <p>CompositeViews are yet another type of view introduced (currently in Beta) to enable new indexing capabilities:</p>
 <ul>
   <li>ability to collect data to be indexed from multiple sources (current project, other projects, remote Nexus  deployments);</li>
@@ -310,10 +347,7 @@ BlueBrain/nexus
 </ul>
 <p>Projections include filtering configuration to allow resources of different types or constrained by different schemas to be indexed separately. An obvious use case is to index resources of different shapes in different ElasticSearch indices with appropriate mapping definitions for each variation.</p>
 <p>The complete configuration options can be found in the <a href="../api/current/kg/views/composite-view-api.html">api reference</a>.</p>
-<h2><a href="#studio" name="studio" class="anchor"><span class="anchor-link"></span></a>Studio</h2>
-<p>This feature (currently in beta) allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with javascript, data curators can format the presentation of the query results any way they like.</p>
-<p><a href="../nexus-web/studio/index.html">Learn more about the Studios feature</a></p>
-<h2><a href="#view-offsets" name="view-offsets" class="anchor"><span class="anchor-link"></span></a>View offsets</h2>
+<h3><a href="#view-offsets" name="view-offsets" class="anchor"><span class="anchor-link"></span></a>View Offsets</h3>
 <p>Views now expose <code>offset</code> as a sub-resource allowing the retrieval of the last consumed event id. The event id values are the same as the ones presented via <a href="../api/current/kg/kg-resources-api.html#resources-server-sent-events">Server Sent Events</a>.</p>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/offset
 </code></pre>
@@ -343,7 +377,11 @@ BlueBrain/nexus
 <p>These endpoints also accept deletion instructing the system to restart only a part of the process. For example, executing a deletion on the following endpoint will cause the system to only rebuild the projections without having to restart the collection of resources in the temporary RDF graph:</p>
 <pre><code>DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/_/offset
 </code></pre>
-<h2><a href="#other-changes" name="other-changes" class="anchor"><span class="anchor-link"></span></a>Other changes</h2>
+<h3><a href="#javascript-python-sdks-and-the-cli" name="javascript-python-sdks-and-the-cli" class="anchor"><span class="anchor-link"></span></a>JavaScript, Python SDKs and the CLI</h3>
+<p>The JavaScript SDK has been updated to support the new APIs exposed in this release, maintaining feature parity.</p>
+<p>The Python SDK and Nexus CLI have not yet been updated, as we&rsquo;re working on redesigning these components to provide a better user experience. Since the release is fully backwards compatible with the previous releases, the Python SDK and Nexus CLI can be used just as before, but they don&rsquo;t support the newly added APIs.</p>
+<p>We will announce their release at a later date.</p>
+<h3><a href="#other-changes" name="other-changes" class="anchor"><span class="anchor-link"></span></a>Other Changes</h3>
 <p>The SparqlViews can now also <a href="../api/current/kg/views/sparql-view-api.html#sparql-query">be queried</a> using the GET HTTP method by providing the query string in the <code>query</code> parameter:</p>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
 </code></pre>

@@ -253,7 +253,7 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#v1-2-to-v1-3-migration" name="v1-2-to-v1-3-migration" class="anchor"><span class="anchor-link"></span></a>v1.2 To v1.3 Migration</h1>
-<p>As part of the v1.3 release <a href="../api/current/kg/views/composite-view-api.html">CompositeViews</a> were introduced requiring a change in the data model used to record the indexing progress of a View. The change is not backwards compatible, it requires dropping two Cassandra tables and a rebuilding all indices.</p>
+<p>As part of the v1.3 release <a href="../api/current/kg/views/composite-view-api.html">CompositeViews</a> were introduced requiring a change in the data model used to record the indexing progress of a View. The change is not backwards compatible, it requires dropping two Cassandra tables and a rebuilding all indices. Additionally, in order to benefit from the new ElasticSearch index configuration, a migration of the default ElasticSearchView of each project is required.</p>
 <p>The migration steps are as follows:</p>
 <ol>
   <li>Stop the 3 services: iam, admin and kg.</li>
@@ -276,7 +276,12 @@ drop table kg.projections_failures;
 </code></pre>
   </li>
   <li>
-  <p>Deploy the new service images (tag <code>1.3</code>): <a href="https://hub.docker.com/r/bluebrain/nexus-iam">iam</a>,  <a href="https://hub.docker.com/r/bluebrain/nexus-admin">admin</a> and <a href="https://hub.docker.com/r/bluebrain/nexus-kg">kg</a>;  make sure to start the iam, admin and kg services one by one in order.</p></li>
+  <p>Deploy the new service images (tag <code>1.3</code>) for <a href="https://hub.docker.com/r/bluebrain/nexus-iam">iam</a> and  <a href="https://hub.docker.com/r/bluebrain/nexus-admin">admin</a>.</p></li>
+  <li>
+    <p>Deploy the new <a href="https://hub.docker.com/r/bluebrain/nexus-kg">kg</a> (tag <code>1.3</code>) image with the <code>MIGRATE_V12_TO_V13=true</code>  environment variable. This will instruct the service to automatically migrate the default views. The service can  be restarted without the migration environment variable after the following message is presented in the log:</p>
+    <pre><code>Finished migrating views mappings. 
+</code></pre>
+  </li>
 </ol>
 <p>Once the services are restarted with the new images all ElasticSearch and BlazeGraph indices will be rebuilt automatically. The progress for each view can be tracked either in Nexus Web or using the <a href="../api/current/kg/views/elasticsearch-view-api.html#fetch-statistics">statistics endpoint</a> for each view:</p>
 <pre><code>    GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
