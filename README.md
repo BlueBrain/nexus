@@ -43,9 +43,9 @@ For more details, you can talk with the development team directly on [Gitter].
 [documentation]: https://bluebrainnexus.io/docs/
 [components]: https://bluebrainnexus.io/docs/index.html#nexus-components
 [getting started]: https://bluebrainnexus.io/docs/getting-started/
-[api reference]: https://bluebrainnexus.io/docs/api/
-[architecture]: https://bluebrainnexus.io/docs/architecture/
-[roadmap]: https://bluebrainnexus.io/docs/roadmap/
+[api reference]: https://bluebrainnexus.io/docs/api/current/
+[architecture]: https://bluebrainnexus.io/docs/additional-info/architecture/
+[roadmap]: https://github.com/BlueBrain/nexus/milestones
 
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/
