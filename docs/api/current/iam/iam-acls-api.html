@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
-<meta name="description" content="nexus">
+<meta name="description" content="docs">
 <meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
@@ -18,7 +18,7 @@
 <meta name="lang:search.tokenizer" content="[\s\-]+">
 
 
-<meta name="description" content="nexus">
+<meta name="description" content="docs">
 <link rel="shortcut icon" href="../../../.././assets/img/favicon-32x32.png">
 <title>Access Control Lists · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../../assets/stylesheets/application.451f80e5.css">
@@ -258,7 +258,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.1.0*
+<i class="md-icon" title="Version">label_outline</i> 0.1.13+189-ff951bd4
 </label>
 </li>
 </ul>
@@ -327,7 +327,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1&quot; -d  \
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-add.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1&quot; -d  \
 &#39;{
   &quot;acl&quot;: [
     {
@@ -360,10 +360,10 @@ BlueBrain/nexus
       }
     }
   ]
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-add.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+}&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-add.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;acl&quot;: [
     {
       &quot;permissions&quot;: [
@@ -395,10 +395,10 @@ BlueBrain/nexus
       }
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-add.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-added-ref.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
@@ -410,7 +410,7 @@ BlueBrain/nexus
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-added-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h2><a href="#replace-acls" name="replace-acls" class="anchor"><span class="anchor-link"></span></a>Replace ACLs</h2>
 <p>This operation overrides the collection of ACL on the provided path.</p>
@@ -427,7 +427,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=1&quot; -d \
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-replace.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPUT -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=1&quot; -d \
 &#39;{
   &quot;acl&quot;: [
     {
@@ -460,10 +460,10 @@ BlueBrain/nexus
       }
     }
   ]
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-replace.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+}&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-add.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;acl&quot;: [
     {
       &quot;permissions&quot;: [
@@ -495,10 +495,10 @@ BlueBrain/nexus
       }
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-add.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-replaced-ref.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
@@ -510,7 +510,7 @@ BlueBrain/nexus
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:07:00.801Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-replaced-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h2><a href="#subtract-acls" name="subtract-acls" class="anchor"><span class="anchor-link"></span></a>Subtract ACLs</h2>
 <p>This operation removes the provided ACL collection from the existing collection of ACL on the provided path.</p>
@@ -527,7 +527,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=2&quot; -d \
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-subtract.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=2&quot; -d \
 &#39;{
   &quot;@type&quot;: &quot;Subtract&quot;,
   &quot;acl&quot;: [
@@ -541,10 +541,10 @@ BlueBrain/nexus
       }
     }
   ]
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-subtract.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+}&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-subtract.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@type&quot;: &quot;Subtract&quot;,
   &quot;acl&quot;: [
     {
@@ -557,10 +557,10 @@ BlueBrain/nexus
       }
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-subtract.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-subtracted-ref.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
@@ -572,7 +572,7 @@ BlueBrain/nexus
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:10:00.801Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-subtracted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h2><a href="#append-acls" name="append-acls" class="anchor"><span class="anchor-link"></span></a>Append ACLs</h2>
 <p>This operation appends the provided ACL collection to the existing collection of ACL on the provided path.</p>
@@ -589,7 +589,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=3&quot; -d  \
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-append.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPATCH -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/acls/org1?rev=3&quot; -d  \
 &#39;{
   &quot;@type&quot;: &quot;Append&quot;,
   &quot;acl&quot;: [
@@ -604,10 +604,10 @@ BlueBrain/nexus
       }
     }
   ]
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-append.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+}&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-append.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@type&quot;: &quot;Append&quot;,
   &quot;acl&quot;: [
     {
@@ -621,10 +621,10 @@ BlueBrain/nexus
       }
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-append.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-appended-ref.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
   &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
@@ -633,7 +633,7 @@ BlueBrain/nexus
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:15:00.801Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-appended-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h2><a href="#delete-acls" name="delete-acls" class="anchor"><span class="anchor-link"></span></a>Delete ACLs</h2>
 <p>This operation deletes the entire collection of ACL on the provided path.</p>
@@ -647,10 +647,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/acls/org1?rev=4&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-delete.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-delete.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/acls/org1?rev=4&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-deleted-ref.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
   &quot;@id&quot;: &quot;https://nexus.example.com/v1/acls/org1&quot;,
   &quot;@type&quot;: &quot;nxv:AccessControlList&quot;,
@@ -659,7 +659,7 @@ BlueBrain/nexus
   &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:30:00.801Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-deleted-ref.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h2><a href="#fetch-acls" name="fetch-acls" class="anchor"><span class="anchor-link"></span></a>Fetch ACLs</h2>
 <pre><code>GET /v1/acls/{path}?rev={rev}&amp;self={self}
@@ -674,10 +674,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/org1?rev=1&amp;self=false&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-get.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-get.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/org1?rev=1&amp;self=false&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-fetched.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/acls.json&quot;
@@ -727,7 +727,7 @@ BlueBrain/nexus
   &quot;_updatedAt&quot;: &quot;2018-09-18T10:01:00.801Z&quot;,
   &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
   &quot;_rev&quot;: 1
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-fetched.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h2><a href="#list-acls" name="list-acls" class="anchor"><span class="anchor-link"></span></a>List ACLs</h2>
 <pre><code>GET /v1/acls/{path}?ancestors={ancestors}&amp;self={self}
@@ -751,10 +751,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/*?ancestors=true&amp;self=true&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-list.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-list.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/*?ancestors=true&amp;self=true&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-listed.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
@@ -810,15 +810,15 @@ BlueBrain/nexus
       &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-listed.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
   <dt>Request (with ancestors)
   </dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/myorg/*?ancestors=false&amp;self=false&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-list-ancestors.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-list-ancestors.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/myorg/*?ancestors=false&amp;self=false&quot;</code></pre></dd>
   <dt>Response (with ancestors)
   </dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/acls-listed-ancestors.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,
@@ -896,7 +896,7 @@ BlueBrain/nexus
       &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/alice&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/acls-listed-ancestors.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h2><a href="#acl-server-sent-events" name="acl-server-sent-events" class="anchor"><span class="anchor-link"></span></a>ACL Server Sent Events</h2>
 <p>This endpoint allows clients to receive automatic updates from the ACLs in a streaming fashion.</p>
@@ -918,10 +918,10 @@ id:{id}
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/events&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/event.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/event.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/acls/events&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;AclAppended&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/test&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;nexusdev&quot;,&quot;subject&quot;:&quot;test&quot;},&quot;permissions&quot;:[&quot;organizations/create&quot;]}],&quot;_path&quot;:&quot;/&quot;,&quot;_rev&quot;:5,&quot;_instant&quot;:&quot;2019-06-14T11:54:52.379Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/acls/event.json" target="_blank" title="Go to snippet source"></a><code class="language-json">data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;AclAppended&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/test&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;nexusdev&quot;,&quot;subject&quot;:&quot;test&quot;},&quot;permissions&quot;:[&quot;organizations/create&quot;]}],&quot;_path&quot;:&quot;/&quot;,&quot;_rev&quot;:5,&quot;_instant&quot;:&quot;2019-06-14T11:54:52.379Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
 event:AclAppended
 id:381a17e0-8e9b-11e9-a8f6-c5c16f2312d6
 
@@ -931,17 +931,17 @@ id:388cfdf0-8e9b-11e9-a8f6-c5c16f2312d6
 
 data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/iam.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;],&quot;@type&quot;:&quot;AclSubtracted&quot;,&quot;acl&quot;:[{&quot;identity&quot;:{&quot;@id&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/test&quot;,&quot;@type&quot;:&quot;User&quot;,&quot;realm&quot;:&quot;nexusdev&quot;,&quot;subject&quot;:&quot;test&quot;},&quot;permissions&quot;:[&quot;organizations/create&quot;]}],&quot;_path&quot;:&quot;/&quot;,&quot;_rev&quot;:6,&quot;_instant&quot;:&quot;2019-06-14T11:56:55.963Z&quot;,&quot;_subject&quot;:&quot;https://nexus.example.com/v1/realms/nexusdev/users/myuser&quot;}
 event:AclSubtracted
-id:81c3d200-8e9b-11e9-a8f6-c5c16f2312d6</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/acls/event.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+id:81c3d200-8e9b-11e9-a8f6-c5c16f2312d6</code></pre></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/iam/iam-acls-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/iam/iam-acls-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.1.0*
+0.1.13+189-ff951bd4
 </span>
 </div>
 </article>

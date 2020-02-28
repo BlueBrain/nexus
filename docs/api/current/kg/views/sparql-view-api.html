@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
-<meta name="description" content="nexus">
+<meta name="description" content="docs">
 <meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
@@ -18,7 +18,7 @@
 <meta name="lang:search.tokenizer" content="[\s\-]+">
 
 
-<meta name="description" content="nexus">
+<meta name="description" content="docs">
 <link rel="shortcut icon" href="../../../../.././assets/img/favicon-32x32.png">
 <title>SparqlView · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../../../assets/stylesheets/application.451f80e5.css">
@@ -259,7 +259,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.1.0*
+<i class="md-icon" title="Version">label_outline</i> 0.1.13+189-ff951bd4
 </label>
 </li>
 </ul>
@@ -354,11 +354,11 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/graph/sparql&quot; -d \
-&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/sparql-view-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/sparql-view-search.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/graph/sparql&quot; -d \
+&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/sparql-view-search.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;head&quot;: {
     &quot;vars&quot;: [
       &quot;s&quot;
@@ -380,7 +380,7 @@ BlueBrain/nexus
       }
     ]
   }
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/sparql-view-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#fetch-statistics" name="fetch-statistics" class="anchor"><span class="anchor-link"></span></a>Fetch statistics</h3>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
@@ -389,10 +389,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/statistics&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-statistics.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/view-statistics.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/statistics&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/view-statistics.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
   &quot;@type&quot;: &quot;ViewStatistics&quot;,
   &quot;totalEvents&quot;: 3754,
@@ -404,7 +404,7 @@ BlueBrain/nexus
   &quot;delayInSeconds&quot;: 0,
   &quot;lastEventDateTime&quot;: &quot;2020-01-31T15:04:44.021Z&quot;,
   &quot;lastProcessedEventDateTime&quot;: &quot;2020-01-31T15:04:44.021Z&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-statistics.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <p>where&hellip;</p>
 <ul>
@@ -425,23 +425,23 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/offset&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-restart.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/view-restart.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/offset&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/view-restart.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/offset.json&quot;,
   &quot;@type&quot;: &quot;NoOffset&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-restart.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/kg/views/sparql-view-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/kg/views/sparql-view-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.1.0*
+0.1.13+189-ff951bd4
 </span>
 </div>
 </article>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="x-ua-compatible" content="ie=edge">
-<meta name="description" content="nexus">
+<meta name="description" content="docs">
 <meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
 
 <meta name="lang:clipboard.copy" content="Copy to clipboard">
@@ -18,7 +18,7 @@
 <meta name="lang:search.tokenizer" content="[\s\-]+">
 
 
-<meta name="description" content="nexus">
+<meta name="description" content="docs">
 <link rel="shortcut icon" href="../../../../.././assets/img/favicon-32x32.png">
 <title>CompositeView · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../../../assets/stylesheets/application.451f80e5.css">
@@ -281,7 +281,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.1.0*
+<i class="md-icon" title="Version">label_outline</i> 0.1.13+189-ff951bd4
 </label>
 </li>
 </ul>
@@ -686,7 +686,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:myprojection/_search&quot; -d \
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-es-id-search.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:myprojection/_search&quot; -d \
 &#39;{
     &quot;query&quot;: {
         &quot;term&quot;: {
@@ -695,10 +695,10 @@ BlueBrain/nexus
             }
         }
     }
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-es-id-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+}&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-es-search-payload.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
     &quot;query&quot;: {
         &quot;term&quot;: {
             &quot;name&quot;: {
@@ -706,10 +706,10 @@ BlueBrain/nexus
             }
         }
     }
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-es-search-payload.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-es-search.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;_shards&quot;: {
     &quot;failed&quot;: 0,
     &quot;skipped&quot;: 0,
@@ -795,7 +795,7 @@ BlueBrain/nexus
   },
   &quot;timed_out&quot;: false,
   &quot;took&quot;: 0
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-es-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#search-documents-in-all-projections" name="search-documents-in-all-projections" class="anchor"><span class="anchor-link"></span></a>Search Documents in all projections</h3>
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/_search
@@ -806,7 +806,7 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/_search&quot; -d \
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-es-search.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/json&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/_search&quot; -d \
 &#39;{
     &quot;query&quot;: {
         &quot;term&quot;: {
@@ -815,10 +815,10 @@ BlueBrain/nexus
             }
         }
     }
-}&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-es-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+}&#39;</code></pre></dd>
   <dt>Payload</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-es-search-payload.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
     &quot;query&quot;: {
         &quot;term&quot;: {
             &quot;name&quot;: {
@@ -826,10 +826,10 @@ BlueBrain/nexus
             }
         }
     }
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-es-search-payload.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-es-search.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;_shards&quot;: {
     &quot;failed&quot;: 0,
     &quot;skipped&quot;: 0,
@@ -915,7 +915,7 @@ BlueBrain/nexus
   },
   &quot;timed_out&quot;: false,
   &quot;took&quot;: 0
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-es-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#sparql-query-in-a-projection" name="sparql-query-in-a-projection" class="anchor"><span class="anchor-link"></span></a>SPARQL query in a projection</h3>
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/sparql
@@ -930,11 +930,11 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:album/sparql&quot; -d \
-&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-id-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-id-search.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:album/sparql&quot; -d \
+&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-search.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;head&quot;: {
     &quot;vars&quot;: [
       &quot;s&quot;
@@ -956,7 +956,7 @@ BlueBrain/nexus
       }
     ]
   }
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#sparql-query-in-all-projections" name="sparql-query-in-all-projections" class="anchor"><span class="anchor-link"></span></a>SPARQL query in all projections</h3>
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql
@@ -970,11 +970,11 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/sparql&quot; -d \
-&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-projections-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-projections-search.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/sparql&quot; -d \
+&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-search.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;head&quot;: {
     &quot;vars&quot;: [
       &quot;s&quot;
@@ -996,7 +996,7 @@ BlueBrain/nexus
       }
     ]
   }
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#sparql-query-in-the-intermediate-space" name="sparql-query-in-the-intermediate-space" class="anchor"><span class="anchor-link"></span></a>SPARQL query in the intermediate space</h3>
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/sparql
@@ -1010,11 +1010,11 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/sparql&quot; -d \
-&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-intermediate-sparql-search.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-intermediate-sparql-search.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XPOST -H &quot;Content-Type: application/sparql-query&quot; &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/sparql&quot; -d \
+&#39;SELECT ?s where {?s ?p ?o} LIMIT 2&#39;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-search.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;head&quot;: {
     &quot;vars&quot;: [
       &quot;s&quot;
@@ -1036,7 +1036,7 @@ BlueBrain/nexus
       }
     ]
   }
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-sparql-search.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#fetch-statistics" name="fetch-statistics" class="anchor"><span class="anchor-link"></span></a>Fetch statistics</h3>
 <p>This endpoint displays statistical information about the intermediate Sparql space.</p>
@@ -1046,10 +1046,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/statistics&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-intermediate-stats.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-intermediate-stats.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/statistics&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-stats.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
   &quot;@type&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/CompositeViewStatistics&quot;,
   &quot;totalEvents&quot;: 34,
@@ -1105,7 +1105,7 @@ BlueBrain/nexus
       &quot;lastProcessedEventDateTime&quot;: &quot;2020-02-14T09:32:44.650Z&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-stats.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <p>where:</p>
 <ul>
@@ -1128,10 +1128,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/sources/nxv:mysource/statistics&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-source-id-stats.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-source-id-stats.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/sources/nxv:mysource/statistics&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-source-stat.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
   &quot;@type&quot;: &quot;ViewStatistics&quot;,
   &quot;totalEvents&quot;: 9,
@@ -1143,7 +1143,7 @@ BlueBrain/nexus
   &quot;delayInSeconds&quot;: 0,
   &quot;lastEventDateTime&quot;: &quot;2020-02-14T09:31:41.400Z&quot;,
   &quot;lastProcessedEventDateTime&quot;: &quot;2020-02-14T09:31:41.400Z&quot;
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-source-stat.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <p>where:</p>
 <ul>
@@ -1164,10 +1164,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/sources/_/statistics&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-sources-stats.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-sources-stats.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/sources/_/statistics&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-sources-stat.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;
@@ -1214,7 +1214,7 @@ BlueBrain/nexus
       &quot;lastProcessedEventDateTime&quot;: &quot;2020-01-24T13:41:42.177Z&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-sources-stat.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <p>where:</p>
 <ul>
@@ -1237,10 +1237,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:albums/statistics&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-id-stats.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-id-stats.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:albums/statistics&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-stats.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
   &quot;@type&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/CompositeViewStatistics&quot;,
   &quot;totalEvents&quot;: 34,
@@ -1296,7 +1296,7 @@ BlueBrain/nexus
       &quot;lastProcessedEventDateTime&quot;: &quot;2020-02-14T09:32:44.650Z&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-stats.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <p>where:</p>
 <ul>
@@ -1319,10 +1319,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/statistics&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-stats.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-stats.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/statistics&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-all-stats.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;
@@ -1414,7 +1414,7 @@ BlueBrain/nexus
       &quot;lastProcessedEventDateTime&quot;: &quot;2020-01-24T13:41:42.177Z&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/compositeview-fetch-all-stats.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <p>where:</p>
 <ul>
@@ -1437,10 +1437,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/offset&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/view-restart.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/view-restart.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/offset&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-restart.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/offset.json&quot;,
   &quot;@type&quot;: &quot;CompositeViewOffset&quot;,
   &quot;values&quot;: [
@@ -1457,7 +1457,7 @@ BlueBrain/nexus
       &quot;sourceId&quot;: &quot;http://music.com/sources/local&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-restart.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#restart-projection" name="restart-projection" class="anchor"><span class="anchor-link"></span></a>Restart projection</h3>
 <p>This endpoint restarts indexing process for the provided projection while keeping the sources (and the intermediate Sparql space) progress.</p>
@@ -1468,10 +1468,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:album/offset&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-projection-id-restart.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-projection-id-restart.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/nxv:album/offset&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-projection-id-restart.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/offset.json&quot;,
   &quot;@type&quot;: &quot;CompositeViewOffset&quot;,
   &quot;values&quot;: [
@@ -1491,7 +1491,7 @@ BlueBrain/nexus
       &quot;projectionId&quot;: &quot;http://music.com/albums&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-projection-id-restart.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 <h3><a href="#restart-all-projections" name="restart-all-projections" class="anchor"><span class="anchor-link"></span></a>Restart all projections</h3>
 <p>This endpoint restarts indexing process for all projections while keeping the sources (and the intermediate Sparql space) progress.</p>
@@ -1501,10 +1501,10 @@ BlueBrain/nexus
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/offset&quot;</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-projection-restart.sh" class="snippet-full-source github">Full source at GitHub</a></dd>
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-projection-restart.sh" target="_blank" title="Go to snippet source"></a><code class="language-sh">curl -XDELETE &quot;https://nexus.example.com/v1/views/myorg/myproj/nxv:myview/projections/_/offset&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><code class="language-json">{
+  <pre class="prettyprint"><a class="icon go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/assets/views/composite-view-projection-restart.json" target="_blank" title="Go to snippet source"></a><code class="language-json">{
   &quot;@context&quot;: [
     &quot;https://bluebrain.github.io/nexus/contexts/offset.json&quot;,
     &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;
@@ -1554,17 +1554,17 @@ BlueBrain/nexus
       &quot;value&quot;: &quot;412b3110-3eaf-11ea-8415-9b8aa8c49858&quot;
     }
   ]
-}</code></pre><a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/assets/views/composite-view-projection-restart.json" class="snippet-full-source github">Full source at GitHub</a></dd>
+}</code></pre></dd>
 </dl>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/src/main/paradox/docs/api/current/kg/views/composite-view-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/api/current/kg/views/composite-view-api.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.1.0*
+0.1.13+189-ff951bd4
 </span>
 </div>
 </article>
