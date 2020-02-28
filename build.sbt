@@ -143,7 +143,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs)
+  .aggregate(docs, cli)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -164,4 +164,4 @@ inThisBuild(
   )
 )
 
-addCommandAlias("review", ";clean;paradox")
+addCommandAlias("review", ";clean;scalafmtSbt;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;coverageReport;coverageAggregate")
