@@ -1,8 +1,10 @@
-name: Continuous Integration
+name: Continuous Integration Docs
 on:
   push:
     branches:
       - master
+    paths:
+      - 'docs/**'
   pull_request:
 
 jobs:
@@ -17,7 +19,7 @@ jobs:
       with:
         java-version: adopt@1.11
     - name: Review
-      run: sbt clean scalafmtCheck scalafmtSbtCheck paradox
+      run: sbt docs/clean docs/scalafmtCheck docs/scalafmtSbtCheck docs/paradox
 
   publish:
     if: github.event_name == 'push'
@@ -42,5 +44,5 @@ jobs:
         echo "$BUILD_BOT_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_rsa"
         chmod 400 "$HOME/.ssh/id_rsa"
         ssh-keyscan -t rsa github.com >> "$HOME/.ssh/known_hosts"
-        sbt clean makeSite ghpagesPushSite
+        sbt docs/clean docs/makeSite docs/ghpagesPushSite
 
