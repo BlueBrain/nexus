@@ -20,9 +20,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: StaticAnalysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false cli/clean cli/scalafmtCheck cli/test:scalafmtCheck cli/scalafmtSbtCheck cli/scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false cli/clean cli/coverage cli/test cli/coverageReport cli/coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" clean coverage test coverageReport coverageAggregate
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -38,9 +38,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Publish
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false cli/releaseEarly
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" releaseEarly
       - name: RecordCoverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false cli/clean cli/coverage cli/test cli/coverageReport cli/coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" clean coverage test coverageReport coverageAggregate
       - uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -59,9 +59,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Publish
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false cli/releaseEarly
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" releaseEarly
       - name: RecordCoverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false cli/clean cli/coverage cli/test cli/coverageReport cli/coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" clean coverage test coverageReport coverageAggregate
       - uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
