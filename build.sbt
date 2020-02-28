@@ -25,7 +25,7 @@ scalafmt: {
  */
 
 lazy val docs = project
-  .in(file("modules/docs"))
+  .in(file("docs"))
   .enablePlugins(ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
   .settings(
     name       := "docs",
