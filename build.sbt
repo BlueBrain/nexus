@@ -83,21 +83,7 @@ lazy val docs = project
     },
     paradoxNavigationDepth in Paradox := 4,
     paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
-    paradoxRoots := List(
-      "docs/additional-info/architecture/meetup/README.html",
-      "docs/getting-started/intro-linked-data.html",
-      "docs/index.html",
-      "docs/tutorial/build-recommender/prepare-data.html",
-      "docs/tutorial/build-recommender/push-model.html",
-      "docs/tutorial/build-recommender/recommend-query.html",
-      "docs/tutorial/build-recommender/setup-es-view.html",
-      "docs/tutorial/build-recommender/setup-nexus.html",
-      "docs/tutorial/build-recommender/train-recommender-model.html",
-      "docs/tutorial/knowledge-graph/little-semantic.html",
-      "docs/tutorial/nexus-nutshell/index.html",
-      "docs/tutorial/shacl-in-a-nutshell/cleaning-movielens.html",
-      "docs/tutorial/shacl-in-a-nutshell/index.html"
-    ),
+    paradoxRoots                      := List("docs/index.html"),
     // gh pages settings
     git.remoteRepo  := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll := true,
@@ -165,3 +151,4 @@ inThisBuild(
 )
 
 addCommandAlias("review", ";clean;scalafmtSbt;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;coverageReport;coverageAggregate")
+addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
