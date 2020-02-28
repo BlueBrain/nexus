@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.cli.influx
+package ch.epfl.bluebrain.nexus.cli.influxdb
 
 import cats.effect.ExitCode
 import monix.execution.Scheduler.Implicits.global
