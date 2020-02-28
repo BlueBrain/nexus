@@ -12,10 +12,6 @@ import org.http4s.Uri
   */
 final case class SparqlResults(head: Head, results: Bindings, boolean: Option[Boolean] = None) {
 
-  private val s = "subject"
-  private val p = "predicate"
-  private val o = "object"
-
   /**
     * Creates a new sparql result which is a merge of the provided results and the current results
     * @param that the provided head
