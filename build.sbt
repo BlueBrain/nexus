@@ -98,6 +98,8 @@ lazy val cliShared = project
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
+      circeGeneric,
+      circeParser,
       http4sCirce,
       http4sClient,
       fs2,
@@ -123,7 +125,7 @@ lazy val cli = project
   .in(file("cli"))
   .settings(name := "cli", moduleName := "cli")
   .settings(libraryDependencies ++= Seq(decline, scalaTest % Test))
-  .aggregate(influxdb, postgresql)
+  .aggregate(cliShared, influxdb, postgresql)
 
 lazy val root = project
   .in(file("."))
@@ -150,5 +152,5 @@ inThisBuild(
   )
 )
 
-addCommandAlias("review", ";clean;scalafmtSbt;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;coverageReport;coverageAggregate")
+addCommandAlias("review", ";clean;scalafmtSbt;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
