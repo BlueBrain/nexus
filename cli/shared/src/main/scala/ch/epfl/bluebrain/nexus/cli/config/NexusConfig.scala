@@ -14,8 +14,9 @@ import pureconfig.generic.semiauto.deriveConvert
   *
   * @param endpoint the Nexus endpoint, including the prefix (if necessary)
   * @param token    the optional Bearer token value
+  * @param retry    the retry strategy
   */
-final case class NexusConfig(endpoint: Uri, token: Option[BearerToken]) {
+final case class NexusConfig(endpoint: Uri, token: Option[BearerToken], retry: RetryStrategyConfig) {
 
   /**
     * Converts the Bearer Token to the HTTP Header Authorization header
