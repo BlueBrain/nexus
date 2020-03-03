@@ -60,15 +60,15 @@ class EventStreamClientSpec extends AnyWordSpecLike with Matchers with Fixtures 
       val instantDeprecated = Instant.parse("2020-03-02T11:05:34.643363Z")
       val expected = Vector(
         EventEnvelope(
-          Some(timeCreated),
+          timeCreated,
           Event("Created", resourceId, orgLabel, projectLabel, Set(nxv / "TypeA", nxv / "TypeB"), instantCreated)
         ),
         EventEnvelope(
-          Some(timeUpdated),
+          timeUpdated,
           Event("Updated", resourceId, orgLabel, projectLabel, Set(nxv / "TypeB"), instantUpdated)
         ),
         EventEnvelope(
-          Some(timeDeprecated),
+          timeDeprecated,
           Event("Deprecated", resourceId, orgLabel, projectLabel, Set.empty, instantDeprecated)
         )
       )

@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.cli.types
 
 /**
-  * Event wrapper adding the offset metadata.
+ * Event wrapper adding its metadata.
+ *
+ * @param offset the offset of the event
+ * @param event  the event value
  **/
-final case class EventEnvelope(offsetOpt: Option[Offset], event: Event)
+final case class EventEnvelope(offset: Offset, event: Event)
