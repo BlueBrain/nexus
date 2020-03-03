@@ -98,6 +98,7 @@ lazy val cliShared = project
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
+      catsEffectRetry,
       circeGeneric,
       circeParser,
       http4sCirce,

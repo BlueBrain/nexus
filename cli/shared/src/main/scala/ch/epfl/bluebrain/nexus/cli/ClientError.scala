@@ -45,9 +45,7 @@ object ClientError {
     */
   final case class Unexpected(code: Status, message: String) extends ClientError
 
-  def errorOr[F[_], A](
-      successF: Response[F] => F[Either[ClientError, A]]
-  )(implicit F: Sync[F]): Response[F] => F[Either[ClientError, A]] = {
+  def errorOr[F[_]: Sync, A](successF: Response[F] => F[ClientErrOr[A]]): Response[F] => F[ClientErrOr[A]] = {
     case Status.Successful(r)  => successF(r)
     case Status.ClientError(r) => r.bodyAsText.compile.string.map(s => Left(ClientStatusError(r.status, s)))
     case Status.ServerError(r) => r.bodyAsText.compile.string.map(s => Left(ServerStatusError(r.status, s)))
