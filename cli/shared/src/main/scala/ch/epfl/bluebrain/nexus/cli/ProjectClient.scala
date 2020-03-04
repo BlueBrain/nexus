@@ -63,7 +63,7 @@ object ProjectClient {
     new ProjectClient[F] {
 
       private val endpoints                            = NexusEndpoints(config)
-      private val retryCondition                       = config.retry.retryCondition.fromEither[ProjectLabelRef] _
+      private val successCondition                     = config.retry.retryCondition.notRetryFromEither[ProjectLabelRef] _
       private implicit val retryPolicy: RetryPolicy[F] = config.retry.retryPolicy
       private implicit val logOnError: (ClientErrOr[ProjectLabelRef], RetryDetails) => F[Unit] =
         (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
@@ -83,7 +83,7 @@ object ProjectClient {
                     F.pure(Right((orgLabel, projectLabel)))
               }
             })
-            resp.retryingM(retryCondition)
+            resp.retryingM(successCondition)
         }
       }
     }

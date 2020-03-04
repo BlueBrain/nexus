@@ -24,18 +24,18 @@ scalafmt: {
 }
  */
 
-val catsVersion       = "2.1.0"
-val catsEffectVersion = "2.0.0"
+val catsVersion       = "2.1.1"
+val catsEffectVersion = "2.1.2"
 val catsRetryVersion  = "0.3.2"
 val circeVersion      = "0.13.0"
 val declineVersion    = "1.0.0"
-val fs2Version        = "2.2.1"
+val fs2Version        = "2.2.2"
 val http4sVersion     = "0.21.1"
 val log4catsVersion   = "1.0.1"
 val logbackVersion    = "1.2.3"
 val monixVersion      = "3.1.0"
-val pureconfigVersion = "0.12.1"
-val scalaTestVersion  = "3.1.0"
+val pureconfigVersion = "0.12.3"
+val scalaTestVersion  = "3.1.1"
 
 lazy val catsCore        = "org.typelevel"         %% "cats-core"              % catsVersion
 lazy val catsEffect      = "org.typelevel"         %% "cats-effect"            % catsEffectVersion

@@ -10,10 +10,9 @@ import org.http4s._
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.Client
 import org.http4s.headers.`Content-Type`
-import retry.{RetryDetails, RetryPolicy}
 import retry.CatsEffect._
-import retry._
 import retry.syntax.all._
+import retry.{RetryDetails, RetryPolicy}
 
 trait SparqlClient[F[_]] {
 
@@ -60,7 +59,7 @@ object SparqlClient {
     new SparqlClient[F] {
 
       private val endpoints                            = NexusEndpoints(config)
-      private val retryCondition                       = config.retry.retryCondition.fromEither[SparqlResults] _
+      private val successCondition                     = config.retry.retryCondition.notRetryFromEither[SparqlResults] _
       private implicit val retryPolicy: RetryPolicy[F] = config.retry.retryPolicy
       private implicit val logOnError: (ClientErrOr[SparqlResults], RetryDetails) => F[Unit] =
         (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
@@ -79,7 +78,7 @@ object SparqlClient {
         val resp: F[ClientErrOr[SparqlResults]] = client.fetch(req)(ClientError.errorOr { r =>
           r.attemptAs[SparqlResults].value.map(_.leftMap(err => SerializationError(err.message)))
         })
-        resp.retryingM(retryCondition)
+        resp.retryingM(successCondition)
       }
     }
 }
