@@ -26,6 +26,25 @@ trait ClientRetryCondition {
       case Left(err) => apply(err)
       case _         => false
     }
+
+  /**
+    * Decide whether it is worth to avoid retrying or not depending on the passed [[ClientError]].
+    * The actual retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
+
+    * @param error the client error
+    * @return true = do not retry; false = retry
+    */
+  def notRetry(error: ClientError): Boolean = !apply(error)
+
+  /**
+    * Decide whether it is worth to avoid retrying or not depending on the passed either of [[ClientError]].
+    * The actual retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
+    *
+    * @param either an [[Either]] where the Left is a [[ClientError]]
+    * @return true = do not retry; false = retry
+    */
+  def notRetryFromEither[A](either: ClientErrOr[A]): Boolean = !fromEither(either)
+
 }
 
 // $COVERAGE-OFF$
