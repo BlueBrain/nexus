@@ -28,7 +28,11 @@ object InfluxDbConfig {
   case class ProjectConfig(
       sparqlView: Uri,
       typePrefix: Uri,
-      types: Map[String, String]
+      types: Map[String, String],
+      influxdbDatabase: String,
+      influxdbMeasurement: String,
+      influxdbValues: Set[String],
+      influxdbTimestamp: String
   ) {
     def findTemplate(eventTypes: Set[Uri]): Option[(String, SparqlQueryTemplate)] = {
       types.foldLeft[Option[(String, SparqlQueryTemplate)]](None) {
