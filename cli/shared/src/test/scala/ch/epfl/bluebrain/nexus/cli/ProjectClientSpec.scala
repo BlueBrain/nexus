@@ -6,7 +6,7 @@ import java.util.regex.Pattern.quote
 import cats.effect.IO
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.cli.ClientError.ClientStatusError
-import ch.epfl.bluebrain.nexus.cli.ProjectClient.ProjectLabelRef
+import ch.epfl.bluebrain.nexus.cli.ProjectClient.{LiveProjectClient, TestProjectClient}
 import ch.epfl.bluebrain.nexus.cli.types.Label
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import org.http4s.Method._
@@ -23,48 +23,49 @@ class ProjectClientSpec extends AnyWordSpecLike with Matchers with Fixtures {
   private val orgLabel     = Label(genString())
   private val projectLabel = Label(genString())
   private val projectUuid  = UUID.randomUUID()
-  private val cache        = Ref[IO].of(Map.empty[(UUID, UUID), ProjectLabelRef]).unsafeRunSync()
 
-  val replacements = Map(
-    quote("{projectUuid}")  -> projectUuid.toString,
-    quote("{orgUuid}")      -> orgUuid.toString,
-    quote("{projectLabel}") -> projectLabel.toString,
-    quote("{orgLabel}")     -> orgLabel.toString
-  )
+  "A LiveProjectClient" should {
 
-  private val mockedHttpApp = HttpApp[IO] {
-    case r
-        if r.uri == endpoints.projectUri(orgUuid, projectUuid) &&
-          r.method == GET &&
-          r.headers.get(Authorization) == config.authorizationHeader =>
-      IO.pure(Response[IO](Status.Ok).withEntity(jsonContentOf("/project.json", replacements)))
+    val cache = Ref[IO].of(Map.empty[(UUID, UUID), ProjectLabelRef]).unsafeRunSync()
 
-    case r
-        if r.uri.toString().startsWith((config.endpoint / "projects").toString()) &&
-          r.method == GET &&
-          r.headers.get(Authorization) == config.authorizationHeader =>
-      IO.pure(Response[IO](Status.NotFound).withEntity(jsonContentOf("/not_found.json")))
+    val replacements = Map(
+      quote("{projectUuid}")  -> projectUuid.toString,
+      quote("{orgUuid}")      -> orgUuid.toString,
+      quote("{projectLabel}") -> projectLabel.toString,
+      quote("{orgLabel}")     -> orgLabel.toString
+    )
 
-    case r if r.uri.toString().startsWith((config.endpoint / "projects").toString()) && r.method == GET =>
-      IO.pure(Response[IO](Status.Forbidden).withEntity(jsonContentOf("/auth_failed.json")))
-  }
+    val mockedHttpApp = HttpApp[IO] {
+      case r
+          if r.uri == endpoints.projectUri(orgUuid, projectUuid) &&
+            r.method == GET &&
+            r.headers.get(Authorization) == config.authorizationHeader =>
+        IO.pure(Response[IO](Status.Ok).withEntity(jsonContentOf("/project.json", replacements)))
 
-  private val mockedHttpClient: Client[IO] = Client.fromHttpApp(mockedHttpApp)
+      case r
+          if r.uri.toString().startsWith((config.endpoint / "projects").toString()) &&
+            r.method == GET &&
+            r.headers.get(Authorization) == config.authorizationHeader =>
+        IO.pure(Response[IO](Status.NotFound).withEntity(jsonContentOf("/not_found.json")))
 
-  private val client: ProjectClient[IO] = ProjectClient(mockedHttpClient, config, cache)
+      case r if r.uri.toString().startsWith((config.endpoint / "projects").toString()) && r.method == GET =>
+        IO.pure(Response[IO](Status.Forbidden).withEntity(jsonContentOf("/auth_failed.json")))
+    }
 
-  "A ProjectClient" should {
+    val mockedHttpClient: Client[IO] = Client.fromHttpApp(mockedHttpApp)
+
+    val client: ProjectClient[IO] = new LiveProjectClient(mockedHttpClient, config, cache)
 
     "return a label" in {
       client.label(orgUuid, projectUuid).unsafeRunSync() shouldEqual Right(orgLabel -> projectLabel)
-      cache.get.unsafeRunSync() shouldEqual Map(((orgUuid, projectUuid))            -> ((orgLabel, projectLabel)))
+      cache.get.unsafeRunSync() shouldEqual Map((orgUuid, projectUuid)              -> ((orgLabel, projectLabel)))
     }
 
     "return a label from the cache" in {
       val emptyMockedClient = Client.fromHttpApp(HttpApp[IO] { _ =>
         IO.raiseError(new RuntimeException("err"))
       })
-      val cache   = Ref[IO].of(Map(((orgUuid, projectUuid)) -> ((orgLabel, projectLabel)))).unsafeRunSync()
+      val cache   = Ref[IO].of(Map((orgUuid, projectUuid) -> ((orgLabel, projectLabel)))).unsafeRunSync()
       val client2 = ProjectClient[IO](emptyMockedClient, config, cache)
       client2.label(orgUuid, projectUuid).unsafeRunSync() shouldEqual Right(orgLabel -> projectLabel)
     }
@@ -80,6 +81,23 @@ class ProjectClientSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val client2: ProjectClient[IO] = ProjectClient[IO](mockedHttpClient, config.copy(token = None)).unsafeRunSync()
       client2.label(orgUuid, projectUuid).unsafeRunSync() shouldEqual
         Left(ClientStatusError(Status.Forbidden, jsonContentOf("/auth_failed.json").noSpaces))
+    }
+  }
+
+  "A TestProjectClient" should {
+
+    val cache                     = Map((orgUuid, projectUuid) -> ((orgLabel, projectLabel)))
+    val client: ProjectClient[IO] = new TestProjectClient(cache)
+
+    "return a label" in {
+      client.label(orgUuid, projectUuid).unsafeRunSync() shouldEqual Right(orgLabel -> projectLabel)
+    }
+
+    "return not found" in {
+      val org     = UUID.randomUUID()
+      val project = UUID.randomUUID()
+      client.label(org, project).unsafeRunSync() shouldEqual
+        Left(ClientStatusError(Status.NotFound, "Project not found"))
     }
   }
 }

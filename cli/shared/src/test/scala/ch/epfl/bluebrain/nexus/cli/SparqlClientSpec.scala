@@ -16,52 +16,53 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class SparqlClientSpec extends AnyWordSpecLike with Matchers with Fixtures with OptionValues {
 
-  private val organization  = Label("myorg")
-  private val project       = Label("mylabel")
-  private val query         = "SELECT * {?s ?p ?o} LIMIT 10"
-  private val randomViewUri = nxv / genString()
+  private val organization      = Label("myorg")
+  private val project           = Label("mylabel")
+  private val query             = "SELECT * {?s ?p ?o} LIMIT 10"
+  private val randomViewUri     = nxv / genString()
+  private val sparqlResultsJson = jsonContentOf("/sparql_results.json")
 
-  private val mockedHttpApp = HttpApp[IO] {
-    case r
-        if r.uri == endpoints.sparqlQueryUri(organization, project, defaultSparqlView) &&
-          r.method == POST &&
-          r.headers.get(Authorization) == config.authorizationHeader &&
-          r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
-          r.bodyAsText.compile.string.unsafeRunSync() == query =>
-      IO.pure(Response[IO](Status.Ok).withEntity(jsonContentOf("/sparql_results.json")))
+  "A LiveSparqlClient" should {
 
-    case r
-        if r.uri == endpoints.sparqlQueryUri(organization, project, randomViewUri) &&
-          r.method == POST &&
-          r.headers.get(Authorization) == config.authorizationHeader &&
-          r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
-          r.bodyAsText.compile.string.unsafeRunSync() == query =>
-      IO.pure(Response[IO](Status.NotFound).withEntity(jsonContentOf("/not_found.json")))
+    val mockedHttpApp = HttpApp[IO] {
+      case r
+          if r.uri == endpoints.sparqlQueryUri(organization, project, defaultSparqlView) &&
+            r.method == POST &&
+            r.headers.get(Authorization) == config.authorizationHeader &&
+            r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
+            r.bodyAsText.compile.string.unsafeRunSync() == query =>
+        IO.pure(Response[IO](Status.Ok).withEntity(sparqlResultsJson))
 
-    case r
-        if r.uri == endpoints.sparqlQueryUri(organization, project, defaultSparqlView) &&
-          r.method == POST &&
-          r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
-          r.bodyAsText.compile.string.unsafeRunSync() == query =>
-      IO.pure(Response[IO](Status.Forbidden).withEntity(jsonContentOf("/auth_failed.json")))
+      case r
+          if r.uri == endpoints.sparqlQueryUri(organization, project, randomViewUri) &&
+            r.method == POST &&
+            r.headers.get(Authorization) == config.authorizationHeader &&
+            r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
+            r.bodyAsText.compile.string.unsafeRunSync() == query =>
+        IO.pure(Response[IO](Status.NotFound).withEntity(jsonContentOf("/not_found.json")))
 
-    case r
-        if r.method == POST &&
-          r.headers.get(Authorization) == config.authorizationHeader &&
-          r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
-          r.bodyAsText.compile.string.unsafeRunSync() == query =>
-      IO.pure(Response[IO](Status.InternalServerError).withEntity(jsonContentOf("/internal_error.json")))
+      case r
+          if r.uri == endpoints.sparqlQueryUri(organization, project, defaultSparqlView) &&
+            r.method == POST &&
+            r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
+            r.bodyAsText.compile.string.unsafeRunSync() == query =>
+        IO.pure(Response[IO](Status.Forbidden).withEntity(jsonContentOf("/auth_failed.json")))
 
-  }
+      case r
+          if r.method == POST &&
+            r.headers.get(Authorization) == config.authorizationHeader &&
+            r.headers.get(`Content-Type`).contains(`Content-Type`(`application/sparql-query`)) &&
+            r.bodyAsText.compile.string.unsafeRunSync() == query =>
+        IO.pure(Response[IO](Status.InternalServerError).withEntity(jsonContentOf("/internal_error.json")))
 
-  private val mockedHttpClient: Client[IO] = Client.fromHttpApp(mockedHttpApp)
+    }
 
-  private val client: SparqlClient[IO] = SparqlClient(mockedHttpClient, config)
+    val mockedHttpClient: Client[IO] = Client.fromHttpApp(mockedHttpApp)
 
-  "A SparqlClient" should {
+    val client: SparqlClient[IO] = new LiveSparqlClient(mockedHttpClient, config)
 
     "return SPARQL results" in {
-      val sparqlResults = jsonContentOf("/sparql_results.json").as[SparqlResults].toOption.value
+      val sparqlResults = sparqlResultsJson.as[SparqlResults].toOption.value
       client.query(organization, project, defaultSparqlView, query).unsafeRunSync() shouldEqual Right(sparqlResults)
     }
 
@@ -80,6 +81,22 @@ class SparqlClientSpec extends AnyWordSpecLike with Matchers with Fixtures with 
         SparqlClient[IO](mockedHttpClient, config.copy(token = None))
       client2.query(organization, project, defaultSparqlView, query).unsafeRunSync() shouldEqual
         Left(ClientStatusError(Status.Forbidden, jsonContentOf("/auth_failed.json").noSpaces))
+    }
+  }
+
+  "A TestSparqlClient" should {
+
+    val sparqlResults            = sparqlResultsJson.as[SparqlResults].toOption.value
+    val client: SparqlClient[IO] = new TestSparqlClient(Map((organization, project) -> sparqlResults))
+
+    "return SPARQL results" in {
+      client.query(organization, project, defaultSparqlView, query).unsafeRunSync() shouldEqual Right(sparqlResults)
+    }
+
+    "return not found" in {
+      client.query(organization, Label(genString()), defaultSparqlView, query).unsafeRunSync() shouldEqual
+        Left(ClientStatusError(Status.NotFound, "Project not found"))
+
     }
   }
 }
