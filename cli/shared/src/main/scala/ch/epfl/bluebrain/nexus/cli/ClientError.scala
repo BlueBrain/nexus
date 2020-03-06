@@ -31,7 +31,6 @@ object ClientError {
   def unsafe(code: Status, message: String): ClientError =
     code.responseClass match {
       case Status.Successful =>
-        "".toBoolean
         throw new IllegalArgumentException(s"Successful code '$code cannot be converted to a ClientError'")
       case Status.ClientError =>
         ClientStatusError(code, message)
