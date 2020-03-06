@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.cli.influxdb.client
 
+import cats.effect.concurrent.Ref
 import cats.effect.{Sync, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.InfluxDbClientConfig
 import ch.epfl.bluebrain.nexus.cli.{ClientErrOr, _}
 import io.chrisdavenport.log4cats.Logger
 import org.http4s.client.Client
-import org.http4s.{Method, Request, UrlForm}
+import org.http4s.{Method, Request, Status, UrlForm}
 import retry.CatsEffect._
 import retry.syntax.all._
 import retry.{RetryDetails, RetryPolicy}
@@ -31,18 +32,8 @@ trait InfluxDbClient[F[_]] {
 
 object InfluxDbClient {
 
-  /**
-    * Construct an instance of [[InfluxDbClient]].
-    *
-    * @param client  the underlying HTTP client.
-    * @param config  InfluxDB config
-    * @tparam F the effect type
-    */
-  final def apply[F[_]](
-      client: Client[F],
-      config: InfluxDbClientConfig
-  )(implicit F: Sync[F], T: Timer[F]): InfluxDbClient[F] = new InfluxDbClient[F] {
-
+  private[cli] final class LiveInfluxDbClient[F[_]: Sync: Timer](client: Client[F], config: InfluxDbClientConfig)
+      extends InfluxDbClient[F] {
     private implicit val successCondition            = config.retry.retryCondition.notRetryFromEither[Unit] _
     private implicit val retryPolicy: RetryPolicy[F] = config.retry.retryPolicy
     private implicit val logOnErrorUnit: (ClientErrOr[Unit], RetryDetails) => F[Unit] =
@@ -60,7 +51,7 @@ object InfluxDbClient {
     override def createDb(name: String): F[Unit] = {
       val req = Request[F](method = Method.POST, uri = config.endpoint / "query").withEntity(
         UrlForm(
-          "q" -> s"""CREATE DATABASE "$name" WITH DURATION ${config.duration} REPLICATION ${config.replication} SHARD DURATION 1h NAME "$name""""
+          "q" -> s"""CREATE DATABASE "$name" IF NOT EXISTS WITH DURATION ${config.duration} REPLICATION ${config.replication} SHARD DURATION 1h NAME "$name""""
         )
       )
       performRequest(req)
@@ -75,5 +66,47 @@ object InfluxDbClient {
       ).withEntity(point)
       performRequest(req)
     }
+
+  }
+
+  /**
+    * Construct an instance of [[InfluxDbClient]].
+    *
+    * @param client  the underlying HTTP client.
+    * @param config  InfluxDB config
+    * @tparam F the effect type
+    */
+  final def apply[F[_]: Sync: Timer](
+      client: Client[F],
+      config: InfluxDbClientConfig
+  ): InfluxDbClient[F] = new LiveInfluxDbClient[F](client, config)
+
+  private[cli] final class TestInfluxDbClient[F[_]](
+      databases: Ref[F, Set[String]],
+      points: Ref[F, Map[String, Vector[Point]]]
+  )(implicit F: Sync[F])
+      extends InfluxDbClient[F] {
+
+    private def writePointIfDbExists(dbs: Set[String], database: String, point: Point): F[ClientErrOr[Unit]] = {
+      if (dbs(database)) {
+        points
+          .update(_.updatedWith(database) {
+            case None          => Some(Vector(point))
+            case Some(current) => Some(current :+ point)
+          })
+          .as(Right(()))
+      } else
+        F.pure(Left(ClientError.ClientStatusError(Status.NotFound, s"Database '$database' doesn't exists")))
+
+    }
+    override def createDb(name: String): F[Unit] =
+      databases.update(_ + name)
+
+    override def write(database: String, point: Point): F[ClientErrOr[Unit]] =
+      for {
+        dbs <- databases.get
+        res <- writePointIfDbExists(dbs, database, point)
+      } yield res
+
   }
 }

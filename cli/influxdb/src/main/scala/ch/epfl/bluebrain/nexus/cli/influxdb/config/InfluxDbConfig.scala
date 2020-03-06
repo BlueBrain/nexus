@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.cli.influxdb.config
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.ProjectLabelRef
 import ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.{DataConfig, IndexingConfig, InfluxDbClientConfig}
-import ch.epfl.bluebrain.nexus.cli.influxdb.{ProjectRef, SparqlQueryTemplate}
+import ch.epfl.bluebrain.nexus.cli.influxdb.SparqlQueryTemplate
+import ch.epfl.bluebrain.nexus.cli.types.Label
 import org.http4s.Uri
 import pureconfig.error.CannotConvert
 import pureconfig.{ConfigReader, ConfigWriter}
@@ -44,8 +46,9 @@ object InfluxDbConfig {
   }
 
   case class DataConfig(projects: Map[String, ProjectConfig]) {
-    def configOf(ref: ProjectRef): Option[ProjectConfig] =
-      projects.get(ref.asString)
+    def configOf(ref: ProjectLabelRef): Option[ProjectConfig] = ref match {
+      case (Label(org), Label(proj)) => projects.get(s"$org/$proj")
+    }
   }
 
   case class InfluxDbClientConfig(endpoint: Uri, retry: RetryStrategyConfig, duration: String, replication: Int)

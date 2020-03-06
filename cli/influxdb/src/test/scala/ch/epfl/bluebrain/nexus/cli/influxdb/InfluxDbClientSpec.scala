@@ -35,7 +35,7 @@ class InfluxDbClientSpec extends AnyWordSpecLike with Matchers with Fixtures wit
       case r if r.uri == Uri.unsafeFromString("http://localhost:8086/write?db=nstats") && r.method == POST =>
         for {
           body <- r.bodyAsText.compile.string
-          _    <- ref.modify(current => (current :+ body, body))
+          _    <- ref.update(_ :+ body)
         } yield Response[IO](Status.NoContent)
       case _ => ???
 
