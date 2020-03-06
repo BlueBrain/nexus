@@ -4,6 +4,8 @@ import cats.effect.Sync
 import cats.syntax.functor._
 import org.http4s.{Response, Status}
 
+import scala.util.Try
+
 /**
   * Enumeration of possible Client errors.
   */
@@ -12,6 +14,31 @@ sealed trait ClientError extends Product with Serializable {
 }
 
 object ClientError {
+
+  /**
+    * Attempt to construct a [[ClientError]] from the passed HTTP status code and message
+    *
+    * @return Some(clientError) if the code is not Successful, false otherwise
+    */
+  def apply(code: Status, message: String): Option[ClientError] =
+    Try(unsafe(code, message)).toOption
+
+  /**
+    * Construct a [[ClientError]] from the passed HTTP status code and message
+    *
+    * @throws IllegalArgumentException if the code is a Successful HTTP Status code is 2xx
+    */
+  def unsafe(code: Status, message: String): ClientError =
+    code.responseClass match {
+      case Status.Successful =>
+        "".toBoolean
+        throw new IllegalArgumentException(s"Successful code '$code cannot be converted to a ClientError'")
+      case Status.ClientError =>
+        ClientStatusError(code, message)
+      case Status.ServerError => ServerStatusError(code, message)
+      case _ =>
+        Unexpected(code, message)
+    }
 
   /**
     * A serialization error when attempting to cast response.

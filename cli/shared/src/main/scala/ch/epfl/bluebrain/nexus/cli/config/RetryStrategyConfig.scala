@@ -18,7 +18,7 @@ import scala.concurrent.duration.FiniteDuration
   *                     For "constant" strategy the value is both the initial delay and all the subsequent retries delay
   * @param maxDelay     the maximum delay (applicable for strategy "exponential")
   * @param maxRetries   maximum number of retries in case of failure (applicable for strategy "exponential" and "constant")
-  * @param condition    the condition when is worth retrying; possible options are "never", "onServerError", "always".
+  * @param condition    the condition under which is worth retrying; possible options are "never", "on-server-error", "always".
   *                     Defaults to "never"
   */
 // $COVERAGE-OFF$
@@ -42,9 +42,9 @@ final case class RetryStrategyConfig(
     }
 
   val retryCondition: ClientRetryCondition = condition match {
-    case "always"        => ClientRetryCondition.always
-    case "onServerError" => ClientRetryCondition.onServerError
-    case _               => ClientRetryCondition.never
+    case "always"          => ClientRetryCondition.always
+    case "on-server-error" => ClientRetryCondition.onServerError
+    case _                 => ClientRetryCondition.never
   }
 }
 // $COVERAGE-ON$

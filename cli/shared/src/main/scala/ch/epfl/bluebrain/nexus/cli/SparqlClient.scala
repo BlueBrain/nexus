@@ -45,40 +45,47 @@ object SparqlClient {
   final val `application/sparql-query`: MediaType =
     new MediaType("application", "sparql-query")
 
+  private[cli] final class LiveSparqlClient[F[_]: Sync: Timer](client: Client[F], config: NexusConfig)
+      extends SparqlClient[F] {
+    private val retry                                = config.httpClient.retry
+    private val endpoints                            = NexusEndpoints(config)
+    private val successCondition                     = retry.retryCondition.notRetryFromEither[SparqlResults] _
+    private implicit val retryPolicy: RetryPolicy[F] = retry.retryPolicy
+    private implicit val logOnError: (ClientErrOr[SparqlResults], RetryDetails) => F[Unit] =
+      (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
+
+    def query(
+        organization: Label,
+        project: Label,
+        viewId: Uri,
+        value: String
+    ): F[ClientErrOr[SparqlResults]] = {
+      val uri     = endpoints.sparqlQueryUri(organization, project, viewId)
+      val headers = Headers(config.authorizationHeader.toList)
+      val req = Request[F](method = Method.POST, uri = uri, headers = headers)
+        .withEntity(value)
+        .withContentType(`Content-Type`(`application/sparql-query`))
+      val resp: F[ClientErrOr[SparqlResults]] = client.fetch(req)(ClientError.errorOr { r =>
+        r.attemptAs[SparqlResults].value.map(_.leftMap(err => SerializationError(err.message)))
+      })
+      resp.retryingM(successCondition)
+    }
+  }
+
+  private[cli] final class TestSparqlClient[F[_]](value: Map[ProjectLabelRef, SparqlResults])(implicit F: Sync[F])
+      extends SparqlClient[F] {
+    private val notFound: ClientError = ClientError.unsafe(Status.NotFound, "Project not found")
+    def query(organization: Label, project: Label, viewId: Uri, query: String): F[ClientErrOr[SparqlResults]] =
+      F.delay(value.get((organization, project)).toRight(notFound))
+  }
+
   /**
     * Construct a [[SparqlClient]] to query Nexus sparql view.
     *
     * @param client the underlying HTTP client
     * @param config the Nexus configuration
-    * @tparam F the effect type
     */
-  final def apply[F[_]](
-      client: Client[F],
-      config: NexusConfig
-  )(implicit F: Sync[F], T: Timer[F]): SparqlClient[F] =
-    new SparqlClient[F] {
+  final def apply[F[_]: Sync: Timer](client: Client[F], config: NexusConfig): SparqlClient[F] =
+    new LiveSparqlClient(client, config)
 
-      private val endpoints                            = NexusEndpoints(config)
-      private val successCondition                     = config.retry.retryCondition.notRetryFromEither[SparqlResults] _
-      private implicit val retryPolicy: RetryPolicy[F] = config.retry.retryPolicy
-      private implicit val logOnError: (ClientErrOr[SparqlResults], RetryDetails) => F[Unit] =
-        (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
-
-      def query(
-          organization: Label,
-          project: Label,
-          viewId: Uri,
-          value: String
-      ): F[ClientErrOr[SparqlResults]] = {
-        val uri     = endpoints.sparqlQueryUri(organization, project, viewId)
-        val headers = Headers(config.authorizationHeader.toList)
-        val req = Request[F](method = Method.POST, uri = uri, headers = headers)
-          .withEntity(value)
-          .withContentType(`Content-Type`(`application/sparql-query`))
-        val resp: F[ClientErrOr[SparqlResults]] = client.fetch(req)(ClientError.errorOr { r =>
-          r.attemptAs[SparqlResults].value.map(_.leftMap(err => SerializationError(err.message)))
-        })
-        resp.retryingM(successCondition)
-      }
-    }
 }

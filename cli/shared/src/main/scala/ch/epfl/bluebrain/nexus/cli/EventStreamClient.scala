@@ -2,15 +2,18 @@ package ch.epfl.bluebrain.nexus.cli
 
 import cats.data.EitherT
 import cats.data.EitherT._
-import cats.effect.Concurrent
+import cats.effect.{Concurrent, Sync}
 import ch.epfl.bluebrain.nexus.cli.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.config.{NexusConfig, NexusEndpoints}
+import ch.epfl.bluebrain.nexus.cli.types.Offset.Sequence
 import ch.epfl.bluebrain.nexus.cli.types.{Event, EventEnvelope, Label, Offset}
 import fs2.Stream
 import org.http4s.ServerSentEvent.EventId
 import org.http4s._
 import org.http4s.client.Client
 import org.http4s.headers._
+
+import scala.math.Ordering.Implicits._
 
 trait EventStreamClient[F[_]] {
 
@@ -40,19 +43,12 @@ trait EventStreamClient[F[_]] {
 
 object EventStreamClient {
 
-  /**
-    * Construct an [[EventStreamClient]] to read the SSE from Nexus.
-    *
-    * @param client        the underlying HTTP client
-    * @param projectClient the project client to convert UUIDs into Labels
-    * @param config        the Nexus configuration
-    * @tparam F the effect type
-    */
-  final def apply[F[_]](
+  private[cli] final class LiveEventStreamClient[F[_]](
       client: Client[F],
       projectClient: ProjectClient[F],
       config: NexusConfig
-  )(implicit F: Concurrent[F]): EventStreamClient[F] = new EventStreamClient[F] {
+  )(implicit F: Concurrent[F])
+      extends EventStreamClient[F] {
 
     private val endpoints = NexusEndpoints(config)
 
@@ -82,6 +78,40 @@ object EventStreamClient {
 
     def apply(organization: Label, project: Label, lastEventId: Option[Offset]): Stream[F, EventEnvelope] =
       buildStream(endpoints.eventsUri(organization, project), lastEventId)
+  }
+
+  private[cli] final class TestEventStreamClient[F[_]: Sync](events: List[Event]) extends EventStreamClient[F] {
+
+    private val offsetEvents     = events.zipWithIndex.map { case (ev, i) => EventEnvelope(Sequence(i + 1L), ev) }
+    private val noOffset: Offset = Sequence(0L)
+
+    private def eventsFrom(lastEventId: Option[Offset]): Seq[EventEnvelope] =
+      offsetEvents.dropWhile(_.offset <= lastEventId.getOrElse(noOffset))
+
+    def apply(lastEventId: Option[Offset]): Stream[F, EventEnvelope] =
+      Stream.fromIterator(eventsFrom(lastEventId).iterator)
+
+    def apply(organization: Label, lastEventId: Option[Offset]): Stream[F, EventEnvelope] =
+      Stream.fromIterator(eventsFrom(lastEventId).filter(_.event.organization == organization).iterator)
+
+    def apply(organization: Label, project: Label, lastEventId: Option[Offset]): Stream[F, EventEnvelope] =
+      Stream.fromIterator(
+        eventsFrom(lastEventId).filter(e => e.event.organization == organization && e.event.project == project).iterator
+      )
 
   }
+
+  /**
+    * Construct an [[EventStreamClient]] to read the SSE from Nexus.
+    *
+    * @param client        the underlying HTTP client
+    * @param projectClient the project client to convert UUIDs into Labels
+    * @param config        the Nexus configuration
+    */
+  final def apply[F[_]: Concurrent](
+      client: Client[F],
+      projectClient: ProjectClient[F],
+      config: NexusConfig
+  ): EventStreamClient[F] =
+    new LiveEventStreamClient(client, projectClient, config)
 }
