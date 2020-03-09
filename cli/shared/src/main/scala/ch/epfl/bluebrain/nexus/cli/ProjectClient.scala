@@ -5,8 +5,9 @@ import java.util.UUID
 import cats.effect.concurrent.Ref
 import cats.effect.{Sync, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.config.{NexusConfig, NexusEndpoints}
+import ch.epfl.bluebrain.nexus.cli.error.ClientError
+import ch.epfl.bluebrain.nexus.cli.error.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.types.Label
 import io.chrisdavenport.log4cats.Logger
 import io.circe.Decoder
@@ -55,7 +56,7 @@ object ProjectClient {
           val req = Request[F](uri = uri, headers = Headers(config.authorizationHeader.toList))
           val resp: F[ClientErrOr[ProjectLabelRef]] = client.fetch(req)(ClientError.errorOr { r =>
             r.attemptAs[NexusAPIProject].value.flatMap {
-              case Left(err) => F.pure(Left(SerializationError(err.message)))
+              case Left(err) => F.pure(Left(SerializationError(err.message, "NexusAPIProject")))
               case Right(NexusAPIProject(orgLabel, projectLabel)) =>
                 cache.update(_ + ((organization, project) -> ((orgLabel, projectLabel)))) >>
                   F.pure(Right((orgLabel, projectLabel)))

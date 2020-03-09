@@ -1,7 +1,9 @@
-package ch.epfl.bluebrain.nexus.cli
+package ch.epfl.bluebrain.nexus.cli.error
 
+import cats.Show
 import cats.effect.Sync
-import cats.syntax.functor._
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.ClientErrOr
 import org.http4s.{Response, Status}
 
 import scala.util.Try
@@ -9,10 +11,10 @@ import scala.util.Try
 /**
   * Enumeration of possible Client errors.
   */
-sealed abstract class ClientError(message: String) extends Product with Serializable {
-  override def toString: String = message
-}
+@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+sealed trait ClientError extends CliError
 
+@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object ClientError {
 
   /**
@@ -43,10 +45,15 @@ object ClientError {
     * A serialization error when attempting to cast response.
     *
     * @param message  the error message
+    * @param tpe      the type into which the serialization was attempted
     * @param original the optionally available original payload
     */
-  final case class SerializationError(message: String, original: Option[String] = None)
-      extends ClientError(s"Serialization error due to '$message'. Original payload: '$original'")
+  final case class SerializationError(message: String, tpe: String, original: Option[String] = None)
+      extends ClientError {
+    val reason: String = s"an HTTP response could not be converted to type '$tpe'"
+    val lines: List[String] = List(s"the serialization failed due to '$message'") ++
+      original.map(orig => s"The message attempted to serialized was: '$orig'.").toList
+  }
 
   /**
     * A Client status error (HTTP status codes 4xx).
@@ -54,8 +61,10 @@ object ClientError {
     * @param code    the HTTP status code
     * @param message the error message
     */
-  final case class ClientStatusError(code: Status, message: String)
-      extends ClientError(s"Server responded with client error code '$code'. Reason: '$message'")
+  final case class ClientStatusError(code: Status, message: String) extends ClientError {
+    val reason: String      = s"an HTTP response that should have been successful, returned the HTTP status code '$code'"
+    val lines: List[String] = List(s"The request failed due to '$message'")
+  }
 
   /**
     * A server status error (HTTP status codes 5xx).
@@ -63,8 +72,10 @@ object ClientError {
     * @param code    the HTTP status code
     * @param message the error message
     */
-  final case class ServerStatusError(code: Status, message: String)
-      extends ClientError(s"Server responded with server error code '$code'. Reason: '$message'")
+  final case class ServerStatusError(code: Status, message: String) extends ClientError {
+    val reason: String      = s"an HTTP response that should have been successful, returned the HTTP status code '$code'"
+    val lines: List[String] = List(s"The request failed due to '$message'")
+  }
 
   /**
     * Some other response error which is not 4xx nor 5xx
@@ -72,8 +83,10 @@ object ClientError {
     * @param code    the HTTP status code
     * @param message the error message
     */
-  final case class Unexpected(code: Status, message: String)
-      extends ClientError(s"Server responded with unexpected error code '$code'. Reason: '$message'")
+  final case class Unexpected(code: Status, message: String) extends ClientError {
+    val reason: String      = s"an HTTP response that should have been successful, returned the HTTP status code '$code'"
+    val lines: List[String] = List(s"The request failed due to '$message'")
+  }
 
   def errorOr[F[_]: Sync, A](successF: Response[F] => F[ClientErrOr[A]]): Response[F] => F[ClientErrOr[A]] = {
     case Status.Successful(r)  => successF(r)
@@ -81,5 +94,7 @@ object ClientError {
     case Status.ServerError(r) => r.bodyAsText.compile.string.map(s => Left(ServerStatusError(r.status, s)))
     case r                     => r.bodyAsText.compile.string.map(s => Left(Unexpected(r.status, s)))
   }
+
+  implicit val clientErrorShow: Show[ClientError] = r => (r: CliError).show
 
 }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus
 import java.util.UUID
 
 import cats.effect.Sync
+import ch.epfl.bluebrain.nexus.cli.error.ClientError
 import ch.epfl.bluebrain.nexus.cli.types.Label
 import io.chrisdavenport.log4cats.Logger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger

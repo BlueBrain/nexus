@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.cli
 
 import cats.effect.{Sync, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.config.{NexusConfig, NexusEndpoints}
+import ch.epfl.bluebrain.nexus.cli.error.ClientError
+import ch.epfl.bluebrain.nexus.cli.error.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.types.{Label, SparqlResults}
 import io.chrisdavenport.log4cats.Logger
 import org.http4s._
@@ -66,7 +67,7 @@ object SparqlClient {
         .withEntity(value)
         .withContentType(`Content-Type`(`application/sparql-query`))
       val resp: F[ClientErrOr[SparqlResults]] = client.fetch(req)(ClientError.errorOr { r =>
-        r.attemptAs[SparqlResults].value.map(_.leftMap(err => SerializationError(err.message)))
+        r.attemptAs[SparqlResults].value.map(_.leftMap(err => SerializationError(err.message, "SparqlResults")))
       })
       resp.retryingM(successCondition)
     }
