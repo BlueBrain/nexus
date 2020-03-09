@@ -4,11 +4,10 @@ import ch.epfl.bluebrain.nexus.cli.types.SparqlResults
 import ch.epfl.bluebrain.nexus.cli.types.SparqlResults.{Binding, Bindings, Head, Literal}
 import ch.epfl.bluebrain.nexus.cli.utils.{Fixtures, Resources}
 import org.http4s.Uri
-import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class SparqlResultsSpec extends AnyWordSpecLike with Matchers with Resources with Fixtures with OptionValues {
+class SparqlResultsSpec extends AnyWordSpecLike with Matchers with Resources with Fixtures {
 
   "A SparqlResult" should {
     val json    = jsonContentOf("/sparql_results.json")

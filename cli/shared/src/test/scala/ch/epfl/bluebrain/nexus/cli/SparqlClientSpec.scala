@@ -10,11 +10,10 @@ import org.http4s.circe.CirceEntityEncoder._
 import org.http4s.client.Client
 import org.http4s.headers._
 import org.http4s.{HttpApp, Response, Status}
-import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class SparqlClientSpec extends AnyWordSpecLike with Matchers with Fixtures with OptionValues {
+class SparqlClientSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
   private val organization      = Label("myorg")
   private val project           = Label("mylabel")
