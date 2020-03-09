@@ -7,7 +7,7 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.cli.ClientError.ServerStatusError
 import ch.epfl.bluebrain.nexus.cli.EventStreamClient.{LiveEventStreamClient, TestEventStreamClient}
 import ch.epfl.bluebrain.nexus.cli.types.Offset.{Sequence, TimeBasedUUID}
-import ch.epfl.bluebrain.nexus.cli.types.{Event, EventEnvelope, Label, Offset}
+import ch.epfl.bluebrain.nexus.cli.types.{Event, Label, Offset}
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import fs2.Stream
 import fs2.text.utf8Encode
@@ -16,10 +16,11 @@ import org.http4s.ServerSentEvent.EventId
 import org.http4s.client.Client
 import org.http4s.headers.{`Last-Event-Id`, Authorization}
 import org.http4s.{HttpApp, Response, Status, Uri}
+import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class EventStreamClientSpec extends AnyWordSpecLike with Matchers with Fixtures {
+class EventStreamClientSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
   private val orgUuid      = UUID.fromString("e6a5c668-5051-49bb-9414-265ccb51323e")
   private val orgLabel     = Label("myorg")
@@ -61,34 +62,42 @@ class EventStreamClientSpec extends AnyWordSpecLike with Matchers with Fixtures 
     val client: EventStreamClient[IO] = new LiveEventStreamClient(mockedHttpClient, projectClient, config)
 
     "return events" in {
-      val timeCreated    = TimeBasedUUID(UUID.fromString("a2293500-5c75-11ea-beb1-a5eb66b44d1c"))
       val timeUpdated    = TimeBasedUUID(UUID.fromString("b8a93f50-5c75-11ea-beb1-a5eb66b44d1c"))
       val timeDeprecated = TimeBasedUUID(UUID.fromString("bd62f6d0-5c75-11ea-beb1-a5eb66b44d1c"))
-
-      val expected = List(
-        EventEnvelope(timeCreated, created),
-        EventEnvelope(timeUpdated, updated),
-        EventEnvelope(timeDeprecated, deprecated)
-      )
-
-      client(Some(eventId)).take(3).compile.to(List).unsafeRunSync() shouldEqual expected
-      client(orgLabel, Some(eventId)).take(3).compile.to(List).unsafeRunSync() shouldEqual expected
-      client(orgLabel, projectLabel, Some(eventId)).take(3).compile.to(List).unsafeRunSync() shouldEqual expected
+      val list =
+        List(client(Some(eventId)), client(orgLabel, Some(eventId)), client(orgLabel, projectLabel, Some(eventId)))
+      forAll(list) { eventStreamF =>
+        val eventStream = eventStreamF.unsafeRunSync()
+        eventStream.value.take(2).compile.to(List).unsafeRunSync() shouldEqual List(created, updated)
+        eventStream.currentEventId().unsafeRunSync() shouldEqual Some(timeUpdated)
+        eventStream.value.take(3).compile.to(List).unsafeRunSync() shouldEqual List(created, updated, deprecated)
+        eventStream.currentEventId().unsafeRunSync() shouldEqual Some(timeDeprecated)
+      }
     }
 
     "A TestEventStreamClient" should {
 
       val events                        = List(created, created.copy(project = Label("other")), updated, deprecated)
-      val expected                      = events.zipWithIndex.map { case (ev, i) => EventEnvelope(Sequence(i + 1L), ev) }
       val client: EventStreamClient[IO] = new TestEventStreamClient(events)
 
       "return events" in {
+        val eventStreamBeginning = client(None).unsafeRunSync()
+        eventStreamBeginning.value.take(4).compile.to(List).unsafeRunSync() shouldEqual events
+        eventStreamBeginning.currentEventId().unsafeRunSync() shouldEqual Some(Sequence(4L))
 
-        client(None).take(4).compile.to(List).unsafeRunSync() shouldEqual expected
-        client(Some(Sequence(2L))).take(2).compile.to(List).unsafeRunSync() shouldEqual expected.drop(2)
-        client(orgLabel, Some(Sequence(2L))).take(2).compile.to(List).unsafeRunSync() shouldEqual expected.drop(2)
-        client(orgLabel, projectLabel, Some(Sequence(1L))).take(2).compile.to(List).unsafeRunSync() shouldEqual
-          expected.drop(2)
+        val list = List(
+          client(Some(Sequence(2L)))                         -> Sequence(2L),
+          client(orgLabel, Some(Sequence(2L)))               -> Sequence(2L),
+          client(orgLabel, projectLabel, Some(Sequence(1L))) -> Sequence(1L)
+        )
+
+        forAll(list) {
+          case (eventStreamF, initialOffset) =>
+            val eventStream = eventStreamF.unsafeRunSync()
+            eventStream.currentEventId().unsafeRunSync() shouldEqual Some(initialOffset)
+            eventStream.value.take(2).compile.to(List).unsafeRunSync() shouldEqual events.drop(2)
+            eventStream.currentEventId().unsafeRunSync() shouldEqual Some(Sequence(4L))
+        }
       }
     }
   }

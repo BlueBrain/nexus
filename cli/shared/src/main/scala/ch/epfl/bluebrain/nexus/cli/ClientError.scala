@@ -9,8 +9,8 @@ import scala.util.Try
 /**
   * Enumeration of possible Client errors.
   */
-sealed trait ClientError extends Product with Serializable {
-  def message: String
+sealed abstract class ClientError(message: String) extends Product with Serializable {
+  override def toString: String = message
 }
 
 object ClientError {
@@ -45,7 +45,8 @@ object ClientError {
     * @param message  the error message
     * @param original the optionally available original payload
     */
-  final case class SerializationError(message: String, original: Option[String] = None) extends ClientError
+  final case class SerializationError(message: String, original: Option[String] = None)
+      extends ClientError(s"Serialization error due to '$message'. Original payload: '$original'")
 
   /**
     * A Client status error (HTTP status codes 4xx).
@@ -53,7 +54,8 @@ object ClientError {
     * @param code    the HTTP status code
     * @param message the error message
     */
-  final case class ClientStatusError(code: Status, message: String) extends ClientError
+  final case class ClientStatusError(code: Status, message: String)
+      extends ClientError(s"Server responded with client error code '$code'. Reason: '$message'")
 
   /**
     * A server status error (HTTP status codes 5xx).
@@ -61,7 +63,8 @@ object ClientError {
     * @param code    the HTTP status code
     * @param message the error message
     */
-  final case class ServerStatusError(code: Status, message: String) extends ClientError
+  final case class ServerStatusError(code: Status, message: String)
+      extends ClientError(s"Server responded with server error code '$code'. Reason: '$message'")
 
   /**
     * Some other response error which is not 4xx nor 5xx
@@ -69,7 +72,8 @@ object ClientError {
     * @param code    the HTTP status code
     * @param message the error message
     */
-  final case class Unexpected(code: Status, message: String) extends ClientError
+  final case class Unexpected(code: Status, message: String)
+      extends ClientError(s"Server responded with unexpected error code '$code'. Reason: '$message'")
 
   def errorOr[F[_]: Sync, A](successF: Response[F] => F[ClientErrOr[A]]): Response[F] => F[ClientErrOr[A]] = {
     case Status.Successful(r)  => successF(r)
