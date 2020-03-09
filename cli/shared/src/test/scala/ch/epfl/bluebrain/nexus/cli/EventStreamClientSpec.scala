@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.cli.ClientError.ServerStatusError
 import ch.epfl.bluebrain.nexus.cli.EventStreamClient.{LiveEventStreamClient, TestEventStreamClient}
-import ch.epfl.bluebrain.nexus.cli.types.Offset.{Sequence, TimeBasedUUID}
+import ch.epfl.bluebrain.nexus.cli.types.Offset.Sequence
 import ch.epfl.bluebrain.nexus.cli.types.{Event, Label, Offset}
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import fs2.Stream
@@ -62,8 +62,8 @@ class EventStreamClientSpec extends AnyWordSpecLike with Matchers with Fixtures 
     val client: EventStreamClient[IO] = new LiveEventStreamClient(mockedHttpClient, projectClient, config)
 
     "return events" in {
-      val timeUpdated    = TimeBasedUUID(UUID.fromString("b8a93f50-5c75-11ea-beb1-a5eb66b44d1c"))
-      val timeDeprecated = TimeBasedUUID(UUID.fromString("bd62f6d0-5c75-11ea-beb1-a5eb66b44d1c"))
+      val timeUpdated    = Offset("b8a93f50-5c75-11ea-beb1-a5eb66b44d1c").value
+      val timeDeprecated = Offset("bd62f6d0-5c75-11ea-beb1-a5eb66b44d1c").value
       val list =
         List(client(Some(eventId)), client(orgLabel, Some(eventId)), client(orgLabel, projectLabel, Some(eventId)))
       forAll(list) { eventStreamF =>

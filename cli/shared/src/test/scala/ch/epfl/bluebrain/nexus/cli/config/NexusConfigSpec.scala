@@ -4,6 +4,7 @@ import java.nio.file.Paths
 
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.cli.config.NexusConfig.{ClientConfig, SSEConfig}
+import ch.epfl.bluebrain.nexus.cli.types.{BearerToken, Offset}
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import org.http4s.Uri
 import org.scalatest.matchers.should.Matchers
@@ -18,6 +19,14 @@ class NexusConfigSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be created from a passed config file" in {
       val path = Paths.get(getClass().getResource("/nexus-test.conf").toURI())
       NexusConfig(path) shouldEqual Right(config)
+    }
+
+    "be created from passed config file and overriding parameters" in {
+      val sse   = SSEConfig(Offset("b8a93f50-5c75-11ea-beb1-a5eb66b44d1c"))
+      val token = BearerToken("myothertoken")
+      val path  = Paths.get(getClass().getResource("/nexus-test.conf").toURI())
+      NexusConfig.withDefaults(path, token = Some(token), sse = Some(sse)) shouldEqual
+        Right(config.copy(token = Some(token), sse = sse))
     }
 
     "be created from reference.conf file" in {

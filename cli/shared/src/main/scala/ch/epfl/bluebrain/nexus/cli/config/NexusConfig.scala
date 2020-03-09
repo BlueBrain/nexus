@@ -57,6 +57,33 @@ object NexusConfig {
     reader(path, referenceConfig)
 
   /**
+    * Attempts to construct a Nexus configuration from the passed path. If the path is not provided,
+    * the default path ~/.nexus.conf will be used.
+    * If that path does not exists, the default configuration in ''reference.conf'' will be used.
+    *
+    * The rest of the parameters, if present, will override the resulting Nexus configuration parameters.
+    */
+  def withDefaults(
+      path: Path = defaultPath,
+      endpoint: Option[Uri] = None,
+      token: Option[BearerToken] = None,
+      httpClient: Option[ClientConfig] = None,
+      sse: Option[SSEConfig] = None
+  ): Either[String, NexusConfig] =
+    apply(path).map { config =>
+      config.copy(
+        endpoint = mergeOpt(config.endpoint, endpoint),
+        token = mergeOpt(config.token, token),
+        httpClient = mergeOpt(config.httpClient, httpClient),
+        sse = mergeOpt(config.sse, sse)
+      )
+    }
+
+  private def mergeOpt[A](one: Option[A], other: Option[A]): Option[A] = other orElse one
+
+  private def mergeOpt[A](one: A, other: Option[A]): A = other.getOrElse(one)
+
+  /**
     * The HTTP Client configuration
     *
     * @param retry the retry strategy (policy and condition)
