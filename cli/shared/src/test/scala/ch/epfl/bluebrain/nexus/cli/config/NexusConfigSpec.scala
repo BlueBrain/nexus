@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.cli.config
 import java.nio.file.Paths
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.cli.config.NexusConfig.{ClientConfig, SSEConfig}
-import ch.epfl.bluebrain.nexus.cli.types.{BearerToken, Offset}
+import ch.epfl.bluebrain.nexus.cli.config.NexusConfig.ClientConfig
+import ch.epfl.bluebrain.nexus.cli.types.BearerToken
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import org.http4s.Uri
 import org.scalatest.matchers.should.Matchers
@@ -22,17 +22,16 @@ class NexusConfigSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "be created from passed config file and overriding parameters" in {
-      val sse   = SSEConfig(Offset("b8a93f50-5c75-11ea-beb1-a5eb66b44d1c"))
-      val token = BearerToken("myothertoken")
-      val path  = Paths.get(getClass().getResource("/nexus-test.conf").toURI())
-      NexusConfig.withDefaults(path, token = Some(token), sse = Some(sse)) shouldEqual
-        Right(config.copy(token = Some(token), sse = sse))
+      val token    = BearerToken("myothertoken")
+      val endpoint = Uri.unsafeFromString("https://other.nexus.ch")
+      val path     = Paths.get(getClass().getResource("/nexus-test.conf").toURI())
+      NexusConfig.withDefaults(path, endpoint = Some(endpoint), token = Some(token)) shouldEqual
+        Right(config.copy(endpoint = endpoint, token = Some(token)))
     }
 
     "be created from reference.conf file" in {
       val clientConf = ClientConfig(RetryStrategyConfig("exponential", 100.millis, 20.seconds, 10, "on-server-error"))
-      val sseConf    = SSEConfig(None)
-      val conf       = NexusConfig(Uri.unsafeFromString("https://nexus.example.com/v1"), None, clientConf, sseConf)
+      val conf       = NexusConfig(Uri.unsafeFromString("https://nexus.example.com/v1"), None, clientConf)
       val path       = Paths.get(s"${genString()}.conf")
       NexusConfig(path) shouldEqual Right(conf)
     }

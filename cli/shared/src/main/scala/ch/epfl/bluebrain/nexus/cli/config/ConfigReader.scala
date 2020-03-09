@@ -15,19 +15,21 @@ import scala.util.Try
   */
 class ConfigReader[A: pureconfig.ConfigReader] {
 
-  private def load(config: Config) =
-    ConfigSource.fromConfig(config).at("app").load[A].leftMap(_.head.description)
+  private val emptyConfig = ConfigFactory.empty().root().toConfig
+
+  private def load(config: Config, prefix: String) =
+    ConfigSource.fromConfig(config).at(prefix).load[A].leftMap(_.head.description)
 
   /**
     * Attempts to read the passed ''path'' into a [[Config]] and then
     * converts it to the type ''A'' using the pureconfig reader.
     * If the file does not exists, it will use the ''defaultConfig''
     */
-  def apply(path: Path, defaultConfig: => Config): Either[String, A] =
+  def apply(path: Path, prefix: String, defaultConfig: => Config = emptyConfig): Either[String, A] =
     if (path.toFile.exists())
-      Try(ConfigFactory.parseFile(path.toFile)).toEither.leftMap(_.getMessage).flatMap(load)
+      Try(ConfigFactory.parseFile(path.toFile)).toEither.leftMap(_.getMessage).flatMap(load(_, prefix))
     else
-      load(defaultConfig)
+      load(defaultConfig, prefix)
 }
 
 object ConfigReader {

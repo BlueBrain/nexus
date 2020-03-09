@@ -16,15 +16,16 @@ import scala.util.Try
 class ConfigWriter[A, F[_]](implicit F: Sync[F], writer: pureconfig.ConfigWriter[A]) {
   private val renderConfigOpts = ConfigRenderOptions.defaults().setOriginComments(false).setJson(false)
 
-  private def appConfig(config: ConfigValue): ConfigValue =
-    ConfigFactory.empty().withValue("app", config).root()
+  private def configWithPrefix(config: ConfigValue, prefix: String): ConfigValue =
+    ConfigFactory.empty().withValue(prefix, config).root()
 
   /**
     * Attempts to convert the passed ''config'' to a (typesafe)Config and write the result to the passed ''path'' location.
     */
-  def apply(config: A, path: Path): F[Either[String, Unit]] =
+  def apply(config: A, path: Path, prefix: String): F[Either[String, Unit]] =
     for {
-      configString <- F.delay(appConfig(writer.to(config)).render(renderConfigOpts))
+      _            <- F.delay(Files.createDirectories(path.toAbsolutePath.getParent))
+      configString <- F.delay(configWithPrefix(writer.to(config), prefix).render(renderConfigOpts))
       writeResult  <- F.delay(Try(Files.writeString(path, configString)).map(_ => ()).toEither.leftMap(_.getMessage))
     } yield writeResult
 }
