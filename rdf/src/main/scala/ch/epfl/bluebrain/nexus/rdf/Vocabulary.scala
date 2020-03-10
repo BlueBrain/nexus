@@ -80,12 +80,5 @@ object Vocabulary {
     val Person            = url"${base}Person"
     val QuantitativeValue = url"${base}QuantitativeValue"
   }
-
-  /**
-    * Nexus vocabulary
-    */
-  object nxv {
-    val base = url"https://bluebrain.github.io/nexus/vocabulary/"
-  }
 }
 // $COVERAGE-ON$
