@@ -5,9 +5,10 @@ import cats.data.EitherT._
 import cats.effect.concurrent.Ref
 import cats.effect.{Concurrent, Sync}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.EventStreamClient.EventStream
 import ch.epfl.bluebrain.nexus.cli.config.{NexusConfig, NexusEndpoints}
+import ch.epfl.bluebrain.nexus.cli.error.ClientError
+import ch.epfl.bluebrain.nexus.cli.error.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.types.Offset.Sequence
 import ch.epfl.bluebrain.nexus.cli.types.{Event, Label, Offset}
 import fs2.{Pipe, Stream}
@@ -74,6 +75,8 @@ object EventStreamClient {
       extends EventStreamClient[F] {
 
     private val endpoints = NexusEndpoints(config)
+    private lazy val offsetError =
+      SerializationError("The expected offset was not found or had the wrong format", "Offset")
 
     private def buildStream(uri: Uri, lastEventIdCache: Ref[F, Option[Offset]]): F[EventStream[F]] =
       lastEventIdCache.get
@@ -85,7 +88,7 @@ object EventStreamClient {
             .flatMap(_.body.through(ServerSentEvent.decoder[F]))
             .evalMap { sse =>
               (for {
-                off   <- fromEither[F](sse.id.flatMap(v => Offset(v.value)).toRight(SerializationError("Missing offset")))
+                off   <- fromEither[F](sse.id.flatMap(v => Offset(v.value)).toRight(offsetError))
                 _     <- right[ClientError](lastEventIdCache.update(_ => Some(off)))
                 event <- EitherT(Event(sse, projectClient))
               } yield event).value

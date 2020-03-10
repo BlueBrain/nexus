@@ -3,12 +3,16 @@ package ch.epfl.bluebrain.nexus.cli.config
 import java.nio.file.Paths
 
 import cats.effect.IO
+import cats.syntax.show._
+import ch.epfl.bluebrain.nexus.cli.config.OffsetConfig._
+import ch.epfl.bluebrain.nexus.cli.error.ConfigError.ReadConvertError
 import ch.epfl.bluebrain.nexus.cli.types.Offset
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{EitherValues, Inspectors}
 
-class OffsetConfigSpec extends AnyWordSpecLike with Matchers with Fixtures {
+class OffsetConfigSpec extends AnyWordSpecLike with Matchers with Fixtures with EitherValues with Inspectors {
 
   "An Offset Config" should {
 
@@ -20,11 +24,22 @@ class OffsetConfigSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "be saved to a file" in {
-      val path = Paths.get(s"${genString()}.conf")
-      offsetConfig.write[IO](path).unsafeRunSync() shouldEqual Right(())
-      path.toFile.exists() shouldEqual true
-      OffsetConfig(path) shouldEqual Right(offsetConfig)
-      path.toFile.delete()
+      val paths = List(Paths.get(s"${genString()}.conf") -> false, defaultPath.toOption.value -> true)
+      forAll(paths) {
+        case (path, default) =>
+          val write = if (default) offsetConfig.write[IO]() else offsetConfig.write[IO](path)
+          write.unsafeRunSync() shouldEqual Right(())
+          path.toFile.exists() shouldEqual true
+          OffsetConfig(path) shouldEqual Right(offsetConfig)
+          path.toFile.delete()
+      }
+    }
+
+    "fail" in {
+      val path = Paths.get(getClass().getResource("/offset-fail-test.conf").toURI())
+      val err  = OffsetConfig(path).left.value
+      err shouldBe a[ReadConvertError]
+      err.show.contains("the application configuration failed to be loaded into a configuration object") shouldEqual true
     }
 
   }
