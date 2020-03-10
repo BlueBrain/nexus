@@ -24,5 +24,5 @@ This tutorial introduces the basics of SPARQL, a query language for querying RDF
 
 This tutorial code is available:
 
-* at [Github](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Query_Sparql_View.ipynb)
-* on [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Query_Sparql_View.ipynb)
+* at [Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/tutorial/notebooks/Query_Sparql_View.ipynb)
+* on [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/tutorial/notebooks/Query_Sparql_View.ipynb)
