@@ -5,8 +5,8 @@ import java.util.UUID
 
 import cats.Applicative
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.{ClientErrOr, ProjectClient}
+import ch.epfl.bluebrain.nexus.cli.error.ClientError.SerializationError
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.parser.decode
@@ -51,7 +51,7 @@ object Event {
       implicit F: Applicative[F]
   ): F[ClientErrOr[Event]] =
     decode[NexusAPIEvent](value.data) match {
-      case Left(err) => F.pure(Left(SerializationError(err.getMessage, Some(value.data))))
+      case Left(err) => F.pure(Left(SerializationError(err.getMessage, "NexusAPIEvent", Some(value.data))))
       case Right(NexusAPIEvent(orgUuid, projectUuid, tpe, types, resourceId, instant)) =>
         projectClient
           .label(orgUuid, projectUuid)

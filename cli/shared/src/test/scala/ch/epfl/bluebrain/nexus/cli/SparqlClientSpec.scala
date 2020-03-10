@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.cli
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.cli.ClientError.{ClientStatusError, ServerStatusError}
 import ch.epfl.bluebrain.nexus.cli.SparqlClient._
+import ch.epfl.bluebrain.nexus.cli.error.ClientError.{ClientStatusError, ServerStatusError}
 import ch.epfl.bluebrain.nexus.cli.types.{Label, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import org.http4s.Method._

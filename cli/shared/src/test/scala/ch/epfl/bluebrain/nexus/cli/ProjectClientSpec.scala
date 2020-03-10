@@ -5,8 +5,8 @@ import java.util.regex.Pattern.quote
 
 import cats.effect.IO
 import cats.effect.concurrent.Ref
-import ch.epfl.bluebrain.nexus.cli.ClientError.ClientStatusError
 import ch.epfl.bluebrain.nexus.cli.ProjectClient.{LiveProjectClient, TestProjectClient}
+import ch.epfl.bluebrain.nexus.cli.error.ClientError.ClientStatusError
 import ch.epfl.bluebrain.nexus.cli.types.Label
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import org.http4s.Method._

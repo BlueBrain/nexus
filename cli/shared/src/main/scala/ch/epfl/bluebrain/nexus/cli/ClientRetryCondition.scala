@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli
 
-import ch.epfl.bluebrain.nexus.cli.ClientError.ServerStatusError
+import ch.epfl.bluebrain.nexus.cli.error.ClientError
+import ch.epfl.bluebrain.nexus.cli.error.ClientError.ServerStatusError
 import org.http4s.Status
 
 trait ClientRetryCondition {
