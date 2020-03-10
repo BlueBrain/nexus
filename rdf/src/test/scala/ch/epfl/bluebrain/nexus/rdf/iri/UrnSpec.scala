@@ -32,9 +32,7 @@ class UrnSpec extends RdfSpec {
         "urn:example:some/path/?+",
         "urn:example:some/path/?="
       )
-      forAll(fail) { str =>
-        Urn(str).leftValue
-      }
+      forAll(fail) { str => Urn(str).leftValue }
     }
 
     val withHash = Iri.uri("urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b#hash").rightValue

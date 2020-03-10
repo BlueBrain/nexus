@@ -62,11 +62,9 @@ class ProjectClientSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "return a label from the cache" in {
-      val emptyMockedClient = Client.fromHttpApp(HttpApp[IO] { _ =>
-        IO.raiseError(new RuntimeException("err"))
-      })
-      val cache   = Ref[IO].of(Map((orgUuid, projectUuid) -> ((orgLabel, projectLabel)))).unsafeRunSync()
-      val client2 = ProjectClient[IO](emptyMockedClient, config, cache)
+      val emptyMockedClient = Client.fromHttpApp(HttpApp[IO] { _ => IO.raiseError(new RuntimeException("err")) })
+      val cache             = Ref[IO].of(Map((orgUuid, projectUuid) -> ((orgLabel, projectLabel)))).unsafeRunSync()
+      val client2           = ProjectClient[IO](emptyMockedClient, config, cache)
       client2.label(orgUuid, projectUuid).unsafeRunSync() shouldEqual Right(orgLabel -> projectLabel)
     }
 

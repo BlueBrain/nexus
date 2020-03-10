@@ -34,6 +34,6 @@ object Component {
   final def apply(string: String): Either[String, Component] =
     new IriParser(string).parseComponent
 
-  final implicit val componentShow: Show[Component] = Show.show(_.iriString)
-  final implicit val componentEq: Eq[Component]     = Eq.fromUniversalEquals
+  implicit final val componentShow: Show[Component] = Show.show(_.iriString)
+  implicit final val componentEq: Eq[Component]     = Eq.fromUniversalEquals
 }

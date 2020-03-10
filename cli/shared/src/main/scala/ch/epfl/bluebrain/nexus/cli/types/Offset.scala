@@ -19,7 +19,7 @@ object Offset {
   final def apply(value: String): Option[Offset] =
     Try(Sequence(value.toLong)).toOption orElse Try(TimeBasedUUID(UUID.fromString(value))).toOption
 
-  final implicit val offsetOrdering: Ordering[Offset] = {
+  implicit final val offsetOrdering: Ordering[Offset] = {
     case (x: Sequence, y: Sequence)           => x compare y
     case (x: TimeBasedUUID, y: TimeBasedUUID) => x compare y
     case _                                    => 0

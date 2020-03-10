@@ -20,9 +20,7 @@ class ComponentSpec extends RdfSpec {
     }
     "fail to construct" in {
       val strings = List("", "asd?=", "asd?+", "asd?=a", "asd?+a")
-      forAll(strings) { s =>
-        Component(s).leftValue
-      }
+      forAll(strings) { s => Component(s).leftValue }
     }
     "show" in {
       Component("a%C2%A3/?:@;&b%C3%86c").rightValue.show shouldEqual "a£/?:@;&bÆc"

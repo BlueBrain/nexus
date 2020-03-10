@@ -1,9 +1,13 @@
 package ch.epfl.bluebrain.nexus.cli.postgres
 
-import cats.effect.{ContextShift, Effect, IO, Timer}
-import ch.epfl.bluebrain.nexus.cli.postgres.config.PostgresConfig
+import java.nio.file.{Files, Path}
+
+import cats.effect.{ContextShift, IO, Timer}
+import ch.epfl.bluebrain.nexus.cli.postgres.PostgresDocker.PostgresHostConfig
+import ch.epfl.bluebrain.nexus.cli.postgres.config.AppConfig
 import com.github.ghik.silencer.silent
 import doobie.util.transactor.Transactor
+import izumi.distage.effect.modules.CatsDIEffectModule
 import izumi.distage.model.definition.ModuleDef
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
@@ -13,21 +17,44 @@ import scala.concurrent.ExecutionContext
 
 class ProjectionSpec extends DistageSpecScalatest[IO] {
 
-  private implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  private implicit val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
+  implicit private val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit private val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
+
+  private val copyConfigs: IO[(Path, Path)] = IO {
+    val parent       = Files.createTempDirectory(".nexus")
+    val envFile      = parent.resolve("env.conf")
+    val postgresFile = parent.resolve("postgres.conf")
+    Files.copy(getClass.getClassLoader.getResourceAsStream("env.conf"), envFile)
+    Files.copy(getClass.getClassLoader.getResourceAsStream("postgres.conf"), postgresFile)
+    (envFile, postgresFile)
+  }
 
   @silent
   override def config: TestConfig = TestConfig(
-    pluginConfig = PluginConfig.const(IOPlugin),
+    pluginConfig = PluginConfig.empty,
     moduleOverrides = new ModuleDef {
-      make[Transactor[IO]].from { (cfg: PostgresConfig) =>
+      make[AppConfig]
+        .fromEffect { host: PostgresHostConfig =>
+          copyConfigs.flatMap {
+            case (envFile, postgresFile) =>
+              AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
+                case Left(value) => IO.raiseError(value)
+                case Right(value) =>
+                  IO.pure(value.copy(postgres = value.postgres.copy(host = host.host, port = host.port)))
+              }
+          }
+        }
+
+      make[Transactor[IO]].from { cfg: AppConfig =>
         Transactor.fromDriverManager[IO](
-          "org.postgresql.Driver",                               // driver classname
-          s"jdbc:postgresql://${cfg.host}:${cfg.port}/postgres", // connect URL (driver-specific)
-          "postgres",                                            // user
-          "postgres"                                             // password
+          "org.postgresql.Driver",
+          cfg.postgres.jdbcUrl,
+          cfg.postgres.username,
+          cfg.postgres.password
         )
       }
+
+      include(CatsDIEffectModule)
       include(new PostgresDocker.Module[IO])
     },
     configBaseName = "postgres-test"
@@ -36,13 +63,11 @@ class ProjectionSpec extends DistageSpecScalatest[IO] {
   "A DB" should {
     "select 1" in {
       import doobie.implicits._
-      (xa: Transactor[IO], eff: Effect[IO]) => {
-        implicit val e = eff
+      xa: Transactor[IO] =>
         for {
           result <- sql"select 1;".query[Int].unique.transact(xa)
-          _ = assert(result == 1)
+          _      = assert(result == 1)
         } yield ()
-      }
     }
   }
 

@@ -128,15 +128,13 @@ object SparqlResults {
 
   }
 
-  private[types] implicit val uriDecoder: Decoder[Uri] =
+  implicit private[types] val uriDecoder: Decoder[Uri] =
     Decoder.decodeString.emap(str => Uri.fromString(str).leftMap(_ => "Failed to decode str as Uri"))
 
   private val askResultDecoder: Decoder[SparqlResults] =
-    Decoder.instance(_.get[Boolean]("boolean").map { boolean =>
-      SparqlResults(Head(), Bindings(), Some(boolean))
-    })
+    Decoder.instance(_.get[Boolean]("boolean").map { boolean => SparqlResults(Head(), Bindings(), Some(boolean)) })
 
-  final implicit val sparqlResultsDecoder: Decoder[SparqlResults] = {
+  implicit final val sparqlResultsDecoder: Decoder[SparqlResults] = {
     val default = deriveDecoder[SparqlResults]
     Decoder.instance(hc => default(hc) orElse askResultDecoder(hc))
 

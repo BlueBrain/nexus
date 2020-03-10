@@ -35,6 +35,6 @@ object Nid {
   final def apply(string: String): Either[String, Nid] =
     new IriParser(string).parseNid
 
-  final implicit val nidShow: Show[Nid] = Show.show(_.iriString)
-  final implicit val nidEq: Eq[Nid]     = Eq.fromUniversalEquals
+  implicit final val nidShow: Show[Nid] = Show.show(_.iriString)
+  implicit final val nidEq: Eq[Nid]     = Eq.fromUniversalEquals
 }

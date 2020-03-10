@@ -50,9 +50,7 @@ class PathSpec extends RdfSpec {
     }
     "fail to construct for invalid chars" in {
       val cases = List("/a/b?", "abc", "/a#", ":asd", " ")
-      forAll(cases) { c =>
-        Path(c).leftValue
-      }
+      forAll(cases) { c => Path(c).leftValue }
     }
     "normalize paths" in {
       val cases = List(
@@ -193,9 +191,7 @@ class PathSpec extends RdfSpec {
     "to segments" in {
       val cases =
         List(Path("/a/b/c/d/e/").rightValue, Path("/a//b/c//d//e//").rightValue, Path("/a/b/c/d/e").rightValue)
-      forAll(cases) { path =>
-        path.segments shouldEqual List("a", "b", "c", "d", "e")
-      }
+      forAll(cases) { path => path.segments shouldEqual List("a", "b", "c", "d", "e") }
       Path.Empty.segments shouldEqual List.empty[String]
       Path("/a/").rightValue.segments shouldEqual List("a")
     }
@@ -210,9 +206,7 @@ class PathSpec extends RdfSpec {
     "number of segments" in {
       val cases =
         List(Path("/a/b/c/d/e/").rightValue, Path("/a//b/c//d//e//").rightValue, Path("/a/b/c/d/e").rightValue)
-      forAll(cases) { path =>
-        path.size shouldEqual 5
-      }
+      forAll(cases) { path => path.size shouldEqual 5 }
       Path.Empty.size shouldEqual 0
       Path("/a/").rightValue.size shouldEqual 1
     }

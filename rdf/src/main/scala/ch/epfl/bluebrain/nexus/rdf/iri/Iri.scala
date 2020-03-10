@@ -255,9 +255,9 @@ object Iri {
     final def apply(string: String): Either[String, RelativeIri] =
       new IriParser(string).parseRelative
 
-    final implicit val relativeIriShow: Show[RelativeIri] = Show.show(_.iriString)
+    implicit final val relativeIriShow: Show[RelativeIri] = Show.show(_.iriString)
 
-    final implicit val relativeIriEq: Eq[RelativeIri] = Eq.fromUniversalEquals
+    implicit final val relativeIriEq: Eq[RelativeIri] = Eq.fromUniversalEquals
   }
 
   /**
@@ -319,8 +319,8 @@ object Iri {
     final def unsafe(string: String): Uri =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    final implicit val absoluteIriShow: Show[Uri] = Show.show(_.iriString)
-    final implicit val absoluteIriEq: Eq[Uri]     = Eq.fromUniversalEquals
+    implicit final val absoluteIriShow: Show[Uri] = Show.show(_.iriString)
+    implicit final val absoluteIriEq: Eq[Uri]     = Eq.fromUniversalEquals
   }
 
   /**
@@ -427,9 +427,9 @@ object Iri {
     private[rdf] def unsafe(string: String): Url =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    final implicit def urlShow: Show[Url] = Show.show(_.iriString)
+    implicit final def urlShow: Show[Url] = Show.show(_.iriString)
 
-    final implicit val urlEq: Eq[Url] = Eq.fromUniversalEquals
+    implicit final val urlEq: Eq[Url] = Eq.fromUniversalEquals
   }
 
   /**
@@ -488,13 +488,13 @@ object Iri {
     private[rdf] def unsafe(string: String): Urn =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    final implicit val urnShow: Show[Urn] = Show.show(_.iriString)
+    implicit final val urnShow: Show[Urn] = Show.show(_.iriString)
 
-    final implicit val urnEq: Eq[Urn] = Eq.fromUniversalEquals
+    implicit final val urnEq: Eq[Urn] = Eq.fromUniversalEquals
   }
 
-  final implicit val iriEq: Eq[Iri] = Eq.fromUniversalEquals
-  final implicit def iriShow(implicit urnShow: Show[Urn], urlShow: Show[Url], relShow: Show[RelativeIri]): Show[Iri] =
+  implicit final val iriEq: Eq[Iri] = Eq.fromUniversalEquals
+  implicit final def iriShow(implicit urnShow: Show[Urn], urlShow: Show[Url], relShow: Show[RelativeIri]): Show[Iri] =
     Show.show {
       case r: RelativeIri => r.show
       case url: Url       => url.show

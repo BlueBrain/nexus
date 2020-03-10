@@ -9,15 +9,11 @@ class SchemeSpec extends RdfSpec {
   "A Scheme" should {
     "be constructed successfully" in {
       val strings = List("urn", "https", "http", "file", "ftp", "ssh", "a", "a0", "a-", "a+", "a.", "HTTPS", "A0-+.")
-      forAll(strings) { s =>
-        Scheme(s).rightValue
-      }
+      forAll(strings) { s => Scheme(s).rightValue }
     }
     "fail to construct" in {
       val strings = List("", "0", "0a", "as_", "%20a", "0-+.")
-      forAll(strings) { s =>
-        Scheme(s).leftValue
-      }
+      forAll(strings) { s => Scheme(s).leftValue }
     }
     "return the appropriate boolean flag" in {
       val cases = List(

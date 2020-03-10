@@ -11,9 +11,7 @@ class HostSpec extends RdfSpec {
     val one = Host.ipv4("1.1.1.1").rightValue
     "be parsed correctly from string" in {
       val values = List("127.0.0.1", "255.255.255.255", "199.99.9.0", "249.249.249.249")
-      forAll(values) { v =>
-        Host.ipv4(v).rightValue.show shouldEqual v
-      }
+      forAll(values) { v => Host.ipv4(v).rightValue.show shouldEqual v }
     }
     "be constructed correctly from bytes" in {
       Host.ipv4(1, 1, 1, 1).show shouldEqual one.show
@@ -45,9 +43,7 @@ class HostSpec extends RdfSpec {
         "355.255.255.255",
         "260.255.255.256"
       )
-      forAll(values) { v =>
-        Host.ipv4(v).leftValue should not be empty
-      }
+      forAll(values) { v => Host.ipv4(v).leftValue should not be empty }
     }
     "be an IPv4 address" in {
       one.isIPv4 shouldEqual true
