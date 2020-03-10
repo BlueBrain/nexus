@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.cli.influxdb.client
 import java.time.Instant
 import java.util.regex.Pattern
 
-import ch.epfl.bluebrain.nexus.cli.SparqlClient
-import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.ProjectConfig
+import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.TypeConfig
 import ch.epfl.bluebrain.nexus.cli.types.{Label, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
+import org.http4s.Uri
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -28,11 +28,9 @@ class PointSpec extends AnyWordSpecLike with Matchers with Fixtures with OptionV
         )
       ).as[SparqlResults].getOrElse(throw new IllegalArgumentException)
 
-      val projectConfig = ProjectConfig(
-        SparqlClient.defaultSparqlView,
-        SparqlClient.defaultSparqlView,
-        Map.empty,
-        "nstats",
+      val typeConfig = TypeConfig(
+        Uri.unsafeFromString("https://neuroshapes.org/Subject"),
+        "",
         "datastats",
         Set("bytes"),
         "updated"
@@ -43,7 +41,6 @@ class PointSpec extends AnyWordSpecLike with Matchers with Fixtures with OptionV
         Map(
           "created"    -> created.toString,
           "project"    -> "myorg/myproject",
-          "type"       -> "Subject",
           "deprecated" -> "false"
         ),
         Map(
@@ -52,7 +49,7 @@ class PointSpec extends AnyWordSpecLike with Matchers with Fixtures with OptionV
         Some(updated)
       )
 
-      Point.fromSparqlResults(sparqlResults, Label("myorg"), Label("myproject"), "Subject", projectConfig) shouldEqual List(
+      Point.fromSparqlResults(sparqlResults, Label("myorg"), Label("myproject"), typeConfig) shouldEqual List(
         expected
       )
 

@@ -4,7 +4,7 @@ import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.{InfluxDbClient, Point}
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig
-import ch.epfl.bluebrain.nexus.cli.types.EventEnvelope
+import ch.epfl.bluebrain.nexus.cli.types.Event
 import ch.epfl.bluebrain.nexus.cli.{EventStreamClient, SparqlClient}
 import fs2.Stream
 
@@ -22,44 +22,52 @@ class InfluxDbIndexer[F[_]: Timer](
     * Index points into InfluxDB base on a SPARQL query.
     */
   def index(): F[Unit] = {
-    def executeStream(sseStream: Stream[F, EventEnvelope]): F[Unit] =
+    def executeStream(sseStream: Stream[F, Event]): F[Unit] =
       sseStream
-        .mapFilter { ee =>
-          for {
-            pc <- config.data.configOf((ee.event.organization, ee.event.project))
-            qt <- pc.findTemplate(ee.event.resourceTypes)
-
-          } yield (ee, qt, pc)
+        .flatMap { event =>
+          config.data.configOf((event.organization, event.project)) match {
+            case None => Stream.empty
+            case Some(pc) =>
+              Stream.emits(
+                pc.findTypes(event.resourceTypes).map((event, _, pc))
+              )
+          }
         }
         .mapAsync(config.indexing.sparqlConcurrency) {
-          case (ee, (tpe, template), pc) =>
+          case (event, typeConf, pc) =>
             sparqlClient
-              .query(ee.event.organization, ee.event.project, pc.sparqlView, template.inject(ee.event.resourceId))
+              .query(
+                event.organization,
+                event.project,
+                pc.sparqlView,
+                SparqlQueryTemplate(typeConf.query).inject(event.resourceId)
+              )
               .map { resp =>
-                resp.toOption.map(res => (ee, (tpe, res), pc))
+                resp.toOption.map(res => (event, res, pc, typeConf))
               }
 
         }
         .mapFilter(r => r)
         .flatMap {
-          case (ee, (tpe, results), pc) =>
+          case (event, results, pc, tc) =>
             Stream.emits(
-              Point.fromSparqlResults(results, ee.event.organization, ee.event.project, tpe, pc).map((ee.offset, _, pc))
+              Point.fromSparqlResults(results, event.organization, event.project, tc).map((_, pc))
             )
         }
         .mapAsync(config.indexing.influxdbConcurrency) {
-          case (offset, point, pc) =>
-            influxDbClient.write(pc.influxdbDatabase, point).as(offset)
+          case (point, pc) =>
+            influxDbClient.write(pc.database, point)
         }
         .compile
         .drain
 
     def createDbs() =
-      config.data.projects.values.map(pc => influxDbClient.createDb(pc.influxdbDatabase)).toList.sequence
+      config.data.projects.values.map(pc => influxDbClient.createDb(pc.database)).toList.sequence
 
     for {
-      _ <- createDbs()
-      _ <- executeStream(eventStreamClient(None))
+      _      <- createDbs()
+      stream <- eventStreamClient(None)
+      _      <- executeStream(stream.value)
     } yield ()
   }
 

@@ -26,6 +26,7 @@ class InfluxDbIndexerSpec extends AnyWordSpecLike with Matchers with Fixtures wi
   "InfluxDb indexer" should {
 
     "index resources into InfluxDB" in {
+      val neuroshapes: Uri = Uri.unsafeFromString("https://neuroshapes.org/")
 
       implicit val timer: Timer[IO] = IO.timer(scala.concurrent.ExecutionContext.global)
 
@@ -49,9 +50,9 @@ class InfluxDbIndexerSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       val projectLabel2 = Label("project2")
       val projectLabel3 = Label("project3")
       val events = List(
-        Event("Created", resourceId1, orgLabel, projectLabel1, Set(nxv / "TypeA", nxv / "Subject"), instant1),
-        Event("Updated", resourceId2, orgLabel, projectLabel2, Set(nxv / "Subject"), instant2),
-        Event("Created", resourceId1, orgLabel, projectLabel3, Set(nxv / "TypeA", nxv / "Subject"), instant3)
+        Event("Created", resourceId1, orgLabel, projectLabel1, Set(nxv / "TypeA", neuroshapes / "Subject"), instant1),
+        Event("Updated", resourceId2, orgLabel, projectLabel2, Set(neuroshapes / "Subject"), instant2),
+        Event("Created", resourceId1, orgLabel, projectLabel3, Set(nxv / "TypeA", neuroshapes / "Subject"), instant3)
       )
 
       val eventStreamClient = new TestEventStreamClient[IO](events)
@@ -94,8 +95,7 @@ class InfluxDbIndexerSpec extends AnyWordSpecLike with Matchers with Fixtures wi
             Map(
               "created"    -> instant1.toString,
               "deprecated" -> "false",
-              "project"    -> "myorg/project1",
-              "type"       -> "Subject"
+              "project"    -> "myorg/project1"
             ),
             Map("bytes" -> "1234"),
             Some(instant1)
@@ -107,8 +107,7 @@ class InfluxDbIndexerSpec extends AnyWordSpecLike with Matchers with Fixtures wi
             Map(
               "created"    -> instant1.toString,
               "deprecated" -> "false",
-              "project"    -> "myorg/project2",
-              "type"       -> "Subject"
+              "project"    -> "myorg/project2"
             ),
             Map("bytes" -> "5678"),
             Some(instant2)

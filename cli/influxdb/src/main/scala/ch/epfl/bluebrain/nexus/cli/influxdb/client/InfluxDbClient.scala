@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.cli.influxdb.client
 import cats.effect.concurrent.Ref
 import cats.effect.{Sync, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.error.ClientError
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.InfluxDbClientConfig
 import ch.epfl.bluebrain.nexus.cli.{ClientErrOr, _}
 import io.chrisdavenport.log4cats.Logger

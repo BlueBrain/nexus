@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.cli.influxdb.client
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.ProjectConfig
-import ch.epfl.bluebrain.nexus.cli.types.{Label, SparqlResults}
+import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.TypeConfig
 import ch.epfl.bluebrain.nexus.cli.types.SparqlResults.Binding
+import ch.epfl.bluebrain.nexus.cli.types.{Label, SparqlResults}
 import fs2.Chunk
-import org.http4s.{EntityEncoder, MediaType}
 import org.http4s.headers.`Content-Type`
+import org.http4s.{EntityEncoder, MediaType}
 
 import scala.util.Try
 
@@ -46,30 +46,26 @@ object Point {
     * @param results      PARQL query results.
     * @param organization organization
     * @param project      proj
-    * @param tpe          type of the entity that matched the query
-    * @param pc           project configuration
     * @return             [[Point]] created form the [[SparqlResults]].
     */
   def fromSparqlResults(
       results: SparqlResults,
       organization: Label,
       project: Label,
-      tpe: String,
-      pc: ProjectConfig
+      tc: TypeConfig
   ): List[Point] = {
     def mapToPoint(bindings: Map[String, Binding]): Option[Point] = {
-      val values = pc.influxdbValues.flatMap(value => bindings.get(value).map(value -> _.value)).toMap
+      val values = tc.values.flatMap(value => bindings.get(value).map(value -> _.value)).toMap
       if (values.isEmpty) None
       else {
         val tags = bindings.view
-          .filterKeys(key => !pc.influxdbValues(key) && key != pc.influxdbTimestamp)
+          .filterKeys(key => !tc.values(key) && key != tc.timestamp)
           .mapValues(_.value) ++ Seq(
           "project" -> s"${organization.value}/${project.value}",
-          "type"    -> tpe
         )
         val timestamp =
-          bindings.get(pc.influxdbTimestamp).flatMap(binding => Try(Instant.parse(binding.value)).toOption)
-        Some(Point(pc.influxdbMeasurement, tags.toMap, values, timestamp))
+          bindings.get(tc.timestamp).flatMap(binding => Try(Instant.parse(binding.value)).toOption)
+        Some(Point(tc.measurement, tags.toMap, values, timestamp))
       }
     }
 

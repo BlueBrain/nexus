@@ -4,7 +4,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.ProjectLabelRef
 import ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.{DataConfig, IndexingConfig, InfluxDbClientConfig}
-import ch.epfl.bluebrain.nexus.cli.influxdb.SparqlQueryTemplate
 import ch.epfl.bluebrain.nexus.cli.types.Label
 import org.http4s.Uri
 import pureconfig.error.CannotConvert
@@ -27,33 +26,27 @@ object InfluxDbConfig {
   implicit val uriConfigWriter: ConfigWriter[Uri] =
     ConfigWriter[String].contramap(_.renderString)
 
-  case class ProjectConfig(
+  final case class TypeConfig(`type`: Uri, query: String, measurement: String, values: Set[String], timestamp: String)
+  final case class ProjectConfig(
       sparqlView: Uri,
-      typePrefix: Uri,
-      types: Map[String, String],
-      influxdbDatabase: String,
-      influxdbMeasurement: String,
-      influxdbValues: Set[String],
-      influxdbTimestamp: String
+      database: String,
+      types: Seq[TypeConfig]
   ) {
-    def findTemplate(eventTypes: Set[Uri]): Option[(String, SparqlQueryTemplate)] = {
-      types.foldLeft[Option[(String, SparqlQueryTemplate)]](None) {
-        case (Some(value), _)                                              => Some(value)
-        case (_, (tpe, template)) if eventTypes.contains(typePrefix / tpe) => Some((tpe, SparqlQueryTemplate(template)))
-        case _                                                             => None
-      }
+    def findTypes(eventTypes: Set[Uri]): Seq[TypeConfig] = {
+      types.filter(typeConf => eventTypes(typeConf.`type`))
+
     }
   }
 
-  case class DataConfig(projects: Map[String, ProjectConfig]) {
+  final case class DataConfig(projects: Map[String, ProjectConfig]) {
     def configOf(ref: ProjectLabelRef): Option[ProjectConfig] = ref match {
       case (Label(org), Label(proj)) => projects.get(s"$org/$proj")
     }
   }
 
-  case class InfluxDbClientConfig(endpoint: Uri, retry: RetryStrategyConfig, duration: String, replication: Int)
+  final case class InfluxDbClientConfig(endpoint: Uri, retry: RetryStrategyConfig, duration: String, replication: Int)
 
-  case class IndexingConfig(
+  final case class IndexingConfig(
       sparqlConcurrency: Int,
       influxdbConcurrency: Int
   )
