@@ -4,23 +4,25 @@ import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri._
+import io.circe.Json
+import io.circe.syntax._
 
 class UrnSpec extends RdfSpec {
 
   "An Urn" should {
+    // format: off
+    val cases = List(
+      "urn:uUid:6e8bc430-9c3a-11d9-9669-0800200c9a66"           -> "urn:uuid:6e8bc430-9c3a-11d9-9669-0800200c9a66",
+      "urn:example:a%C2%A3/b%C3%86c//:://?=a=b#"                -> "urn:example:a£/bÆc//:://?=a=b#",
+      "urn:lex:eu:council:directive:2010-03-09;2010-19-UE"      -> "urn:lex:eu:council:directive:2010-03-09;2010-19-UE",
+      "urn:Example:weather?=op=map&lat=39.56&lon=-104.85#test"  -> "urn:example:weather?=op=map&lat=39.56&lon=-104.85#test",
+      "urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk"           -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk",
+      "urn:examp-lE:foo-bar-baz-qux?=a=b?+CCResolve:cc=uk"      -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b",
+      "urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b"      -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b",
+      "urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b#hash" -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b#hash"
+    )
+    // format: on
     "be parsed correctly" in {
-      // format: off
-      val cases = List(
-        "urn:uUid:6e8bc430-9c3a-11d9-9669-0800200c9a66"           -> "urn:uuid:6e8bc430-9c3a-11d9-9669-0800200c9a66",
-        "urn:example:a%C2%A3/b%C3%86c//:://?=a=b#"                -> "urn:example:a£/bÆc//:://?=a=b#",
-        "urn:lex:eu:council:directive:2010-03-09;2010-19-UE"      -> "urn:lex:eu:council:directive:2010-03-09;2010-19-UE",
-        "urn:Example:weather?=op=map&lat=39.56&lon=-104.85#test"  -> "urn:example:weather?=op=map&lat=39.56&lon=-104.85#test",
-        "urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk"           -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk",
-        "urn:examp-lE:foo-bar-baz-qux?=a=b?+CCResolve:cc=uk"      -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b",
-        "urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b"      -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b",
-        "urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b#hash" -> "urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b#hash"
-      )
-      // format: on
       forAll(cases) {
         case (in, expected) =>
           Urn(in).rightValue.iriString shouldEqual expected
@@ -83,6 +85,18 @@ class UrnSpec extends RdfSpec {
       val lhs = Urn("urn:examp-lE:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b#hash").rightValue
       val rhs = Urn("urn:examp-le:foo-bar-baz-qux?+CCResolve:cc=uk?=a=b#hash").rightValue
       Eq.eqv(lhs, rhs) shouldEqual true
+    }
+
+    "encode" in {
+      forAll(cases) {
+        case (cons, str) => Iri.urn(cons).rightValue.asJson shouldEqual Json.fromString(str)
+      }
+    }
+
+    "decode" in {
+      forAll(cases) {
+        case (cons, str) => Json.fromString(str).as[Urn].rightValue shouldEqual Iri.urn(cons).rightValue
+      }
     }
   }
 }

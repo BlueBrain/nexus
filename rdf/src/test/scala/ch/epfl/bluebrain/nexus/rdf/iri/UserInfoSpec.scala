@@ -4,6 +4,8 @@ import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Authority._
+import io.circe.Json
+import io.circe.syntax._
 
 class UserInfoSpec extends RdfSpec {
 
@@ -56,6 +58,16 @@ class UserInfoSpec extends RdfSpec {
 
     "not eq" in {
       Eq.eqv(UserInfo(ucsUp).rightValue, UserInfo(ucsLow).rightValue) shouldEqual false
+    }
+
+    "encode" in {
+      val userInfo = UserInfo(up + low).rightValue
+      userInfo.asJson shouldEqual Json.fromString(up + low)
+    }
+
+    "decode" in {
+      val userInfo = UserInfo(up + low).rightValue
+      Json.fromString(up + low).as[UserInfo].rightValue shouldEqual userInfo
     }
   }
 }

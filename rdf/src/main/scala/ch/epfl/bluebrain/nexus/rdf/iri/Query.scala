@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.{Eq, Show}
 import ch.epfl.bluebrain.nexus.rdf.PctString._
 import ch.epfl.bluebrain.nexus.rdf.iri.IriParser._
+import io.circe.{Decoder, Encoder}
 
 import scala.collection.SortedMap
 import scala.collection.immutable.SortedSet
@@ -62,4 +63,7 @@ object Query {
   implicit final val queryShow: Show[Query] = Show.show(_.iriString)
 
   implicit final val queryEq: Eq[Query] = (x: Query, y: Query) => x.sorted == y.sorted
+
+  implicit final val queryEncoder: Encoder[Query] = Encoder.encodeString.contramap(_.iriString)
+  implicit final val queryDecoder: Decoder[Query] = Decoder.decodeString.emap(Query.apply)
 }

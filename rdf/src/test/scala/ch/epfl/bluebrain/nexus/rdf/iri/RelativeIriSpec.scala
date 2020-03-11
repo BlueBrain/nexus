@@ -3,28 +3,30 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.Eq
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Url}
+import io.circe.Json
+import io.circe.syntax._
 
 class RelativeIriSpec extends RdfSpec {
 
   "A RelativeIri" should {
+    val correctCases = List(
+      "//me:me@hOst:443/a/b?a&e=f&b=c#frag" -> "//me:me@host:443/a/b?a&e=f&b=c#frag",
+      "//me:me@hOst#frag"                   -> "//me:me@host#frag",
+      "/some/:/path"                        -> "/some/:/path",
+      "a/../b/./c"                          -> "b/c",
+      "../../../"                           -> "../../../",
+      "/../../"                             -> "/",
+      "/:/some/path"                        -> "/:/some/path",
+      "some/:/path"                         -> "some/:/path",
+      "?q=v"                                -> "?q=v",
+      "#frag"                               -> "#frag",
+      "//hOst:443/a/b/../c"                 -> "//host:443/a/c",
+      "//1.2.3.4:80/a%C2%A3/b%C3%86c//:://" -> "//1.2.3.4:80/a£/bÆc//:://",
+      "//1.2.3.4:80/a%C2%A3/b%C3%86c//:://" -> "//1.2.3.4:80/a£/bÆc//:://",
+      "//1.2.3.4:80/a%C2%A3/b%C3%86c//:://" -> "//1.2.3.4:80/a£/bÆc//:://"
+    )
     "be parsed correctly" in {
-      val cases = List(
-        "//me:me@hOst:443/a/b?a&e=f&b=c#frag" -> "//me:me@host:443/a/b?a&e=f&b=c#frag",
-        "//me:me@hOst#frag"                   -> "//me:me@host#frag",
-        "/some/:/path"                        -> "/some/:/path",
-        "a/../b/./c"                          -> "b/c",
-        "../../../"                           -> "../../../",
-        "/../../"                             -> "/",
-        "/:/some/path"                        -> "/:/some/path",
-        "some/:/path"                         -> "some/:/path",
-        "?q=v"                                -> "?q=v",
-        "#frag"                               -> "#frag",
-        "//hOst:443/a/b/../c"                 -> "//host:443/a/c",
-        "//1.2.3.4:80/a%C2%A3/b%C3%86c//:://" -> "//1.2.3.4:80/a£/bÆc//:://",
-        "//1.2.3.4:80/a%C2%A3/b%C3%86c//:://" -> "//1.2.3.4:80/a£/bÆc//:://",
-        "//1.2.3.4:80/a%C2%A3/b%C3%86c//:://" -> "//1.2.3.4:80/a£/bÆc//:://"
-      )
-      forAll(cases) {
+      forAll(correctCases) {
         case (in, expected) => RelativeIri(in).rightValue.iriString shouldEqual expected
       }
     }
@@ -182,6 +184,16 @@ class RelativeIriSpec extends RdfSpec {
       )
       forAll(cases) {
         case (in, result) => RelativeIri(in).rightValue.resolve(base) shouldEqual Url(result).rightValue
+      }
+    }
+    "encode" in {
+      forAll(correctCases) {
+        case (cons, str) => RelativeIri(cons).rightValue.asJson shouldEqual Json.fromString(str)
+      }
+    }
+    "decode" in {
+      forAll(correctCases) {
+        case (cons, str) => Json.fromString(str).as[RelativeIri].rightValue shouldEqual RelativeIri(cons).rightValue
       }
     }
   }

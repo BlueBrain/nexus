@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
+import io.circe.Json
+import io.circe.syntax._
 
 class NidSpec extends RdfSpec {
 
@@ -25,6 +27,14 @@ class NidSpec extends RdfSpec {
     }
     "eq" in {
       Eq.eqv(Nid("iban").rightValue, normalized.rightValue) shouldEqual true
+    }
+    "encode" in {
+      val name = "iban"
+      Nid(name).rightValue.asJson shouldEqual Json.fromString(name)
+    }
+    "decode" in {
+      val name = "iban"
+      Json.fromString(name).as[Nid].rightValue shouldEqual Nid(name).rightValue
     }
   }
 }

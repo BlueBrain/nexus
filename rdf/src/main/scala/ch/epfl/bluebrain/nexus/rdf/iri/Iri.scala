@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.rdf.iri.Authority.Port
 import scala.annotation.tailrec
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri._
 import ch.epfl.bluebrain.nexus.rdf.iri.Path._
+import io.circe.{Decoder, Encoder}
 
 /**
   * An Iri as defined by RFC 3987.
@@ -260,6 +261,9 @@ object Iri {
     implicit final val relativeIriShow: Show[RelativeIri] = Show.show(_.iriString)
 
     implicit final val relativeIriEq: Eq[RelativeIri] = Eq.fromUniversalEquals
+
+    implicit final val relativeIriEncoder: Encoder[RelativeIri] = Encoder.encodeString.contramap(_.iriString)
+    implicit final val relativeIriDecoder: Decoder[RelativeIri] = Decoder.decodeString.emap(RelativeIri.apply)
   }
 
   /**
@@ -321,8 +325,12 @@ object Iri {
     final def unsafe(string: String): Uri =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    implicit final val absoluteIriShow: Show[Uri] = Show.show(_.iriString)
-    implicit final val absoluteIriEq: Eq[Uri]     = Eq.fromUniversalEquals
+    implicit final val uriShow: Show[Uri] = Show.show(_.iriString)
+
+    implicit final val uriEq: Eq[Uri] = Eq.fromUniversalEquals
+
+    implicit final val uriEncoder: Encoder[Uri] = Encoder.encodeString.contramap(_.iriString)
+    implicit final val uriDecoder: Decoder[Uri] = Decoder.decodeString.emap(Uri.apply)
   }
 
   /**
@@ -429,9 +437,12 @@ object Iri {
     private[rdf] def unsafe(string: String): Url =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    implicit final def urlShow: Show[Url] = Show.show(_.iriString)
+    implicit final val urlShow: Show[Url] = Show.show(_.iriString)
 
     implicit final val urlEq: Eq[Url] = Eq.fromUniversalEquals
+
+    implicit final val urlEncoder: Encoder[Url] = Encoder.encodeString.contramap(_.iriString)
+    implicit final val urlDecoder: Decoder[Url] = Decoder.decodeString.emap(Url.apply)
   }
 
   /**
@@ -493,6 +504,9 @@ object Iri {
     implicit final val urnShow: Show[Urn] = Show.show(_.iriString)
 
     implicit final val urnEq: Eq[Urn] = Eq.fromUniversalEquals
+
+    implicit final val urnEncoder: Encoder[Urn] = Encoder.encodeString.contramap(_.iriString)
+    implicit final val urnDecoder: Decoder[Urn] = Decoder.decodeString.emap(Urn.apply)
   }
 
   implicit final val iriEq: Eq[Iri] = Eq.fromUniversalEquals
@@ -502,4 +516,7 @@ object Iri {
       case url: Url       => url.show
       case urn: Urn       => urn.show
     }
+
+  implicit final val iriEncoder: Encoder[Iri] = Encoder.encodeString.contramap(_.iriString)
+  implicit final val iriDecoder: Decoder[Iri] = Decoder.decodeString.emap(Iri.apply)
 }

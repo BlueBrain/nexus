@@ -4,6 +4,7 @@ import cats.syntax.show._
 import cats.{Eq, Show}
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri._
+import io.circe.{Decoder, Encoder}
 
 /**
   * A Compact URI as defined by W3C in ''CURIE Syntax 1.0''.
@@ -70,12 +71,17 @@ object Curie {
     final def apply(string: String): Either[String, Prefix] =
       new IriParser(string).parseNcName
 
-    implicit final val prefixShow: Show[Prefix] = Show.show(_.value)
-    implicit final val prefixEq: Eq[Prefix]     = Eq.fromUniversalEquals
+    implicit final val prefixShow: Show[Prefix]       = Show.show(_.value)
+    implicit final val prefixEq: Eq[Prefix]           = Eq.fromUniversalEquals
+    implicit final val prefixEncoder: Encoder[Prefix] = Encoder.encodeString.contramap(_.value)
+    implicit final val prefixDecoder: Decoder[Prefix] = Decoder.decodeString.emap(Prefix.apply)
   }
 
   implicit final def curieShow(implicit p: Show[Prefix], r: Show[RelativeIri]): Show[Curie] =
     Show.show { case Curie(prefix, reference) => prefix.show + ":" + reference.show }
 
   implicit final val curieEq: Eq[Curie] = Eq.fromUniversalEquals
+
+  implicit final val curieEncoder: Encoder[Curie] = Encoder.encodeString.contramap(_.show)
+  implicit final val curieDecoder: Decoder[Curie] = Decoder.decodeString.emap(Curie.apply)
 }
