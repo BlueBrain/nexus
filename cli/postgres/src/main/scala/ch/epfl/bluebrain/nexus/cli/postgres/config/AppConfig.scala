@@ -15,6 +15,8 @@ import pureconfig.{ConfigConvert, ConfigReader, ConfigSource}
 
 /**
   * Complete application configuration.
+  * @param env      the environment configuration
+  * @param postgres the postgres specific configuration
   */
 final case class AppConfig(
     env: NexusConfig,
@@ -23,12 +25,22 @@ final case class AppConfig(
 
 object AppConfig {
 
+  /**
+    * Loads the application configuration using possible file config location overrides.
+    * @param envConfigFile      an optional env config file location
+    * @param postgresConfigFile an optional postgres config file location
+    */
   def load[F[_]: Sync](
       envConfigFile: Option[Path] = None,
       postgresConfigFile: Option[Path] = None
   ): F[Either[ConfigError, AppConfig]] =
     loadT[F](envConfigFile, postgresConfigFile).value
 
+  /**
+    * Loads the application configuration using possible file config location overrides.
+    * @param envConfigFile      an optional env config file location
+    * @param postgresConfigFile an optional postgres config file location
+    */
   def loadT[F[_]](
       envConfigFile: Option[Path] = None,
       postgresConfigFile: Option[Path] = None

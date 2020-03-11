@@ -9,6 +9,8 @@ import pureconfig.generic.semiauto.deriveConvert
 
 /**
   * SQL Projection project configuration.
+  * @param sparqlView an optional view reference to query
+  * @param types      the collection of type specific configuration
   */
 final case class ProjectConfig(
     sparqlView: Option[Uri],

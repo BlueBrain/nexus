@@ -18,7 +18,12 @@ trait Fixtures extends Randomness with Resources with OptionValues {
   private val retryStrategy = RetryStrategyConfig("once", 100.millis, 5.seconds, 1, "on-server-error")
   private val client        = ClientConfig(retryStrategy)
 
-  val config: NexusConfig       = NexusConfig(Uri.unsafeFromString("https://nexus.example.com/v1"), token, client)
+  val config: NexusConfig = NexusConfig(
+    Uri.unsafeFromString("https://nexus.example.com/v1"),
+    token,
+    client,
+    Uri.unsafeFromString("https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex")
+  )
   val endpoints: NexusEndpoints = NexusEndpoints(config)
   val nxv: Uri                  = Uri.unsafeFromString("https://bluebrain.github.io/nexus/vocabulary")
 }

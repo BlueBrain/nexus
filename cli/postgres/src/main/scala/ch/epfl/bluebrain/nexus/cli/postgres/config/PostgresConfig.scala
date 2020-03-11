@@ -9,6 +9,12 @@ import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
 
 /**
   * PostgreSQL connectivity information along with the projection configuration.
+  * @param host     the postgres host
+  * @param port     the postgres port
+  * @param database the database to be used
+  * @param username the auth username
+  * @param password the auth password
+  * @param projects the project to config mapping
   */
 final case class PostgresConfig(
     host: String,

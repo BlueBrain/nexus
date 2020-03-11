@@ -6,6 +6,8 @@ import pureconfig.generic.semiauto.deriveConvert
 
 /**
   * Type to query configuration mapping.
+  * @param tpe     the type for which the query configuration is applied
+  * @param queries the collection of query configurations for this type
   */
 final case class TypeConfig(
     tpe: String,
