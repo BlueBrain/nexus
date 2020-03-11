@@ -84,8 +84,6 @@ object Vocabulary {
   /**
     * Nexus vocabulary
     */
-  object nxv {
-    val base = url"https://bluebrain.github.io/nexus/vocabulary/"
-  }
+  val nxv = url"https://bluebrain.github.io/nexus/vocabulary/"
 }
 // $COVERAGE-ON$

@@ -65,6 +65,8 @@ sealed abstract class Iri extends Product with Serializable {
     */
   def uriString: String
 
+  override def toString: String = iriString
+
 }
 
 object Iri {

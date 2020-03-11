@@ -23,7 +23,7 @@ val http4sVersion     = "0.21.1"
 val jenaVersion       = "3.14.0"
 val log4catsVersion   = "1.0.1"
 val logbackVersion    = "1.2.3"
-val magnoliaVersion   = "0.12.6"
+val magnoliaVersion   = "0.12.8"
 val monixVersion      = "3.1.0"
 val parboiledVersion  = "2.2.0"
 val pureconfigVersion = "0.12.3"
@@ -98,6 +98,7 @@ lazy val rdf = project
     libraryDependencies ++= Seq(
       alleycatsCore,
       catsCore,
+      magnolia,
       parboiled2,
       circeCore    % Test,
       circeParser  % Test,
