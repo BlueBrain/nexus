@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.{Eq, Show}
 import ch.epfl.bluebrain.nexus.rdf.PctString._
 import ch.epfl.bluebrain.nexus.rdf.iri.IriParser._
+import io.circe.{Decoder, Encoder}
 
 /**
   * NID part of an Urn as defined by RFC 8141.
@@ -35,6 +36,8 @@ object Nid {
   final def apply(string: String): Either[String, Nid] =
     new IriParser(string).parseNid
 
-  implicit final val nidShow: Show[Nid] = Show.show(_.iriString)
-  implicit final val nidEq: Eq[Nid]     = Eq.fromUniversalEquals
+  implicit final val nidShow: Show[Nid]         = Show.show(_.iriString)
+  implicit final val nidEq: Eq[Nid]             = Eq.fromUniversalEquals
+  implicit final val queryEncoder: Encoder[Nid] = Encoder.encodeString.contramap(_.iriString)
+  implicit final val queryDecoder: Decoder[Nid] = Decoder.decodeString.emap(Nid.apply)
 }

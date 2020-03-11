@@ -4,6 +4,8 @@ import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie._
+import io.circe.Json
+import io.circe.syntax._
 
 class CurieSpec extends RdfSpec {
   "A Prefix" should {
@@ -92,6 +94,17 @@ class CurieSpec extends RdfSpec {
       val iri = Iri.uri("http://example.com/a/").rightValue
       val map = Map(Prefix("rdf").rightValue -> iri)
       c.toIri(map).rightValue shouldEqual Iri.uri("http://example.com/a/type").rightValue
+    }
+    "encode" in {
+      forAll(valid) {
+        case (string, prefix, ref) => Curie(string).rightValue.asJson shouldEqual Json.fromString(s"$prefix:$ref")
+      }
+    }
+    "decode" in {
+      forAll(valid) {
+        case (string, prefix, ref) =>
+          Json.fromString(s"$prefix:$ref").as[Curie].rightValue shouldEqual Curie(string).rightValue
+      }
     }
   }
 }

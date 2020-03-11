@@ -4,6 +4,8 @@ import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Authority.Port
+import io.circe.Json
+import io.circe.syntax._
 
 class PortSpec extends RdfSpec {
 
@@ -25,6 +27,14 @@ class PortSpec extends RdfSpec {
     }
     "eq" in {
       Eq.eqv(Port("1").rightValue, Port(1).rightValue) shouldEqual true
+    }
+    "encode" in {
+      forAll(List(0, 1, 10, 65535, 60000)) { int => Port(int).rightValue.asJson shouldEqual Json.fromInt(int) }
+    }
+    "decode" in {
+      forAll(List(0, 1, 10, 65535, 60000)) { int =>
+        Json.fromInt(int).as[Port].rightValue shouldEqual Port(int).rightValue
+      }
     }
   }
 }

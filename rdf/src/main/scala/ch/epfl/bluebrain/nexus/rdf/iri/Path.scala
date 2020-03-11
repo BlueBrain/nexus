@@ -4,6 +4,7 @@ import cats.{Eq, Show}
 import ch.epfl.bluebrain.nexus.rdf.PctString._
 import ch.epfl.bluebrain.nexus.rdf.iri.IriParser._
 import ch.epfl.bluebrain.nexus.rdf.iri.Path._
+import io.circe.{Decoder, Encoder}
 
 import scala.annotation.tailrec
 
@@ -292,4 +293,8 @@ object Path {
   implicit final val pathShow: Show[Path] = Show.show(_.iriString)
 
   implicit final val pathEq: Eq[Path] = Eq.fromUniversalEquals
+
+  implicit final val pathEncoder: Encoder[Path] = Encoder.encodeString.contramap(_.iriString)
+  implicit final val pathDecoder: Decoder[Path] =
+    Decoder.decodeString.emap(Path.rootless) or Decoder.decodeString.emap(Path.abempty)
 }

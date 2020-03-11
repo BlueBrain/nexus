@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.{Eq, Show}
 import ch.epfl.bluebrain.nexus.rdf.PctString._
 import ch.epfl.bluebrain.nexus.rdf.iri.IriParser._
+import io.circe.{Decoder, Encoder}
 
 /**
   * Urn R or Q component as defined by RFC 8141.
@@ -34,6 +35,8 @@ object Component {
   final def apply(string: String): Either[String, Component] =
     new IriParser(string).parseComponent
 
-  implicit final val componentShow: Show[Component] = Show.show(_.iriString)
-  implicit final val componentEq: Eq[Component]     = Eq.fromUniversalEquals
+  implicit final val componentShow: Show[Component]       = Show.show(_.iriString)
+  implicit final val componentEq: Eq[Component]           = Eq.fromUniversalEquals
+  implicit final val componentEncoder: Encoder[Component] = Encoder.encodeString.contramap(_.iriString)
+  implicit final val componentDecoder: Decoder[Component] = Decoder.decodeString.emap(Component.apply)
 }

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.{Eq, Show}
 import ch.epfl.bluebrain.nexus.rdf.PctString._
 import ch.epfl.bluebrain.nexus.rdf.iri.IriParser._
+import io.circe.{Decoder, Encoder}
 
 /**
   * Fragment part of an Iri as defined by RFC 3987.
@@ -36,6 +37,8 @@ object Fragment {
   final def apply(string: String): Either[String, Fragment] =
     new IriParser(string).parseFragment
 
-  implicit final val fragmentShow: Show[Fragment] = Show.show(_.iriString)
-  implicit final val fragmentEq: Eq[Fragment]     = Eq.fromUniversalEquals
+  implicit final val fragmentShow: Show[Fragment]       = Show.show(_.iriString)
+  implicit final val fragmentEq: Eq[Fragment]           = Eq.fromUniversalEquals
+  implicit final val fragmentEncoder: Encoder[Fragment] = Encoder.encodeString.contramap(_.iriString)
+  implicit final val fragmentDecoder: Decoder[Fragment] = Decoder.decodeString.emap(Fragment.apply)
 }

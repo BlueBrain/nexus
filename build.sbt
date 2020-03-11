@@ -94,8 +94,8 @@ lazy val rdf = project
       catsCore,
       magnolia,
       parboiled2,
-      circeCore    % Test,
-      circeParser  % Test,
+      circeCore,
+      circeParser,
       circeLiteral % Test,
       jenaArq      % Test,
       scalaTest    % Test

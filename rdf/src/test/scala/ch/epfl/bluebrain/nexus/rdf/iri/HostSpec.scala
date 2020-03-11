@@ -4,6 +4,9 @@ import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Authority.Host
+import ch.epfl.bluebrain.nexus.rdf.iri.Authority.Host.{IPv4Host, NamedHost}
+import io.circe.Json
+import io.circe.syntax._
 
 class HostSpec extends RdfSpec {
 
@@ -68,6 +71,17 @@ class HostSpec extends RdfSpec {
     }
     "eq" in {
       Eq.eqv(Host.ipv4("1.1.1.1").rightValue, one) shouldEqual true
+    }
+    "encode" in {
+      forAll(List("127.0.0.1", "255.255.255.255", "199.99.9.0", "249.249.249.249")) { str =>
+        Host.ipv4(str).rightValue.asJson shouldEqual Json.fromString(str)
+      }
+    }
+    "decode" in {
+      forAll(List("127.0.0.1", "255.255.255.255", "199.99.9.0", "249.249.249.249")) { str =>
+        Json.fromString(str).as[IPv4Host].rightValue shouldEqual Host.ipv4(str).rightValue
+
+      }
     }
   }
 
@@ -164,6 +178,14 @@ class HostSpec extends RdfSpec {
 
     "eq" in {
       Eq.eqv(Host.named(ucsUp).rightValue, Host.named(ucsLow).rightValue) shouldEqual true
+    }
+    "encode" in {
+      val name = "epfl.ch"
+      Host.named("epfl.ch").rightValue.asJson shouldEqual Json.fromString(name)
+    }
+    "decode" in {
+      val name = "epfl.ch"
+      Json.fromString(name).as[NamedHost].rightValue shouldEqual Host.named(name).rightValue
     }
   }
 }
