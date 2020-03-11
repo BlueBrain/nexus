@@ -21,9 +21,7 @@ class NodeSpec extends RdfSpec {
     }
     "fail to construct" in {
       val cases = List("", " ", "a#", "_", "-", "-a", "_a")
-      forAll(cases) { el =>
-        Node.blank(el).leftValue
-      }
+      forAll(cases) { el => Node.blank(el).leftValue }
     }
     "show" in {
       Node.blank.show
@@ -48,9 +46,7 @@ class NodeSpec extends RdfSpec {
         "de-Latn-DE-1996",
         "zh-Hans"
       )
-      forAll(cases) { el =>
-        LanguageTag(el).rightValue
-      }
+      forAll(cases) { el => LanguageTag(el).rightValue }
     }
     "fail to construct" in {
       val cases = List(
@@ -61,9 +57,7 @@ class NodeSpec extends RdfSpec {
         "!",
         "aaaaaaaa4h5kj324h54"
       )
-      forAll(cases) { el =>
-        LanguageTag(el).leftValue
-      }
+      forAll(cases) { el => LanguageTag(el).leftValue }
     }
   }
 
@@ -200,9 +194,7 @@ class NodeSpec extends RdfSpec {
         Node.literal(1.toLong),
         Node.literal(1.toShort)
       )
-      forAll(cases) { el =>
-        el.isNumeric shouldEqual true
-      }
+      forAll(cases) { el => el.isNumeric shouldEqual true }
     }
     "be boolean" in {
       Node.literal(true).asBoolean.value shouldEqual true

@@ -180,11 +180,11 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
   }
 
   object IriOrBNode {
-    final implicit def iriOrBNodeShow(implicit I: Show[IriNode], B: Show[BNode]): Show[IriOrBNode] = Show.show {
+    implicit final def iriOrBNodeShow(implicit I: Show[IriNode], B: Show[BNode]): Show[IriOrBNode] = Show.show {
       case v: IriNode => I.show(v)
       case v: BNode   => B.show(v)
     }
-    final implicit def iriOrBNodeEq: Eq[IriOrBNode] = Eq.fromUniversalEquals
+    implicit final def iriOrBNodeEq: Eq[IriOrBNode] = Eq.fromUniversalEquals
   }
 
   /**
@@ -224,8 +224,8 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
         .leftMap(_.format(id, formatter))
     }
 
-    final implicit val bnodeShow: Show[BNode] = Show.show(_.toString)
-    final implicit val bnodeEq: Eq[BNode]     = Eq.fromUniversalEquals
+    implicit final val bnodeShow: Show[BNode] = Show.show(_.toString)
+    implicit final val bnodeEq: Eq[BNode]     = Eq.fromUniversalEquals
 
     //noinspection TypeAnnotation
     // format: off
@@ -567,12 +567,12 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     }
   }
 
-  final implicit def nodeShow(implicit I: Show[IriNode], B: Show[BNode], L: Show[Literal]): Show[Node] = Show.show {
+  implicit final def nodeShow(implicit I: Show[IriNode], B: Show[BNode], L: Show[Literal]): Show[Node] = Show.show {
     case v: IriNode => I.show(v)
     case v: BNode   => B.show(v)
     case v: Literal => L.show(v)
   }
-  final implicit def nodeEq: Eq[Node] = Eq.fromUniversalEquals
+  implicit final def nodeEq: Eq[Node] = Eq.fromUniversalEquals
 }
 
 trait PrimitiveNodeConversions {

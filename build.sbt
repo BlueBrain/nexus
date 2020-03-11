@@ -2,24 +2,11 @@
 scalafmt: {
   style = defaultWithAlign
   maxColumn = 150
-  align.tokens = [
-    { code = "=>", owner = "Case" }
-    { code = "?", owner = "Case" }
-    { code = "extends", owner = "Defn.(Class|Trait|Object)" }
-    { code = "//", owner = ".*" }
-    { code = "{", owner = "Template" }
-    { code = "}", owner = "Template" }
+  align = most
+  align.tokens.add = [
     { code = ":=", owner = "Term.ApplyInfix" }
-    { code = "++=", owner = "Term.ApplyInfix" }
     { code = "+=", owner = "Term.ApplyInfix" }
-    { code = "%", owner = "Term.ApplyInfix" }
-    { code = "%%", owner = "Term.ApplyInfix" }
-    { code = "%%%", owner = "Term.ApplyInfix" }
-    { code = "->", owner = "Term.ApplyInfix" }
-    { code = "?", owner = "Term.ApplyInfix" }
-    { code = "<-", owner = "Enumerator.Generator" }
-    { code = "?", owner = "Enumerator.Generator" }
-    { code = "=", owner = "(Enumerator.Val|Defn.(Va(l|r)|Def|Type))" }
+    { code = "++=", owner = "Term.ApplyInfix" }
   ]
 }
  */

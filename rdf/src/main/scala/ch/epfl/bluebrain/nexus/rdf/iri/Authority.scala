@@ -44,9 +44,9 @@ final case class Authority(userInfo: Option[UserInfo], host: Host, port: Option[
 
 object Authority {
 
-  final implicit val authorityShow: Show[Authority] = Show.show(_.iriString)
+  implicit final val authorityShow: Show[Authority] = Show.show(_.iriString)
 
-  final implicit val authorityEq: Eq[Authority] = Eq.fromUniversalEquals
+  implicit final val authorityEq: Eq[Authority] = Eq.fromUniversalEquals
 
   /**
     * A user info representation as specified by RFC 3987.
@@ -89,8 +89,8 @@ object Authority {
     final def apply(string: String): Either[String, UserInfo] =
       new IriParser(string).parseUserInfo
 
-    final implicit val userInfoShow: Show[UserInfo] = Show.show(_.iriString)
-    final implicit val userInfoEq: Eq[UserInfo]     = Eq.fromUniversalEquals
+    implicit final val userInfoShow: Show[UserInfo] = Show.show(_.iriString)
+    implicit final val userInfoEq: Eq[UserInfo]     = Eq.fromUniversalEquals
   }
 
   /**
@@ -245,10 +245,10 @@ object Authority {
         new IPv4Host(bytes.toIndexedSeq)
       }
 
-      final implicit val ipv4HostShow: Show[IPv4Host] =
+      implicit final val ipv4HostShow: Show[IPv4Host] =
         Show.show(_.iriString)
 
-      final implicit val ipv4HostEq: Eq[IPv4Host] =
+      implicit final val ipv4HostEq: Eq[IPv4Host] =
         Eq.fromUniversalEquals
     }
 
@@ -291,10 +291,10 @@ object Authority {
         new IPv6Host(bytes.toIndexedSeq)
       }
 
-      final implicit val ipv6HostShow: Show[IPv6Host] =
+      implicit final val ipv6HostShow: Show[IPv6Host] =
         Show.show(_.iriString)
 
-      final implicit val ipv6HostEq: Eq[IPv6Host] =
+      implicit final val ipv6HostEq: Eq[IPv6Host] =
         Eq.fromUniversalEquals
     }
 
@@ -321,14 +321,14 @@ object Authority {
       final def apply(string: String): Either[String, NamedHost] =
         new IriParser(string).parseNamed
 
-      final implicit val namedHostShow: Show[NamedHost] =
+      implicit final val namedHostShow: Show[NamedHost] =
         Show.show(_.iriString)
 
-      final implicit val namedHostEq: Eq[NamedHost] =
+      implicit final val namedHostEq: Eq[NamedHost] =
         Eq.fromUniversalEquals
     }
 
-    final implicit val hostShow: Show[Host] = Show.show(_.iriString)
+    implicit final val hostShow: Show[Host] = Show.show(_.iriString)
   }
 
   /**
@@ -359,7 +359,7 @@ object Authority {
     final def apply(string: String): Either[String, Port] =
       new IriParser(string).parsePort
 
-    final implicit val portShow: Show[Port] = Show.show(_.value.toString)
-    final implicit val portEq: Eq[Port]     = Eq.fromUniversalEquals
+    implicit final val portShow: Show[Port] = Show.show(_.value.toString)
+    implicit final val portEq: Eq[Port]     = Eq.fromUniversalEquals
   }
 }

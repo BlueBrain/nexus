@@ -32,9 +32,7 @@ class QuerySpec extends RdfSpec {
     }
     "fail to parse" in {
       val cases = List("a==b", "a=b&", "a#", "a&&", "a=&b")
-      forAll(cases) { str =>
-        Query(str).leftValue
-      }
+      forAll(cases) { str => Query(str).leftValue }
     }
     "show" in {
       val encodedDelim = urlEncode("[]#")

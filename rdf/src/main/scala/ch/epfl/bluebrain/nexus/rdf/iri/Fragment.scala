@@ -36,6 +36,6 @@ object Fragment {
   final def apply(string: String): Either[String, Fragment] =
     new IriParser(string).parseFragment
 
-  final implicit val fragmentShow: Show[Fragment] = Show.show(_.iriString)
-  final implicit val fragmentEq: Eq[Fragment]     = Eq.fromUniversalEquals
+  implicit final val fragmentShow: Show[Fragment] = Show.show(_.iriString)
+  implicit final val fragmentEq: Eq[Fragment]     = Eq.fromUniversalEquals
 }

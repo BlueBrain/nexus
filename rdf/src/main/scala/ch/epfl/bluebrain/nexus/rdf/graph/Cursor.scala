@@ -113,7 +113,7 @@ object Cursor {
   final def apply(graph: Graph): Cursor =
     NodeCursor(graph.root, null, null, graph)
 
-  private[this] final case class NodeCursor(node: Node, lastCursor: Cursor, lastOp: CursorOp, g: Graph)
+  final private[this] case class NodeCursor(node: Node, lastCursor: Cursor, lastOp: CursorOp, g: Graph)
       extends Cursor(lastCursor, lastOp, g) {
 
     override def focus: Option[Node]          = Some(node)
@@ -156,7 +156,7 @@ object Cursor {
 
   }
 
-  private[this] final case class FailedCursor(lastCursor: Cursor, lastOp: CursorOp, g: Graph)
+  final private[this] case class FailedCursor(lastCursor: Cursor, lastOp: CursorOp, g: Graph)
       extends Cursor(lastCursor, lastOp, g) {
     override def focus: Option[Node]          = None
     override def values: Option[Set[Node]]    = None
@@ -169,7 +169,7 @@ object Cursor {
     override def downSet(p: IriNode): Cursor  = FailedCursor(this, CursorOp.DownSet(p), g)
   }
 
-  private[this] final case class SetCursor(cursorSet: Set[NodeCursor], lastCursor: Cursor, lastOp: CursorOp, g: Graph)
+  final private[this] case class SetCursor(cursorSet: Set[NodeCursor], lastCursor: Cursor, lastOp: CursorOp, g: Graph)
       extends Cursor(lastCursor, lastOp, g) {
 
     override def focus: Option[Node] = None

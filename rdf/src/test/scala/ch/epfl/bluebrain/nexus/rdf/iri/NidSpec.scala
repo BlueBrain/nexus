@@ -9,15 +9,11 @@ class NidSpec extends RdfSpec {
   "A Nid" should {
     "be constructed successfully" in {
       val strings = List("aa", "a-a", "1a", "11", "AA", s"a${List.fill(30)("1").mkString}a")
-      forAll(strings) { s =>
-        Nid(s).rightValue
-      }
+      forAll(strings) { s => Nid(s).rightValue }
     }
     "fail to construct" in {
       val strings = List("", "-a", "a-", "a", "%20a", "-", s"a${List.fill(31)("1").mkString}a")
-      forAll(strings) { s =>
-        Nid(s).leftValue
-      }
+      forAll(strings) { s => Nid(s).leftValue }
     }
     val normalized = Nid("IbAn")
 

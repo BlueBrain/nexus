@@ -40,6 +40,6 @@ object Scheme {
   final def apply(value: String): Either[String, Scheme] =
     new IriParser(value).parseScheme
 
-  final implicit val schemeShow: Show[Scheme] = Show.show(_.value)
-  final implicit val schemeEq: Eq[Scheme]     = Eq.fromUniversalEquals
+  implicit final val schemeShow: Show[Scheme] = Show.show(_.value)
+  implicit final val schemeEq: Eq[Scheme]     = Eq.fromUniversalEquals
 }

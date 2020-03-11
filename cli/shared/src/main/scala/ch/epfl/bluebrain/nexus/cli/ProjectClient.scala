@@ -34,7 +34,7 @@ trait ProjectClient[F[_]] {
 object ProjectClient {
   type UUIDToLabel = Map[ProjectUuidRef, ProjectLabelRef]
 
-  private[cli] final class LiveProjectClient[F[_]: Timer: Sync](
+  final private[cli] class LiveProjectClient[F[_]: Timer: Sync](
       client: Client[F],
       config: NexusConfig,
       cache: Ref[F, UUIDToLabel]
@@ -43,8 +43,8 @@ object ProjectClient {
     private val retry                                = config.httpClient.retry
     private val endpoints                            = NexusEndpoints(config)
     private val successCondition                     = retry.retryCondition.notRetryFromEither[ProjectLabelRef] _
-    private implicit val retryPolicy: RetryPolicy[F] = retry.retryPolicy
-    private implicit val logOnError: (ClientErrOr[ProjectLabelRef], RetryDetails) => F[Unit] =
+    implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
+    implicit private val logOnError: (ClientErrOr[ProjectLabelRef], RetryDetails) => F[Unit] =
       (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
 
     def label(organization: UUID, project: UUID): F[ClientErrOr[ProjectLabelRef]] =
@@ -66,7 +66,7 @@ object ProjectClient {
       }
   }
 
-  private[cli] final class TestProjectClient[F[_]](cache: UUIDToLabel)(implicit F: Sync[F]) extends ProjectClient[F] {
+  final private[cli] class TestProjectClient[F[_]](cache: UUIDToLabel)(implicit F: Sync[F]) extends ProjectClient[F] {
     private val notFound: ClientError = ClientError.unsafe(Status.NotFound, "Project not found")
     def label(organization: UUID, project: UUID): F[ClientErrOr[ProjectLabelRef]] =
       F.delay(cache.get((organization, project)).toRight(notFound))
@@ -82,7 +82,7 @@ object ProjectClient {
   final def apply[F[_]: Sync: Timer](client: Client[F], config: NexusConfig): F[ProjectClient[F]] =
     Ref[F].of(Map.empty[ProjectUuidRef, ProjectLabelRef]).map(cache => apply(client, config, cache))
 
-  private[cli] final def apply[F[_]: Sync: Timer](
+  final private[cli] def apply[F[_]: Sync: Timer](
       client: Client[F],
       config: NexusConfig,
       cache: Ref[F, UUIDToLabel]
@@ -92,7 +92,7 @@ object ProjectClient {
   final private[ProjectClient] case class NexusAPIProject(`_organizationLabel`: Label, `_label`: Label)
 
   object NexusAPIProject {
-    private[ProjectClient] implicit val nexusAPIProjectDecoder: Decoder[NexusAPIProject] =
+    implicit private[ProjectClient] val nexusAPIProjectDecoder: Decoder[NexusAPIProject] =
       deriveDecoder[NexusAPIProject]
   }
 }
