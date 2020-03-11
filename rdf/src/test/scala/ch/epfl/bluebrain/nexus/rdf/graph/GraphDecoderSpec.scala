@@ -104,9 +104,8 @@ class GraphDecoderSpec extends RdfSpec with JenaSpec {
       Graph(Literal("", xsd.boolean)).cursor.as[Boolean].leftValue // illegal typed boolean
     }
     "or" in {
-      val withDefault: GraphDecoder[String] = GraphDecoder.graphDecodeString or GraphDecoder.instance(
-        _ => Right("default")
-      )
+      val withDefault: GraphDecoder[String] =
+        GraphDecoder.graphDecodeString or GraphDecoder.instance(_ => Right("default"))
       c.down(nxv / "string").as[String](withDefault).rightValue shouldEqual "some string"
       c.down(nxv / "int").as[String](withDefault).rightValue shouldEqual "default"
     }
@@ -148,10 +147,8 @@ class GraphDecoderSpec extends RdfSpec with JenaSpec {
         .leftValue shouldEqual expected
     }
     "handleError" in {
-      val failed = GraphDecoder.failed[Int](DecodingError("msg", Nil))
-      val handled = MonadError[GraphDecoder, DecodingError].handleErrorWith(failed) { _ =>
-        GraphDecoder.const(1)
-      }
+      val failed  = GraphDecoder.failed[Int](DecodingError("msg", Nil))
+      val handled = MonadError[GraphDecoder, DecodingError].handleErrorWith(failed) { _ => GraphDecoder.const(1) }
       handled(c.down(nxv / "string")).rightValue shouldEqual 1
     }
     "return left for DecodingError in tailrecM" in {
@@ -166,10 +163,7 @@ class GraphDecoderSpec extends RdfSpec with JenaSpec {
     }
     "recurse until right in tailrecM" in {
       val succeedsThirdTime: Int => GraphDecoder[Either[Int, String]] =
-        int =>
-          GraphDecoder.instance { _ =>
-            if (int == 3) Right(Right("success")) else Right(Left(int + 1))
-          }
+        int => GraphDecoder.instance { _ => if (int == 3) Right(Right("success")) else Right(Left(int + 1)) }
       val decoder = MonadError[GraphDecoder, DecodingError].tailRecM(1)(int => succeedsThirdTime(int))
       decoder(c).rightValue shouldEqual "success"
     }
