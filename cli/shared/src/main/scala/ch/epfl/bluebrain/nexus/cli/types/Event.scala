@@ -32,7 +32,7 @@ final case class Event(
 )
 
 object Event {
-  private[Event] final case class NexusAPIEvent(
+  final private[Event] case class NexusAPIEvent(
       `_organizationUuid`: UUID,
       `_projectUuid`: UUID,
       `@type`: String,
@@ -42,9 +42,9 @@ object Event {
   )
 
   object NexusAPIEvent {
-    private[types] implicit val uriDecoder: Decoder[Uri] =
+    implicit private[types] val uriDecoder: Decoder[Uri] =
       Decoder.decodeString.emap(str => Uri.fromString(str).leftMap(_ => "Failed to decode str as Uri"))
-    private[Event] implicit val nexusAPIEventDecoder: Decoder[NexusAPIEvent] = deriveDecoder[NexusAPIEvent]
+    implicit private[Event] val nexusAPIEventDecoder: Decoder[NexusAPIEvent] = deriveDecoder[NexusAPIEvent]
   }
 
   final def apply[F[_]](value: ServerSentEvent, projectClient: ProjectClient[F])(

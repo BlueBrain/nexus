@@ -70,12 +70,12 @@ object Curie {
     final def apply(string: String): Either[String, Prefix] =
       new IriParser(string).parseNcName
 
-    final implicit val prefixShow: Show[Prefix] = Show.show(_.value)
-    final implicit val prefixEq: Eq[Prefix]     = Eq.fromUniversalEquals
+    implicit final val prefixShow: Show[Prefix] = Show.show(_.value)
+    implicit final val prefixEq: Eq[Prefix]     = Eq.fromUniversalEquals
   }
 
-  final implicit def curieShow(implicit p: Show[Prefix], r: Show[RelativeIri]): Show[Curie] =
+  implicit final def curieShow(implicit p: Show[Prefix], r: Show[RelativeIri]): Show[Curie] =
     Show.show { case Curie(prefix, reference) => prefix.show + ":" + reference.show }
 
-  final implicit val curieEq: Eq[Curie] = Eq.fromUniversalEquals
+  implicit final val curieEq: Eq[Curie] = Eq.fromUniversalEquals
 }

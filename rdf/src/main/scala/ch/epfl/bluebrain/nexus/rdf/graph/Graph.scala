@@ -329,22 +329,22 @@ object Graph {
     if (triples.isEmpty) SingleNodeGraph(root)
     else MultiNodeGraph(root, triples)
 
-  private[rdf] final case class SingleNodeGraph(root: Node) extends Graph {
+  final private[rdf] case class SingleNodeGraph(root: Node) extends Graph {
     override val triples: Set[(IriOrBNode, IriNode, Node)] = Set.empty
   }
 
-  private[rdf] final case class SetGraph(root: Node, graphs: Set[Graph]) extends Graph {
+  final private[rdf] case class SetGraph(root: Node, graphs: Set[Graph]) extends Graph {
     override lazy val triples: Set[Triple] =
       graphs.foldLeft(Set.empty[Triple])(_ ++ _.triples)
   }
 
-  private[rdf] final case class OptionalGraph(graph: Option[Graph]) extends Graph {
+  final private[rdf] case class OptionalGraph(graph: Option[Graph]) extends Graph {
     override lazy val root: Node = graph.map(_.root).getOrElse(BNode())
     override lazy val triples: Set[Triple] =
       graph.map(_.triples).getOrElse(Set.empty)
   }
 
-  private[rdf] final case class MultiNodeGraph(root: Node, triples: Set[Triple]) extends Graph
+  final private[rdf] case class MultiNodeGraph(root: Node, triples: Set[Triple]) extends Graph
 
   type Triple = (IriOrBNode, IriNode, Node)
 

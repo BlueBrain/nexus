@@ -59,7 +59,7 @@ object Query {
   final def apply(string: String): Either[String, Query] =
     new IriParser(string).parseQuery
 
-  final implicit val queryShow: Show[Query] = Show.show(_.iriString)
+  implicit final val queryShow: Show[Query] = Show.show(_.iriString)
 
-  final implicit val queryEq: Eq[Query] = (x: Query, y: Query) => x.sorted == y.sorted
+  implicit final val queryEq: Eq[Query] = (x: Query, y: Query) => x.sorted == y.sorted
 }

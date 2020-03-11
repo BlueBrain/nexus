@@ -57,12 +57,12 @@ object GraphEncoder
     override def contramap[A, B](fa: GraphEncoder[A])(f: B => A): GraphEncoder[B] = fa.contramap(f)
   }
 
-  private[rdf] final def apply[C[_], A](f: C[A] => Iterator[A])(implicit A: GraphEncoder[A]): GraphEncoder[C[A]] =
+  final private[rdf] def apply[C[_], A](f: C[A] => Iterator[A])(implicit A: GraphEncoder[A]): GraphEncoder[C[A]] =
     new IterableAsListGraphEncoder[C, A](A) {
       override protected def toIterator(a: C[A]): Iterator[A] = f(a)
     }
 
-  private[rdf] abstract class IterableAsListGraphEncoder[C[_], A](A: GraphEncoder[A]) extends GraphEncoder[C[A]] {
+  abstract private[rdf] class IterableAsListGraphEncoder[C[_], A](A: GraphEncoder[A]) extends GraphEncoder[C[A]] {
     protected def toIterator(a: C[A]): Iterator[A]
     override def apply(a: C[A]): Graph = {
       val it = toIterator(a)

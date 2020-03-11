@@ -41,7 +41,7 @@ object Console {
     * @param retentionTime the time to retain each messages in the queue. It is required in order to prevent
     *                      the queue from overflowing
     */
-  private[cli] final class TestConsole[F[_]: Timer](
+  final private[cli] class TestConsole[F[_]: Timer](
       stdQueue: Queue[F, String],
       errQueue: Queue[F, String],
       retentionTime: FiniteDuration

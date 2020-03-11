@@ -289,7 +289,7 @@ object Path {
     def size: Int                                          = 1 + rest.size
   }
 
-  final implicit val pathShow: Show[Path] = Show.show(_.iriString)
+  implicit final val pathShow: Show[Path] = Show.show(_.iriString)
 
-  final implicit val pathEq: Eq[Path] = Eq.fromUniversalEquals
+  implicit final val pathEq: Eq[Path] = Eq.fromUniversalEquals
 }

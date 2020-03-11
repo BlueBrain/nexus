@@ -142,8 +142,8 @@ object GraphDecoder
     new SemigroupK[GraphDecoder] with MonadError[GraphDecoder, DecodingError] {
       final def combineK[A](x: GraphDecoder[A], y: GraphDecoder[A]): GraphDecoder[A]                   = x.or(y)
       final def pure[A](a: A): GraphDecoder[A]                                                         = const(a)
-      override final def map[A, B](fa: GraphDecoder[A])(f: A => B): GraphDecoder[B]                    = fa.map(f)
-      override final def product[A, B](fa: GraphDecoder[A], fb: GraphDecoder[B]): GraphDecoder[(A, B)] = fa.product(fb)
+      final override def map[A, B](fa: GraphDecoder[A])(f: A => B): GraphDecoder[B]                    = fa.map(f)
+      final override def product[A, B](fa: GraphDecoder[A], fb: GraphDecoder[B]): GraphDecoder[(A, B)] = fa.product(fb)
       final def flatMap[A, B](fa: GraphDecoder[A])(f: A => GraphDecoder[B]): GraphDecoder[B]           = fa.flatMap(f)
 
       final def raiseError[A](e: DecodingError): GraphDecoder[A] = GraphDecoder.failed(e)
@@ -221,9 +221,7 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
   }
 
   implicit final val graphDecodeDuration: GraphDecoder[Duration] =
-    graphDecodeString.emap { str =>
-      Try(Duration(str)).toEither.leftMap(_ => "Unable to decode node as a Duration")
-    }
+    graphDecodeString.emap { str => Try(Duration(str)).toEither.leftMap(_ => "Unable to decode node as a Duration") }
 
   implicit final val graphDecodeFiniteDuration: GraphDecoder[FiniteDuration] =
     graphDecodeDuration.emap {
@@ -237,9 +235,7 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
     }
 
   implicit final val graphDecodePeriod: GraphDecoder[Period] =
-    graphDecodeString.emap { str =>
-      Try(Period.parse(str)).toEither.leftMap(_ => "Unable to decode node as a Period")
-    }
+    graphDecodeString.emap { str => Try(Period.parse(str)).toEither.leftMap(_ => "Unable to decode node as a Period") }
 
   implicit final def graphDecodeSet[A](implicit A: GraphDecoder[A]): GraphDecoder[Set[A]] = GraphDecoder.instance { c =>
     c.cursors match {
@@ -261,9 +257,7 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
           inner(rest, first.map(a => builder.addOne(a)))
       }
 
-    GraphDecoder.instance { c =>
-      inner(c, Right(f.newBuilder))
-    }
+    GraphDecoder.instance { c => inner(c, Right(f.newBuilder)) }
   }
 
   implicit final def graphDecodeVector[A](implicit A: GraphDecoder[A]): GraphDecoder[Vector[A]] =

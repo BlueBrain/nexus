@@ -67,7 +67,7 @@ object EventStreamClient {
     }
   }
 
-  private[cli] final class LiveEventStreamClient[F[_]](
+  final private[cli] class LiveEventStreamClient[F[_]](
       client: Client[F],
       projectClient: ProjectClient[F],
       config: NexusConfig
@@ -109,15 +109,15 @@ object EventStreamClient {
 
   }
 
-  private[cli] final class TestEventStreamClient[F[_]](events: List[Event])(implicit F: Sync[F])
+  final private[cli] class TestEventStreamClient[F[_]](events: List[Event])(implicit F: Sync[F])
       extends EventStreamClient[F] {
 
     private val offsetEvents: Seq[(Offset, Event)] = events.zipWithIndex.map { case (ev, i) => (Sequence(i + 1L), ev) }
     private val noOffset: Offset                   = Sequence(0L)
 
     private def eventsFrom(lastEventIdCache: Ref[F, Option[Offset]]) =
-      lastEventIdCache.get.map(
-        lastEventId => offsetEvents.dropWhile { case (offset, _) => offset <= lastEventId.getOrElse(noOffset) }
+      lastEventIdCache.get.map(lastEventId =>
+        offsetEvents.dropWhile { case (offset, _) => offset <= lastEventId.getOrElse(noOffset) }
       )
 
     private def saveOffset(lastEventIdCache: Ref[F, Option[Offset]]): Pipe[F, (Offset, Event), Event] =
@@ -131,15 +131,15 @@ object EventStreamClient {
 
     def apply(organization: Label, lastEventId: Option[Offset]): F[EventStream[F]] =
       for {
-        ref    <- Ref.of(lastEventId)
-        events <- eventsFrom(ref)
+        ref      <- Ref.of(lastEventId)
+        events   <- eventsFrom(ref)
         filtered = events.iterator.filter { case (_, ev) => ev.organization == organization }
       } yield EventStream(Stream.fromIterator(filtered.iterator).through(saveOffset(ref)), ref)
 
     def apply(organization: Label, project: Label, lastEventId: Option[Offset]): F[EventStream[F]] =
       for {
-        ref    <- Ref.of(lastEventId)
-        events <- eventsFrom(ref)
+        ref      <- Ref.of(lastEventId)
+        events   <- eventsFrom(ref)
         filtered = events.iterator.filter { case (_, ev) => ev.organization == organization && ev.project == project }
       } yield EventStream(Stream.fromIterator(filtered.iterator).through(saveOffset(ref)), ref)
 
