@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import io.circe.Json
 import io.circe.parser.parse
-import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import org.scalactic
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 import org.scalatest.matchers.should.Matchers
@@ -15,8 +14,6 @@ import org.scalatest.{EitherValues, Inspectors, OptionValues, TryValues}
 import scala.io.Source
 
 trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValues with OptionValues with TryValues {
-
-  val nxv = url"https://bluebrain.github.io/nexus/vocabulary/"
 
   implicit def convertEitherToValuable[L, R](
       either: Either[L, R]
@@ -48,4 +45,7 @@ trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
   final def jsonContentOf(resourcePath: String): Json =
     parse(Source.fromInputStream(getClass.getResourceAsStream(resourcePath)).mkString)
       .getOrElse(throw new IllegalArgumentException)
+
+  final def jsonWithViewContext(resourcePath: String): Json =
+    jsonContentOf("/view-context.json") deepMerge jsonContentOf(resourcePath)
 }

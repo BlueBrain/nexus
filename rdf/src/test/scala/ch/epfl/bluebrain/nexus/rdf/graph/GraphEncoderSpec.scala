@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.rdf.graph.GraphEncoderSpec.IntValue
 import ch.epfl.bluebrain.nexus.rdf.graph.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{Uri, Url}
 import ch.epfl.bluebrain.nexus.rdf.Node.{IriNode, Literal}
-import ch.epfl.bluebrain.nexus.rdf.Vocabulary.{rdf, schema}
+import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 
 import scala.concurrent.duration.{Duration, FiniteDuration}

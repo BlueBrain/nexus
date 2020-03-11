@@ -8,7 +8,7 @@ import cats.{Applicative, FlatMap, Functor, MonadError, SemigroupK}
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{Uri, Url, Urn}
 import ch.epfl.bluebrain.nexus.rdf.Node.{BNode, IriNode, IriOrBNode, Literal}
 import ch.epfl.bluebrain.nexus.rdf.{JenaSpec, Node, RdfSpec}
-import ch.epfl.bluebrain.nexus.rdf.Vocabulary.xsd
+import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -16,7 +16,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
 class GraphDecoderSpec extends RdfSpec with JenaSpec {
 
   private val id    = url"http://example.com/id"
-  private val model = toJenaModel(jsonWithContext("/graph/decoder.json"))
+  private val model = toJenaModel(jsonWithViewContext("/graph/decoder.json"))
   private val graph = fromJenaModel(id, model)
   private val c     = graph.cursor
 

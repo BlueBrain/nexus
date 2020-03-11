@@ -1,0 +1,19 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "View",
+    "ElasticSearchView"
+  ],
+  "_uuid": "3aa14a1a-81e7-4147-8306-136d8270bb01",
+  "resourceSchemas": [
+    "nxv:Schema",
+    "nxv:Resource"
+  ],
+  "resourceTypes": [
+    "nxv:MyType",
+    "nxv:MyType2"
+  ],
+  "resourceTag": "one",
+  "sourceAsText": false,
+  "mapping": "{\"properties\":{\"@type\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"@id\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_rev\":{\"type\":\"long\",\"copy_to\":\"_all_fields\"},\"_deprecated\":{\"type\":\"boolean\",\"copy_to\":\"_all_fields\"},\"_createdAt\":{\"type\":\"date\",\"copy_to\":\"_all_fields\"},\"_updatedAt\":{\"type\":\"date\",\"copy_to\":\"_all_fields\"},\"_createdBy\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_updatedBy\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_constrainedBy\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_project\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_self\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_incoming\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_outgoing\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_original_source\":{\"type\":\"text\",\"copy_to\":\"_all_fields\"},\"_bytes\":{\"type\":\"long\",\"copy_to\":\"_all_fields\"},\"_mediaType\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_location\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_filename\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_digest\":{\"type\":\"nested\",\"properties\":{\"_algorithm\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_value\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"}}},\"_storage\":{\"type\":\"nested\",\"properties\":{\"_rev\":{\"type\":\"long\",\"copy_to\":\"_all_fields\"},\"@id\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"}}},\"_all_fields\":{\"type\":\"text\"}},\"dynamic\":false}"
+}

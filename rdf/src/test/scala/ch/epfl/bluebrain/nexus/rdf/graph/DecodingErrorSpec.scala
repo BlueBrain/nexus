@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.rdf.graph
 
-import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
+import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.graph.CursorOp._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
