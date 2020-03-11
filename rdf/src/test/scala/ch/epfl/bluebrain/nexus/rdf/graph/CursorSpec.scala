@@ -2,16 +2,16 @@ package ch.epfl.bluebrain.nexus.rdf.graph
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.rdf.{JenaSpec, RdfSpec}
-import ch.epfl.bluebrain.nexus.rdf.Vocabulary.{rdf, schema}
+import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
+import ch.epfl.bluebrain.nexus.rdf.{JenaSpec, RdfSpec}
 
 class CursorSpec extends RdfSpec with JenaSpec {
 
   private val id     = url"http://example.com/id"
   private val idNode = in"http://example.com/id"
-  private val model  = toJenaModel(jsonWithContext("/graph/composite-view.json"))
+  private val model  = toJenaModel(jsonWithViewContext("/graph/composite-view.json"))
   private val graph  = fromJenaModel(id, model)
 
   "A Cursor" should {

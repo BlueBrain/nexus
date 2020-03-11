@@ -12,6 +12,8 @@ trait IriSyntax {
 final class IriContext(private val sc: StringContext) extends AnyVal {
   def url(args: Any*): Url =
     Url.unsafe(sc.s(args: _*))
+  def uri(args: Any*): Uri =
+    Uri.unsafe(sc.s(args: _*))
   def urn(args: Any*): Urn =
     Urn.unsafe(sc.s(args: _*))
   def iri(args: Any*): Iri =
