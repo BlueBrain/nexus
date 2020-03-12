@@ -8,10 +8,8 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.config.NexusConfig
 import ch.epfl.bluebrain.nexus.cli.error.ConfigError
 import ch.epfl.bluebrain.nexus.cli.error.ConfigError.{ReadConvertError, UserHomeNotDefined}
-import com.typesafe.config.{Config, ConfigFactory}
-import pureconfig.backend.ConfigFactoryWrapper
 import pureconfig.generic.semiauto.deriveConvert
-import pureconfig.{ConfigConvert, ConfigReader, ConfigSource}
+import pureconfig.{ConfigConvert, ConfigObjectSource, ConfigSource}
 
 /**
   * Complete application configuration.
@@ -27,54 +25,61 @@ object AppConfig {
 
   /**
     * Loads the application configuration using possible file config location overrides.
+    *
     * @param envConfigFile      an optional env config file location
     * @param postgresConfigFile an optional postgres config file location
     */
-  def load[F[_]: Sync](
+  def load[F[_]](
       envConfigFile: Option[Path] = None,
       postgresConfigFile: Option[Path] = None
-  ): F[Either[ConfigError, AppConfig]] =
+  )(implicit F: Sync[F]): F[Either[ConfigError, AppConfig]] =
     loadT[F](envConfigFile, postgresConfigFile).value
 
   /**
-    * Loads the application configuration using possible file config location overrides.
+    * Loads the application configuration using possible overrides.
     * @param envConfigFile      an optional env config file location
     * @param postgresConfigFile an optional postgres config file location
     */
   def loadT[F[_]](
       envConfigFile: Option[Path] = None,
       postgresConfigFile: Option[Path] = None
-  )(implicit F: Sync[F]): EitherT[F, ConfigError, AppConfig] = {
+  )(implicit F: Sync[F]): EitherT[F, ConfigError, AppConfig] =
+    for {
+      cfg    <- assembleConfig(envConfigFile, postgresConfigFile)
+      appCfg <- EitherT.fromEither[F](cfg.load[AppConfig].leftMap[ConfigError](ReadConvertError))
+    } yield appCfg
 
+  /**
+    * Assembles the configuration using possible file config location overrides.
+    *
+    * @param envConfigFile      an optional env config file location
+    * @param postgresConfigFile an optional postgres config file location
+    */
+  def assembleConfig[F[_]](
+      envConfigFile: Option[Path] = None,
+      postgresConfigFile: Option[Path] = None
+  )(implicit F: Sync[F]): EitherT[F, ConfigError, ConfigObjectSource] = {
     val nexusHome: Either[ConfigError, Path] =
       sys.props.get("user.home").toRight(UserHomeNotDefined).map(home => Paths.get(home, ".nexus"))
     val envFile      = nexusHome.map { value => envConfigFile.getOrElse(value.resolve("env.conf")) }
     val postgresFile = nexusHome.map { value => postgresConfigFile.getOrElse(value.resolve("postgres.conf")) }
 
-    def liftT(value: => ConfigReader.Result[Config]): EitherT[F, ConfigError, Config] =
-      EitherT(F.delay(value.leftMap(ReadConvertError)))
-
-    def loadFileIfExists(file: Path): EitherT[F, ConfigError, Config] = {
+    def loadFileIfExists(file: Path): EitherT[F, ConfigError, ConfigObjectSource] = {
       EitherT(F.delay {
-        if (Files.exists(file)) ConfigFactoryWrapper.parseFile(file).leftMap[ConfigError](f => ReadConvertError(f))
-        else Right(ConfigFactory.empty())
+        if (Files.exists(file) && Files.isReadable(file) && Files.isRegularFile(file)) Right(ConfigSource.file(file))
+        else Right(ConfigSource.empty)
       })
     }
 
-    def fromConfig(config: Config): Either[ConfigError, AppConfig] =
-      ConfigSource.fromConfig(config).load[AppConfig].leftMap(ReadConvertError)
-
     for {
       envFile      <- EitherT.fromEither[F](envFile)
-      env          <- loadFileIfExists(envFile)
       postgresFile <- EitherT.fromEither[F](postgresFile)
+      env          <- loadFileIfExists(envFile)
       postgres     <- loadFileIfExists(postgresFile)
-      reference    <- liftT(ConfigFactoryWrapper.defaultReference())
-      overrides    <- liftT(ConfigFactoryWrapper.defaultOverrides())
+      overrides    = ConfigSource.defaultOverrides
+      reference    = ConfigSource.defaultReference
       stack        = overrides withFallback postgres withFallback env withFallback reference
-      resolved     = stack.resolve()
-      cfg          <- EitherT.fromEither[F](fromConfig(resolved))
-    } yield cfg
+    } yield stack
   }
 
   implicit final val appConfigConvert: ConfigConvert[AppConfig] =

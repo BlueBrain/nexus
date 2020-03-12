@@ -15,10 +15,10 @@ import izumi.distage.testkit.scalatest.DistageSpecScalatest
 
 import scala.concurrent.ExecutionContext
 
-class ProjectionSpec extends DistageSpecScalatest[IO] {
+class AbstractPostgresSpec extends DistageSpecScalatest[IO] {
 
-  implicit private val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit private val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
+  implicit protected val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit protected val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
 
   private val copyConfigs: IO[(Path, Path)] = IO {
     val parent       = Files.createTempDirectory(".nexus")
@@ -60,15 +60,6 @@ class ProjectionSpec extends DistageSpecScalatest[IO] {
     configBaseName = "postgres-test"
   )
 
-  "A DB" should {
-    "select 1" in {
-      import doobie.implicits._
-      xa: Transactor[IO] =>
-        for {
-          result <- sql"select 1;".query[Int].unique.transact(xa)
-          _      = assert(result == 1)
-        } yield ()
-    }
-  }
-
+  def command(string: String): List[String] =
+    string.split(" ").toList
 }
