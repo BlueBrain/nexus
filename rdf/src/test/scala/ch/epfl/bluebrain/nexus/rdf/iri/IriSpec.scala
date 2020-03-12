@@ -4,6 +4,8 @@ import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Urn
+import io.circe.Json
+import io.circe.syntax._
 
 class IriSpec extends RdfSpec {
   "An Iri" should {
@@ -104,6 +106,20 @@ class IriSpec extends RdfSpec {
       val lhs = Iri("hTtp://gooGle.com/?q=asd#1").rightValue
       val rhs = Iri("http://google.com/?q=asd#1").rightValue
       Eq.eqv(lhs, rhs) shouldEqual true
+    }
+
+    "encode" in {
+      val values = casesRelative ++ casesUrn ++ casesUrl
+      forAll(values) {
+        case (cons, str) => Iri(cons).rightValue.asJson shouldEqual Json.fromString(str)
+      }
+    }
+
+    "decode" in {
+      val values = casesRelative ++ casesRelativeEncoded ++ casesUrn ++ casesUrnEncoded ++ casesUrl ++ casesUrlEncoded
+      forAll(values) {
+        case (cons, str) => Json.fromString(str).as[Iri].rightValue shouldEqual Iri(cons).rightValue
+      }
     }
   }
 

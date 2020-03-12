@@ -22,6 +22,11 @@ private[iri] class IriParser(val input: ParserInput)
                             (implicit formatter: ErrorFormatter = new ErrorFormatter(showExpected = false, showTraces = false))
   extends Parser with StringBuilding {
 
+  def parseAuthority: Either[String, Authority] =
+  rule(`iauthority` ~ EOI).run()
+    .map(_ => _authority)
+    .leftMap(_.format(input, formatter))
+
   def parseScheme: Either[String, Scheme] =
     rule(scheme ~ EOI).run()
       .map(_ => _scheme)

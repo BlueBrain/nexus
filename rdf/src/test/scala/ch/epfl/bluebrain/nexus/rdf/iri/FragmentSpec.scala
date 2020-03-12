@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
+import io.circe.Json
+import io.circe.syntax._
 
 class FragmentSpec extends RdfSpec {
 
@@ -35,6 +37,14 @@ class FragmentSpec extends RdfSpec {
       val lhs = Fragment(pct + ucs + delims + rest).rightValue
       val rhs = Fragment(ucs + ucs + delims + rest).rightValue
       Eq.eqv(lhs, rhs) shouldEqual true
+    }
+    "encode" in {
+      val fragment = Fragment(pct + ucs + delims + rest).rightValue
+      fragment.asJson shouldEqual Json.fromString(ucs + ucs + delims + rest)
+    }
+    "decode" in {
+      val fragment = Fragment(pct + ucs + delims + rest).rightValue
+      Json.fromString(ucs + ucs + delims + rest).as[Fragment].rightValue shouldEqual fragment
     }
   }
 }

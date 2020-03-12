@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.rdf.iri
 
 import cats.{Eq, Show}
+import io.circe.{Decoder, Encoder}
 
 /**
   * Scheme part of an Iri as defined by RFC 3987.
@@ -40,6 +41,8 @@ object Scheme {
   final def apply(value: String): Either[String, Scheme] =
     new IriParser(value).parseScheme
 
-  implicit final val schemeShow: Show[Scheme] = Show.show(_.value)
-  implicit final val schemeEq: Eq[Scheme]     = Eq.fromUniversalEquals
+  implicit final val schemeShow: Show[Scheme]       = Show.show(_.value)
+  implicit final val schemeEq: Eq[Scheme]           = Eq.fromUniversalEquals
+  implicit final val schemeEncoder: Encoder[Scheme] = Encoder.encodeString.contramap(_.value)
+  implicit final val schemeDecoder: Decoder[Scheme] = Decoder.decodeString.emap(Scheme.apply)
 }

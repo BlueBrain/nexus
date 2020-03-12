@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.rdf.PctString._
 import ch.epfl.bluebrain.nexus.rdf.iri.Authority.Host._
 import ch.epfl.bluebrain.nexus.rdf.iri.Authority._
 import ch.epfl.bluebrain.nexus.rdf.iri.IriParser._
+import io.circe.{Decoder, Encoder}
 
 import scala.collection.immutable.ArraySeq
 import scala.collection.{immutable, View}
@@ -43,10 +44,6 @@ final case class Authority(userInfo: Option[UserInfo], host: Host, port: Option[
 }
 
 object Authority {
-
-  implicit final val authorityShow: Show[Authority] = Show.show(_.iriString)
-
-  implicit final val authorityEq: Eq[Authority] = Eq.fromUniversalEquals
 
   /**
     * A user info representation as specified by RFC 3987.
@@ -89,8 +86,10 @@ object Authority {
     final def apply(string: String): Either[String, UserInfo] =
       new IriParser(string).parseUserInfo
 
-    implicit final val userInfoShow: Show[UserInfo] = Show.show(_.iriString)
-    implicit final val userInfoEq: Eq[UserInfo]     = Eq.fromUniversalEquals
+    implicit final val userInfoShow: Show[UserInfo]       = Show.show(_.iriString)
+    implicit final val userInfoEq: Eq[UserInfo]           = Eq.fromUniversalEquals
+    implicit final val userInfoEncoder: Encoder[UserInfo] = Encoder.encodeString.contramap(_.iriString)
+    implicit final val userInfoDecoder: Decoder[UserInfo] = Decoder.decodeString.emap(UserInfo.apply)
   }
 
   /**
@@ -250,6 +249,9 @@ object Authority {
 
       implicit final val ipv4HostEq: Eq[IPv4Host] =
         Eq.fromUniversalEquals
+
+      implicit final val ipv4HostEncoder: Encoder[IPv4Host] = Encoder.encodeString.contramap(_.iriString)
+      implicit final val ipv4HostDecoder: Decoder[IPv4Host] = Decoder.decodeString.emap(IPv4Host.apply)
     }
 
     /**
@@ -296,6 +298,10 @@ object Authority {
 
       implicit final val ipv6HostEq: Eq[IPv6Host] =
         Eq.fromUniversalEquals
+
+      implicit final val ipv6HostEncoder: Encoder[IPv6Host] = Encoder.encodeString.contramap(_.iriString)
+      // TODO: Missing ipv6 parser
+      //final implicit val ipv6HostDecoder: Decoder[IPv6Host] = Decoder.decodeString.emap(IPv6Host.apply)
     }
 
     /**
@@ -326,9 +332,16 @@ object Authority {
 
       implicit final val namedHostEq: Eq[NamedHost] =
         Eq.fromUniversalEquals
+
+      implicit final val namedHostEncoder: Encoder[NamedHost] = Encoder.encodeString.contramap(_.iriString)
+      implicit final val namedHostDecoder: Decoder[NamedHost] = Decoder.decodeString.emap(NamedHost.apply)
     }
 
-    implicit final val hostShow: Show[Host] = Show.show(_.iriString)
+    implicit final val hostShow: Show[Host]       = Show.show(_.iriString)
+    implicit final val hostEq: Eq[Host]           = Eq.fromUniversalEquals
+    implicit final val hostEncoder: Encoder[Host] = Encoder.encodeString.contramap(_.iriString)
+    implicit final def hostDecoder(named: Decoder[NamedHost], ipv4: Decoder[IPv4Host]): Decoder[Host] =
+      named.map(identity[Host]) or ipv4.map(identity[Host])
   }
 
   /**
@@ -359,7 +372,26 @@ object Authority {
     final def apply(string: String): Either[String, Port] =
       new IriParser(string).parsePort
 
-    implicit final val portShow: Show[Port] = Show.show(_.value.toString)
-    implicit final val portEq: Eq[Port]     = Eq.fromUniversalEquals
+    implicit final val portShow: Show[Port]       = Show.show(_.value.toString)
+    implicit final val portEq: Eq[Port]           = Eq.fromUniversalEquals
+    implicit final val portEncoder: Encoder[Port] = Encoder.encodeInt.contramap(_.value)
+    implicit final val portDecoder: Decoder[Port] = Decoder.decodeInt.emap(Port.apply)
   }
+
+  /**
+    * Attempt to construct a new Authority from the argument validating the character encodings as per RFC 3987.
+    *
+    * @param string the string to parse as a named host.
+    * @return Right(Authority(value)) if the string conforms to specification, Left(error) otherwise
+    */
+  final def apply(string: String): Either[String, Authority] =
+    new IriParser(string).parseAuthority
+
+  implicit final val authorityShow: Show[Authority] = Show.show(_.iriString)
+
+  implicit final val authorityEq: Eq[Authority] = Eq.fromUniversalEquals
+
+  implicit final val authorityEncoder: Encoder[Authority] = Encoder.encodeString.contramap(_.iriString)
+  implicit final val authorityDecoder: Decoder[Authority] = Decoder.decodeString.emap(Authority.apply)
+
 }

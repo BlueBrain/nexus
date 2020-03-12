@@ -3,13 +3,15 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
+import io.circe.Json
+import io.circe.syntax._
 
 class SchemeSpec extends RdfSpec {
 
   "A Scheme" should {
+    val correctCases = List("urn", "https", "http", "file", "ftp", "ssh", "a", "a0", "a-", "a+", "a.", "HTTPS", "A0-+.")
     "be constructed successfully" in {
-      val strings = List("urn", "https", "http", "file", "ftp", "ssh", "a", "a0", "a-", "a+", "a.", "HTTPS", "A0-+.")
-      forAll(strings) { s => Scheme(s).rightValue }
+      forAll(correctCases) { s => Scheme(s).rightValue }
     }
     "fail to construct" in {
       val strings = List("", "0", "0a", "as_", "%20a", "0-+.")
@@ -43,6 +45,15 @@ class SchemeSpec extends RdfSpec {
     }
     "eq" in {
       Eq.eqv(Scheme("https").rightValue, normalized) shouldEqual true
+    }
+    "encode" in {
+      forAll(correctCases) { str =>
+        val scheme = Scheme(str).rightValue
+        scheme.asJson shouldEqual Json.fromString(scheme.value)
+      }
+    }
+    "decode" in {
+      forAll(correctCases) { str => Json.fromString(str).as[Scheme].rightValue shouldEqual Scheme(str).rightValue }
     }
   }
 }

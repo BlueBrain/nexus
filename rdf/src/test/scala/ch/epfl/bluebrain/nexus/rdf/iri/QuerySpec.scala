@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.Eq
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
+import io.circe.Json
+import io.circe.syntax._
 
 import scala.collection.immutable.{SortedMap, SortedSet}
 
@@ -55,6 +57,14 @@ class QuerySpec extends RdfSpec {
       val lhs = Query("a=b&a=b&a=c&a&b&b&b=c&d&e").rightValue
       val rhs = Query("a=b&a=b&a=c&a&b&b=c&d&e").rightValue
       Eq.eqv(lhs, rhs) shouldEqual true
+    }
+    "encode" in {
+      val queryStr = "a=b&a=c&b=d"
+      Query(queryStr).rightValue.asJson shouldEqual Json.fromString(queryStr)
+    }
+    "decode" in {
+      val queryStr = "a=b&a=c&b=d"
+      Json.fromString(queryStr).as[Query].rightValue shouldEqual Query(queryStr).rightValue
     }
   }
 }
