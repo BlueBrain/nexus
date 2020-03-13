@@ -5,6 +5,7 @@ import java.nio.file.Path
 import cats.data.EitherT
 import cats.effect.{ExitCode, Sync}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.Console
 import ch.epfl.bluebrain.nexus.cli.error.ConfigError
 import ch.epfl.bluebrain.nexus.cli.error.ConfigError.ReadConvertError
 import ch.epfl.bluebrain.nexus.cli.postgres.cli.CliOpts._
@@ -17,7 +18,7 @@ import pureconfig.{ConfigSource, ConfigWriter}
 /**
   * CLI configuration specific options.
   */
-final class Config[F[_]](implicit F: Sync[F]) {
+final class Config[F[_]](console: Console[F])(implicit F: Sync[F]) {
 
   def subcommand: Opts[F[ExitCode]] =
     Opts.subcommand("config", "Read or write the tool configuration.") {
@@ -29,7 +30,7 @@ final class Config[F[_]](implicit F: Sync[F]) {
       (envConfig.orNone, postgresConfig.orNone, token.orNone).mapN {
         case (e, p, t) =>
           loadConfig(e, p, t).flatMap {
-            case Right(value) => F.delay(println(renderConfig(value))).as(ExitCode.Success)
+            case Right(value) => console.println(renderConfig(value)).as(ExitCode.Success)
             case Left(err)    => F.raiseError(err).as(ExitCode.Error)
           }
       }
@@ -62,5 +63,5 @@ final class Config[F[_]](implicit F: Sync[F]) {
 }
 
 object Config {
-  def apply[F[_]: Sync]: Config[F] = new Config[F]
+  def apply[F[_]: Sync](console: Console[F]): Config[F] = new Config[F](console)
 }

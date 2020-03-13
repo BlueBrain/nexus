@@ -110,9 +110,11 @@ lazy val rdf = project
 
 lazy val cliShared = project
   .in(file("cli/shared"))
-  .settings(name := "cli-shared", moduleName := "cli-shared")
   .settings(noPublish)
   .settings(
+    name            := "cli-shared",
+    moduleName      := "cli-shared",
+    coverageMinimum := 70d,
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
@@ -139,9 +141,8 @@ lazy val postgres = project
   .in(file("cli/postgres"))
   .dependsOn(cliShared)
   .settings(
-    name            := "postgres",
-    moduleName      := "postgres",
-    coverageMinimum := 70d,
+    name       := "postgres",
+    moduleName := "postgres",
     libraryDependencies ++= Seq(
       catsRetry,
       catsEffectRetry,

@@ -8,14 +8,12 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.duration._
-
 class ConsoleSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
   "A TestConsole" should {
     val stdQueue             = Queue.unbounded[IO, String].unsafeRunSync()
     val errQueue             = Queue.unbounded[IO, String].unsafeRunSync()
-    val console: Console[IO] = new TestConsole[IO](stdQueue, errQueue, 1.second)
+    val console: Console[IO] = new TestConsole[IO](stdQueue, errQueue)
 
     "print to the standard output" in {
       forAll(0 until 10) { i =>

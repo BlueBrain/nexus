@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.cli.postgres
 import java.nio.file.{Files, Path}
 
 import cats.effect.{ContextShift, IO, Timer}
+import ch.epfl.bluebrain.nexus.cli.SharedModule
 import ch.epfl.bluebrain.nexus.cli.postgres.PostgresDocker.PostgresHostConfig
 import ch.epfl.bluebrain.nexus.cli.postgres.config.AppConfig
 import com.github.ghik.silencer.silent
 import doobie.util.transactor.Transactor
 import izumi.distage.effect.modules.CatsDIEffectModule
-import izumi.distage.model.definition.ModuleDef
+import izumi.distage.model.definition.{ModuleDef, StandardAxis}
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
 import izumi.distage.testkit.scalatest.DistageSpecScalatest
@@ -32,6 +33,7 @@ class AbstractPostgresSpec extends DistageSpecScalatest[IO] {
   @silent
   override def config: TestConfig = TestConfig(
     pluginConfig = PluginConfig.empty,
+    activation = StandardAxis.testDummyActivation,
     moduleOverrides = new ModuleDef {
       make[AppConfig]
         .fromEffect { host: PostgresHostConfig =>
@@ -56,10 +58,9 @@ class AbstractPostgresSpec extends DistageSpecScalatest[IO] {
 
       include(CatsDIEffectModule)
       include(new PostgresDocker.Module[IO])
+      include(SharedModule[IO])
+      include(PostgresModule[IO])
     },
     configBaseName = "postgres-test"
   )
-
-  def command(string: String): List[String] =
-    string.split(" ").toList
 }
