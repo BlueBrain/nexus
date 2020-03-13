@@ -9,7 +9,7 @@ import izumi.distage.model.effect.{DIApplicative, DIEffect, DIEffectAsync, DIEff
   * Module definition that binds effect TC instances for an arbitrary F[_].
   */
 class EffectModule[F[_]: Parallel: ConcurrentEffect: ContextShift: Timer: TagK] extends ModuleDef {
-  private implicit def diEffectRunner: DIEffectRunner[F] = new DIEffectRunner[F] {
+  implicit private def diEffectRunner: DIEffectRunner[F] = new DIEffectRunner[F] {
     override def run[A](f: => F[A]): A = ConcurrentEffect[F].toIO(f).unsafeRunSync()
   }
 
