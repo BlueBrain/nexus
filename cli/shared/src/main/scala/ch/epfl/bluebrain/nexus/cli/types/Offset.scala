@@ -2,16 +2,26 @@ package ch.epfl.bluebrain.nexus.cli.types
 
 import java.util.UUID
 
+import scala.util.Try
+
 /**
   * An offset for events.
   */
-sealed trait Offset extends Product with Serializable
+sealed trait Offset extends Product with Serializable {
+  def asString: String
+}
 
 object Offset {
 
-  final implicit val offsetOrdering: Ordering[Offset] = {
-    case (x: Sequence, y: Sequence)           => x compareTo y
-    case (x: TimeBasedUUID, y: TimeBasedUUID) => x.value.timestamp() compareTo y.value.timestamp()
+  /**
+    * Attempts to create an [[Offset]] from the passed string value.
+    */
+  final def apply(value: String): Option[Offset] =
+    Try(Sequence(value.toLong)).toOption orElse Try(TimeBasedUUID(UUID.fromString(value))).toOption
+
+  implicit final val offsetOrdering: Ordering[Offset] = {
+    case (x: Sequence, y: Sequence)           => x compare y
+    case (x: TimeBasedUUID, y: TimeBasedUUID) => x compare y
     case _                                    => 0
   }
 
@@ -26,6 +36,8 @@ object Offset {
     */
   final case class TimeBasedUUID(value: UUID) extends Offset with Ordered[TimeBasedUUID] {
     override def compare(that: TimeBasedUUID): Int = value.timestamp() compareTo that.value.timestamp()
+
+    override def asString: String = value.toString
   }
 
   /**
@@ -39,6 +51,8 @@ object Offset {
     */
   final case class Sequence(value: Long) extends Offset with Ordered[Sequence] {
     override def compare(that: Sequence): Int = value compareTo that.value
+
+    override def asString: String = value.toString
   }
 
 }

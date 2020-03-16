@@ -1,0 +1,44 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "list": {
+      "@id": "nxv:list",
+      "@container": "@list"
+    },
+    "set": {
+      "@id": "nxv:set",
+      "@container": "@set"
+    },
+    "idUrl": {
+      "@id": "nxv:idUrl",
+      "@type": "@id"
+    },
+    "idUrn": {
+      "@id": "nxv:idUrn",
+      "@type": "@id"
+    }
+  },
+  "@id": "http://example.com/id",
+  "float": 1.2,
+  "double": 1.2,
+  "int": 1,
+  "long": 1,
+  "boolean": true,
+  "string": "some string",
+  "uuid": "3aa14a1a-81e7-4147-8306-136d8270bb01",
+  "url": "http://example.com/id",
+  "idUrl": "http://example.com/id",
+  "urn": "urn:uuid:3aa14a1a-81e7-4147-8306-136d8270bb01",
+  "idUrn": "urn:uuid:3aa14a1a-81e7-4147-8306-136d8270bb01",
+  "list": [1, 2, 2],
+  "set": [1, 2, 2],
+  "bnode": {
+    "value": 3
+  },
+  "duration": "Inf",
+  "finiteDuration": "3 minutes",
+  "instant": "2019-05-29T09:09:22.754Z",
+  "period": "P2Y3M4D"
+}

@@ -1,7 +1,11 @@
 package ch.epfl.bluebrain.nexus.cli.types
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.types.SparqlResults._
+import io.circe.Decoder
 import org.http4s.Uri
+import io.circe.generic.semiauto._
+import io.circe.generic.auto._
 
 /**
   * Sparql query results representation.
@@ -21,7 +25,7 @@ final case class SparqlResults(head: Head, results: Bindings, boolean: Option[Bo
 
 object SparqlResults {
 
-  private val rdfString = Uri.unsafeFromString("http://www.w3.org/2001/XMLSchema#string")
+  val rdfString = Uri.unsafeFromString("http://www.w3.org/2001/XMLSchema#string")
 
   final case class Literal private[types] (lexicalForm: String, dataType: Uri, languageTag: Option[String] = None)
 
@@ -121,6 +125,18 @@ object SparqlResults {
       */
     def asUri: Option[Uri] =
       if (isIri) Uri.fromString(value).toOption else None
+
+  }
+
+  implicit private[types] val uriDecoder: Decoder[Uri] =
+    Decoder.decodeString.emap(str => Uri.fromString(str).leftMap(_ => "Failed to decode str as Uri"))
+
+  private val askResultDecoder: Decoder[SparqlResults] =
+    Decoder.instance(_.get[Boolean]("boolean").map { boolean => SparqlResults(Head(), Bindings(), Some(boolean)) })
+
+  implicit final val sparqlResultsDecoder: Decoder[SparqlResults] = {
+    val default = deriveDecoder[SparqlResults]
+    Decoder.instance(hc => default(hc) orElse askResultDecoder(hc))
 
   }
 }

@@ -1,0 +1,62 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "View": "nxv:View",
+    "ElasticSearchView": "nxv:ElasticSearchView",
+    "SparqlView": "nxv:SparqlView",
+    "ElasticSearch": "nxv:ElasticSearch",
+    "Sparql": "nxv:Sparql",
+    "Interval": "nxv:Interval",
+    "projections": {
+      "@id": "nxv:projections",
+      "@container": "@set"
+    },
+    "sources": {
+      "@id": "nxv:sources",
+      "@container": "@set"
+    },
+    "rebuildStrategy": "nxv:rebuildStrategy",
+    "value": "nxv:value",
+    "context": "nxv:context",
+    "query": "nxv:query",
+    "ProjectEventStream": "nxv:ProjectEventStream",
+    "CrossProjectEventStream": "nxv:CrossProjectEventStream",
+    "CompositeView": "nxv:CompositeView",
+    "AggregateElasticSearchView": "nxv:AggregateElasticSearchView",
+    "AggregateSparqlView": "nxv:AggregateSparqlView",
+    "_uuid": "nxv:uuid",
+    "resourceSchemas": {
+      "@id": "nxv:resourceSchemas",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "resourceTypes": {
+      "@id": "nxv:resourceTypes",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "views": {
+      "@id": "nxv:views",
+      "#comment": "this should normally be a set",
+      "@container": "@list"
+    },
+    "project": "nxv:project",
+    "viewId": {
+      "@id": "nxv:viewId",
+      "@type": "@id"
+    },
+    "resourceTag": "nxv:resourceTag",
+    "includeMetadata": "nxv:includeMetadata",
+    "includeDeprecated": "nxv:includeDeprecated",
+    "sourceAsText": "nxv:sourceAsText",
+    "mapping": "nxv:mapping",
+    "identities": {
+      "@id": "nxv:identities",
+      "@container": "@set"
+    },
+    "realm": "nxv:realm",
+    "subject": "nxv:subject",
+    "group": "nxv:group"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/view.json"
+}
