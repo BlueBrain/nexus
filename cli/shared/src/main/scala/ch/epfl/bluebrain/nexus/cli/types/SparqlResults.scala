@@ -110,8 +110,7 @@ object SparqlResults {
         datatype.flatMap(Uri.fromString(_).toOption) match {
           case Some(dt) => Some(Literal(value, dt, `xml:lang`))
           case _        => Some(Literal(value, rdfString, `xml:lang`))
-        }
-      else
+        } else
         None
 
     /**

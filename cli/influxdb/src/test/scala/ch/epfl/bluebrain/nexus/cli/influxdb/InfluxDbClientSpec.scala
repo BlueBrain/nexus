@@ -4,6 +4,7 @@ import java.time.Instant
 
 import cats.effect.IO
 import cats.effect.concurrent.Ref
+import ch.epfl.bluebrain.nexus.cli.Console.LiveConsole
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.{InfluxDbClient, Point}
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig._
@@ -43,7 +44,7 @@ class InfluxDbClientSpec extends AnyWordSpecLike with Matchers with Fixtures wit
 
     val mockedHttpClient: Client[IO] = Client.fromHttpApp(mockedHttpApp)
 
-    val client = InfluxDbClient(mockedHttpClient, config.client)
+    val client = InfluxDbClient(mockedHttpClient, new LiveConsole[IO](), config.client)
 
     "create database" in {
       client.createDb("testDb").unsafeRunSync() shouldEqual ()

@@ -5,6 +5,7 @@ import java.util.regex.Pattern
 
 import cats.effect.concurrent.Ref
 import cats.effect.{IO, Timer}
+import ch.epfl.bluebrain.nexus.cli.Console.LiveConsole
 import ch.epfl.bluebrain.nexus.cli.EventStreamClient.TestEventStreamClient
 import ch.epfl.bluebrain.nexus.cli.SparqlClient.TestSparqlClient
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.InfluxDbClient.TestInfluxDbClient
@@ -86,7 +87,9 @@ class InfluxDbIndexerSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       val points         = Ref[IO].of(Map.empty[String, Vector[Point]]).unsafeRunSync()
       val influxDbClient = new TestInfluxDbClient[IO](databases, points)
 
-      val influxDbIndexer = InfluxDbIndexer[IO](eventStreamClient, sparqlClient, influxDbClient, config)
+      val influxDbIndexer = {
+        InfluxDbIndexer[IO](eventStreamClient, sparqlClient, influxDbClient, new LiveConsole[IO](), config)
+      }
 
       val expected = Map(
         "nstats1" -> Vector(
@@ -116,7 +119,6 @@ class InfluxDbIndexerSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       )
 
       influxDbIndexer.index().unsafeRunSync()
-
       points.get.unsafeRunSync() shouldEqual expected
     }
 

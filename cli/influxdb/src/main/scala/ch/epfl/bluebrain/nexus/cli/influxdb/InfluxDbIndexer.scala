@@ -4,8 +4,9 @@ import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.{InfluxDbClient, Point}
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig
-import ch.epfl.bluebrain.nexus.cli.types.Event
-import ch.epfl.bluebrain.nexus.cli.{EventStreamClient, SparqlClient}
+import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.{ProjectConfig, TypeConfig}
+import ch.epfl.bluebrain.nexus.cli.types.{Event, SparqlResults}
+import ch.epfl.bluebrain.nexus.cli.{Console, EventStreamClient, SparqlClient}
 import fs2.Stream
 
 /**
@@ -15,6 +16,7 @@ class InfluxDbIndexer[F[_]: Timer](
     eventStreamClient: EventStreamClient[F],
     sparqlClient: SparqlClient[F],
     influxDbClient: InfluxDbClient[F],
+    console: Console[F],
     config: InfluxDbConfig
 )(implicit F: Concurrent[F]) {
 
@@ -22,6 +24,7 @@ class InfluxDbIndexer[F[_]: Timer](
     * Index points into InfluxDB base on a SPARQL query.
     */
   def index(): F[Unit] = {
+
     def executeStream(sseStream: Stream[F, Event]): F[Unit] =
       sseStream
         .flatMap { event =>
@@ -42,10 +45,10 @@ class InfluxDbIndexer[F[_]: Timer](
                 pc.sparqlView,
                 SparqlQueryTemplate(typeConf.query).inject(event.resourceId)
               )
-              .map { resp =>
-                resp.toOption.map(res => (event, res, pc, typeConf))
+              .flatMap[Option[(Event, SparqlResults, ProjectConfig, TypeConfig)]] {
+                case Left(err)  => console.printlnErr(err.show).as(None)
+                case Right(res) => F.pure(Some((event, res, pc, typeConf)))
               }
-
         }
         .mapFilter(r => r)
         .flatMap {
@@ -58,11 +61,20 @@ class InfluxDbIndexer[F[_]: Timer](
           case (point, pc) =>
             influxDbClient.write(pc.database, point)
         }
+        .map {
+          case Right(_)  => ()
+          case Left(err) => console.printlnErr(err.show)
+        }
         .compile
         .drain
 
     def createDbs() =
-      config.data.projects.values.map(pc => influxDbClient.createDb(pc.database)).toList.sequence
+      config.data.projects.values
+        .map { pc =>
+          influxDbClient.createDb(pc.database)
+        }
+        .toList
+        .sequence
 
     for {
       _      <- createDbs()
@@ -82,6 +94,7 @@ object InfluxDbIndexer {
       eventStreamClient: EventStreamClient[F],
       sparqlClient: SparqlClient[F],
       influxDbClient: InfluxDbClient[F],
+      console: Console[F],
       config: InfluxDbConfig
-  ): InfluxDbIndexer[F] = new InfluxDbIndexer[F](eventStreamClient, sparqlClient, influxDbClient, config)
+  ): InfluxDbIndexer[F] = new InfluxDbIndexer[F](eventStreamClient, sparqlClient, influxDbClient, console, config)
 }

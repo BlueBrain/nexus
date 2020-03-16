@@ -6,8 +6,8 @@ import java.util.regex.Pattern
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig.TypeConfig
 import ch.epfl.bluebrain.nexus.cli.types.{Label, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
-import org.http4s.Uri
 import org.scalatest.OptionValues
+import org.http4s.Uri
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

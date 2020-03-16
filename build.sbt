@@ -16,6 +16,7 @@ val catsEffectVersion = "2.1.2"
 val catsRetryVersion  = "0.3.2"
 val circeVersion      = "0.13.0"
 val declineVersion    = "1.0.0"
+val distageVersion    = "0.10.2-M8"
 val fs2Version        = "2.2.2"
 val http4sVersion     = "0.21.1"
 val jenaVersion       = "3.14.0"
@@ -37,6 +38,7 @@ lazy val circeGeneric    = "io.circe"              %% "circe-generic"          %
 lazy val circeLiteral    = "io.circe"              %% "circe-literal"          % circeVersion
 lazy val circeParser     = "io.circe"              %% "circe-parser"           % circeVersion
 lazy val decline         = "com.monovore"          %% "decline"                % declineVersion
+lazy val distageCore     = "io.7mind.izumi"        %% "distage-core"           % distageVersion
 lazy val fs2             = "co.fs2"                %% "fs2-core"               % fs2Version
 lazy val http4sCirce     = "org.http4s"            %% "http4s-circe"           % http4sVersion
 lazy val http4sClient    = "org.http4s"            %% "http4s-blaze-client"    % http4sVersion
@@ -126,7 +128,7 @@ lazy val influxdb = project
   .in(file("cli/influxdb"))
   .dependsOn(cliShared % "compile->compile;test->test")
   .settings(name := "influxdb", moduleName := "influxdb")
-  .settings(libraryDependencies ++= Seq(decline, monixEval, scalaTest % Test))
+  .settings(libraryDependencies ++= Seq(decline, distageCore, monixEval, scalaTest % Test))
 
 lazy val postgresql = project
   .in(file("cli/postgresql"))
