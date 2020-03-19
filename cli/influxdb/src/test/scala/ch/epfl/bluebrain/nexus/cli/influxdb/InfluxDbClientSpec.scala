@@ -7,7 +7,6 @@ import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.cli.Console.LiveConsole
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.{InfluxDbClient, Point}
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig
-import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig._
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
 import com.typesafe.config.ConfigFactory
 import org.http4s.Method._
@@ -17,7 +16,6 @@ import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import pureconfig.ConfigSource
-import pureconfig.generic.auto._
 
 class InfluxDbClientSpec extends AnyWordSpecLike with Matchers with Fixtures with OptionValues {
 

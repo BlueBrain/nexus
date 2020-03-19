@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli.influxdb.modules
 
 import cats.effect.concurrent.Ref
-import cats.effect.{Async, Bracket, Concurrent, ConcurrentEffect, ContextShift, Effect, Sync, Timer}
+import cats.effect.{Async, Blocker, Bracket, Concurrent, ConcurrentEffect, ContextShift, Effect, Sync, Timer}
 import ch.epfl.bluebrain.nexus.cli.Console.LiveConsole
 import ch.epfl.bluebrain.nexus.cli.EventStreamClient.LiveEventStreamClient
 import ch.epfl.bluebrain.nexus.cli.ProjectClient.{LiveProjectClient, UUIDToLabel}
@@ -9,14 +9,7 @@ import ch.epfl.bluebrain.nexus.cli.SparqlClient.LiveSparqlClient
 import ch.epfl.bluebrain.nexus.cli.influxdb.InfluxDbIndexer
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.InfluxDbClient
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.InfluxDbClient.LiveInfluxDbClient
-import ch.epfl.bluebrain.nexus.cli.{
-  Console,
-  EventStreamClient,
-  ProjectClient,
-  ProjectLabelRef,
-  ProjectUuidRef,
-  SparqlClient
-}
+import ch.epfl.bluebrain.nexus.cli.{Console, EventStreamClient, ProjectClient, ProjectLabelRef, ProjectUuidRef, SparqlClient}
 import distage.TagK
 import izumi.distage.model.definition.ModuleDef
 import izumi.distage.model.definition.StandardAxis.Repo
@@ -35,6 +28,8 @@ class InfluxDbModule[F[_]: ConcurrentEffect: Concurrent: ContextShift: Timer: Ta
   addImplicit[Bracket[F, Throwable]]
   addImplicit[Timer[F]]
   addImplicit[ContextShift[F]]
+
+  make[Blocker].fromResource(Blocker[F])
 
   make[Console[F]].tagged(Repo.Prod).from[LiveConsole[F]]
   make[Ref[F, UUIDToLabel]].tagged(Repo.Prod).fromEffect(Ref[F].of(Map.empty[ProjectUuidRef, ProjectLabelRef]))
