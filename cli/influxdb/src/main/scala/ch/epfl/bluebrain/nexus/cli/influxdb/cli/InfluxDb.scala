@@ -30,14 +30,12 @@ class InfluxDb[F[_]: ConcurrentEffect: Concurrent: ContextShift: Timer: TagK] {
           for {
             influxDbConfig <- InfluxDbConfig.withDefaults(configFileOpt, influxEndpointOpt).liftTo[F]
             nexusConfig    <- NexusConfig.withDefaults(configFileOpt, nexusEndpointOpt, nexusTokenOpt).liftTo[F]
-            configModule = ConfigModule(nexusConfig, influxDbConfig)
-            influxModule = InfluxDbModule[F]
-            modules      = influxModule ++ configModule
+            configModule   = ConfigModule(nexusConfig, influxDbConfig)
+            influxModule   = InfluxDbModule[F]
+            modules        = influxModule ++ configModule
             result <- Injector(Activation(Repo -> Repo.Prod))
-              .produceF[F](modules, GCMode.NoGC)
-              .use { locator =>
-                locator.get[InfluxDbIndexer[F]].index(restart).as(ExitCode.Success)
-              }
+                       .produceF[F](modules, GCMode.NoGC)
+                       .use { locator => locator.get[InfluxDbIndexer[F]].index(restart).as(ExitCode.Success) }
           } yield result
       }
     }

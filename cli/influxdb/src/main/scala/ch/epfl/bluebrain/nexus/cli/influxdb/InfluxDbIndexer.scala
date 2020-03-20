@@ -125,9 +125,7 @@ class InfluxDbIndexer[F[_]: ContextShift](
 
     def createDbs() =
       config.data.projects.values
-        .map { pc =>
-          influxDbClient.createDb(pc.database)
-        }
+        .map { pc => influxDbClient.createDb(pc.database) }
         .toList
         .sequence
 
@@ -135,9 +133,9 @@ class InfluxDbIndexer[F[_]: ContextShift](
       offset <- getOffset()
       _      <- createDbs()
       stream <- eventStreamClient(offset)
-      write = writeOffsetPeriodically(stream)
-      exec  = executeStream(stream)
-      _ <- F.race(write, exec)
+      write  = writeOffsetPeriodically(stream)
+      exec   = executeStream(stream)
+      _      <- F.race(write, exec)
     } yield ()
   }
 

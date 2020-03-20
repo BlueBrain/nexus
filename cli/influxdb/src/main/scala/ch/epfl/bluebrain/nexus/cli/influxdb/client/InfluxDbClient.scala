@@ -32,15 +32,15 @@ trait InfluxDbClient[F[_]] {
 
 object InfluxDbClient {
 
-  private[cli] final class LiveInfluxDbClient[F[_]: Timer](
+  final private[cli] class LiveInfluxDbClient[F[_]: Timer](
       client: Client[F],
       console: Console[F],
       config: InfluxDbClientConfig
   )(implicit val F: Sync[F])
       extends InfluxDbClient[F] {
-    private implicit val successCondition            = config.retry.retryCondition.notRetryFromEither[Unit] _
-    private implicit val retryPolicy: RetryPolicy[F] = config.retry.retryPolicy
-    private implicit val logOnErrorUnit: (ClientErrOr[Unit], RetryDetails) => F[Unit] =
+    implicit private val successCondition            = config.retry.retryCondition.notRetryFromEither[Unit] _
+    implicit private val retryPolicy: RetryPolicy[F] = config.retry.retryPolicy
+    implicit private val logOnErrorUnit: (ClientErrOr[Unit], RetryDetails) => F[Unit] =
       (eitherErr, details) => console.printlnErr(s"Client error '$eitherErr'. Retry details: '$details'")
 
     private def performRequest(req: Request[F]): F[ClientErrOr[Unit]] =
@@ -91,7 +91,7 @@ object InfluxDbClient {
       config: InfluxDbClientConfig
   ): InfluxDbClient[F] = new LiveInfluxDbClient[F](client, console, config)
 
-  private[cli] final class TestInfluxDbClient[F[_]](
+  final private[cli] class TestInfluxDbClient[F[_]](
       databases: Ref[F, Set[String]],
       points: Ref[F, Map[String, Vector[Point]]]
   )(implicit F: Sync[F])
