@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig._
 import ch.epfl.bluebrain.nexus.cli.types.Offset.Sequence
 import ch.epfl.bluebrain.nexus.cli.types._
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
-import fs2.{Stream, io, text}
+import fs2.{io, text, Stream}
 import org.http4s._
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
