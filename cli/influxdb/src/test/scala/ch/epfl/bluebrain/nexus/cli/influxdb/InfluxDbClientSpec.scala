@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli.influxdb
 
+import java.nio.file.Paths
 import java.time.Instant
 
 import cats.effect.IO
@@ -8,23 +9,19 @@ import ch.epfl.bluebrain.nexus.cli.Console.LiveConsole
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.{InfluxDbClient, Point}
 import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
-import com.typesafe.config.ConfigFactory
 import org.http4s.Method._
 import org.http4s.client.Client
 import org.http4s.{HttpApp, Response, Status, Uri}
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import pureconfig.ConfigSource
 
 class InfluxDbClientSpec extends AnyWordSpecLike with Matchers with Fixtures with OptionValues {
 
   "InfluxDbClient" should {
 
-    val config: InfluxDbConfig = ConfigSource
-      .fromConfig(ConfigFactory.parseResources("test-app.conf"))
-      .at("influxdb")
-      .loadOrThrow[InfluxDbConfig]
+    val config: InfluxDbConfig =
+      InfluxDbConfig(Paths.get(getClass().getResource("/influxdb-test.conf").toURI())).toOption.value
 
     val ref = Ref.of[IO, Seq[String]](Vector.empty).unsafeRunSync()
 

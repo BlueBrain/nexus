@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli.influxdb
 
+import java.nio.file.Paths
 import java.time.Instant
 import java.util.regex.Pattern
 
@@ -16,13 +17,11 @@ import ch.epfl.bluebrain.nexus.cli.influxdb.config.InfluxDbConfig._
 import ch.epfl.bluebrain.nexus.cli.types.Offset.Sequence
 import ch.epfl.bluebrain.nexus.cli.types._
 import ch.epfl.bluebrain.nexus.cli.utils.Fixtures
-import com.typesafe.config.ConfigFactory
-import fs2.{io, text, Stream}
+import fs2.{Stream, io, text}
 import org.http4s._
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import pureconfig.ConfigSource
 
 import scala.concurrent.ExecutionContext
 
@@ -35,10 +34,8 @@ class InfluxDbIndexerSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
     implicit val blocker: Blocker = Blocker.liftExecutionContext(ExecutionContext.global)
 
-    val config: InfluxDbConfig = ConfigSource
-      .fromConfig(ConfigFactory.parseResources("test-app.conf"))
-      .at("influxdb")
-      .loadOrThrow[InfluxDbConfig]
+    val config: InfluxDbConfig =
+      InfluxDbConfig(Paths.get(getClass().getResource("/influxdb-test.conf").toURI())).toOption.value
 
     val resourceId1 = Uri.unsafeFromString("https://example.com/v1/myId1")
     val resourceId2 = Uri.unsafeFromString("https://example.com/v1/myId2")

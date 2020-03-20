@@ -102,12 +102,12 @@ class InfluxDbIndexer[F[_]: ContextShift](
                 case Right(res) => F.pure(Some((event, res, pc, typeConf)))
               }
         }
-        .mapFilter(r => r)
         .flatMap {
-          case (event, results, pc, tc) =>
+          case Some((event, results, pc, tc)) =>
             Stream.emits(
               Point.fromSparqlResults(results, event.organization, event.project, tc).map((_, pc))
             )
+          case None => Stream.empty
         }
         .mapAsync(config.indexing.influxdbConcurrency) {
           case (point, pc) =>
@@ -115,13 +115,8 @@ class InfluxDbIndexer[F[_]: ContextShift](
         }
         .evalScan(0L) {
           case (idx, Right(_)) if idx % 100 == 0 && idx != 0 =>
-            sseStream.currentEventId().flatMap {
-              case Some(offset) =>
-                writeOffset(offset) >>
-                  console.println(s"Processed $idx events.") >>
-                  F.pure(idx + 1)
-              case None => F.pure(idx + 1)
-            }
+            console.println(s"Processed $idx events.") >>
+              F.pure(idx + 1)
           case (idx, Left(err)) => console.printlnErr(err.show) >> F.pure(idx + 1)
           case (idx, _)         => F.pure(idx + 1)
         }

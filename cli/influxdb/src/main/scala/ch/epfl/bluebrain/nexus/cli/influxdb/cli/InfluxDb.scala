@@ -24,7 +24,6 @@ import scala.util.Try
 
 class InfluxDb[F[_]: ConcurrentEffect: Concurrent: ContextShift: Timer: TagK] {
   def subcommand: Opts[F[ExitCode]] = {
-
     Opts.subcommand("index", "Index data into the target system") {
       (influxDbEndpoint, nexusEndpoint, nexusToken, configFile, restartFlag).mapN {
         (influxEndpointOpt, nexusEndpointOpt, nexusTokenOpt, configFileOpt, restart) =>

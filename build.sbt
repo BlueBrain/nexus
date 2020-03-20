@@ -127,7 +127,7 @@ lazy val cliShared = project
 lazy val influxdb = project
   .in(file("cli/influxdb"))
   .dependsOn(cliShared % "compile->compile;test->test")
-  .settings(name := "influxdb", moduleName := "influxdb")
+  .settings(name := "influxdb", moduleName := "influxdb", coverageFailOnMinimum := false)
   .settings(libraryDependencies ++= Seq(decline, distageCore, monixEval, scalaTest % Test))
 
 lazy val postgresql = project
@@ -138,7 +138,7 @@ lazy val postgresql = project
 
 lazy val cli = project
   .in(file("cli"))
-  .settings(name := "cli", moduleName := "cli")
+  .settings(name := "cli", moduleName := "cli", coverageFailOnMinimum := false)
   .settings(libraryDependencies ++= Seq(decline, scalaTest % Test))
   .aggregate(cliShared, influxdb, postgresql)
 

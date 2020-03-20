@@ -61,7 +61,7 @@ object Point {
         val tags = bindings.view
           .filterKeys(key => !tc.values(key) && key != tc.timestamp)
           .mapValues(_.value) ++ Seq(
-          "project" -> s"${organization.value}/${project.value}",
+          "project" -> s"${organization.value}/${project.value}"
         )
         val timestamp =
           bindings.get(tc.timestamp).flatMap(binding => Try(Instant.parse(binding.value)).toOption)

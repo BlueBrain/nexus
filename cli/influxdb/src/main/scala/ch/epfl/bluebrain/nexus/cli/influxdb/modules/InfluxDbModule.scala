@@ -9,7 +9,14 @@ import ch.epfl.bluebrain.nexus.cli.SparqlClient.LiveSparqlClient
 import ch.epfl.bluebrain.nexus.cli.influxdb.InfluxDbIndexer
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.InfluxDbClient
 import ch.epfl.bluebrain.nexus.cli.influxdb.client.InfluxDbClient.LiveInfluxDbClient
-import ch.epfl.bluebrain.nexus.cli.{Console, EventStreamClient, ProjectClient, ProjectLabelRef, ProjectUuidRef, SparqlClient}
+import ch.epfl.bluebrain.nexus.cli.{
+  Console,
+  EventStreamClient,
+  ProjectClient,
+  ProjectLabelRef,
+  ProjectUuidRef,
+  SparqlClient
+}
 import distage.TagK
 import izumi.distage.model.definition.ModuleDef
 import izumi.distage.model.definition.StandardAxis.Repo
