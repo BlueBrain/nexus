@@ -16,8 +16,14 @@ trait Resources {
     * @param resourcePath the path of a resource available on the classpath
     * @return the content of the referenced resource as a string
     */
-  final def contentOf(resourcePath: String): String =
-    Source.fromInputStream(getClass.getResourceAsStream(resourcePath)).mkString
+  final def contentOf(resourcePath: String): String = {
+    val fromClass       = Option(getClass.getResourceAsStream(resourcePath))
+    val fromClassLoader = Option(getClass.getClassLoader.getResourceAsStream(resourcePath))
+    val is = (fromClass orElse fromClassLoader).getOrElse(
+      throw new IllegalArgumentException(s"Unable to load resource '$resourcePath' from classpath.")
+    )
+    Source.fromInputStream(is).mkString
+  }
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of
