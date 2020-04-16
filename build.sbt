@@ -124,10 +124,12 @@ lazy val cliShared = project
       distageCore,
       http4sCirce,
       http4sClient,
+      jenaArq,
       fs2,
       log4catsSlf4j,
       pureconfig,
-      scalaTest % Test
+      circeLiteral % Test,
+      scalaTest    % Test
     )
   )
 
@@ -139,7 +141,7 @@ lazy val influxdb = project
 
 lazy val postgres = project
   .in(file("cli/postgres"))
-  .dependsOn(cliShared)
+  .dependsOn(cliShared % "compile->compile;test->test")
   .settings(
     name       := "postgres",
     moduleName := "postgres",

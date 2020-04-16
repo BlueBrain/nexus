@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli
 
-import cats.effect.{Async, Bracket, ConcurrentEffect, ContextShift, Effect, Sync, Timer}
+import cats.effect.{Async, Bracket, Concurrent, ConcurrentEffect, ContextShift, Effect, Sync, Timer}
 import cats.{Applicative, ApplicativeError, Functor, Monad, MonadError, Parallel}
 import distage.{ModuleDef, TagK}
 import izumi.distage.model.effect.{DIApplicative, DIEffect, DIEffectAsync, DIEffectRunner}
@@ -27,6 +27,7 @@ class EffectModule[F[_]: Parallel: ConcurrentEffect: ContextShift: Timer: TagK] 
   addImplicit[Sync[F]]
   addImplicit[Async[F]]
   addImplicit[Effect[F]]
+  addImplicit[Concurrent[F]]
   addImplicit[ConcurrentEffect[F]]
   addImplicit[Timer[F]]
   addImplicit[ContextShift[F]]
