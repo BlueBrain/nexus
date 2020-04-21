@@ -59,6 +59,7 @@ object NodeObject {
     final case class TypeMap(value: Map[Uri, NodeObject] = Map.empty, others: Seq[NodeObject] = Vector.empty)                                   extends NodeObjectValue
     final case class IdMap(value: Map[Uri, Seq[NodeObject]] = Map.empty, others: Seq[NodeObject] = Vector.empty)                                extends NodeObjectValue
     final case class IndexMap(value: Map[String, NodeObjectValue] = Map.empty, others: Seq[NodeObjectValue] = Vector.empty)                     extends NodeObjectValue
+    final case class JsonWrapper(value: Json)                                                                                                   extends NodeObjectValue
   }
   // format: on
 }

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, ContextWrapper, Term
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ParsingStatus._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.syntax.all._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{NodeObject, NoneNullOr}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, NodeObject, NoneNullOr}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
@@ -48,7 +48,6 @@ private class NodeObjectParser private (
 
   private def traverseMap(init: NodeObject) =
     obj.remove(context).filterKeys(!(typeKeys ++ idKeys).contains(_)).toList.foldM(init) {
-      case (node, (_, json)) if json.isNull                                 => Right(node)
       case (node, (term, _)) if node.graph.nonEmpty && isAlias(term, graph) => Left(collidingKey(graph))
       case (node, (term, _)) if node.index.nonEmpty && isAlias(term, index) => Left(collidingKey(index))
 
@@ -95,22 +94,27 @@ private class NodeObjectParser private (
       lazy val idObj    = IdMapParser(json, innerCursor)
       lazy val tpeObj   = TypeMapParser(json, innerCursor)
       lazy val langObj  = LanguageMapParser(json, innerCursor)
-      val result = innerCursor.value.map(_.container) match {
-        case Val(container) if container.contains(id) =>
-          idObj onNotMatched valueObj onNotMatched nodeObj
-        case Val(container) if container.contains(tpe) =>
-          tpeObj onNotMatched valueObj onNotMatched nodeObj
-        case Val(container) if container.contains(language) =>
-          langObj onNotMatched valueObj onNotMatched nodeObj
-        case Val(container) if container.contains(index) =>
-          indexObj onNotMatched valueObj onNotMatched nodeObj onNotMatched listObj onNotMatched setObj
-        case Val(container) if container.contains(list) =>
-          listObj onNotMatched valueObj onNotMatched nodeObj
-        case Val(container) if container.contains(set) =>
-          setObj onNotMatched valueObj onNotMatched nodeObj
-        case _ =>
-          valueObj onNotMatched nodeObj onNotMatched listObj onNotMatched setObj
-      }
+      lazy val jsonObj  = JsonObjectParser(json, innerCursor)
+      val result =
+        if (innerCursor.value.exists(_.tpe.contains(KeywordValue(keyword.json))))
+          Right(JsonWrapper(json))
+        else
+          innerCursor.value.map(_.container) match {
+            case Val(container) if container.contains(id) =>
+              idObj onNotMatched jsonObj onNotMatched valueObj onNotMatched nodeObj
+            case Val(container) if container.contains(tpe) =>
+              tpeObj onNotMatched jsonObj onNotMatched valueObj onNotMatched nodeObj
+            case Val(container) if container.contains(language) =>
+              langObj onNotMatched jsonObj onNotMatched valueObj onNotMatched nodeObj
+            case Val(container) if container.contains(index) =>
+              indexObj onNotMatched jsonObj onNotMatched valueObj onNotMatched nodeObj onNotMatched listObj onNotMatched setObj
+            case Val(container) if container.contains(list) =>
+              listObj onNotMatched jsonObj onNotMatched valueObj onNotMatched nodeObj
+            case Val(container) if container.contains(set) =>
+              setObj onNotMatched jsonObj onNotMatched valueObj onNotMatched nodeObj
+            case _ =>
+              jsonObj onNotMatched valueObj onNotMatched nodeObj onNotMatched listObj onNotMatched setObj
+          }
       result.map {
         case WrappedNodeObject(n) if innerCursor.value.exists(_.container.contains(graph)) =>
           WrappedNodeObject(NodeObject(graph = Vector(n)))

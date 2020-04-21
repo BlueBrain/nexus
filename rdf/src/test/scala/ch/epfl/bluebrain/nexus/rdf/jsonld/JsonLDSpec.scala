@@ -47,11 +47,9 @@ class JsonLDSpec extends RdfSpec with JsonLdFixtures with CirceEq {
     "be expanded" in {
 
       forAll(expandTestCases) {
-        case ((inName, json), (_, Some(outJson)))
-            if !excluded.contains(inName) && !inName.startsWith("js") && !inName.startsWith("pr") =>
+        case ((inName, json), (_, Some(outJson))) if !excluded.contains(inName) && !inName.startsWith("pr") =>
           val expanded     = JsonLD.expand(json).rightValue
           val expandedJson = expanded.toJson()
-          println(s""""/jsonld/expand/$inName",""")
           expandedJson should equalIgnoreArrayOrder(outJson)
         case _ => // ignore
       }

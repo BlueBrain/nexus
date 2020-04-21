@@ -92,6 +92,7 @@ private[jsonld] object Expansion {
       case v: ListValue             => Json.arr(expand(v))
       case TypeMap(value, others)   => expandNodes(value.values.toSeq ++ others)
       case IdMap(value, others)     => expandNodes(value.values.toSeq.flatten ++ others)
+      case JsonWrapper(json)        => Json.arr(Json.obj(value -> json, tpe -> keyword.json.asJson))
       case IndexMap(value, others) =>
         value.foldLeft(fromValues(others.map(expand))) {
           case (acc, (idx, v)) => mergeJson(acc, expand(withIndex(idx, v)))
@@ -123,7 +124,7 @@ private[jsonld] object Expansion {
       case ListValue(v, _)      => ListValue(withIndex(idx, v))
       case TypeMap(v, o)        => TypeMap(v.map { case (tpe, n) => tpe -> withIndex(idx, n) }, o.map(withIndex(idx, _)))
       case IdMap(v, o)          => IdMap(v.map { case (id, n) => id -> n.map(withIndex(idx, _)) }, o.map(withIndex(idx, _)))
-      case v: IndexMap          => v // do nothing
+      case v                    => v // do nothing
     }
 
   private def withIndex(idx: String, languageMap: LanguageMap): LanguageMap = {
