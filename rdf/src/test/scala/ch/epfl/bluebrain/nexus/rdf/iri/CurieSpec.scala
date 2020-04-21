@@ -10,8 +10,25 @@ import io.circe.syntax._
 class CurieSpec extends RdfSpec {
   "A Prefix" should {
 
-    val valid   = List("prefix", "PrEfIx", "_prefix", "__prefix", "_.prefix", "pre-fix", "_123.456", "Àprefix", "Öfix")
-    val invalid = List("-prefix", "!prefix", ":prefix", ".prefix", "6prefix", "prefi!x", "prefix:", "")
+    val valid = List(
+      "prefix",
+      "PrEfIx",
+      "_prefix",
+      "__prefix",
+      "_.prefix",
+      "pre-fix",
+      "_123.456",
+      "Àprefix",
+      "Öfix",
+      "-prefix",
+      "!prefix",
+      ".prefix",
+      "6prefix",
+      "prefi!x",
+      "@",
+      "@foo.bar"
+    )
+    val invalid = List(":prefix", "prefix:", "", "@prefix")
 
     "be parsed correctly from string" in {
       forAll(valid)(in => Prefix(in).rightValue.value shouldEqual in)
@@ -33,37 +50,16 @@ class CurieSpec extends RdfSpec {
   }
 
   "A Curie" should {
-    val valid = List(
-      ("rdf:type", "rdf", "type"),
-      ("prefix://me:me@hOst:443/a/b?a&e=f&b=c#frag", "prefix", "//me:me@host:443/a/b?a&e=f&b=c#frag"),
-      ("PrEfIx://me:me@hOst#frag", "PrEfIx", "//me:me@host#frag"),
-      ("_prefix:/some/:/path", "_prefix", "/some/:/path"),
-      ("_.prefix:/:/some/path", "_.prefix", "/:/some/path"),
-      ("pre-fix:some/:/path", "pre-fix", "some/:/path"),
-      ("_123.456:?q=v", "_123.456", "?q=v"),
-      ("Àprefix:#frag", "Àprefix", "#frag"),
-      ("Öfix://hOst%C2%A3:80/a%C2%A3/b%C3%86c//:://", "Öfix", "//host£:80/a£/bÆc//:://")
-    )
-    val invalid = List(
-      "-prefix",
-      "!prefix",
-      ":prefix",
-      ".prefix",
-      "6prefix",
-      "prefi!x",
-      "prefix:",
-      "//hOst%C2%A3:80/a%C2%A3/b%C3%86c//:://",
-      "?q=v",
-      ""
-    )
+    val valid   = List(("rdf:type", "rdf", "type"), ("rdf:some/other/suffix", "rdf", "some/other/suffix"))
+    val invalid = List("prefix://suffix", "", "@prefix:suffix", "prefix:suf:fix")
 
     "be parsed correctly from string" in {
       forAll(valid) {
         case (in, p, r) =>
           val curie = Curie(in).rightValue
           curie.prefix.value shouldEqual p
-          curie.reference.iriString shouldEqual r
-          curie.show shouldEqual s"$p:${curie.reference.iriString}"
+          curie.reference shouldEqual r
+          curie.show shouldEqual s"$p:${curie.reference}"
       }
     }
 
@@ -83,7 +79,7 @@ class CurieSpec extends RdfSpec {
       Eq.eqv(lhs, rhs) shouldEqual false
     }
 
-    "fail to convert to iri when resolved curie is not an AbsoluteIri" in {
+    "fail to convert to iri when resolved curie is not a Uei" in {
       val c   = Curie("rdf:type?a=b").rightValue
       val iri = Iri.uri("http://example.com/b?c=d").rightValue
       c.toIri(iri).leftValue
@@ -93,7 +89,7 @@ class CurieSpec extends RdfSpec {
       val c   = Curie("rdf:type").rightValue
       val iri = Iri.uri("http://example.com/a/").rightValue
       val map = Map(Prefix("rdf").rightValue -> iri)
-      c.toIri(map).rightValue shouldEqual Iri.uri("http://example.com/a/type").rightValue
+      c.toIri(map).rightValue.value shouldEqual Iri.uri("http://example.com/a/type").rightValue
     }
     "encode" in {
       forAll(valid) {

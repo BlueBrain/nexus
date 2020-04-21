@@ -18,7 +18,7 @@ import org.parboiled2._
 // format: off
 @SuppressWarnings(Array("MethodNames", "unused", "UnsafeTraversableMethods"))
 @silent
-private[iri] class IriParser(val input: ParserInput)
+private[rdf] class IriParser(val input: ParserInput)
                             (implicit formatter: ErrorFormatter = new ErrorFormatter(showExpected = false, showTraces = false))
   extends Parser with StringBuilding {
 
@@ -138,21 +138,14 @@ private[iri] class IriParser(val input: ParserInput)
 
   def parseCurie: Either[String, Curie] =
     rule(`curie`).run()
-      .map { _ =>
-        val prefix    = _ncName
-        val reference = RelativeIri(
-          authority = Option(_authority),
-          path      = _path,
-          query     = Option(_query),
-          fragment  = Option(_fragment))
-        Curie(prefix, reference)
-      }
+      .map ( _ =>Curie(_prefix, _suffix))
       .leftMap(_.format(input, formatter))
 
-  def parseNcName: Either[String, Prefix] =
-    rule(`nc-name` ~ EOI).run()
-      .map(_ => _ncName)
+  def parsePrefix: Either[String, Prefix] =
+    rule(`prefix` ~ EOI).run()
+      .map(_ => _prefix)
       .leftMap(_.format(input, formatter))
+
 
   private def appendSBAsLower(): Rule0 = rule { run(sb.append(CharUtils.toLowerCase(lastChar))) }
   private def getDecodedSB: String = IriParser.decode(sb.toString, UTF8)
@@ -169,7 +162,8 @@ private[iri] class IriParser(val input: ParserInput)
   private[this] var _nid: Nid = _
   private[this] var _r: Component = _
 
-  private[this] var _ncName: Prefix = _
+  private[this] var _prefix: Prefix = _
+  private[this] var _suffix: String = _
 
   private val schemeNonFirstPred = AlphaNum ++ "+-."
   private def scheme: Rule0 = rule {
@@ -377,16 +371,21 @@ private[iri] class IriParser(val input: ParserInput)
     0xF900 to 0xFDCF, 0xFDF0 to 0xFFFD, 0x10000 to 0xEFFFF
   ).map(r => CharPredicate.from(c => r contains c.toInt)).reduce(_ ++ _)
 
-  private val `nc-name-rest` = `nc-name-start` ++ Digit ++ CharPredicate("-.", "\u00B7", '\u0300' to '\u036F', '\u203F' to '\u2040')
 
-  private def `nc-name`: Rule0 = rule {
-    clearSB() ~ `nc-name-start` ~ appendSB() ~ zeroOrMore(`nc-name-rest` ~ appendSB()) ~ run {
-      _ncName = new Prefix(sb.toString)
+  private def `prefix`: Rule0 = rule {
+    clearSB() ~ oneOrMore(!':' ~ `ipchar`) ~ test(!Prefix.isReserved(sb.toString)) ~ run {
+      _prefix = new Prefix(sb.toString)
+    }
+  }
+
+  private def `suffix`: Rule0 = rule {
+    clearSB() ~ !"//" ~ oneOrMore(noneOf(":") ~ appendSB()) ~ run {
+      _suffix = sb.toString
     }
   }
 
   private def `curie`: Rule0 = rule {
-    `nc-name` ~ ':' ~ `irelative-ref` ~ EOI
+    `prefix` ~ ':' ~ `suffix` ~ EOI
   }
 }
 

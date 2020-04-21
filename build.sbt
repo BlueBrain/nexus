@@ -11,44 +11,47 @@ scalafmt: {
 }
  */
 
-val catsVersion       = "2.1.1"
-val catsEffectVersion = "2.1.2"
-val catsRetryVersion  = "0.3.2"
-val circeVersion      = "0.13.0"
-val declineVersion    = "1.0.0"
-val fs2Version        = "2.2.2"
-val http4sVersion     = "0.21.1"
-val jenaVersion       = "3.14.0"
-val log4catsVersion   = "1.0.1"
-val logbackVersion    = "1.2.3"
-val magnoliaVersion   = "0.12.8"
-val monixVersion      = "3.1.0"
-val parboiledVersion  = "2.2.0"
-val pureconfigVersion = "0.12.3"
-val scalaTestVersion  = "3.1.1"
+val catsVersion          = "2.1.1"
+val catsEffectVersion    = "2.1.2"
+val catsRetryVersion     = "0.3.2"
+val circeVersion         = "0.13.0"
+val declineVersion       = "1.0.0"
+val fs2Version           = "2.2.2"
+val http4sVersion        = "0.21.1"
+val jenaVersion          = "3.14.0"
+val kindProjectorVersion = "0.11.0"
+val log4catsVersion      = "1.0.1"
+val logbackVersion       = "1.2.3"
+val magnoliaVersion      = "0.12.8"
+val monixVersion         = "3.1.0"
+val parboiledVersion     = "2.2.0"
+val pureconfigVersion    = "0.12.3"
+val scalaTestVersion     = "3.1.1"
 
-lazy val alleycatsCore   = "org.typelevel"         %% "alleycats-core"         % catsVersion
-lazy val catsCore        = "org.typelevel"         %% "cats-core"              % catsVersion
-lazy val catsEffect      = "org.typelevel"         %% "cats-effect"            % catsEffectVersion
-lazy val catsRetry       = "com.github.cb372"      %% "cats-retry-core"        % catsRetryVersion
-lazy val catsEffectRetry = "com.github.cb372"      %% "cats-retry-cats-effect" % catsRetryVersion
-lazy val circeCore       = "io.circe"              %% "circe-core"             % circeVersion
-lazy val circeGeneric    = "io.circe"              %% "circe-generic"          % circeVersion
-lazy val circeLiteral    = "io.circe"              %% "circe-literal"          % circeVersion
-lazy val circeParser     = "io.circe"              %% "circe-parser"           % circeVersion
-lazy val decline         = "com.monovore"          %% "decline"                % declineVersion
-lazy val fs2             = "co.fs2"                %% "fs2-core"               % fs2Version
-lazy val http4sCirce     = "org.http4s"            %% "http4s-circe"           % http4sVersion
-lazy val http4sClient    = "org.http4s"            %% "http4s-blaze-client"    % http4sVersion
-lazy val jenaArq         = "org.apache.jena"       % "jena-arq"                % jenaVersion
-lazy val log4cats        = "io.chrisdavenport"     %% "log4cats-core"          % log4catsVersion
-lazy val log4catsSlf4j   = "io.chrisdavenport"     %% "log4cats-slf4j"         % log4catsVersion
-lazy val logback         = "ch.qos.logback"        % "logback-classic"         % logbackVersion
-lazy val magnolia        = "com.propensive"        %% "magnolia"               % magnoliaVersion
-lazy val monixEval       = "io.monix"              %% "monix-eval"             % monixVersion
-lazy val parboiled2      = "org.parboiled"         %% "parboiled"              % parboiledVersion
-lazy val pureconfig      = "com.github.pureconfig" %% "pureconfig"             % pureconfigVersion
-lazy val scalaTest       = "org.scalatest"         %% "scalatest"              % scalaTestVersion
+lazy val alleycatsCore      = "org.typelevel"         %% "alleycats-core"         % catsVersion
+lazy val catsCore           = "org.typelevel"         %% "cats-core"              % catsVersion
+lazy val catsEffect         = "org.typelevel"         %% "cats-effect"            % catsEffectVersion
+lazy val catsRetry          = "com.github.cb372"      %% "cats-retry-core"        % catsRetryVersion
+lazy val catsEffectRetry    = "com.github.cb372"      %% "cats-retry-cats-effect" % catsRetryVersion
+lazy val circeCore          = "io.circe"              %% "circe-core"             % circeVersion
+lazy val circeGeneric       = "io.circe"              %% "circe-generic"          % circeVersion
+lazy val circeGenericExtras = "io.circe"              %% "circe-generic-extras"   % circeVersion
+lazy val circeLiteral       = "io.circe"              %% "circe-literal"          % circeVersion
+lazy val circeParser        = "io.circe"              %% "circe-parser"           % circeVersion
+lazy val decline            = "com.monovore"          %% "decline"                % declineVersion
+lazy val fs2                = "co.fs2"                %% "fs2-core"               % fs2Version
+lazy val http4sCirce        = "org.http4s"            %% "http4s-circe"           % http4sVersion
+lazy val http4sClient       = "org.http4s"            %% "http4s-blaze-client"    % http4sVersion
+lazy val jenaArq            = "org.apache.jena"       % "jena-arq"                % jenaVersion
+lazy val kindProjector      = "org.typelevel"         %% "kind-projector"         % kindProjectorVersion cross CrossVersion.full
+lazy val log4cats           = "io.chrisdavenport"     %% "log4cats-core"          % log4catsVersion
+lazy val log4catsSlf4j      = "io.chrisdavenport"     %% "log4cats-slf4j"         % log4catsVersion
+lazy val logback            = "ch.qos.logback"        % "logback-classic"         % logbackVersion
+lazy val magnolia           = "com.propensive"        %% "magnolia"               % magnoliaVersion
+lazy val monixEval          = "io.monix"              %% "monix-eval"             % monixVersion
+lazy val parboiled2         = "org.parboiled"         %% "parboiled"              % parboiledVersion
+lazy val pureconfig         = "com.github.pureconfig" %% "pureconfig"             % pureconfigVersion
+lazy val scalaTest          = "org.scalatest"         %% "scalatest"              % scalaTestVersion
 
 lazy val docs = project
   .in(file("docs"))
@@ -87,14 +90,22 @@ lazy val docs = project
 lazy val rdf = project
   .in(file("rdf"))
   .settings(name := "rdf", moduleName := "rdf")
+  .enablePlugins(JmhPlugin)
+  .settings(addCompilerPlugin(kindProjector))
   .settings(noPublish)
   .settings(
+    sourceDirectory in Jmh     := (sourceDirectory in Test).value,
+    classDirectory in Jmh      := (classDirectory in Test).value,
+    dependencyClasspath in Jmh := (dependencyClasspath in Test).value,
+    compile in Jmh             := (compile in Jmh).dependsOn(compile in Test).value,
+    run in Jmh                 := (run in Jmh).dependsOn(Keys.compile in Jmh).evaluated,
     libraryDependencies ++= Seq(
       alleycatsCore,
       catsCore,
       magnolia,
       parboiled2,
       circeCore,
+      circeGenericExtras,
       circeParser,
       circeLiteral % Test,
       jenaArq      % Test,
