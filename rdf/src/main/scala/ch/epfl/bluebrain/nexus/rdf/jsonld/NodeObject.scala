@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context
 import io.circe.Json
 
-final case class NodeObject(
+final private[jsonld] case class NodeObject(
     id: Option[Uri] = None,
     types: Seq[Uri] = Vector.empty,
     context: Option[Context] = None,
@@ -31,7 +31,7 @@ final case class NodeObject(
 
 }
 
-object NodeObject {
+private[jsonld] object NodeObject {
 
   type TermValue      = (Uri, NodeObjectValue)
   type TermNodeObject = (Uri, Seq[NodeObject])

@@ -135,7 +135,7 @@ private class ArrayObjectParser private (obj: JsonObject, override val cursor: T
     }
 }
 
-object ArrayObjectParser {
+private[jsonld] object ArrayObjectParser {
 
   def list(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, ListValue] =
     if (json.isObject) listObject(json, cursor) onNotMatched ArrayParser.list(json, cursor)
@@ -144,7 +144,7 @@ object ArrayObjectParser {
   def set(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, SetValue] =
     ArrayParser.set(json, cursor) onNotMatched setObject(json, cursor)
 
-  private[jsonld] def listObject(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, ListValue] =
+  def listObject(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, ListValue] =
     if (json.isNull)
       Left(NullObject)
     else

@@ -37,7 +37,7 @@ private class IdMapParser private (obj: JsonObject, override val cursor: TermDef
     }
 }
 
-object IdMapParser {
+private[jsonld] object IdMapParser {
 
   def apply(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, IdMap] =
     if (json.isNull)

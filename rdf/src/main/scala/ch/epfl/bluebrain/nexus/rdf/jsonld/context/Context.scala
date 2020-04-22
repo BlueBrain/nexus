@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Uri}
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr.{Empty, Val}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Val}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ContextParser
@@ -37,8 +37,8 @@ final case class Context(
     version11: Option[Boolean] = None,
     propagate: Option[Boolean] = None,
     `protected`: Option[Boolean] = None,
-    language: NoneNullOr[LanguageTag] = Empty,
-    direction: NoneNullOr[String] = Empty,
+    language: EmptyNullOr[LanguageTag] = Empty,
+    direction: EmptyNullOr[String] = Empty,
     ignoreAncestors: Boolean = false
 ) {
 
@@ -119,14 +119,14 @@ final case class Context(
   /**
     * Navigate down the passed ''term'' and merge the term context with the current context if term is found
     */
-  def down(term: String): NoneNullOr[TermDefinition] =
-    NoneNullOr(terms.get(term)).map(d => d.withContext(merge(d.context)))
+  def down(term: String): EmptyNullOr[TermDefinition] =
+    EmptyNullOr(terms.get(term)).map(d => d.withContext(merge(d.context)))
 
   /**
     * Navigate down the first term with the passed ''uri'' and merge the term context with the current context if term is found
     */
-  def down(uri: Uri): NoneNullOr[TermDefinition] =
-    NoneNullOr(terms.collectFirst { case (_, d) if d.id == uri => d }).map(d => d.withContext(merge(d.context)))
+  def down(uri: Uri): EmptyNullOr[TermDefinition] =
+    EmptyNullOr(terms.collectFirst { case (_, d) if d.id == uri => d }).map(d => d.withContext(merge(d.context)))
 
   /**
     * Merge the current context with the passed context (Empty, Null or Context).
@@ -135,7 +135,7 @@ final case class Context(
     * If the passed context is empty, the current context is returned.
     */
   //TODO: See if we have to ignore nulls or we have to replace context with null
-  def merge(ctx: NoneNullOr[Context]): NoneNullOr[Context] =
+  def merge(ctx: EmptyNullOr[Context]): EmptyNullOr[Context] =
     ctx.map(merge).onNone(Val(this))
 
   /**

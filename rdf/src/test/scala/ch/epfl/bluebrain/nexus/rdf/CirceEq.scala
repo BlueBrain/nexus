@@ -5,7 +5,7 @@ import _root_.io.circe.syntax._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait CirceEq {
-  private implicit val printer = Printer.noSpaces.copy(dropNullValues = true)
+  implicit private val printer = Printer.noSpaces.copy(dropNullValues = true)
 
   def equalIgnoreArrayOrder(json: Json) = IgnoredArrayOrder(json)
 

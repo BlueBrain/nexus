@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.ArrayEntry
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.ArrayEntry.ListValueWrapper
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.NodeObjectValue.{ListValue, SetValue, ValueObject}
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr.Val
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.Val
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, TermDefinitionCursor}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.ExpandedTermDefinition
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._

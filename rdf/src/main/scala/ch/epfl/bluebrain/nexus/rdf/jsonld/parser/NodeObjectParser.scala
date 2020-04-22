@@ -4,14 +4,14 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.ArrayEntry.NodeObjectArray
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.NodeObjectValue._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr.Val
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.Val
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.KeywordOrUri
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.KeywordOrUri.KeywordValue
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, ContextWrapper, TermDefinitionCursor}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ParsingStatus._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.syntax.all._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, NodeObject, NoneNullOr}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, EmptyNullOr, NodeObject}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
@@ -164,12 +164,12 @@ private class NodeObjectParser private (
 
 object NodeObjectParser {
 
-  final def root(json: Json, ctx: NoneNullOr[Context]): Either[ParsingStatus, NodeObject] =
+  final def root(json: Json, ctx: EmptyNullOr[Context]): Either[ParsingStatus, NodeObject] =
     if (json.isNull) Right(NodeObject())
     else
       json.arrayOrObjectSingle(or = Right(NodeObject()), _ => Right(NodeObject()), obj => root(obj, ctx))
 
-  final def root(obj: JsonObject, ctx: NoneNullOr[Context]): Either[ParsingStatus, NodeObject] =
+  final def root(obj: JsonObject, ctx: EmptyNullOr[Context]): Either[ParsingStatus, NodeObject] =
     new NodeObjectParser(obj, TermDefinitionCursor.fromCtx(ctx), reverseParent = false).parse() match {
       case Left(NotMatchObject) | Left(NullObject) => Right(NodeObject())
       case other                                   => other

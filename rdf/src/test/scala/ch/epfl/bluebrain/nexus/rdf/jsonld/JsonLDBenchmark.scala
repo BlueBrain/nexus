@@ -158,11 +158,9 @@ class JsonLDBenchmark extends OptionValues {
   @Benchmark
   def toExpanded(): Unit =
     testNoVersion.foreach {
-      case (name, json) =>
-        parseModel(json) match {
-          case Some(model) => writeJsonLD(model).value
-          case _           => println(s"failed to convert a model from file '$name'")
-        }
+      case (_, json) =>
+        val model = parseModel(json).value
+        writeJsonLD(model).value
 
     }
 

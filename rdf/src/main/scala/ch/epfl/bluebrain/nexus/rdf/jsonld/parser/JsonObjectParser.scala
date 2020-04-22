@@ -28,9 +28,9 @@ private class JsonObjectParser private (obj: JsonObject, override val cursor: Te
 
   private def fetchValue() =
     obj.toList.foldM[Either[ParsingStatus, *], Option[Json]](None) {
-      case (Some(_), (term, _)) if isAlias(term, value) => Left(collidingKey(value))
-      case (v, (term, _)) if isAlias(term, tpe)         => Right(v)
-      case (None, (term, json)) if isAlias(term, value) => Right(Some(json))
+      case (Some(_), (term, _)) if isAlias(term, value)        => Left(collidingKey(value))
+      case (v, (term, _)) if isAlias(term, tpe)                => Right(v)
+      case (None, (term, json)) if isAlias(term, value)        => Right(Some(json))
       case (v, (_, json)) if json.isNull                       => Right(v)
       case (_, (term, _)) if all.exists(k => isAlias(term, k)) => Left(invalidValueObject(term))
       case (_, (term, _)) if expand(term).isRight              => Left(invalidValueObject(term))
@@ -38,7 +38,7 @@ private class JsonObjectParser private (obj: JsonObject, override val cursor: Te
     }
 }
 
-object JsonObjectParser {
+private[jsonld] object JsonObjectParser {
   final def apply(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, JsonWrapper] =
     json.arrayOrObjectSingle(Left(NotMatchObject), _ => Left(NotMatchObject), apply(_, cursor))
 

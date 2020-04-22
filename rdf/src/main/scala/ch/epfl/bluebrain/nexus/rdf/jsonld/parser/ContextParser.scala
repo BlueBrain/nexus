@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.rdf.iri.Curie
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix.isReserved
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr.{Empty, Null, Val}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Null, Val}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.KeywordOrUri.{KeywordValue, UriValue}
@@ -40,15 +40,15 @@ private[jsonld] object ContextParser {
         id: Option[String] = None,
         tpe: Option[String] = None,
         container: Option[Set[String]] = None,
-        language: NoneNullOr[LanguageTag] = Empty,
+        language: EmptyNullOr[LanguageTag] = Empty,
         prefix: Option[Boolean] = None,
         `protected`: Option[Boolean] = None,
         propagate: Option[Boolean] = None,
-        direction: NoneNullOr[String] = Empty,
+        direction: EmptyNullOr[String] = Empty,
         reverse: Option[String] = None,
         `import`: Option[String] = None,
         index: Option[String] = None,
-        context: NoneNullOr[Set[NoneNullOr[ActiveContext]]] = Empty,
+        context: EmptyNullOr[Set[EmptyNullOr[ActiveContext]]] = Empty,
         nest: Option[String] = None
     ) extends TermDef
 
@@ -209,7 +209,7 @@ private[jsonld] object ContextParser {
       }
     }
 
-    private def merge(other: NoneNullOr[ActiveContext]): NoneNullOr[ActiveContext] =
+    private def merge(other: EmptyNullOr[ActiveContext]): EmptyNullOr[ActiveContext] =
       other
         .map(otherCtx => copy(terms = terms ++ otherCtx.terms, allTerms = allTerms ++ otherCtx.allTerms))
         .onNone(Val(this))
@@ -222,7 +222,7 @@ private[jsonld] object ContextParser {
         case (acc, (term, d: ExpandedDef)) if ctx.terms.contains(term) =>
           val terms           = allTerms - term
           val ignoreAncestors = d.context.isNull || d.context.map(_.exists(_.isNull)).toOption.getOrElse(false)
-          val initial: NoneNullOr[ActiveContext] =
+          val initial: EmptyNullOr[ActiveContext] =
             Val(ActiveContext(terms, terms, resolved, Context.empty))
           val mergedScoped = d.context
             .flatMap { ctx => ctx.foldLeft(initial)((acc, c) => acc.flatMap(_.merge(c)).onNullOrNone(c)) }
@@ -369,10 +369,13 @@ private[jsonld] object ContextParser {
   }
 
   // TODO: Not yet implemented for keywords
-  private[parser] def removeInherited(merged: NoneNullOr[Context], original: NoneNullOr[Set[NoneNullOr[ActiveContext]]]): NoneNullOr[Context] =
+  private[parser] def removeInherited(
+      merged: EmptyNullOr[Context],
+      original: EmptyNullOr[Set[EmptyNullOr[ActiveContext]]]
+  ): EmptyNullOr[Context] =
     (merged, original).mapN { case (mergedCtx, origCtx) => removeInherited(mergedCtx, origCtx) }
 
-  private def removeInherited(context: Context, original: Set[NoneNullOr[ActiveContext]]): Context =
+  private def removeInherited(context: Context, original: Set[EmptyNullOr[ActiveContext]]): Context =
     Context(
       terms = context.terms.view.filterKeys(k => original.exists(_.exists(_.terms.contains(k)))).toMap,
       prefixMappings =
@@ -421,7 +424,7 @@ private[jsonld] object ContextParser {
   def apply(json: Json): Either[String, Context] =
     activeCtx(json).flatMap(_.toResolvedContext).map(_.ctx)
 
-  def apply(json: Json, parent: NoneNullOr[Context]): Either[String, Context] =
+  def apply(json: Json, parent: EmptyNullOr[Context]): Either[String, Context] =
     activeCtx(json)
       .flatMap(ctx =>
         ctx

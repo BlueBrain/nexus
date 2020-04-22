@@ -87,7 +87,7 @@ private class IndexMapParser private (obj: JsonObject, override val cursor: Term
     }
 }
 
-object IndexMapParser {
+private[jsonld] object IndexMapParser {
 
   def apply(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, IndexMap] =
     if (json.isNull)

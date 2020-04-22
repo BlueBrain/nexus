@@ -17,7 +17,8 @@ import io.circe.{Json, JsonObject}
 
 import scala.annotation.tailrec
 
-private class ValueObjectParser private (obj: JsonObject, override val cursor: TermDefinitionCursor) extends JsonLDParser {
+private class ValueObjectParser private (obj: JsonObject, override val cursor: TermDefinitionCursor)
+    extends JsonLDParser {
 
   private type ValueObjectFields =
     (Option[Literal], Option[Uri], Option[LanguageTag], Option[String], Option[String], Boolean)
@@ -88,7 +89,7 @@ private class ValueObjectParser private (obj: JsonObject, override val cursor: T
 
 }
 
-object ValueObjectParser {
+private[jsonld] object ValueObjectParser {
 
   final def apply(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, ValueObject] =
     json.arrayOrObjectSingle(
@@ -111,8 +112,8 @@ object ValueObjectParser {
       (json.asBoolean, json.asString, json.asNumber, json.asArray, json.asNull) match {
         case (Some(v), _, _, _, _) => Right(ValueObject(Literal(v.toString, tpe.getOrElse(xsd.boolean)), tpe.nonEmpty))
         case (_, Some(v), _, _, _) =>
-          val lang       = cursor.value.flatMap(_.termLanguage).toOption
-          val direction  = cursor.value.flatMap(_.termDirection).toOption
+          val lang      = cursor.value.flatMap(_.termLanguage).toOption
+          val direction = cursor.value.flatMap(_.termDirection).toOption
           Right(ValueObject(Literal(v, tpe.getOrElse(xsd.string), lang), tpe.nonEmpty, direction))
         case (_, _, Some(v), _, _) =>
           (v.toInt, v.toLong) match {

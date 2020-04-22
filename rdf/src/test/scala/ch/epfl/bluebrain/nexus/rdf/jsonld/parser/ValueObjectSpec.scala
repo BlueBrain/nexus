@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.rdf.Vocabulary.xsd
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.NodeObjectValue.ValueObject
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr.Val
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.Val
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, TermDefinitionCursor}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.ExpandedTermDefinition
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ParsingStatus._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, NoneNullOr}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, EmptyNullOr}
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import io.circe.literal._
 
@@ -94,7 +94,7 @@ class ValueObjectSpec extends RdfSpec {
 
     "be parsed with language on term definition" in {
       val otherCursor =
-        TermDefinitionCursor(Val(ExpandedTermDefinition(ex, context = Val(ctx), language = NoneNullOr(de))))
+        TermDefinitionCursor(Val(ExpandedTermDefinition(ex, context = Val(ctx), language = EmptyNullOr(de))))
       val jsons = List(
         json""""string""""                               -> ValueObject(Literal("string", xsd.string, de)),
         json"""["string"]"""                             -> ValueObject(Literal("string", xsd.string, de)),

@@ -36,7 +36,7 @@ private class TypeMapParser private (obj: JsonObject, override val cursor: TermD
     }
 }
 
-object TypeMapParser {
+private[jsonld] object TypeMapParser {
 
   def apply(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, TypeMap] =
     if (json.isNull)

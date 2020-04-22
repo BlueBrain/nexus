@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.rdf.jsonld.context
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr.Empty
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.Empty
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.KeywordOrUri
 
 /**
@@ -13,13 +13,13 @@ import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.KeywordOrUri
   */
 sealed trait TermDefinition extends Product with Serializable {
   def id: Uri
-  def context: NoneNullOr[Context]
+  def context: EmptyNullOr[Context]
   def reverse: Option[Uri]
   def container: Set[String]
   def tpe: Option[KeywordOrUri]
-  def termLanguage: NoneNullOr[LanguageTag]
-  def termDirection: NoneNullOr[String]
-  def withContext(context: NoneNullOr[Context]): TermDefinition
+  def termLanguage: EmptyNullOr[LanguageTag]
+  def termDirection: EmptyNullOr[String]
+  def withContext(context: EmptyNullOr[Context]): TermDefinition
   def withContainer(container: Set[String]): TermDefinition
 }
 
@@ -29,14 +29,14 @@ object TermDefinition {
     * The associated expanded form Uri of a term
     */
   final case class SimpleTermDefinition(id: Uri) extends TermDefinition {
-    val context: NoneNullOr[Context]                              = Empty
-    val container: Set[String]                                    = Set.empty
-    val reverse: Option[Uri]                                      = None
-    val termLanguage: NoneNullOr[LanguageTag]                     = Empty
-    val termDirection: NoneNullOr[String]                         = Empty
-    val tpe: Option[KeywordOrUri]                                 = None
-    def withContext(context: NoneNullOr[Context]): TermDefinition = ExpandedTermDefinition(id, context = context)
-    def withContainer(container: Set[String]): TermDefinition     = ExpandedTermDefinition(id, container = container)
+    val context: EmptyNullOr[Context]                              = Empty
+    val container: Set[String]                                     = Set.empty
+    val reverse: Option[Uri]                                       = None
+    val termLanguage: EmptyNullOr[LanguageTag]                     = Empty
+    val termDirection: EmptyNullOr[String]                         = Empty
+    val tpe: Option[KeywordOrUri]                                  = None
+    def withContext(context: EmptyNullOr[Context]): TermDefinition = ExpandedTermDefinition(id, context = context)
+    def withContainer(container: Set[String]): TermDefinition      = ExpandedTermDefinition(id, container = container)
   }
 
   /**
@@ -65,20 +65,20 @@ object TermDefinition {
       id: Uri,
       tpe: Option[KeywordOrUri] = None,
       container: Set[String] = Set.empty,
-      language: NoneNullOr[LanguageTag] = Empty,
+      language: EmptyNullOr[LanguageTag] = Empty,
       prefix: Boolean = false,
       `protected`: Option[Boolean] = None,
       propagate: Option[Boolean] = None,
-      direction: NoneNullOr[String] = Empty,
+      direction: EmptyNullOr[String] = Empty,
       reverse: Option[Uri] = None,
       index: Option[Uri] = None,
       nest: Option[String] = None,
-      context: NoneNullOr[Context] = Empty
+      context: EmptyNullOr[Context] = Empty
   ) extends TermDefinition {
-    def termLanguage: NoneNullOr[LanguageTag]                     = language.onNone(context.flatMap(_.language))
-    def termDirection: NoneNullOr[String]                         = direction.onNone(context.flatMap(_.direction))
-    def withContext(context: NoneNullOr[Context]): TermDefinition = copy(context = context)
-    def withContainer(container: Set[String]): TermDefinition     = copy(container = container)
+    def termLanguage: EmptyNullOr[LanguageTag]                     = language.onNone(context.flatMap(_.language))
+    def termDirection: EmptyNullOr[String]                         = direction.onNone(context.flatMap(_.direction))
+    def withContext(context: EmptyNullOr[Context]): TermDefinition = copy(context = context)
+    def withContainer(container: Set[String]): TermDefinition      = copy(container = container)
   }
 
   implicit final def termDefinitionFromUri(uri: Uri): SimpleTermDefinition = SimpleTermDefinition(uri)

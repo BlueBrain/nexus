@@ -273,7 +273,7 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     override def asBlank: Option[BNode]     = None
     override def asIri: Option[IriNode]     = None
     override def asLiteral: Option[Literal] = Some(this)
-//    override def toString: String           = lexicalForm
+    override def toString: String           = lexicalForm
 
     /**
       * @return true if the literal is numeric, false otherwise

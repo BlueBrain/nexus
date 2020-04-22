@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.rdf.jsonld.context
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr._
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.SimpleTermDefinition
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinitionCursor._
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
@@ -11,13 +11,13 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 /**
   * A cursor to navigate on the context term definitions. It allows to reach scoped contexts, if defined
   */
-sealed abstract class TermDefinitionCursor { self =>
+sealed abstract private[jsonld] class TermDefinitionCursor { self =>
 
-  def value: NoneNullOr[TermDefinition]
+  def value: EmptyNullOr[TermDefinition]
 
-  lazy val context: NoneNullOr[Context] = value.flatMap(_.context)
+  lazy val context: EmptyNullOr[Context] = value.flatMap(_.context)
 
-  def unresolvedContext: NoneNullOr[Context]
+  def unresolvedContext: EmptyNullOr[Context]
 
   def failed: Boolean
 
@@ -38,11 +38,11 @@ sealed abstract class TermDefinitionCursor { self =>
   protected def prev: TermDefinitionCursor
 
   private[context] def prevPropagate: TermDefinitionCursor =
-    if(isTop) self
-    else if(propagate) self
+    if (isTop) self
+    else if (propagate) self
     else prev.prevPropagate
 
-  def mergeContext(other: NoneNullOr[Context]): TermDefinitionCursor =
+  def mergeContext(other: EmptyNullOr[Context]): TermDefinitionCursor =
     other match {
       case Empty => self
       case otherValue =>
@@ -66,14 +66,14 @@ sealed abstract class TermDefinitionCursor { self =>
     else downTypes(types) or downEmpty
 
   private[context] def downTerm(term: String): TermDefinitionCursor =
-    context.flatMap(ctx => NoneNullOr(ctx.find(term)).map(ctx -> _)) match {
+    context.flatMap(ctx => EmptyNullOr(ctx.find(term)).map(ctx -> _)) match {
       case Empty         => FailedValueCursor(top, self, term)
       case Null          => self
       case Val((ctx, v)) => ValueCursor(top, self, Val(v.withContext(ctx.merge(v.context))), term, v.context)
     }
 
   private def downTypes(types: Seq[Uri]): TermDefinitionCursor =
-    context.flatMap(ctx => NoneNullOr(ctx.findFirst(types).map { case (uri, term) => (ctx, uri, term) })) match {
+    context.flatMap(ctx => EmptyNullOr(ctx.findFirst(types).map { case (uri, term) => (ctx, uri, term) })) match {
       case Empty              => FailedTypeScopedCursor(top, self, types)
       case Null               => self
       case Val((ctx, tpe, v)) => TypeScopedCursor(top, self, Val(v.withContext(ctx.merge(v.context))), tpe, v.context)
@@ -85,35 +85,36 @@ sealed abstract class TermDefinitionCursor { self =>
 
 }
 
-object TermDefinitionCursor {
+private[jsonld] object TermDefinitionCursor {
 
   private val emptyDefinition = SimpleTermDefinition(uri"urn:root:term")
 
   val empty: TermDefinitionCursor = TopCursor(Empty)
 
-  final private case class TopCursor private[context] (value: NoneNullOr[TermDefinition]) extends TermDefinitionCursor {
-    val isTop: Boolean                         = true
-    val failed: Boolean                        = false
-    val top: TopCursor                         = this
-    protected val prev: TermDefinitionCursor   = this
-    val typeScoped: Boolean                    = false
-    val term: Option[String]                   = None
-    val tpe: Option[Uri]                       = None
-    val unresolvedContext: NoneNullOr[Context] = context
+  final private case class TopCursor private[context] (value: EmptyNullOr[TermDefinition])
+      extends TermDefinitionCursor {
+    val isTop: Boolean                             = true
+    val failed: Boolean                            = false
+    val top: TopCursor                             = this
+    protected val prev: TermDefinitionCursor       = this
+    val typeScoped: Boolean                        = false
+    val term: Option[String]                       = None
+    val tpe: Option[Uri]                           = None
+    val unresolvedContext: EmptyNullOr[Context]    = context
     override protected lazy val propagate: Boolean = context.toOption.flatMap(_.propagate).getOrElse(true)
   }
 
   final private case class EmbeddedCursor private[context] (
       top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
-      value: NoneNullOr[TermDefinition]
+      value: EmptyNullOr[TermDefinition]
   ) extends TermDefinitionCursor {
-    val isTop: Boolean                         = false
-    val failed: Boolean                        = false
-    val typeScoped: Boolean                    = false
-    val term: Option[String]                   = None
-    val tpe: Option[Uri]                       = None
-    val unresolvedContext: NoneNullOr[Context] = context
+    val isTop: Boolean                             = false
+    val failed: Boolean                            = false
+    val typeScoped: Boolean                        = false
+    val term: Option[String]                       = None
+    val tpe: Option[Uri]                           = None
+    val unresolvedContext: EmptyNullOr[Context]    = context
     override protected lazy val propagate: Boolean = context.toOption.flatMap(_.propagate).getOrElse(true)
   }
 
@@ -122,13 +123,13 @@ object TermDefinitionCursor {
       prev: TermDefinitionCursor,
       termValue: String
   ) extends TermDefinitionCursor {
-    val isTop: Boolean                         = false
-    val failed: Boolean                        = true
-    val value: NoneNullOr[TermDefinition]      = Empty
-    val typeScoped: Boolean                    = false
-    val term: Option[String]                   = Some(termValue)
-    val tpe: Option[Uri]                       = None
-    val unresolvedContext: NoneNullOr[Context] = context
+    val isTop: Boolean                          = false
+    val failed: Boolean                         = true
+    val value: EmptyNullOr[TermDefinition]      = Empty
+    val typeScoped: Boolean                     = false
+    val term: Option[String]                    = Some(termValue)
+    val tpe: Option[Uri]                        = None
+    val unresolvedContext: EmptyNullOr[Context] = context
   }
 
   final private case class FailedTypeScopedCursor private[context] (
@@ -136,22 +137,22 @@ object TermDefinitionCursor {
       prev: TermDefinitionCursor,
       terms: Seq[Uri]
   ) extends TermDefinitionCursor {
-    val isTop: Boolean                         = false
-    val failed: Boolean                        = true
-    val value: NoneNullOr[TermDefinition]      = Empty
-    val typeScoped: Boolean                    = true
-    val term: Option[String]                   = None
-    val tpe: Option[Uri]                       = None
-    val unresolvedContext: NoneNullOr[Context] = context
+    val isTop: Boolean                          = false
+    val failed: Boolean                         = true
+    val value: EmptyNullOr[TermDefinition]      = Empty
+    val typeScoped: Boolean                     = true
+    val term: Option[String]                    = None
+    val tpe: Option[Uri]                        = None
+    val unresolvedContext: EmptyNullOr[Context] = context
 
   }
 
   final private case class TypeScopedCursor private[context] (
       top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
-      value: NoneNullOr[TermDefinition],
+      value: EmptyNullOr[TermDefinition],
       termValue: Uri,
-      unresolvedContext: NoneNullOr[Context]
+      unresolvedContext: EmptyNullOr[Context]
   ) extends TermDefinitionCursor {
     val isTop: Boolean                             = false
     val failed: Boolean                            = false
@@ -164,9 +165,9 @@ object TermDefinitionCursor {
   final private case class ValueCursor private[context] (
       top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
-      value: NoneNullOr[TermDefinition],
+      value: EmptyNullOr[TermDefinition],
       termValue: String,
-      unresolvedContext: NoneNullOr[Context]
+      unresolvedContext: EmptyNullOr[Context]
   ) extends TermDefinitionCursor {
     val isTop: Boolean       = false
     val failed: Boolean      = false
@@ -175,10 +176,10 @@ object TermDefinitionCursor {
     val tpe: Option[Uri]     = None
   }
 
-  final def apply(value: NoneNullOr[TermDefinition]): TermDefinitionCursor =
+  final def apply(value: EmptyNullOr[TermDefinition]): TermDefinitionCursor =
     TopCursor(value)
 
-  final def fromCtx(ctx: NoneNullOr[Context]): TermDefinitionCursor =
+  final def fromCtx(ctx: EmptyNullOr[Context]): TermDefinitionCursor =
     apply(Val(emptyDefinition.withContext(ctx)))
 
   final def firstSuccess(cursors: Seq[TermDefinitionCursor]): TermDefinitionCursor =

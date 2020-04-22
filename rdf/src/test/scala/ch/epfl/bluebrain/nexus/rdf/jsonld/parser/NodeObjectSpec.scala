@@ -7,12 +7,12 @@ import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.ArrayEntry.NodeValueArray
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.NodeObjectValue._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr.{Empty, Val}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Val}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, TermDefinitionCursor}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.ExpandedTermDefinition
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ParsingStatus._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{JsonLD, NodeObject, keyword}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, JsonLD, NodeObject}
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import io.circe.literal._
 
@@ -41,7 +41,7 @@ class NodeObjectSpec extends RdfSpec {
         keywords = Map(tpe -> Set("type"), id -> Set("id"))
       )
     val definition = ExpandedTermDefinition(id = uri"http://example.com/id", context = Val(ctx))
-    val cursor = TermDefinitionCursor(Val(definition))
+    val cursor     = TermDefinitionCursor(Val(definition))
     val bob        = NodeObject(id = Some(baseUri("bob")), terms = Vector(vocabUri("name") -> "Bob"))
     val alice      = NodeObject(id = Some(baseUri("alice")), terms = Vector(vocabUri("name") -> "Alice"))
     val other      = NodeObject(id = Some(baseUri("other")), terms = Vector(vocabUri("name") -> "Other"))
@@ -115,9 +115,11 @@ class NodeObjectSpec extends RdfSpec {
     }
 
     "be parsed with multiple scoped contexts" ignore {
-      val json = json"""{"@context": {"@base": "http://example/base-base/", "@vocab": "http://example/", "foo": "http://example/foo", "Type": {"@context": {"@base": "http://example/typed-base/", "xsd": "http://xsd.com/xsd/", "@vocab": "http://type-vocab/", "nestedscoped": {"@context": {"@base": "http://nestedscoped.com/base/", "foo": "http://replaced.com/foo"}, "@id": "http://nestedscoped-id.com/nestedscoped"} } }, "Type2": {"@context": {"@base": "http://example/type2base/", "@vocab": "http://type-2-vocab/"} } }, "@id": "base-id", "@type": "Type2", "p": {"@id": "typed-id", "@type": "Type", "nestedNode": {"@id": "nested-id", "foo": "bar"}, "nestedscoped": {"@id": "nested-id-scoped", "foo": "bar"}, "subjectReference": [{"@id": "subject-reference-id"}, {"@id": "subject-reference-id-2"} ], "valuereferece": {"@value": "1", "@type": "xsd:xsd"} } }"""
+      val json =
+        json"""{"@context": {"@base": "http://example/base-base/", "@vocab": "http://example/", "foo": "http://example/foo", "Type": {"@context": {"@base": "http://example/typed-base/", "xsd": "http://xsd.com/xsd/", "@vocab": "http://type-vocab/", "nestedscoped": {"@context": {"@base": "http://nestedscoped.com/base/", "foo": "http://replaced.com/foo"}, "@id": "http://nestedscoped-id.com/nestedscoped"} } }, "Type2": {"@context": {"@base": "http://example/type2base/", "@vocab": "http://type-2-vocab/"} } }, "@id": "base-id", "@type": "Type2", "p": {"@id": "typed-id", "@type": "Type", "nestedNode": {"@id": "nested-id", "foo": "bar"}, "nestedscoped": {"@id": "nested-id-scoped", "foo": "bar"}, "subjectReference": [{"@id": "subject-reference-id"}, {"@id": "subject-reference-id-2"} ], "valuereferece": {"@value": "1", "@type": "xsd:xsd"} } }"""
       val result = JsonLD.expand(json).rightValue
-      val expected = json"""[{"@id": "http://example/type2base/base-id", "@type": ["http://example/Type2"], "http://type-2-vocab/p": [{"@id": "http://example/typed-base/typed-id", "@type": ["http://example/Type"], "http://type-vocab/nestedNode": [{"@id": "http://example/base-base/nested-id", "http://example/foo": [{"@value": "bar"} ] } ], "http://nestedscoped-id.com/nestedscoped": [{"@id": "http://nestedscoped.com/base/nested-id-scoped", "http://replaced.com/foo": [{"@value": "bar"} ] } ], "http://type-vocab/subjectReference": [{"@id": "http://example/typed-base/subject-reference-id"}, {"@id": "http://example/typed-base/subject-reference-id-2"} ], "http://type-vocab/valuereferece": [{"@type": "http://xsd.com/xsd/xsd", "@value": "1"} ] } ] } ]"""
+      val expected =
+        json"""[{"@id": "http://example/type2base/base-id", "@type": ["http://example/Type2"], "http://type-2-vocab/p": [{"@id": "http://example/typed-base/typed-id", "@type": ["http://example/Type"], "http://type-vocab/nestedNode": [{"@id": "http://example/base-base/nested-id", "http://example/foo": [{"@value": "bar"} ] } ], "http://nestedscoped-id.com/nestedscoped": [{"@id": "http://nestedscoped.com/base/nested-id-scoped", "http://replaced.com/foo": [{"@value": "bar"} ] } ], "http://type-vocab/subjectReference": [{"@id": "http://example/typed-base/subject-reference-id"}, {"@id": "http://example/typed-base/subject-reference-id-2"} ], "http://type-vocab/valuereferece": [{"@type": "http://xsd.com/xsd/xsd", "@value": "1"} ] } ] } ]"""
       println(result.toJson())
       println("=====")
       println(expected)
@@ -130,7 +132,9 @@ class NodeObjectSpec extends RdfSpec {
 
     "return invalid format on parsing when expanded id" in {
       val jsons = List(json"""{"@id": "a"}""", json"""{"@type": "a"}""")
-      forAll(jsons) { json => NodeObjectParser(json, TermDefinitionCursor(Empty)).leftValue shouldBe a[InvalidObjectFormat] }
+      forAll(jsons) { json =>
+        NodeObjectParser(json, TermDefinitionCursor(Empty)).leftValue shouldBe a[InvalidObjectFormat]
+      }
     }
 
     "return null on parsing" in {

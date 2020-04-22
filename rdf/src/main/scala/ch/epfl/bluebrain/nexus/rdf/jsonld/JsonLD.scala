@@ -21,7 +21,7 @@ sealed trait JsonLD extends Product with Serializable {
 object JsonLD {
   final case class CompactedJsonLD(
       original: Json,
-      private val context: NoneNullOr[Context],
+      private val context: EmptyNullOr[Context],
       private[jsonld] val node: NodeObject
   ) extends JsonLD {
     val isCompact: Boolean                                      = true
@@ -34,7 +34,7 @@ object JsonLD {
 
   final case class ExpandedJsonLD(
       original: Json,
-      private val context: NoneNullOr[Context],
+      private val context: EmptyNullOr[Context],
       private[jsonld] val node: NodeObject
   ) extends JsonLD {
     val isCompact: Boolean                                      = false
@@ -48,7 +48,7 @@ object JsonLD {
 
   private val wrongFormat = "Wrong JsonLD format"
 
-  private def jsonld(json: Json, ctx: Json): Either[String, (Json, NoneNullOr[Context], NodeObject)] =
+  private def jsonld(json: Json, ctx: Json): Either[String, (Json, EmptyNullOr[Context], NodeObject)] =
     (json deepMerge ctx).arrayOrObjectSingle(
       Left(wrongFormat),
       _ => Left(wrongFormat),

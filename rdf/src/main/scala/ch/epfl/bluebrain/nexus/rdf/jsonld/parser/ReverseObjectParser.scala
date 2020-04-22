@@ -33,7 +33,7 @@ private class ReverseObjectParser private (json: Json, override val cursor: Term
     }
 }
 
-object ReverseObjectParser {
+private[jsonld] object ReverseObjectParser {
 
   /**
     * Attempts to fetch the Node Objects from a term which has @reverse container

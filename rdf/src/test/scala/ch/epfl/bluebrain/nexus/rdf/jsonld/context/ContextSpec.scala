@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
-import ch.epfl.bluebrain.nexus.rdf.jsonld.NoneNullOr._
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.ContextSpec._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, JsonLdFixtures}
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._

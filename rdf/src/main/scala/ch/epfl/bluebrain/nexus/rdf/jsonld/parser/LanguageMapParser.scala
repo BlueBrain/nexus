@@ -41,13 +41,13 @@ private class LanguageMapParser private (obj: JsonObject, override val cursor: T
       case (_, Some(vector)) =>
         vector.foldM(Vector.empty[DirectionValue]) {
           case (acc, c) if c.isNull => Right(acc)
-          case (acc, c) => c.asString.toRight(invalidLanguageMapValue).map(str => acc :+ ((str, termDirection)))
+          case (acc, c)             => c.asString.toRight(invalidLanguageMapValue).map(str => acc :+ ((str, termDirection)))
         }
       case _ => Left(invalidLanguageMapValue)
     }
 }
 
-object LanguageMapParser {
+private[jsonld] object LanguageMapParser {
 
   def apply(json: Json, cursor: TermDefinitionCursor): Either[ParsingStatus, LanguageMap] =
     if (json.isNull)
