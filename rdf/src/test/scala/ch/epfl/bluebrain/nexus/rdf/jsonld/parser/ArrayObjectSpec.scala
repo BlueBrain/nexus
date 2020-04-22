@@ -187,7 +187,7 @@ class ArrayObjectSpec extends RdfSpec {
 
     "be parsed as @id" in {
       val json       = json"""["id", true, 0]"""
-      val ctx        = Context(base = Some(uri"http://ex.com/base/"), vocab = Some(uri"http://ex.com/vocab/"))
+      val ctx        = Context(base = Some(uri"http://ex.com/base/"), vocab = Val(uri"http://ex.com/vocab/"))
       val cursorId   = TermDefinitionCursor(Val(ExpandedTermDefinition(ex, tpe = Some(id), context = Val(ctx))))
       val expectedId = SetValue(Vector(NodeObject(id = Some(uri"http://ex.com/base/id")), true, 0))
       ArrayParser.set(json, cursorId).rightValue shouldEqual expectedId
@@ -195,7 +195,7 @@ class ArrayObjectSpec extends RdfSpec {
 
     "be parsed as @value" in {
       val json   = json"""["id", true, 0]"""
-      val ctx    = Context(base = Some(uri"http://ex.com/base/"), vocab = Some(uri"http://ex.com/vocab/"))
+      val ctx    = Context(base = Some(uri"http://ex.com/base/"), vocab = Val(uri"http://ex.com/vocab/"))
       val cursor = TermDefinitionCursor(Val(ExpandedTermDefinition(ex, context = Val(ctx))))
       ArrayParser.set(json, cursor).rightValue shouldEqual SetValue(Vector("id", true, 0))
     }

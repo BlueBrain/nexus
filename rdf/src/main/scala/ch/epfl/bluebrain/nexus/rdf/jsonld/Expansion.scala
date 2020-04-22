@@ -112,7 +112,7 @@ private[jsonld] object Expansion {
     val valuesWithLang =
       elems.value.to(SortedMap).flatMap { case (lang, seq) => seq.map[ArrayEntry](toValueObject(_, Some(lang))) }
     val valuesNoLang = elems.others.map[ArrayEntry](toValueObject(_))
-    expandArr(valuesWithLang ++ valuesNoLang)
+    expandArr(valuesNoLang ++ valuesWithLang)
   }
 
   private def withIndex(idx: String, elem: NodeObjectValue): NodeObjectValue =

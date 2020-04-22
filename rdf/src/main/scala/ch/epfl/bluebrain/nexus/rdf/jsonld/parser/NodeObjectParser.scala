@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, ContextWrapper, Term
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ParsingStatus._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.syntax.all._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, EmptyNullOr, NodeObject}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, EmptyNullOr, JsonLdOptions, NodeObject}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
@@ -128,7 +128,7 @@ private class NodeObjectParser private (
       case Some(uri) if !reverseParent => addReverseToNode(uri)
       case Some(uri)                   => addTermToNode(uri)
       case None =>
-        expand(term, innerCursor) match {
+        expandKey(term, innerCursor) match {
           case Right(uri) if reverseParent => addReverseToNode(uri)
           case Right(uri)                  => addTermToNode(uri)
           case _                           => Right(node)
@@ -164,12 +164,16 @@ private class NodeObjectParser private (
 
 object NodeObjectParser {
 
-  final def root(json: Json, ctx: EmptyNullOr[Context]): Either[ParsingStatus, NodeObject] =
+  final def root(json: Json, ctx: EmptyNullOr[Context])(
+      implicit options: JsonLdOptions
+  ): Either[ParsingStatus, NodeObject] =
     if (json.isNull) Right(NodeObject())
     else
       json.arrayOrObjectSingle(or = Right(NodeObject()), _ => Right(NodeObject()), obj => root(obj, ctx))
 
-  final def root(obj: JsonObject, ctx: EmptyNullOr[Context]): Either[ParsingStatus, NodeObject] =
+  final def root(obj: JsonObject, ctx: EmptyNullOr[Context])(
+      implicit options: JsonLdOptions
+  ): Either[ParsingStatus, NodeObject] =
     new NodeObjectParser(obj, TermDefinitionCursor.fromCtx(ctx), reverseParent = false).parse() match {
       case Left(NotMatchObject) | Left(NullObject) => Right(NodeObject())
       case other                                   => other
@@ -216,9 +220,11 @@ object NodeObjectParser {
   ): Either[ParsingStatus, NodeObject] =
     innerCtx(obj.asJson, cursor).flatMap(mergedCursor => new NodeObjectParser(obj, mergedCursor, reverseParent).parse())
 
-  private def innerCtx(json: Json, cursor: TermDefinitionCursor) =
+  private def innerCtx(json: Json, cursor: TermDefinitionCursor) = {
+    implicit val options = cursor.options
     ContextWrapper.fromParent(cursor.context).decodeJson(json).leftMap(err => InvalidObjectFormat(err.message)).map {
       case ContextWrapper(inner) => cursor.mergeContext(inner)
     }
+  }
 
 }

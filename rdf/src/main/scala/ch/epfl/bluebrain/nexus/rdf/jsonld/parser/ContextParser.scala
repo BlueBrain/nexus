@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix.isReserved
-import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
-import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr
+import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Uri}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{EmptyNullOr, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Null, Val}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context._
@@ -32,7 +32,7 @@ private[jsonld] object ContextParser {
 
   object TermDef {
 
-    final private[ContextParser] case class SimpleDef(value: String) extends TermDef
+    final private[ContextParser] case class SimpleDef(value: String, isString: Boolean) extends TermDef
 
     final private[ContextParser] case object NullDef extends TermDef
 
@@ -89,16 +89,22 @@ private[jsonld] object ContextParser {
         case (Some(jObj), _, _, _, _) if jObj.isEmpty =>
           Left(DecodingFailure("expanded term definition cannot be empty", hc.history))
         case (Some(_), _, _, _, _)      => expDec(hc)
-        case (_, Some(value), _, _, _)  => Right(SimpleDef(value))
-        case (_, _, Some(number), _, _) => Right(SimpleDef(number.toDouble.toString))
-        case (_, _, _, Some(bool), _)   => Right(SimpleDef(bool.toString))
+        case (_, Some(value), _, _, _)  => Right(SimpleDef(value, isString = true))
+        case (_, _, Some(number), _, _) => Right(SimpleDef(number.toDouble.toString, isString = false))
+        case (_, _, _, Some(bool), _)   => Right(SimpleDef(bool.toString, isString = false))
         case (_, _, _, _, Some(_))      => Right(NullDef)
         case _                          => Left(DecodingFailure("A term definition must be a string or a Json Object", hc.history))
       }
     }
   }
 
-  final private case class ActiveContext(terms: _Terms, allTerms: _Terms, resolved: ResolvedTerms, ctx: Context) {
+  final private case class ActiveContext(
+      terms: _Terms,
+      allTerms: _Terms,
+      resolved: ResolvedTerms,
+      ctx: Context,
+      options: JsonLdOptions
+  ) {
 
     /**
       * Fetch the prefix mappings and resolved Uris. It also removed the reserved terms (terms with regex "@"1*ALPHA)
@@ -107,14 +113,14 @@ private[jsonld] object ContextParser {
       terms.foldLeft(this) {
         case (acc, (term, _)) if !all.contains(term) && isReserved(term) =>
           acc.removeTerm(term)
-        case (acc, (term, SimpleDef(value))) if !all.contains(value) && isReserved(value) =>
+        case (acc, (term, SimpleDef(value, _))) if !all.contains(value) && isReserved(value) =>
           acc.removeTerm(term)
         case (acc, (term, d: ExpandedDef)) if d.id.exists(id => !all.contains(id) && isReserved(id)) =>
           acc.removeTerm(term)
         case (acc, (term, d: ExpandedDef)) if d.reverse.exists(r => !all.contains(r) && isReserved(r)) =>
           acc.removeTerm(term)
 
-        case (acc, (term, SimpleDef(value))) =>
+        case (acc, (term, SimpleDef(value, _))) =>
           Prefix(term).flatMap(p => acc.curieOrUri(value).map(acc.addTermOrPm(p, _))).getOrElse(acc)
 
         case (acc, (term, ExpandedDef(Some(value), _, _, _, Some(prefixKey), _, _, _, _, _, _, _, _))) =>
@@ -128,27 +134,46 @@ private[jsonld] object ContextParser {
         case (acc, _) => acc
       }
 
+    private def initializeBase(): Either[String, ActiveContext] =
+      terms.get(`base`) match {
+        case Some(SimpleDef(str, true)) => prefixCurieUriOrRelative(str).map(withBase)
+        case Some(_)                    => Left(s"$base must be a String")
+        case None                       => Right(options.base.map(withBase).getOrElse(this))
+      }
+
     /**
       * Initialize the active context with the top level default keywords, if present
       */
     private def initializeKeywords(): Either[String, ActiveContext] =
-      terms.toList
+      terms
+        .removed(`base`)
+        .toList
         .foldM(this) {
-          case (acc, (`version`, SimpleDef("1.1")))                                   => Right(acc.withVersion11)
-          case (_, (`version`, _))                                                    => Left(s"$version keyword value must be '1.1'")
-          case (acc, (`vocab`, SimpleDef(str)))                                       => acc.prefixCurieOrUri(str).map(acc.withVocab)
-          case (acc, (`base`, SimpleDef(str)))                                        => acc.prefixCurieOrUri(str).map(acc.withBase)
-          case (acc, (`propagate`, SimpleDef(str)))                                   => toBool(str).map(acc.withPropagate)
-          case (acc, (`protected`, SimpleDef(str)))                                   => toBool(str).map(acc.withProtected)
-          case (acc, (`language`, SimpleDef(str)))                                    => LanguageTag(str).map(acc.withLanguage)
-          case (acc, (`language`, NullDef))                                           => Right(acc.withNullLanguage)
-          case (acc, (`direction`, SimpleDef(str))) if allowedDirection.contains(str) => Right(acc.withDirection(str))
-          case (acc, (`direction`, NullDef))                                          => Right(acc.withNullDirection)
+          case (acc, (`version`, SimpleDef("1.1", false))) => Right(acc.withVersion11)
+          case (_, (`version`, _))                         => Left(s"$version keyword value must be '1.1'")
+          case (acc, (`vocab`, SimpleDef("", true)))       => ctx.base.toRight(invalidTerm("").message).map(acc.withVocab)
+          case (acc, (`vocab`, SimpleDef(str, true)))      => acc.resolveVocab(str).map(acc.withVocab)
+          case (acc, (`vocab`, NullDef))                   => Right(acc.copy(ctx = acc.ctx.copy(vocab = Null)))
+          case (_, (`vocab`, SimpleDef(_, false)))         => Left(s"$language must be a String")
+          case (acc, (`propagate`, SimpleDef(str, false))) => toBool(str).map(acc.withPropagate)
+          case (_, (`propagate`, SimpleDef(_, true)))      => Left(s"$propagate must be a boolean")
+          case (acc, (`protected`, SimpleDef(str, false))) => toBool(str).map(acc.withProtected)
+          case (_, (`protected`, SimpleDef(_, true)))      => Left(s"${`protected`} must be a boolean")
+          case (acc, (`language`, SimpleDef(str, true)))   => LanguageTag(str).map(acc.withLanguage)
+          case (acc, (`language`, NullDef))                => Right(acc.withNullLanguage)
+          case (_, (`language`, SimpleDef(_, false)))      => Left(s"$language must be a String")
+          case (acc, (`direction`, SimpleDef(str, true))) if allowedDirection.contains(str) =>
+            Right(acc.withDirection(str))
+          case (acc, (`direction`, NullDef))           => Right(acc.withNullDirection)
+          case (_, (`direction`, SimpleDef(_, false))) => Left(s"$direction must be a String")
           case (_, (`direction`, _)) =>
             Left(s"$direction invalid value. Allowed values: ${allowedDirection.mkString(",")}")
-          case (acc, (`tpe`, ExpandedDef(None, None, c, Empty, None, _, None, Empty, None, None, None, Empty, None)))
-              if c.forall(_ == Set(set)) =>
+          case (
+              acc,
+              (`tpe`, ExpandedDef(None, None, c, Empty, None, _, None, Empty, None, None, None, Empty, None))
+              ) if c.forall(_ == Set(set)) =>
             Right(acc)
+          case (_, (term, SimpleDef(_, false)))     => Left(s"Term '$term' value must be a String or an object")
           case (_, (term, _)) if all.contains(term) => Left(s"Keyword '$term' cannot be used in term position")
           case (acc, _)                             => Right(acc)
         }
@@ -157,18 +182,18 @@ private[jsonld] object ContextParser {
     /**
       * Fetch the keywords aliases.
       */
-    private def aliases(): ActiveContext =
-      terms.foldLeft(this) {
-        case (acc, (alias, SimpleDef(keyword))) if keywords.contains(keyword) =>
-          acc.removeTerm(alias).addAlias(keyword, alias)
-        case (acc, (alias, SimpleDef(aliasedKey))) if acc.ctx.aliases.contains(aliasedKey) =>
-          acc.removeTerm(alias).addAlias(acc.ctx.aliases(aliasedKey), alias)
-        case (
-            acc,
-            (alias, ExpandedDef(Some(k), _, container, Empty, None, _, None, Empty, None, None, None, Empty, None))
-            ) if keywords.contains(k) && container.forall(_ == Set(set)) =>
-          acc.addAlias(k, alias)
-        case (acc, _) => acc
+    private def aliases(): Either[String, ActiveContext] =
+      terms.toList.foldM(this) {
+        case (acc, (alias, SimpleDef(keyword, _))) if keywords.contains(keyword) =>
+          Right(acc.removeTerm(alias).addAlias(keyword, alias))
+        case (acc, (alias, SimpleDef(aliasedKey, _))) if acc.ctx.aliases.contains(aliasedKey) =>
+          Right(acc.removeTerm(alias).addAlias(acc.ctx.aliases(aliasedKey), alias))
+        case (_, (term, d: ExpandedDef)) if d.id.contains(context) =>
+          Left(s"$context cannot be aliased with term '$term'")
+        case (acc, (alias, ExpandedDef(Some(k), _, c, Empty, None, _, None, Empty, None, None, None, Empty, None)))
+            if keywords.contains(k) && c.forall(_ == Set(set)) =>
+          Right(acc.addAlias(k, alias))
+        case (acc, _) => Right(acc)
       }
 
     /**
@@ -176,7 +201,7 @@ private[jsonld] object ContextParser {
       */
     private def resolveUris(): Either[String, ActiveContext] = {
       terms.toList.foldM(this) {
-        case (acc, (term, SimpleDef(value))) =>
+        case (acc, (term, SimpleDef(value, _))) =>
           acc.prefixCurieOrUri(value).flatMap { uriDef =>
             Prefix(term).map(prefix => acc.addTermOrPm(prefix, uriDef)) orElse
               acc.prefixCurieOrUri(term).flatMap { termUri =>
@@ -212,7 +237,7 @@ private[jsonld] object ContextParser {
     private def merge(other: EmptyNullOr[ActiveContext]): EmptyNullOr[ActiveContext] =
       other
         .map(otherCtx => copy(terms = terms ++ otherCtx.terms, allTerms = allTerms ++ otherCtx.allTerms))
-        .onNone(Val(this))
+        .onEmpty(Val(this))
 
     /**
       * Resolve the scoped contexts within term definitions
@@ -223,9 +248,9 @@ private[jsonld] object ContextParser {
           val terms           = allTerms - term
           val ignoreAncestors = d.context.isNull || d.context.map(_.exists(_.isNull)).toOption.getOrElse(false)
           val initial: EmptyNullOr[ActiveContext] =
-            Val(ActiveContext(terms, terms, resolved, Context.empty))
+            Val(ActiveContext(terms, terms, resolved, Context.empty, options))
           val mergedScoped = d.context
-            .flatMap { ctx => ctx.foldLeft(initial)((acc, c) => acc.flatMap(_.merge(c)).onNullOrNone(c)) }
+            .flatMap { ctx => ctx.foldLeft(initial)((acc, c) => acc.flatMap(_.merge(c)).onEmptyOrNull(c)) }
             .traverse(v => v.toResolvedContext)
           mergedScoped.map { mergedScopedResult =>
             val finalCtx =
@@ -242,8 +267,9 @@ private[jsonld] object ContextParser {
       */
     def toResolvedContext: Either[String, ActiveContext] =
       prefixMappingsAndResolvedUris()
-        .initializeKeywords()
-        .map(_.aliases())
+        .initializeBase()
+        .flatMap(_.initializeKeywords())
+        .flatMap(_.aliases())
         .flatMap(_.resolveUris())
         .flatMap(_.resolveScopedCtx())
 
@@ -259,7 +285,7 @@ private[jsonld] object ContextParser {
       copy(ctx = ctx.copy(version11 = Some(true)))
 
     private def withVocab(value: Uri): ActiveContext =
-      copy(ctx = ctx.copy(vocab = Some(value)))
+      copy(ctx = ctx.copy(vocab = Val(value)))
 
     private def withBase(value: Uri): ActiveContext =
       copy(ctx = ctx.copy(base = Some(value)))
@@ -308,18 +334,22 @@ private[jsonld] object ContextParser {
 
     private def expandTerm(prefix: Prefix): Option[Uri] =
       resolved.get(prefix.value) orElse
-        ctx.expandTerm(prefix) orElse
-        ctx.vocab.flatMap(vocab => Uri(vocab.iriString + prefix.value).toOption) orElse
-        ctx.base.flatMap(base => Uri(base.iriString + prefix.value).toOption)
+        ctx.expandPrefixTerm(prefix) orElse
+        ctx.vocabOpt.flatMap(vocab => Uri(vocab.iriString + prefix.value).toOption)
 
     private def curieOrUri(term: String): Either[String, Uri] =
       (Curie(term).toOption.flatMap(ctx.expandCurie) orElse Uri(term).toOption)
         .toRight(s"Term '$term' couldn't be expanded to a Uri")
 
-    private def prefixCurieOrUri(
-        term: String
-    ): Either[String, Uri] =
-      ctx.expandTerm(term, prefixFn = expandTerm)
+    private def prefixCurieOrUri(term: String): Either[String, Uri] = ctx.expandTerm(term, prefixFn = expandTerm)
+
+    private def resolveVocab(term: String): Either[String, Uri] =
+      ctx.expandTermValue(term, prefixFn = expandTerm, relativeIdFn = r => ctx.base.map(r.resolve))
+
+    private def prefixCurieUriOrRelative(str: String): Either[String, Uri] =
+      (Option.when(str.isEmpty)(options.base).flatten orElse prefixCurieOrUri(str).toOption orElse
+        (RelativeIri(str).toOption, options.base).mapN { case (rel, b) => rel.resolve(b) })
+        .toRight(invalidTerm(str).message)
 
     private def resolveType(definition: ExpandedDef): Either[String, Option[KeywordOrUri]] =
       definition.tpe
@@ -364,8 +394,8 @@ private[jsonld] object ContextParser {
   }
 
   private object ActiveContext {
-    final def apply(terms: _Terms): ActiveContext =
-      ActiveContext(terms, terms, Map.empty, Context.empty)
+    final def apply(terms: _Terms)(implicit options: JsonLdOptions): ActiveContext =
+      ActiveContext(terms, terms, Map.empty, Context.empty, options)
   }
 
   // TODO: Not yet implemented for keywords
@@ -381,7 +411,7 @@ private[jsonld] object ContextParser {
       prefixMappings =
         context.prefixMappings.view.filterKeys(k => original.exists(_.exists(_.terms.contains(k.value)))).toMap,
       keywords = context.keywords,
-      vocab = if (original.exists(_.exists(_.terms.contains(vocab)))) context.vocab else None,
+      vocab = if (original.exists(_.exists(_.terms.contains(vocab)))) context.vocab else Empty,
       base = if (original.exists(_.exists(_.terms.contains(base)))) context.base else None,
       version11 = if (original.exists(_.exists(_.terms.contains(version)))) context.version11 else None,
       propagate = if (original.exists(_.exists(_.terms.contains(propagate)))) context.propagate else None,
@@ -406,25 +436,27 @@ private[jsonld] object ContextParser {
       case (acc, (term, json)) => json.as[TermDef].map(definition => acc + (term -> definition)).leftMap(_.message)
     }
 
-  private def activeCtx(json: Json): Either[String, ActiveContext] =
+  private def activeCtx(json: Json)(implicit option: JsonLdOptions): Either[String, ActiveContext] =
     json.arrayOrObject[Either[String, ActiveContext]](
       Left(s"$context should be a Json Array or a Json Object"),
       _.foldM(JsonObject.empty) { (acc, c) =>
         c.asObject.map(deepMerge(acc, _)).toRight(s"$context Array Element must be a Json Object")
-      }.flatMap(terms).map(ActiveContext.apply),
-      terms(_).map(ActiveContext.apply)
+      }.flatMap(terms).map(ActiveContext(_)),
+      terms(_).map(ActiveContext(_))
     )
 
-  implicit private[ContextParser] val activeContextDecoder: Decoder[ActiveContext] =
+  implicit private[ContextParser] def activeContextDecoder(
+      implicit option: JsonLdOptions = JsonLdOptions.empty
+  ): Decoder[ActiveContext] =
     Decoder.decodeJson.emap(activeCtx)
 
   private def deepMerge(one: JsonObject, other: JsonObject): JsonObject =
     other.toIterable.foldLeft(one) { case (acc, (k, v)) => acc.add(k, v) }
 
-  def apply(json: Json): Either[String, Context] =
+  def apply(json: Json)(implicit option: JsonLdOptions): Either[String, Context] =
     activeCtx(json).flatMap(_.toResolvedContext).map(_.ctx)
 
-  def apply(json: Json, parent: EmptyNullOr[Context]): Either[String, Context] =
+  def apply(json: Json, parent: EmptyNullOr[Context])(implicit option: JsonLdOptions): Either[String, Context] =
     activeCtx(json)
       .flatMap(ctx =>
         ctx

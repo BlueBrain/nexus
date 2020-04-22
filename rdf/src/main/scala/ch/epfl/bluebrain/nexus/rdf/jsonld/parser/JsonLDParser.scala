@@ -10,8 +10,11 @@ private[parser] trait JsonLDParser {
 
   def cursor: TermDefinitionCursor
 
-  def expand(term: String, c: TermDefinitionCursor = cursor): Either[ParsingStatus, Uri] =
+  def expandKey(term: String, c: TermDefinitionCursor = cursor): Either[ParsingStatus, Uri] =
     c.context.toOption.fold(Uri(term))(ctx => ctx.expand(term)).leftMap(_ => invalidTerm(term))
+
+  def expand(term: String, c: TermDefinitionCursor = cursor): Either[ParsingStatus, Uri] =
+    c.context.toOption.fold(Uri(term))(ctx => ctx.expandTermValue(term)).leftMap(_ => invalidTerm(term))
 
   def expandId(term: String, c: TermDefinitionCursor = cursor): Either[ParsingStatus, Uri] =
     c.context.toOption.fold(Uri(term))(ctx => ctx.expandId(term)).leftMap(_ => invalidIdTerm(term))

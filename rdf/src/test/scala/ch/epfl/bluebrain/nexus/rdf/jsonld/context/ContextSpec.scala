@@ -3,16 +3,26 @@ package ch.epfl.bluebrain.nexus.rdf.jsonld.context
 import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
 import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.ContextSpec._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, JsonLdFixtures}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{JsonLdFixtures, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 
 class ContextSpec extends JsonLdFixtures {
   "A Context" should {
     "be decoded" in {
       forAll(expandTestCases) {
-        case ((inName, in), (_, Some(_))) if !excluded.contains(inName) =>
-          in.hcursor.get[Option[Context]](keyword.context).rightValue
+        case ((inName, in), (_, Some(_)), options) if !excluded.contains(inName) =>
+          implicit val opt: JsonLdOptions = options
+          in.as[ContextWrapper].rightValue
         case _ => // ignore
+      }
+    }
+
+    "failed to be decoded" in {
+      forAll(expandTestCases) {
+        case ((inName, in), (_, None), options) if !excludedFailed.contains(inName) =>
+          implicit val opt: JsonLdOptions = options
+          in.as[ContextWrapper].leftValue
+        case _ => //ignore
       }
     }
 
@@ -29,14 +39,6 @@ class ContextSpec extends JsonLdFixtures {
         Context(Map("t1" -> uri"http://b/t1", "t2" -> uri"http://b/t2", "t3" -> uri"http://a/t3"), language = Null)
       ctx1.merge(Val(ctx2)) shouldEqual Val(expected)
     }
-
-    "failed to be decoded" in {
-      forAll(expandTestCases) {
-        case ((inName, in), (_, None)) if !excludedFailed.contains(inName) =>
-          in.hcursor.get[Option[Context]](keyword.context).leftValue
-        case _ => //ignore
-      }
-    }
   }
 }
 
@@ -46,11 +48,6 @@ object ContextSpec {
     "0032-in.jsonld", // null keys not supported yet
     "0038-in.jsonld", // @id as a blank node not supported
     "0075-in.jsonld", // @vocab as a blank node not supported
-    "0089-in.jsonld", // @base relative not supported
-    "0090-in.jsonld", // @base relative not supported
-    "0091-in.jsonld", // @base relative not supported
-    "0092-in.jsonld", // @vocab with empty value "" not supported
-    "0115-in.jsonld", // @vocab with empty value "" not supported
     "0117-in.jsonld", // term starting with : ":term"
     "0126-in.jsonld", // relative link resolution, not supported
     "0127-in.jsonld", // relative link resolution, not supported
@@ -58,9 +55,6 @@ object ContextSpec {
     "c031-in.jsonld", // relative link resolution, not supported
     "c034-in.jsonld", // relative link resolution, not supported
     "in06-in.jsonld", // null term value, not supported
-    "pr15-in.jsonld", // context with a link with null value
-    "pr16-in.jsonld", // context with a link with null value
-    "pr19-in.jsonld", // context with a link with null value
     "so05-in.jsonld", // relative link resolution, not supported
     "so06-in.jsonld", // relative link resolution, not supported
     "so08-in.jsonld", // relative link resolution, not supported
@@ -69,8 +63,9 @@ object ContextSpec {
   )
 
   private[jsonld] val excludedFailed = Set(
-    "0116-in.jsonld",
-    "0123-in.jsonld",
+    "0115-in.jsonld", // fails only in jsonld 1.0
+    "0116-in.jsonld", // fails only in jsonld 1.0
+    "0123-in.jsonld", // failure is on the object nodes, not on the context
     "c029-in.jsonld",
     "di09-in.jsonld",
     "en01-in.jsonld",

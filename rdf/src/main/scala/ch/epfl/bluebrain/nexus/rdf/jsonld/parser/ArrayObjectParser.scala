@@ -130,7 +130,7 @@ private class ArrayObjectParser private (obj: JsonObject, override val cursor: T
       case (acc, (_, json)) if json.isNull                                 => Right(acc)
       case ((arr, idx, true), _)                                           => Right((arr, idx, true))
       case ((arr, idx, _), (term, _)) if all.exists(k => isAlias(term, k)) => Right((arr, idx, true))
-      case ((arr, idx, _), (term, _)) if expand(term).isRight              => Right((arr, idx, true))
+      case ((arr, idx, _), (term, _)) if expandKey(term).isRight           => Right((arr, idx, true))
       case (acc, _)                                                        => Right(acc) // ignore when term is not an alias and it is not a resolvable Uri
     }
 }

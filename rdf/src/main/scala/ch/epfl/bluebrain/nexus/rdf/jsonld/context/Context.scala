@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Uri}
-import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{EmptyNullOr, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Val}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
@@ -32,7 +32,7 @@ final case class Context(
     terms: Terms = Map.empty,
     keywords: KeywordAliases = Map.empty,
     prefixMappings: PrefixMappings = Map.empty,
-    vocab: Option[Uri] = None,
+    vocab: EmptyNullOr[Uri] = Empty,
     base: Option[Uri] = None,
     version11: Option[Boolean] = None,
     propagate: Option[Boolean] = None,
@@ -42,24 +42,26 @@ final case class Context(
     ignoreAncestors: Boolean = false
 ) {
 
+  private[jsonld] lazy val vocabOpt = vocab.toOption
+
   /**
     * A reverse index for the keywords aliases. The keys are the aliases, the values are the keywords
     */
   lazy val aliases: Map[String, String] = keywords.flatMap { case (keyword, aliases) => aliases.map(_ -> keyword) }
 
-  private[jsonld] def expandTerm(prefix: Prefix): Option[Uri] =
+  private[jsonld] def expandPrefixTerm(prefix: Prefix): Option[Uri] =
     terms.get(prefix.value).map(_.id) orElse
       prefixMappings.get(prefix) orElse
-      vocab.flatMap(vocab => Uri(vocab.iriString + prefix.value).toOption)
+      vocabOpt.flatMap(vocab => Uri(vocab.iriString + prefix.value).toOption)
 
-  private[jsonld] def expandTerm(str: String): Option[Uri] =
+  private[jsonld] def expandValidTerm(str: String): Option[Uri] =
     terms.get(str).map(_.id) orElse
-      vocab.flatMap(vocab => Uri(vocab.iriString + str).toOption)
+      vocabOpt.flatMap(vocab => Uri(vocab.iriString + str).toOption)
 
   private[jsonld] def expandCurie(curie: Curie): Option[Uri] =
     curie.toIri(prefixMappings).toOption.flatten
 
-  private[jsonld] def expandRelativeBase(relative: RelativeIri): Option[Uri] =
+  private[jsonld] def expandRelativeTerm(relative: RelativeIri): Option[Uri] =
     base.map(relative.resolve)
 
   private def validTerm(str: String): Option[String] =
@@ -67,19 +69,36 @@ final case class Context(
 
   private[jsonld] def expandTerm(
       string: String,
-      prefixFn: Prefix => Option[Uri] = expandTerm,
-      termFn: String => Option[Uri] = expandTerm,
-      curieFn: Curie => Option[Uri] = expandCurie,
-      relativeIdFn: RelativeIri => Option[Uri] = expandRelativeBase
+      prefixFn: Prefix => Option[Uri] = expandPrefixTerm,
+      termFn: String => Option[Uri] = expandValidTerm,
+      curieFn: Curie => Option[Uri] = expandCurie
   ): Either[String, Uri] = {
-    lazy val prefix   = Prefix(string).toOption
-    lazy val term     = validTerm(string)
-    lazy val curie    = Curie(string).toOption
-    lazy val uri      = Uri(string).toOption
-    lazy val relative = RelativeIri(string).toOption
-    (prefix.flatMap(prefixFn) orElse curie.flatMap(curieFn) orElse uri orElse term.flatMap(termFn) orElse
-      relative.flatMap(relativeIdFn)).toRight(invalidTerm(string).message)
+    lazy val prefix = Prefix(string).toOption
+    lazy val term   = validTerm(string)
+    lazy val curie  = Curie(string).toOption
+    lazy val uri    = Uri(string).toOption
+    (prefix.flatMap(prefixFn) orElse curie.flatMap(curieFn) orElse uri orElse term.flatMap(termFn))
+      .toRight(invalidTerm(string).message)
   }
+
+  private[jsonld] def expandTermValue(
+      string: String,
+      prefixFn: Prefix => Option[Uri] = expandPrefixTerm,
+      termFn: String => Option[Uri] = expandValidTerm,
+      curieFn: Curie => Option[Uri] = expandCurie,
+      relativeIdFn: RelativeIri => Option[Uri] = expandRelativeTerm
+  ): Either[String, Uri] = {
+    lazy val relative = RelativeIri(string).toOption
+    (expandTerm(string, prefixFn, termFn, curieFn).toOption orElse relative.flatMap(relativeIdFn))
+      .toRight(invalidTerm(string).message)
+  }
+
+  def expand(term: String): Either[String, Uri] = expandTerm(term)
+
+  def expandId(idTerm: String): Either[String, Uri] =
+    expandTermValue(idTerm, prefixFn = _ => None, termFn = _ => None)
+
+  def expandValue(termValue: String): Either[String, Uri] = expandTermValue(termValue)
 
   def find(term: String): Option[TermDefinition] =
     terms.get(term)
@@ -89,26 +108,6 @@ final case class Context(
 
   def findFirst(uriTerms: Seq[Uri]): Option[(Uri, TermDefinition)] =
     uriTerms.toVector.collectFirstSome(uriTerm => find(uriTerm).map(uriTerm -> _))
-
-  /**
-    * Expands the passed ''term''. The conversion will be attempted: 1) a Prefix, 2) a Curie; 3) a Uri; 4) A relative uri.
-    * 1. term to Prefix: Checking if this prefix has an associated term id; prefix mappings or @vocab expansion
-    * 2. term to Curie: Checking if the curie can be expanded using the prefix mappings
-    * 3. term to Uri: Checking if the term is a Uri and attempting conversion
-    * 4. term to relative uri: Checking if the term is a Uri and attempting conversion
-    *
-    * @param term the term to be expanded
-    * @return Left(error) when failed to expand term, Right(uri) otherwise
-    */
-  def expand(term: String): Either[String, Uri] = expandTerm(term)
-
-  /**
-    * Same as expand but defaulting to Prefix being attempted to expand using @base instead of @vocab
-    *
-    * @see expand
-    */
-  def expandId(idTerm: String): Either[String, Uri] =
-    expandTerm(idTerm, prefixFn = _ => None, termFn = _ => None)
 
   /**
     * @return true when ''term'' is an alias for ''keyword'', false otherwise
@@ -136,7 +135,7 @@ final case class Context(
     */
   //TODO: See if we have to ignore nulls or we have to replace context with null
   def merge(ctx: EmptyNullOr[Context]): EmptyNullOr[Context] =
-    ctx.map(merge).onNone(Val(this))
+    ctx.map(merge).onEmpty(Val(this))
 
   /**
     * Merge the current context with the passed context. If some of the fields are present in both contexts, the passed
@@ -151,13 +150,13 @@ final case class Context(
           case (acc, (k, alias)) => acc.updatedWith(k)(v => Some(v.fold(alias)(_ ++ alias)))
         },
         prefixMappings ++ ctx.prefixMappings,
-        ctx.vocab.orElse(vocab),
+        ctx.vocab.onEmpty(vocab),
         ctx.base.orElse(base),
         ctx.version11.orElse(version11),
         ctx.propagate.orElse(propagate),
         ctx.`protected`.orElse(`protected`),
-        ctx.language.onNone(language),
-        ctx.direction.onNone(direction)
+        ctx.language.onEmpty(language),
+        ctx.direction.onEmpty(direction)
       )
 
 }
@@ -172,6 +171,7 @@ object Context {
   final val keywords: KeywordAliases = all.filterNot(_ == context).map(k => k -> Set(k)).toMap
   final val empty: Context           = Context()
 
-  implicit final val contextDecoder: Decoder[Context] = Decoder.decodeJson.emap(ContextParser(_))
+  implicit final def contextDecoder(implicit options: JsonLdOptions): Decoder[Context] =
+    Decoder.decodeJson.emap(ContextParser(_))
 
 }

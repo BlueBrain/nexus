@@ -19,13 +19,13 @@ import scala.annotation.tailrec
 sealed trait EmptyNullOr[+A] extends Product with Serializable {
 
   final def isEmpty: Boolean  = this eq Empty
-  final def nonEmpty: Boolean = !isEmpty
+  final def notEmpty: Boolean = !isEmpty
 
   final def isNull: Boolean  = this eq Null
-  final def nonNull: Boolean = !isNull
+  final def notNull: Boolean = !isNull
 
   final def isValue: Boolean  = !(isNull && isEmpty)
-  final def nonValue: Boolean = !isValue
+  final def notValue: Boolean = !isValue
 
   @inline final def forall(p: A => Boolean): Boolean =
     this match {
@@ -39,7 +39,7 @@ sealed trait EmptyNullOr[+A] extends Product with Serializable {
       case _          => false
     }
 
-  def onNone[A1 >: A](value: => EmptyNullOr[A1]): EmptyNullOr[A1] =
+  def onEmpty[A1 >: A](value: => EmptyNullOr[A1]): EmptyNullOr[A1] =
     this match {
       case Empty => value
       case other => other
@@ -51,7 +51,7 @@ sealed trait EmptyNullOr[+A] extends Product with Serializable {
       case other => other
     }
 
-  def onNullOrNone[A1 >: A](value: => EmptyNullOr[A1]): EmptyNullOr[A1] =
+  def onEmptyOrNull[A1 >: A](value: => EmptyNullOr[A1]): EmptyNullOr[A1] =
     this match {
       case Null | Empty => value
       case other        => other

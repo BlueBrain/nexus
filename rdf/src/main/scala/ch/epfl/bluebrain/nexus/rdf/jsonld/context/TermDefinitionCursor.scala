@@ -2,11 +2,13 @@ package ch.epfl.bluebrain.nexus.rdf.jsonld.context
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
-import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr
 import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.SimpleTermDefinition
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinitionCursor._
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{EmptyNullOr, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
+
+import scala.annotation.tailrec
 
 /**
   * A cursor to navigate on the context term definitions. It allows to reach scoped contexts, if defined
@@ -14,6 +16,8 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 sealed abstract private[jsonld] class TermDefinitionCursor { self =>
 
   def value: EmptyNullOr[TermDefinition]
+
+  def options: JsonLdOptions
 
   lazy val context: EmptyNullOr[Context] = value.flatMap(_.context)
 
@@ -29,14 +33,13 @@ sealed abstract private[jsonld] class TermDefinitionCursor { self =>
 
   protected lazy val propagate: Boolean = context.toOption.flatMap(_.propagate).getOrElse(prev.propagate)
 
-  def top: TermDefinitionCursor
-
   protected def tpe: Option[Uri]
 
   protected def term: Option[String]
 
   protected def prev: TermDefinitionCursor
 
+  @tailrec
   private[context] def prevPropagate: TermDefinitionCursor =
     if (isTop) self
     else if (propagate) self
@@ -46,12 +49,12 @@ sealed abstract private[jsonld] class TermDefinitionCursor { self =>
     other match {
       case Empty => self
       case otherValue =>
-        val ctx = context.flatMap(_.merge(otherValue)).onNull(otherValue).onNone(otherValue)
-        EmbeddedCursor(top, self, Val(emptyDefinition.withContext(ctx)))
+        val ctx = context.flatMap(_.merge(otherValue)).onNull(otherValue).onEmpty(otherValue)
+        EmbeddedCursor(self, Val(emptyDefinition.withContext(ctx)))
     }
 
   lazy val downEmpty: TermDefinitionCursor =
-    ValueCursor(top, self, Val(emptyDefinition.withContext(context)), "", self.unresolvedContext)
+    ValueCursor(self, Val(emptyDefinition.withContext(context)), "", self.unresolvedContext)
 
   def down(term: String, types: Seq[Uri] = Seq.empty): TermDefinitionCursor =
     if (succeeded && !propagate && typeScoped)
@@ -67,16 +70,16 @@ sealed abstract private[jsonld] class TermDefinitionCursor { self =>
 
   private[context] def downTerm(term: String): TermDefinitionCursor =
     context.flatMap(ctx => EmptyNullOr(ctx.find(term)).map(ctx -> _)) match {
-      case Empty         => FailedValueCursor(top, self, term)
+      case Empty         => FailedValueCursor(self, term)
       case Null          => self
-      case Val((ctx, v)) => ValueCursor(top, self, Val(v.withContext(ctx.merge(v.context))), term, v.context)
+      case Val((ctx, v)) => ValueCursor(self, Val(v.withContext(ctx.merge(v.context))), term, v.context)
     }
 
   private def downTypes(types: Seq[Uri]): TermDefinitionCursor =
     context.flatMap(ctx => EmptyNullOr(ctx.findFirst(types).map { case (uri, term) => (ctx, uri, term) })) match {
-      case Empty              => FailedTypeScopedCursor(top, self, types)
+      case Empty              => FailedTypeScopedCursor(self, types)
       case Null               => self
-      case Val((ctx, tpe, v)) => TypeScopedCursor(top, self, Val(v.withContext(ctx.merge(v.context))), tpe, v.context)
+      case Val((ctx, tpe, v)) => TypeScopedCursor(self, Val(v.withContext(ctx.merge(v.context))), tpe, v.context)
     }
 
   def or(other: TermDefinitionCursor): TermDefinitionCursor =
@@ -89,13 +92,12 @@ private[jsonld] object TermDefinitionCursor {
 
   private val emptyDefinition = SimpleTermDefinition(uri"urn:root:term")
 
-  val empty: TermDefinitionCursor = TopCursor(Empty)
+  val empty: TermDefinitionCursor = TopCursor(Empty, JsonLdOptions.empty)
 
-  final private case class TopCursor private[context] (value: EmptyNullOr[TermDefinition])
+  final private case class TopCursor private[context] (value: EmptyNullOr[TermDefinition], options: JsonLdOptions)
       extends TermDefinitionCursor {
     val isTop: Boolean                             = true
     val failed: Boolean                            = false
-    val top: TopCursor                             = this
     protected val prev: TermDefinitionCursor       = this
     val typeScoped: Boolean                        = false
     val term: Option[String]                       = None
@@ -105,7 +107,6 @@ private[jsonld] object TermDefinitionCursor {
   }
 
   final private case class EmbeddedCursor private[context] (
-      top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
       value: EmptyNullOr[TermDefinition]
   ) extends TermDefinitionCursor {
@@ -116,10 +117,10 @@ private[jsonld] object TermDefinitionCursor {
     val tpe: Option[Uri]                           = None
     val unresolvedContext: EmptyNullOr[Context]    = context
     override protected lazy val propagate: Boolean = context.toOption.flatMap(_.propagate).getOrElse(true)
+    val options: JsonLdOptions                     = prev.options
   }
 
   final private case class FailedValueCursor private[context] (
-      top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
       termValue: String
   ) extends TermDefinitionCursor {
@@ -130,10 +131,10 @@ private[jsonld] object TermDefinitionCursor {
     val term: Option[String]                    = Some(termValue)
     val tpe: Option[Uri]                        = None
     val unresolvedContext: EmptyNullOr[Context] = context
+    val options: JsonLdOptions                  = prev.options
   }
 
   final private case class FailedTypeScopedCursor private[context] (
-      top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
       terms: Seq[Uri]
   ) extends TermDefinitionCursor {
@@ -144,11 +145,10 @@ private[jsonld] object TermDefinitionCursor {
     val term: Option[String]                    = None
     val tpe: Option[Uri]                        = None
     val unresolvedContext: EmptyNullOr[Context] = context
-
+    val options: JsonLdOptions                  = prev.options
   }
 
   final private case class TypeScopedCursor private[context] (
-      top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
       value: EmptyNullOr[TermDefinition],
       termValue: Uri,
@@ -159,33 +159,31 @@ private[jsonld] object TermDefinitionCursor {
     val typeScoped: Boolean                        = true
     val term: Option[String]                       = None
     val tpe: Option[Uri]                           = Some(termValue)
+    val options: JsonLdOptions                     = prev.options
     override protected lazy val propagate: Boolean = context.toOption.flatMap(_.propagate).getOrElse(false)
   }
 
   final private case class ValueCursor private[context] (
-      top: TermDefinitionCursor,
       prev: TermDefinitionCursor,
       value: EmptyNullOr[TermDefinition],
       termValue: String,
       unresolvedContext: EmptyNullOr[Context]
   ) extends TermDefinitionCursor {
-    val isTop: Boolean       = false
-    val failed: Boolean      = false
-    val typeScoped: Boolean  = false
-    val term: Option[String] = Some(termValue)
-    val tpe: Option[Uri]     = None
+    val isTop: Boolean         = false
+    val failed: Boolean        = false
+    val typeScoped: Boolean    = false
+    val term: Option[String]   = Some(termValue)
+    val tpe: Option[Uri]       = None
+    val options: JsonLdOptions = prev.options
+
   }
 
-  final def apply(value: EmptyNullOr[TermDefinition]): TermDefinitionCursor =
-    TopCursor(value)
+  final def apply(
+      value: EmptyNullOr[TermDefinition]
+  )(implicit options: JsonLdOptions = JsonLdOptions.empty): TermDefinitionCursor =
+    TopCursor(value, options)
 
-  final def fromCtx(ctx: EmptyNullOr[Context]): TermDefinitionCursor =
+  final def fromCtx(ctx: EmptyNullOr[Context])(implicit options: JsonLdOptions): TermDefinitionCursor =
     apply(Val(emptyDefinition.withContext(ctx)))
-
-  final def firstSuccess(cursors: Seq[TermDefinitionCursor]): TermDefinitionCursor =
-    cursors.foldLeft(empty) {
-      case (`empty`, current)  => current
-      case (previous, current) => previous or current
-    }
 
 }

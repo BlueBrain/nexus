@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 
 import cats.Eq
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
-import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Uri, Url}
+import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Url}
 import io.circe.Json
 import io.circe.syntax._
 
@@ -31,10 +31,8 @@ class RelativeIriSpec extends RdfSpec {
       }
     }
 
-    "aaa" in {
-      val uri      = Uri("http://example.com/some/deep/directory/and/file#with-a-fragment").rightValue
-      val relative = RelativeIri("relativeIris").rightValue
-      println(relative.resolve(uri))
+    "a" in {
+      Iri
     }
 
     "fail to parse from string" in {

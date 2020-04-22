@@ -59,7 +59,7 @@ private class ValueObjectParser private (obj: JsonObject, override val cursor: T
       case (acc, (_, json)) if json.isNull => Right(acc)
       case ((lit, t, lang, dir, idx, _), (term, _)) if all.exists(k => isAlias(term, k)) =>
         Option.when(lit.isEmpty)((lit, t, lang, dir, idx, true)).toRight(invalidValueObject(term))
-      case ((lit, t, lang, dir, idx, _), (term, _)) if expand(term).isRight =>
+      case ((lit, t, lang, dir, idx, _), (term, _)) if expandKey(term).isRight =>
         Option.when(lit.isEmpty)((lit, t, lang, dir, idx, true)).toRight(invalidValueObject(term))
       case (acc, _) => Right(acc) // ignore when term is not an alias and it is not a resolvable Uri
     }

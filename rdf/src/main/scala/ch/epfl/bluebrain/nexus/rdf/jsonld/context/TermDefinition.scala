@@ -75,8 +75,8 @@ object TermDefinition {
       nest: Option[String] = None,
       context: EmptyNullOr[Context] = Empty
   ) extends TermDefinition {
-    def termLanguage: EmptyNullOr[LanguageTag]                     = language.onNone(context.flatMap(_.language))
-    def termDirection: EmptyNullOr[String]                         = direction.onNone(context.flatMap(_.direction))
+    def termLanguage: EmptyNullOr[LanguageTag]                     = language.onEmpty(context.flatMap(_.language))
+    def termDirection: EmptyNullOr[String]                         = direction.onEmpty(context.flatMap(_.direction))
     def withContext(context: EmptyNullOr[Context]): TermDefinition = copy(context = context)
     def withContainer(container: Set[String]): TermDefinition      = copy(container = container)
   }

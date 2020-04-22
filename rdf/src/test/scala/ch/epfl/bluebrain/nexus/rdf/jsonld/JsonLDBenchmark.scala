@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec._
+import ch.epfl.bluebrain.nexus.rdf.jsonld
 import com.github.jsonldjava.core.JsonLdOptions
 import io.circe.Json
 import io.circe.parser.parse
@@ -122,7 +123,7 @@ class JsonLDBenchmark extends OptionValues {
     "/jsonld/expand/p004-in.jsonld"
   ).map(name => name -> jsonContentOf(name))
 
-  val testNoVersion = tests.map { case (name, json) => name -> json.removeNestedKeys(keyword.version) }
+  private val testNoVersion = tests.map { case (name, json) => name -> json.removeNestedKeys(keyword.version) }
 
   private def parseModel(json: Json): Option[Model] = {
     Try {
@@ -147,11 +148,13 @@ class JsonLDBenchmark extends OptionValues {
     }.toOption.flatMap(str => parse(str).toOption)
   }
 
+  implicit private val options: jsonld.JsonLdOptions = jsonld.JsonLdOptions.empty
+
   @Benchmark
   def toExpandedJena(): Unit =
     tests.foreach {
       case (_, json) =>
-        val expanded = JsonLD.expand(json).toOption.value
+        val expanded = JsonLd.expand(json).toOption.value
         expanded.toJson()
     }
 

@@ -45,7 +45,7 @@ object ParsingStatus {
   private[jsonld] def invalidIdTerm(term: String) =
     InvalidObjectFormat(s"$id term '$term' couldn't be expanded to a Uri")
   private[jsonld] def invalidTerm(term: String) =
-    InvalidObjectFormat(s"term '$term' couldn't be expanded to a Uri")
+    InvalidObjectFormat(s"term with value '$term' couldn't be expanded to a Uri")
   private[jsonld] def invalidReverseValue =
     InvalidObjectFormat(s"Invalid $reverse value: it must be a Node Object")
   private[jsonld] def invalidReverseInnerValue =
