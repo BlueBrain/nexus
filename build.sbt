@@ -143,8 +143,9 @@ lazy val postgres = project
   .in(file("cli/postgres"))
   .dependsOn(cliShared % "compile->compile;test->test")
   .settings(
-    name       := "postgres",
-    moduleName := "postgres",
+    name            := "postgres",
+    moduleName      := "postgres",
+    coverageMinimum := 50d,
     libraryDependencies ++= Seq(
       catsRetry,
       catsEffectRetry,
@@ -160,8 +161,33 @@ lazy val postgres = project
 
 lazy val cli = project
   .in(file("cli"))
-  .settings(name := "cli", moduleName := "cli")
-  .settings(libraryDependencies ++= Seq(decline, scalaTest % Test))
+  .settings(
+    name       := "cli",
+    moduleName := "cli",
+    libraryDependencies ++= Seq(
+      catsCore,
+      catsEffect,
+      catsEffectRetry,
+      catsRetry,
+      circeGeneric,
+      circeParser,
+      decline,
+      distageCore,
+      doobiePostgres,
+      distageCore,
+      http4sCirce,
+      http4sClient,
+      jenaArq,
+      fs2,
+      log4catsSlf4j,
+      monixEval,
+      pureconfig,
+      circeLiteral   % Test,
+      distageDocker  % Test,
+      distageTestkit % Test,
+      scalaTest      % Test
+    )
+  )
   .aggregate(cliShared, influxdb, postgres)
 
 lazy val root = project
