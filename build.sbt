@@ -188,7 +188,7 @@ lazy val cli = project
       scalaTest      % Test
     )
   )
-  .aggregate(cliShared, influxdb, postgres)
+//  .aggregate(cliShared, influxdb, postgres)
 
 lazy val root = project
   .in(file("."))
