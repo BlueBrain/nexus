@@ -22,8 +22,8 @@ trait Console[F[_]] {
 object Console {
 
   /**
-   * An implementation of a console backed up by the Scala Console and delay if the ''F'' effect context
-   */
+    * An implementation of a console backed up by the Scala Console and delay if the ''F'' effect context
+    */
   final def apply[F[_]: Sync]: Console[F] =
     new LiveConsole[F]
 
