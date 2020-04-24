@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.cli
+package ch.epfl.bluebrain.nexus.cli.sse
 
 /**
   * The value of the HTTP Header Authorization Bearer token.

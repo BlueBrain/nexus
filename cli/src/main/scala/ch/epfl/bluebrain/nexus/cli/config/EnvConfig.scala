@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli.config
 
-import ch.epfl.bluebrain.nexus.cli.BearerToken
+import ch.epfl.bluebrain.nexus.cli.sse.BearerToken
 import org.http4s.headers.Authorization
 import org.http4s.{AuthScheme, Credentials, Uri}
 
