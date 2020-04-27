@@ -49,6 +49,29 @@ final case class EnvConfig(
     */
   def sparql(org: OrgLabel, proj: ProjectLabel, view: Uri): Uri =
     endpoint / "views" / org.show / proj.show / view.renderString / "sparql"
+
+  /**
+    * Computes the events endpoint.
+    */
+  def eventsUri: Uri =
+    endpoint / "events"
+
+  /**
+    * Computes the events endpoint from the arguments.
+    *
+    * @param org the organization label
+    */
+  def eventsUri(org: OrgLabel): Uri =
+    endpoint / "resources" / org.show / "events"
+
+  /**
+    * Computes the events endpoint from the arguments.
+    *
+    * @param org  the organization label
+    * @param proj the project label
+    */
+  def eventsUri(org: OrgLabel, proj: ProjectLabel): Uri =
+    endpoint / "resources" / org.show / proj.show / "events"
 }
 
 object EnvConfig extends Codecs {

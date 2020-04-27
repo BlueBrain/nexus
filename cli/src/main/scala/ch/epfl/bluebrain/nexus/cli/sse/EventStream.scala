@@ -11,7 +11,7 @@ trait EventStream[F[_]] {
   /**
     * The Stream of events.
     */
-  def value: Stream[F, Event]
+  def value: Stream[F, (Event, OrgLabel, ProjectLabel)]
 
   /**
     * The eventId for the last consumed event.
@@ -20,8 +20,11 @@ trait EventStream[F[_]] {
 }
 
 object EventStream {
-  final def apply[F[_]](stream: Stream[F, Event], ref: Ref[F, Option[Offset]]): EventStream[F] = new EventStream[F] {
-    override def value: Stream[F, Event]             = stream
-    override def currentEventId(): F[Option[Offset]] = ref.get
+  final def apply[F[_]](
+      stream: Stream[F, (Event, OrgLabel, ProjectLabel)],
+      ref: Ref[F, Option[Offset]]
+  ): EventStream[F] = new EventStream[F] {
+    override def value: Stream[F, (Event, OrgLabel, ProjectLabel)] = stream
+    override def currentEventId(): F[Option[Offset]]               = ref.get
   }
 }

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli.clients
 
 import java.util.UUID
-import java.util.regex.Pattern.quote
 
 import cats.effect.IO
 import cats.effect.concurrent.Ref
@@ -19,21 +18,7 @@ import org.http4s.{HttpApp, Response, Status}
 
 class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
 
-  private val orgUuid      = OrgUuid(UUID.randomUUID())
-  private val orgLabel     = OrgLabel(genString())
-  private val projectUuid  = ProjectUuid(UUID.randomUUID())
-  private val projectLabel = ProjectLabel(genString())
-
-  private val replacements = Map(
-    quote("{projectUuid}")  -> projectUuid.show,
-    quote("{orgUuid}")      -> orgUuid.show,
-    quote("{projectLabel}") -> projectLabel.show,
-    quote("{orgLabel}")     -> orgLabel.show
-  )
-
-  private val projectJson    = jsonContentOf("/templates/project.json", replacements)
-  private val notFoundJson   = jsonContentOf("/templates/not-found.json")
-  private val authFailedJson = jsonContentOf("/templates/auth-failed.json")
+  private val projectJson = jsonContentOf("/templates/project.json", replacements)
 
   type Cache    = Map[(OrgUuid, ProjectUuid), (OrgLabel, ProjectLabel)]
   type CacheRef = Ref[IO, Cache]
@@ -41,15 +26,13 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
   override def overrides: ModuleDef = new ModuleDef {
     include(defaultModules)
     make[Client[IO]].from { cfg: AppConfig =>
+      val token = cfg.env.token
       val httpApp = HttpApp[IO] {
-        case GET -> Root / "v1" / "projects" / OrgUuidVar(`orgUuid`) / ProjectUuidVar(`projectUuid`) bearer token
-            if cfg.env.token.contains(token) =>
+        case GET -> `v1` / "projects" / OrgUuidVar(`orgUuid`) / ProjectUuidVar(`projectUuid`) optbearer `token` =>
           Response[IO](Status.Ok).withEntity(projectJson).pure[IO]
-        case GET -> Root / "v1" / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) bearer token
-            if cfg.env.token.contains(token) =>
+        case GET -> `v1` / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) optbearer `token` =>
           Response[IO](Status.NotFound).withEntity(notFoundJson).pure[IO]
-        case GET -> Root / "v1" / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) bearer token
-            if !cfg.env.token.contains(token) =>
+        case GET -> `v1` / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) bearer (_: BearerToken) =>
           Response[IO](Status.Forbidden).withEntity(authFailedJson).pure[IO]
       }
       Client.fromHttpApp(httpApp)

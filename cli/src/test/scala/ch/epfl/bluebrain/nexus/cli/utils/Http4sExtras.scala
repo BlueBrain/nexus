@@ -4,7 +4,9 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.sse._
 import org.http4s.Credentials.Token
 import org.http4s.Request
-import org.http4s.headers.{`Content-Type`, Authorization}
+import org.http4s.ServerSentEvent.EventId
+import org.http4s.dsl.impl.{/, Root}
+import org.http4s.headers.{`Content-Type`, `Last-Event-Id`, Authorization}
 import org.http4s.util.CaseInsensitiveString
 
 import scala.util.{Success, Try}
@@ -52,6 +54,24 @@ trait Http4sExtras {
         case _                        => None
       }
   }
+
+  object optLastEventId {
+    def unapply[F[_]](request: Request[F]): Option[(Request[F], Option[Offset])] =
+      request.headers.get(`Last-Event-Id`) match {
+        case Some(`Last-Event-Id`(EventId(value))) => Some((request, Offset(value)))
+        case _                                     => Some((request, None))
+      }
+  }
+
+  object lastEventId {
+    def unapply[F[_]](request: Request[F]): Option[(Request[F], Offset)] =
+      optLastEventId.unapply(request) match {
+        case Some((_, Some(offset))) => Some((request, offset))
+        case _                       => None
+      }
+  }
+
+  val v1: / = Root / "v1"
 
 }
 

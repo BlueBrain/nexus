@@ -17,12 +17,6 @@ import org.scalatest.OptionValues
 
 class SparqlClientSpec extends AbstractCliSpec with Http4sExtras with OptionValues {
 
-  private val orgLabel     = OrgLabel(genString())
-  private val projectLabel = ProjectLabel(genString())
-
-  private val notFoundJson      = jsonContentOf("/templates/not-found.json")
-  private val authFailedJson    = jsonContentOf("/templates/auth-failed.json")
-  private val internalErrorJson = jsonContentOf("/templates/internal-error.json")
   private val sparqlResultsJson = jsonContentOf("/templates/sparql-results.json")
   private val sparqlResults     = sparqlResultsJson.as[SparqlResults].toOption.value
   private val query             = "SELECT * {?s ?p ?o} LIMIT 10"
@@ -35,19 +29,19 @@ class SparqlClientSpec extends AbstractCliSpec with Http4sExtras with OptionValu
       val view  = cfg.env.defaultSparqlView.renderString
       val httpApp = HttpApp[IO] {
         // success
-        case req @ POST -> Root / "v1" / "views" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / `view` / "sparql" contentType `ct` optbearer `token` =>
+        case req @ POST -> `v1` / "views" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / `view` / "sparql" contentType `ct` optbearer `token` =>
           req.as[String].flatMap {
             case `query` => Response[IO](Status.Ok).withEntity(sparqlResultsJson).pure[IO]
             case _       => Response[IO](Status.BadRequest).pure[IO]
           }
         // unknown view id
-        case req @ POST -> Root / "v1" / "views" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / (_: String) / "sparql" contentType `ct` optbearer `token` =>
+        case req @ POST -> `v1` / "views" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / (_: String) / "sparql" contentType `ct` optbearer `token` =>
           req.as[String].flatMap {
             case `query` => Response[IO](Status.NotFound).withEntity(notFoundJson).pure[IO]
             case _       => Response[IO](Status.BadRequest).pure[IO]
           }
         // unknown token
-        case req @ POST -> Root / "v1" / "views" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / `view` / "sparql" contentType `ct` optbearer (_: Option[
+        case req @ POST -> `v1` / "views" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / `view` / "sparql" contentType `ct` optbearer (_: Option[
               BearerToken
             ]) =>
           req.as[String].flatMap {
