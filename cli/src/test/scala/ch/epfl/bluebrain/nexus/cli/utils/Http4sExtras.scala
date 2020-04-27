@@ -1,17 +1,17 @@
 package ch.epfl.bluebrain.nexus.cli.utils
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.sse.{BearerToken, OrgUuid, ProjectUuid}
+import ch.epfl.bluebrain.nexus.cli.sse._
 import org.http4s.Credentials.Token
 import org.http4s.Request
-import org.http4s.headers.Authorization
+import org.http4s.headers.{`Content-Type`, Authorization}
 import org.http4s.util.CaseInsensitiveString
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 /**
- * Convenience extra DSL for Http4s.
- */
+  * Convenience extra DSL for Http4s.
+  */
 trait Http4sExtras {
 
   protected class Var[A](cast: String => Try[A]) {
@@ -24,6 +24,9 @@ trait Http4sExtras {
 
   object OrgUuidVar     extends Var(str => Try(java.util.UUID.fromString(str)).map(OrgUuid.apply))
   object ProjectUuidVar extends Var(str => Try(java.util.UUID.fromString(str)).map(ProjectUuid.apply))
+
+  object OrgLabelVar     extends Var(str => Success(OrgLabel(str)))
+  object ProjectLabelVar extends Var(str => Success(ProjectLabel(str)))
 
   object optbearer {
     def unapply[F[_]](request: Request[F]): Option[(Request[F], Option[BearerToken])] =
@@ -39,6 +42,14 @@ trait Http4sExtras {
       optbearer.unapply(request) match {
         case Some((_, Some(token))) => Some((request, token))
         case _                      => None
+      }
+  }
+
+  object contentType {
+    def unapply[F[_]](request: Request[F]): Option[(Request[F], `Content-Type`)] =
+      request.headers.get(`Content-Type`) match {
+        case Some(ct: `Content-Type`) => Some((request, ct))
+        case _                        => None
       }
   }
 

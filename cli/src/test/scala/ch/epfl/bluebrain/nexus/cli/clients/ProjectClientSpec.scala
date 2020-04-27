@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.cli
+package ch.epfl.bluebrain.nexus.cli.clients
 
 import java.util.UUID
 import java.util.regex.Pattern.quote
@@ -6,8 +6,8 @@ import java.util.regex.Pattern.quote
 import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.AbstractCliSpec
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.ClientStatusError
-import ch.epfl.bluebrain.nexus.cli.clients.ProjectClient
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import ch.epfl.bluebrain.nexus.cli.sse._
 import ch.epfl.bluebrain.nexus.cli.utils.Http4sExtras

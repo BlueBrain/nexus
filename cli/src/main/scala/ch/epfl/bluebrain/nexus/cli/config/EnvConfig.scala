@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli.config
 
-import ch.epfl.bluebrain.nexus.cli.sse.{BearerToken, OrgUuid, ProjectUuid}
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.sse._
 import ch.epfl.bluebrain.nexus.cli.utils.Codecs
 import org.http4s.headers.Authorization
 import org.http4s.{AuthScheme, Credentials, Uri}
@@ -37,7 +38,17 @@ final case class EnvConfig(
     * @param proj the project uuid
     */
   def project(org: OrgUuid, proj: ProjectUuid): Uri =
-    endpoint / "projects" / org.value.toString / proj.value.toString
+    endpoint / "projects" / org.show / proj.show
+
+  /**
+    * Computes the sparql endpoint from the arguments.
+    *
+    * @param org  the organization label
+    * @param proj the project label
+    * @param view the view to query
+    */
+  def sparql(org: OrgLabel, proj: ProjectLabel, view: Uri): Uri =
+    endpoint / "views" / org.show / proj.show / view.renderString / "sparql"
 }
 
 object EnvConfig extends Codecs {

@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.ClientErrOr
 import ch.epfl.bluebrain.nexus.cli.config.EnvConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
+import ch.epfl.bluebrain.nexus.cli.utils.Logging._
 import io.chrisdavenport.log4cats.Logger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import org.http4s.circe.CirceEntityDecoder._
@@ -74,7 +74,6 @@ object ProjectClient {
 
     private val retry                                = env.httpClient.retry
     private val successCondition                     = retry.retryCondition.notRetryFromEither[(OrgLabel, ProjectLabel)] _
-    implicit private val unsafeLogger: Logger[F]     = Slf4jLogger.getLogger[F]
     implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
     implicit private val logOnError: (ClientErrOr[(OrgLabel, ProjectLabel)], RetryDetails) => F[Unit] =
       (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
