@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "https://nexus.example.com/v1/projects/{orgLabel}/{projectLabel}",
+  "@type": "Project",
+  "description": "Project description",
+  "base": "https://example.com/base/",
+  "vocab": "https://example.com/vocab/",
+  "apiMappings": [
+    {
+      "prefix": "datashapes",
+      "namespace": "https://neuroshapes.org/dash/"
+    },
+    {
+      "prefix": "prov",
+      "namespace": "http://www.w3.org/ns/prov#"
+    }
+  ],
+  "_uuid": "{projectUuid}",
+  "_label": "{projectLabel}",
+  "_organizationUuid": "{orgUuid}",
+  "_organizationLabel": "{orgLabel}",
+  "_rev": 2,
+  "_deprecated": false,
+  "_createdAt": "2019-07-29T10:16:10.915762Z",
+  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/test",
+  "_updatedAt": "2019-07-29T10:16:10.915762Z",
+  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/test"
+}

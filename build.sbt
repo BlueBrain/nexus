@@ -11,23 +11,24 @@ scalafmt: {
 }
  */
 
-val catsVersion       = "2.1.1"
-val catsEffectVersion = "2.1.2"
-val catsRetryVersion  = "0.3.2"
-val circeVersion      = "0.13.0"
-val distageVersion    = "0.10.2-M8"
-val declineVersion    = "1.0.0"
-val doobieVersion     = "0.8.8"
-val fs2Version        = "2.2.2"
-val http4sVersion     = "0.21.1"
-val jenaVersion       = "3.14.0"
-val log4catsVersion   = "1.0.1"
-val logbackVersion    = "1.2.3"
-val magnoliaVersion   = "0.12.8"
-val monixVersion      = "3.1.0"
-val parboiledVersion  = "2.2.0"
-val pureconfigVersion = "0.12.3"
-val scalaTestVersion  = "3.1.1"
+val catsVersion          = "2.1.1"
+val catsEffectVersion    = "2.1.2"
+val catsRetryVersion     = "0.3.2"
+val circeVersion         = "0.13.0"
+val distageVersion       = "0.10.2-M8"
+val declineVersion       = "1.0.0"
+val doobieVersion        = "0.8.8"
+val fs2Version           = "2.2.2"
+val http4sVersion        = "0.21.1"
+val jenaVersion          = "3.14.0"
+val kindProjectorVersion = "0.11.0"
+val log4catsVersion      = "1.0.1"
+val logbackVersion       = "1.2.3"
+val magnoliaVersion      = "0.12.8"
+val monixVersion         = "3.1.0"
+val parboiledVersion     = "2.2.0"
+val pureconfigVersion    = "0.12.3"
+val scalaTestVersion     = "3.1.1"
 
 lazy val alleycatsCore   = "org.typelevel"         %% "alleycats-core"            % catsVersion
 lazy val catsCore        = "org.typelevel"         %% "cats-core"                 % catsVersion
@@ -46,7 +47,9 @@ lazy val doobiePostgres  = "org.tpolecat"          %% "doobie-postgres"         
 lazy val fs2             = "co.fs2"                %% "fs2-core"                  % fs2Version
 lazy val http4sCirce     = "org.http4s"            %% "http4s-circe"              % http4sVersion
 lazy val http4sClient    = "org.http4s"            %% "http4s-blaze-client"       % http4sVersion
+lazy val http4sDsl       = "org.http4s"            %% "http4s-dsl"                % http4sVersion
 lazy val jenaArq         = "org.apache.jena"       % "jena-arq"                   % jenaVersion
+lazy val kindProjector   = "org.typelevel"         %% "kind-projector"            % kindProjectorVersion
 lazy val log4cats        = "io.chrisdavenport"     %% "log4cats-core"             % log4catsVersion
 lazy val log4catsSlf4j   = "io.chrisdavenport"     %% "log4cats-slf4j"            % log4catsVersion
 lazy val logback         = "ch.qos.logback"        % "logback-classic"            % logbackVersion
@@ -177,7 +180,6 @@ lazy val cli = project
       distageCore,
       http4sCirce,
       http4sClient,
-      jenaArq,
       fs2,
       log4catsSlf4j,
       monixEval,
@@ -185,10 +187,11 @@ lazy val cli = project
       circeLiteral   % Test,
       distageDocker  % Test,
       distageTestkit % Test,
+      http4sDsl      % Test,
+      jenaArq        % Test,
       scalaTest      % Test
     )
   )
-//  .aggregate(cliShared, influxdb, postgres)
 
 lazy val root = project
   .in(file("."))

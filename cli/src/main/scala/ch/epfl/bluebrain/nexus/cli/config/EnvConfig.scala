@@ -1,8 +1,11 @@
 package ch.epfl.bluebrain.nexus.cli.config
 
-import ch.epfl.bluebrain.nexus.cli.sse.BearerToken
+import ch.epfl.bluebrain.nexus.cli.sse.{BearerToken, OrgUuid, ProjectUuid}
+import ch.epfl.bluebrain.nexus.cli.utils.Codecs
 import org.http4s.headers.Authorization
 import org.http4s.{AuthScheme, Credentials, Uri}
+import pureconfig.ConfigConvert
+import pureconfig.generic.semiauto.deriveConvert
 
 /**
   * Environment configuration.
@@ -27,4 +30,17 @@ final case class EnvConfig(
       case BearerToken(value) => Authorization(Credentials.Token(AuthScheme.Bearer, value))
     }
 
+  /**
+    * Computes the project endpoint from the arguments.
+    *
+    * @param org  the organization uuid
+    * @param proj the project uuid
+    */
+  def project(org: OrgUuid, proj: ProjectUuid): Uri =
+    endpoint / "projects" / org.value.toString / proj.value.toString
+}
+
+object EnvConfig extends Codecs {
+  implicit final val envConfigConvert: ConfigConvert[EnvConfig] =
+    deriveConvert[EnvConfig]
 }
