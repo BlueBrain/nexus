@@ -8,10 +8,12 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import ch.epfl.bluebrain.nexus.cli.dummies.TestCliModule
+import ch.epfl.bluebrain.nexus.cli.modules.config.ConfigModule
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
 import ch.epfl.bluebrain.nexus.cli.utils.{Randomness, Resources, ShouldMatchers}
 import io.circe.Json
 import izumi.distage.model.definition.{Module, ModuleDef, StandardAxis}
+import izumi.distage.model.reflection.universe.RuntimeDIUniverse.DIKey
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
 import izumi.distage.testkit.scalatest.DistageSpecScalatest
@@ -39,7 +41,9 @@ abstract class AbstractCliSpec extends DistageSpecScalatest[IO] with Resources w
     quote("{orgLabel}")     -> orgLabel.show
   )
 
-  protected val defaultModules: Module = CliModule[IO] ++ TestCliModule[IO] ++ EffectModule[IO] ++ configModule
+  protected val defaultModules: Module = {
+    TestCliModule[IO] ++ EffectModule[IO] ++ ConfigModule[IO] ++ testModule
+  }
 
   def overrides: ModuleDef = new ModuleDef {
     include(defaultModules)
@@ -49,6 +53,10 @@ abstract class AbstractCliSpec extends DistageSpecScalatest[IO] with Resources w
     pluginConfig = PluginConfig.empty,
     activation = StandardAxis.testDummyActivation,
     moduleOverrides = overrides,
+    forcedRoots = Set(
+      DIKey.get[AppConfig],
+      DIKey.get[Console[IO]]
+    ),
     configBaseName = "cli-test"
   )
 
@@ -61,7 +69,7 @@ abstract class AbstractCliSpec extends DistageSpecScalatest[IO] with Resources w
     (envFile, postgresFile)
   }
 
-  def configModule: ModuleDef = new ModuleDef {
+  def testModule: ModuleDef = new ModuleDef {
     make[AppConfig].fromEffect {
       copyConfigs.flatMap {
         case (envFile, postgresFile) =>

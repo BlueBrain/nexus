@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.cli.dummies
 
-import cats.effect.ConcurrentEffect
-import ch.epfl.bluebrain.nexus.cli.Console
+import cats.Parallel
+import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import ch.epfl.bluebrain.nexus.cli.clients.ProjectClient
 import ch.epfl.bluebrain.nexus.cli.sse.OrgUuid.unsafe._
 import ch.epfl.bluebrain.nexus.cli.sse.ProjectUuid.unsafe._
+import ch.epfl.bluebrain.nexus.cli.{Cli, Console}
 import distage.{ModuleDef, TagK}
 import izumi.distage.model.definition.StandardAxis.Repo
+import izumi.distage.model.recursive.LocatorRef
 
-final class TestCliModule[F[_]: ConcurrentEffect: TagK] extends ModuleDef {
+final class TestCliModule[F[_]: Parallel: ContextShift: Timer: ConcurrentEffect: TagK] extends ModuleDef {
   make[TestConsole[F]].tagged(Repo.Dummy).fromEffect(TestConsole[F])
   make[Console[F]].tagged(Repo.Dummy).from { tc: TestConsole[F] => tc }
 
@@ -25,11 +27,13 @@ final class TestCliModule[F[_]: ConcurrentEffect: TagK] extends ModuleDef {
         )
       )
     )
+
+  make[Cli[F]].tagged(Repo.Dummy).from { locatorRef: LocatorRef => new Cli[F](Some(locatorRef)) }
 }
 
 object TestCliModule {
 
-  final def apply[F[_]: ConcurrentEffect: TagK]: TestCliModule[F] =
+  final def apply[F[_]: Parallel: ContextShift: Timer: ConcurrentEffect: TagK]: TestCliModule[F] =
     new TestCliModule[F]
 
 }

@@ -167,7 +167,7 @@ lazy val cli = project
   .settings(
     name            := "cli",
     moduleName      := "cli",
-    coverageMinimum := 70d,
+    coverageMinimum := 50d,
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
