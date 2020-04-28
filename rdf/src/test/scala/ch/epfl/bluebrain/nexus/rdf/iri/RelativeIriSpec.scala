@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.rdf.iri
 import cats.Eq
 import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Url}
+import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import io.circe.Json
 import io.circe.syntax._
 
@@ -29,10 +30,6 @@ class RelativeIriSpec extends RdfSpec {
       forAll(correctCases) {
         case (in, expected) => RelativeIri(in).rightValue.iriString shouldEqual expected
       }
-    }
-
-    "a" in {
-      Iri
     }
 
     "fail to parse from string" in {
@@ -84,8 +81,14 @@ class RelativeIriSpec extends RdfSpec {
       Eq.eqv(lhs, rhs) shouldEqual true
     }
 
+    "resolve from base url http://example" in {
+      val base = url"http://example"
+      RelativeIri("relative-iri").rightValue.resolve(base) shouldEqual url"http://example/relative-iri"
+      println(RelativeIri(":term"))
+    }
+
     "resolve from base url http://a/b/c/d;p?q" in {
-      val base = Url("http://a/b/c/d;p?q").rightValue
+      val base = url"http://a/b/c/d;p?q"
       val cases = List(
         "g"             -> "http://a/b/c/g",
         "./g"           -> "http://a/b/c/g",
@@ -121,7 +124,9 @@ class RelativeIriSpec extends RdfSpec {
         "g/./h"         -> "http://a/b/c/g/h",
         "g/../h"        -> "http://a/b/c/h",
         "g;x=1/./y"     -> "http://a/b/c/g;x=1/y",
-        "g;x=1/../y"    -> "http://a/b/c/y"
+        "g;x=1/../y"    -> "http://a/b/c/y",
+        "./g/"         -> "http://a/b/c/g/",
+        "./g/."         -> "http://a/b/c/g/"
       )
       forAll(cases) {
         case (in, result) =>
@@ -129,8 +134,26 @@ class RelativeIriSpec extends RdfSpec {
       }
     }
 
+    "resolve from base url file:///a/bb/ccc/d;p?q" in {
+      val base = url"file:///a/bb/ccc/d;p?q"
+      val cases = List(
+        "/./g" -> "file:///g",
+        "/g" -> "file:///g",
+        "/../g" -> "file:///g",
+        "g?y" -> "file:///a/bb/ccc/g?y",
+        "#s" -> "file:///a/bb/ccc/d;p?q#s",
+        "g/./h" -> "file:///a/bb/ccc/g/h",
+//        "//g" -> "file:///g",
+      )
+      forAll(cases) {
+        case (in, result) =>
+          val relative = RelativeIri(in).rightValue
+          relative.resolve(base) shouldEqual Url(result).rightValue
+      }
+    }
+
     "resolve from base url http://a/b/c/" in {
-      val base = Url("http://a/b/c/").rightValue
+      val base = url"http://a/b/c/"
       val cases = List(
         "g"            -> "http://a/b/c/g",
         "./g"          -> "http://a/b/c/g",

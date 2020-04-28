@@ -21,7 +21,7 @@ class LanguageMapSpec extends RdfSpec {
   private def withDirection(v: DirectionValue, direction: Option[String]): DirectionValue = (v._1, direction)
 
   "A LanguageMap" should {
-    val ctx        = Context(terms = Map("ex" -> ex), keywords = Map(language -> Set("language")))
+    val ctx        = Context(terms = Map("ex" -> Some(ex)), keywords = Map(language -> Set("language")))
     val definition = ExpandedTermDefinition(ex, context = Val(ctx), container = Set(language))
     val cursor     = TermDefinitionCursor(Val(definition))
     val en         = LanguageTag("en").rightValue

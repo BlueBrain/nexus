@@ -5,14 +5,14 @@ import ch.epfl.bluebrain.nexus.rdf.RdfSpec
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.xsd
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
-import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Val}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.Val
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.ArrayEntry.NodeValueArray
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.NodeObjectValue._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.ExpandedTermDefinition
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, TermDefinitionCursor}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ParsingStatus._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, NodeObject}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{NodeObject, keyword}
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import io.circe.literal._
 
@@ -28,15 +28,15 @@ class NodeObjectSpec extends RdfSpec {
     def baseUri(suffix: String): Uri  = uri"${base.iriString}$suffix"
     val ctx =
       Context(
-        base = Some(base),
+        base = Val(base),
         vocab = Val(vocab),
         prefixMappings = Map(Prefix("xsd").rightValue -> Uri(xsd.base).rightValue),
         terms = Map(
-          "typemap"   -> ExpandedTermDefinition(vocabUri("some/typemap"), container = Set(tpe)),
-          "list2"     -> ExpandedTermDefinition(vocabUri("list2"), container = Set(keyword.list), tpe = Some(id)),
-          "idmap"     -> ExpandedTermDefinition(vocabUri("idmap"), container = Set(id)),
-          "emptySet"  -> ExpandedTermDefinition(vocabUri("emptySet"), container = Set(set)),
-          "emptyList" -> ExpandedTermDefinition(vocabUri("emptyList"), container = Set(keyword.list))
+          "typemap"   -> Some(ExpandedTermDefinition(vocabUri("some/typemap"), container = Set(tpe))),
+          "list2"     -> Some(ExpandedTermDefinition(vocabUri("list2"), container = Set(keyword.list), tpe = Some(id))),
+          "idmap"     -> Some(ExpandedTermDefinition(vocabUri("idmap"), container = Set(id))),
+          "emptySet"  -> Some(ExpandedTermDefinition(vocabUri("emptySet"), container = Set(set))),
+          "emptyList" -> Some(ExpandedTermDefinition(vocabUri("emptyList"), container = Set(keyword.list)))
         ),
         keywords = Map(tpe -> Set("type"), id -> Set("id"))
       )
@@ -116,13 +116,6 @@ class NodeObjectSpec extends RdfSpec {
 
     "return invalid format on parsing" in {
       forAll(invalid) { json => NodeObjectParser(json, cursor).leftValue shouldBe a[InvalidObjectFormat] }
-    }
-
-    "return invalid format on parsing when expanded id" in {
-      val jsons = List(json"""{"@id": "a"}""", json"""{"@type": "a"}""")
-      forAll(jsons) { json =>
-        NodeObjectParser(json, TermDefinitionCursor(Empty)).leftValue shouldBe a[InvalidObjectFormat]
-      }
     }
 
     "return null on parsing" in {

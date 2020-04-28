@@ -23,7 +23,7 @@ class IndexMapSpec extends RdfSpec {
   implicit private def literalInt(int: Int): Literal       = Literal(int)
 
   "An IndexMap" should {
-    val ctx        = Context(terms = Map("ex" -> ex), keywords = Map(index -> Set("index")))
+    val ctx        = Context(terms = Map("ex" -> Some(ex)), keywords = Map(index -> Set("index")))
     val definition = ExpandedTermDefinition(ex, context = Val(ctx), container = Set(index))
     val cursor     = TermDefinitionCursor(Val(definition))
     val en         = Some(LanguageTag("en").rightValue)

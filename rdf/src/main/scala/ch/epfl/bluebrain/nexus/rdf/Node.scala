@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.rdf
 
-import java.util.UUID
+import java.text.{DecimalFormat, DecimalFormatSymbols}
+import java.util.{Locale, UUID}
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import cats.implicits._
@@ -133,7 +134,7 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     Literal(value)
 
   /**
-    * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#int'' data type.
+    * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#integer'' data type.
     *
     * @param value the underlying int value
     */
@@ -275,6 +276,12 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     override def asLiteral: Option[Literal] = Some(this)
     override def toString: String           = lexicalForm
 
+    def rdfLexicalForm: String =
+      if (dataType == xsd.double || dataType == xsd.float || (isNumeric && asInt.isEmpty && asLong.isEmpty))
+        asDouble.map(eFormatter.format(_)).getOrElse(escape(lexicalForm))
+      else
+        escape(lexicalForm)
+
     /**
       * @return true if the literal is numeric, false otherwise
       */
@@ -399,12 +406,12 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
       new Literal(value.toString, xsd.byte)
 
     /**
-      * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#int'' data type.
+      * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#integer'' data type.
       *
       * @param value the underlying int value
       */
     final def apply(value: Int): Literal =
-      new Literal(value.toString, xsd.int)
+      new Literal(value.toString, xsd.integer)
 
     /**
       * Creates a new Short literal of ''http://www.w3.org/2001/XMLSchema#short'' data type.
@@ -448,15 +455,19 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
       case x    => x.toString
     }
 
-    private def escape(str: String): String =
+    private[Literal] def escape(str: String): String =
       str.flatMap(escape(_: Char))
 
-    implicit final def literalShow(implicit is: Show[Uri], ls: Show[LanguageTag]): Show[Literal] = Show.show {
-      case Literal(f, _, Some(tag))           => s""""${escape(f)}"@${ls.show(tag)}"""
-      case l @ Literal(f, _, _) if l.isString => s""""${escape(f)}""""
-      case Literal(f, dt, None)               => s""""${escape(f)}"^^<${is.show(dt)}>"""
-    }
+    private[Literal] val eFormatter = new DecimalFormat("0.###############E0", new DecimalFormatSymbols(Locale.ENGLISH))
+    eFormatter.setMinimumFractionDigits(1)
 
+    implicit final def literalShow(implicit is: Show[Uri], ls: Show[LanguageTag]): Show[Literal] = Show.show {
+
+      case l @ Literal(_, _, Some(tag))           => s""""${l.rdfLexicalForm}"@${ls.show(tag)}"""
+      case l: Literal if l.dataType == xsd.string => s""""${l.rdfLexicalForm}""""
+      case l @ Literal(_, dt, None)               => s""""${l.rdfLexicalForm}"^^<${is.show(dt)}>"""
+
+    }
     implicit final val literalEq: Eq[Literal] = Eq.fromUniversalEquals
 
     /**

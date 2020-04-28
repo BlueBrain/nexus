@@ -48,6 +48,7 @@ sealed abstract private[jsonld] class TermDefinitionCursor { self =>
   def mergeContext(other: EmptyNullOr[Context]): TermDefinitionCursor =
     other match {
       case Empty => self
+      case Null => EmbeddedCursor(self, Val(emptyDefinition.withContext(Val(Context(base = EmptyNullOr(options.base))))))
       case otherValue =>
         val ctx = context.flatMap(_.merge(otherValue)).onNull(otherValue).onEmpty(otherValue)
         EmbeddedCursor(self, Val(emptyDefinition.withContext(ctx)))
@@ -69,7 +70,7 @@ sealed abstract private[jsonld] class TermDefinitionCursor { self =>
     else downTypes(types) or downEmpty
 
   private[context] def downTerm(term: String): TermDefinitionCursor =
-    context.flatMap(ctx => EmptyNullOr(ctx.find(term)).map(ctx -> _)) match {
+    context.flatMap(ctx => ctx.find(term).map(ctx -> _)) match {
       case Empty         => FailedValueCursor(self, term)
       case Null          => self
       case Val((ctx, v)) => ValueCursor(self, Val(v.withContext(ctx.merge(v.context))), term, v.context)

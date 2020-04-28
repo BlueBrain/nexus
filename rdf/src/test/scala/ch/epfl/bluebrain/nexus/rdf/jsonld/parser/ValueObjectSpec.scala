@@ -27,7 +27,7 @@ class ValueObjectSpec extends RdfSpec {
     val ctx =
       Context(
         prefixMappings = Map(Prefix("xsd").rightValue -> Uri(xsd.base).rightValue),
-        terms = Map("ex"                              -> ex),
+        terms = Map("ex"                              -> Some(ex)),
         keywords = Map(keyword.tpe                    -> Set("type"), keyword.value -> Set("value"))
       )
     val definition = ExpandedTermDefinition(ex, context = Val(ctx))
@@ -37,11 +37,11 @@ class ValueObjectSpec extends RdfSpec {
       json"""2"""                                                                                 -> ValueObject(Literal(2)),
       json"""[2.12]"""                                                                            -> ValueObject(Literal(2.12)),
       json"""true"""                                                                              -> ValueObject(Literal(true)),
-      json"""{"@value": true, "@type": "xsd:boolean"}"""                                          -> ValueObject(Literal(true), explicitType = true),
+      json"""{"@value": true, "@type": "xsd:boolean"}"""                                          -> ValueObject(Literal(true), explicitType = Some(xsd.boolean)),
       json""""string""""                                                                          -> ValueObject(Literal("string")),
       json"""["string"]"""                                                                        -> ValueObject(Literal("string")),
-      json"""{"value": "text", "type": "ex", "ignored": "whatever"}"""                            -> ValueObject(Literal("text", ex), explicitType = true),
-      json"""{"value": "text", "type": "ex", "ex": null}"""                                       -> ValueObject(Literal("text", ex), explicitType = true),
+      json"""{"value": "text", "type": "ex", "ignored": "whatever"}"""                            -> ValueObject(Literal("text"), explicitType = Some(ex)),
+      json"""{"value": "text", "type": "ex", "ex": null}"""                                       -> ValueObject(Literal("text"), explicitType = Some(ex)),
       json"""{"@value": "text", "@language": "en"}"""                                             -> ValueObject(Literal("text", xsd.string, en)),
       json"""{"@value": "text", "@language": "en", "@direction": "ltr"}"""                        -> ValueObject(Literal("text", xsd.string, en), direction = ltr.toOption),
       json"""[{"@value": "text", "@language": "en", "@direction": "ltr", "@index": "someIdx"}]""" -> ValueObject(Literal("text", xsd.string, en), direction = ltr.toOption, index = Some("someIdx"))
@@ -80,15 +80,13 @@ class ValueObjectSpec extends RdfSpec {
     }
 
     "be parsed with custom context datatype" in {
-      val jsons       = List(json"1" -> "1", json"true" -> "true", json"5.1" -> "5.1")
+      val jsons       = List(json"1" -> Literal(1), json"true" -> Literal(true), json"5.1" -> Literal(5.1))
       val custom      = uri"http://example.com/custom"
       val otherCursor = TermDefinitionCursor(Val(ExpandedTermDefinition(ex, tpe = Some(custom))))
       forAll(jsons) {
-        case (json, str) =>
-          ValueObjectParser(json, otherCursor).rightValue shouldEqual ValueObject(
-            Literal(str, custom),
-            explicitType = true
-          )
+        case (json, lit) =>
+          ValueObjectParser(json, otherCursor).rightValue shouldEqual
+            ValueObject(lit, explicitType = Some(custom))
       }
     }
 
@@ -140,7 +138,10 @@ class ValueObjectSpec extends RdfSpec {
       val json        = json"""{"value": "text", "@type": "ex"}"""
       val otherCursor = TermDefinitionCursor(Val(definition.copy(tpe = Some(id))))
 
-      ValueObjectParser(json, otherCursor).rightValue shouldEqual ValueObject(Literal("text", ex), explicitType = true)
+      ValueObjectParser(json, otherCursor).rightValue shouldEqual ValueObject(
+        Literal("text", xsd.string),
+        explicitType = Some(ex)
+      )
     }
 
     "be parsed ignoring @type in term definition when is a json object" in {

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.rdf.iri.Curie
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix.isReserved
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Uri}
-import ch.epfl.bluebrain.nexus.rdf.jsonld.{EmptyNullOr, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.{keyword, EmptyNullOr, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Null, Val}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context._
@@ -86,8 +86,7 @@ private[jsonld] object ContextParser {
           s"$nest invalid keyword. Allowed keywords: $nest"
         )
       (hc.value.asObject, hc.value.asString, hc.value.asNumber, hc.value.asBoolean, hc.value.asNull) match {
-        case (Some(jObj), _, _, _, _) if jObj.isEmpty =>
-          Left(DecodingFailure("expanded term definition cannot be empty", hc.history))
+        case (Some(obj), _, _, _, _) if obj == JsonObject(keyword.id -> Json.Null) => Right(NullDef)
         case (Some(_), _, _, _, _)      => expDec(hc)
         case (_, Some(value), _, _, _)  => Right(SimpleDef(value, isString = true))
         case (_, _, Some(number), _, _) => Right(SimpleDef(number.toDouble.toString, isString = false))
@@ -137,6 +136,7 @@ private[jsonld] object ContextParser {
     private def initializeBase(): Either[String, ActiveContext] =
       terms.get(`base`) match {
         case Some(SimpleDef(str, true)) => prefixCurieUriOrRelative(str).map(withBase)
+        case Some(NullDef)              => Right(copy(ctx = ctx.copy(base = Null)))
         case Some(_)                    => Left(s"$base must be a String")
         case None                       => Right(options.base.map(withBase).getOrElse(this))
       }
@@ -151,7 +151,8 @@ private[jsonld] object ContextParser {
         .foldM(this) {
           case (acc, (`version`, SimpleDef("1.1", false))) => Right(acc.withVersion11)
           case (_, (`version`, _))                         => Left(s"$version keyword value must be '1.1'")
-          case (acc, (`vocab`, SimpleDef("", true)))       => ctx.base.toRight(invalidTerm("").message).map(acc.withVocab)
+          case (acc, (`vocab`, SimpleDef("", true))) =>
+            ctx.base.toOption.toRight(invalidTerm("").message).map(acc.withVocab)
           case (acc, (`vocab`, SimpleDef(str, true)))      => acc.resolveVocab(str).map(acc.withVocab)
           case (acc, (`vocab`, NullDef))                   => Right(acc.copy(ctx = acc.ctx.copy(vocab = Null)))
           case (_, (`vocab`, SimpleDef(_, false)))         => Left(s"$language must be a String")
@@ -168,11 +169,6 @@ private[jsonld] object ContextParser {
           case (_, (`direction`, SimpleDef(_, false))) => Left(s"$direction must be a String")
           case (_, (`direction`, _)) =>
             Left(s"$direction invalid value. Allowed values: ${allowedDirection.mkString(",")}")
-          case (
-              acc,
-              (`tpe`, ExpandedDef(None, None, c, Empty, None, _, None, Empty, None, None, None, Empty, None))
-              ) if c.forall(_ == Set(set)) =>
-            Right(acc)
           case (_, (term, SimpleDef(_, false)))     => Left(s"Term '$term' value must be a String or an object")
           case (_, (term, _)) if all.contains(term) => Left(s"Keyword '$term' cannot be used in term position")
           case (acc, _)                             => Right(acc)
@@ -210,6 +206,8 @@ private[jsonld] object ContextParser {
                   .toRight(s"'$term' and definition '$value' must expand to the same Uri")
               }
           }
+        case (acc, (term, NullDef)) =>
+          Right(acc.addNullTerm(term))
         case (acc, (term, d: ExpandedDef)) =>
           for {
             typeKeywordOrUri <- acc.resolveType(d)
@@ -255,7 +253,7 @@ private[jsonld] object ContextParser {
           mergedScoped.map { mergedScopedResult =>
             val finalCtx =
               removeInherited(mergedScopedResult.map(_.ctx), d.context).map(_.copy(ignoreAncestors = ignoreAncestors))
-            val updatedTerm = ctx.terms(term).withContext(finalCtx)
+            val updatedTerm = ctx.terms(term).map(_.withContext(finalCtx))
             acc.copy(ctx = acc.ctx.copy(terms = acc.ctx.terms + (term -> updatedTerm)))
           }
         case (acc, _) => Right(acc)
@@ -288,7 +286,7 @@ private[jsonld] object ContextParser {
       copy(ctx = ctx.copy(vocab = Val(value)))
 
     private def withBase(value: Uri): ActiveContext =
-      copy(ctx = ctx.copy(base = Some(value)))
+      copy(ctx = ctx.copy(base = Val(value)))
 
     private def withProtected(value: Boolean): ActiveContext =
       copy(ctx = ctx.copy(`protected` = Some(value)))
@@ -309,10 +307,13 @@ private[jsonld] object ContextParser {
       copy(ctx = ctx.copy(direction = Null))
 
     private[parser] def addTerm(term: String, definition: ExpandedTermDefinition): ActiveContext =
-      removeTerm(term).copy(ctx = ctx.copy(terms = ctx.terms + (term -> definition)))
+      removeTerm(term).copy(ctx = ctx.copy(terms = ctx.terms + (term -> Some(definition))))
 
     private def addTerm(term: String, uri: Uri): ActiveContext =
-      removeTerm(term).copy(ctx = ctx.copy(terms = ctx.terms + (term -> uri)))
+      removeTerm(term).copy(ctx = ctx.copy(terms = ctx.terms + (term -> Some(uri))))
+
+    private def addNullTerm(term: String): ActiveContext =
+      removeTerm(term).copy(ctx = ctx.copy(terms = ctx.terms + (term -> None)))
 
     private def addTermOrPm(prefix: Prefix, definition: ExpandedTermDefinition): ActiveContext =
       if (isGenDelim(definition.id) || definition.prefix)
@@ -344,7 +345,7 @@ private[jsonld] object ContextParser {
     private def prefixCurieOrUri(term: String): Either[String, Uri] = ctx.expandTerm(term, prefixFn = expandTerm)
 
     private def resolveVocab(term: String): Either[String, Uri] =
-      ctx.expandTermValue(term, prefixFn = expandTerm, relativeIdFn = r => ctx.base.map(r.resolve))
+      ctx.expandTermValue(term, prefixFn = expandTerm, relativeIdFn = r => ctx.base.map(r.resolve).toOption)
 
     private def prefixCurieUriOrRelative(str: String): Either[String, Uri] =
       (Option.when(str.isEmpty)(options.base).flatten orElse prefixCurieOrUri(str).toOption orElse
@@ -376,19 +377,35 @@ private[jsonld] object ContextParser {
         definition: ExpandedDef,
         reverseUri: Option[Uri]
     ): Either[String, (Option[Prefix], Uri)] = {
-      def idsCheck(idUri: => Option[Uri], termCurieOrUri: => Option[Uri], termPrefix: => Option[Uri]) =
+      lazy val err = s"term '$term' must have an $id that resolves to a Uri"
+      def idsCheck(
+          idUri: => Option[Uri],
+          termCurieOrUri: => Option[Uri],
+          termPrefix: => Option[Uri],
+          validTerm: => Option[Uri]
+      ) =
         (idUri, termCurieOrUri, termPrefix) match {
-          case (Some(id), Some(termCOrUri), _) if id != termCOrUri => Left(s"'$id' must equal '$termCOrUri'")
+          case (Some(id), Some(termOrCurie), _) if id != termOrCurie => Left(s"'$id' must equal '$termOrCurie'")
           case _ =>
-            (idUri orElse termCurieOrUri orElse termPrefix)
-              .toRight(s"term '$term' must have an $id that resolves to a Uri")
+            (idUri orElse termCurieOrUri orElse termPrefix).toRight(err) orElse
+              validTerm.toRight(err).flatMap { uri =>
+                Option
+                  .when(!(RelativeIri(term).isRight && definition.prefix.exists(_ == true)))(uri)
+                  .toRight(s"relative term '$term' cannot be used in combination of @prefix with value 'true'")
+              }
         }
 
       for {
         uriDefinition <- if (definition.reverse.nonEmpty) Right(reverseUri)
                         else definition.id.filterNot(keywords.contains).traverse(prefixCurieOrUri)
-        prefix <- Right(Prefix(term).toOption)
-        uri    <- idsCheck(uriDefinition, curieOrUri(term).toOption, prefix.flatMap(expandTerm))
+        prefix    <- Right(Prefix(term).toOption)
+        validTerm <- Right(ctx.validTerm(term))
+        uri <- idsCheck(
+                uriDefinition,
+                curieOrUri(term).toOption,
+                prefix.flatMap(expandTerm),
+                validTerm.flatMap(ctx.expandValidTerm)
+              )
       } yield (prefix, uri)
     }
   }
@@ -412,7 +429,7 @@ private[jsonld] object ContextParser {
         context.prefixMappings.view.filterKeys(k => original.exists(_.exists(_.terms.contains(k.value)))).toMap,
       keywords = context.keywords,
       vocab = if (original.exists(_.exists(_.terms.contains(vocab)))) context.vocab else Empty,
-      base = if (original.exists(_.exists(_.terms.contains(base)))) context.base else None,
+      base = if (original.exists(_.exists(_.terms.contains(base)))) context.base else Empty,
       version11 = if (original.exists(_.exists(_.terms.contains(version)))) context.version11 else None,
       propagate = if (original.exists(_.exists(_.terms.contains(propagate)))) context.propagate else None,
       `protected` = if (original.exists(_.exists(_.terms.contains(`protected`)))) context.`protected` else None,

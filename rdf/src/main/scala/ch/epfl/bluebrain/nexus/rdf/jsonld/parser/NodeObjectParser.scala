@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.rdf.jsonld.parser
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.Val
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.ArrayEntry.NodeObjectArray
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.NodeObjectValue._
-import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.Val
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.KeywordOrUri
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.TermDefinition.KeywordOrUri.KeywordValue
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.{Context, ContextWrapper, TermDefinitionCursor}
@@ -57,15 +57,16 @@ private class NodeObjectParser private (
           .map(reversed => node.copy(terms = node.terms ++ reversed.terms, reverse = node.reverse ++ reversed.reverse))
 
       case (node, (term, json)) if isAlias(term, graph) =>
-        parseGraphOrInclude(json).map(v => node.copy(graph = node.graph ++ v))
+        parseGraph(json).map(v => node.copy(graph = node.graph ++ v))
 
       case (node, (term, json)) if isAlias(term, included) =>
-        parseGraphOrInclude(json).map(v => node.copy(included = node.included ++ v))
+        parseIncluded(json).map(v => node.copy(included = node.included ++ v))
 
       case (node, (term, json)) if isAlias(term, index) =>
         asString(json, index).map(v => node.copy(index = Some(v)))
 
-      case (_, (term, _)) if all.exists(k => isAlias(term, k)) => Left(invalidNodeObject(term))
+      case (_, (term, _)) if all.exists(k => isAlias(term, k)) =>
+        Left(invalidNodeObject(term))
 
       case (node, (term, json)) => parseTerm(node, term, json)
 
@@ -136,11 +137,22 @@ private class NodeObjectParser private (
     }
   }
 
-  private def parseGraphOrInclude(json: Json) =
+  private def parseGraph(json: Json) =
+    parseNodeObjectsFromArr(json) onNotMatched
+      NodeObjectParser(json, cursor.downEmpty).map { case n if n.nonEmptyValues => Vector(n) }
+
+  private def parseIncluded(json: Json) =
+    if (json.isArray)
+      parseNodeObjectsFromArr(json)
+    else
+      NodeObjectParser(json, cursor.downEmpty)
+        .flatMap { n => Option.when(n.nonEmptyValues)(Vector(n)).toRight(invalidIncludedTerm) }
+        .leftMap(_ => invalidIncludedTerm)
+
+  private def parseNodeObjectsFromArr(json: Json) =
     ArrayObjectParser
       .set(json, cursor.downEmpty)
-      .map(_.value.collect { case NodeObjectArray(n) if n.nonEmptyValues => n }) onNotMatched
-      NodeObjectParser(json, cursor.downEmpty).map { case n if n.nonEmptyValues => Vector(n) }
+      .map(_.value.collect { case NodeObjectArray(n) if n.nonEmptyValues => n })
 
   private def parseType(json: Json) =
     (json.asString, json.asArray) match {

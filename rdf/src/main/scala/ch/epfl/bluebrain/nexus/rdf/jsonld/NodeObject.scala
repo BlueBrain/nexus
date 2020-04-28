@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.rdf.Node.Literal
+import ch.epfl.bluebrain.nexus.rdf.Node
 import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
+import ch.epfl.bluebrain.nexus.rdf.Node.{IriNode, IriOrBNode, Literal}
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject.NodeObjectValue.{ListValue, ValueObject}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.NodeObject._
@@ -19,6 +20,8 @@ final private[jsonld] case class NodeObject(
     index: Option[String] = None,
     terms: Seq[TermValue] = Vector.empty
 ) {
+
+  lazy val subject: IriOrBNode = id.map(IriNode.apply).getOrElse(Node.blank)
 
   lazy val emptyValues: Boolean =
     types.isEmpty && reverse.isEmpty && graph.isEmpty && included.isEmpty && nest.isEmpty && index.isEmpty && terms.isEmpty
@@ -51,15 +54,15 @@ private[jsonld] object NodeObject {
 
   // format: off
   object NodeObjectValue {
-    final case class WrappedNodeObject(value: NodeObject)                                                                                       extends NodeObjectValue
-    final case class ValueObject(value: Literal, explicitType: Boolean = false, direction: Option[String] = None, index: Option[String] = None) extends NodeObjectValue
-    final case class LanguageMap(value: Map[LanguageTag, Seq[DirectionValue]] = Map.empty, others: Seq[DirectionValue] = Vector.empty)          extends NodeObjectValue
-    final case class SetValue(value: Seq[ArrayEntry] = Vector.empty, index: Option[String] = None)                                              extends NodeObjectValue
-    final case class ListValue(value: Seq[ArrayEntry] = Vector.empty, index: Option[String] = None)                                             extends NodeObjectValue
-    final case class TypeMap(value: Map[Uri, NodeObject] = Map.empty, others: Seq[NodeObject] = Vector.empty)                                   extends NodeObjectValue
-    final case class IdMap(value: Map[Uri, Seq[NodeObject]] = Map.empty, others: Seq[NodeObject] = Vector.empty)                                extends NodeObjectValue
-    final case class IndexMap(value: Map[String, NodeObjectValue] = Map.empty, others: Seq[NodeObjectValue] = Vector.empty)                     extends NodeObjectValue
-    final case class JsonWrapper(value: Json)                                                                                                   extends NodeObjectValue
+    final case class WrappedNodeObject(value: NodeObject)                                                                                             extends NodeObjectValue
+    final case class ValueObject(literal: Literal, explicitType: Option[Uri] = None, direction: Option[String] = None, index: Option[String] = None)  extends NodeObjectValue
+    final case class LanguageMap(value: Map[LanguageTag, Seq[DirectionValue]] = Map.empty, others: Seq[DirectionValue] = Vector.empty)                extends NodeObjectValue
+    final case class SetValue(value: Seq[ArrayEntry] = Vector.empty, index: Option[String] = None)                                                    extends NodeObjectValue
+    final case class ListValue(value: Seq[ArrayEntry] = Vector.empty, index: Option[String] = None)                                                   extends NodeObjectValue
+    final case class TypeMap(value: Map[Uri, NodeObject] = Map.empty, others: Seq[NodeObject] = Vector.empty)                                         extends NodeObjectValue
+    final case class IdMap(value: Map[Uri, Seq[NodeObject]] = Map.empty, others: Seq[NodeObject] = Vector.empty)                                      extends NodeObjectValue
+    final case class IndexMap(value: Map[String, NodeObjectValue] = Map.empty, others: Seq[NodeObjectValue] = Vector.empty)                           extends NodeObjectValue
+    final case class JsonWrapper(value: Json)                                                                                                         extends NodeObjectValue
   }
   // format: on
 }

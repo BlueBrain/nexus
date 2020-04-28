@@ -51,12 +51,16 @@ trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
 
   def urlEncode(s: String): String = URLEncoder.encode(s, UTF_8.displayName()).replaceAll("\\+", "%20")
 
-  final def jsonFiles(resourcePath: String): Map[String, Json] = {
+  final def jsonFiles(resourcePath: String, fileFilter: File => Boolean = _ => true): Map[String, Json] = {
     new File(getClass.getResource(resourcePath).getPath)
       .listFiles()
+      .filter(fileFilter)
       .map(file => file.getName -> jsonContentOf(s"$resourcePath/${file.getName}"))
       .toMap
   }
+
+  final def contentOf(resourcePath: String): String =
+    Source.fromInputStream(getClass.getResourceAsStream(resourcePath)).mkString
 
   final def jsonContentOf(resourcePath: String): Json =
     parse(Source.fromInputStream(getClass.getResourceAsStream(resourcePath), UTF_8.name()).mkString)

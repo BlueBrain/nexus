@@ -54,12 +54,12 @@ private[rdf] class IriParser(val input: ParserInput)
 
   def parsePathAbempty: Either[String, Path] =
     rule(`ipath-abempty` ~ EOI).run()
-      .map(_ => _path)
+      .map(_ => fetchPath)
       .leftMap(_.format(input, formatter))
 
   def parsePathRootLess: Either[String, Path] =
     rule(`ipath-rootless` ~ EOI).run()
-      .map(_ => _path)
+      .map(_ => fetchPath)
       .leftMap(_.format(input, formatter))
 
   def parsePathSegment: Either[String, Path] =
@@ -78,11 +78,11 @@ private[rdf] class IriParser(val input: ParserInput)
       .leftMap(_.format(input, formatter))
 
   def parseUrl: Either[String, Url] =
-    rule(`url`).run()
+    rule(`url-or-file`).run()
       .map(_ => Url(
         scheme    = _scheme,
         authority = Option(_authority),
-        path      = _path,
+        path      = fetchPath,
         query     = Option(_query),
         fragment  = Option(_fragment))
       )
@@ -92,36 +92,38 @@ private[rdf] class IriParser(val input: ParserInput)
     rule(`urn`).run()
       .map(_ => Urn(
         nid      = _nid,
-        nss      = _path,
+        nss      = fetchPath,
         r        = Option(_r),
         q        = Option(_query),
         fragment = Option(_fragment))
       )
       .leftMap(_.format(input, formatter))
 
-  def parseAbsolute: Either[String, Uri] =
-    rule(`urn` | `url`).run()
-      .map { _ =>
-        if (_nid != null) Urn(
-          nid      = _nid,
-          nss      = _path,
-          r        = Option(_r),
-          q        = Option(_query),
-          fragment = Option(_fragment))
-        else Url(
-          scheme    = _scheme,
-          authority = Option(_authority),
-          path      = _path,
-          query     = Option(_query),
-          fragment  = Option(_fragment))
-      }
-      .leftMap(_.format(input, formatter))
+//  def parseAbsolute: Either[String, Uri] =
+//    rule(`urn` | `url-or-file`).run()
+//      .map { _ =>
+//        if (_nid != null) Urn(
+//          nid      = _nid,
+//          nss      = fetchPath,
+//          r        = Option(_r),
+//          q        = Option(_query),
+//          fragment = Option(_fragment))
+//        else Url(
+//          scheme    = _scheme,
+//          authority = Option(_authority),
+//          path      = fetchPath,
+//          query     = Option(_query),
+//          fragment  = Option(_fragment))
+//      }
+//      .leftMap(_.format(input, formatter))
+
+  private def fetchPath = if(_path_last_is_dot && !_path.isEmpty && _path != Path./) Slash(_path) else _path
 
   def parseRelative: Either[String, RelativeIri] =
     rule(`irelative-ref` ~ EOI).run()
       .map(_ => RelativeIri(
         authority = Option(_authority),
-        path      = _path,
+        path      = fetchPath,
         query     = Option(_query),
         fragment  = Option(_fragment))
       )
@@ -156,6 +158,7 @@ private[rdf] class IriParser(val input: ParserInput)
   private[this] var _userInfo: UserInfo = _
   private[this] var _authority: Authority = _
   private[this] var _path: Path = Path.Empty
+  private[this] var _path_last_is_dot: Boolean = false
   private[this] var _query: Query = _
   private[this] var _fragment: Fragment = _
 
@@ -239,6 +242,7 @@ private[rdf] class IriParser(val input: ParserInput)
         case (acc, el)                      => Segment(el, Slash(acc))
       }
       _path = res
+      _path_last_is_dot = value == "."
     }
 
     rule {
@@ -259,11 +263,12 @@ private[rdf] class IriParser(val input: ParserInput)
         case (Segment(el, acc), "..") if el != ".." && el != "."  => acc
         case (Slash(acc), "..")                                   => acc
         case (acc, ".")                                           => acc
-        case (acc, el) if el.length == 0                          => Slash(acc)
+        case (acc, el) if el.isEmpty                              => Slash(acc)
         case (Path.Empty, el)                                     => Segment(el, Path.Empty)
         case (acc, el)                                            => Segment(el, Slash(acc))
       }
       _path = res
+      _path_last_is_dot = value == "."
     }
 
     rule {
@@ -312,12 +317,24 @@ private[rdf] class IriParser(val input: ParserInput)
     }
   }
 
+  private def `ihier-part-file`: Rule0 = rule {
+    run { _authority = null } ~ "//" ~`ipath-absolute`
+  }
+
   private def `ihier-part`: Rule0 = rule {
     ("//" ~ `iauthority` ~ `ipath-abempty`) | (run { _authority = null } ~ (`ipath-absolute` | `ipath-rootless` | `ipath-empty`))
   }
 
+  private def `url-or-file`: Rule0 = rule {
+    scheme ~ ':' ~ (test(_scheme.value === "file") ~!~ `file` ~ EOI | `url` ~ EOI)
+  }
+
+  private def `file`: Rule0 = rule {
+    `ihier-part-file` ~ optional('?' ~ `iquery`) ~ optional('#' ~ `ifragment`)
+  }
+
   private def `url`: Rule0 = rule {
-    scheme ~ ':' ~ `ihier-part` ~ optional('?' ~ `iquery`) ~ optional('#' ~ `ifragment`) ~ EOI
+    `ihier-part` ~ optional('?' ~ `iquery`) ~ optional('#' ~ `ifragment`)
   }
 
   private def `irelative-part`: Rule0 = rule {

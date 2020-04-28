@@ -322,6 +322,8 @@ sealed abstract class Graph extends Product with Serializable {
 
 object Graph {
 
+  val empty = apply(Node.blank)
+
   /**
     * Constructs a new [[Graph]] from the provided root node and set of triples.
     */

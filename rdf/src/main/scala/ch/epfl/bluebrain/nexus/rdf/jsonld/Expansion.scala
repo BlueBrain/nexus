@@ -57,14 +57,14 @@ private[jsonld] object Expansion {
 
   private def expand(elem: ValueObject): Json =
     elem match {
-      case ValueObject(l @ Literal(_, dataType, lang), explicitType, direct, idx) =>
+      case ValueObject(l @ Literal(_, _, lang), explicitType, direct, idx) =>
         JsonObject
           .fromMap(
-            VectorMap(value                 -> toJson(l)) ++
-              Option.when(explicitType)(tpe -> dataType.iriString.asJson) ++
-              lang.map(language             -> _.asJson) ++
-              direct.map(direction          -> _.asJson) ++
-              idx.map(index                 -> _.asJson)
+            VectorMap(value        -> toJson(l)) ++
+              explicitType.map(tpe -> _.asJson) ++
+              lang.map(language    -> _.asJson) ++
+              direct.map(direction -> _.asJson) ++
+              idx.map(index        -> _.asJson)
           )
           .asJson
     }
@@ -147,9 +147,11 @@ private[jsonld] object Expansion {
     }
 
   private def toJson(l: Literal): Json =
-    (l.asBoolean.map(_.asJson) orElse l.asInt.map(_.asJson) orElse l.asLong.map(_.asJson) orElse l.asDouble.map(
-      _.asJson
-    )) getOrElse l.lexicalForm.asJson
+    (l.asBoolean.map(_.asJson) orElse
+      l.asInt.map(_.asJson) orElse
+      l.asLong.map(_.asJson) orElse
+      l.asDouble.map(_.asJson)) getOrElse
+      l.lexicalForm.asJson
 
   private def toValueObject(valueAndDirection: (String, Option[String]), lang: Option[LanguageTag] = None) =
     ValueObject(Literal(valueAndDirection._1, xsd.string, lang), direction = valueAndDirection._2)

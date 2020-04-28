@@ -23,7 +23,7 @@ class ArrayObjectSpec extends RdfSpec {
 
   "A ListObject" should {
     val ctx =
-      Context(terms = Map("ex" -> ex), keywords = Map(list -> Set("list"), keyword.value -> Set("value")))
+      Context(terms = Map("ex" -> Some(ex)), keywords = Map(list -> Set("list"), keyword.value -> Set("value")))
     val cursor = TermDefinitionCursor(Val(ExpandedTermDefinition(ex, context = Val(ctx))))
 
     val valid = List(
@@ -67,7 +67,7 @@ class ArrayObjectSpec extends RdfSpec {
 
   "A SetObject" should {
     val ctx =
-      Context(terms = Map("ex" -> ex), keywords = Map(set -> Set("set"), keyword.value -> Set("value")))
+      Context(terms = Map("ex" -> Some(ex)), keywords = Map(set -> Set("set"), keyword.value -> Set("value")))
     val cursor = TermDefinitionCursor(Val(ExpandedTermDefinition(ex, context = Val(ctx))))
 
     val valid = List(
@@ -109,7 +109,7 @@ class ArrayObjectSpec extends RdfSpec {
   }
 
   "A ListArray" should {
-    val ctx        = Context(terms = Map("ex" -> ex), keywords = Map(keyword.value -> Set("value")))
+    val ctx        = Context(terms = Map("ex" -> Some(ex)), keywords = Map(keyword.value -> Set("value")))
     val definition = ExpandedTermDefinition(ex, context = Val(ctx), container = Set(list))
     val cursor     = TermDefinitionCursor(Val(definition))
 
@@ -137,10 +137,6 @@ class ArrayObjectSpec extends RdfSpec {
       }
     }
 
-    "failed to parse" in {
-      forAll(invalid) { json => ArrayParser.list(json, cursor).leftValue }
-    }
-
     "return not matched on parsing" in {
       val cursorNotList = TermDefinitionCursor(Val(definition.copy(container = Set(index))))
       forAll((valid.map { case (json, _) => json } ++ invalid).filterNot(_.isNull)) { json =>
@@ -152,7 +148,7 @@ class ArrayObjectSpec extends RdfSpec {
   }
 
   "A SetArray" should {
-    val ctx        = Context(terms = Map("ex" -> ex), keywords = Map(keyword.value -> Set("value")))
+    val ctx        = Context(terms = Map("ex" -> Some(ex)), keywords = Map(keyword.value -> Set("value")))
     val definition = ExpandedTermDefinition(ex, context = Val(ctx), container = Set(set))
     val cursor     = TermDefinitionCursor(Val(definition))
 
@@ -187,7 +183,7 @@ class ArrayObjectSpec extends RdfSpec {
 
     "be parsed as @id" in {
       val json       = json"""["id", true, 0]"""
-      val ctx        = Context(base = Some(uri"http://ex.com/base/"), vocab = Val(uri"http://ex.com/vocab/"))
+      val ctx        = Context(base = Val(uri"http://ex.com/base/"), vocab = Val(uri"http://ex.com/vocab/"))
       val cursorId   = TermDefinitionCursor(Val(ExpandedTermDefinition(ex, tpe = Some(id), context = Val(ctx))))
       val expectedId = SetValue(Vector(NodeObject(id = Some(uri"http://ex.com/base/id")), true, 0))
       ArrayParser.set(json, cursorId).rightValue shouldEqual expectedId
@@ -195,13 +191,9 @@ class ArrayObjectSpec extends RdfSpec {
 
     "be parsed as @value" in {
       val json   = json"""["id", true, 0]"""
-      val ctx    = Context(base = Some(uri"http://ex.com/base/"), vocab = Val(uri"http://ex.com/vocab/"))
+      val ctx    = Context(base = Val(uri"http://ex.com/base/"), vocab = Val(uri"http://ex.com/vocab/"))
       val cursor = TermDefinitionCursor(Val(ExpandedTermDefinition(ex, context = Val(ctx))))
       ArrayParser.set(json, cursor).rightValue shouldEqual SetValue(Vector("id", true, 0))
-    }
-
-    "failed to parse" in {
-      forAll(invalid) { json => ArrayParser.set(json, cursor).leftValue }
     }
 
     "return not matched on parsing" in {

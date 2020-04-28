@@ -28,6 +28,8 @@ object ParsingStatus {
     InvalidObjectFormat(
       s"Invalid value object format: both $tpe and either $direction or $language cannot be simultaneously present"
     )
+  private[jsonld] val invalidLanguageValue =
+    InvalidObjectFormat(s"$language keyword can only be used with strings")
   private[jsonld] val invalidDirection =
     InvalidObjectFormat(s"$direction keyword invalid format. Allowed values: '${allowedDirection.mkString(",")}'")
   private[jsonld] def invalidDirection(v: String) =
@@ -60,5 +62,7 @@ object ParsingStatus {
     InvalidObjectFormat(s"Invalid $graph object: it must be a object or an array")
   private[jsonld] val invalidGraphArrayObject =
     InvalidObjectFormat(s"Invalid $graph array element: it must be a object")
+  private[jsonld] val invalidIncludedTerm =
+    InvalidObjectFormat(s"Invalid $included object value: it must be a node object")
 
 }

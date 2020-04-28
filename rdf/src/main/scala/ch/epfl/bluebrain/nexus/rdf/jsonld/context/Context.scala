@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.rdf.iri.Curie
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.{RelativeIri, Uri}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.{EmptyNullOr, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Val}
+import ch.epfl.bluebrain.nexus.rdf.jsonld.EmptyNullOr.{Empty, Null, Val}
 import ch.epfl.bluebrain.nexus.rdf.jsonld.context.Context._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.keyword._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.parser.ContextParser
@@ -33,7 +33,7 @@ final case class Context(
     keywords: KeywordAliases = Map.empty,
     prefixMappings: PrefixMappings = Map.empty,
     vocab: EmptyNullOr[Uri] = Empty,
-    base: Option[Uri] = None,
+    base: EmptyNullOr[Uri] = Empty,
     version11: Option[Boolean] = None,
     propagate: Option[Boolean] = None,
     `protected`: Option[Boolean] = None,
@@ -50,21 +50,21 @@ final case class Context(
   lazy val aliases: Map[String, String] = keywords.flatMap { case (keyword, aliases) => aliases.map(_ -> keyword) }
 
   private[jsonld] def expandPrefixTerm(prefix: Prefix): Option[Uri] =
-    terms.get(prefix.value).map(_.id) orElse
+    terms.get(prefix.value).flatMap(_.map(_.id)) orElse
       prefixMappings.get(prefix) orElse
       vocabOpt.flatMap(vocab => Uri(vocab.iriString + prefix.value).toOption)
 
   private[jsonld] def expandValidTerm(str: String): Option[Uri] =
-    terms.get(str).map(_.id) orElse
+    terms.get(str).flatMap(_.map(_.id)) orElse
       vocabOpt.flatMap(vocab => Uri(vocab.iriString + str).toOption)
 
   private[jsonld] def expandCurie(curie: Curie): Option[Uri] =
     curie.toIri(prefixMappings).toOption.flatten
 
   private[jsonld] def expandRelativeTerm(relative: RelativeIri): Option[Uri] =
-    base.map(relative.resolve)
+    base.map(relative.resolve).toOption
 
-  private def validTerm(str: String): Option[String] =
+  private[jsonld] def validTerm(str: String): Option[String] =
     Option.when(str.nonEmpty && !Prefix.isReserved(str))(str)
 
   private[jsonld] def expandTerm(
@@ -77,8 +77,10 @@ final case class Context(
     lazy val term   = validTerm(string)
     lazy val curie  = Curie(string).toOption
     lazy val uri    = Uri(string).toOption
-    (prefix.flatMap(prefixFn) orElse curie.flatMap(curieFn) orElse uri orElse term.flatMap(termFn))
-      .toRight(invalidTerm(string).message)
+    if (terms.get(string).exists(_.isEmpty)) Left(invalidTerm(string).message)
+    else
+      (prefix.flatMap(prefixFn) orElse curie.flatMap(curieFn) orElse uri orElse term.flatMap(termFn))
+        .toRight(invalidTerm(string).message)
   }
 
   private[jsonld] def expandTermValue(
@@ -89,7 +91,8 @@ final case class Context(
       relativeIdFn: RelativeIri => Option[Uri] = expandRelativeTerm
   ): Either[String, Uri] = {
     lazy val relative = RelativeIri(string).toOption
-    (expandTerm(string, prefixFn, termFn, curieFn).toOption orElse relative.flatMap(relativeIdFn))
+    (expandTerm(string, prefixFn, termFn, curieFn).toOption orElse
+      relative.flatMap(relativeIdFn) orElse Option.when(string.isEmpty)(base.toOption).flatten)
       .toRight(invalidTerm(string).message)
   }
 
@@ -100,11 +103,15 @@ final case class Context(
 
   def expandValue(termValue: String): Either[String, Uri] = expandTermValue(termValue)
 
-  def find(term: String): Option[TermDefinition] =
-    terms.get(term)
+  def find(term: String): EmptyNullOr[TermDefinition] =
+    terms.get(term) match {
+      case Some(None) => Null
+      case Some(Some(definition)) => Val(definition)
+      case None => Empty
+    }
 
   def find(uriTerm: Uri): Option[TermDefinition] =
-    terms.collectFirst { case (_, d) if d.id == uriTerm => d }
+    terms.collectFirst { case (_, Some(d)) if d.id == uriTerm => d }
 
   def findFirst(uriTerms: Seq[Uri]): Option[(Uri, TermDefinition)] =
     uriTerms.toVector.collectFirstSome(uriTerm => find(uriTerm).map(uriTerm -> _))
@@ -119,13 +126,13 @@ final case class Context(
     * Navigate down the passed ''term'' and merge the term context with the current context if term is found
     */
   def down(term: String): EmptyNullOr[TermDefinition] =
-    EmptyNullOr(terms.get(term)).map(d => d.withContext(merge(d.context)))
+    find(term).map(d => d.withContext(merge(d.context)))
 
   /**
     * Navigate down the first term with the passed ''uri'' and merge the term context with the current context if term is found
     */
   def down(uri: Uri): EmptyNullOr[TermDefinition] =
-    EmptyNullOr(terms.collectFirst { case (_, d) if d.id == uri => d }).map(d => d.withContext(merge(d.context)))
+    EmptyNullOr(terms.collectFirst { case (_, Some(d)) if d.id == uri => d }).map(d => d.withContext(merge(d.context)))
 
   /**
     * Merge the current context with the passed context (Empty, Null or Context).
@@ -133,7 +140,6 @@ final case class Context(
     * If the passed context has a value, merging occurs.
     * If the passed context is empty, the current context is returned.
     */
-  //TODO: See if we have to ignore nulls or we have to replace context with null
   def merge(ctx: EmptyNullOr[Context]): EmptyNullOr[Context] =
     ctx.map(merge).onEmpty(Val(this))
 
@@ -151,7 +157,7 @@ final case class Context(
         },
         prefixMappings ++ ctx.prefixMappings,
         ctx.vocab.onEmpty(vocab),
-        ctx.base.orElse(base),
+        ctx.base.onEmpty(base),
         ctx.version11.orElse(version11),
         ctx.propagate.orElse(propagate),
         ctx.`protected`.orElse(`protected`),
@@ -166,7 +172,7 @@ object Context {
   type KeywordAliases = Map[String, Set[String]]
   type PrefixMappings = Map[Prefix, Uri]
   type PrefixAliases  = Map[String, Uri]
-  type Terms          = Map[String, TermDefinition]
+  type Terms          = Map[String, Option[TermDefinition]]
 
   final val keywords: KeywordAliases = all.filterNot(_ == context).map(k => k -> Set(k)).toMap
   final val empty: Context           = Context()

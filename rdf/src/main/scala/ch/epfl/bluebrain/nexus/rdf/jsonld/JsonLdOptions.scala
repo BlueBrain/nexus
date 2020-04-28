@@ -13,4 +13,6 @@ final case class JsonLdOptions(base: Option[Uri], useNativeTypes: Boolean = fals
 
 object JsonLdOptions {
   val empty: JsonLdOptions = JsonLdOptions(base = None)
+
+  sealed trait RdfDirection extends Product with Serializable
 }

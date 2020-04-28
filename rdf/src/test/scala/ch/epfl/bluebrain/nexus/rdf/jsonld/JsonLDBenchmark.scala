@@ -11,16 +11,17 @@ import org.apache.jena.riot._
 import org.apache.jena.riot.system.StreamRDFLib
 import org.openjdk.jmh.annotations._
 import org.scalatest.OptionValues
+import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 
 import scala.util.Try
 
 @State(Scope.Thread)
-class JsonLDBenchmark extends OptionValues {
+class JsonLDBenchmark extends OptionValues with FromJenaConverters {
 
-  private val tests = List(
-    "/jsonld/expand/0001-in.jsonld",
-    "/jsonld/expand/0002-in.jsonld",
-    "/jsonld/expand/0003-in.jsonld",
+  implicit private val options: jsonld.JsonLdOptions =
+    jsonld.JsonLdOptions(base = Some(uri"https://w3c.github.io/json-ld-api/tests/id"))
+
+  private val test100Expand = List(
     "/jsonld/expand/0004-in.jsonld",
     "/jsonld/expand/0006-in.jsonld",
     "/jsonld/expand/0007-in.jsonld",
@@ -123,7 +124,116 @@ class JsonLDBenchmark extends OptionValues {
     "/jsonld/expand/p004-in.jsonld"
   ).map(name => name -> jsonContentOf(name))
 
-  private val testNoVersion = tests.map { case (name, json) => name -> json.removeNestedKeys(keyword.version) }
+  private val test100ExpandNoVersion =
+    test100Expand.map { case (name, json) => name -> json.removeNestedKeys(keyword.version) }
+
+  private val test100ToGraph = List(
+    "/jsonld/toRdf/0001-in.jsonld",
+    "/jsonld/toRdf/0007-in.jsonld",
+    "/jsonld/toRdf/0008-in.jsonld",
+    "/jsonld/toRdf/0010-in.jsonld",
+    "/jsonld/toRdf/0011-in.jsonld",
+    "/jsonld/toRdf/0012-in.jsonld",
+    "/jsonld/toRdf/0013-in.jsonld",
+    "/jsonld/toRdf/0019-in.jsonld",
+    "/jsonld/toRdf/0020-in.jsonld",
+    "/jsonld/toRdf/0022-in.jsonld",
+    "/jsonld/toRdf/0023-in.jsonld",
+    "/jsonld/toRdf/0024-in.jsonld",
+    "/jsonld/toRdf/0025-in.jsonld",
+    "/jsonld/toRdf/0026-in.jsonld",
+    "/jsonld/toRdf/0130-in.jsonld",
+    "/jsonld/toRdf/0131-in.jsonld",
+    "/jsonld/toRdf/0132-in.jsonld",
+    "/jsonld/toRdf/c001-in.jsonld",
+    "/jsonld/toRdf/c002-in.jsonld",
+    "/jsonld/toRdf/c003-in.jsonld",
+    "/jsonld/toRdf/c004-in.jsonld",
+    "/jsonld/toRdf/c005-in.jsonld",
+    "/jsonld/toRdf/c006-in.jsonld",
+    "/jsonld/toRdf/c007-in.jsonld",
+    "/jsonld/toRdf/c008-in.jsonld",
+    "/jsonld/toRdf/c009-in.jsonld",
+    "/jsonld/toRdf/c010-in.jsonld",
+    "/jsonld/toRdf/c011-in.jsonld",
+    "/jsonld/toRdf/c012-in.jsonld",
+    "/jsonld/toRdf/c013-in.jsonld",
+    "/jsonld/toRdf/c014-in.jsonld",
+    "/jsonld/toRdf/c015-in.jsonld",
+    "/jsonld/toRdf/c016-in.jsonld",
+    "/jsonld/toRdf/c017-in.jsonld",
+    "/jsonld/toRdf/c018-in.jsonld",
+    "/jsonld/toRdf/c019-in.jsonld",
+    "/jsonld/toRdf/c020-in.jsonld",
+    "/jsonld/toRdf/c021-in.jsonld",
+    "/jsonld/toRdf/c022-in.jsonld",
+    "/jsonld/toRdf/c023-in.jsonld",
+    "/jsonld/toRdf/c024-in.jsonld",
+    "/jsonld/toRdf/c026-in.jsonld",
+    "/jsonld/toRdf/c027-in.jsonld",
+    "/jsonld/toRdf/c035-in.jsonld",
+    "/jsonld/toRdf/di03-in.jsonld",
+    "/jsonld/toRdf/di05-in.jsonld",
+    "/jsonld/toRdf/e001-in.jsonld",
+    "/jsonld/toRdf/e002-in.jsonld",
+    "/jsonld/toRdf/e003-in.jsonld",
+    "/jsonld/toRdf/e004-in.jsonld",
+    "/jsonld/toRdf/e005-in.jsonld",
+    "/jsonld/toRdf/e006-in.jsonld",
+    "/jsonld/toRdf/e007-in.jsonld",
+    "/jsonld/toRdf/e008-in.jsonld",
+    "/jsonld/toRdf/e009-in.jsonld",
+    "/jsonld/toRdf/e010-in.jsonld",
+    "/jsonld/toRdf/e011-in.jsonld",
+    "/jsonld/toRdf/e012-in.jsonld",
+    "/jsonld/toRdf/e013-in.jsonld",
+    "/jsonld/toRdf/e014-in.jsonld",
+    "/jsonld/toRdf/e015-in.jsonld",
+    "/jsonld/toRdf/e016-in.jsonld",
+    "/jsonld/toRdf/e017-in.jsonld",
+    "/jsonld/toRdf/e018-in.jsonld",
+    "/jsonld/toRdf/e019-in.jsonld",
+    "/jsonld/toRdf/e022-in.jsonld",
+    "/jsonld/toRdf/e023-in.jsonld",
+    "/jsonld/toRdf/e024-in.jsonld",
+    "/jsonld/toRdf/e025-in.jsonld",
+    "/jsonld/toRdf/e026-in.jsonld",
+    "/jsonld/toRdf/e027-in.jsonld",
+    "/jsonld/toRdf/e028-in.jsonld",
+    "/jsonld/toRdf/e029-in.jsonld",
+    "/jsonld/toRdf/e030-in.jsonld",
+    "/jsonld/toRdf/e031-in.jsonld",
+    "/jsonld/toRdf/e032-in.jsonld",
+    "/jsonld/toRdf/e033-in.jsonld",
+    "/jsonld/toRdf/e034-in.jsonld",
+    "/jsonld/toRdf/e035-in.jsonld",
+    "/jsonld/toRdf/e036-in.jsonld",
+    "/jsonld/toRdf/e037-in.jsonld",
+    "/jsonld/toRdf/e039-in.jsonld",
+    "/jsonld/toRdf/e040-in.jsonld",
+    "/jsonld/toRdf/e041-in.jsonld",
+    "/jsonld/toRdf/e042-in.jsonld",
+    "/jsonld/toRdf/e065-in.jsonld",
+    "/jsonld/toRdf/e066-in.jsonld",
+    "/jsonld/toRdf/e067-in.jsonld",
+    "/jsonld/toRdf/e069-in.jsonld",
+    "/jsonld/toRdf/e070-in.jsonld",
+    "/jsonld/toRdf/e071-in.jsonld",
+    "/jsonld/toRdf/e072-in.jsonld",
+    "/jsonld/toRdf/e073-in.jsonld",
+    "/jsonld/toRdf/e074-in.jsonld",
+    "/jsonld/toRdf/li06-in.jsonld",
+    "/jsonld/toRdf/li08-in.jsonld",
+    "/jsonld/toRdf/p001-in.jsonld",
+    "/jsonld/toRdf/p002-in.jsonld",
+    "/jsonld/toRdf/p003-in.jsonld",
+    "/jsonld/toRdf/p004-in.jsonld"
+  ).map(name => name -> jsonContentOf(name))
+
+  private val test100ToGrphNoVersion =
+    test100ToGraph.map {
+      case (name, json) => (name, JsonLd(json).toOption.value.node.subject, json.removeNestedKeys(keyword.version))
+    }
 
   private def parseModel(json: Json): Option[Model] = {
     Try {
@@ -148,23 +258,36 @@ class JsonLDBenchmark extends OptionValues {
     }.toOption.flatMap(str => parse(str).toOption)
   }
 
-  implicit private val options: jsonld.JsonLdOptions = jsonld.JsonLdOptions.empty
-
   @Benchmark
-  def toExpandedJena(): Unit =
-    tests.foreach {
+  def toExpanded100(): Unit =
+    test100Expand.foreach {
       case (_, json) =>
-        val expanded = JsonLd.expand(json).toOption.value
-        expanded.toJson()
+        val jsonLd = JsonLd(json).toOption.value
+        jsonLd.expanded
     }
 
   @Benchmark
-  def toExpanded(): Unit =
-    testNoVersion.foreach {
+  def toExpandedJena100(): Unit =
+    test100ExpandNoVersion.foreach {
       case (_, json) =>
         val model = parseModel(json).value
         writeJsonLD(model).value
+    }
 
+  @Benchmark
+  def toGraph100(): Unit =
+    test100ToGraph.foreach {
+      case (_, json) =>
+        val jsonLd = JsonLd(json).toOption.value
+        jsonLd.toGraph
+    }
+
+  @Benchmark
+  def toGraphJena100(): Unit =
+    test100ToGrphNoVersion.foreach {
+      case (_, n, json) =>
+        val model = parseModel(json).value
+        asRdfGraph(n, model).toOption.value
     }
 
 }

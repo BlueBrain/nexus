@@ -16,6 +16,7 @@ object Vocabulary {
     val tpe        = url"${base}type"
     val langString = url"${base}langString"
     val value      = url"${base}value"
+    val json       = url"${base}JSON"
   }
 
   /**

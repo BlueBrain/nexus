@@ -28,8 +28,8 @@ private class ValueObjectParser private (obj: JsonObject, override val cursor: T
       case (None, None, Some(_), _, _, _)                                   => Left(NullObject)
       case (None, _, _, _, _, _)                                            => Left(NotMatchObject)
       case (Some(_), Some(_), lang, d, _, _) if lang.nonEmpty || d.nonEmpty => Left(invalidValueObjectExclusion)
-      case (Some(lit), None, lang, d, idx, _)                               => Right(ValueObject(lit.copy(languageTag = lang), false, d, idx))
-      case (Some(lit), Some(t), lang, d, idx, _)                            => Right(ValueObject(Literal(lit.lexicalForm, t, lang), true, d, idx))
+      case (Some(lit), _, Some(_), _, _, _) if !lit.isString                => Left(invalidLanguageValue)
+      case (Some(lit), t, lang, d, idx, _)                                  => Right(ValueObject(lit.copy(languageTag = lang), t, d, idx))
     }
 
   private def fetchFields =
@@ -110,16 +110,17 @@ private[jsonld] object ValueObjectParser {
     else {
       lazy val tpe = cursor.value.toOption.flatMap(_.tpe.collect { case UriValue(uri) => uri })
       (json.asBoolean, json.asString, json.asNumber, json.asArray, json.asNull) match {
-        case (Some(v), _, _, _, _) => Right(ValueObject(Literal(v.toString, tpe.getOrElse(xsd.boolean)), tpe.nonEmpty))
+        case (Some(v), _, _, _, _) =>
+          Right(ValueObject(Literal(v), tpe))
         case (_, Some(v), _, _, _) =>
           val lang      = cursor.value.flatMap(_.termLanguage).toOption
           val direction = cursor.value.flatMap(_.termDirection).toOption
-          Right(ValueObject(Literal(v, tpe.getOrElse(xsd.string), lang), tpe.nonEmpty, direction))
+          Right(ValueObject(Literal(v, xsd.string, lang), tpe, direction))
         case (_, _, Some(v), _, _) =>
           (v.toInt, v.toLong) match {
-            case (Some(_), _) => Right(ValueObject(Literal(v.toString, tpe.getOrElse(xsd.int)), tpe.nonEmpty))
-            case (_, Some(_)) => Right(ValueObject(Literal(v.toString, tpe.getOrElse(xsd.long)), tpe.nonEmpty))
-            case (_, _)       => Right(ValueObject(Literal(v.toString, tpe.getOrElse(xsd.double)), tpe.nonEmpty))
+            case (Some(vv), _) => Right(ValueObject(Literal(vv), tpe))
+            case (_, Some(vv)) => Right(ValueObject(Literal(vv), tpe))
+            case (_, _)        => Right(ValueObject(Literal(v.toDouble), tpe))
           }
         case (_, _, _, Some(v), _) =>
           v match {
