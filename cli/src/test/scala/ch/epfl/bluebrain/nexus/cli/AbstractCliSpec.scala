@@ -4,8 +4,8 @@ import java.nio.file.{Files, Path}
 import java.util.UUID
 import java.util.regex.Pattern.quote
 
-import cats.implicits._
 import cats.effect.{ContextShift, IO, Timer}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import ch.epfl.bluebrain.nexus.cli.dummies.TestCliModule
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
@@ -52,20 +52,23 @@ abstract class AbstractCliSpec extends DistageSpecScalatest[IO] with Resources w
     configBaseName = "cli-test"
   )
 
-  def copyConfigs: IO[Path] = IO {
-    val parent  = Files.createTempDirectory(".nexus")
-    val envFile = parent.resolve("env.conf")
+  def copyConfigs: IO[(Path, Path)] = IO {
+    val parent       = Files.createTempDirectory(".nexus")
+    val envFile      = parent.resolve("env.conf")
+    val postgresFile = parent.resolve("postgres.conf")
     Files.copy(getClass.getClassLoader.getResourceAsStream("env.conf"), envFile)
-    envFile
+    Files.copy(getClass.getClassLoader.getResourceAsStream("postgres.conf"), postgresFile)
+    (envFile, postgresFile)
   }
 
   def configModule: ModuleDef = new ModuleDef {
     make[AppConfig].fromEffect {
-      copyConfigs.flatMap { envFile =>
-        AppConfig.load[IO](Some(envFile)).flatMap {
-          case Left(value)  => IO.raiseError(value)
-          case Right(value) => IO.pure(value)
-        }
+      copyConfigs.flatMap {
+        case (envFile, postgresFile) =>
+          AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
+            case Left(value)  => IO.raiseError(value)
+            case Right(value) => IO.pure(value)
+          }
       }
     }
     make[EnvConfig].from { cfg: AppConfig => cfg.env }
