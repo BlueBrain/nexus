@@ -6,6 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliOpts.{envConfig, postgresConfig, token}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.modules.config.ConfigModule
+import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresModule
 import com.monovore.decline.Opts
 import distage.{Injector, TagK}
 import izumi.distage.model.Locator
@@ -27,13 +28,15 @@ abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locato
             AppConfig.load[F](e, p, t).flatMap {
               case Left(err) => F.raiseError(err)
               case Right(value) =>
-                val effects = EffectModule[F]
-                val cli     = CliModule[F]
-                val config  = ConfigModule[F]
-                val modules = effects ++ cli ++ config ++ new ModuleDef {
+                val effects  = EffectModule[F]
+                val cli      = CliModule[F]
+                val config   = ConfigModule[F]
+                val postgres = PostgresModule[F]
+                val modules = effects ++ cli ++ config ++ postgres ++ new ModuleDef {
                   make[AppConfig].from(value)
                 }
-                Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, GCMode.NoGC).use(loc => F.pure(loc))
+                Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, GCMode.NoGC).wrapRelease((_, _) => F.unit).use(loc => F.pure(loc))
+//                Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, GCMode.NoGC).use(loc => F.pure(loc))
             }
         }
     }

@@ -18,9 +18,7 @@ import org.scalatest.OptionValues
 
 class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with OptionValues {
 
-  private val eventsJson = jsonContentOf("/events.json")
-  private val events     = eventsJson.as[List[Event]].toOption.value
-  private val offset     = Some(Offset(new UUID(1584614086454L, 0))) // 3rd event
+  private val offset = Some(Offset(new UUID(1584614086454L, 0))) // 3rd event
 
   private def streamFor(offset: Option[Offset]): Stream[IO, Byte] = {
     val stream = Stream

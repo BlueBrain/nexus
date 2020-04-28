@@ -70,6 +70,7 @@ object EventStreamClient {
           val req          = Request[F](uri = uri, headers = Headers(lastEventIdH.toList ++ env.authorizationHeader.toList))
           client
             .stream(req)
+            // TODO: handle client errors
             .flatMap(_.body.through(ServerSentEvent.decoder[F]))
             .evalMap { sse =>
               val resultT = for {

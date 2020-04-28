@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli.config.postgres
 
+import java.nio.file.Path
+
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
 import com.github.ghik.silencer.silent
 import pureconfig.configurable._
@@ -7,14 +9,19 @@ import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveConvert
 import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
   * PostgreSQL connectivity information along with the projection configuration.
-  * @param host     the postgres host
-  * @param port     the postgres port
-  * @param database the database to be used
-  * @param username the auth username
-  * @param password the auth password
-  * @param projects the project to config mapping
+  *
+  * @param host               the postgres host
+  * @param port               the postgres port
+  * @param database           the database to be used
+  * @param username           the auth username
+  * @param password           the auth password
+  * @param offsetFile         the location where the postgres projection offset should be read / stored
+  * @param offsetSaveInterval how frequent to save the stream offset into the offset file
+  * @param projects           the project to config mapping
   */
 final case class PostgresConfig(
     host: String,
@@ -22,6 +29,8 @@ final case class PostgresConfig(
     database: String,
     username: String,
     password: String,
+    offsetFile: Path,
+    offsetSaveInterval: FiniteDuration,
     projects: Map[(OrgLabel, ProjectLabel), ProjectConfig]
 ) {
 

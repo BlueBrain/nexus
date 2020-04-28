@@ -1,4 +1,6 @@
-Usage: nexus-cli config
+Usage:
+    nexus-cli config
+    nexus-cli postgres
 
 Nexus CLI
 
@@ -9,3 +11,5 @@ Options and flags:
 Subcommands:
     config
         Read or write the tool configuration.
+    postgres
+        Postgres database projection.
