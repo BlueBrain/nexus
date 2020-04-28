@@ -165,8 +165,9 @@ lazy val postgres = project
 lazy val cli = project
   .in(file("cli"))
   .settings(
-    name       := "cli",
-    moduleName := "cli",
+    name            := "cli",
+    moduleName      := "cli",
+    coverageMinimum := 70d,
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
