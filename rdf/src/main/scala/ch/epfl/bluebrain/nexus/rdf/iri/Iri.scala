@@ -206,7 +206,7 @@ object Iri {
     }
 
     private def merge(base: Url): Path =
-      if (base.authority.isDefined && base.path.isEmpty) Slash(path)
+      if (base.authority.isDefined && base.path.isEmpty) path.prepend(/)
       else removeDotSegments(path.prepend(deleteLast(base.path), allowSlashDup = true))
 
     private def merge(base: Urn): Path =
@@ -319,7 +319,7 @@ object Iri {
       * @return Right(Uri) if the string conforms to specification, Left(error) otherwise
       */
     final def apply(string: String): Either[String, Uri] =
-      new IriParser(string).parseAbsolute
+      new IriParser(string).parseUrn orElse new IriParser(string).parseUrl
 
     @SuppressWarnings(Array("EitherGet"))
     final def unsafe(string: String): Uri =
@@ -365,7 +365,7 @@ object Iri {
       copy(fragment = Some(fragment))
 
     override lazy val iriString: String = {
-      val a = authority.map("//" + _.iriString).getOrElse("")
+      val a = if (scheme.value == "file") "//" else authority.map("//" + _.iriString).getOrElse("")
       val q = query.map("?" + _.iriString).getOrElse("")
       val f = fragment.map("#" + _.iriString).getOrElse("")
 

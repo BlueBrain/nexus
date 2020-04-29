@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.rdf
 
 import cats.Eq
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import ch.epfl.bluebrain.nexus.rdf.Node.IriOrBNode
 import ch.epfl.bluebrain.nexus.rdf.Node.Literal.LanguageTag
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri
+import ch.epfl.bluebrain.nexus.rdf.syntax.all._
+
 import scala.concurrent.duration._
 
 class NodeSpec extends RdfSpec {

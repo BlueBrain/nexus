@@ -1,20 +1,20 @@
 package ch.epfl.bluebrain.nexus.rdf.iri
 
-import cats.syntax.show._
+import cats.implicits._
 import cats.{Eq, Show}
 import ch.epfl.bluebrain.nexus.rdf.iri.Curie._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri._
 import io.circe.{Decoder, Encoder}
 
 /**
-  * A Compact URI as defined by W3C in ''CURIE Syntax 1.0''.
+  * A Compact URI as defined in the Json-LD 1.1 spec.
   * A curie is form by a ''prefix'', a '':'' and a ''reference''.
   * Example: xsd:integer
   *
   * @param prefix    the curie prefix
   * @param reference the curie reference
   */
-final case class Curie(prefix: Prefix, reference: RelativeIri) {
+final case class Curie(prefix: Prefix, reference: String) {
 
   /**
     * Converts the curie to an iri using the provided ''namespace'' and the curie ''reference''.
@@ -24,7 +24,7 @@ final case class Curie(prefix: Prefix, reference: RelativeIri) {
     *         an string with the error message otherwise
     */
   def toIri(namespace: Uri): Either[String, Uri] =
-    Iri.uri(namespace.iriString + reference.iriString)
+    Iri.uri(namespace.iriString + reference)
 
   /**
     * Converts the curie to an iri using the provided ''prefixMappings'' to resolve the value of the ''prefix''.
@@ -33,11 +33,8 @@ final case class Curie(prefix: Prefix, reference: RelativeIri) {
     * @return an [[Uri]] when successfully joined the resolution of the prefix with the ''reference'' or
     *         an string with the error message otherwise
     */
-  def toIri(prefixMappings: Map[Prefix, Uri]): Either[String, Uri] =
-    prefixMappings
-      .get(prefix)
-      .toRight(s"Could not find a namespace definition for '${prefix.value}'")
-      .flatMap(toIri)
+  def toIri(prefixMappings: Map[Prefix, Uri]): Either[String, Option[Uri]] =
+    prefixMappings.get(prefix).map(toIri).sequence
 }
 
 object Curie {
@@ -61,6 +58,11 @@ object Curie {
 
   object Prefix {
 
+    val idAlphaNum = """^@[a-zA-Z0-9]+$""".r.pattern
+
+    def isReserved(term: String): Boolean =
+      idAlphaNum.matcher(term).matches()
+
     /**
       * Attempt to construct a new [[Prefix]] from the argument validating the structure and the character encodings as per
       * ''CURIE Syntax 1.0''.
@@ -69,7 +71,7 @@ object Curie {
       * @return Right(prefix) if the string conforms to specification, Left(error) otherwise
       */
     final def apply(string: String): Either[String, Prefix] =
-      new IriParser(string).parseNcName
+      new IriParser(string).parsePrefix
 
     implicit final val prefixShow: Show[Prefix]       = Show.show(_.value)
     implicit final val prefixEq: Eq[Prefix]           = Eq.fromUniversalEquals
@@ -77,8 +79,8 @@ object Curie {
     implicit final val prefixDecoder: Decoder[Prefix] = Decoder.decodeString.emap(Prefix.apply)
   }
 
-  implicit final def curieShow(implicit p: Show[Prefix], r: Show[RelativeIri]): Show[Curie] =
-    Show.show { case Curie(prefix, reference) => prefix.show + ":" + reference.show }
+  implicit final def curieShow(implicit p: Show[Prefix]): Show[Curie] =
+    Show.show { case Curie(prefix, reference) => prefix.show + ":" + reference }
 
   implicit final val curieEq: Eq[Curie] = Eq.fromUniversalEquals
 

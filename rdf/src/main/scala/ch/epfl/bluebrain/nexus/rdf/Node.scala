@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.rdf
 
-import java.util.UUID
+import java.text.{DecimalFormat, DecimalFormatSymbols}
+import java.util.{Locale, UUID}
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import cats.implicits._
@@ -10,6 +11,7 @@ import ch.epfl.bluebrain.nexus.rdf.Node.{BNode, IriNode, Literal}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri
 import ch.epfl.bluebrain.nexus.rdf.iri.Iri.Uri
+import io.circe.{Decoder, Encoder}
 import org.parboiled2.CharPredicate._
 import org.parboiled2._
 
@@ -132,7 +134,7 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     Literal(value)
 
   /**
-    * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#int'' data type.
+    * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#integer'' data type.
     *
     * @param value the underlying int value
     */
@@ -228,7 +230,6 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     implicit final val bnodeEq: Eq[BNode]     = Eq.fromUniversalEquals
 
     //noinspection TypeAnnotation
-    // format: off
     @SuppressWarnings(Array("MethodNames"))
     private class BNodeParser(val input: ParserInput) extends Parser {
       def bnode = rule { AlphaNum ~ zeroOrMore(AlphaNum ++ "-_") ~ EOI }
@@ -245,15 +246,14 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     override def isIri: Boolean         = true
     override def asBlank: Option[BNode] = None
     override def asIri: Option[IriNode] = Some(this)
-    override def toString: String = value.show
+    override def toString: String       = value.show
   }
 
   object IriNode {
-    final implicit def iriNodeShow(implicit is: Show[Uri]): Show[IriNode] =
-      Show.show(i => s"<${is.show(i.value)}>"
-      )
+    implicit final def iriNodeShow(implicit is: Show[Uri]): Show[IriNode] =
+      Show.show(i => s"<${is.show(i.value)}>")
 
-    final implicit val iriNodeEq: Eq[IriNode] = Eq.fromUniversalEquals
+    implicit final val iriNodeEq: Eq[IriNode] = Eq.fromUniversalEquals
   }
 
   /**
@@ -274,7 +274,13 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     override def asBlank: Option[BNode]     = None
     override def asIri: Option[IriNode]     = None
     override def asLiteral: Option[Literal] = Some(this)
-    override def toString: String = lexicalForm
+    override def toString: String           = lexicalForm
+
+    def rdfLexicalForm: String =
+      if (dataType == xsd.double || dataType == xsd.float || (isNumeric && asInt.isEmpty && asLong.isEmpty))
+        asDouble.map(eFormatter.format(_)).getOrElse(escape(lexicalForm))
+      else
+        escape(lexicalForm)
 
     /**
       * @return true if the literal is numeric, false otherwise
@@ -304,27 +310,33 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
       * @return Some(boolean) when the literal is a boolean, None otherwise
       */
     def asBoolean: Option[Boolean] =
-      if(isBoolean) lexicalForm.toBooleanOption else None
+      if (isBoolean) lexicalForm.toBooleanOption else None
 
     /**
       * @return Some(long) when the literal is a numerical value which can be cased as a long, None otherwise
       */
     def asLong: Option[Long] =
-      if(isNumeric) lexicalForm.toLongOption else None
+      if (isNumeric) lexicalForm.toLongOption else None
+
+    /**
+      * @return Some(double) when the literal is a numerical value which can be cased as a double, None otherwise
+      */
+    def asDouble: Option[Double] =
+      if (isNumeric) lexicalForm.toDoubleOption else None
 
     /**
       * @return Some(int) when the literal is a numerical value which can be cased as an int, None otherwise
       */
     def asInt: Option[Int] =
-      if(isNumeric) lexicalForm.toIntOption else None
+      if (isNumeric) lexicalForm.toIntOption else None
 
     /**
       * @return Some(duration) when the literal is a string that can be converted to a finite duration, None otherwise
       */
     def asFiniteDuration: Option[FiniteDuration] =
-      if(isString) 
+      if (isString)
         Try(Duration(lexicalForm)).toOption.filter(_.isFinite).map(d => FiniteDuration(d.toNanos, NANOSECONDS))
-      else 
+      else
         None
 
   }
@@ -332,10 +344,23 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
   object Literal {
 
     final val numericDataTypes: Set[Uri] = Set(
-      xsd.byte, xsd.short, xsd.int, xsd.integer, xsd.long, xsd.decimal, xsd.double, xsd.float,
-      xsd.negativeInteger, xsd.nonNegativeInteger, xsd.nonPositiveInteger, xsd.positiveInteger,
-      xsd.unsignedByte, xsd.unsignedShort, xsd.unsignedInt, xsd.unsignedLong)
-    
+      xsd.byte,
+      xsd.short,
+      xsd.int,
+      xsd.integer,
+      xsd.long,
+      xsd.decimal,
+      xsd.double,
+      xsd.float,
+      xsd.negativeInteger,
+      xsd.nonNegativeInteger,
+      xsd.nonPositiveInteger,
+      xsd.positiveInteger,
+      xsd.unsignedByte,
+      xsd.unsignedShort,
+      xsd.unsignedInt,
+      xsd.unsignedLong
+    )
 
     /**
       * Creates a new Literal node from the arguments.
@@ -381,12 +406,12 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
       new Literal(value.toString, xsd.byte)
 
     /**
-      * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#int'' data type.
+      * Creates a new Integer literal of ''http://www.w3.org/2001/XMLSchema#integer'' data type.
       *
       * @param value the underlying int value
       */
     final def apply(value: Int): Literal =
-      new Literal(value.toString, xsd.int)
+      new Literal(value.toString, xsd.integer)
 
     /**
       * Creates a new Short literal of ''http://www.w3.org/2001/XMLSchema#short'' data type.
@@ -430,16 +455,20 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
       case x    => x.toString
     }
 
-    private def escape(str: String): String =
+    private[Literal] def escape(str: String): String =
       str.flatMap(escape(_: Char))
 
-    final implicit def literalShow(implicit is: Show[Uri], ls: Show[LanguageTag]): Show[Literal] = Show.show {
-      case Literal(f, _, Some(tag))         => s""""${escape(f)}"@${ls.show(tag)}"""
-      case l@Literal(f, _, _) if l.isString => s""""${escape(f)}""""
-      case Literal(f, dt, None)             => s""""${escape(f)}"^^<${is.show(dt)}>"""
-    }
+    private[Literal] val eFormatter = new DecimalFormat("0.###############E0", new DecimalFormatSymbols(Locale.ENGLISH))
+    eFormatter.setMinimumFractionDigits(1)
 
-    final implicit val literalEq: Eq[Literal] = Eq.fromUniversalEquals
+    implicit final def literalShow(implicit is: Show[Uri], ls: Show[LanguageTag]): Show[Literal] = Show.show {
+
+      case l @ Literal(_, _, Some(tag))           => s""""${l.rdfLexicalForm}"@${ls.show(tag)}"""
+      case l: Literal if l.dataType == xsd.string => s""""${l.rdfLexicalForm}""""
+      case l @ Literal(_, dt, None)               => s""""${l.rdfLexicalForm}"^^<${is.show(dt)}>"""
+
+    }
+    implicit final val literalEq: Eq[Literal] = Eq.fromUniversalEquals
 
     /**
       * A language tag as described by BCP 47 (https://tools.ietf.org/html/bcp47#section-2.1).
@@ -466,8 +495,10 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
           .leftMap(_.format(string, formatter))
       }
 
-      final implicit val languageTagShow: Show[LanguageTag] = Show.show(_.value)
-      final implicit val languageTagEq: Eq[LanguageTag]     = Eq.fromUniversalEquals
+      implicit final val languageTagShow: Show[LanguageTag]       = Show.show(_.value)
+      implicit final val languageTagEq: Eq[LanguageTag]           = Eq.fromUniversalEquals
+      implicit final val languageTagEncoder: Encoder[LanguageTag] = Encoder.encodeString.contramap(_.value)
+      implicit final val languageTagDecoder: Decoder[LanguageTag] = Decoder.decodeString.emap(LanguageTag.apply)
 
       //noinspection TypeAnnotation
       // format: off

@@ -18,7 +18,7 @@ import org.parboiled2._
 // format: off
 @SuppressWarnings(Array("MethodNames", "unused", "UnsafeTraversableMethods"))
 @silent
-private[iri] class IriParser(val input: ParserInput)
+private[rdf] class IriParser(val input: ParserInput)
                             (implicit formatter: ErrorFormatter = new ErrorFormatter(showExpected = false, showTraces = false))
   extends Parser with StringBuilding {
 
@@ -54,12 +54,12 @@ private[iri] class IriParser(val input: ParserInput)
 
   def parsePathAbempty: Either[String, Path] =
     rule(`ipath-abempty` ~ EOI).run()
-      .map(_ => _path)
+      .map(_ => fetchPath)
       .leftMap(_.format(input, formatter))
 
   def parsePathRootLess: Either[String, Path] =
     rule(`ipath-rootless` ~ EOI).run()
-      .map(_ => _path)
+      .map(_ => fetchPath)
       .leftMap(_.format(input, formatter))
 
   def parsePathSegment: Either[String, Path] =
@@ -78,11 +78,11 @@ private[iri] class IriParser(val input: ParserInput)
       .leftMap(_.format(input, formatter))
 
   def parseUrl: Either[String, Url] =
-    rule(`url`).run()
+    rule(`url-or-file`).run()
       .map(_ => Url(
         scheme    = _scheme,
         authority = Option(_authority),
-        path      = _path,
+        path      = fetchPath,
         query     = Option(_query),
         fragment  = Option(_fragment))
       )
@@ -92,36 +92,38 @@ private[iri] class IriParser(val input: ParserInput)
     rule(`urn`).run()
       .map(_ => Urn(
         nid      = _nid,
-        nss      = _path,
+        nss      = fetchPath,
         r        = Option(_r),
         q        = Option(_query),
         fragment = Option(_fragment))
       )
       .leftMap(_.format(input, formatter))
 
-  def parseAbsolute: Either[String, Uri] =
-    rule(`urn` | `url`).run()
-      .map { _ =>
-        if (_nid != null) Urn(
-          nid      = _nid,
-          nss      = _path,
-          r        = Option(_r),
-          q        = Option(_query),
-          fragment = Option(_fragment))
-        else Url(
-          scheme    = _scheme,
-          authority = Option(_authority),
-          path      = _path,
-          query     = Option(_query),
-          fragment  = Option(_fragment))
-      }
-      .leftMap(_.format(input, formatter))
+//  def parseAbsolute: Either[String, Uri] =
+//    rule(`urn` | `url-or-file`).run()
+//      .map { _ =>
+//        if (_nid != null) Urn(
+//          nid      = _nid,
+//          nss      = fetchPath,
+//          r        = Option(_r),
+//          q        = Option(_query),
+//          fragment = Option(_fragment))
+//        else Url(
+//          scheme    = _scheme,
+//          authority = Option(_authority),
+//          path      = fetchPath,
+//          query     = Option(_query),
+//          fragment  = Option(_fragment))
+//      }
+//      .leftMap(_.format(input, formatter))
+
+  private def fetchPath = if(_path_last_is_dot && !_path.isEmpty && _path != Path./) Slash(_path) else _path
 
   def parseRelative: Either[String, RelativeIri] =
     rule(`irelative-ref` ~ EOI).run()
       .map(_ => RelativeIri(
         authority = Option(_authority),
-        path      = _path,
+        path      = fetchPath,
         query     = Option(_query),
         fragment  = Option(_fragment))
       )
@@ -138,21 +140,14 @@ private[iri] class IriParser(val input: ParserInput)
 
   def parseCurie: Either[String, Curie] =
     rule(`curie`).run()
-      .map { _ =>
-        val prefix    = _ncName
-        val reference = RelativeIri(
-          authority = Option(_authority),
-          path      = _path,
-          query     = Option(_query),
-          fragment  = Option(_fragment))
-        Curie(prefix, reference)
-      }
+      .map ( _ =>Curie(_prefix, _suffix))
       .leftMap(_.format(input, formatter))
 
-  def parseNcName: Either[String, Prefix] =
-    rule(`nc-name` ~ EOI).run()
-      .map(_ => _ncName)
+  def parsePrefix: Either[String, Prefix] =
+    rule(`prefix` ~ EOI).run()
+      .map(_ => _prefix)
       .leftMap(_.format(input, formatter))
+
 
   private def appendSBAsLower(): Rule0 = rule { run(sb.append(CharUtils.toLowerCase(lastChar))) }
   private def getDecodedSB: String = IriParser.decode(sb.toString, UTF8)
@@ -163,13 +158,15 @@ private[iri] class IriParser(val input: ParserInput)
   private[this] var _userInfo: UserInfo = _
   private[this] var _authority: Authority = _
   private[this] var _path: Path = Path.Empty
+  private[this] var _path_last_is_dot: Boolean = false
   private[this] var _query: Query = _
   private[this] var _fragment: Fragment = _
 
   private[this] var _nid: Nid = _
   private[this] var _r: Component = _
 
-  private[this] var _ncName: Prefix = _
+  private[this] var _prefix: Prefix = _
+  private[this] var _suffix: String = _
 
   private val schemeNonFirstPred = AlphaNum ++ "+-."
   private def scheme: Rule0 = rule {
@@ -245,6 +242,7 @@ private[iri] class IriParser(val input: ParserInput)
         case (acc, el)                      => Segment(el, Slash(acc))
       }
       _path = res
+      _path_last_is_dot = value == "."
     }
 
     rule {
@@ -265,11 +263,12 @@ private[iri] class IriParser(val input: ParserInput)
         case (Segment(el, acc), "..") if el != ".." && el != "."  => acc
         case (Slash(acc), "..")                                   => acc
         case (acc, ".")                                           => acc
-        case (acc, el) if el.length == 0                          => Slash(acc)
+        case (acc, el) if el.isEmpty                              => Slash(acc)
         case (Path.Empty, el)                                     => Segment(el, Path.Empty)
         case (acc, el)                                            => Segment(el, Slash(acc))
       }
       _path = res
+      _path_last_is_dot = value == "."
     }
 
     rule {
@@ -318,12 +317,24 @@ private[iri] class IriParser(val input: ParserInput)
     }
   }
 
+  private def `ihier-part-file`: Rule0 = rule {
+    run { _authority = null } ~ "//" ~`ipath-absolute`
+  }
+
   private def `ihier-part`: Rule0 = rule {
     ("//" ~ `iauthority` ~ `ipath-abempty`) | (run { _authority = null } ~ (`ipath-absolute` | `ipath-rootless` | `ipath-empty`))
   }
 
+  private def `url-or-file`: Rule0 = rule {
+    scheme ~ ':' ~ (test(_scheme.value === "file") ~!~ `file` ~ EOI | `url` ~ EOI)
+  }
+
+  private def `file`: Rule0 = rule {
+    `ihier-part-file` ~ optional('?' ~ `iquery`) ~ optional('#' ~ `ifragment`)
+  }
+
   private def `url`: Rule0 = rule {
-    scheme ~ ':' ~ `ihier-part` ~ optional('?' ~ `iquery`) ~ optional('#' ~ `ifragment`) ~ EOI
+    `ihier-part` ~ optional('?' ~ `iquery`) ~ optional('#' ~ `ifragment`)
   }
 
   private def `irelative-part`: Rule0 = rule {
@@ -377,16 +388,21 @@ private[iri] class IriParser(val input: ParserInput)
     0xF900 to 0xFDCF, 0xFDF0 to 0xFFFD, 0x10000 to 0xEFFFF
   ).map(r => CharPredicate.from(c => r contains c.toInt)).reduce(_ ++ _)
 
-  private val `nc-name-rest` = `nc-name-start` ++ Digit ++ CharPredicate("-.", "\u00B7", '\u0300' to '\u036F', '\u203F' to '\u2040')
 
-  private def `nc-name`: Rule0 = rule {
-    clearSB() ~ `nc-name-start` ~ appendSB() ~ zeroOrMore(`nc-name-rest` ~ appendSB()) ~ run {
-      _ncName = new Prefix(sb.toString)
+  private def `prefix`: Rule0 = rule {
+    clearSB() ~ oneOrMore(!':' ~ `ipchar`) ~ test(!Prefix.isReserved(sb.toString)) ~ run {
+      _prefix = new Prefix(sb.toString)
+    }
+  }
+
+  private def `suffix`: Rule0 = rule {
+    clearSB() ~ !"//" ~ oneOrMore(noneOf(":") ~ appendSB()) ~ run {
+      _suffix = sb.toString
     }
   }
 
   private def `curie`: Rule0 = rule {
-    `nc-name` ~ ':' ~ `irelative-ref` ~ EOI
+    `prefix` ~ ':' ~ `suffix` ~ EOI
   }
 }
 
