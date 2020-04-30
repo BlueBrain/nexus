@@ -38,7 +38,7 @@ final case class PostgresConfig(
     * The jdbc connection string.
     */
   def jdbcUrl: String =
-    s"jdbc:postgresql://$host:$port/$database"
+    s"jdbc:postgresql://$host:$port/$database?stringtype=unspecified"
 
 }
 
