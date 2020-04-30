@@ -220,5 +220,5 @@ inThisBuild(
   )
 )
 
-addCommandAlias("review", ";clean;scalafmtSbt;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
+addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")

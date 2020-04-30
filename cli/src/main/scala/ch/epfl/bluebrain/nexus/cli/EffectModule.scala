@@ -37,16 +37,18 @@ final class EffectModule[F[_]: Parallel: ConcurrentEffect: ContextShift: Timer: 
   addImplicit[ContextShift[F]]
 
   make[Blocker].from(Blocker.liftExecutionContext {
-    ExecutionContext.fromExecutor(Executors.newCachedThreadPool(
-      new ThreadFactory {
-        def newThread(r: Runnable): Thread = {
-          val th = new Thread(r)
-          th.setName(s"blocking-thread-pool-${th.getId}")
-          th.setDaemon(true)
-          th
+    ExecutionContext.fromExecutor(
+      Executors.newCachedThreadPool(
+        new ThreadFactory {
+          def newThread(r: Runnable): Thread = {
+            val th = new Thread(r)
+            th.setName(s"blocking-thread-pool-${th.getId}")
+            th.setDaemon(true)
+            th
+          }
         }
-      }
-    ))
+      )
+    )
   })
 }
 
