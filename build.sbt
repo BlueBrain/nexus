@@ -11,6 +11,9 @@ scalafmt: {
 }
  */
 
+val javaSpecificationVersion = "11"
+val scalacSilencerVersion    = "1.4.4"
+
 val catsVersion          = "2.1.1"
 val catsEffectVersion    = "2.1.3"
 val catsRetryVersion     = "0.3.2"
@@ -61,13 +64,15 @@ lazy val scalaTest       = "org.scalatest"         %% "scalatest"               
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
+  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
+  .disablePlugins(ScapegoatSbtPlugin)
+  .settings(shared, compilation)
+  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
   .settings(
     name       := "docs",
     moduleName := "docs",
     // paradox settings
     sourceDirectory in Paradox := sourceDirectory.value / "main" / "paradox",
-    ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox),
     paradoxMaterialTheme in Paradox := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
@@ -97,6 +102,7 @@ lazy val rdf = project
   .in(file("rdf"))
   .settings(name := "rdf", moduleName := "rdf")
   .settings(noPublish)
+  .settings(shared, compilation, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
       alleycatsCore,
@@ -111,64 +117,16 @@ lazy val rdf = project
     )
   )
 
-lazy val cliShared = project
-  .in(file("cli/shared"))
-  .settings(noPublish)
-  .settings(
-    name            := "cli-shared",
-    moduleName      := "cli-shared",
-    coverageMinimum := 70d,
-    libraryDependencies ++= Seq(
-      catsCore,
-      catsEffect,
-      catsEffectRetry,
-      circeGeneric,
-      circeParser,
-      distageCore,
-      http4sCirce,
-      http4sClient,
-      jenaArq,
-      fs2,
-      log4catsSlf4j,
-      pureconfig,
-      circeLiteral % Test,
-      scalaTest    % Test
-    )
-  )
-
-lazy val influxdb = project
-  .in(file("cli/influxdb"))
-  .dependsOn(cliShared)
-  .settings(name := "influxdb", moduleName := "influxdb")
-  .settings(libraryDependencies ++= Seq(monixEval, scalaTest % Test))
-
-lazy val postgres = project
-  .in(file("cli/postgres"))
-  .dependsOn(cliShared % "compile->compile;test->test")
-  .settings(
-    name            := "postgres",
-    moduleName      := "postgres",
-    coverageMinimum := 50d,
-    libraryDependencies ++= Seq(
-      catsRetry,
-      catsEffectRetry,
-      distageCore,
-      decline,
-      doobiePostgres,
-      monixEval,
-      distageDocker  % Test,
-      distageTestkit % Test,
-      scalaTest      % Test
-    )
-  )
-
 lazy val cli = project
   .in(file("cli"))
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
+  .settings(shared, compilation, coverage, release, servicePackaging)
   .settings(
-    name            := "cli",
-    moduleName      := "cli",
-    coverageMinimum := 50d,
-    run / fork      := true,
+    name                 := "cli",
+    moduleName           := "cli",
+    Docker / packageName := "nexus-cli",
+    coverageMinimum      := 50d,
+    run / fork           := true,
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
@@ -203,8 +161,119 @@ lazy val root = project
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
+lazy val shared = Seq(
+  organization := "ch.epfl.bluebrain.nexus",
+  resolvers ++= Seq(
+    Resolver.bintrayRepo("bbp", "nexus-releases"),
+    Resolver.bintrayRepo("bbp", "nexus-snapshots")
+  )
+)
+
+lazy val compilation = Seq(
+  scalaVersion := "2.13.1", // scapegoat plugin not published yet for 2.13.2
+  // to be removed when migrating to 2.13.2 and replaced with @nowarn (scapegoat plugin not published yet for 2.13.2)
+  libraryDependencies ++= Seq(
+    compilerPlugin("com.github.ghik" % "silencer-plugin" % scalacSilencerVersion cross CrossVersion.full),
+    "com.github.ghik" % "silencer-lib" % scalacSilencerVersion % Provided cross CrossVersion.full
+  ),
+  scalacOptions ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+  javacOptions ++= Seq(
+    "-source",
+    javaSpecificationVersion,
+    "-target",
+    javaSpecificationVersion,
+    "-Xlint"
+  ),
+  scalacOptions in (Compile, doc) ++= Seq("-no-link-warnings"),
+  javacOptions in (Compile, doc)  := Seq("-source", javaSpecificationVersion),
+  autoAPIMappings                 := true,
+  apiMappings += {
+    val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
+    ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
+  },
+  // fail the build initialization if the JDK currently used is not ${javaSpecificationVersion} or higher
+  initialize := {
+    // runs the previous initialization
+    initialize.value
+    // runs the java compatibility check
+    val current  = VersionNumber(sys.props("java.specification.version"))
+    val required = VersionNumber(javaSpecificationVersion)
+    assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
+  }
+)
+
+lazy val coverage = Seq(
+  coverageMinimum       := 80,
+  coverageFailOnMinimum := true
+)
+
+lazy val release = Seq(
+  bintrayOrganization := Some("bbp"),
+  bintrayRepository := {
+    import ch.epfl.scala.sbt.release.ReleaseEarly.Defaults
+    if (Defaults.isSnapshot.value) "nexus-snapshots"
+    else "nexus-releases"
+  },
+  sources in (Compile, doc)                := Seq.empty,
+  publishArtifact in packageDoc            := false,
+  publishArtifact in (Compile, packageSrc) := true,
+  publishArtifact in (Compile, packageDoc) := false,
+  publishArtifact in (Test, packageBin)    := false,
+  publishArtifact in (Test, packageDoc)    := false,
+  publishArtifact in (Test, packageSrc)    := false,
+  publishMavenStyle                        := true,
+  pomIncludeRepository                     := Function.const(false),
+  // removes compile time only dependencies from the resulting pom
+  pomPostProcess := { node =>
+    XmlTransformer.transformer(moduleFilter("org.scoverage") | moduleFilter("com.sksamuel.scapegoat")).transform(node).head
+  }
+)
+
+lazy val servicePackaging = {
+  import com.typesafe.sbt.packager.Keys._
+  import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerChmodType, Docker}
+  import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
+  import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
+  Seq(
+    // package the kanela agent as a fixed name jar
+    mappings in Universal := {
+      val universalMappings = (mappings in Universal).value
+      universalMappings.foldLeft(Vector.empty[(File, String)]) {
+        case (acc, (file, filename)) if filename.contains("kanela-agent") =>
+          acc :+ (file -> "lib/instrumentation-agent.jar")
+        case (acc, other) =>
+          acc :+ other
+      } :+ (WaitForIt.download(target.value) -> "bin/wait-for-it.sh")
+    },
+    // docker publishing settings
+    Docker / maintainer := "Nexus Team <noreply@epfl.ch>",
+    Docker / version    := "latest",
+    Docker / daemonUser := "nexus",
+    dockerBaseImage     := "adoptopenjdk:11-jre-hotspot",
+    dockerExposedPorts  := Seq(8080, 2552),
+    dockerUsername      := Some("bluebrain"),
+    dockerUpdateLatest  := false,
+    dockerChmodType     := DockerChmodType.UserGroupWriteExecute,
+    dockerVersion := Some(
+      DockerVersion(19, 3, 5, Some("ce"))
+    ) // forces the version because gh-actions version is 3.0.x which is not recognized to support multistage
+  )
+}
+
 inThisBuild(
   Seq(
+    scapegoatVersion     := "1.4.3",
+    scapegoatMaxWarnings := 0,
+    scapegoatMaxErrors   := 0,
+    scapegoatMaxInfos    := 0,
+    scapegoatDisabledInspections := Seq(
+      "RedundantFinalModifierOnCaseClass",
+      "RedundantFinalModifierOnMethod",
+      "ObjectNames",
+      "AsInstanceOf",
+      "ClassNames",
+      "VariableShadowing"
+    ),
     homepage := Some(url("https://github.com/BlueBrain/nexus-commons")),
     licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
     scmInfo  := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-commons"), "scm:git:git@github.com:BlueBrain/nexus-commons.git")),

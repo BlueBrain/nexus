@@ -1,5 +1,0 @@
-{
-  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "InternalError",
-  "reason": "The service blew up!"
-}

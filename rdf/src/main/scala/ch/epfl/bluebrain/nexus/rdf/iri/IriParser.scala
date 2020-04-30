@@ -466,7 +466,7 @@ object IriParser {
             sb.append(new String(bytes, 0, pos, charset))
           } catch {
             case e: NumberFormatException =>
-              throw new IllegalArgumentException("URLDecoder: Illegal hex characters in escape (%) pattern - " + e.getMessage)
+              throw new IllegalArgumentException("URLDecoder: Illegal hex characters in escape (%) pattern - " + e.getMessage, e)
           }
           needToChange = true
         case _ =>
