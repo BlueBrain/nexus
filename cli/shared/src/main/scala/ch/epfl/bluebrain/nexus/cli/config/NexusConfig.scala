@@ -23,11 +23,17 @@ import scala.util.Try
 /**
   * Nexus configuration.
   *
-  * @param endpoint   the Nexus service endpoint, including the prefix (if necessary)
-  * @param token      the optional Bearer Token used to connect to the Nexus service
-  * @param httpClient the HTTP Client configuration
+  * @param endpoint          the Nexus service endpoint, including the prefix (if necessary)
+  * @param token             the optional Bearer Token used to connect to the Nexus service
+  * @param httpClient        the HTTP Client configuration
+  * @param defaultSparqlView the default project sparql view
   */
-final case class NexusConfig(endpoint: Uri, token: Option[BearerToken], httpClient: ClientConfig) { self =>
+final case class NexusConfig(
+    endpoint: Uri,
+    token: Option[BearerToken],
+    httpClient: ClientConfig,
+    defaultSparqlView: Uri
+) { self =>
 
   /**
     * Writes the current config to the passed default path location.

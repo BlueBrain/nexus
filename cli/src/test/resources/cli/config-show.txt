@@ -1,0 +1,25 @@
+env {
+    default-sparql-view="https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+    endpoint="http://localhost:8080/v1"
+    http-client {
+        retry {
+            condition=on-server-error
+            initial-delay="100ms"
+            max-delay="5s"
+            max-retries=1
+            strategy=once
+        }
+    }
+    token=mytoken
+}
+postgres {
+    database=postgres
+    host="127.0.0.1"
+    offset-file="{postgres-offset-file}"
+    offset-save-interval="1s"
+    password=postgres
+    port=5432
+    projects {}
+    username=postgres
+}
+

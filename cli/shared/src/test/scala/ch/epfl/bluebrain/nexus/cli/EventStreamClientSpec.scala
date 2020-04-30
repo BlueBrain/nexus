@@ -20,6 +20,7 @@ import org.http4s.{HttpApp, Response, Status, Uri}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import io.circe.literal._
 
 class EventStreamClientSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
@@ -32,9 +33,12 @@ class EventStreamClientSpec extends AnyWordSpecLike with Matchers with Fixtures 
   private val instantCreated    = Instant.parse("2020-03-02T11:04:48.934789Z")
   private val instantUpdated    = Instant.parse("2020-03-02T11:05:26.713124Z")
   private val instantDeprecated = Instant.parse("2020-03-02T11:05:34.643363Z")
-  private val created           = Event("Created", id, orgLabel, projectLabel, Set(nxv / "TypeA", nxv / "TypeB"), instantCreated)
-  private val updated           = Event("Updated", id, orgLabel, projectLabel, Set(nxv / "TypeB"), instantUpdated)
-  private val deprecated        = Event("Deprecated", id, orgLabel, projectLabel, Set.empty, instantDeprecated)
+
+  // format: off
+  private val created    = Event("Created", id, 1L, orgLabel, projectLabel, Set(nxv / "TypeA", nxv / "TypeB"), instantCreated, json"""{"@context":"https://bluebrain.github.io/nexus/contexts/resource.json","@type":"Created","_resourceId":"https://example.com/v1/myId","_source":{"@context":{"@base":"https://example.com/base/","@vocab":"https://example.com/vocab/"},"@id":"myid"},"_types":["https://bluebrain.github.io/nexus/vocabulary/TypeA","https://bluebrain.github.io/nexus/vocabulary/TypeB"],"_constrainedBy":"https://bluebrain.github.io/nexus/schemas/unconstrained.json","_projectUuid":"0e23f7e4-0d06-4e05-b850-5944f03557af","_organizationUuid":"e6a5c668-5051-49bb-9414-265ccb51323e","_instant":"2020-03-02T11:04:48.934789Z","_subject":"https://example.com/v1/realms/myrealm/users/test"}""")
+  private val updated    = Event("Updated", id, 2L, orgLabel, projectLabel, Set(nxv / "TypeB"), instantUpdated, json"""{"@context":"https://bluebrain.github.io/nexus/contexts/resource.json","@type":"Updated","_resourceId":"https://example.com/v1/myId","_source":{"@context":{"@base":"https://example.com/base/","@vocab":"https://example.com/vocab/"},"@id":"myid","label":"mylabel"},"_types":["https://bluebrain.github.io/nexus/vocabulary/TypeB"],"_projectUuid":"0e23f7e4-0d06-4e05-b850-5944f03557af","_organizationUuid":"e6a5c668-5051-49bb-9414-265ccb51323e","_rev":2,"_instant":"2020-03-02T11:05:26.713124Z","_subject":"https://example.com/v1/realms/myrealm/users/test"}""")
+  private val deprecated = Event("Deprecated", id, 3L, orgLabel, projectLabel, Set.empty, instantDeprecated, json"""{"@context":"https://bluebrain.github.io/nexus/contexts/resource.json","@type":"Deprecated","_resourceId":"https://example.com/v1/myId","_types":[],"_projectUuid":"0e23f7e4-0d06-4e05-b850-5944f03557af","_organizationUuid":"e6a5c668-5051-49bb-9414-265ccb51323e","_rev":3,"_instant":"2020-03-02T11:05:34.643363Z","_subject":"https://example.com/v1/realms/myrealm/users/test"}""")
+  // format: on
 
   "A LiveEventStreamClient" should {
 

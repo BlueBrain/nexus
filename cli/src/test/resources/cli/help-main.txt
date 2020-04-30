@@ -1,0 +1,15 @@
+Usage:
+    nexus-cli config
+    nexus-cli postgres
+
+Nexus CLI
+
+Options and flags:
+    --help
+        Display this help text.
+
+Subcommands:
+    config
+        Read or write the tool configuration.
+    postgres
+        Postgres database projection.

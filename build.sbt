@@ -11,44 +11,53 @@ scalafmt: {
 }
  */
 
-val catsVersion       = "2.1.1"
-val catsEffectVersion = "2.1.2"
-val catsRetryVersion  = "0.3.2"
-val circeVersion      = "0.13.0"
-val declineVersion    = "1.0.0"
-val fs2Version        = "2.2.2"
-val http4sVersion     = "0.21.1"
-val jenaVersion       = "3.14.0"
-val log4catsVersion   = "1.0.1"
-val logbackVersion    = "1.2.3"
-val magnoliaVersion   = "0.12.8"
-val monixVersion      = "3.1.0"
-val parboiledVersion  = "2.2.0"
-val pureconfigVersion = "0.12.3"
-val scalaTestVersion  = "3.1.1"
+val catsVersion          = "2.1.1"
+val catsEffectVersion    = "2.1.3"
+val catsRetryVersion     = "0.3.2"
+val circeVersion         = "0.13.0"
+val distageVersion       = "0.10.6"
+val declineVersion       = "1.2.0"
+val doobieVersion        = "0.9.0"
+val fs2Version           = "2.3.0"
+val http4sVersion        = "0.21.3"
+val jenaVersion          = "3.14.0"
+val kindProjectorVersion = "0.11.0"
+val log4catsVersion      = "1.0.1"
+val logbackVersion       = "1.2.3"
+val magnoliaVersion      = "0.12.8"
+val monixVersion         = "3.1.0"
+val parboiledVersion     = "2.2.0"
+val pureconfigVersion    = "0.12.3"
+val scalaTestVersion     = "3.1.1"
 
-lazy val alleycatsCore   = "org.typelevel"         %% "alleycats-core"         % catsVersion
-lazy val catsCore        = "org.typelevel"         %% "cats-core"              % catsVersion
-lazy val catsEffect      = "org.typelevel"         %% "cats-effect"            % catsEffectVersion
-lazy val catsRetry       = "com.github.cb372"      %% "cats-retry-core"        % catsRetryVersion
-lazy val catsEffectRetry = "com.github.cb372"      %% "cats-retry-cats-effect" % catsRetryVersion
-lazy val circeCore       = "io.circe"              %% "circe-core"             % circeVersion
-lazy val circeGeneric    = "io.circe"              %% "circe-generic"          % circeVersion
-lazy val circeLiteral    = "io.circe"              %% "circe-literal"          % circeVersion
-lazy val circeParser     = "io.circe"              %% "circe-parser"           % circeVersion
-lazy val decline         = "com.monovore"          %% "decline"                % declineVersion
-lazy val fs2             = "co.fs2"                %% "fs2-core"               % fs2Version
-lazy val http4sCirce     = "org.http4s"            %% "http4s-circe"           % http4sVersion
-lazy val http4sClient    = "org.http4s"            %% "http4s-blaze-client"    % http4sVersion
-lazy val jenaArq         = "org.apache.jena"       % "jena-arq"                % jenaVersion
-lazy val log4cats        = "io.chrisdavenport"     %% "log4cats-core"          % log4catsVersion
-lazy val log4catsSlf4j   = "io.chrisdavenport"     %% "log4cats-slf4j"         % log4catsVersion
-lazy val logback         = "ch.qos.logback"        % "logback-classic"         % logbackVersion
-lazy val magnolia        = "com.propensive"        %% "magnolia"               % magnoliaVersion
-lazy val monixEval       = "io.monix"              %% "monix-eval"             % monixVersion
-lazy val parboiled2      = "org.parboiled"         %% "parboiled"              % parboiledVersion
-lazy val pureconfig      = "com.github.pureconfig" %% "pureconfig"             % pureconfigVersion
-lazy val scalaTest       = "org.scalatest"         %% "scalatest"              % scalaTestVersion
+lazy val alleycatsCore   = "org.typelevel"         %% "alleycats-core"            % catsVersion
+lazy val catsCore        = "org.typelevel"         %% "cats-core"                 % catsVersion
+lazy val catsEffect      = "org.typelevel"         %% "cats-effect"               % catsEffectVersion
+lazy val catsRetry       = "com.github.cb372"      %% "cats-retry-core"           % catsRetryVersion
+lazy val catsEffectRetry = "com.github.cb372"      %% "cats-retry-cats-effect"    % catsRetryVersion
+lazy val circeCore       = "io.circe"              %% "circe-core"                % circeVersion
+lazy val circeGeneric    = "io.circe"              %% "circe-generic"             % circeVersion
+lazy val circeLiteral    = "io.circe"              %% "circe-literal"             % circeVersion
+lazy val circeParser     = "io.circe"              %% "circe-parser"              % circeVersion
+lazy val distageCore     = "io.7mind.izumi"        %% "distage-core"              % distageVersion
+lazy val distageDocker   = "io.7mind.izumi"        %% "distage-framework-docker"  % distageVersion
+lazy val distageTestkit  = "io.7mind.izumi"        %% "distage-testkit-scalatest" % distageVersion
+lazy val decline         = "com.monovore"          %% "decline"                   % declineVersion
+lazy val doobiePostgres  = "org.tpolecat"          %% "doobie-postgres"           % doobieVersion
+lazy val fs2             = "co.fs2"                %% "fs2-core"                  % fs2Version
+lazy val http4sCirce     = "org.http4s"            %% "http4s-circe"              % http4sVersion
+lazy val http4sClient    = "org.http4s"            %% "http4s-blaze-client"       % http4sVersion
+lazy val http4sDsl       = "org.http4s"            %% "http4s-dsl"                % http4sVersion
+lazy val jenaArq         = "org.apache.jena"       % "jena-arq"                   % jenaVersion
+lazy val kindProjector   = "org.typelevel"         %% "kind-projector"            % kindProjectorVersion
+lazy val log4cats        = "io.chrisdavenport"     %% "log4cats-core"             % log4catsVersion
+lazy val log4catsSlf4j   = "io.chrisdavenport"     %% "log4cats-slf4j"            % log4catsVersion
+lazy val logback         = "ch.qos.logback"        % "logback-classic"            % logbackVersion
+lazy val magnolia        = "com.propensive"        %% "magnolia"                  % magnoliaVersion
+lazy val monixEval       = "io.monix"              %% "monix-eval"                % monixVersion
+lazy val parboiled2      = "org.parboiled"         %% "parboiled"                 % parboiledVersion
+lazy val pureconfig      = "com.github.pureconfig" %% "pureconfig"                % pureconfigVersion
+lazy val scalaTest       = "org.scalatest"         %% "scalatest"                 % scalaTestVersion
 
 lazy val docs = project
   .in(file("docs"))
@@ -104,21 +113,26 @@ lazy val rdf = project
 
 lazy val cliShared = project
   .in(file("cli/shared"))
-  .settings(name := "cli-shared", moduleName := "cli-shared")
   .settings(noPublish)
   .settings(
+    name            := "cli-shared",
+    moduleName      := "cli-shared",
+    coverageMinimum := 70d,
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,
       catsEffectRetry,
       circeGeneric,
       circeParser,
+      distageCore,
       http4sCirce,
       http4sClient,
+      jenaArq,
       fs2,
       log4catsSlf4j,
       pureconfig,
-      scalaTest % Test
+      circeLiteral % Test,
+      scalaTest    % Test
     )
   )
 
@@ -128,17 +142,58 @@ lazy val influxdb = project
   .settings(name := "influxdb", moduleName := "influxdb")
   .settings(libraryDependencies ++= Seq(monixEval, scalaTest % Test))
 
-lazy val postgresql = project
-  .in(file("cli/postgresql"))
-  .dependsOn(cliShared)
-  .settings(name := "postgresql", moduleName := "postgresql")
-  .settings(libraryDependencies ++= Seq(monixEval, scalaTest % Test))
+lazy val postgres = project
+  .in(file("cli/postgres"))
+  .dependsOn(cliShared % "compile->compile;test->test")
+  .settings(
+    name            := "postgres",
+    moduleName      := "postgres",
+    coverageMinimum := 50d,
+    libraryDependencies ++= Seq(
+      catsRetry,
+      catsEffectRetry,
+      distageCore,
+      decline,
+      doobiePostgres,
+      monixEval,
+      distageDocker  % Test,
+      distageTestkit % Test,
+      scalaTest      % Test
+    )
+  )
 
 lazy val cli = project
   .in(file("cli"))
-  .settings(name := "cli", moduleName := "cli")
-  .settings(libraryDependencies ++= Seq(decline, scalaTest % Test))
-  .aggregate(cliShared, influxdb, postgresql)
+  .settings(
+    name            := "cli",
+    moduleName      := "cli",
+    coverageMinimum := 50d,
+    run / fork      := true,
+    libraryDependencies ++= Seq(
+      catsCore,
+      catsEffect,
+      catsEffectRetry,
+      catsRetry,
+      circeGeneric,
+      circeParser,
+      decline,
+      distageCore,
+      doobiePostgres,
+      distageCore,
+      http4sCirce,
+      http4sClient,
+      fs2,
+      log4catsSlf4j,
+      monixEval,
+      pureconfig,
+      circeLiteral   % Test,
+      distageDocker  % Test,
+      distageTestkit % Test,
+      http4sDsl      % Test,
+      jenaArq        % Test,
+      scalaTest      % Test
+    )
+  )
 
 lazy val root = project
   .in(file("."))
@@ -165,5 +220,5 @@ inThisBuild(
   )
 )
 
-addCommandAlias("review", ";clean;scalafmtSbt;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
+addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
