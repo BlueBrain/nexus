@@ -25,7 +25,7 @@ Plugins are developed using javascript and are loaded into the Nexus Web instanc
 
 ## What is a Studio?
 
-A studio is a collection of persistant queries organized in a table layout for users to quickly access relevant data in a customizable way. Studio authors can create a studio to match a specific topic, and create organization schemes called workspaces and dashboards to access various aspects of that data.
+A studio is a collection of persistent queries organized in a table layout for users to quickly access relevant data in a customizable way. Studio authors can create a studio to match a specific topic, and create organization schemes called workspaces and dashboards to access various aspects of that data.
 
 For example, a studio might cover all datasets from the `Neocortex`, with a workspace called `Physiology` and a dashboard called `Morphology Pipeline`.
 
