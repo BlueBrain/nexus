@@ -19,7 +19,7 @@ class OffsetConfigSpec extends AnyWordSpecLike with Matchers with Fixtures with 
     val offsetConfig = OffsetConfig(Some(Offset("b8a93f50-5c75-11ea-beb1-a5eb66b44d1c").value))
 
     "be created from a passed config file" in {
-      val path = Paths.get(getClass().getResource("/offset-test.conf").toURI())
+      val path = Paths.get(getClass.getResource("/offset-test.conf").toURI)
       OffsetConfig(path) shouldEqual Right(offsetConfig)
     }
 
@@ -36,7 +36,7 @@ class OffsetConfigSpec extends AnyWordSpecLike with Matchers with Fixtures with 
     }
 
     "fail" in {
-      val path = Paths.get(getClass().getResource("/offset-fail-test.conf").toURI())
+      val path = Paths.get(getClass.getResource("/offset-fail-test.conf").toURI)
       val err  = OffsetConfig(path).left.value
       err shouldBe a[ReadConvertError]
       err.show.contains("the application configuration failed to be loaded into a configuration object") shouldEqual true

@@ -5,7 +5,13 @@ on:
       - master
     paths:
       - 'docs/**'
+      - 'build.sbt'
+      - 'project/**'
   pull_request:
+    paths:
+      - 'docs/**'
+      - 'build.sbt'
+      - 'project/**'
 
 jobs:
   review:

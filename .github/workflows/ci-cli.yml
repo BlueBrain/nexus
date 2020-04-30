@@ -5,7 +5,13 @@ on:
       - master
     paths:
       - 'cli/**'
+      - 'build.sbt'
+      - 'project/**'
   pull_request:
+    paths:
+      - 'cli/**'
+      - 'build.sbt'
+      - 'project/**'
   release:
     types: [published]
 jobs:

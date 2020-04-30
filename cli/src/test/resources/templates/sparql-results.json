@@ -1,0 +1,56 @@
+{
+  "head": {
+    "vars": [
+      "s",
+      "p",
+      "o"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "s": {
+          "type": "uri",
+          "value": "https://example.com/subject"
+        },
+        "p": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/nexus/vocabulary/constrainedBy"
+        },
+        "o": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/nexus/schemas/resolver.json"
+        }
+      },
+      {
+        "s": {
+          "type": "uri",
+          "value": "https://example.com/subject"
+        },
+        "p": {
+          "type": "uri",
+          "value": "https://bluebrain.github.io/nexus/vocabulary/deprecated"
+        },
+        "o": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+          "type": "literal",
+          "value": "false"
+        }
+      },
+      {
+        "s" : {
+          "type" : "uri",
+          "value": "https://example.com/subject"
+        },
+        "p" : {
+          "type" : "uri",
+          "value" : "https://bluebrain.github.io/nexus/vocabulary/label"
+        },
+        "o" : {
+          "type" : "literal",
+          "value" : "myText"
+        }
+      }
+    ]
+  }
+}
