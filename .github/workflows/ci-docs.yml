@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2.1.0
     - uses: olafurpg/setup-scala@v5
       with:
         java-version: adopt@1.11
@@ -37,7 +37,7 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
       BUILD_BOT_SSH_PRIVATE_KEY: ${{ secrets.BUILD_BOT_SSH_PRIVATE_KEY }}
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2.1.0
     - uses: olafurpg/setup-scala@v5
       with:
         java-version: adopt@1.11

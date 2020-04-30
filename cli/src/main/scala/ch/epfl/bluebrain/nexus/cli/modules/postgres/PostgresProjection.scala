@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli.modules.postgres
 
-import java.nio.file.Path
+import java.nio.file.{Path, StandardOpenOption}
+import java.time.Instant
 
 import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
@@ -17,8 +18,6 @@ import doobie.util.fragment.Elem
 import doobie.util.transactor.Transactor
 import fs2.{io, text, Stream}
 import retry.RetryDetails
-
-import scala.concurrent.duration.FiniteDuration
 
 class PostgresProjection[F[_]: ContextShift](
     console: Console[F],
@@ -113,6 +112,7 @@ class PostgresProjection[F[_]: ContextShift](
   }
 
   private def toElem(binding: Binding): Elem = {
+    import PostgresProjection.TimeMeta.javatime._
     (binding.asLiteral, binding.asUri, binding.asBNode) match {
       case (Some(Literal(lexicalForm, dataType, _)), _, _)
           if dataType.renderString == "http://www.w3.org/2001/XMLSchema#string" =>
@@ -124,8 +124,11 @@ class PostgresProjection[F[_]: ContextShift](
           if dataType.renderString == "http://www.w3.org/2001/XMLSchema#int" || dataType.renderString == "http://www.w3.org/2001/XMLSchema#integer" =>
         Elem.Arg[Int](lexicalForm.toInt, Put[Int])
       case (Some(Literal(lexicalForm, dataType, _)), _, _)
-          if dataType.renderString == "http://www.w3.org/2001/XMLSchema#boolean" || dataType.renderString == "http://www.w3.org/2001/XMLSchema#boolean" =>
+          if dataType.renderString == "http://www.w3.org/2001/XMLSchema#boolean" =>
         Elem.Arg[Boolean](lexicalForm.toBoolean, Put[Boolean])
+      case (Some(Literal(lexicalForm, dataType, _)), _, _)
+          if dataType.renderString == "http://www.w3.org/2001/XMLSchema#dateTime" =>
+        Elem.Arg[Instant](Instant.parse(lexicalForm), Put[Instant])
       case (None, Some(uri), _) =>
         Elem.Arg[String](uri.renderString, Put[String])
       case (None, None, Some(bnode)) =>
@@ -158,20 +161,17 @@ class PostgresProjection[F[_]: ContextShift](
     conn.transact(xa) >> F.unit
   }
 
-  private def repeatAtFixedRate(period: FiniteDuration, task: F[Unit]): F[Unit] =
-    task >> T.sleep(period) >> repeatAtFixedRate(period, task)
-
-  def writeOffsetPeriodically(sseStream: EventStream[F]): F[Unit] = {
-    repeatAtFixedRate(
-      cfg.postgres.offsetSaveInterval,
-      sseStream.currentEventId().flatMap {
-        case Some(offset) =>
-          writeOffset(offset)
-        case None =>
-          F.unit
+  private def writeOffsetPeriodically(sseStream: EventStream[F]): F[Unit] =
+    Stream
+      .repeatEval {
+        sseStream.currentEventId().flatMap {
+          case Some(offset) => writeOffset(offset)
+          case None         => F.unit
+        }
       }
-    )
-  }
+      .metered(cfg.postgres.offsetSaveInterval)
+      .compile
+      .drain
 
   private def readOffset(file: Path): F[Option[Offset]] = {
     io.file.exists(blocker, cfg.postgres.offsetFile).flatMap { exists =>
@@ -187,12 +187,32 @@ class PostgresProjection[F[_]: ContextShift](
     }
   }
 
-  private def writeOffset(offset: Offset): F[Unit] =
-    io.file.createDirectories(blocker, cfg.postgres.offsetFile.getParent) >>
-      io.file.deleteIfExists(blocker, cfg.postgres.offsetFile) >>
+  private def writeOffset(offset: Offset): F[Unit] = {
+    // if the file exists => truncate and write, otherwise create parents and write
+    val pipeF = io.file
+      .exists(blocker, cfg.postgres.offsetFile)
+      .ifM(
+        F.pure(
+          io.file.writeAll(
+            cfg.postgres.offsetFile,
+            blocker,
+            List(StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
+          )
+        ),
+        io.file
+          .createDirectories(blocker, cfg.postgres.offsetFile.getParent)
+          .map(_ => io.file.writeAll(cfg.postgres.offsetFile, blocker))
+      )
+    pipeF.flatMap { write =>
       Stream(offset.asString)
         .through(text.utf8Encode)
-        .through(io.file.writeAll(cfg.postgres.offsetFile, blocker))
+        .through(write)
         .compile
         .drain
+    }
+  }
+}
+
+object PostgresProjection {
+  object TimeMeta extends doobie.util.meta.TimeMeta
 }

@@ -21,8 +21,7 @@ object CliOpts extends OptsInstances {
       help = "The token to use when interacting with the Nexus API; " +
         "a 'none' string value will remove any preconfigured token."
     )
-    .map(_.trim)
-    .validate("Token must be a non empty string") { _.length > 0 }
+    .validate("Token must be a non empty string") { !_.isBlank }
     .map {
       case "none" => None
       case value  => Some(BearerToken(value))

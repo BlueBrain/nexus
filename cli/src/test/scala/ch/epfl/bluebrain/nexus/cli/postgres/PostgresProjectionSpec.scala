@@ -1,13 +1,18 @@
 package ch.epfl.bluebrain.nexus.cli.postgres
 
-import cats.effect.IO
+import java.time.OffsetDateTime
+
+import cats.effect.{Blocker, IO}
+import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresProjection
+import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresProjection.TimeMeta.javatime._
 import doobie.util.transactor.Transactor
+import fs2.{io, text}
 
 //noinspection SqlNoDataSourceInspection
 class PostgresProjectionSpec extends AbstractPostgresSpec {
 
-  "A DB" should {
+  "A PostgresProjection" should {
     "project all schemas" in {
       import doobie.implicits._
       (xa: Transactor[IO], proj: PostgresProjection[IO]) =>
@@ -22,7 +27,26 @@ class PostgresProjectionSpec extends AbstractPostgresSpec {
           (maxImportSchema, maxImportCount) = maxImport
           _                                 = maxImportSchema shouldEqual "https://neuroshapes.org/commons/entity"
           _                                 = maxImportCount shouldEqual 7
+          lastUpdated <- sql"select last_updated from schemas where id = 'https://neuroshapes.org/commons/entity'"
+                          .query[OffsetDateTime]
+                          .unique
+                          .transact(xa)
+          _ = lastUpdated.toInstant.toEpochMilli shouldEqual 1584615316089L
         } yield ()
+    }
+    "save offset" in { (cfg: AppConfig, blocker: Blocker, proj: PostgresProjection[IO]) =>
+      for {
+        _      <- proj.run
+        exists <- io.file.exists[IO](blocker, cfg.postgres.offsetFile)
+        _      = exists shouldEqual true
+        offset <- io.file
+                   .readAll[IO](cfg.postgres.offsetFile, blocker, 1024)
+                   .through(text.utf8Decode)
+                   .through(text.lines)
+                   .compile
+                   .string
+        _ = offset.isBlank shouldEqual false
+      } yield ()
     }
   }
 }

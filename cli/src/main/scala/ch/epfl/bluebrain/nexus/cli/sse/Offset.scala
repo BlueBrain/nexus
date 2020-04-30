@@ -17,9 +17,5 @@ object Offset {
     * Attempts to create an [[Offset]] from the passed string value.
     */
   final def apply(string: String): Option[Offset] =
-    Try(UUID.fromString(string)).map(Offset.apply).toOption
-
-  implicit final val offsetOrdering: Ordering[Offset] = (x: Offset, y: Offset) =>
-    x.value.timestamp() compareTo y.value.timestamp()
-
+    Try(UUID.fromString(string)).toOption.map(Offset(_))
 }
