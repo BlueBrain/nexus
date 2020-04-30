@@ -2,7 +2,7 @@ version: "2"
 services:
   kg:
     image: bluebrain/nexus-kg:1.3
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
@@ -17,7 +17,7 @@ services:
 
   iam:
     image: bluebrain/nexus-iam:1.3
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
@@ -26,7 +26,7 @@ services:
 
   admin:
     image: bluebrain/nexus-admin:1.3
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"

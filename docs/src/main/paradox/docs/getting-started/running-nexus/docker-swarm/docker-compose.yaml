@@ -2,7 +2,7 @@ version: "3.3"
 services:
   kg:
     image: bluebrain/nexus-kg:1.3
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "admin:8080", "--", "./bin/kg"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
@@ -13,11 +13,11 @@ services:
       ADMIN_PUBLIC_IRI: "http://localhost"
       SPARQL_BASE_URI: "http://blazegraph:9999/blazegraph"
       ELASTIC_SEARCH_BASE_URI: "http://elasticsearch:9200"
-      JAVA_OPTS: "-XX:+UseStringDeduplication -Xms2G -Xmx4G"
+      JAVA_OPTS: "-XX:+UseStringDeduplication -Xms1G -Xmx2G"
 
   iam:
     image: bluebrain/nexus-iam:1.3
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/iam"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
@@ -27,7 +27,7 @@ services:
 
   admin:
     image: bluebrain/nexus-admin:1.3
-    entrypoint: ["wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "iam:8080", "--", "./bin/admin"]
     environment:
       CASSANDRA_CONTACT_POINT1: "cassandra:9042"
       BIND_INTERFACE: "0.0.0.0"
@@ -39,14 +39,14 @@ services:
   elasticsearch:
     image: "docker.elastic.co/elasticsearch/elasticsearch:7.4.0"
     environment:
-      ES_JAVA_OPTS: "-Xms4G -Xmx4G"
+      ES_JAVA_OPTS: "-Xms2G -Xmx2G"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
 
   cassandra:
     image: "cassandra:3"
     environment:
-      MAX_HEAP_SIZE: "4G"
+      MAX_HEAP_SIZE: "2G"
       HEAP_NEWSIZE: "256m"
       CASSANDRA_BROADCAST_ADDRESS: cassandra
 
