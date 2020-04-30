@@ -22,10 +22,7 @@ final class Postgres[F[_]: Timer: Parallel: ContextShift: TagK](locatorOpt: Opti
 
   def run: Opts[F[ExitCode]] =
     Opts.subcommand("run", "Runs the postgres database projection") {
-      locator.map(_.flatMap { l =>
-        val projection = l.get[PostgresProjection[F]]
-        projection.run.as(ExitCode.Success)
-      })
+      locatorResource.map { _.use { locator => locator.get[PostgresProjection[F]].run.as(ExitCode.Success) } }
     }
 
 }

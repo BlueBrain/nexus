@@ -168,6 +168,7 @@ lazy val cli = project
     name            := "cli",
     moduleName      := "cli",
     coverageMinimum := 50d,
+    run / fork      := true,
     libraryDependencies ++= Seq(
       catsCore,
       catsEffect,

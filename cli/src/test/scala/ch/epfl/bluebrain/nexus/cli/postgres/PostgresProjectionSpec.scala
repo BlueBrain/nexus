@@ -8,14 +8,6 @@ import doobie.util.transactor.Transactor
 class PostgresProjectionSpec extends AbstractPostgresSpec {
 
   "A DB" should {
-    "select 1" in {
-      import doobie.implicits._
-      xa: Transactor[IO] =>
-        for {
-          result <- sql"select 1;".query[Int].unique.transact(xa)
-          _      = result shouldEqual 1
-        } yield ()
-    }
     "project all schemas" in {
       import doobie.implicits._
       (xa: Transactor[IO], proj: PostgresProjection[IO]) =>

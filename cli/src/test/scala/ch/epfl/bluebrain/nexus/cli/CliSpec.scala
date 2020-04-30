@@ -1,26 +1,29 @@
 package ch.epfl.bluebrain.nexus.cli
 
-import cats.effect.{ExitCode, IO}
-import ch.epfl.bluebrain.nexus.cli.dummies.TestConsole
+import java.nio.file.{Files, Path}
+import java.util.regex.Pattern
 
-import scala.io.Source
+import cats.effect.{ExitCode, IO}
+import ch.epfl.bluebrain.nexus.cli.config.AppConfig
+import ch.epfl.bluebrain.nexus.cli.dummies.TestConsole
 
 class CliSpec extends AbstractCliSpec {
 
   "A CLI" should {
-    "show the default config" in { (cli: Cli[IO], console: TestConsole[IO]) =>
+    "show the default config" in { (cli: Cli[IO], console: TestConsole[IO], cfg: AppConfig) =>
       for {
-        code     <- cli.command(assemble("config show"))
-        expected = linesOf("cli/config-show.txt").mkString("\n").trim
-        lines    <- console.stdQueue.dequeue1
-        _        = lines.trim shouldEqual expected.trim
-        _        = code shouldEqual ExitCode.Success
+        code         <- cli.command(assemble("config show"))
+        replacements = Map(Pattern.quote("{postgres-offset-file}") -> cfg.postgres.offsetFile.toString)
+        expected     = contentOf("cli/config-show.txt", replacements)
+        lines        <- console.stdQueue.dequeue1
+        _            = lines.trim shouldEqual expected.trim
+        _            = code shouldEqual ExitCode.Success
       } yield ()
     }
     "show the default help" in { (cli: Cli[IO], console: TestConsole[IO]) =>
       for {
         code     <- cli.command(assemble("--help"))
-        expected = linesOf("cli/help-main.txt").mkString("\n").trim
+        expected = contentOf("cli/help-main.txt")
         lines    <- console.stdQueue.dequeue1
         _        = lines.trim shouldEqual expected.trim
         _        = code shouldEqual ExitCode.Success
@@ -28,8 +31,14 @@ class CliSpec extends AbstractCliSpec {
     }
   }
 
-  def linesOf(resourcePath: String): List[String] =
-    Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(resourcePath)).getLines().toList
+  override def copyConfigs: IO[(Path, Path)] = IO {
+    val parent       = Files.createTempDirectory(".nexus")
+    val envFile      = parent.resolve("env.conf")
+    val postgresFile = parent.resolve("postgres.conf")
+    Files.copy(getClass.getClassLoader.getResourceAsStream("env.conf"), envFile)
+    Files.copy(getClass.getClassLoader.getResourceAsStream("postgres-noprojects.conf"), postgresFile)
+    (envFile, postgresFile)
+  }
 
   def assemble(string: String): List[String] =
     string.split(" ").toList

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.cli.sse.{Event, OrgLabel, OrgUuid, ProjectLabel, 
 import ch.epfl.bluebrain.nexus.cli.utils.{Randomness, Resources, ShouldMatchers}
 import io.circe.Json
 import izumi.distage.model.definition.{Module, ModuleDef, StandardAxis}
-import izumi.distage.model.reflection.universe.RuntimeDIUniverse.DIKey
+import izumi.distage.model.reflection.DIKey
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
 import izumi.distage.testkit.scalatest.DistageSpecScalatest
@@ -83,9 +83,11 @@ abstract class AbstractCliSpec
     make[AppConfig].fromEffect {
       copyConfigs.flatMap {
         case (envFile, postgresFile) =>
+          val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
           AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
-            case Left(value)  => IO.raiseError(value)
-            case Right(value) => IO.pure(value)
+            case Left(value) => IO.raiseError(value)
+            case Right(value) =>
+              IO.pure(value.copy(postgres = value.postgres.copy(offsetFile = postgresOffsetFile)))
           }
       }
     }

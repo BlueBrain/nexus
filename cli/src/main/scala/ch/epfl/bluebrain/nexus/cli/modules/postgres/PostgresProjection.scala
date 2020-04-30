@@ -34,7 +34,6 @@ class PostgresProjection[F[_]: ContextShift](
       _           <- console.println("Starting projection...")
       _           <- ddl
       offset      <- readOffset(cfg.postgres.offsetFile)
-      _           <- console.println(offset.toString)
       eventStream <- esc.apply(offset)
       stream      = executeStream(eventStream)
       saveOffset  = writeOffsetPeriodically(eventStream)
@@ -196,7 +195,4 @@ class PostgresProjection[F[_]: ContextShift](
         .through(io.file.writeAll(cfg.postgres.offsetFile, blocker))
         .compile
         .drain
-
 }
-
-object PostgresProjection {}

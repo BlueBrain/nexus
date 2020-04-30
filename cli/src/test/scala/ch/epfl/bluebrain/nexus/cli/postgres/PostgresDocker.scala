@@ -26,7 +26,7 @@ object PostgresDocker extends ContainerDef {
     }
 
     make[PostgresHostConfig].from { docker: PostgresDocker.Container =>
-      val knownAddress = docker.availablePorts(primaryPort).head
+      val knownAddress = docker.availablePorts.availablePorts(primaryPort).head
       PostgresHostConfig(knownAddress.hostV4, knownAddress.port)
     }
 
@@ -36,7 +36,7 @@ object PostgresDocker extends ContainerDef {
         Docker.ClientConfig(
           readTimeoutMs = 60000, // long timeout for gh actions
           connectTimeoutMs = 500,
-          allowReuse = true,
+          allowReuse = false,
           useRemote = false,
           useRegistry = true,
           remote = None,

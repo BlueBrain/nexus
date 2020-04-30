@@ -25,11 +25,13 @@ final class Config[F[_]: Timer: Parallel: ContextShift: TagK](locatorOpt: Option
 
   private def show: Opts[F[ExitCode]] =
     Opts.subcommand("show", "Print the current configuration") {
-      locator.map(_.flatMap { l =>
-        val console = l.get[Console[F]]
-        val cfg     = l.get[AppConfig]
-        console.println(renderConfig(cfg)).as(ExitCode.Success)
-      })
+      locatorResource.map {
+        _.use { locator =>
+          val console = locator.get[Console[F]]
+          val cfg     = locator.get[AppConfig]
+          console.println(renderConfig(cfg)).as(ExitCode.Success)
+        }
+      }
     }
 
   private def renderConfig(cfg: AppConfig): String = {
