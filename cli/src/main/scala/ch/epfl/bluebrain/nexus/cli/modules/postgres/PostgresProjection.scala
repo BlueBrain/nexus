@@ -210,6 +210,7 @@ class PostgresProjection[F[_]: ContextShift](
       }
       .recoverWith {
         case NonFatal(err) =>
+          // fail when there's an error reading the offset
           console.println(s"""Failed to read offset from file '${pc.offsetFile.toString}'.
                              |Error message: '${Option(err.getMessage).getOrElse("no message")}'
                              |The operation will NOT be retried.""".stripMargin) >> F.raiseError(err)
