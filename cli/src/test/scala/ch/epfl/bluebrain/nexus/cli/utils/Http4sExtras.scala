@@ -47,6 +47,11 @@ trait Http4sExtras {
       }
   }
 
+  object db {
+    def unapply[F[_]](request: Request[F]): Option[(Request[F], String)] =
+      request.uri.params.get("db").map(request -> _)
+  }
+
   object contentType {
     def unapply[F[_]](request: Request[F]): Option[(Request[F], `Content-Type`)] =
       request.headers.get(`Content-Type`) match {

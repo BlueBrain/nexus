@@ -5,6 +5,7 @@ import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.modules.config.Config
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.Postgres
+import ch.epfl.bluebrain.nexus.cli.modules.influx.Influx
 import com.monovore.decline.{Command, Help}
 import distage.{LocatorRef, TagK}
 
@@ -34,7 +35,7 @@ class Cli[F[_]: TagK: Parallel: ContextShift: Timer](locatorOpt: Option[LocatorR
     */
   def command(args: List[String], env: Map[String, String] = Map.empty): F[ExitCode] =
     Command("nexus-cli", "Nexus CLI") {
-      Config[F](locatorOpt).subcommand orElse Postgres[F](locatorOpt).subcommand
+      Config[F](locatorOpt).subcommand orElse Postgres[F](locatorOpt).subcommand orElse Influx[F](locatorOpt).subcommand
     }.parse(args, env)
       .fold(help => printHelp(help), identity)
       .recoverWith {

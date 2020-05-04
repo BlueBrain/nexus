@@ -18,7 +18,7 @@ class AbstractPostgresSpec extends AbstractCliSpec {
   override def testModule: ModuleDef = new ModuleDef {
     make[AppConfig].fromEffect { host: PostgresHostConfig =>
       copyConfigs.flatMap {
-        case (envFile, postgresFile) =>
+        case (envFile, postgresFile, _) =>
           AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
             case Left(value) => IO.raiseError(value)
             case Right(value) =>

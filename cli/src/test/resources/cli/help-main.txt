@@ -1,6 +1,7 @@
 Usage:
     nexus-cli config
     nexus-cli postgres
+    nexus-cli influxdb
 
 Nexus CLI
 
@@ -13,3 +14,5 @@ Subcommands:
         Read or write the tool configuration.
     postgres
         Postgres database projection.
+    influxdb
+        influxDB projection.

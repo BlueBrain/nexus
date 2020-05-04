@@ -3,11 +3,13 @@ package ch.epfl.bluebrain.nexus.cli.postgres
 import java.time.OffsetDateTime
 
 import cats.effect.{Blocker, IO}
+import ch.epfl.bluebrain.nexus.cli.Console
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresProjection
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresProjection.TimeMeta.javatime._
+import ch.epfl.bluebrain.nexus.cli.sse.Offset
 import doobie.util.transactor.Transactor
-import fs2.{io, text}
+import fs2.io
 
 //noinspection SqlNoDataSourceInspection
 class PostgresProjectionSpec extends AbstractPostgresSpec {
@@ -34,18 +36,16 @@ class PostgresProjectionSpec extends AbstractPostgresSpec {
           _ = lastUpdated.toInstant.toEpochMilli shouldEqual 1584615316089L
         } yield ()
     }
-    "save offset" in { (cfg: AppConfig, blocker: Blocker, proj: PostgresProjection[IO]) =>
+    "save offset" in { (cfg: AppConfig, blocker: Blocker, proj: PostgresProjection[IO], console: Console[IO]) =>
+      implicit val b: Blocker     = blocker
+      implicit val c: Console[IO] = console
+
       for {
         _      <- proj.run
         exists <- io.file.exists[IO](blocker, cfg.postgres.offsetFile)
         _      = exists shouldEqual true
-        offset <- io.file
-                   .readAll[IO](cfg.postgres.offsetFile, blocker, 1024)
-                   .through(text.utf8Decode)
-                   .through(text.lines)
-                   .compile
-                   .string
-        _ = offset.isBlank shouldEqual false
+        offset <- Offset.load(cfg.postgres.offsetFile)
+        _      = offset.nonEmpty shouldEqual true
       } yield ()
     }
   }

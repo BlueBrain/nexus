@@ -26,7 +26,8 @@ trait SparqlClient[F[_]] {
     * @param proj     the project label
     * @param queryStr the SPARQL query
     */
-  def query(org: OrgLabel, proj: ProjectLabel, queryStr: String): F[ClientErrOr[SparqlResults]]
+  def query(org: OrgLabel, proj: ProjectLabel, queryStr: String): F[ClientErrOr[SparqlResults]] =
+    query(org, proj, None, queryStr)
 
   /**
     * Performs a SPARQL query on the passed view, organization and project.
@@ -36,7 +37,18 @@ trait SparqlClient[F[_]] {
     * @param view     the view @id value
     * @param queryStr the SPARQL query
     */
-  def query(org: OrgLabel, proj: ProjectLabel, view: Uri, queryStr: String): F[ClientErrOr[SparqlResults]]
+  def query(org: OrgLabel, proj: ProjectLabel, view: Uri, queryStr: String): F[ClientErrOr[SparqlResults]] =
+    query(org, proj, Some(view), queryStr)
+
+  /**
+    * Performs a SPARQL query on the passed (or default) view, organization and project.
+    *
+    * @param org      the organization label
+    * @param proj     the project label
+    * @param view     the view @id value
+    * @param queryStr the SPARQL query
+    */
+  def query(org: OrgLabel, proj: ProjectLabel, view: Option[Uri], queryStr: String): F[ClientErrOr[SparqlResults]]
 }
 
 object SparqlClient {
@@ -58,10 +70,15 @@ object SparqlClient {
     private val successCondition                     = retry.condition.notRetryFromEither[SparqlResults] _
     implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
     implicit private val logOnError: (ClientErrOr[SparqlResults], RetryDetails) => F[Unit] =
-      (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
+      (eitherErr, details) => Logger[F].info(s"Sparql client error '$eitherErr'. Retry details: '$details'")
 
-    def query(org: OrgLabel, proj: ProjectLabel, view: Uri, queryStr: String): F[ClientErrOr[SparqlResults]] = {
-      val uri     = env.sparql(org, proj, view)
+    override def query(
+        org: OrgLabel,
+        proj: ProjectLabel,
+        view: Option[Uri],
+        queryStr: String
+    ): F[ClientErrOr[SparqlResults]] = {
+      val uri     = env.sparql(org, proj, view.getOrElse(env.defaultSparqlView))
       val headers = Headers(env.authorizationHeader.toList)
       val req = Request[F](method = Method.POST, uri = uri, headers = headers)
         .withEntity(queryStr)
@@ -71,9 +88,5 @@ object SparqlClient {
       })
       resp.retryingM(successCondition)
     }
-
-    override def query(org: OrgLabel, proj: ProjectLabel, queryStr: String): F[ClientErrOr[SparqlResults]] =
-      query(org, proj, env.defaultSparqlView, queryStr)
   }
-
 }

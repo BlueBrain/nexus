@@ -57,6 +57,12 @@ object CliOpts extends OptsInstances {
       help = "The postgres configuration file"
     )
 
+  val influxConfig: Opts[Path] = Opts
+    .option[Path](
+      long = "config",
+      help = "The influx configuration file"
+    )
+
 }
 
 trait OptsInstances {

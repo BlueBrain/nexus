@@ -20,11 +20,15 @@ final class TestCliModule[F[_]: Parallel: ContextShift: Timer: ConcurrentEffect:
     .tagged(Repo.Dummy)
     .from(
       new TestProjectClient[F](
+        // matches the uuids from the events.json file used for testing
         Map(
           (
-            // matches the uuids from the events.json file used for testing
             ("e6a84231-5df7-41cf-9d18-286892d119ec", "d576d282-1049-4a0c-9240-ff34b5e879f2"),
             ("tutorialnexus", "datamodels")
+          ),
+          (
+            ("a605b71a-377d-4df3-95f8-923149d04106", "a7d69059-8d1d-4dac-800f-90b6b6ab94ee"),
+            ("bbp", "atlas")
           )
         )
       )
