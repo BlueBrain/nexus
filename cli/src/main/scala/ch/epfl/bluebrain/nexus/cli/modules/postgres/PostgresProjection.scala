@@ -10,14 +10,19 @@ import ch.epfl.bluebrain.nexus.cli.Console
 import ch.epfl.bluebrain.nexus.cli.clients.SparqlResults.{Binding, Literal}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, SparqlClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
-import ch.epfl.bluebrain.nexus.cli.config.postgres.QueryConfig
+import ch.epfl.bluebrain.nexus.cli.config.postgres.{PostgresConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset}
-import com.github.ghik.silencer.silent
 import doobie.util.Put
 import doobie.util.fragment.Elem
 import doobie.util.transactor.Transactor
+import doobie.util.update.Update0
 import fs2.{io, text, Stream}
-import retry.RetryDetails
+import retry.CatsEffect._
+import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
+import retry.syntax.all._
+import retry.{RetryDetails, RetryPolicy}
+
+import scala.util.control.NonFatal
 
 class PostgresProjection[F[_]: ContextShift](
     console: Console[F],
@@ -28,11 +33,14 @@ class PostgresProjection[F[_]: ContextShift](
     cfg: AppConfig
 )(implicit F: ConcurrentEffect[F], T: Timer[F]) {
 
+  private val pc: PostgresConfig                   = cfg.postgres
+  implicit private val retryPolicy: RetryPolicy[F] = pc.retry.retryPolicy
+
   def run: F[Unit] =
     for {
       _           <- console.println("Starting projection...")
       _           <- ddl
-      offset      <- readOffset(cfg.postgres.offsetFile)
+      offset      <- readOffset(pc.offsetFile)
       eventStream <- esc.apply(offset)
       stream      = executeStream(eventStream)
       saveOffset  = writeOffsetPeriodically(eventStream)
@@ -49,7 +57,7 @@ class PostgresProjection[F[_]: ContextShift](
       }
       .flatMap {
         case (ev, org, proj) =>
-          val maybeConfig = cfg.postgres.projects
+          val maybeConfig = pc.projects
             .get((org, proj))
             .flatMap(pc =>
               pc.types
@@ -92,6 +100,7 @@ class PostgresProjection[F[_]: ContextShift](
       case Right(results) =>
         import doobie._
         import doobie.implicits._
+
         val delete = {
           val ids = results.results.bindings.flatMap(_.get("id").map(b => b.value).toList).mkString("'", "', '", "'")
           if (ids == "''") ""
@@ -99,15 +108,20 @@ class PostgresProjection[F[_]: ContextShift](
             s"""delete from ${qc.table} where id in ($ids);
                |""".stripMargin
         }
+
         val insert =
           s"""insert into ${qc.table} (${results.head.vars.sorted.mkString(", ")})
              |values (${results.head.vars.map(_ => "?").mkString(", ")});
              |""".stripMargin
+
         val elems = results.results.bindings.map { map =>
           map.toList.sortBy(_._1).map(_._2).map(binding => toElem(binding))
         }
-        val connections = Fragment.const(delete).update.run :: elems.map(row => Fragment(insert, row).update.run)
-        connections.sequence.transact(xa).map(_ => Right(()))
+        val statements = Fragment.const(delete).update :: elems.map(row => Fragment(insert, row).update)
+
+        implicit val log: (Throwable, RetryDetails) => F[Unit] = logFnForSqlStatements(statements)
+
+        statements.map(_.run).sequence.transact(xa).retryingOnAllErrors.map(_ => Right(()))
     }
   }
 
@@ -138,27 +152,34 @@ class PostgresProjection[F[_]: ContextShift](
     }
   }
 
-  @silent
-  private def logError(err: Throwable, details: RetryDetails): F[Unit] =
-    details match {
-      case RetryDetails.WillDelayAndRetry(nextDelay, retriesSoFar, _) =>
-        console.println(s"Error occurred while running the index stream: ${err.getMessage}") >>
-          console.println(s"Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)")
-      case RetryDetails.GivingUp(totalRetries, _) =>
-        console.println(s"Error occurred while running the index stream: ${err.printStackTrace()}") >>
-          console.println(s"Giving up ... (total retries: $totalRetries)")
-    }
-
   private def ddl: F[Unit] = {
     import doobie._
     import doobie.implicits._
     val ddls = for {
-      projectConfig <- cfg.postgres.projects.values.toList
+      projectConfig <- pc.projects.values.toList
       typeConfig    <- projectConfig.types
       queryConfig   <- typeConfig.queries
     } yield Fragment.const(queryConfig.ddl)
-    val conn = ddls.map(_.update.run).sequence
-    conn.transact(xa) >> F.unit
+    val statements                                         = ddls.map(_.update)
+    implicit val log: (Throwable, RetryDetails) => F[Unit] = logFnForSqlStatements(statements)
+    statements.map(_.run).sequence.transact(xa).retryingOnAllErrors >> F.unit
+  }
+
+  private def logFnForSqlStatements(statements: List[Update0]): (Throwable, RetryDetails) => F[Unit] = {
+    case (NonFatal(err), WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
+      console.println(s"""Error occurred while the following DDL statements:
+                         |
+                         |${statements.map("\t" + _.sql).mkString("\n")}
+                         |
+                         |Error message: '${Option(err.getMessage).getOrElse("no message")}'
+                         |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin)
+    case (NonFatal(err), GivingUp(totalRetries, _)) =>
+      console.println(s"""Error occurred while the following DDL statements:
+                         |
+                         |${statements.map("\t" + _.sql).mkString("\n")}
+                         |
+                         |Error message: '${Option(err.getMessage).getOrElse("no message")}'
+                         |Giving up ... (total retries: $totalRetries)""".stripMargin)
   }
 
   private def writeOffsetPeriodically(sseStream: EventStream[F]): F[Unit] =
@@ -169,47 +190,62 @@ class PostgresProjection[F[_]: ContextShift](
           case None         => F.unit
         }
       }
-      .metered(cfg.postgres.offsetSaveInterval)
+      .metered(pc.offsetSaveInterval)
       .compile
       .drain
 
   private def readOffset(file: Path): F[Option[Offset]] = {
-    io.file.exists(blocker, cfg.postgres.offsetFile).flatMap { exists =>
-      if (exists)
-        io.file
-          .readAll(file, blocker, 1024)
-          .through(text.utf8Decode)
-          .through(text.lines)
-          .compile
-          .string
-          .map(Offset(_))
-      else F.pure(None)
-    }
+    io.file
+      .exists(blocker, pc.offsetFile)
+      .flatMap[Option[Offset]] { exists =>
+        if (exists)
+          io.file
+            .readAll(file, blocker, 1024)
+            .through(text.utf8Decode)
+            .through(text.lines)
+            .compile
+            .string
+            .map(Offset(_))
+        else F.pure(None)
+      }
+      .recoverWith {
+        case NonFatal(err) =>
+          console.println(s"""Failed to read offset from file '${pc.offsetFile.toString}'.
+                             |Error message: '${Option(err.getMessage).getOrElse("no message")}'
+                             |The operation will NOT be retried.""".stripMargin) >> F.raiseError(err)
+      }
   }
 
   private def writeOffset(offset: Offset): F[Unit] = {
     // if the file exists => truncate and write, otherwise create parents and write
     val pipeF = io.file
-      .exists(blocker, cfg.postgres.offsetFile)
+      .exists(blocker, pc.offsetFile)
       .ifM(
         F.pure(
           io.file.writeAll(
-            cfg.postgres.offsetFile,
+            pc.offsetFile,
             blocker,
             List(StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
           )
         ),
         io.file
-          .createDirectories(blocker, cfg.postgres.offsetFile.getParent)
-          .map(_ => io.file.writeAll(cfg.postgres.offsetFile, blocker))
+          .createDirectories(blocker, pc.offsetFile.getParent)
+          .map(_ => io.file.writeAll(pc.offsetFile, blocker))
       )
-    pipeF.flatMap { write =>
-      Stream(offset.asString)
-        .through(text.utf8Encode)
-        .through(write)
-        .compile
-        .drain
-    }
+    pipeF
+      .flatMap { write =>
+        Stream(offset.asString)
+          .through(text.utf8Encode)
+          .through(write)
+          .compile
+          .drain
+      }
+      .recoverWith {
+        case NonFatal(err) =>
+          console.println(s"""Failed to write offset '${offset.asString}' to file '${pc.offsetFile}'.
+             |Error message: '${Option(err.getMessage).getOrElse("no message")}'
+             |The operation will NOT be retried.""".stripMargin)
+      }
   }
 }
 
