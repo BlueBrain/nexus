@@ -20,6 +20,12 @@ postgres {
     password=postgres
     port=5432
     projects {}
+    retry {
+        initial-delay="100ms"
+        max-delay="5s"
+        max-retries=1
+        strategy=once
+    }
     username=postgres
 }
 

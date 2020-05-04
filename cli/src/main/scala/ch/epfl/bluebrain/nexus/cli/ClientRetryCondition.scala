@@ -3,8 +3,10 @@ package ch.epfl.bluebrain.nexus.cli
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.ServerStatusError
 import org.http4s.Status
+import pureconfig.ConfigConvert
+import pureconfig.error.CannotConvert
 
-trait ClientRetryCondition {
+sealed trait ClientRetryCondition {
 
   /**
     * Decides whether it is worth to retry or not depending on the passed [[ClientError]].
@@ -54,20 +56,47 @@ object ClientRetryCondition {
   /**
     * Do not retry on any type of client error.
     */
-  val never: ClientRetryCondition = _ => false
+  final case object Never extends ClientRetryCondition {
+    override def apply(error: ClientError): Boolean = false
+  }
 
   /**
     * Retry when the Client response returns a HTTP Server Error (status codes 5xx) that is not a [[Status.GatewayTimeout]].
     */
-  val onServerError: ClientRetryCondition = {
-    case ServerStatusError(status, _) => status != Status.GatewayTimeout
-    case _                            => false
+  final case object OnServerError extends ClientRetryCondition {
+    override def apply(error: ClientError): Boolean = error match {
+      case ServerStatusError(status, _) => status != Status.GatewayTimeout
+      case _                            => false
+    }
   }
 
   /**
     * Retry on any client error.
     */
-  val always: ClientRetryCondition = _ => true
+  final case object Always extends ClientRetryCondition {
+    override def apply(error: ClientError): Boolean = true
+  }
+
+  implicit final val clientRetryConditionConfigConvert: ConfigConvert[ClientRetryCondition] =
+    ConfigConvert.viaString(
+      {
+        case "always"          => Right(Always)
+        case "on-server-error" => Right(OnServerError)
+        case "never"           => Right(Never)
+        case other =>
+          Left(
+            CannotConvert(
+              other,
+              "ClientRetryCondition",
+              s"Unknown value 'other', accepted values are: [always, on-server-error, never]"
+            )
+          )
+      }, {
+        case Always        => "always"
+        case OnServerError => "on-server-error"
+        case Never         => "never"
+      }
+    )
 
 }
 // $COVERAGE-ON$

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.cli.config.postgres
 
 import java.nio.file.Path
 
+import ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
 import com.github.ghik.silencer.silent
 import pureconfig.configurable._
@@ -21,6 +22,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param password           the auth password
   * @param offsetFile         the location where the postgres projection offset should be read / stored
   * @param offsetSaveInterval how frequent to save the stream offset into the offset file
+  * @param retry              the retry strategy (policy and condition)
   * @param projects           the project to config mapping
   */
 final case class PostgresConfig(
@@ -31,6 +33,7 @@ final case class PostgresConfig(
     password: String,
     offsetFile: Path,
     offsetSaveInterval: FiniteDuration,
+    retry: RetryStrategyConfig[Unit],
     projects: Map[(OrgLabel, ProjectLabel), ProjectConfig]
 ) {
 

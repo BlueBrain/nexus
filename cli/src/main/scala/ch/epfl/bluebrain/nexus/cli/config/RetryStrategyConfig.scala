@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli.config
 
 import cats.Applicative
-import ch.epfl.bluebrain.nexus.cli.ClientRetryCondition
 import pureconfig.ConfigConvert
 import pureconfig.generic.semiauto.deriveConvert
 import retry.RetryPolicies._
@@ -22,12 +21,12 @@ import scala.concurrent.duration.FiniteDuration
   *                     Defaults to "never"
   */
 // $COVERAGE-OFF$
-final case class RetryStrategyConfig(
+final case class RetryStrategyConfig[A](
     strategy: String,
     initialDelay: FiniteDuration,
     maxDelay: FiniteDuration,
     maxRetries: Int,
-    condition: String
+    condition: A
 ) {
 
   /**
@@ -40,16 +39,33 @@ final case class RetryStrategyConfig(
       case "once"        => constantDelay[F](initialDelay) join limitRetries[F](1)
       case _             => alwaysGiveUp
     }
-
-  val retryCondition: ClientRetryCondition = condition match {
-    case "always"          => ClientRetryCondition.always
-    case "on-server-error" => ClientRetryCondition.onServerError
-    case _                 => ClientRetryCondition.never
-  }
 }
 // $COVERAGE-ON$
 
 object RetryStrategyConfig {
-  implicit val retryStrategyConfigConvert: ConfigConvert[RetryStrategyConfig] =
-    deriveConvert[RetryStrategyConfig]
+
+  final private[RetryStrategyConfig] case class UnitRetryStrategyConfig(
+      strategy: String,
+      initialDelay: FiniteDuration,
+      maxDelay: FiniteDuration,
+      maxRetries: Int
+  )
+  private[RetryStrategyConfig] object UnitRetryStrategyConfig {
+    val configConvert: ConfigConvert[UnitRetryStrategyConfig] =
+      deriveConvert[UnitRetryStrategyConfig]
+  }
+
+  implicit final val retryStrategyConfigConvertUnitCondition: ConfigConvert[RetryStrategyConfig[Unit]] =
+    UnitRetryStrategyConfig.configConvert.xmap(
+      {
+        case UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries) =>
+          RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, ())
+      }, {
+        case RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, _) =>
+          UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries)
+      }
+    )
+
+  implicit final def retryStrategyConfigConvert[A: ConfigConvert]: ConfigConvert[RetryStrategyConfig[A]] =
+    deriveConvert[RetryStrategyConfig[A]]
 }
