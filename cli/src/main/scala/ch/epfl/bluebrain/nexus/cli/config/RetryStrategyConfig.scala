@@ -44,7 +44,7 @@ final case class RetryStrategyConfig[A](
 
 object RetryStrategyConfig {
 
-  private[RetryStrategyConfig] case class UnitRetryStrategyConfig(
+  final private[RetryStrategyConfig] case class UnitRetryStrategyConfig(
       strategy: String,
       initialDelay: FiniteDuration,
       maxDelay: FiniteDuration,

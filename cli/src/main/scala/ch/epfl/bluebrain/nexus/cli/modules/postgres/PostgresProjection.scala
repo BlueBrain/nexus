@@ -167,14 +167,14 @@ class PostgresProjection[F[_]: ContextShift](
 
   private def logFnForSqlStatements(statements: List[Update0]): (Throwable, RetryDetails) => F[Unit] = {
     case (NonFatal(err), WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
-      console.println(s"""Error occurred while the following DDL statements:
+      console.println(s"""Error occurred while the following SQL statements:
                          |
                          |${statements.map("\t" + _.sql).mkString("\n")}
                          |
                          |Error message: '${Option(err.getMessage).getOrElse("no message")}'
                          |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin)
     case (NonFatal(err), GivingUp(totalRetries, _)) =>
-      console.println(s"""Error occurred while the following DDL statements:
+      console.println(s"""Error occurred while the following SQL statements:
                          |
                          |${statements.map("\t" + _.sql).mkString("\n")}
                          |
