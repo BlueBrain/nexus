@@ -55,7 +55,7 @@ object SparqlClient {
 
   final private class LiveSparqlClient[F[_]: Sync: Timer](client: Client[F], env: EnvConfig) extends SparqlClient[F] {
     private val retry                                = env.httpClient.retry
-    private val successCondition                     = retry.retryCondition.notRetryFromEither[SparqlResults] _
+    private val successCondition                     = retry.condition.notRetryFromEither[SparqlResults] _
     implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
     implicit private val logOnError: (ClientErrOr[SparqlResults], RetryDetails) => F[Unit] =
       (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")

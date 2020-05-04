@@ -73,7 +73,7 @@ object ProjectClient {
       }
 
     private val retry                                = env.httpClient.retry
-    private val successCondition                     = retry.retryCondition.notRetryFromEither[(OrgLabel, ProjectLabel)] _
+    private val successCondition                     = retry.condition.notRetryFromEither[(OrgLabel, ProjectLabel)] _
     implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
     implicit private val logOnError: (ClientErrOr[(OrgLabel, ProjectLabel)], RetryDetails) => F[Unit] =
       (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
