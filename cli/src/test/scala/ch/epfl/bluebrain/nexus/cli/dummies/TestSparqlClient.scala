@@ -48,7 +48,12 @@ class TestSparqlClient[F[_]](events: List[Event])(implicit F: Sync[F]) extends S
   }
   ds.setDefaultModel(ds.getUnionModel)
 
-  override def query(org: OrgLabel, proj: ProjectLabel, queryStr: String): F[ClientErrOr[SparqlResults]] = {
+  override def query(
+      org: OrgLabel,
+      proj: ProjectLabel,
+      view: Option[Uri],
+      queryStr: String
+  ): F[ClientErrOr[SparqlResults]] = {
     F.delay {
       ds.begin(ReadWrite.READ)
       try {
@@ -67,8 +72,6 @@ class TestSparqlClient[F[_]](events: List[Event])(implicit F: Sync[F]) extends S
       }
     }
   }
-  override def query(org: OrgLabel, proj: ProjectLabel, view: Uri, queryStr: String): F[ClientErrOr[SparqlResults]] =
-    query(org, proj, queryStr)
 }
 
 object TestSparqlClient {

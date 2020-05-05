@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.cli.modules.postgres
 
-import java.nio.file.{Path, StandardOpenOption}
 import java.time.Instant
 
 import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
 import ch.epfl.bluebrain.nexus.cli.Console
+import ch.epfl.bluebrain.nexus.cli.ProjectionPipes.{printConsumedEvent, printEvaluatedProjection}
 import ch.epfl.bluebrain.nexus.cli.clients.SparqlResults.{Binding, Literal}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, SparqlClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
@@ -16,7 +16,7 @@ import doobie.util.Put
 import doobie.util.fragment.Elem
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update0
-import fs2.{io, text, Stream}
+import fs2.Stream
 import retry.CatsEffect._
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 import retry.syntax.all._
@@ -29,19 +29,19 @@ class PostgresProjection[F[_]: ContextShift](
     esc: EventStreamClient[F],
     spc: SparqlClient[F],
     xa: Transactor[F],
-    blocker: Blocker,
     cfg: AppConfig
-)(implicit F: ConcurrentEffect[F], T: Timer[F]) {
+)(implicit blocker: Blocker, F: ConcurrentEffect[F], T: Timer[F]) {
 
   private val pc: PostgresConfig                   = cfg.postgres
   implicit private val retryPolicy: RetryPolicy[F] = pc.retry.retryPolicy
+  implicit private val c: Console[F]               = console
 
   def run: F[Unit] =
     for {
-      _           <- console.println("Starting projection...")
+      _           <- console.println("Starting postgres projection...")
       _           <- ddl
-      offset      <- readOffset(pc.offsetFile)
-      eventStream <- esc.apply(offset)
+      offset      <- Offset.load(pc.offsetFile)
+      eventStream <- esc(offset)
       stream      = executeStream(eventStream)
       saveOffset  = writeOffsetPeriodically(eventStream)
       _           <- F.race(stream, saveOffset)
@@ -49,20 +49,15 @@ class PostgresProjection[F[_]: ContextShift](
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
     eventStream.value
-      .mapAccumulate(0L)((idx, tuple) => (idx + 1, tuple))
-      .evalMap {
-        case (idx, tuple) if idx % 100 == 0 && idx != 0L =>
-          console.println(s"Read $idx events.") >> F.pure(tuple)
-        case (_, tuple) => F.pure(tuple)
-      }
+      .through(printConsumedEvent(console))
       .flatMap {
         case (ev, org, proj) =>
           val maybeConfig = pc.projects
             .get((org, proj))
             .flatMap(pc =>
-              pc.types
-                .find(typeCfg => ev.resourceTypes.map(_.toString()).contains(typeCfg.tpe))
-                .map(tc => (pc, tc, ev, org, proj))
+              pc.types.collectFirst {
+                case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+              }
             )
           Stream.fromIterator[F](maybeConfig.iterator)
       }
@@ -73,23 +68,12 @@ class PostgresProjection[F[_]: ContextShift](
               val query = qc.query
                 .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
                 .replaceAllLiterally("{event_rev}", ev.rev.toString)
-              pc.sparqlView match {
-                case Some(view) => spc.query(org, proj, view, query).flatMap(res => insert(qc, res))
-                case None       => spc.query(org, proj, query).flatMap(res => insert(qc, res))
-              }
+              spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
             }
             .sequence
             .map(_.sequence)
       }
-      .mapAccumulate((0L, 0L)) {
-        case ((successes, errors), v @ Right(_)) => ((successes + 1, errors), v)
-        case ((successes, errors), v @ Left(_))  => ((successes, errors + 1), v)
-      }
-      .evalMap {
-        case ((successes, errors), v) if (successes + errors) % 100 == 0 && (successes + errors) != 0L =>
-          console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)") >> F.pure(v)
-        case ((_, _), v) => F.pure(v)
-      }
+      .through(printEvaluatedProjection(console))
       .compile
       .drain
   }
@@ -186,7 +170,7 @@ class PostgresProjection[F[_]: ContextShift](
     Stream
       .repeatEval {
         sseStream.currentEventId().flatMap {
-          case Some(offset) => writeOffset(offset)
+          case Some(offset) => offset.write(pc.offsetFile)
           case None         => F.unit
         }
       }
@@ -194,60 +178,6 @@ class PostgresProjection[F[_]: ContextShift](
       .compile
       .drain
 
-  private def readOffset(file: Path): F[Option[Offset]] = {
-    io.file
-      .exists(blocker, pc.offsetFile)
-      .flatMap[Option[Offset]] { exists =>
-        if (exists)
-          io.file
-            .readAll(file, blocker, 1024)
-            .through(text.utf8Decode)
-            .through(text.lines)
-            .compile
-            .string
-            .map(Offset(_))
-        else F.pure(None)
-      }
-      .recoverWith {
-        case NonFatal(err) =>
-          // fail when there's an error reading the offset
-          console.println(s"""Failed to read offset from file '${pc.offsetFile.toString}'.
-                             |Error message: '${Option(err.getMessage).getOrElse("no message")}'
-                             |The operation will NOT be retried.""".stripMargin) >> F.raiseError(err)
-      }
-  }
-
-  private def writeOffset(offset: Offset): F[Unit] = {
-    // if the file exists => truncate and write, otherwise create parents and write
-    val pipeF = io.file
-      .exists(blocker, pc.offsetFile)
-      .ifM(
-        F.pure(
-          io.file.writeAll(
-            pc.offsetFile,
-            blocker,
-            List(StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)
-          )
-        ),
-        io.file
-          .createDirectories(blocker, pc.offsetFile.getParent)
-          .map(_ => io.file.writeAll(pc.offsetFile, blocker))
-      )
-    pipeF
-      .flatMap { write =>
-        Stream(offset.asString)
-          .through(text.utf8Encode)
-          .through(write)
-          .compile
-          .drain
-      }
-      .recoverWith {
-        case NonFatal(err) =>
-          console.println(s"""Failed to write offset '${offset.asString}' to file '${pc.offsetFile}'.
-             |Error message: '${Option(err.getMessage).getOrElse("no message")}'
-             |The operation will NOT be retried.""".stripMargin)
-      }
-  }
 }
 
 object PostgresProjection {

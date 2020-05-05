@@ -1,54 +1,41 @@
-package ch.epfl.bluebrain.nexus.cli.config.postgres
+package ch.epfl.bluebrain.nexus.cli.config.influx
 
 import java.nio.file.Path
 
-import ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.cli.utils.Codecs._
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
 import com.github.ghik.silencer.silent
-import pureconfig.configurable._
+import org.http4s.Uri
+import pureconfig.configurable.{genericMapReader, genericMapWriter}
 import pureconfig.error.CannotConvert
-import pureconfig.generic.semiauto.deriveConvert
+import pureconfig.generic.semiauto._
 import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
 
 import scala.concurrent.duration.FiniteDuration
 
 /**
-  * PostgreSQL connectivity information along with the projection configuration.
+  * influxDB connectivity information along with the projection configuration.
   *
-  * @param host               the postgres host
-  * @param port               the postgres port
+  * @param endpoint           the influxDB v1.x API endpoint
   * @param database           the database to be used
-  * @param username           the auth username
-  * @param password           the auth password
-  * @param offsetFile         the location where the postgres projection offset should be read / stored
+  * @param dbCreationCommand  the command used to create an influxDB database
+  * @param offsetFile         the location where the influxDB projection offset should be read / stored
   * @param offsetSaveInterval how frequent to save the stream offset into the offset file
-  * @param retry              the retry strategy (policy and condition)
   * @param projects           the project to config mapping
   */
-final case class PostgresConfig(
-    host: String,
-    port: Int,
+final case class InfluxConfig(
+    endpoint: Uri,
     database: String,
-    username: String,
-    password: String,
+    dbCreationCommand: String,
     offsetFile: Path,
     offsetSaveInterval: FiniteDuration,
-    retry: RetryStrategyConfig[Unit],
     projects: Map[(OrgLabel, ProjectLabel), ProjectConfig]
-) {
+)
 
-  /**
-    * The jdbc connection string.
-    */
-  def jdbcUrl: String =
-    s"jdbc:postgresql://$host:$port/$database?stringtype=unspecified"
-
-}
-
-object PostgresConfig {
+object InfluxConfig {
 
   @silent
-  implicit final val postgresConfigConvert: ConfigConvert[PostgresConfig] = {
+  implicit final val influxConfigConvert: ConfigConvert[InfluxConfig] = {
     implicit val labelTupleMapReader: ConfigReader[Map[(OrgLabel, ProjectLabel), ProjectConfig]] =
       genericMapReader[(OrgLabel, ProjectLabel), ProjectConfig] { key =>
         key.split('/') match {
@@ -58,7 +45,6 @@ object PostgresConfig {
       }
     implicit val labelTupleMapWriter: ConfigWriter[Map[(OrgLabel, ProjectLabel), ProjectConfig]] =
       genericMapWriter { case (OrgLabel(org), ProjectLabel(proj)) => s"$org/$proj" }
-    deriveConvert[PostgresConfig]
+    deriveConvert[InfluxConfig]
   }
-
 }

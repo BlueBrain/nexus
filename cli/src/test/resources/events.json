@@ -18095,5 +18095,369 @@
     "_organizationUuid" : "e6a84231-5df7-41cf-9d18-286892d119ec",
     "_instant" : "2020-03-19T10:56:49.300417Z",
     "_subject" : "https://sandbox.bluebrainnexus.io/v1/realms/github/users/bogdanromanx"
+  },
+  {
+    "_source": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/a4552116-607b-469e-ad2a-50bba00c23d8+",
+      "@type": [
+        "https://neuroshapes.org/BrainParcellationDataLayer",
+        "https://neuroshapes.org/VolumetricDataLayer"
+      ],
+      "http://schema.org/distribution": {
+        "@type": "http://schema.org/DataDownload",
+        "http://schema.org/contentSize": {
+          "http://schema.org/unitCode": "bytes",
+          "http://schema.org/value": 10
+        },
+        "http://schema.org/contentUrl": {
+          "@id": "https://sandbox.bluebrainnexus.io/v1/files/bbp/atlas/fa6db5af-d64d-4a4c-b30d-cad3a7168f2e"
+        },
+        "http://schema.org/encodingFormat": "application/nrrd",
+        "http://schema.org/name": "annotationFiber_25_ccf2011.nrrd",
+        "https://neuroshapes.org/digest": {
+          "http://schema.org/algorithm": "SHA-256",
+          "http://schema.org/value": "f67150c54d727b092a1b22bf7c0008b5a210ffef6d8134dbd91162687a3b6baa"
+        }
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+        "@id": "https://neuroshapes.org/dash/volumetricdatalayer"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2020-02-24T15:36:41.484672Z",
+      "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie",
+      "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+      "https://bluebrain.github.io/nexus/vocabulary/incoming": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8%2B/incoming",
+      "https://bluebrain.github.io/nexus/vocabulary/outgoing": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8%2B/outgoing",
+      "https://bluebrain.github.io/nexus/vocabulary/project": {
+        "@id": "https://sandbox.bluebrainnexus.io/v1/projects/bbp/atlas"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/rev": 1,
+      "https://bluebrain.github.io/nexus/vocabulary/self": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8%2B",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2020-02-24T15:36:41.484672Z",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+    },
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://bbp.epfl.ch/neurosciencegraph/data/a4552116-607b-469e-ad2a-50bba00c23d8+",
+    "_types": [
+      "https://neuroshapes.org/VolumetricDataLayer",
+      "https://neuroshapes.org/BrainParcellationDataLayer"
+    ],
+    "_constrainedBy": "https://neuroshapes.org/dash/volumetricdatalayer",
+    "_projectUuid": "a7d69059-8d1d-4dac-800f-90b6b6ab94ee",
+    "_organizationUuid": "a605b71a-377d-4df3-95f8-923149d04106",
+    "_instant": "2020-02-24T15:36:41.484672Z",
+    "_subject": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+  },
+  {
+    "_source": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/a4552116-607b-469e-ad2a-50bba00c23d8+",
+      "@type": [
+        "https://neuroshapes.org/BrainParcellationDataLayer",
+        "https://neuroshapes.org/VolumetricDataLayer"
+      ],
+      "http://schema.org/description": "Original Allen ccfv2 annotation volume at 25 microns for fibers only.",
+      "http://schema.org/distribution": {
+        "@type": "http://schema.org/DataDownload",
+        "http://schema.org/contentSize": {
+          "http://schema.org/unitCode": "bytes",
+          "http://schema.org/value": 18111712
+        },
+        "http://schema.org/contentUrl": {
+          "@id": "https://sandbox.bluebrainnexus.io/v1/files/bbp/atlas/fa6db5af-d64d-4a4c-b30d-cad3a7168f2e"
+        },
+        "http://schema.org/encodingFormat": "application/nrrd",
+        "http://schema.org/name": "annotationFiber_25_ccf2011.nrrd",
+        "https://neuroshapes.org/digest": {
+          "http://schema.org/algorithm": "SHA-256",
+          "http://schema.org/value": "f67150c54d727b092a1b22bf7c0008b5a210ffef6d8134dbd91162687a3b6bff"
+        }
+      },
+      "http://schema.org/name": "annotationFiber_25_ccf2011",
+      "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+        "@id": "https://neuroshapes.org/dash/volumetricdatalayer"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2020-02-24T15:36:41.484672Z",
+      "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie",
+      "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+      "https://bluebrain.github.io/nexus/vocabulary/incoming": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8%2B/incoming",
+      "https://bluebrain.github.io/nexus/vocabulary/outgoing": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8%2B/outgoing",
+      "https://bluebrain.github.io/nexus/vocabulary/project": {
+        "@id": "https://sandbox.bluebrainnexus.io/v1/projects/bbp/atlas"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/rev": 2,
+      "https://bluebrain.github.io/nexus/vocabulary/self": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8%2B",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2020-02-24T15:39:17.745809Z",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+    },
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Updated",
+    "_resourceId": "https://bbp.epfl.ch/neurosciencegraph/data/a4552116-607b-469e-ad2a-50bba00c23d8+",
+    "_types": [
+      "https://neuroshapes.org/VolumetricDataLayer",
+      "https://neuroshapes.org/BrainParcellationDataLayer"
+    ],
+    "_projectUuid": "a7d69059-8d1d-4dac-800f-90b6b6ab94ee",
+    "_organizationUuid": "a605b71a-377d-4df3-95f8-923149d04106",
+    "_rev": 2,
+    "_instant": "2020-02-24T15:39:17.745809Z",
+    "_subject": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+  },
+  {
+    "_source": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/a4552116-607b-469e-ad2a-50bba00c23d8",
+      "@type": [
+        "https://neuroshapes.org/BrainParcellationDataLayer",
+        "https://neuroshapes.org/VolumetricDataLayer"
+      ],
+      "http://schema.org/distribution": {
+        "@type": "http://schema.org/DataDownload",
+        "http://schema.org/contentSize": {
+          "http://schema.org/unitCode": "bytes",
+          "http://schema.org/value": 1891712
+        },
+        "http://schema.org/contentUrl": {
+          "@id": "https://sandbox.bluebrainnexus.io/v1/files/bbp/atlas/be30b922-5dd7-4f7f-9a76-c3454da3cd50"
+        },
+        "http://schema.org/encodingFormat": "application/nrrd",
+        "http://schema.org/name": "annotationFiber_25_ccf2011.nrrd",
+        "https://neuroshapes.org/digest": {
+          "http://schema.org/algorithm": "SHA-256",
+          "http://schema.org/value": "f67150c54d727b092a1b22bf7c0008b5a210ffef6d8134dbd91162687a3b6bff"
+        }
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+        "@id": "https://neuroshapes.org/dash/volumetricdatalayer"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2020-02-24T15:43:49.216073Z",
+      "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie",
+      "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+      "https://bluebrain.github.io/nexus/vocabulary/incoming": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8/incoming",
+      "https://bluebrain.github.io/nexus/vocabulary/outgoing": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8/outgoing",
+      "https://bluebrain.github.io/nexus/vocabulary/project": {
+        "@id": "https://sandbox.bluebrainnexus.io/v1/projects/bbp/atlas"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/rev": 1,
+      "https://bluebrain.github.io/nexus/vocabulary/self": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/a4552116-607b-469e-ad2a-50bba00c23d8",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2020-02-24T15:43:49.216073Z",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+    },
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://bbp.epfl.ch/neurosciencegraph/data/a4552116-607b-469e-ad2a-50bba00c23d8",
+    "_types": [
+      "https://neuroshapes.org/BrainParcellationDataLayer",
+      "https://neuroshapes.org/VolumetricDataLayer"
+    ],
+    "_constrainedBy": "https://neuroshapes.org/dash/volumetricdatalayer",
+    "_projectUuid": "a7d69059-8d1d-4dac-800f-90b6b6ab94ee",
+    "_organizationUuid": "a605b71a-377d-4df3-95f8-923149d04106",
+    "_instant": "2020-02-24T15:43:49.216073Z",
+    "_subject": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+  },
+  {
+    "_source": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/2f26c63b-6d01-4540-bf8b-b0a2a7c59597",
+      "@type": [
+        "https://neuroshapes.org/VolumetricDataLayer",
+        "https://neuroshapes.org/BrainParcellationDataLayer"
+      ],
+      "http://schema.org/distribution": {
+        "@type": "http://schema.org/DataDownload",
+        "http://schema.org/contentSize": {
+          "http://schema.org/unitCode": "bytes",
+          "http://schema.org/value": 13007853
+        },
+        "http://schema.org/contentUrl": {
+          "@id": "https://sandbox.bluebrainnexus.io/v1/files/bbp/atlas/767e142c-a22a-4146-8c84-827727077997"
+        },
+        "http://schema.org/encodingFormat": "application/nrrd",
+        "http://schema.org/name": "annotationFiber_10_ccf2011.nrrd",
+        "https://neuroshapes.org/digest": {
+          "http://schema.org/algorithm": "SHA-256",
+          "http://schema.org/value": "7457dd64d24229a13b8d35562fb2e94ed61bb6f87d0e4749ae8ef6e23faf73fc"
+        }
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+        "@id": "https://neuroshapes.org/dash/volumetricdatalayer"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2020-02-25T08:48:33.808426Z",
+      "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie",
+      "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+      "https://bluebrain.github.io/nexus/vocabulary/incoming": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/2f26c63b-6d01-4540-bf8b-b0a2a7c59597/incoming",
+      "https://bluebrain.github.io/nexus/vocabulary/outgoing": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/2f26c63b-6d01-4540-bf8b-b0a2a7c59597/outgoing",
+      "https://bluebrain.github.io/nexus/vocabulary/project": {
+        "@id": "https://sandbox.bluebrainnexus.io/v1/projects/bbp/atlas"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/rev": 1,
+      "https://bluebrain.github.io/nexus/vocabulary/self": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:volumetricdatalayer/2f26c63b-6d01-4540-bf8b-b0a2a7c59597",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2020-02-25T08:48:33.808426Z",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+    },
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://bbp.epfl.ch/neurosciencegraph/data/2f26c63b-6d01-4540-bf8b-b0a2a7c59597",
+    "_types": [
+      "https://neuroshapes.org/BrainParcellationDataLayer",
+      "https://neuroshapes.org/VolumetricDataLayer"
+    ],
+    "_constrainedBy": "https://neuroshapes.org/dash/volumetricdatalayer",
+    "_projectUuid": "a7d69059-8d1d-4dac-800f-90b6b6ab94ee",
+    "_organizationUuid": "a605b71a-377d-4df3-95f8-923149d04106",
+    "_instant": "2020-02-25T08:48:33.808426Z",
+    "_subject": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+  },
+  {
+    "_source": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/fd28e9a9-a943-4e1d-a5c2-8928127396c4",
+      "@type": [
+        "http://www.w3.org/ns/prov#Entity",
+        "https://neuroshapes.org/CellRecordSeries",
+        "https://neuroshapes.org/RecordSeries"
+      ],
+      "http://schema.org/distribution": {
+        "@type": "http://schema.org/DataDownload",
+        "http://schema.org/contentSize": {
+          "http://schema.org/unitCode": "bytes",
+          "http://schema.org/value": 13848730
+        },
+        "http://schema.org/contentUrl": {
+          "@id": "https://staging.nexus.ocp.bbp.epfl.ch/v1/files/bbp/atlas/10e9cab7-3940-45da-ad69-2eb042ece855"
+        },
+        "http://schema.org/encodingFormat": "application/octet-stream",
+        "http://schema.org/name": "cell_x_y_z_type_ratio1pc.raw",
+        "https://neuroshapes.org/digest": {
+          "http://schema.org/algorithm": "SHA-256",
+          "http://schema.org/value": "29321e1397459f5a21eb85b113a66db6f3ab3f88618856b47c043d8197635035"
+        }
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+        "@id": "https://neuroshapes.org/dash/entity"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2019-11-11T14:59:49.241511Z",
+      "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie",
+      "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+      "https://bluebrain.github.io/nexus/vocabulary/incoming": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:entity/fd28e9a9-a943-4e1d-a5c2-8928127396c4/incoming",
+      "https://bluebrain.github.io/nexus/vocabulary/outgoing": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:entity/fd28e9a9-a943-4e1d-a5c2-8928127396c4/outgoing",
+      "https://bluebrain.github.io/nexus/vocabulary/project": {
+        "@id": "https://sandbox.bluebrainnexus.io/v1/projects/bbp/atlas"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/rev": 1,
+      "https://bluebrain.github.io/nexus/vocabulary/self": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:entity/fd28e9a9-a943-4e1d-a5c2-8928127396c4",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2019-11-11T14:59:49.241511Z",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+    },
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://bbp.epfl.ch/neurosciencegraph/data/fd28e9a9-a943-4e1d-a5c2-8928127396c4",
+    "_types": [
+      "http://www.w3.org/ns/prov#Entity",
+      "https://neuroshapes.org/CellRecordSeries",
+      "https://neuroshapes.org/RecordSeries"
+    ],
+    "_constrainedBy": "https://neuroshapes.org/dash/entity",
+    "_projectUuid": "a7d69059-8d1d-4dac-800f-90b6b6ab94ee",
+    "_organizationUuid": "a605b71a-377d-4df3-95f8-923149d04106",
+    "_instant": "2019-11-11T14:59:49.241511Z",
+    "_subject": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+  },
+  {
+    "_source": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/cb30cc85-e0df-4e45-9916-9afc2b7a3e97",
+      "@type": [
+        "https://neuroshapes.org/CellRecordSeries"
+      ],
+      "http://schema.org/distribution": {
+        "@type": "http://schema.org/DataDownload",
+        "http://schema.org/contentSize": {
+          "http://schema.org/unitCode": "bytes",
+          "http://schema.org/value": 2884
+        },
+        "http://schema.org/contentUrl": {
+          "@id": "https://sandbox.bluebrainnexus.io/v1/files/bbp/atlas/49da7026-a906-42e2-bfc2-b4d5b523d8cc"
+        },
+        "http://schema.org/encodingFormat": "application/octet-stream",
+        "http://schema.org/name": "interleaved_1004_ratio100.raw",
+        "https://neuroshapes.org/digest": {
+          "http://schema.org/algorithm": "SHA-256",
+          "http://schema.org/value": "180c5be4ba669aa395e5a2c87692491dec7493d32716d7b25e840ad325d6841e"
+        }
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+        "@id": "https://neuroshapes.org/dash/cellrecordseries"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2019-12-03T12:53:56.682642Z",
+      "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie",
+      "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+      "https://bluebrain.github.io/nexus/vocabulary/incoming": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:cellrecordseries/cb30cc85-e0df-4e45-9916-9afc2b7a3e97/incoming",
+      "https://bluebrain.github.io/nexus/vocabulary/outgoing": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:cellrecordseries/cb30cc85-e0df-4e45-9916-9afc2b7a3e97/outgoing",
+      "https://bluebrain.github.io/nexus/vocabulary/project": {
+        "@id": "https://sandbox.bluebrainnexus.io/v1/projects/bbp/atlas"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/rev": 1,
+      "https://bluebrain.github.io/nexus/vocabulary/self": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:cellrecordseries/cb30cc85-e0df-4e45-9916-9afc2b7a3e97",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2019-12-03T12:53:56.682642Z",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+    },
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://bbp.epfl.ch/neurosciencegraph/data/cb30cc85-e0df-4e45-9916-9afc2b7a3e97",
+    "_types": [
+      "https://neuroshapes.org/CellRecordSeries"
+    ],
+    "_constrainedBy": "https://neuroshapes.org/dash/cellrecordseries",
+    "_projectUuid": "a7d69059-8d1d-4dac-800f-90b6b6ab94ee",
+    "_organizationUuid": "a605b71a-377d-4df3-95f8-923149d04106",
+    "_instant": "2019-12-03T12:53:56.682642Z",
+    "_subject": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+  },
+  {
+    "_source": {
+      "@id": "https://bbp.epfl.ch/neurosciencegraph/data/ffbaf713-fcc9-4823-a666-1dae029e7869",
+      "@type": [
+        "https://neuroshapes.org/CellRecordSeries"
+      ],
+      "http://schema.org/distribution": {
+        "@type": "http://schema.org/DataDownload",
+        "http://schema.org/contentSize": {
+          "http://schema.org/unitCode": "bytes",
+          "http://schema.org/value": 4046
+        },
+        "http://schema.org/contentUrl": {
+          "@id": "https://sandbox.bluebrainnexus.io/v1/files/bbp/atlas/2a47d6e0-a9bb-4a88-a9fd-b8b48276a4bd"
+        },
+        "http://schema.org/encodingFormat": "application/octet-stream",
+        "http://schema.org/name": "interleaved_1005_ratio100.raw",
+        "https://neuroshapes.org/digest": {
+          "http://schema.org/algorithm": "SHA-256",
+          "http://schema.org/value": "493ebf5d2f846ca64666f41d4a124209017c9e93d6622543eb2063680a03c2ac"
+        }
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+        "@id": "https://neuroshapes.org/dash/cellrecordseries"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2019-12-03T12:55:27.949226Z",
+      "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie",
+      "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+      "https://bluebrain.github.io/nexus/vocabulary/incoming": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:cellrecordseries/ffbaf713-fcc9-4823-a666-1dae029e7869/incoming",
+      "https://bluebrain.github.io/nexus/vocabulary/outgoing": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:cellrecordseries/ffbaf713-fcc9-4823-a666-1dae029e7869/outgoing",
+      "https://bluebrain.github.io/nexus/vocabulary/project": {
+        "@id": "https://sandbox.bluebrainnexus.io/v1/projects/bbp/atlas"
+      },
+      "https://bluebrain.github.io/nexus/vocabulary/rev": 1,
+      "https://bluebrain.github.io/nexus/vocabulary/self": "https://sandbox.bluebrainnexus.io/v1/resources/bbp/atlas/datashapes:cellrecordseries/ffbaf713-fcc9-4823-a666-1dae029e7869",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2019-12-03T12:55:27.949226Z",
+      "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
+    },
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://bbp.epfl.ch/neurosciencegraph/data/ffbaf713-fcc9-4823-a666-1dae029e7869",
+    "_types": [
+      "https://neuroshapes.org/CellRecordSeries"
+    ],
+    "_constrainedBy": "https://neuroshapes.org/dash/cellrecordseries",
+    "_projectUuid": "a7d69059-8d1d-4dac-800f-90b6b6ab94ee",
+    "_organizationUuid": "a605b71a-377d-4df3-95f8-923149d04106",
+    "_instant": "2019-12-03T12:55:27.949226Z",
+    "_subject": "https://sandbox.bluebrainnexus.io/v1/realms/bbp/users/lurie"
   }
 ]

@@ -9,6 +9,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import ch.epfl.bluebrain.nexus.cli.dummies.TestCliModule
 import ch.epfl.bluebrain.nexus.cli.modules.config.ConfigModule
+import ch.epfl.bluebrain.nexus.cli.modules.influx.InfluxModule
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresModule
 import ch.epfl.bluebrain.nexus.cli.sse.{Event, OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
 import ch.epfl.bluebrain.nexus.cli.utils.{Randomness, Resources, ShouldMatchers}
@@ -52,7 +53,7 @@ abstract class AbstractCliSpec
   )
 
   protected def defaultModules: Module = {
-    TestCliModule[IO](events) ++ EffectModule[IO] ++ ConfigModule[IO] ++ PostgresModule[IO] ++ testModule
+    TestCliModule[IO](events) ++ EffectModule[IO] ++ ConfigModule[IO] ++ PostgresModule[IO] ++ InfluxModule[IO] ++ testModule
   }
 
   def overrides: ModuleDef = new ModuleDef {
@@ -70,24 +71,32 @@ abstract class AbstractCliSpec
     configBaseName = "cli-test"
   )
 
-  def copyConfigs: IO[(Path, Path)] = IO {
+  def copyConfigs: IO[(Path, Path, Path)] = IO {
     val parent       = Files.createTempDirectory(".nexus")
     val envFile      = parent.resolve("env.conf")
     val postgresFile = parent.resolve("postgres.conf")
+    val influxFile   = parent.resolve("influx.conf")
     Files.copy(getClass.getClassLoader.getResourceAsStream("env.conf"), envFile)
     Files.copy(getClass.getClassLoader.getResourceAsStream("postgres.conf"), postgresFile)
-    (envFile, postgresFile)
+    Files.copy(getClass.getClassLoader.getResourceAsStream("influx.conf"), influxFile)
+    (envFile, postgresFile, influxFile)
   }
 
   def testModule: ModuleDef = new ModuleDef {
     make[AppConfig].fromEffect {
       copyConfigs.flatMap {
-        case (envFile, postgresFile) =>
+        case (envFile, postgresFile, influxFile) =>
           val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
-          AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
+          val influxOffsetFile   = influxFile.getParent.resolve("influx.offset")
+          AppConfig.load[IO](Some(envFile), Some(postgresFile), Some(influxFile)).flatMap {
             case Left(value) => IO.raiseError(value)
             case Right(value) =>
-              IO.pure(value.copy(postgres = value.postgres.copy(offsetFile = postgresOffsetFile)))
+              IO.pure(
+                value.copy(
+                  postgres = value.postgres.copy(offsetFile = postgresOffsetFile),
+                  influx = value.influx.copy(offsetFile = influxOffsetFile)
+                )
+              )
           }
       }
     }

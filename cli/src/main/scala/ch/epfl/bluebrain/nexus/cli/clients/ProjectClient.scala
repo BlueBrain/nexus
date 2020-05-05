@@ -76,7 +76,7 @@ object ProjectClient {
     private val successCondition                     = retry.condition.notRetryFromEither[(OrgLabel, ProjectLabel)] _
     implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
     implicit private val logOnError: (ClientErrOr[(OrgLabel, ProjectLabel)], RetryDetails) => F[Unit] =
-      (eitherErr, details) => Logger[F].info(s"Client error '$eitherErr'. Retry details: '$details'")
+      (eitherErr, details) => Logger[F].info(s"Project client error '$eitherErr'. Retry details: '$details'")
 
     private def get(org: OrgUuid, proj: ProjectUuid): F[ClientErrOr[(OrgLabel, ProjectLabel)]] = {
       val uri = env.project(org, proj)
