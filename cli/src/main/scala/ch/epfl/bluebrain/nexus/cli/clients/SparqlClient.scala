@@ -3,19 +3,19 @@ package ch.epfl.bluebrain.nexus.cli.clients
 import cats.effect.{Sync, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.SerializationError
-import ch.epfl.bluebrain.nexus.cli.ClientErrOr
+import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.{SerializationError, Unexpected}
 import ch.epfl.bluebrain.nexus.cli.config.EnvConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
-import ch.epfl.bluebrain.nexus.cli.utils.Logging._
-import io.chrisdavenport.log4cats.Logger
+import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
 import org.http4s._
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.Client
 import org.http4s.headers.`Content-Type`
 import retry.CatsEffect._
+import retry.RetryPolicy
 import retry.syntax.all._
-import retry.{RetryDetails, RetryPolicy}
+
+import scala.util.control.NonFatal
 
 trait SparqlClient[F[_]] {
 
@@ -56,21 +56,24 @@ object SparqlClient {
   /**
     * Construct a [[SparqlClient]] to perform sparql queries using the Nexus API.
     *
-    * @param client the underlying HTTP client
-    * @param env    the CLI environment configuration
+    * @param client  the underlying HTTP client
+    * @param env     the CLI environment configuration
+    * @param console [[Console]] for logging.
     */
-  final def apply[F[_]: Sync: Timer](client: Client[F], env: EnvConfig): SparqlClient[F] =
+  final def apply[F[_]: Sync: Timer](client: Client[F], env: EnvConfig, console: Console[F]): SparqlClient[F] = {
+    implicit val c: Console[F] = console
     new LiveSparqlClient[F](client, env)
+  }
 
   final val `application/sparql-query`: MediaType =
     new MediaType("application", "sparql-query")
 
-  final private class LiveSparqlClient[F[_]: Sync: Timer](client: Client[F], env: EnvConfig) extends SparqlClient[F] {
+  final private class LiveSparqlClient[F[_]: Timer: Console](client: Client[F], env: EnvConfig)(implicit F: Sync[F])
+      extends SparqlClient[F] {
     private val retry                                = env.httpClient.retry
-    private val successCondition                     = retry.condition.notRetryFromEither[SparqlResults] _
+    private def successCondition[A]                  = retry.condition.notRetryFromEither[A] _
     implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
-    implicit private val logOnError: (ClientErrOr[SparqlResults], RetryDetails) => F[Unit] =
-      (eitherErr, details) => Logger[F].info(s"Sparql client error '$eitherErr'. Retry details: '$details'")
+    implicit private def logOnError[A]               = logRetryErrors[F, A]("querying a SPARQL endpoint")
 
     override def query(
         org: OrgLabel,
@@ -86,7 +89,11 @@ object SparqlClient {
       val resp: F[ClientErrOr[SparqlResults]] = client.fetch(req)(ClientError.errorOr { r =>
         r.attemptAs[SparqlResults].value.map(_.leftMap(err => SerializationError(err.message, "SparqlResults")))
       })
-      resp.retryingM(successCondition)
+      resp
+        .recoverWith {
+          case NonFatal(err) => F.delay(Left(Unexpected(err.getMessage.take(30))))
+        }
+        .retryingM(successCondition)
     }
   }
 }

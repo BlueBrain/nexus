@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli
 
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.ServerStatusError
+import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.{ServerStatusError, Unexpected}
 import org.http4s.Status
 import pureconfig.ConfigConvert
 import pureconfig.error.CannotConvert
@@ -62,10 +62,12 @@ object ClientRetryCondition {
 
   /**
     * Retry when the Client response returns a HTTP Server Error (status codes 5xx) that is not a [[Status.GatewayTimeout]].
+    * Alternatively, retries when the Client returns an Unexpected error
     */
   final case object OnServerError extends ClientRetryCondition {
     override def apply(error: ClientError): Boolean = error match {
       case ServerStatusError(status, _) => status != Status.GatewayTimeout
+      case _: Unexpected                => true
       case _                            => false
     }
   }

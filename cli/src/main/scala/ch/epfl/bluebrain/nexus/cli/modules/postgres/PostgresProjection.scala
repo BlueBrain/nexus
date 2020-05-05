@@ -5,8 +5,9 @@ import java.time.Instant
 import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.Console
-import ch.epfl.bluebrain.nexus.cli.ProjectionPipes.{printConsumedEvent, printEvaluatedProjection}
+import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.Unexpected
+import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, Console}
+import ch.epfl.bluebrain.nexus.cli.ProjectionPipes.{printConsumedEventSkipFailed, printEvaluatedProjection}
 import ch.epfl.bluebrain.nexus.cli.clients.SparqlResults.{Binding, Literal}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, SparqlClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
@@ -48,34 +49,40 @@ class PostgresProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    eventStream.value
-      .through(printConsumedEvent(console))
-      .flatMap {
-        case (ev, org, proj) =>
-          val maybeConfig = pc.projects
-            .get((org, proj))
-            .flatMap(pc =>
-              pc.types.collectFirst {
-                case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+    implicit def logOnError[A] = logRetryErrors[F, A]("fetching SSE")
+    def successCondition[A]    = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+    val compiledStream =
+      eventStream.value
+        .through(printConsumedEventSkipFailed(console))
+        .flatMap {
+          case (ev, org, proj) =>
+            val maybeConfig = pc.projects
+              .get((org, proj))
+              .flatMap(pc =>
+                pc.types.collectFirst {
+                  case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+                }
+              )
+            Stream.fromIterator[F](maybeConfig.iterator)
+        }
+        .evalMap {
+          case (pc, tc, ev, org, proj) =>
+            tc.queries
+              .map { qc =>
+                val query = qc.query
+                  .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
+                  .replaceAllLiterally("{event_rev}", ev.rev.toString)
+                spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
               }
-            )
-          Stream.fromIterator[F](maybeConfig.iterator)
-      }
-      .evalMap {
-        case (pc, tc, ev, org, proj) =>
-          tc.queries
-            .map { qc =>
-              val query = qc.query
-                .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
-                .replaceAllLiterally("{event_rev}", ev.rev.toString)
-              spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
-            }
-            .sequence
-            .map(_.sequence)
-      }
-      .through(printEvaluatedProjection(console))
-      .compile
-      .drain
+              .sequence
+              .map(_.sequence)
+        }
+        .through(printEvaluatedProjection(console))
+        .attempt
+        .map(_.leftMap(err => Unexpected(err.getMessage.take(30))).map(_ => ()))
+        .compile
+        .lastOrError
+    compiledStream.retryingM(successCondition) >> F.unit
   }
 
   private def insert(qc: QueryConfig, res: Either[ClientError, SparqlResults]): F[Either[ClientError, Unit]] = {

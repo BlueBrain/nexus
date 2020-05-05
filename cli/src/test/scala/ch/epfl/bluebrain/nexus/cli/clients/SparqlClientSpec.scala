@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.cli.clients
 
 import cats.effect.IO
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.AbstractCliSpec
+import ch.epfl.bluebrain.nexus.cli.{AbstractCliSpec, Console}
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.{ClientStatusError, ServerStatusError}
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import ch.epfl.bluebrain.nexus.cli.sse._
@@ -60,29 +60,29 @@ class SparqlClientSpec extends AbstractCliSpec with Http4sExtras with OptionValu
   }
 
   "A SparqlClient" should {
-    "return sparql results" in { (client: Client[IO], env: EnvConfig) =>
-      val cl = SparqlClient(client, env)
+    "return sparql results" in { (client: Client[IO], console: Console[IO], env: EnvConfig) =>
+      val cl = SparqlClient(client, env, console)
       for {
         results <- cl.query(orgLabel, projectLabel, query)
         _       = results shouldEqual Right(sparqlResults)
       } yield ()
     }
-    "return not found" in { (client: Client[IO], env: EnvConfig) =>
-      val cl = SparqlClient(client, env)
+    "return not found" in { (client: Client[IO], console: Console[IO], env: EnvConfig) =>
+      val cl = SparqlClient(client, env, console)
       for {
         results <- cl.query(orgLabel, projectLabel, Uri.unsafeFromString(genString()), query)
         _       = results shouldEqual Left(ClientStatusError(Status.NotFound, notFoundJson.noSpaces))
       } yield ()
     }
-    "return internal error" in { (client: Client[IO], env: EnvConfig) =>
-      val cl = SparqlClient(client, env)
+    "return internal error" in { (client: Client[IO], console: Console[IO], env: EnvConfig) =>
+      val cl = SparqlClient(client, env, console)
       for {
         results <- cl.query(orgLabel, ProjectLabel(genString()), Uri.unsafeFromString(genString()), query)
         _       = results shouldEqual Left(ServerStatusError(Status.InternalServerError, internalErrorJson.noSpaces))
       } yield ()
     }
-    "return bad token" in { (client: Client[IO], env: EnvConfig) =>
-      val cl = SparqlClient(client, env.copy(token = Some(BearerToken("bad"))))
+    "return bad token" in { (client: Client[IO], console: Console[IO], env: EnvConfig) =>
+      val cl = SparqlClient(client, env.copy(token = Some(BearerToken("bad"))), console)
       for {
         results <- cl.query(orgLabel, projectLabel, query)
         _       = results shouldEqual Left(ClientStatusError(Status.Forbidden, authFailedJson.noSpaces))

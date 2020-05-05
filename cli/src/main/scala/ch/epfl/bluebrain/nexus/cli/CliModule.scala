@@ -21,13 +21,15 @@ final class CliModule[F[_]: ConcurrentEffect: Timer: TagK] extends ModuleDef {
     BlazeClientBuilder[F](ExecutionContext.global).resource
   }
 
-  make[ProjectClient[F]].tagged(Repo.Prod).fromEffect { (cfg: AppConfig, client: Client[F]) =>
+  make[ProjectClient[F]].tagged(Repo.Prod).fromEffect { (cfg: AppConfig, client: Client[F], console: Console[F]) =>
     Ref.of[F, Map[(OrgUuid, ProjectUuid), (OrgLabel, ProjectLabel)]](Map.empty).map { cache =>
-      ProjectClient(client, cfg.env, cache)
+      ProjectClient(client, cfg.env, cache, console)
     }
   }
 
-  make[SparqlClient[F]].tagged(Repo.Prod).from { (cfg: AppConfig, client: Client[F]) => SparqlClient(client, cfg.env) }
+  make[SparqlClient[F]].tagged(Repo.Prod).from { (cfg: AppConfig, client: Client[F], console: Console[F]) =>
+    SparqlClient(client, cfg.env, console)
+  }
 
   make[EventStreamClient[F]].tagged(Repo.Prod).from { (cfg: AppConfig, client: Client[F], pc: ProjectClient[F]) =>
     EventStreamClient(client, pc, cfg.env)

@@ -3,17 +3,19 @@ package ch.epfl.bluebrain.nexus.cli.clients
 import cats.effect.{Sync, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.SerializationError
+import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.{SerializationError, Unexpected}
 import ch.epfl.bluebrain.nexus.cli._
 import ch.epfl.bluebrain.nexus.cli.config.influx.InfluxConfig
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import io.circe.Json
 import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.Client
-import org.http4s.{Method, Request, UrlForm}
+import org.http4s.{Method, Request, Response, UrlForm}
 import retry.CatsEffect._
+import retry.RetryPolicy
 import retry.syntax.all._
-import retry.{RetryDetails, RetryPolicy}
+
+import scala.util.control.NonFatal
 
 trait InfluxClient[F[_]] {
 
@@ -46,23 +48,33 @@ object InfluxClient {
 
   private class LiveInfluxDbClient[F[_]: Timer](
       client: Client[F],
-      console: Console[F],
       config: InfluxConfig,
       env: EnvConfig
-  )(implicit val F: Sync[F])
+  )(implicit val F: Sync[F], console: Console[F])
       extends InfluxClient[F] {
-    private val retry                                = env.httpClient.retry
-    implicit private def successCondition[A]         = retry.condition.notRetryFromEither[A] _
-    implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
-    implicit private def logOnErrorUnit[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
-      (eitherErr, details) => console.printlnErr(s"influxDB client error '$eitherErr'. Retry details: '$details'")
 
-    private def execute(req: Request[F]): F[ClientErrOr[Unit]] =
-      client.fetch(req)(ClientError.errorOr[F, Unit](_.body.compile.drain.as(Right(())))).retryingM(successCondition)
+    private val retry                                = env.httpClient.retry
+    private def successCondition[A]                  = retry.condition.notRetryFromEither[A] _
+    implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
+    implicit private def logOnError[A]               = logRetryErrors[F, A]("interacting with the influxDB API")
+
+    private def executeDrain(req: Request[F]): F[ClientErrOr[Unit]] =
+      execute(req, _.body.compile.drain.as(Right(())))
+
+    private def executeParseJson(req: Request[F]): F[ClientErrOr[Json]] =
+      execute(req, _.attemptAs[Json].value.map(_.leftMap(err => SerializationError(err.message, "Json"))))
+
+    private def execute[A](req: Request[F], f: Response[F] => F[ClientErrOr[A]]): F[ClientErrOr[A]] =
+      client
+        .fetch(req)(ClientError.errorOr[F, A](r => f(r)))
+        .recoverWith {
+          case NonFatal(err) => F.delay(Left(Unexpected(err.getMessage.take(30))))
+        }
+        .retryingM(successCondition[A])
 
     override def createDb: F[Unit] = {
       val req = Request[F](Method.POST, config.endpoint / "query").withEntity(UrlForm("q" -> config.dbCreationCommand))
-      execute(req).flatMap {
+      executeDrain(req).flatMap {
         case Left(err) => console.printlnErr(err.show)
         case _         => F.unit
       }
@@ -70,24 +82,18 @@ object InfluxClient {
 
     override def write(point: InfluxPoint): F[ClientErrOr[Unit]] = {
       val uri = (config.endpoint / "write").withQueryParam("db", config.database)
-      execute(Request[F](Method.POST, uri).withEntity(point))
+      executeDrain(Request[F](Method.POST, uri).withEntity(point))
     }
 
     override def query(ql: String): F[ClientErrOr[Json]] = {
       val uri = (config.endpoint / "query").withQueryParam("db", config.database)
       val req = Request[F](Method.POST, uri).withEntity(UrlForm("q" -> ql))
-      val resp: F[ClientErrOr[Json]] = client.fetch(req)(ClientError.errorOr { r =>
-        r.attemptAs[Json].value.map(_.leftMap(err => SerializationError(err.message, "Json")))
-      })
-      resp.retryingM(successCondition)
+      executeParseJson(req)
     }
 
     override def health: F[ClientErrOr[Json]] = {
       val req = Request[F](Method.GET, config.endpoint / "health")
-      val resp: F[ClientErrOr[Json]] = client.fetch(req)(ClientError.errorOr { r =>
-        r.attemptAs[Json].value.map(_.leftMap(err => SerializationError(err.message, "Json")))
-      })
-      resp.retryingM(successCondition)
+      executeParseJson(req)
     }
   }
 
@@ -103,5 +109,8 @@ object InfluxClient {
       client: Client[F],
       console: Console[F],
       config: AppConfig
-  ): InfluxClient[F] = new LiveInfluxDbClient[F](client, console, config.influx, config.env)
+  ): InfluxClient[F] = {
+    implicit val c: Console[F] = console
+    new LiveInfluxDbClient[F](client, config.influx, config.env)
+  }
 }

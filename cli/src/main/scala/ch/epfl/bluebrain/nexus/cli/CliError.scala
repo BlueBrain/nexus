@@ -59,7 +59,7 @@ object CliError {
           ClientStatusError(code, message)
         case Status.ServerError => ServerStatusError(code, message)
         case _ =>
-          Unexpected(code, message)
+          UnexpectedStatusError(code, message)
       }
 
     /**
@@ -104,8 +104,18 @@ object CliError {
       * @param code    the HTTP status code
       * @param message the error message
       */
-    final case class Unexpected(code: Status, message: String) extends ClientError {
+    final case class UnexpectedStatusError(code: Status, message: String) extends ClientError {
       val reason: String      = s"an HTTP response that should have been successful, returned the HTTP status code '$code'"
+      val lines: List[String] = List(s"The request failed due to '$message'")
+    }
+
+    /**
+      * An unexpected error thrown by the client
+      *
+      * @param message the error message
+      */
+    final case class Unexpected(message: String) extends ClientError {
+      val reason: String      = s"an HTTP response that should have been successful, failed unexpectedly"
       val lines: List[String] = List(s"The request failed due to '$message'")
     }
 
@@ -113,7 +123,7 @@ object CliError {
       case Status.Successful(r)  => successF(r)
       case Status.ClientError(r) => r.bodyAsText.compile.string.map(s => Left(ClientStatusError(r.status, s)))
       case Status.ServerError(r) => r.bodyAsText.compile.string.map(s => Left(ServerStatusError(r.status, s)))
-      case r                     => r.bodyAsText.compile.string.map(s => Left(Unexpected(r.status, s)))
+      case r                     => r.bodyAsText.compile.string.map(s => Left(UnexpectedStatusError(r.status, s)))
     }
 
     implicit val clientErrorShow: Show[ClientError] = Show[CliError].narrow

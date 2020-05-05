@@ -5,7 +5,7 @@ import java.util.UUID
 import cats.effect.IO
 import cats.effect.concurrent.Ref
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.AbstractCliSpec
+import ch.epfl.bluebrain.nexus.cli.{AbstractCliSpec, Console}
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.ClientStatusError
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import ch.epfl.bluebrain.nexus.cli.sse._
@@ -43,31 +43,34 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
   }
 
   "A ProjectClient" should {
-    "resolve a known (orgUuid, projUuid) pair" in { (client: Client[IO], cache: CacheRef, env: EnvConfig) =>
-      val cl = ProjectClient[IO](client, env, cache)
-      for {
-        labels <- cl.labels(orgUuid, projectUuid)
-        _      = labels shouldEqual Right((orgLabel, projectLabel))
-      } yield ()
+    "resolve a known (orgUuid, projUuid) pair" in {
+      (client: Client[IO], console: Console[IO], cache: CacheRef, env: EnvConfig) =>
+        val cl = ProjectClient[IO](client, env, cache, console)
+        for {
+          labels <- cl.labels(orgUuid, projectUuid)
+          _      = labels shouldEqual Right((orgLabel, projectLabel))
+        } yield ()
     }
-    "resolve from cache a known (orgUuid, projUuid) pair" in { (client: Client[IO], cache: CacheRef, env: EnvConfig) =>
-      val errClient = Client.fromHttpApp(HttpApp[IO] { case GET -> Root => IO.pure(Response[IO](Status.NotFound)) })
-      for {
-        _      <- ProjectClient[IO](client, env, cache).labels(orgUuid, projectUuid)
-        labels <- ProjectClient[IO](errClient, env, cache).labels(orgUuid, projectUuid)
-        _      = labels shouldEqual Right((orgLabel, projectLabel))
-      } yield ()
+    "resolve from cache a known (orgUuid, projUuid) pair" in {
+      (client: Client[IO], console: Console[IO], cache: CacheRef, env: EnvConfig) =>
+        val errClient = Client.fromHttpApp(HttpApp[IO] { case GET -> Root => IO.pure(Response[IO](Status.NotFound)) })
+        for {
+          _      <- ProjectClient[IO](client, env, cache, console).labels(orgUuid, projectUuid)
+          labels <- ProjectClient[IO](errClient, env, cache, console).labels(orgUuid, projectUuid)
+          _      = labels shouldEqual Right((orgLabel, projectLabel))
+        } yield ()
     }
-    "fail to resolve an unknown (orgUuid, projUuid) pair" in { (client: Client[IO], cache: CacheRef, env: EnvConfig) =>
-      val cl = ProjectClient[IO](client, env, cache)
-      for {
-        labels <- cl.labels(OrgUuid(UUID.randomUUID()), projectUuid)
-        _      = labels shouldEqual Left(ClientStatusError(Status.NotFound, notFoundJson.noSpaces))
-      } yield ()
+    "fail to resolve an unknown (orgUuid, projUuid) pair" in {
+      (client: Client[IO], console: Console[IO], cache: CacheRef, env: EnvConfig) =>
+        val cl = ProjectClient[IO](client, env, cache, console)
+        for {
+          labels <- cl.labels(OrgUuid(UUID.randomUUID()), projectUuid)
+          _      = labels shouldEqual Left(ClientStatusError(Status.NotFound, notFoundJson.noSpaces))
+        } yield ()
     }
     "fail to resolve a known (orgUuid, projUuid) pair with bad credentials" in {
-      (client: Client[IO], cache: CacheRef, env: EnvConfig) =>
-        val cl = ProjectClient[IO](client, env.copy(token = Some(BearerToken("bad"))), cache)
+      (client: Client[IO], console: Console[IO], cache: CacheRef, env: EnvConfig) =>
+        val cl = ProjectClient[IO](client, env.copy(token = Some(BearerToken("bad"))), cache, console)
         for {
           labels <- cl.labels(orgUuid, projectUuid)
           _      = labels shouldEqual Left(ClientStatusError(Status.Forbidden, authFailedJson.noSpaces))
