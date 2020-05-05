@@ -25,7 +25,6 @@ val fs2Version           = "2.3.0"
 val http4sVersion        = "0.21.3"
 val jenaVersion          = "3.14.0"
 val kindProjectorVersion = "0.11.0"
-val log4catsVersion      = "1.0.1"
 val logbackVersion       = "1.2.3"
 val magnoliaVersion      = "0.12.8"
 val monixVersion         = "3.1.0"
@@ -53,8 +52,6 @@ lazy val http4sClient    = "org.http4s"            %% "http4s-blaze-client"     
 lazy val http4sDsl       = "org.http4s"            %% "http4s-dsl"                % http4sVersion
 lazy val jenaArq         = "org.apache.jena"       % "jena-arq"                   % jenaVersion
 lazy val kindProjector   = "org.typelevel"         %% "kind-projector"            % kindProjectorVersion
-lazy val log4cats        = "io.chrisdavenport"     %% "log4cats-core"             % log4catsVersion
-lazy val log4catsSlf4j   = "io.chrisdavenport"     %% "log4cats-slf4j"            % log4catsVersion
 lazy val logback         = "ch.qos.logback"        % "logback-classic"            % logbackVersion
 lazy val magnolia        = "com.propensive"        %% "magnolia"                  % magnoliaVersion
 lazy val monixEval       = "io.monix"              %% "monix-eval"                % monixVersion
@@ -141,7 +138,6 @@ lazy val cli = project
       http4sCirce,
       http4sClient,
       fs2,
-      log4catsSlf4j,
       monixEval,
       pureconfig,
       circeLiteral   % Test,
