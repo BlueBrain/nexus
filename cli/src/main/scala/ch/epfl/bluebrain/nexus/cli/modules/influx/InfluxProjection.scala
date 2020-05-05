@@ -63,7 +63,7 @@ class InfluxProjection[F[_]: ContextShift](
       }
       .through(printEvaluatedProjection(console))
       .attempt
-      .map(_.leftMap(err => Unexpected(err.getMessage.take(30))).map(_ => ()))
+      .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
       .compile
       .lastOrError
 

@@ -68,7 +68,7 @@ object InfluxClient {
       client
         .fetch(req)(ClientError.errorOr[F, A](r => f(r)))
         .recoverWith {
-          case NonFatal(err) => F.delay(Left(Unexpected(err.getMessage.take(30))))
+          case NonFatal(err) => F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
         }
         .retryingM(successCondition[A])
 

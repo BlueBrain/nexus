@@ -6,7 +6,7 @@ import cats.effect.Concurrent
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.{SerializationError}
+import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.SerializationError
 import ch.epfl.bluebrain.nexus.cli.ClientRetryCondition.{Always, OnServerError}
 import ch.epfl.bluebrain.nexus.cli.config.EnvConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{Event, EventStream, Offset, OrgLabel, ProjectLabel}
@@ -72,12 +72,12 @@ object EventStreamClient {
           val req          = Request[F](uri = uri, headers = Headers(lastEventIdH.toList ++ env.authorizationHeader.toList))
           client
             .stream(req)
-            .map {
+            .evalMap[F, Response[F]] {
               case r if retry.condition == Always && !r.status.isSuccess =>
-                throw ClientError.unsafe(r.status, "Error when fetching SSEs")
+                F.raiseError(ClientError.unsafe(r.status, "Error when fetching SSEs"))
               case r if retry.condition == OnServerError && !r.status.isSuccess && r.status != Status.GatewayTimeout =>
-                throw ClientError.unsafe(r.status, "Error when fetching SSEs")
-              case r => r
+                F.raiseError(ClientError.unsafe(r.status, "Error when fetching SSEs"))
+              case r => F.pure(r)
             }
             .flatMap(_.body.through(ServerSentEvent.decoder[F]))
             .evalMap { sse =>

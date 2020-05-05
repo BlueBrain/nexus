@@ -91,7 +91,7 @@ object SparqlClient {
       })
       resp
         .recoverWith {
-          case NonFatal(err) => F.delay(Left(Unexpected(err.getMessage.take(30))))
+          case NonFatal(err) => F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
         }
         .retryingM(successCondition)
     }
