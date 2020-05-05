@@ -5,6 +5,7 @@ import java.util.UUID
 import cats.effect.Sync
 import cats.effect.concurrent.Ref
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.{ClientErrOr, LabeledEvent}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, ProjectClient}
 import ch.epfl.bluebrain.nexus.cli.sse._
 import fs2.{Pipe, Stream}
@@ -28,11 +29,8 @@ class TestEventStreamClient[F[_]](events: List[Event], projectClient: ProjectCli
       }
     )
 
-  private def eventAndLabels(event: Event): F[(Event, OrgLabel, ProjectLabel)] =
-    projectClient.labels(event.organization, event.project).flatMap {
-      case Left(err)          => F.raiseError(err)
-      case Right((org, proj)) => F.pure((event, org, proj))
-    }
+  private def eventAndLabels(event: Event): F[ClientErrOr[LabeledEvent]] =
+    projectClient.labels(event.organization, event.project).map(_.map { case (org, proj) => (event, org, proj) })
 
   override def apply(lastEventId: Option[Offset]): F[EventStream[F]] =
     for {
@@ -46,7 +44,8 @@ class TestEventStreamClient[F[_]](events: List[Event], projectClient: ProjectCli
       events <- eventsFrom(ref)
     } yield EventStream(
       Stream.fromIterator[F](events.iterator).through(saveOffset(ref)).evalMap(eventAndLabels).filter {
-        case (_, org, _) => org == organization
+        case Right((_, org, _)) => org == organization
+        case Left(_)            => true
       },
       ref
     )
@@ -57,7 +56,8 @@ class TestEventStreamClient[F[_]](events: List[Event], projectClient: ProjectCli
       events <- eventsFrom(ref)
     } yield EventStream(
       Stream.fromIterator[F](events.iterator).through(saveOffset(ref)).evalMap(eventAndLabels).filter {
-        case (_, org, proj) => org == organization && proj == project
+        case Right((_, org, proj)) => org == organization && proj == project
+        case Left(_)               => true
       },
       ref
     )

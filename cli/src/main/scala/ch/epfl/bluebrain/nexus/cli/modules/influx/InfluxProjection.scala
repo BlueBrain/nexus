@@ -3,13 +3,17 @@ package ch.epfl.bluebrain.nexus.cli.modules.influx
 import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.Console
+import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.Unexpected
 import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
 import ch.epfl.bluebrain.nexus.cli.clients._
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.config.influx.{InfluxConfig, TypeConfig}
 import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset, OrgLabel, ProjectLabel}
+import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, Console}
 import fs2.Stream
+import retry.CatsEffect._
+import retry.RetryPolicy
+import retry.syntax.all._
 
 class InfluxProjection[F[_]: ContextShift](
     console: Console[F],
@@ -19,8 +23,9 @@ class InfluxProjection[F[_]: ContextShift](
     cfg: AppConfig
 )(implicit blocker: Blocker, F: ConcurrentEffect[F], T: Timer[F]) {
 
-  private val ic: InfluxConfig       = cfg.influx
-  implicit private val c: Console[F] = console
+  private val ic: InfluxConfig                     = cfg.influx
+  implicit private val c: Console[F]               = console
+  implicit private val retryPolicy: RetryPolicy[F] = cfg.env.httpClient.retry.retryPolicy
 
   def run: F[Unit] =
     for {
@@ -34,8 +39,10 @@ class InfluxProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    eventStream.value
-      .through(printConsumedEvent(console))
+    implicit def logOnError[A] = logRetryErrors[F, A]("fetching SSE")
+    def successCondition[A]    = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+    val compiledStream = eventStream.value
+      .through(printConsumedEventSkipFailed(console))
       .flatMap {
         case (ev, org, proj) =>
           val maybeConfig = ic.projects
@@ -55,8 +62,12 @@ class InfluxProjection[F[_]: ContextShift](
           spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res, org, proj))
       }
       .through(printEvaluatedProjection(console))
+      .attempt
+      .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
       .compile
-      .drain
+      .lastOrError
+
+    compiledStream.retryingM(successCondition) >> F.unit
   }
 
   private def insert(

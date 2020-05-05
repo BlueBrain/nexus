@@ -7,6 +7,7 @@ import cats.effect.concurrent.Ref
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.SerializationError
+import ch.epfl.bluebrain.nexus.cli.ClientRetryCondition.{Always, OnServerError}
 import ch.epfl.bluebrain.nexus.cli.config.EnvConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{Event, EventStream, Offset, OrgLabel, ProjectLabel}
 import io.circe.parser._
@@ -57,6 +58,7 @@ object EventStreamClient {
   )(implicit F: Concurrent[F])
       extends EventStreamClient[F] {
 
+    private val retry = env.httpClient.retry
     private lazy val offsetError =
       SerializationError("The expected offset was not found or had the wrong format", "Offset")
 
@@ -70,7 +72,13 @@ object EventStreamClient {
           val req          = Request[F](uri = uri, headers = Headers(lastEventIdH.toList ++ env.authorizationHeader.toList))
           client
             .stream(req)
-            // TODO: handle client errors
+            .evalMap[F, Response[F]] {
+              case r if retry.condition == Always && !r.status.isSuccess =>
+                F.raiseError(ClientError.unsafe(r.status, "Error when fetching SSEs"))
+              case r if retry.condition == OnServerError && !r.status.isSuccess && r.status != Status.GatewayTimeout =>
+                F.raiseError(ClientError.unsafe(r.status, "Error when fetching SSEs"))
+              case r => F.pure(r)
+            }
             .flatMap(_.body.through(ServerSentEvent.decoder[F]))
             .evalMap { sse =>
               val resultT = for {
@@ -82,8 +90,6 @@ object EventStreamClient {
               } yield (event, org, proj)
               resultT.value
             }
-            // TODO: log errors
-            .collect { case Right((event, org, proj)) => (event, org, proj) }
         }
         .map(stream => EventStream(stream, lastEventIdCache))
 
