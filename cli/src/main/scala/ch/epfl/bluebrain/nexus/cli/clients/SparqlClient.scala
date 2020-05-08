@@ -1,21 +1,12 @@
 package ch.epfl.bluebrain.nexus.cli.clients
 
 import cats.effect.{Sync, Timer}
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.{SerializationError, Unexpected}
 import ch.epfl.bluebrain.nexus.cli.config.EnvConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
-import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
+import ch.epfl.bluebrain.nexus.cli.{ClientErrOr, Console}
 import org.http4s._
-import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.Client
 import org.http4s.headers.`Content-Type`
-import retry.CatsEffect._
-import retry.RetryPolicy
-import retry.syntax.all._
-
-import scala.util.control.NonFatal
 
 trait SparqlClient[F[_]] {
 
@@ -68,12 +59,9 @@ object SparqlClient {
   final val `application/sparql-query`: MediaType =
     new MediaType("application", "sparql-query")
 
-  final private class LiveSparqlClient[F[_]: Timer: Console](client: Client[F], env: EnvConfig)(implicit F: Sync[F])
-      extends SparqlClient[F] {
-    private val retry                                = env.httpClient.retry
-    private def successCondition[A]                  = retry.condition.notRetryFromEither[A] _
-    implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
-    implicit private def logOnError[A]               = logRetryErrors[F, A]("querying a SPARQL endpoint")
+  final private class LiveSparqlClient[F[_]: Timer: Console: Sync](client: Client[F], env: EnvConfig)
+      extends AbstractHttpClient(client, env)
+      with SparqlClient[F] {
 
     override def query(
         org: OrgLabel,
@@ -86,14 +74,7 @@ object SparqlClient {
       val req = Request[F](method = Method.POST, uri = uri, headers = headers)
         .withEntity(queryStr)
         .withContentType(`Content-Type`(`application/sparql-query`))
-      val resp: F[ClientErrOr[SparqlResults]] = client.fetch(req)(ClientError.errorOr { r =>
-        r.attemptAs[SparqlResults].value.map(_.leftMap(err => SerializationError(err.message, "SparqlResults")))
-      })
-      resp
-        .recoverWith {
-          case NonFatal(err) => F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
-        }
-        .retryingM(successCondition)
+      executeParse[SparqlResults](req)
     }
   }
 }

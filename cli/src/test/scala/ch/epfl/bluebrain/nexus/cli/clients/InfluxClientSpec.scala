@@ -58,7 +58,7 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
   "An InfluxClient" should {
 
     "create a db" in { (client: Client[IO], console: TestConsole[IO], cfg: AppConfig) =>
-      val cl = InfluxClient[IO](client, console, cfg)
+      val cl = InfluxClient[IO](client, cfg, console)
       for {
         dbResult <- cl.createDb
         err      <- console.errQueue.tryDequeue1
@@ -68,7 +68,7 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
     }
 
     "write a point" in { (client: Client[IO], console: TestConsole[IO], cfg: AppConfig) =>
-      val cl = InfluxClient[IO](client, console, cfg)
+      val cl = InfluxClient[IO](client, cfg, console)
       val point = InfluxPoint(
         "m1",
         Map("created" -> created.toString, "project" -> "org/proj", "deprecated" -> "false"),
@@ -84,7 +84,7 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
     }
 
     "fail to write an invalid point" in { (client: Client[IO], console: TestConsole[IO], cfg: AppConfig) =>
-      val cl    = InfluxClient[IO](client, console, cfg)
+      val cl    = InfluxClient[IO](client, cfg, console)
       val point = InfluxPoint("m2", Map.empty, Map.empty, Some(updated))
       for {
         result <- cl.write(point)
@@ -95,7 +95,7 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
     }
 
     "perform an influxQL query" in { (client: Client[IO], console: TestConsole[IO], cfg: AppConfig) =>
-      val cl = InfluxClient[IO](client, console, cfg)
+      val cl = InfluxClient[IO](client, cfg, console)
       for {
         dbResult <- cl.query(allowedQuery)
         err      <- console.errQueue.tryDequeue1

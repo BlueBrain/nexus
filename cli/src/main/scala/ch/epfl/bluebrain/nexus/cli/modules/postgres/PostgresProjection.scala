@@ -7,7 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.Unexpected
 import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, Console}
-import ch.epfl.bluebrain.nexus.cli.ProjectionPipes.{printConsumedEventSkipFailed, printEvaluatedProjection}
+import ch.epfl.bluebrain.nexus.cli.ProjectionPipes.{printConsumedEventSkipFailed, printEvaluatedProjectionSkipFailed}
 import ch.epfl.bluebrain.nexus.cli.clients.SparqlResults.{Binding, Literal}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, SparqlClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
@@ -77,7 +77,7 @@ class PostgresProjection[F[_]: ContextShift](
               .sequence
               .map(_.sequence)
         }
-        .through(printEvaluatedProjection(console))
+        .through(printEvaluatedProjectionSkipFailed(console))
         .attempt
         .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
         .compile
