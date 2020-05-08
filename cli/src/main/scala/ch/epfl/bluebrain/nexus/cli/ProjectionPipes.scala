@@ -12,33 +12,34 @@ object ProjectionPipes {
     *
     * @return it returns the successful events, ignoring the failures
     */
-  def printConsumedEventSkipFailed[F[_], A](console: Console[F])(implicit F: Monad[F]): Pipe[F, ClientErrOr[A], A] =
-    _.through(countSuccessAndError)
-      .evalMap {
-        case ((successes, errors), v) if (successes + errors) % 100 == 0 && (successes + errors) != 0L =>
-          console.println(s"Read ${successes + errors} events (success: $successes, errors: $errors)") >>
-            F.pure(v)
-        case ((_, _), v) => F.pure(v)
-      }
-      .collect { case Right(v) => v }
+  def printConsumedEventSkipFailed[F[_]: Monad, A, E](console: Console[F]): Pipe[F, Either[E, A], A] =
+    printSkipFailed(
+      console,
+      (successes, errors) => s"Read ${successes + errors} events (success: $successes, errors: $errors)"
+    )
 
   /**
     * Print the evaluated projections to the passed ''console''.
     * It prints every 100 consumed events, distinguishing errors and success.
+    *
+    * @return it returns the successfully evaluated projections, ignoring the failures
     */
-  def printEvaluatedProjection[F[_], A](
-      console: Console[F]
-  )(implicit F: Monad[F]): Pipe[F, ClientErrOr[A], ClientErrOr[A]] =
-    _.through(countSuccessAndError).evalMap {
-      case ((successes, errors), v) if (successes + errors) % 100 == 0 && (successes + errors) != 0L =>
-        console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)") >>
-          F.pure(v)
-      case ((_, _), v) => F.pure(v)
-    }
+  def printEvaluatedProjectionSkipFailed[F[_]: Monad, A, E](console: Console[F]): Pipe[F, Either[E, A], A] =
+    printSkipFailed(
+      console,
+      (successes, errors) => s"Processed ${successes + errors} events (success: $successes, errors: $errors)"
+    )
 
-  private def countSuccessAndError[F[_], A]: Pipe[F, ClientErrOr[A], ((Long, Long), ClientErrOr[A])] =
+  private[cli] def printSkipFailed[F[_], A, E](console: Console[F], line: (Long, Long) => String)(
+      implicit F: Monad[F]
+  ): Pipe[F, Either[E, A], A] =
     _.mapAccumulate((0L, 0L)) {
       case ((successes, errors), v @ Right(_)) => ((successes + 1, errors), v)
       case ((successes, errors), v @ Left(_))  => ((successes, errors + 1), v)
-    }
+    }.evalMap {
+        case ((successes, errors), v) if (successes + errors) % 100 == 0 && (successes + errors) != 0L =>
+          console.println(line(successes, errors)) >> F.pure(v)
+        case ((_, _), v) => F.pure(v)
+      }
+      .collect { case Right(v) => v }
 }

@@ -61,7 +61,7 @@ class InfluxProjection[F[_]: ContextShift](
             .replaceAllLiterally("{event_rev}", ev.rev.toString)
           spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res, org, proj))
       }
-      .through(printEvaluatedProjection(console))
+      .through(printEvaluatedProjectionSkipFailed(console))
       .attempt
       .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
       .compile

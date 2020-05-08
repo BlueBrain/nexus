@@ -38,7 +38,7 @@ class AbstractInfluxSpec extends AbstractCliSpec {
     make[InfluxClient[IO]].fromResource {
       (_: InfluxDocker.Container, cfg: AppConfig, blocker: Blocker, console: Console[IO]) =>
         BlazeClientBuilder[IO](blocker.blockingContext).resource.flatMap { client =>
-          val influxClient = InfluxClient(client, console, cfg)
+          val influxClient = InfluxClient(client, cfg, console)
           waitForPostgresReady(influxClient).map(_ => influxClient)
         }
     }

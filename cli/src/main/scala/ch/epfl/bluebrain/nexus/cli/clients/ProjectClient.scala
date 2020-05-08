@@ -3,21 +3,13 @@ package ch.epfl.bluebrain.nexus.cli.clients
 import cats.effect.concurrent.Ref
 import cats.effect.{Sync, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.{SerializationError, Unexpected}
 import ch.epfl.bluebrain.nexus.cli.config.EnvConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
-import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
+import ch.epfl.bluebrain.nexus.cli.{ClientErrOr, Console}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import org.http4s.circe.CirceEntityDecoder._
 import org.http4s.client.Client
 import org.http4s.{Headers, Request}
-import retry.CatsEffect._
-import retry.RetryPolicy
-import retry.syntax.all._
-
-import scala.util.control.NonFatal
 
 trait ProjectClient[F[_]] {
 
@@ -52,12 +44,12 @@ object ProjectClient {
     new LiveProjectClient[F](client, env, cache)
   }
 
-  private class LiveProjectClient[F[_]: Timer: Console](
+  private class LiveProjectClient[F[_]: Timer: Console: Sync](
       client: Client[F],
       env: EnvConfig,
       cache: Ref[F, Map[(OrgUuid, ProjectUuid), (OrgLabel, ProjectLabel)]]
-  )(implicit F: Sync[F])
-      extends ProjectClient[F] {
+  ) extends AbstractHttpClient[F](client, env)
+      with ProjectClient[F] {
 
     override def labels(org: OrgUuid, proj: ProjectUuid): F[ClientErrOr[(OrgLabel, ProjectLabel)]] =
       cache.get.flatMap { map =>
@@ -76,26 +68,13 @@ object ProjectClient {
         }
       }
 
-    private val retry                                = env.httpClient.retry
-    private def successCondition[A]                  = retry.condition.notRetryFromEither[A] _
-    implicit private val retryPolicy: RetryPolicy[F] = retry.retryPolicy
-    implicit private def logOnError[A]               = logRetryErrors[F, A]("fetching a project")
-
     private def get(org: OrgUuid, proj: ProjectUuid): F[ClientErrOr[(OrgLabel, ProjectLabel)]] = {
       val uri = env.project(org, proj)
       val req = Request[F](uri = uri, headers = Headers(env.authorizationHeader.toList))
-      val resp: F[ClientErrOr[(OrgLabel, ProjectLabel)]] = client
-        .fetch(req)(ClientError.errorOr { r =>
-          r.attemptAs[NexusAPIProject].value.map {
-            case Left(err)                                      => Left(SerializationError(err.message, "NexusAPIProject"))
-            case Right(NexusAPIProject(orgLabel, projectLabel)) => Right((orgLabel, projectLabel))
-          }
-        })
-      resp
-        .recoverWith {
-          case NonFatal(err) => F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
-        }
-        .retryingM(successCondition)
+      executeParse[NexusAPIProject](req).map {
+        case Right(NexusAPIProject(orgLabel, projectLabel)) => Right((orgLabel, projectLabel))
+        case Left(err)                                      => Left(err)
+      }
     }
   }
 
