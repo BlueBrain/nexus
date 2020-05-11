@@ -7,7 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.Unexpected
 import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, Console}
-import ch.epfl.bluebrain.nexus.cli.ProjectionPipes.{printConsumedEventSkipFailed, printEvaluatedProjectionSkipFailed}
+import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
 import ch.epfl.bluebrain.nexus.cli.clients.SparqlResults.{Binding, Literal}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, SparqlClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
@@ -53,18 +53,20 @@ class PostgresProjection[F[_]: ContextShift](
     def successCondition[A]    = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
     val compiledStream =
       eventStream.value
-        .through(printConsumedEventSkipFailed(console))
-        .flatMap {
-          case (ev, org, proj) =>
-            val maybeConfig = pc.projects
-              .get((org, proj))
-              .flatMap(pc =>
-                pc.types.collectFirst {
-                  case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
-                }
-              )
-            Stream.fromIterator[F](maybeConfig.iterator)
+        .map {
+          case Right((ev, org, proj)) =>
+            Right(
+              pc.projects
+                .get((org, proj))
+                .flatMap(pc =>
+                  pc.types.collectFirst {
+                    case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+                  }
+                )
+            )
+          case Left(err) => Left(err)
         }
+        .through(printEventProgress(console))
         .evalMap {
           case (pc, tc, ev, org, proj) =>
             tc.queries
@@ -77,7 +79,7 @@ class PostgresProjection[F[_]: ContextShift](
               .sequence
               .map(_.sequence)
         }
-        .through(printEvaluatedProjectionSkipFailed(console))
+        .through(printProjectionProgress(console))
         .attempt
         .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
         .compile

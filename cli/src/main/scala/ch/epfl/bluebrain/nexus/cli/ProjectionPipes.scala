@@ -7,38 +7,42 @@ import fs2.Pipe
 object ProjectionPipes {
 
   /**
-    * Print the consumed events to the passed ''console''.
-    * It prints every 100 consumed events, distinguishing errors and success.
+    * Print the progress of the consumed events through the passed ''console''.
+    * It prints every 100 consumed events, distinguishing skip, errors and success events.
     *
-    * @return it returns the successful events, ignoring the failures
+    * @return it returns the successful events, ignoring the failures and the skipped
     */
-  def printConsumedEventSkipFailed[F[_]: Monad, A, E](console: Console[F]): Pipe[F, Either[E, A], A] =
-    printSkipFailed(
-      console,
-      (successes, errors) => s"Read ${successes + errors} events (success: $successes, errors: $errors)"
-    )
+  def printEventProgress[F[_], A, E](console: Console[F])(implicit F: Monad[F]): Pipe[F, Either[E, Option[A]], A] =
+    _.mapAccumulate((0L, 0L, 0L)) {
+      case ((success, skip, errors), v @ Right(Some(_))) => ((success + 1, skip, errors), v)
+      case ((success, skip, errors), v @ Right(None))    => ((success, skip + 1, errors), v)
+      case ((success, skip, errors), v @ Left(_))        => ((success, skip, errors + 1), v)
+    }.evalMap {
+        case ((success, skip, errors), v) if (success + skip + errors) % 100 == 0 && (success + skip + errors) != 0L =>
+          console.println(
+            s"Read ${success + skip + errors} events (success: $success, skip: $skip, errors: $errors)"
+          ) >>
+            F.pure(v)
+        case ((_, _, _), v) => F.pure(v)
+      }
+      .collect { case Right(Some(v)) => v }
 
   /**
-    * Print the evaluated projections to the passed ''console''.
+    * Print the progress of the evaluated projection through the passed ''console''.
     * It prints every 100 consumed events, distinguishing errors and success.
     *
     * @return it returns the successfully evaluated projections, ignoring the failures
     */
-  def printEvaluatedProjectionSkipFailed[F[_]: Monad, A, E](console: Console[F]): Pipe[F, Either[E, A], A] =
-    printSkipFailed(
-      console,
-      (successes, errors) => s"Processed ${successes + errors} events (success: $successes, errors: $errors)"
-    )
-
-  private[cli] def printSkipFailed[F[_], A, E](console: Console[F], line: (Long, Long) => String)(
-      implicit F: Monad[F]
-  ): Pipe[F, Either[E, A], A] =
+  def printProjectionProgress[F[_], A, E](
+      console: Console[F]
+  )(implicit F: Monad[F]): Pipe[F, Either[E, A], A] =
     _.mapAccumulate((0L, 0L)) {
       case ((successes, errors), v @ Right(_)) => ((successes + 1, errors), v)
       case ((successes, errors), v @ Left(_))  => ((successes, errors + 1), v)
     }.evalMap {
         case ((successes, errors), v) if (successes + errors) % 100 == 0 && (successes + errors) != 0L =>
-          console.println(line(successes, errors)) >> F.pure(v)
+          console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)") >>
+            F.pure(v)
         case ((_, _), v) => F.pure(v)
       }
       .collect { case Right(v) => v }
