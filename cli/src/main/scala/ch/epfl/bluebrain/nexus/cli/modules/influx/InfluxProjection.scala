@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
 import ch.epfl.bluebrain.nexus.cli.clients._
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.config.influx.{InfluxConfig, TypeConfig}
-import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset, OrgLabel, ProjectLabel}
-import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, Console}
+import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset}
+import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
 import fs2.Stream
 import retry.CatsEffect._
-import retry.RetryPolicy
+import retry.{RetryDetails, RetryPolicy}
 import retry.syntax.all._
 
 class InfluxProjection[F[_]: ContextShift](
@@ -39,8 +39,8 @@ class InfluxProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    implicit def logOnError[A] = logRetryErrors[F, A]("fetching SSE")
-    def successCondition[A]    = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+    implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] = logRetryErrors[F, A]("fetching SSE")
+    def successCondition[A]                                               = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
     val compiledStream = eventStream.value
       .through(printConsumedEventSkipFailed(console))
       .flatMap {
@@ -58,8 +58,10 @@ class InfluxProjection[F[_]: ContextShift](
         case (pc, tc, ev, org, proj) =>
           val query = tc.query
             .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
+            .replaceAllLiterally("{resource_type}", tc.tpe)
+            .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
             .replaceAllLiterally("{event_rev}", ev.rev.toString)
-          spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res, org, proj))
+          spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res))
       }
       .through(printEvaluatedProjectionSkipFailed(console))
       .attempt
@@ -72,15 +74,13 @@ class InfluxProjection[F[_]: ContextShift](
 
   private def insert(
       tc: TypeConfig,
-      res: Either[ClientError, SparqlResults],
-      org: OrgLabel,
-      proj: ProjectLabel
+      res: Either[ClientError, SparqlResults]
   ): F[Either[ClientError, Unit]] =
     res match {
       case Left(err) => F.pure(Left(err))
       case Right(results) =>
         InfluxPoint
-          .fromSparqlResults(results, org, proj, tc)
+          .fromSparqlResults(results, tc)
           .traverse { point => inc.write(point) }
           .map(_.foldM(())((_, r) => r))
     }

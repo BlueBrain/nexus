@@ -6,7 +6,6 @@ import java.util.regex.Pattern.quote
 import cats.effect.IO
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.config.influx.TypeConfig
-import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
 import ch.epfl.bluebrain.nexus.cli.utils.{Resources, TimeTransformation}
 import fs2._
 import fs2.text._
@@ -41,7 +40,8 @@ class InfluxPointSpec extends AnyWordSpecLike with Matchers with Resources with 
         Map(
           quote("{created}") -> created.toString,
           quote("{updated}") -> updated.toString,
-          quote("{bytes}")   -> 1234.toString
+          quote("{bytes}")   -> 1234.toString,
+          quote("{project}") -> "myorg/myproject"
         )
       ).as[SparqlResults].getOrElse(throw new IllegalArgumentException)
 
@@ -54,7 +54,7 @@ class InfluxPointSpec extends AnyWordSpecLike with Matchers with Resources with 
         Some(updated)
       )
 
-      InfluxPoint.fromSparqlResults(sparqlResults, OrgLabel("myorg"), ProjectLabel("myproject"), typeConfig) shouldEqual
+      InfluxPoint.fromSparqlResults(sparqlResults, typeConfig) shouldEqual
         List(expected)
 
     }

@@ -71,6 +71,8 @@ class PostgresProjection[F[_]: ContextShift](
               .map { qc =>
                 val query = qc.query
                   .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
+                  .replaceAllLiterally("{resource_type}", tc.tpe)
+                  .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
                   .replaceAllLiterally("{event_rev}", ev.rev.toString)
                 spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
               }
