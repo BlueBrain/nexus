@@ -80,15 +80,17 @@ object EventStreamClient {
               case r => F.pure(r)
             }
             .flatMap(_.body.through(ServerSentEvent.decoder[F]))
-            .evalMap { sse =>
-              val resultT = for {
-                off         <- fromEither[F](sse.id.flatMap(v => Offset(v.value)).toRight[ClientError](offsetError))
-                _           <- right[ClientError](lastEventIdCache.update(_ => Some(off)))
-                event       <- fromEither[F](decodeEvent(sse.data))
-                labels      <- EitherT(projectClient.labels(event.organization, event.project))
-                (org, proj) = labels
-              } yield (event, org, proj)
-              resultT.value
+            .collect { case ServerSentEvent(data, _, Some(id), _) => id -> data }
+            .evalMap {
+              case (id, data) =>
+                val resultT = for {
+                  off         <- fromEither[F](Offset(id.value).toRight[ClientError](offsetError))
+                  _           <- right[ClientError](lastEventIdCache.update(_ => Some(off)))
+                  event       <- fromEither[F](decodeEvent(data))
+                  labels      <- EitherT(projectClient.labels(event.organization, event.project))
+                  (org, proj) = labels
+                } yield (event, org, proj)
+                resultT.value
             }
         }
         .map(stream => EventStream(stream, lastEventIdCache))
