@@ -12,13 +12,14 @@ import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.Duration
 
 final class CliModule[F[_]: ConcurrentEffect: Timer: TagK] extends ModuleDef {
 
   make[Console[F]].tagged(Repo.Prod).from(Console[F])
 
   make[Client[F]].tagged(Repo.Prod).fromResource {
-    BlazeClientBuilder[F](ExecutionContext.global).resource
+    BlazeClientBuilder[F](ExecutionContext.global).withIdleTimeout(Duration.Inf).resource
   }
 
   make[ProjectClient[F]].tagged(Repo.Prod).fromEffect { (cfg: AppConfig, client: Client[F], console: Console[F]) =>

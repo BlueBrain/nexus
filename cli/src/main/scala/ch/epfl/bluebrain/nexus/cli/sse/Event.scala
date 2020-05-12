@@ -37,7 +37,7 @@ object Event extends Codecs {
       `_organizationUuid`: UUID,
       `_projectUuid`: UUID,
       `@type`: EventType,
-      `_types`: Set[Uri],
+      `_types`: Option[Set[Uri]],
       `_resourceId`: Uri,
       `_rev`: Option[Long],
       `_instant`: Instant
@@ -48,7 +48,7 @@ object Event extends Codecs {
       `_rev`.getOrElse(1L),
       OrgUuid(`_organizationUuid`),
       ProjectUuid(`_projectUuid`),
-      `_types`,
+      `_types`.getOrElse(Set.empty[Uri]),
       `_instant`,
       raw
     )

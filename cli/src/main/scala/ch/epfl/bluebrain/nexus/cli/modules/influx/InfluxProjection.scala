@@ -42,18 +42,20 @@ class InfluxProjection[F[_]: ContextShift](
     implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] = logRetryErrors[F, A]("fetching SSE")
     def successCondition[A]                                               = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
     val compiledStream = eventStream.value
-      .through(printConsumedEventSkipFailed(console))
-      .flatMap {
-        case (ev, org, proj) =>
-          val maybeConfig = ic.projects
-            .get((org, proj))
-            .flatMap(pc =>
-              pc.types.collectFirst {
-                case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
-              }
-            )
-          Stream.fromIterator[F](maybeConfig.iterator)
+      .map {
+        case Right((ev, org, proj)) =>
+          Right(
+            ic.projects
+              .get((org, proj))
+              .flatMap(pc =>
+                pc.types.collectFirst {
+                  case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+                }
+              )
+          )
+        case Left(err) => Left(err)
       }
+      .through(printEventProgress(console))
       .evalMap {
         case (pc, tc, ev, org, proj) =>
           val query = tc.query
@@ -63,7 +65,7 @@ class InfluxProjection[F[_]: ContextShift](
             .replaceAllLiterally("{event_rev}", ev.rev.toString)
           spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res))
       }
-      .through(printEvaluatedProjectionSkipFailed(console))
+      .through(printProjectionProgress(console))
       .attempt
       .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
       .compile
