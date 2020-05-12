@@ -243,7 +243,11 @@ lazy val servicePackaging = {
     },
     // docker publishing settings
     Docker / maintainer := "Nexus Team <noreply@epfl.ch>",
-    Docker / version    := "latest",
+    Docker / version := {
+      import ch.epfl.scala.sbt.release.ReleaseEarly.Defaults
+      if (Defaults.isSnapshot.value) "latest"
+      else version.value
+    },
     Docker / daemonUser := "nexus",
     dockerBaseImage     := "adoptopenjdk:11-jre-hotspot",
     dockerExposedPorts  := Seq(8080, 2552),
