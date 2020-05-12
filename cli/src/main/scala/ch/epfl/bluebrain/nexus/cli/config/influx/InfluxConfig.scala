@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.cli.config.influx
 
 import java.nio.file.Path
 
+import ch.epfl.bluebrain.nexus.cli.config.PrintConfig
 import ch.epfl.bluebrain.nexus.cli.utils.Codecs._
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
 import com.github.ghik.silencer.silent
@@ -21,6 +22,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param dbCreationCommand  the command used to create an influxDB database
   * @param offsetFile         the location where the influxDB projection offset should be read / stored
   * @param offsetSaveInterval how frequent to save the stream offset into the offset file
+  * @param print              the configuration for printing output to the client
   * @param projects           the project to config mapping
   */
 final case class InfluxConfig(
@@ -29,6 +31,7 @@ final case class InfluxConfig(
     dbCreationCommand: String,
     offsetFile: Path,
     offsetSaveInterval: FiniteDuration,
+    print: PrintConfig,
     projects: Map[(OrgLabel, ProjectLabel), ProjectConfig]
 )
 

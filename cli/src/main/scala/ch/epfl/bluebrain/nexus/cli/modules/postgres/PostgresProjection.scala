@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
 import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
 import ch.epfl.bluebrain.nexus.cli.clients.SparqlResults.{Binding, Literal}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, SparqlClient, SparqlResults}
-import ch.epfl.bluebrain.nexus.cli.config.AppConfig
+import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, PrintConfig}
 import ch.epfl.bluebrain.nexus.cli.config.postgres.{PostgresConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset}
 import doobie.util.Put
@@ -34,6 +34,7 @@ class PostgresProjection[F[_]: ContextShift](
 )(implicit blocker: Blocker, F: ConcurrentEffect[F], T: Timer[F]) {
 
   private val pc: PostgresConfig                   = cfg.postgres
+  implicit private val printCfg: PrintConfig       = pc.print
   implicit private val retryPolicy: RetryPolicy[F] = pc.retry.retryPolicy
   implicit private val c: Console[F]               = console
 
