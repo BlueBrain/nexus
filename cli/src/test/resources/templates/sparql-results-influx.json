@@ -29,6 +29,11 @@
           "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
           "type": "literal",
           "value": "{updated}"
+        },
+        "project": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#string",
+          "type": "literal",
+          "value": "{project}"
         }
       }
     ]

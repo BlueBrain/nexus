@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
 import ch.epfl.bluebrain.nexus.cli.clients._
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.config.influx.{InfluxConfig, TypeConfig}
-import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset, OrgLabel, ProjectLabel}
-import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, Console}
+import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset}
+import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
 import fs2.Stream
 import retry.CatsEffect._
-import retry.RetryPolicy
+import retry.{RetryDetails, RetryPolicy}
 import retry.syntax.all._
 
 class InfluxProjection[F[_]: ContextShift](
@@ -39,50 +39,54 @@ class InfluxProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    implicit def logOnError[A] = logRetryErrors[F, A]("fetching SSE")
-    def successCondition[A]    = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
-    val compiledStream = eventStream.value
-      .map {
-        case Right((ev, org, proj)) =>
-          Right(
-            ic.projects
-              .get((org, proj))
-              .flatMap(pc =>
-                pc.types.collectFirst {
-                  case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
-                }
-              )
-          )
-        case Left(err) => Left(err)
-      }
-      .through(printEventProgress(console))
-      .evalMap {
-        case (pc, tc, ev, org, proj) =>
-          val query = tc.query
-            .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
-            .replaceAllLiterally("{event_rev}", ev.rev.toString)
-          spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res, org, proj))
-      }
-      .through(printProjectionProgress(console))
-      .attempt
-      .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
-      .compile
-      .lastOrError
+    implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
+      logRetryErrors[F, A]("executing the projection")
+    def successCondition[A] = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+
+    val compiledStream = eventStream.value.flatMap { stream =>
+      stream
+        .map {
+          case Right((ev, org, proj)) =>
+            Right(
+              ic.projects
+                .get((org, proj))
+                .flatMap(pc =>
+                  pc.types.collectFirst {
+                    case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+                  }
+                )
+            )
+          case Left(err) => Left(err)
+        }
+        .through(printEventProgress(console))
+        .evalMap {
+          case (pc, tc, ev, org, proj) =>
+            val query = tc.query
+              .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
+              .replaceAllLiterally("{resource_type}", tc.tpe)
+              .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
+              .replaceAllLiterally("{event_rev}", ev.rev.toString)
+            spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res))
+        }
+        .through(printProjectionProgress(console))
+        .attempt
+        .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
+        .compile
+        .lastOrError
+    }
 
     compiledStream.retryingM(successCondition) >> F.unit
   }
 
   private def insert(
       tc: TypeConfig,
-      res: Either[ClientError, SparqlResults],
-      org: OrgLabel,
-      proj: ProjectLabel
+      res: Either[ClientError, SparqlResults]
   ): F[Either[ClientError, Unit]] =
     res match {
       case Left(err) => F.pure(Left(err))
       case Right(results) =>
         InfluxPoint
-          .fromSparqlResults(results, org, proj, tc)
+          .fromSparqlResults(results, tc)
           .traverse { point => inc.write(point) }
           .map(_.foldM(())((_, r) => r))
     }

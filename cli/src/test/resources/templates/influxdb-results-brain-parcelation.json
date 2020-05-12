@@ -10,7 +10,8 @@
             "bytes",
             "created",
             "deprecated",
-            "project"
+            "project",
+            "typeUri"
           ],
           "values" : [
             [
@@ -18,21 +19,24 @@
               18111712,
               "2020-02-24T15:36:41.484672Z",
               "false",
-              "bbp/atlas"
+              "bbp/atlas",
+              "https://neuroshapes.org/BrainParcellationDataLayer"
             ],
             [
               "2020-02-24T15:43:49.216073Z",
               1891712,
               "2020-02-24T15:43:49.216073Z",
               "false",
-              "bbp/atlas"
+              "bbp/atlas",
+              "https://neuroshapes.org/BrainParcellationDataLayer"
             ],
             [
               "2020-02-25T08:48:33.808426Z",
               13007853,
               "2020-02-25T08:48:33.808426Z",
               "false",
-              "bbp/atlas"
+              "bbp/atlas",
+              "https://neuroshapes.org/BrainParcellationDataLayer"
             ]
           ]
         }

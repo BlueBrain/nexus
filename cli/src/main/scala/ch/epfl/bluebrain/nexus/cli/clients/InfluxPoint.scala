@@ -4,7 +4,6 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit.SECONDS
 
 import ch.epfl.bluebrain.nexus.cli.config.influx.TypeConfig
-import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
 import fs2.Chunk
 import org.http4s.headers.`Content-Type`
 import org.http4s.{EntityEncoder, MediaType}
@@ -41,14 +40,10 @@ object InfluxPoint {
   /**
     * Create a series of [[InfluxPoint]] from [[SparqlResults]].
     *
-    * @param results      SPARQL query results
-    * @param organization the organization used as a tag
-    * @param project      the project used as a tag
+    * @param results SPARQL query results
     */
   def fromSparqlResults(
       results: SparqlResults,
-      organization: OrgLabel,
-      project: ProjectLabel,
       tc: TypeConfig
   ): List[InfluxPoint] =
     results.results.bindings.flatMap { bindings =>
@@ -56,9 +51,7 @@ object InfluxPoint {
       Option.when(values.nonEmpty) {
         val tags = bindings.view
           .filterKeys(key => !tc.values(key) && key != tc.timestamp)
-          .mapValues(_.value) ++ Seq(
-          "project" -> s"${organization.value}/${project.value}"
-        )
+          .mapValues(_.value)
         val timestamp = bindings.get(tc.timestamp).flatMap(binding => Try(Instant.parse(binding.value)).toOption)
         InfluxPoint(tc.measurement, tags.toMap, values, timestamp)
       }

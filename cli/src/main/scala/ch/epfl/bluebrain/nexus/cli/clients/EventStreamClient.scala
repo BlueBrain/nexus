@@ -65,8 +65,8 @@ object EventStreamClient {
     private def decodeEvent(str: String): Either[ClientError, Event] =
       decode[Event](str).leftMap(err => SerializationError(err.getMessage, "NexusAPIEvent", Some(str)))
 
-    private def buildStream(uri: Uri, lastEventIdCache: Ref[F, Option[Offset]]): F[EventStream[F]] =
-      lastEventIdCache.get
+    private def buildStream(uri: Uri, lastEventIdCache: Ref[F, Option[Offset]]): F[EventStream[F]] = {
+      val streamF = lastEventIdCache.get
         .map { lastEventId =>
           val lastEventIdH = lastEventId.map[Header](id => `Last-Event-Id`(EventId(id.asString)))
           val req          = Request[F](uri = uri, headers = Headers(lastEventIdH.toList ++ env.authorizationHeader.toList))
@@ -93,7 +93,8 @@ object EventStreamClient {
                 resultT.value
             }
         }
-        .map(stream => EventStream(stream, lastEventIdCache))
+      F.delay(EventStream(streamF, lastEventIdCache))
+    }
 
     def apply(lastEventId: Option[Offset]): F[EventStream[F]] =
       Ref.of(lastEventId).flatMap(ref => buildStream(env.eventsUri, ref))

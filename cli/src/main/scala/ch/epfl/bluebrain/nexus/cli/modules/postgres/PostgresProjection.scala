@@ -6,7 +6,7 @@ import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.Unexpected
-import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, Console}
+import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
 import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
 import ch.epfl.bluebrain.nexus.cli.clients.SparqlResults.{Binding, Literal}
 import ch.epfl.bluebrain.nexus.cli.clients.{EventStreamClient, SparqlClient, SparqlResults}
@@ -49,10 +49,12 @@ class PostgresProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    implicit def logOnError[A] = logRetryErrors[F, A]("fetching SSE")
-    def successCondition[A]    = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
-    val compiledStream =
-      eventStream.value
+    implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
+      logRetryErrors[F, A]("executing the projection")
+    def successCondition[A] = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+
+    val compiledStream = eventStream.value.flatMap { stream =>
+      stream
         .map {
           case Right((ev, org, proj)) =>
             Right(
@@ -73,6 +75,8 @@ class PostgresProjection[F[_]: ContextShift](
               .map { qc =>
                 val query = qc.query
                   .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
+                  .replaceAllLiterally("{resource_type}", tc.tpe)
+                  .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
                   .replaceAllLiterally("{event_rev}", ev.rev.toString)
                 spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
               }
@@ -84,6 +88,7 @@ class PostgresProjection[F[_]: ContextShift](
         .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
         .compile
         .lastOrError
+    }
     compiledStream.retryingM(successCondition) >> F.unit
   }
 
