@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.cli
 
 import cats.Monad
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.config.PrintConfig
 import fs2.Pipe
 
 object ProjectionPipes {
@@ -12,17 +13,22 @@ object ProjectionPipes {
     *
     * @return it returns the successful events, ignoring the failures and the skipped
     */
-  def printEventProgress[F[_], A, E](console: Console[F])(implicit F: Monad[F]): Pipe[F, Either[E, Option[A]], A] =
-    _.mapAccumulate((0L, 0L, 0L)) {
-      case ((success, skip, errors), v @ Right(Some(_))) => ((success + 1, skip, errors), v)
-      case ((success, skip, errors), v @ Right(None))    => ((success, skip + 1, errors), v)
-      case ((success, skip, errors), v @ Left(_))        => ((success, skip, errors + 1), v)
+  def printEventProgress[F[_], A, E <: CliError](
+      console: Console[F]
+  )(implicit F: Monad[F], cfg: PrintConfig): Pipe[F, Either[E, Option[A]], A] =
+    _.evalMapAccumulate[F, (Long, Long, Long), Either[E, Option[A]]]((0L, 0L, 0L)) {
+      case ((success, skip, errors), v @ Right(Some(_))) =>
+        F.pure(((success + 1, skip, errors), v))
+      case ((success, skip, errors), v @ Right(None)) =>
+        F.pure(((success, skip + 1, errors), v))
+      case ((success, skip, errors), v @ Left(err)) =>
+        console.printlnErr(err.asString).as(((success, skip, errors + 1), v))
     }.evalMap {
-        case ((success, skip, errors), v) if (success + skip + errors) % 100 == 0 && (success + skip + errors) != 0L =>
-          console.println(
-            s"Read ${success + skip + errors} events (success: $success, skip: $skip, errors: $errors)"
-          ) >>
-            F.pure(v)
+        case ((success, skip, errors), v)
+            if cfg.progressInterval.exists(interval => (success + skip + errors) % interval == 0) && (success + skip + errors) != 0L =>
+          console
+            .println(s"Read ${success + skip + errors} events (success: $success, skip: $skip, errors: $errors)")
+            .as(v)
         case ((_, _, _), v) => F.pure(v)
       }
       .collect { case Right(Some(v)) => v }
@@ -33,16 +39,18 @@ object ProjectionPipes {
     *
     * @return it returns the successfully evaluated projections, ignoring the failures
     */
-  def printProjectionProgress[F[_], A, E](
+  def printProjectionProgress[F[_], A, E <: CliError](
       console: Console[F]
-  )(implicit F: Monad[F]): Pipe[F, Either[E, A], A] =
-    _.mapAccumulate((0L, 0L)) {
-      case ((successes, errors), v @ Right(_)) => ((successes + 1, errors), v)
-      case ((successes, errors), v @ Left(_))  => ((successes, errors + 1), v)
+  )(implicit F: Monad[F], cfg: PrintConfig): Pipe[F, Either[E, A], A] =
+    _.evalMapAccumulate[F, (Long, Long), Either[E, A]]((0L, 0L)) {
+      case ((success, errors), v @ Right(_)) =>
+        F.pure(((success + 1, errors), v))
+      case ((success, errors), v @ Left(err)) =>
+        console.printlnErr(err.asString).as(((success, errors + 1), v))
     }.evalMap {
-        case ((successes, errors), v) if (successes + errors) % 100 == 0 && (successes + errors) != 0L =>
-          console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)") >>
-            F.pure(v)
+        case ((successes, errors), v)
+            if cfg.progressInterval.exists(interval => (successes + errors) % interval == 0) && (successes + errors) != 0L =>
+          console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)").as(v)
         case ((_, _), v) => F.pure(v)
       }
       .collect { case Right(v) => v }

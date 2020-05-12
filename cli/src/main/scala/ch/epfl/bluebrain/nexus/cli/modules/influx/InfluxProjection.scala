@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.Unexpected
 import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
 import ch.epfl.bluebrain.nexus.cli.clients._
-import ch.epfl.bluebrain.nexus.cli.config.AppConfig
+import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, PrintConfig}
 import ch.epfl.bluebrain.nexus.cli.config.influx.{InfluxConfig, TypeConfig}
 import ch.epfl.bluebrain.nexus.cli.sse.{EventStream, Offset}
 import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, ClientErrOr, Console}
@@ -24,6 +24,7 @@ class InfluxProjection[F[_]: ContextShift](
 )(implicit blocker: Blocker, F: ConcurrentEffect[F], T: Timer[F]) {
 
   private val ic: InfluxConfig                     = cfg.influx
+  implicit private val printCfg: PrintConfig       = ic.print
   implicit private val c: Console[F]               = console
   implicit private val retryPolicy: RetryPolicy[F] = cfg.env.httpClient.retry.retryPolicy
 
