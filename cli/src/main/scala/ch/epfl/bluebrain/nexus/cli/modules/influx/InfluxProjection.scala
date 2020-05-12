@@ -39,37 +39,41 @@ class InfluxProjection[F[_]: ContextShift](
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
-    implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] = logRetryErrors[F, A]("fetching SSE")
-    def successCondition[A]                                               = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
-    val compiledStream = eventStream.value
-      .map {
-        case Right((ev, org, proj)) =>
-          Right(
-            ic.projects
-              .get((org, proj))
-              .flatMap(pc =>
-                pc.types.collectFirst {
-                  case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
-                }
-              )
-          )
-        case Left(err) => Left(err)
-      }
-      .through(printEventProgress(console))
-      .evalMap {
-        case (pc, tc, ev, org, proj) =>
-          val query = tc.query
-            .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
-            .replaceAllLiterally("{resource_type}", tc.tpe)
-            .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
-            .replaceAllLiterally("{event_rev}", ev.rev.toString)
-          spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res))
-      }
-      .through(printProjectionProgress(console))
-      .attempt
-      .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
-      .compile
-      .lastOrError
+    implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
+      logRetryErrors[F, A]("executing the projection")
+    def successCondition[A] = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+
+    val compiledStream = eventStream.value.flatMap { stream =>
+      stream
+        .map {
+          case Right((ev, org, proj)) =>
+            Right(
+              ic.projects
+                .get((org, proj))
+                .flatMap(pc =>
+                  pc.types.collectFirst {
+                    case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+                  }
+                )
+            )
+          case Left(err) => Left(err)
+        }
+        .through(printEventProgress(console))
+        .evalMap {
+          case (pc, tc, ev, org, proj) =>
+            val query = tc.query
+              .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
+              .replaceAllLiterally("{resource_type}", tc.tpe)
+              .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
+              .replaceAllLiterally("{event_rev}", ev.rev.toString)
+            spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res))
+        }
+        .through(printProjectionProgress(console))
+        .attempt
+        .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
+        .compile
+        .lastOrError
+    }
 
     compiledStream.retryingM(successCondition) >> F.unit
   }

@@ -78,7 +78,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       val ec = EventStreamClient[IO](client, pc, env)
       for {
         eventStream <- ec.apply(None)
-        eventList   <- eventStream.value.collect { case Right((event, _, _)) => event }.compile.toList
+        stream      <- eventStream.value
+        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
         _           = eventList shouldEqual events
       } yield ()
     }
@@ -86,7 +87,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       val ec = EventStreamClient[IO](client, pc, env)
       for {
         eventStream <- ec.apply(offset)
-        eventList   <- eventStream.value.collect { case Right((event, _, _)) => event }.compile.toList
+        stream      <- eventStream.value
+        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
         _           = eventList shouldEqual events.drop(3)
       } yield ()
     }
@@ -94,7 +96,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       val ec = EventStreamClient[IO](client, pc, env)
       for {
         eventStream <- ec.apply(orgLabel, None)
-        eventList   <- eventStream.value.collect { case Right((event, _, _)) => event }.compile.toList
+        stream      <- eventStream.value
+        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
         _           = eventList shouldEqual events
       } yield ()
     }
@@ -102,7 +105,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       val ec = EventStreamClient[IO](client, pc, env)
       for {
         eventStream <- ec.apply(orgLabel, offset)
-        eventList   <- eventStream.value.collect { case Right((event, _, _)) => event }.compile.toList
+        stream      <- eventStream.value
+        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
         _           = eventList shouldEqual events.drop(3)
       } yield ()
     }
@@ -110,7 +114,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       val ec = EventStreamClient[IO](client, pc, env)
       for {
         eventStream <- ec.apply(orgLabel, projectLabel, None)
-        eventList   <- eventStream.value.collect { case Right((event, _, _)) => event }.compile.toList
+        stream      <- eventStream.value
+        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
         _           = eventList shouldEqual events
       } yield ()
     }
@@ -118,7 +123,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       val ec = EventStreamClient[IO](client, pc, env)
       for {
         eventStream <- ec.apply(orgLabel, projectLabel, offset)
-        eventList   <- eventStream.value.collect { case Right((event, _, _)) => event }.compile.toList
+        stream      <- eventStream.value
+        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
         _           = eventList shouldEqual events.drop(3)
       } yield ()
     }
