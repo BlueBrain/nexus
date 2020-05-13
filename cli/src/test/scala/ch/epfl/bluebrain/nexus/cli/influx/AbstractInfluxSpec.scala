@@ -23,11 +23,11 @@ class AbstractInfluxSpec extends AbstractCliSpec {
           AppConfig.load[IO](Some(envFile), influxConfigFile = Some(influxFile)).flatMap {
             case Left(value) => IO.raiseError(value)
             case Right(value) =>
-              val postgresOffsetFile = influxFile.getParent.resolve("influx.offset")
+              val influxOffsetFile = influxFile.getParent.resolve("influx.offset")
               val cfg = value.copy(influx =
                 value.influx.copy(
                   endpoint = host.endpoint,
-                  offsetFile = postgresOffsetFile,
+                  offsetFile = influxOffsetFile,
                   offsetSaveInterval = 100.milliseconds
                 )
               )
@@ -39,12 +39,12 @@ class AbstractInfluxSpec extends AbstractCliSpec {
       (_: InfluxDocker.Container, cfg: AppConfig, blocker: Blocker, console: Console[IO]) =>
         BlazeClientBuilder[IO](blocker.blockingContext).resource.flatMap { client =>
           val influxClient = InfluxClient(client, cfg, console)
-          waitForPostgresReady(influxClient).map(_ => influxClient)
+          waitForInfluxReady(influxClient).map(_ => influxClient)
         }
     }
   }
 
-  private def waitForPostgresReady(
+  private def waitForInfluxReady(
       client: InfluxClient[IO],
       maxDelay: FiniteDuration = 90.seconds
   ): Resource[IO, Unit] = {
