@@ -6,6 +6,7 @@ import java.util.regex.Pattern.quote
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.clients.InfluxClient
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, EnvConfig}
 import ch.epfl.bluebrain.nexus.cli.dummies.TestCliModule
 import ch.epfl.bluebrain.nexus.cli.modules.config.ConfigModule
@@ -13,6 +14,7 @@ import ch.epfl.bluebrain.nexus.cli.modules.influx.InfluxModule
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresModule
 import ch.epfl.bluebrain.nexus.cli.sse.{Event, OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
 import ch.epfl.bluebrain.nexus.cli.utils.{Randomness, Resources, ShouldMatchers}
+import doobie.util.transactor.Transactor
 import io.circe.Json
 import izumi.distage.model.definition.{Module, ModuleDef, StandardAxis}
 import izumi.distage.model.reflection.DIKey
@@ -64,7 +66,11 @@ abstract class AbstractCliSpec
     pluginConfig = PluginConfig.empty,
     activation = StandardAxis.testDummyActivation,
     moduleOverrides = overrides,
-    forcedRoots = Set(
+    memoizationRoots = super.config.memoizationRoots ++ Set(
+      DIKey.get[Transactor[IO]],
+      DIKey.get[InfluxClient[IO]]
+    ),
+    forcedRoots = super.config.forcedRoots ++ Set(
       DIKey.get[AppConfig],
       DIKey.get[Console[IO]]
     ),
