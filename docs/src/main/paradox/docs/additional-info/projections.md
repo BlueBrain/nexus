@@ -260,4 +260,291 @@ look similar to the following:
 
 ## Projecting data into PostgreSQL
 
-TBD
+A lot of users prefer using a relational model with a fixed schema to query data in systems. They're used to using
+SQL a query language and wouldn't necessarily want to learn a new query language like SPARQL to navigate the graph.
+Additionally, there are a lot of analytics tools that support connecting to RDBMS systems and enable real time queries
+with strong visualization engines.
+
+In order to address this use case we've built the `bluebrain/nexus-cli` docker image to be used for projecting data
+into a PostgreSQL database.
+
+The following example shows how one could use the `bluebrain/nexus-cli` docker image to project a subset of an RDF graph
+to a strict relational model. The use case we're going to address in this example is to collect all schema resources in
+a Blue Brain Nexus instance and identify all transitive dependencies.
+
+To start, let's set up a postgresql docker container running in the background:
+
+```
+docker run -p 5432:5432 -d -e POSTGRES_PASSWORD=postgres --name postgres library/postgres:12.2
+```
+
+We can now configure the projection using two config files (`env.conf` and `postgres.conf` in the
+[HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) format) that will be mounted to the `nexus-cli`
+container:
+
+```
+mkdir config
+
+echo '
+env {
+  endpoint = ${NEXUS_ENDPOINT}
+  token = ${NEXUS_TOKEN}
+  http-client {
+    retry {
+      strategy = "exponential"
+      initial-delay = 100 millis
+      max-delay = 20 seconds
+      max-retries = 10
+      condition = "on-server-error"
+    }
+  }
+  default-sparql-view = "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+}
+' > config/env.conf
+
+echo '
+postgres {
+  host = ${NEXUS_POSTGRES_HOST}
+  port = ${NEXUS_POSTGRES_PORT}
+  username = ${NEXUS_POSTGRES_USERNAME}
+  password = ${NEXUS_POSTGRES_PASSWORD}
+  database = ${NEXUS_POSTGRES_DATABASE}
+  offset-file =  ${NEXUS_POSTGRES_OFFSET_FILE}
+  offset-save-interval = 1s
+  projects {
+    tutorialnexus/datamodels {
+      sparql-view = ${env.default-sparql-view}
+      types = [
+        {
+          type = "https://bluebrain.github.io/nexus/vocabulary/Schema"
+          queries = [
+            {
+              table = schemas
+              ddl =
+                """
+                  CREATE TABLE IF NOT EXISTS schemas (
+                    id      VARCHAR NOT NULL UNIQUE,
+                    rev     INT NOT NULL,
+                    project VARCHAR NOT NULL
+                  );
+                """
+              query =
+                """
+                  PREFIX nxv:<https://bluebrain.github.io/nexus/vocabulary/>
+                  PREFIX owl:<http://www.w3.org/2002/07/owl#>
+                  SELECT ?id ?rev ?project
+                  WHERE {
+                    <{resource_id}>             a   nxv:Schema .
+                    <{resource_id}>       nxv:rev          ?rev .
+                    BIND("{resource_id}" as ?id) .
+                    BIND("{resource_project}" AS ?project) .
+                    FILTER(?rev >= {event_rev})
+                  }
+                  LIMIT 1
+                """
+            },
+            {
+              table = schema_imports
+              ddl =
+                """
+                  CREATE TABLE IF NOT EXISTS schema_imports (
+                    id     VARCHAR NOT NULL,
+                    import VARCHAR NOT NULL
+                  );
+                """
+              query =
+                """
+                  PREFIX nxv:<https://bluebrain.github.io/nexus/vocabulary/>
+                  PREFIX owl:<http://www.w3.org/2002/07/owl#>
+                  SELECT ?id ?import
+                  WHERE {
+                    <{resource_id}>           a nxv:Schema .
+                    <{resource_id}> owl:imports    ?import .
+                    <{resource_id}>     nxv:rev       ?rev .
+                    BIND("{resource_id}" as ?id) .
+                    FILTER(?rev >= {event_rev})
+                  }
+                """
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+' > config/postgres.conf
+```
+
+The `env.conf` file defines a set of global properties that will be read from the process environment variables like
+for example the `NEXUS_ENDPOINT` or the `NEXUS_TOKEN` to be used for connecting to the system and how errors should
+be retried.
+
+The `postgres.conf` file defines how should the execution happen, what projects and types to consider, what queries to
+be executed for collecting information about each resource and where to project the result.
+
+In this example we will collect all resources of type `Schema` from the `tutorialnexus/datamodels` and project a subset
+of the information in two tables. The information that we would like to collect about each of these resources is defined
+in the variables selected in the SPARQL queries, specifically for the `schemas` table we'll collect:
+
+*   `?id`: the id of each schema
+*   `?rev`: the last known revision of each schema
+*   `?project`: the project where the schema resides
+
+For the `schema_imports` table we'll collect the import relationships:
+
+*   `?id`: the id of each schema
+*   `?import`: the id of the schema that is imported by the one identified by `?id`
+
+The `schema_imports` table will contain multiple rows for a schema identified by `?id` if it defines multiple imports.
+
+Obviously some of the information we're looking for is not necessarily present in the RDF graph, but we can obtain this
+information by means of templating. The SPARQL select query executed is first processed to replace some well known
+tokens (supported ones are: `resource_id` - the id of the resource for which the current change was recorded,
+`resource_project` - the project in which the change was recorded, `resource_type` - the type of the resource that
+matches the type entry in the configuration and `event_rev` - the revision of the resource that the current processed
+event has yielded). Information can thus be passed from the context of each event to the SPARQL select query. The `BIND`
+statements allow setting fixed or conditional values to the collected variable patterns, like for example: the
+`BIND("{resource_project}" AS ?project)` binds the project label (``tutorialnexus/datamodels`` in this case) to the
+`?project` variable.
+
+Since the SPARQL query configuration supports templating, the queries can be very efficient. They can select triples
+with a well defined starting point (the resource id) which are simple for the triple store to handle due to optimal use
+of indices. Any Sparql query can be executed; the selected variables will be projected as either a timestamp, a field
+or a tag, depending on the configuration.
+
+The configuration requires the definition of a `DDL` statement for each type selection. The following type mapping is
+currently supported by the tool:
+
+| Node Type | DB Type |
+| --------- | ------- |
+| Iri | Character types, such as: char, varchar and text |
+| Blank Node | Character types, such as: char, varchar and text |
+| http://www.w3.org/2001/XMLSchema#string | Character types, such as: char, varchar and text |
+| http://www.w3.org/2001/XMLSchema#long | Numeric types, such as int |
+| http://www.w3.org/2001/XMLSchema#int | Numeric types, such as int |
+| http://www.w3.org/2001/XMLSchema#integer | Numeric types, such as int |
+| http://www.w3.org/2001/XMLSchema#boolean | Boolean |
+| http://www.w3.org/2001/XMLSchema#dateTime | Timestamp |
+
+
+The configuration also mentions a file (`NEXUS_POSTGRES_OFFSET_FILE`) where the tool can save its progress such that it
+can resume from the last event processed in case of restarts.
+
+We're ready to start the tool:
+
+```
+docker run \
+  -v $(pwd)/config:/home/nexus/.nexus \
+  --link=postgres \
+  -e NEXUS_ENDPOINT="https://sandbox.bluebrainnexus.io/v1" \
+  -e NEXUS_TOKEN="******" \
+  -e NEXUS_POSTGRES_HOST="postgres" \
+  -e NEXUS_POSTGRES_PORT="5432" \
+  -e NEXUS_POSTGRES_DATABASE="postgres" \
+  -e NEXUS_POSTGRES_USERNAME="postgres" \
+  -e NEXUS_POSTGRES_PASSWORD="postgres" \
+  -e NEXUS_POSTGRES_OFFSET_FILE="/home/nexus/.nexus/postgres.offset" \
+  bluebrain/nexus-cli:1.3.0 postgres run
+```
+
+The tool will output something like the following (assuming the selected data exists in the system), and it's going
+to continue to run, waiting for new changes. The tool uses a continuous subscription, so it will first replay the
+entire log until it reaches the end and then it's going to wait for new changes to be recorded in the system.   
+
+```
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Starting influxDB projection...
+Read 100 events (success: 0, skip: 100, errors: 0)
+Read 200 events (success: 0, skip: 200, errors: 0)
+Read 300 events (success: 0, skip: 300, errors: 0)
+Read 400 events (success: 0, skip: 400, errors: 0)
+Read 500 events (success: 0, skip: 500, errors: 0)
+Read 600 events (success: 0, skip: 600, errors: 0)
+Read 700 events (success: 0, skip: 700, errors: 0)
+Read 800 events (success: 0, skip: 800, errors: 0)
+Read 900 events (success: 0, skip: 900, errors: 0)
+Read 1000 events (success: 0, skip: 1000, errors: 0)
+...
+Read 238000 events (success: 0, skip: 238000, errors: 0)
+Read 238100 events (success: 0, skip: 238100, errors: 0)
+Read 238200 events (success: 9, skip: 238191, errors: 0)
+Processed 100 events (success: 100, errors: 0)
+Read 238300 events (success: 109, skip: 238191, errors: 0)
+Read 238400 events (success: 177, skip: 238223, errors: 0)
+Read 238500 events (success: 177, skip: 238323, errors: 0)
+```
+
+We can now query the data that has been projected to the PostgreSQL container.
+
+First we need to login:
+```
+docker exec -it postgres psql -U postgres
+psql (12.2 (Debian 12.2-2.pgdg100+1))
+Type "help" for help.
+
+postgres=#
+```
+
+Count the schemas:
+
+```
+postgres=# select count(*) from schemas;
+ count
+-------
+   176
+(1 row)
+
+```
+
+Find the top 5 schemas with the most direct imports:
+
+```
+postgres=# select id,count(import) from schema_imports group by id order by count desc limit 5;
+                          id                          | count
+------------------------------------------------------+-------
+ https://neuroshapes.org/commons/entity               |     7
+ https://neuroshapes.org/commons/minds                |     6
+ https://neuroshapes.org/dash/density                 |     4
+ https://neuroshapes.org/commons/experimentalprotocol |     4
+ https://neuroshapes.org/dash/intrasharprecordedcell  |     4
+(5 rows)
+```
+
+Find all transitive imports of a specific schema:
+
+```
+postgres=# WITH RECURSIVE tree(schema, timport) AS (
+   SELECT
+      s.id,
+      s.import
+   FROM
+      schema_imports s
+   LEFT JOIN
+      schema_imports p ON s.import = p.id
+   WHERE
+      p.id IS NULL
+   UNION
+   SELECT
+      id,
+      timport
+   FROM
+      tree
+   INNER JOIN
+      schema_imports on tree.schema = schema_imports.import
+)
+SELECT * FROM tree where schema = 'https://neuroshapes.org/dash/intrasharprecordedcell';
+
+                       schema                        |                        timport
+-----------------------------------------------------+-------------------------------------------------------
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/labeledontologyentity
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://provshapes.org/commons/derivation
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://provshapes.org/commons/invalidation
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://provshapes.org/commons/generation
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/language
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/license
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/vector3d
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/propertyvalue
+(8 rows)
+```
