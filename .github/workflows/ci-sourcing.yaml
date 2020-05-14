@@ -1,0 +1,73 @@
+name: Continuous Integration Sourcing
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'sourcing/**'
+      - 'build.sbt'
+      - 'project/**'
+  pull_request:
+    paths:
+      - 'sourcing/**'
+      - 'build.sbt'
+      - 'project/**'
+  release:
+    types: [published]
+jobs:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v1
+      - uses: olafurpg/setup-scala@v5
+        with:
+          java-version: adopt@1.11
+      - name: StaticAnalysis
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+      - name: Tests
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean coverage test coverageReport coverageAggregate
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    env:
+      CI: true
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: olafurpg/setup-scala@v5
+        with:
+          java-version: adopt@1.11
+      - name: Publish
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false releaseEarly
+      - name: RecordCoverage
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false clean coverage test coverageReport coverageAggregate
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+  release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    env:
+      CI: true
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: olafurpg/setup-scala@v5
+        with:
+          java-version: adopt@1.11
+      - name: Publish
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" releaseEarly
+      - name: RecordCoverage
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean coverage test coverageReport coverageAggregate
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

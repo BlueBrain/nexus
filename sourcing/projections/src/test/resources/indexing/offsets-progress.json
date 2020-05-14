@@ -1,0 +1,24 @@
+{
+  "progress" : [
+    {
+      "index" : "noOffset",
+      "value" : {
+        "type" : "NoProgress"
+      }
+    },
+    {
+      "index" : "other",
+      "value" : {
+        "offset" : {
+          "type" : "Sequence",
+          "value" : 2
+        },
+        "processed" : 10,
+        "failed" : 0,
+        "discarded" : 2,
+        "type" : "OffsetProgress"
+      }
+    }
+  ],
+  "type" : "OffsetsProgress"
+}

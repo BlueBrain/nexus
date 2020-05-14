@@ -1,0 +1,10 @@
+{
+  "offset": {
+    "type": "TimeBasedUUID",
+    "value": "ee7e4360-39ca-11e9-9ed5-dbdaa32f8986"
+  },
+  "processed": 32,
+  "discarded": 5,
+  "failed": 10,
+  "type": "OffsetProgress"
+}

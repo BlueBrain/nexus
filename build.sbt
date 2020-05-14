@@ -14,50 +14,72 @@ scalafmt: {
 val javaSpecificationVersion = "11"
 val scalacSilencerVersion    = "1.4.4"
 
-val catsVersion          = "2.1.1"
-val catsEffectVersion    = "2.1.3"
-val catsRetryVersion     = "0.3.2"
-val circeVersion         = "0.13.0"
-val distageVersion       = "0.10.6"
-val declineVersion       = "1.2.0"
-val doobieVersion        = "0.9.0"
-val fs2Version           = "2.3.0"
-val http4sVersion        = "0.21.3"
-val jenaVersion          = "3.14.0"
-val kindProjectorVersion = "0.11.0"
-val logbackVersion       = "1.2.3"
-val magnoliaVersion      = "0.12.8"
-val monixVersion         = "3.1.0"
-val parboiledVersion     = "2.2.0"
-val pureconfigVersion    = "0.12.3"
-val scalaTestVersion     = "3.1.1"
+val akkaVersion                     = "2.6.1"
+val akkaHttpVersion                 = "10.1.11"
+val akkaPersistenceCassandraVersion = "0.100"
+val akkaPersistenceInMemVersion     = "2.5.15.2"
+val catsVersion                     = "2.1.1"
+val catsEffectVersion               = "2.1.3"
+val catsRetryVersion                = "0.3.2"
+val circeVersion                    = "0.13.0"
+val distageVersion                  = "0.10.6"
+val declineVersion                  = "1.2.0"
+val doobieVersion                   = "0.9.0"
+val fs2Version                      = "2.3.0"
+val http4sVersion                   = "0.21.3"
+val jenaVersion                     = "3.14.0"
+val kindProjectorVersion            = "0.11.0"
+val kryoVersion                     = "1.1.0"
+val logbackVersion                  = "1.2.3"
+val magnoliaVersion                 = "0.12.8"
+val mockitoVersion                  = "1.10.1"
+val monixVersion                    = "3.1.0"
+val parboiledVersion                = "2.2.0"
+val pureconfigVersion               = "0.12.3"
+val scalaTestVersion                = "3.1.1"
+val scalaLoggingVersion             = "3.9.2"
 
-lazy val alleycatsCore   = "org.typelevel"         %% "alleycats-core"            % catsVersion
-lazy val catsCore        = "org.typelevel"         %% "cats-core"                 % catsVersion
-lazy val catsEffect      = "org.typelevel"         %% "cats-effect"               % catsEffectVersion
-lazy val catsRetry       = "com.github.cb372"      %% "cats-retry-core"           % catsRetryVersion
-lazy val catsEffectRetry = "com.github.cb372"      %% "cats-retry-cats-effect"    % catsRetryVersion
-lazy val circeCore       = "io.circe"              %% "circe-core"                % circeVersion
-lazy val circeGeneric    = "io.circe"              %% "circe-generic"             % circeVersion
-lazy val circeLiteral    = "io.circe"              %% "circe-literal"             % circeVersion
-lazy val circeParser     = "io.circe"              %% "circe-parser"              % circeVersion
-lazy val distageCore     = "io.7mind.izumi"        %% "distage-core"              % distageVersion
-lazy val distageDocker   = "io.7mind.izumi"        %% "distage-framework-docker"  % distageVersion
-lazy val distageTestkit  = "io.7mind.izumi"        %% "distage-testkit-scalatest" % distageVersion
-lazy val decline         = "com.monovore"          %% "decline"                   % declineVersion
-lazy val doobiePostgres  = "org.tpolecat"          %% "doobie-postgres"           % doobieVersion
-lazy val fs2             = "co.fs2"                %% "fs2-core"                  % fs2Version
-lazy val http4sCirce     = "org.http4s"            %% "http4s-circe"              % http4sVersion
-lazy val http4sClient    = "org.http4s"            %% "http4s-blaze-client"       % http4sVersion
-lazy val http4sDsl       = "org.http4s"            %% "http4s-dsl"                % http4sVersion
-lazy val jenaArq         = "org.apache.jena"       % "jena-arq"                   % jenaVersion
-lazy val kindProjector   = "org.typelevel"         %% "kind-projector"            % kindProjectorVersion
-lazy val logback         = "ch.qos.logback"        % "logback-classic"            % logbackVersion
-lazy val magnolia        = "com.propensive"        %% "magnolia"                  % magnoliaVersion
-lazy val monixEval       = "io.monix"              %% "monix-eval"                % monixVersion
-lazy val parboiled2      = "org.parboiled"         %% "parboiled"                 % parboiledVersion
-lazy val pureconfig      = "com.github.pureconfig" %% "pureconfig"                % pureconfigVersion
-lazy val scalaTest       = "org.scalatest"         %% "scalatest"                 % scalaTestVersion
+lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
+lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
+lazy val akkaClusterSharding      = "com.typesafe.akka"          %% "akka-cluster-sharding"               % akkaVersion
+lazy val akkaHttpTestKit          = "com.typesafe.akka"          %% "akka-http-testkit"                   % akkaHttpVersion
+lazy val akkaPersistence          = "com.typesafe.akka"          %% "akka-persistence"                    % akkaVersion
+lazy val akkaPersistenceCassandra = "com.typesafe.akka"          %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceLauncher  = "com.typesafe.akka"          %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceInMem     = "com.github.dnvriend"        %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
+lazy val akkaPersistenceQuery     = "com.typesafe.akka"          %% "akka-persistence-query"              % akkaVersion
+lazy val akkaSlf4j                = "com.typesafe.akka"          %% "akka-slf4j"                          % akkaVersion
+lazy val akkaTestKit              = "com.typesafe.akka"          %% "akka-testkit"                        % akkaVersion
+lazy val alleycatsCore            = "org.typelevel"              %% "alleycats-core"                      % catsVersion
+lazy val catsCore                 = "org.typelevel"              %% "cats-core"                           % catsVersion
+lazy val catsEffect               = "org.typelevel"              %% "cats-effect"                         % catsEffectVersion
+lazy val catsRetry                = "com.github.cb372"           %% "cats-retry-core"                     % catsRetryVersion
+lazy val catsEffectRetry          = "com.github.cb372"           %% "cats-retry-cats-effect"              % catsRetryVersion
+lazy val circeCore                = "io.circe"                   %% "circe-core"                          % circeVersion
+lazy val circeGeneric             = "io.circe"                   %% "circe-generic"                       % circeVersion
+lazy val circeGenericExtras       = "io.circe"                   %% "circe-generic-extras"                % circeVersion
+lazy val circeLiteral             = "io.circe"                   %% "circe-literal"                       % circeVersion
+lazy val circeParser              = "io.circe"                   %% "circe-parser"                        % circeVersion
+lazy val distageCore              = "io.7mind.izumi"             %% "distage-core"                        % distageVersion
+lazy val distageDocker            = "io.7mind.izumi"             %% "distage-framework-docker"            % distageVersion
+lazy val distageTestkit           = "io.7mind.izumi"             %% "distage-testkit-scalatest"           % distageVersion
+lazy val decline                  = "com.monovore"               %% "decline"                             % declineVersion
+lazy val doobiePostgres           = "org.tpolecat"               %% "doobie-postgres"                     % doobieVersion
+lazy val fs2                      = "co.fs2"                     %% "fs2-core"                            % fs2Version
+lazy val http4sCirce              = "org.http4s"                 %% "http4s-circe"                        % http4sVersion
+lazy val http4sClient             = "org.http4s"                 %% "http4s-blaze-client"                 % http4sVersion
+lazy val http4sDsl                = "org.http4s"                 %% "http4s-dsl"                          % http4sVersion
+lazy val jenaArq                  = "org.apache.jena"            % "jena-arq"                             % jenaVersion
+lazy val kindProjector            = "org.typelevel"              %% "kind-projector"                      % kindProjectorVersion
+lazy val kryo                     = "io.altoo"                   %% "akka-kryo-serialization"             % kryoVersion
+lazy val logback                  = "ch.qos.logback"             % "logback-classic"                      % logbackVersion
+lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
+lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
+lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
+lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
+lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"                          % pureconfigVersion
+lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
+lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
 
 lazy val docs = project
   .in(file("docs"))
@@ -148,6 +170,64 @@ lazy val cli = project
       scalaTest      % Test
     )
   )
+
+lazy val sourcingCore = project
+  .in(file("sourcing/core"))
+  .settings(name := "sourcing-core", moduleName := "sourcing-core")
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaClusterSharding,
+      akkaPersistence,
+      akkaPersistenceQuery,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
+      akkaPersistenceInMem % Test,
+      akkaSlf4j            % Test,
+      akkaTestKit          % Test,
+      kryo                 % Test,
+      logback              % Test,
+      scalaTest            % Test,
+      pureconfig           % Test
+    ),
+    Test / fork := true
+  )
+
+lazy val sourcingProjections = project
+  .in(file("sourcing/projections"))
+  .settings(name := "sourcing-projections", moduleName := "sourcing-projections")
+  .settings(shared, compilation, coverage, release)
+  .dependsOn(sourcingCore, sourcingCore % "test->test")
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaActor,
+      akkaCluster,
+      akkaPersistenceCassandra,
+      circeCore,
+      circeGenericExtras,
+      circeParser,
+      scalaLogging,
+      pureconfig,
+      akkaPersistenceLauncher % Test,
+      akkaTestKit             % Test,
+      akkaHttpTestKit         % Test,
+      akkaSlf4j               % Test,
+      mockito                 % Test,
+      pureconfig              % Test,
+      scalaTest               % Test
+    ),
+    Test / fork := true
+  )
+
+lazy val sourcing = project
+  .in(file("sourcing"))
+  .settings(noPublish)
+  .settings(
+    name       := "sourcing",
+    moduleName := "sourcing"
+  )
+  .aggregate(sourcingCore, sourcingProjections)
 
 lazy val root = project
   .in(file("."))
