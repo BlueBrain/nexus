@@ -6,10 +6,10 @@ import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import distage.{ModuleDef, TagK}
 import doobie.util.transactor.Transactor
 import izumi.distage.model.definition.StandardAxis.Repo
-import izumi.distage.model.recursive.LocatorRef
 
 final class PostgresModule[F[_]: Parallel: ContextShift: ConcurrentEffect: Timer: TagK] extends ModuleDef {
-  make[Postgres[F]].tagged(Repo.Prod).from { locatorRef: LocatorRef => Postgres[F](Some(locatorRef)) }
+  make[Postgres[F]]
+  make[PostgresProjection[F]]
   make[Transactor[F]].tagged(Repo.Prod).from { (cfg: AppConfig) =>
     Transactor.fromDriverManager[F](
       "org.postgresql.Driver",
@@ -18,7 +18,6 @@ final class PostgresModule[F[_]: Parallel: ContextShift: ConcurrentEffect: Timer
       cfg.postgres.password
     )
   }
-  make[PostgresProjection[F]].tagged(Repo.Prod)
 }
 
 object PostgresModule {

@@ -23,8 +23,7 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
   type Cache    = Map[(OrgUuid, ProjectUuid), (OrgLabel, ProjectLabel)]
   type CacheRef = Ref[IO, Cache]
 
-  override def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
+  override protected def overrides: ModuleDef = new ModuleDef {
     make[Client[IO]].from { cfg: AppConfig =>
       val token = cfg.env.token
       val httpApp = HttpApp[IO] {

@@ -1,25 +1,26 @@
 package ch.epfl.bluebrain.nexus.cli
 
 import cats.Parallel
+import cats.data.NonEmptyList
 import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.cli.Wiring.wireOne
 import ch.epfl.bluebrain.nexus.cli.modules.config.Config
-import ch.epfl.bluebrain.nexus.cli.modules.postgres.Postgres
 import ch.epfl.bluebrain.nexus.cli.modules.influx.Influx
+import ch.epfl.bluebrain.nexus.cli.modules.postgres.Postgres
 import com.monovore.decline.{Command, Help}
-import distage.{LocatorRef, TagK}
+import distage.TagK
 
 /**
   * Entrypoint to the application.
   *
-  * @param locatorOpt an optional locator instance to be cascaded to all commands
+  * @param subcommands a set of commands the application can expose
+  * @param console     implementation of `Console` to use to print help message
   */
-class Cli[F[_]: TagK: Parallel: ContextShift: Timer](locatorOpt: Option[LocatorRef])(implicit F: ConcurrentEffect[F]) {
-
-  private def console: Console[F] = locatorOpt match {
-    case Some(value) => value.get.get[Console[F]]
-    case None        => Console[F]
-  }
+final class Cli[F[_]: TagK: Parallel: ContextShift: Timer](
+    subcommands: NonEmptyList[AbstractCommand[F]],
+    console: Console[F]
+)(implicit F: ConcurrentEffect[F]) {
 
   private def printHelp(help: Help): F[ExitCode] =
     console.println(help.toString()).as {
@@ -35,7 +36,7 @@ class Cli[F[_]: TagK: Parallel: ContextShift: Timer](locatorOpt: Option[LocatorR
     */
   def command(args: List[String], env: Map[String, String] = Map.empty): F[ExitCode] =
     Command("nexus-cli", "Nexus CLI") {
-      Config[F](locatorOpt).subcommand orElse Postgres[F](locatorOpt).subcommand orElse Influx[F](locatorOpt).subcommand
+      subcommands.reduceMap(_.subcommand)
     }.parse(args, env)
       .fold(help => printHelp(help), identity)
       .recoverWith {
@@ -56,7 +57,14 @@ object Cli {
       args: List[String],
       env: Map[String, String]
   ): F[ExitCode] = {
-    new Cli[F](None).command(args, env)
+    new Cli[F](
+      NonEmptyList.of(
+        Config[F](wireOne),
+        Postgres[F](wireOne),
+        Influx[F](wireOne)
+      ),
+      Console[F]
+    ).command(args, env)
   }
   // $COVERAGE-ON$
 }

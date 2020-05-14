@@ -12,9 +12,7 @@ import scala.concurrent.duration._
 
 class AbstractInfluxSpec extends AbstractCliSpec {
 
-  override protected def defaultModules: Module = {
-    super.defaultModules ++ new InfluxDocker.Module[IO]
-  }
+  override protected def overrides: Module = new InfluxDocker.Module[IO]
 
   override def testModule: ModuleDef = new ModuleDef {
     make[AppConfig].fromEffect { host: InfluxHostConfig =>

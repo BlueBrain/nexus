@@ -32,16 +32,15 @@ abstract class AbstractCliSpec
     with ShouldMatchers
     with OptionValues {
 
-  implicit protected val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit protected val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
+  implicit protected val cs: ContextShift[IO] = AbstractCliSpec.cs
+  implicit protected val tm: Timer[IO]        = AbstractCliSpec.tm
 
   protected val orgUuid: OrgUuid           = OrgUuid(UUID.randomUUID())
   protected val projectUuid: ProjectUuid   = ProjectUuid(UUID.randomUUID())
   protected val orgLabel: OrgLabel         = OrgLabel(genString())
   protected val projectLabel: ProjectLabel = ProjectLabel(genString())
 
-  protected val eventsJson: Json    = jsonContentOf("/events.json")
-  protected val events: List[Event] = eventsJson.as[List[Event]].toOption.value
+  protected val events: List[Event] = AbstractCliSpec.events
 
   protected val notFoundJson: Json      = jsonContentOf("/templates/not-found.json")
   protected val authFailedJson: Json    = jsonContentOf("/templates/auth-failed.json")
@@ -54,18 +53,16 @@ abstract class AbstractCliSpec
     quote("{orgLabel}")     -> orgLabel.show
   )
 
-  protected def defaultModules: Module = {
-    TestCliModule[IO](events) ++ EffectModule[IO] ++ ConfigModule[IO] ++ PostgresModule[IO] ++ InfluxModule[IO] ++ testModule
+  final protected def defaultModules: Module = {
+    AbstractCliSpec.ioModules ++ testModule
   }
 
-  def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
-  }
+  protected def overrides: Module = Module.empty
 
   override def config: TestConfig = TestConfig(
     pluginConfig = PluginConfig.empty,
     activation = StandardAxis.testDummyActivation,
-    moduleOverrides = overrides,
+    moduleOverrides = defaultModules overridenBy overrides,
     memoizationRoots = super.config.memoizationRoots ++ Set(
       DIKey.get[Transactor[IO]],
       DIKey.get[InfluxClient[IO]]
@@ -108,4 +105,24 @@ abstract class AbstractCliSpec
     }
     make[EnvConfig].from { cfg: AppConfig => cfg.env }
   }
+}
+
+object AbstractCliSpec {
+
+  private val eventsJson: Json    = Resources.jsonContentOf("/events.json")
+  private val events: List[Event] = eventsJson.as[List[Event]].toOption.get
+
+  implicit private val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit private val tm: Timer[IO]        = IO.timer(ExecutionContext.global)
+
+  /**
+    * Ensure equality of closures capturing implicit parameters to ensure
+    * as few separate memoization groups as possible between tests
+    * and as many as possible globally reused (instead of recreated) components
+    *
+    * @see [[TestConfig]]
+    * @see details: https://github.com/BlueBrain/nexus/pull/1170/files#r424561485
+    */
+  private val ioModules: Module =
+    TestCliModule[IO](events) ++ EffectModule[IO] ++ ConfigModule[IO] ++ PostgresModule[IO] ++ InfluxModule[IO]
 }
