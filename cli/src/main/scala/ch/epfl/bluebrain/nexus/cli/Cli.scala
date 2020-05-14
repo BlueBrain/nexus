@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.cli
 
 import cats.Parallel
 import cats.data.NonEmptyList
-import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, ExitCode, Sync, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.Wiring.wireOne
 import ch.epfl.bluebrain.nexus.cli.modules.config.Config
@@ -17,10 +17,10 @@ import distage.TagK
   * @param subcommands a set of commands the application can expose
   * @param console     implementation of `Console` to use to print help message
   */
-final class Cli[F[_]: TagK: Parallel: ContextShift: Timer](
+final class Cli[F[_]](
     subcommands: NonEmptyList[AbstractCommand[F]],
     console: Console[F]
-)(implicit F: ConcurrentEffect[F]) {
+)(implicit F: Sync[F]) {
 
   private def printHelp(help: Help): F[ExitCode] =
     console.println(help.toString()).as {

@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.cli.modules.postgres
 
-import cats.Parallel
-import cats.effect.{ConcurrentEffect, ContextShift, Timer}
+import cats.effect.{Async, ContextShift}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import distage.{ModuleDef, TagK}
 import doobie.util.transactor.Transactor
 import izumi.distage.model.definition.StandardAxis.Repo
 
-final class PostgresModule[F[_]: Parallel: ContextShift: ConcurrentEffect: Timer: TagK] extends ModuleDef {
+final class PostgresModule[F[_]: Async: ContextShift: TagK] extends ModuleDef {
   make[Postgres[F]]
   make[PostgresProjection[F]]
   make[Transactor[F]].tagged(Repo.Prod).from { (cfg: AppConfig) =>
@@ -21,6 +20,6 @@ final class PostgresModule[F[_]: Parallel: ContextShift: ConcurrentEffect: Timer
 }
 
 object PostgresModule {
-  final def apply[F[_]: Parallel: ContextShift: ConcurrentEffect: Timer: TagK]: PostgresModule[F] =
+  final def apply[F[_]: Async: ContextShift: TagK]: PostgresModule[F] =
     new PostgresModule[F]
 }
