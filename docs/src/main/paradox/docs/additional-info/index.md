@@ -1,5 +1,6 @@
 @@@ index
 
+* [Indexing data in other systems](projections.md)
 * [SDKs for Nexus](sdk.md)
 * [System Architecture](architecture/index.md)
 * [Benchmarks](benchmarks/index.md)
