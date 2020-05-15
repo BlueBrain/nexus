@@ -22,6 +22,12 @@ jobs:
       fail-fast: true
     steps:
       - uses: actions/checkout@v1
+      - name: Cache Coursier
+        uses: actions/cache@v1.1.2
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+          restore-keys: ${{ runner.os }}-coursier-scala-
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
@@ -40,6 +46,12 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - uses: actions/checkout@v1
+      - name: Cache Coursier
+        uses: actions/cache@v1.1.2
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+          restore-keys: ${{ runner.os }}-coursier-scala-
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
@@ -61,6 +73,12 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - uses: actions/checkout@v1
+      - name: Cache Coursier
+        uses: actions/cache@v1.1.2
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+          restore-keys: ${{ runner.os }}-coursier-scala-
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
