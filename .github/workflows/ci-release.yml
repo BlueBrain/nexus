@@ -31,8 +31,8 @@ jobs:
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ";set Docker/version := \"${{ env.VERSION }}\"; releaseEarly; docker:publishLocal"
       - name: PublishToDockerHub
         run: |
-        echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-        docker push bluebrain/nexus-cli:${{ env.VERSION }}
+          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
+          docker push bluebrain/nexus-cli:${{ env.VERSION }}
       - name: RecordCoverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false clean coverage test coverageReport coverageAggregate
       - uses: codecov/codecov-action@v1
