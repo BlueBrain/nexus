@@ -30,5 +30,7 @@ A Python environment with support of Jupyter notebook
 
 This tutorial code is available:
 
-* at [Github](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb)
-* on [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb#scrollTo=iWO1Sh7-Ggf0)
+* at [Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb)
+* on [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb#scrollTo=iWO1Sh7-Ggf0)
+
+

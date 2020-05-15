@@ -1,0 +1,44 @@
+env {
+    default-sparql-view="https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+    endpoint="http://localhost:8080/v1"
+    http-client {
+        retry {
+            condition=on-server-error
+            initial-delay="100ms"
+            max-delay="5s"
+            max-retries=1
+            strategy=once
+        }
+    }
+    token=mytoken
+}
+influx {
+    database=influxdb
+    db-creation-command="CREATE DATABASE \"influxdb\" WITH DURATION 1000d REPLICATION 1 SHARD DURATION 1h NAME \"influxdb\""
+    endpoint="http://localhost:8086"
+    offset-file="{influx-offset-file}"
+    offset-save-interval="1s"
+    print {
+        progress-interval=100
+    }
+    projects {}
+}
+postgres {
+    database=postgres
+    host="127.0.0.1"
+    offset-file="{postgres-offset-file}"
+    offset-save-interval="1s"
+    password=postgres
+    port=5432
+    print {
+        progress-interval=100
+    }
+    projects {}
+    retry {
+        initial-delay="100ms"
+        max-delay="5s"
+        max-retries=1
+        strategy=once
+    }
+    username=postgres
+}

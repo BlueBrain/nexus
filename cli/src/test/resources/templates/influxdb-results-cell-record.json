@@ -1,0 +1,46 @@
+{
+  "results" : [
+    {
+      "statement_id" : 0,
+      "series" : [
+        {
+          "name" : "cellRecord",
+          "columns" : [
+            "time",
+            "bytes",
+            "created",
+            "deprecated",
+            "project",
+            "typeUri"
+          ],
+          "values" : [
+            [
+              "2019-11-11T14:59:49.241511Z",
+              13848730,
+              "2019-11-11T14:59:49.241511Z",
+              "false",
+              "bbp/atlas",
+              "https://neuroshapes.org/CellRecordSeries"
+            ],
+            [
+              "2019-12-03T12:53:56.682642Z",
+              2884,
+              "2019-12-03T12:53:56.682642Z",
+              "false",
+              "bbp/atlas",
+              "https://neuroshapes.org/CellRecordSeries"
+            ],
+            [
+              "2019-12-03T12:55:27.949226Z",
+              4046,
+              "2019-12-03T12:55:27.949226Z",
+              "false",
+              "bbp/atlas",
+              "https://neuroshapes.org/CellRecordSeries"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

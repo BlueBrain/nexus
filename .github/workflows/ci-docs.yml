@@ -5,7 +5,13 @@ on:
       - master
     paths:
       - 'docs/**'
+      - 'build.sbt'
+      - 'project/**'
   pull_request:
+    paths:
+      - 'docs/**'
+      - 'build.sbt'
+      - 'project/**'
 
 jobs:
   review:
@@ -14,8 +20,16 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-    - uses: actions/checkout@v1
-    - uses: olafurpg/setup-scala@v5
+    - name: Checkout
+      uses: actions/checkout@v2.1.0
+    - name: Cache Coursier
+      uses: actions/cache@v1.1.2
+      with:
+        path: ~/.cache/coursier
+        key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+        restore-keys: ${{ runner.os }}-coursier-scala-
+    - name: Setup Scala
+      uses: olafurpg/setup-scala@v5
       with:
         java-version: adopt@1.11
     - name: Review
@@ -31,8 +45,16 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
       BUILD_BOT_SSH_PRIVATE_KEY: ${{ secrets.BUILD_BOT_SSH_PRIVATE_KEY }}
     steps:
-    - uses: actions/checkout@v1
-    - uses: olafurpg/setup-scala@v5
+    - name: Checkout
+      uses: actions/checkout@v2.1.0
+    - name: Cache Coursier
+      uses: actions/cache@v1.1.2
+      with:
+        path: ~/.cache/coursier
+        key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+        restore-keys: ${{ runner.os }}-coursier-scala-
+    - name: Setup Scala
+      uses: olafurpg/setup-scala@v5
       with:
         java-version: adopt@1.11
     - name: Publish
@@ -44,5 +66,5 @@ jobs:
         echo "$BUILD_BOT_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_rsa"
         chmod 400 "$HOME/.ssh/id_rsa"
         ssh-keyscan -t rsa github.com >> "$HOME/.ssh/known_hosts"
-        sbt "project cli" clean makeSite ghpagesPushSite
+        sbt "project docs" clean makeSite ghpagesPushSite
 

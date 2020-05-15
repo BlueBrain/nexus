@@ -1,0 +1,41 @@
+{
+  "head": {
+    "vars": [
+      "created",
+      "updated",
+      "deprecated",
+      "bytes"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "bytes": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#integer",
+          "type": "literal",
+          "value": "{bytes}"
+        },
+        "created": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "{created}"
+        },
+        "deprecated": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#boolean",
+          "type": "literal",
+          "value": "false"
+        },
+        "updated": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#dateTime",
+          "type": "literal",
+          "value": "{updated}"
+        },
+        "project": {
+          "datatype": "http://www.w3.org/2001/XMLSchema#string",
+          "type": "literal",
+          "value": "{project}"
+        }
+      }
+    ]
+  }
+}
