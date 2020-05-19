@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcing
 
 import cats.Applicative
+import pureconfig.ConfigConvert
+import pureconfig.generic.semiauto.deriveConvert
 import retry.RetryPolicies.{alwaysGiveUp, capDelay, constantDelay, fullJitter, limitRetries}
 import retry.RetryPolicy
 
@@ -34,4 +36,9 @@ final case class RetryStrategyConfig(
       case "once"        => constantDelay[F](initialDelay) join limitRetries[F](1)
       case _             => alwaysGiveUp
     }
+}
+
+object RetryStrategyConfig {
+  implicit final val retryStrategyConfigConvert: ConfigConvert[RetryStrategyConfig] =
+    deriveConvert[RetryStrategyConfig]
 }

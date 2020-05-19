@@ -57,7 +57,13 @@ class ProgressFlowSpec
       .tabulate(events) { offset =>
         List.tabulate(revs) { rev =>
           val id = s"id-$offset"
-          EventEnvelope(Sequence(offset.toLong), id, rev.toLong, Event(id, rev.toLong, offset.toLong))
+          EventEnvelope(
+            Sequence(offset.toLong),
+            id,
+            rev.toLong,
+            Event(id, rev.toLong, offset.toLong),
+            offset.toLong * 100L + rev.toLong
+          )
         }
       }
       .flatten

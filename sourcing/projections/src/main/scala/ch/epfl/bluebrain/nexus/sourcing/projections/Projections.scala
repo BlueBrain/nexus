@@ -1,25 +1,21 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
-import akka.Done
 import akka.actor.ActorSystem
-import akka.event.Logging
-import akka.persistence.cassandra.CassandraPluginConfig
-import akka.persistence.cassandra.session.scaladsl.CassandraSession
 import akka.persistence.query.Offset
+import akka.stream.alpakka.cassandra.CassandraSessionSettings
+import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
 import akka.stream.scaladsl.Source
 import cats.effect._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
-import com.datastax.driver.core.Session
-import com.google.common.util.concurrent.ListenableFuture
+import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
+import com.typesafe.config.{Config, ConfigValueType}
 import io.circe.parser.decode
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 
-import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
-import scala.util.Try
+import scala.jdk.CollectionConverters._
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 /**
   * A Projection represents the process to transforming an event stream into a format that's efficient for consumption.
@@ -69,6 +65,10 @@ trait Projections[F[_], A] {
 }
 
 object Projections {
+  val cassandraDefaultConfigPath = "akka.persistence.cassandra"
+
+  def journalConfig(implicit as: ActorSystem) =
+    as.settings.config.getConfig(cassandraDefaultConfigPath).getConfig("journal")
 
   /**
     * Creates a delayed projections module that uses the provided cassandra session.
@@ -78,9 +78,13 @@ object Projections {
   def apply[F[_], A: Encoder: Decoder](
       session: CassandraSession
   )(implicit as: ActorSystem, F: Async[F]): F[Projections[F, A]] = {
-    val statements = new Statements(as)
-    val cfg        = lookupConfig(as)
-    ensureInitialized(session, cfg, statements) >> F.delay(new CassandraProjections(session, statements))
+    val statements                  = new Statements(as)
+    val journalCfg                  = journalConfig
+    val keyspaceAutoCreate: Boolean = journalCfg.getBoolean("keyspace-autocreate")
+    val tablesAutoCreate: Boolean   = journalCfg.getBoolean("tables-autocreate")
+    ensureInitialized(session, keyspaceAutoCreate, tablesAutoCreate, statements) >> F.delay(
+      new CassandraProjections(session, statements)
+    )
   }
 
   /**
@@ -90,16 +94,19 @@ object Projections {
     createSession[F].flatMap(session => apply(session))
 
   private class Statements(as: ActorSystem) {
-    private val journalConfig = as.settings.config.getConfig("cassandra-journal")
-    private val cfg           = new CassandraPluginConfig(as, journalConfig)
-
-    val keyspace: String      = cfg.keyspace
-    val progressTable: String = journalConfig.getString("projection-progress-table")
-    val failuresTable: String = journalConfig.getString("projection-failures-table")
+    val journalCfg: Config = journalConfig(as)
+    val keyspace: String   = journalCfg.getString("keyspace")
+    val replicationStrategy: String = getReplicationStrategy(
+      journalCfg.getString("replication-strategy"),
+      journalCfg.getInt("replication-factor"),
+      getListFromConfig(journalCfg, "data-center-replication-factors")
+    )
+    val progressTable: String = journalCfg.getString("projection-progress-table")
+    val failuresTable: String = journalCfg.getString("projection-failures-table")
 
     val createKeyspace: String =
       s"""CREATE KEYSPACE IF NOT EXISTS $keyspace
-         |WITH REPLICATION = { 'class' : ${cfg.replicationStrategy} }""".stripMargin
+         |WITH REPLICATION = { 'class' : $replicationStrategy }""".stripMargin
 
     val createProgressTable: String =
       s"""CREATE TABLE IF NOT EXISTS $keyspace.$progressTable (
@@ -123,6 +130,64 @@ object Projections {
 
     val failuresQuery: String =
       s"SELECT offset, value from $keyspace.$failuresTable WHERE projection_id = ? ALLOW FILTERING"
+  }
+
+  /**
+    * Ported from Akka Persistence Cassandra private API
+    *
+    * @see [[akka.persistence.cassandra.PluginSettings.getReplicationStrategy]]
+    */
+  private def getReplicationStrategy(
+      strategy: String,
+      replicationFactor: Int,
+      dataCenterReplicationFactors: Seq[String]
+  ): String = {
+
+    def getDataCenterReplicationFactorList(dcrfList: Seq[String]): String = {
+      val result: Seq[String] = dcrfList match {
+        case null | Nil =>
+          throw new IllegalArgumentException(
+            "data-center-replication-factors cannot be empty when using NetworkTopologyStrategy."
+          )
+        case dcrfs =>
+          dcrfs.map { dataCenterWithReplicationFactor =>
+            dataCenterWithReplicationFactor.split(":") match {
+              case Array(dataCenter, replicationFactor) =>
+                s"'$dataCenter':$replicationFactor"
+              case msg =>
+                throw new IllegalArgumentException(
+                  s"A data-center-replication-factor must have the form [dataCenterName:replicationFactor] but was: $msg."
+                )
+            }
+          }
+      }
+      result.mkString(",")
+    }
+
+    strategy.toLowerCase() match {
+      case "simplestrategy" =>
+        s"'SimpleStrategy','replication_factor':$replicationFactor"
+      case "networktopologystrategy" =>
+        s"'NetworkTopologyStrategy',${getDataCenterReplicationFactorList(dataCenterReplicationFactors)}"
+      case unknownStrategy =>
+        throw new IllegalArgumentException(s"$unknownStrategy as replication strategy is unknown and not supported.")
+    }
+  }
+
+  /**
+    * Ported from Akka Persistence Cassandra private API
+    *
+    * @see [[akka.persistence.cassandra.getListFromConfig]]
+    */
+  private def getListFromConfig(config: Config, key: String): List[String] = {
+    config.getValue(key).valueType() match {
+      case ConfigValueType.LIST => config.getStringList(key).asScala.toList
+      // case ConfigValueType.OBJECT is needed to handle dot notation (x.0=y x.1=z) due to Typesafe Config implementation quirk.
+      // https://github.com/lightbend/config/blob/master/config/src/main/java/com/typesafe/config/impl/DefaultTransformer.java#L83
+      case ConfigValueType.OBJECT => config.getStringList(key).asScala.toList
+      case ConfigValueType.STRING => config.getString(key).split(",").toList
+      case _                      => throw new IllegalArgumentException(s"$key should be a List, Object or String")
+    }
   }
 
   private class CassandraProjections[F[_], A: Encoder: Decoder](
@@ -164,59 +229,38 @@ object Projections {
     IO.fromFuture(IO(f)).to[F]
   }
 
-  private def wrapFuture[F[_]: LiftIO, A](f: => ListenableFuture[A])(implicit ec: ExecutionContextExecutor): F[A] =
-    wrapFuture {
-      val promise = Promise[A]
-      f.addListener(() => promise.complete(Try(f.get())), ec)
-      promise.future
-    }
-
-  private def lookupConfig(as: ActorSystem): CassandraPluginConfig = {
-    val journalConfig = as.settings.config.getConfig("cassandra-journal")
-    new CassandraPluginConfig(as, journalConfig)
-  }
-
-  private def createSession[F[_]](implicit as: ActorSystem, F: Sync[F]): F[CassandraSession] = {
-    val cfg = lookupConfig(as)
-    val log = Logging(as, Projections.getClass)
+  private def createSession[F[_]](implicit as: ActorSystem, F: Sync[F]): F[CassandraSession] =
     F.delay {
-      new CassandraSession(
-        as,
-        cfg.sessionProvider,
-        cfg.sessionSettings,
-        as.dispatcher,
-        log,
-        metricsCategory = "projections",
-        init = _ => Future.successful(Done)
-      )
+      CassandraSessionRegistry.get(as).sessionFor(CassandraSessionSettings(cassandraDefaultConfigPath))
     }
-  }
 
-  private def ensureInitialized[F[_]](session: CassandraSession, cfg: CassandraPluginConfig, stmts: Statements)(
+  private def ensureInitialized[F[_]](
+      session: CassandraSession,
+      keyspaceAutoCreate: Boolean,
+      tablesAutoCreate: Boolean,
+      stmts: Statements
+  )(
       implicit as: ActorSystem,
       F: Async[F]
   ): F[Unit] = {
     implicit val ec: ExecutionContextExecutor = as.dispatcher
 
-    val underlying = wrapFuture(session.underlying())
-
-    def keyspace(s: Session) =
-      if (cfg.keyspaceAutoCreate) wrapFuture(s.executeAsync(stmts.createKeyspace)) >> F.unit
+    def keyspace =
+      if (keyspaceAutoCreate) wrapFuture(session.executeDDL(stmts.createKeyspace)) >> F.unit
       else F.unit
 
-    def progress(s: Session) =
-      if (cfg.tablesAutoCreate) wrapFuture(s.executeAsync(stmts.createProgressTable)) >> F.unit
+    def progress =
+      if (tablesAutoCreate) wrapFuture(session.executeDDL(stmts.createProgressTable)) >> F.unit
       else F.unit
 
-    def failures(s: Session) =
-      if (cfg.tablesAutoCreate) wrapFuture(s.executeAsync(stmts.createFailuresTable)) >> F.unit
+    def failures =
+      if (tablesAutoCreate) wrapFuture(session.executeDDL(stmts.createFailuresTable)) >> F.unit
       else F.unit
 
     for {
-      s <- underlying
-      _ <- keyspace(s)
-      _ <- progress(s)
-      _ <- failures(s)
+      _ <- keyspace
+      _ <- progress
+      _ <- failures
     } yield ()
   }
 }

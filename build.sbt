@@ -12,32 +12,31 @@ scalafmt: {
  */
 
 val javaSpecificationVersion = "11"
-val scalacSilencerVersion    = "1.4.4"
+val scalacSilencerVersion    = "1.6.0"
 
-val akkaVersion                     = "2.6.1"
-val akkaHttpVersion                 = "10.1.11"
-val akkaPersistenceCassandraVersion = "0.100"
+val akkaHttpVersion                 = "10.1.12"
+val akkaCorsVersion                 = "0.4.3"
+val akkaPersistenceCassandraVersion = "1.0.0"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
-val catsVersion                     = "2.1.1"
+val akkaVersion                     = "2.6.5"
 val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
+val catsVersion                     = "2.1.1"
 val circeVersion                    = "0.13.0"
-val distageVersion                  = "0.10.6"
 val declineVersion                  = "1.2.0"
+val distageVersion                  = "0.10.8"
 val doobieVersion                   = "0.9.0"
 val fs2Version                      = "2.3.0"
-val http4sVersion                   = "0.21.3"
+val http4sVersion                   = "0.21.4"
 val jenaVersion                     = "3.14.0"
 val kindProjectorVersion            = "0.11.0"
-val kryoVersion                     = "1.1.0"
+val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
-val magnoliaVersion                 = "0.12.8"
-val mockitoVersion                  = "1.10.1"
-val monixVersion                    = "3.1.0"
-val parboiledVersion                = "2.2.0"
+val mockitoVersion                  = "1.14.2"
+val monixVersion                    = "3.2.1"
 val pureconfigVersion               = "0.12.3"
-val scalaTestVersion                = "3.1.1"
 val scalaLoggingVersion             = "3.9.2"
+val scalaTestVersion                = "3.1.2"
 
 lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
 lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
@@ -45,25 +44,25 @@ lazy val akkaClusterSharding      = "com.typesafe.akka"          %% "akka-cluste
 lazy val akkaHttpTestKit          = "com.typesafe.akka"          %% "akka-http-testkit"                   % akkaHttpVersion
 lazy val akkaPersistence          = "com.typesafe.akka"          %% "akka-persistence"                    % akkaVersion
 lazy val akkaPersistenceCassandra = "com.typesafe.akka"          %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceLauncher  = "com.typesafe.akka"          %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
 lazy val akkaPersistenceInMem     = "com.github.dnvriend"        %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
+lazy val akkaPersistenceLauncher  = "com.typesafe.akka"          %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
 lazy val akkaPersistenceQuery     = "com.typesafe.akka"          %% "akka-persistence-query"              % akkaVersion
 lazy val akkaSlf4j                = "com.typesafe.akka"          %% "akka-slf4j"                          % akkaVersion
 lazy val akkaTestKit              = "com.typesafe.akka"          %% "akka-testkit"                        % akkaVersion
 lazy val alleycatsCore            = "org.typelevel"              %% "alleycats-core"                      % catsVersion
 lazy val catsCore                 = "org.typelevel"              %% "cats-core"                           % catsVersion
 lazy val catsEffect               = "org.typelevel"              %% "cats-effect"                         % catsEffectVersion
-lazy val catsRetry                = "com.github.cb372"           %% "cats-retry-core"                     % catsRetryVersion
 lazy val catsEffectRetry          = "com.github.cb372"           %% "cats-retry-cats-effect"              % catsRetryVersion
+lazy val catsRetry                = "com.github.cb372"           %% "cats-retry-core"                     % catsRetryVersion
 lazy val circeCore                = "io.circe"                   %% "circe-core"                          % circeVersion
 lazy val circeGeneric             = "io.circe"                   %% "circe-generic"                       % circeVersion
 lazy val circeGenericExtras       = "io.circe"                   %% "circe-generic-extras"                % circeVersion
 lazy val circeLiteral             = "io.circe"                   %% "circe-literal"                       % circeVersion
 lazy val circeParser              = "io.circe"                   %% "circe-parser"                        % circeVersion
+lazy val decline                  = "com.monovore"               %% "decline"                             % declineVersion
 lazy val distageCore              = "io.7mind.izumi"             %% "distage-core"                        % distageVersion
 lazy val distageDocker            = "io.7mind.izumi"             %% "distage-framework-docker"            % distageVersion
 lazy val distageTestkit           = "io.7mind.izumi"             %% "distage-testkit-scalatest"           % distageVersion
-lazy val decline                  = "com.monovore"               %% "decline"                             % declineVersion
 lazy val doobiePostgres           = "org.tpolecat"               %% "doobie-postgres"                     % doobieVersion
 lazy val fs2                      = "co.fs2"                     %% "fs2-core"                            % fs2Version
 lazy val http4sCirce              = "org.http4s"                 %% "http4s-circe"                        % http4sVersion
@@ -73,10 +72,8 @@ lazy val jenaArq                  = "org.apache.jena"            % "jena-arq"   
 lazy val kindProjector            = "org.typelevel"              %% "kind-projector"                      % kindProjectorVersion
 lazy val kryo                     = "io.altoo"                   %% "akka-kryo-serialization"             % kryoVersion
 lazy val logback                  = "ch.qos.logback"             % "logback-classic"                      % logbackVersion
-lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
-lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
 lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"                          % pureconfigVersion
 lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
@@ -115,25 +112,6 @@ lazy val docs = project
     git.remoteRepo  := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll := true,
     ghpagesBranch   := "gh-pages"
-  )
-
-lazy val rdf = project
-  .in(file("rdf"))
-  .settings(name := "rdf", moduleName := "rdf")
-  .settings(noPublish)
-  .settings(shared, compilation, coverage, release)
-  .settings(
-    libraryDependencies ++= Seq(
-      alleycatsCore,
-      catsCore,
-      magnolia,
-      parboiled2,
-      circeCore,
-      circeParser,
-      circeLiteral % Test,
-      jenaArq      % Test,
-      scalaTest    % Test
-    )
   )
 
 lazy val cli = project
@@ -183,6 +161,7 @@ lazy val sourcingCore = project
       catsCore,
       catsEffectRetry,
       catsEffect,
+      pureconfig,
       akkaPersistenceInMem % Test,
       akkaSlf4j            % Test,
       akkaTestKit          % Test,
@@ -233,7 +212,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, rdf)
+  .aggregate(docs, cli, sourcing)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
