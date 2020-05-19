@@ -229,12 +229,12 @@ lazy val sourcing = project
 lazy val service = project
   .in(file("service"))
   .dependsOn(sourcingProjections)
+  .settings(shared, compilation, coverage, release)
   .settings(
     name            := "service",
     moduleName      := "service",
     coverageMinimum := 20d
   )
-  .settings(shared, compilation, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
       akkaClusterSharding,

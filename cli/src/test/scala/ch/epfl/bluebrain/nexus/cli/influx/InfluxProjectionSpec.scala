@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli.influx
 
+import java.nio.file.Files
+
 import cats.effect.{Blocker, IO}
 import ch.epfl.bluebrain.nexus.cli.Console
 import ch.epfl.bluebrain.nexus.cli.clients.InfluxClient
@@ -30,6 +32,7 @@ class InfluxProjectionSpec extends AbstractInfluxSpec {
         _      <- proj.run
         exists <- io.file.exists[IO](blocker, cfg.influx.offsetFile)
         _      = exists shouldEqual true
+        _      = println(s"Offset file content '${Files.readString(cfg.influx.offsetFile)}'")
         offset <- Offset.load(cfg.influx.offsetFile)
         _      = offset.nonEmpty shouldEqual true
       } yield ()
