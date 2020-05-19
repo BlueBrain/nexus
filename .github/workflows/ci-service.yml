@@ -9,6 +9,7 @@ on:
       - 'project/**'
   pull_request:
     paths:
+      - 'sourcing/**'
       - 'service/**'
       - 'build.sbt'
       - 'project/**'
