@@ -1,0 +1,5 @@
+{
+  "@id": "http://nexus.example.com/v1/realms/myrealm/authenticated",
+  "@type": "Authenticated",
+  "realm": "myrealm"
+}

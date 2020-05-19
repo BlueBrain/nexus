@@ -15,6 +15,7 @@ val javaSpecificationVersion = "11"
 val scalacSilencerVersion    = "1.6.0"
 
 val akkaHttpVersion                 = "10.1.12"
+val akkaHttpCirceVersion            = "1.32.0"
 val akkaCorsVersion                 = "0.4.3"
 val akkaPersistenceCassandraVersion = "1.0.0"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
@@ -28,19 +29,26 @@ val distageVersion                  = "0.10.8"
 val doobieVersion                   = "0.9.0"
 val fs2Version                      = "2.3.0"
 val http4sVersion                   = "0.21.4"
-val jenaVersion                     = "3.14.0"
+val jenaVersion                     = "3.15.0"
+val kamonVersion                    = "2.1.0"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
 val mockitoVersion                  = "1.14.2"
 val monixVersion                    = "3.2.1"
+val nimbusJoseJwtVersion            = "8.17"
+val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
+val splitBrainLithiumVersion        = "0.11.2"
 
 lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
 lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
 lazy val akkaClusterSharding      = "com.typesafe.akka"          %% "akka-cluster-sharding"               % akkaVersion
+lazy val akkaHttp                 = "com.typesafe.akka"          %% "akka-http"                           % akkaHttpVersion
+lazy val akkaHttpCors             = "ch.megard"                  %% "akka-http-cors"                      % akkaCorsVersion
+lazy val akkaHttpCirce            = "de.heikoseeberger"          %% "akka-http-circe"                     % akkaHttpCirceVersion
 lazy val akkaHttpTestKit          = "com.typesafe.akka"          %% "akka-http-testkit"                   % akkaHttpVersion
 lazy val akkaPersistence          = "com.typesafe.akka"          %% "akka-persistence"                    % akkaVersion
 lazy val akkaPersistenceCassandra = "com.typesafe.akka"          %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
@@ -74,9 +82,13 @@ lazy val kryo                     = "io.altoo"                   %% "akka-kryo-s
 lazy val logback                  = "ch.qos.logback"             % "logback-classic"                      % logbackVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
+lazy val nimbusJoseJwt            = "com.nimbusds"               % "nimbus-jose-jwt"                      % nimbusJoseJwtVersion
+lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
 lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"                          % pureconfigVersion
 lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
+// splitBrainLithium should be exchanged for Akka Split Brain Resolver as soon as Akka merge it into Akka Cluster
+lazy val splitBrainLithium = "com.swissborg" %% "lithium" % splitBrainLithiumVersion
 
 lazy val docs = project
   .in(file("docs"))
@@ -151,7 +163,10 @@ lazy val cli = project
 
 lazy val sourcingCore = project
   .in(file("sourcing/core"))
-  .settings(name := "sourcing-core", moduleName := "sourcing-core")
+  .settings(
+    name       := "sourcing-core",
+    moduleName := "sourcing-core"
+  )
   .settings(shared, compilation, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
@@ -175,7 +190,10 @@ lazy val sourcingCore = project
 
 lazy val sourcingProjections = project
   .in(file("sourcing/projections"))
-  .settings(name := "sourcing-projections", moduleName := "sourcing-projections")
+  .settings(
+    name       := "sourcing-projections",
+    moduleName := "sourcing-projections"
+  )
   .settings(shared, compilation, coverage, release)
   .dependsOn(sourcingCore, sourcingCore % "test->test")
   .settings(
@@ -208,11 +226,58 @@ lazy val sourcing = project
   )
   .aggregate(sourcingCore, sourcingProjections)
 
+lazy val service = project
+  .in(file("service"))
+  .dependsOn(sourcingProjections)
+  .settings(
+    name            := "service",
+    moduleName      := "service",
+    coverageMinimum := 20d
+  )
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaClusterSharding,
+      akkaPersistence,
+      akkaPersistenceQuery,
+      akkaHttp,
+      akkaHttpCirce,
+      akkaHttpCors,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
+      kryo,
+      monixEval,
+      nimbusJoseJwt,
+      splitBrainLithium,
+      "net.bytebuddy" % "byte-buddy-agent" % "1.10.10",
+      "io.kamon"      % "kanela-agent" % "1.0.5",
+      "io.kamon"      %% "kamon-status-page" % kamonVersion,
+      "io.kamon"      %% "kamon-instrumentation-common" % kamonVersion,
+      "io.kamon"      %% "kamon-executors" % kamonVersion,
+      "io.kamon"      %% "kamon-scala-future" % kamonVersion,
+      "io.kamon"      %% "kamon-akka" % kamonVersion,
+      "io.kamon"      %% "kamon-logback" % kamonVersion,
+      "io.kamon"      %% "kamon-system-metrics" % kamonVersion,
+      "io.kamon"      %% "kamon-core" % kamonVersion,
+      "io.kamon"      %% "kamon-akka-http" % kamonVersion,
+      "io.kamon"      %% "kamon-prometheus" % kamonVersion,
+      "io.kamon"      %% "kamon-jaeger" % kamonVersion,
+      akkaSlf4j       % Test,
+      akkaTestKit     % Test,
+      akkaHttpTestKit % Test,
+      logback         % Test,
+      mockito         % Test,
+      scalaTest       % Test
+    ),
+    Test / fork := true
+  )
+
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing)
+  .aggregate(docs, cli, sourcing, service)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
