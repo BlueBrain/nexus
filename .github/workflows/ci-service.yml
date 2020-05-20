@@ -4,6 +4,7 @@ on:
     branches:
       - master
     paths:
+      - 'sourcing/**'
       - 'service/**'
       - 'build.sbt'
       - 'project/**'
