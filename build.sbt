@@ -15,10 +15,12 @@ val javaSpecificationVersion = "11"
 val scalacSilencerVersion    = "1.6.0"
 
 val akkaHttpVersion                 = "10.1.12"
+val akkaHttpCirceVersion            = "1.32.0"
 val akkaCorsVersion                 = "0.4.3"
 val akkaPersistenceCassandraVersion = "1.0.0"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaVersion                     = "2.6.5"
+val byteBuddyAgentVersion           = "1.10.10"
 val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.1.1"
@@ -28,19 +30,27 @@ val distageVersion                  = "0.10.8"
 val doobieVersion                   = "0.9.0"
 val fs2Version                      = "2.3.0"
 val http4sVersion                   = "0.21.4"
-val jenaVersion                     = "3.14.0"
+val jenaVersion                     = "3.15.0"
+val kamonVersion                    = "2.1.0"
+val kanelaAgentVersion              = "1.0.5"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
 val mockitoVersion                  = "1.14.2"
 val monixVersion                    = "3.2.1"
+val nimbusJoseJwtVersion            = "8.17"
+val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
+val splitBrainLithiumVersion        = "0.11.2"
 
 lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
 lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
 lazy val akkaClusterSharding      = "com.typesafe.akka"          %% "akka-cluster-sharding"               % akkaVersion
+lazy val akkaHttp                 = "com.typesafe.akka"          %% "akka-http"                           % akkaHttpVersion
+lazy val akkaHttpCors             = "ch.megard"                  %% "akka-http-cors"                      % akkaCorsVersion
+lazy val akkaHttpCirce            = "de.heikoseeberger"          %% "akka-http-circe"                     % akkaHttpCirceVersion
 lazy val akkaHttpTestKit          = "com.typesafe.akka"          %% "akka-http-testkit"                   % akkaHttpVersion
 lazy val akkaPersistence          = "com.typesafe.akka"          %% "akka-persistence"                    % akkaVersion
 lazy val akkaPersistenceCassandra = "com.typesafe.akka"          %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
@@ -50,6 +60,7 @@ lazy val akkaPersistenceQuery     = "com.typesafe.akka"          %% "akka-persis
 lazy val akkaSlf4j                = "com.typesafe.akka"          %% "akka-slf4j"                          % akkaVersion
 lazy val akkaTestKit              = "com.typesafe.akka"          %% "akka-testkit"                        % akkaVersion
 lazy val alleycatsCore            = "org.typelevel"              %% "alleycats-core"                      % catsVersion
+lazy val byteBuddyAgent           = "net.bytebuddy"              % "byte-buddy-agent"                     % byteBuddyAgentVersion
 lazy val catsCore                 = "org.typelevel"              %% "cats-core"                           % catsVersion
 lazy val catsEffect               = "org.typelevel"              %% "cats-effect"                         % catsEffectVersion
 lazy val catsEffectRetry          = "com.github.cb372"           %% "cats-retry-cats-effect"              % catsRetryVersion
@@ -69,14 +80,19 @@ lazy val http4sCirce              = "org.http4s"                 %% "http4s-circ
 lazy val http4sClient             = "org.http4s"                 %% "http4s-blaze-client"                 % http4sVersion
 lazy val http4sDsl                = "org.http4s"                 %% "http4s-dsl"                          % http4sVersion
 lazy val jenaArq                  = "org.apache.jena"            % "jena-arq"                             % jenaVersion
+lazy val kanelaAgent              = "io.kamon"                   % "kanela-agent"                         % kanelaAgentVersion
 lazy val kindProjector            = "org.typelevel"              %% "kind-projector"                      % kindProjectorVersion
 lazy val kryo                     = "io.altoo"                   %% "akka-kryo-serialization"             % kryoVersion
 lazy val logback                  = "ch.qos.logback"             % "logback-classic"                      % logbackVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
+lazy val nimbusJoseJwt            = "com.nimbusds"               % "nimbus-jose-jwt"                      % nimbusJoseJwtVersion
+lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
 lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"                          % pureconfigVersion
 lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
+// splitBrainLithium should be exchanged for Akka Split Brain Resolver as soon as Akka merge it into Akka Cluster
+lazy val splitBrainLithium = "com.swissborg" %% "lithium" % splitBrainLithiumVersion
 
 lazy val docs = project
   .in(file("docs"))
@@ -151,7 +167,10 @@ lazy val cli = project
 
 lazy val sourcingCore = project
   .in(file("sourcing/core"))
-  .settings(name := "sourcing-core", moduleName := "sourcing-core")
+  .settings(
+    name       := "sourcing-core",
+    moduleName := "sourcing-core"
+  )
   .settings(shared, compilation, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
@@ -175,7 +194,10 @@ lazy val sourcingCore = project
 
 lazy val sourcingProjections = project
   .in(file("sourcing/projections"))
-  .settings(name := "sourcing-projections", moduleName := "sourcing-projections")
+  .settings(
+    name       := "sourcing-projections",
+    moduleName := "sourcing-projections"
+  )
   .settings(shared, compilation, coverage, release)
   .dependsOn(sourcingCore, sourcingCore % "test->test")
   .settings(
@@ -208,11 +230,46 @@ lazy val sourcing = project
   )
   .aggregate(sourcingCore, sourcingProjections)
 
+lazy val service = project
+  .in(file("service"))
+  .dependsOn(sourcingProjections)
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    name            := "service",
+    moduleName      := "service",
+    coverageMinimum := 20d
+  )
+  .settings(kamonSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaClusterSharding,
+      akkaPersistence,
+      akkaPersistenceQuery,
+      akkaHttp,
+      akkaHttpCirce,
+      akkaHttpCors,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
+      kryo,
+      monixEval,
+      nimbusJoseJwt,
+      splitBrainLithium,
+      akkaSlf4j       % Test,
+      akkaTestKit     % Test,
+      akkaHttpTestKit % Test,
+      logback         % Test,
+      mockito         % Test,
+      scalaTest       % Test
+    ),
+    Test / fork := true
+  )
+
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing)
+  .aggregate(docs, cli, sourcing, service)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -221,6 +278,24 @@ lazy val shared = Seq(
   resolvers ++= Seq(
     Resolver.bintrayRepo("bbp", "nexus-releases"),
     Resolver.bintrayRepo("bbp", "nexus-snapshots")
+  )
+)
+
+lazy val kamonSettings = Seq(
+  libraryDependencies ++= Seq(
+    byteBuddyAgent,
+    kanelaAgent,
+    "io.kamon" %% "kamon-status-page"            % kamonVersion,
+    "io.kamon" %% "kamon-instrumentation-common" % kamonVersion,
+    "io.kamon" %% "kamon-executors"              % kamonVersion,
+    "io.kamon" %% "kamon-scala-future"           % kamonVersion,
+    "io.kamon" %% "kamon-akka"                   % kamonVersion,
+    "io.kamon" %% "kamon-logback"                % kamonVersion,
+    "io.kamon" %% "kamon-system-metrics"         % kamonVersion,
+    "io.kamon" %% "kamon-core"                   % kamonVersion,
+    "io.kamon" %% "kamon-akka-http"              % kamonVersion,
+    "io.kamon" %% "kamon-prometheus"             % kamonVersion,
+    "io.kamon" %% "kamon-jaeger"                 % kamonVersion
   )
 )
 
