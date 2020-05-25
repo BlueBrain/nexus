@@ -104,10 +104,10 @@ object AppConfig {
   /**
     * ACLs configuration
     *
-    * @param aggregate the acls aggregate configuration
-    * @param indexing the indexing configuration
+    * @param aggregate     the acls aggregate configuration
+    * @param keyValueStore the key value store configuration
     */
-  final case class AclsConfig(aggregate: AggregateConfig, indexing: IndexingConfig)
+  final case class AclsConfig(aggregate: AggregateConfig, keyValueStore: KeyValueStoreConfig)
 
   /**
     * Permissions configuration.

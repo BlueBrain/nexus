@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.persistence.query.{NoOffset, PersistenceQuery}
 import akka.stream.scaladsl.Source
@@ -14,6 +13,7 @@ import cats.Monad
 import cats.data.EitherT
 import cats.effect.{Clock, Effect, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.acls.AclTarget.RootAcl
 import ch.epfl.bluebrain.nexus.acls.Acls
 import ch.epfl.bluebrain.nexus.auth.Identity.{Anonymous, Authenticated, User}
 import ch.epfl.bluebrain.nexus.auth.TokenRejection._
@@ -240,12 +240,12 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
 
   private def check(id: RealmLabel, permission: Permission)(implicit caller: Caller): F[Unit] =
     acls
-      .flatMap(_.hasPermission(id.rootedPath, permission))
+      .flatMap(_.hasPermission(id.aclTarget, permission))
       .ifM(F.unit, F.raiseError(ServiceError.AccessDenied(id.toUri(http.realmsUri), permission)))
 
   private def check(permission: Permission)(implicit caller: Caller): F[Unit] =
     acls
-      .flatMap(_.hasPermission(Path./, permission, ancestors = false))
+      .flatMap(_.hasPermission(RootAcl, permission, ancestors = false))
       .ifM(F.unit, F.raiseError(ServiceError.AccessDenied(http.realmsUri, permission)))
 
   private def eval(cmd: Command): F[MetaOrRejection] =

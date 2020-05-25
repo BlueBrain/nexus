@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.acls
 
 import java.time.Instant
 
-import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.auth.Identity
 import ch.epfl.bluebrain.nexus.auth.Identity.Subject
 import ch.epfl.bluebrain.nexus.config.AppConfig.HttpConfig
@@ -17,9 +16,9 @@ import io.circe.generic.extras.Configuration
 sealed trait AclEvent extends Product with Serializable {
 
   /**
-    * @return the target path for the ACL
+    * @return the target location for the ACL
     */
-  def path: Path
+  def target: AclTarget
 
   /**
     * @return the revision that this event generated
@@ -43,14 +42,14 @@ object AclEvent {
   /**
     * A witness to ACL replace.
     *
-    * @param path    the target path for the ACL
+    * @param target  the target location for the ACL
     * @param acl     the ACL replaced, represented as a mapping of identities to permissions
     * @param rev     the revision that this event generated
     * @param instant the instant when this event was recorded
     * @param subject the subject which generated this event
     */
   final case class AclReplaced(
-      path: Path,
+      target: AclTarget,
       acl: AccessControlList,
       rev: Long,
       instant: Instant,
@@ -60,14 +59,14 @@ object AclEvent {
   /**
     * A witness to ACL append.
     *
-    * @param path    the target path for the ACL
+    * @param target    the target location for the ACL
     * @param acl     the ACL appended, represented as a mapping of identities to permissions
     * @param rev     the revision that this event generated
     * @param instant the instant when this event was recorded
     * @param subject the subject which generated this event
     */
   final case class AclAppended(
-      path: Path,
+      target: AclTarget,
       acl: AccessControlList,
       rev: Long,
       instant: Instant,
@@ -77,14 +76,14 @@ object AclEvent {
   /**
     * A witness to ACL subtraction.
     *
-    * @param path    the target path for the ACL
+    * @param target  the target location for the ACL
     * @param acl     the ACL subtracted, represented as a mapping of identities to permissions
     * @param rev     the revision that this event generated
     * @param instant the instant when this event was recorded
     * @param subject the subject which generated this event
     */
   final case class AclSubtracted(
-      path: Path,
+      target: AclTarget,
       acl: AccessControlList,
       rev: Long,
       instant: Instant,
@@ -94,13 +93,13 @@ object AclEvent {
   /**
     * A witness to ACL deletion.
     *
-    * @param path    the target path for the ACL
+    * @param target  the target location for the ACL
     * @param rev     the revision that this event generated
     * @param instant the instant when this event was recorded
     * @param subject the subject which generated this event
     */
   final case class AclDeleted(
-      path: Path,
+      target: AclTarget,
       rev: Long,
       instant: Instant,
       subject: Subject

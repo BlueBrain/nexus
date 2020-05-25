@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.marshallers
 import java.time.Instant
 
 import akka.actor.ExtendedActorSystem
-import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.acls.AclEvent.AclDeleted
+import ch.epfl.bluebrain.nexus.acls.AclTarget.ProjectAcl
 import ch.epfl.bluebrain.nexus.auth.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.permissions.PermissionsEvent.PermissionsDeleted
 import ch.epfl.bluebrain.nexus.realms.RealmEvent.RealmDeprecated
@@ -28,10 +28,10 @@ class EventSerializerSpec extends ActorSystemFixture("SerializerSpec") with Matc
        |  "@type": "PermissionsDeleted"
        |}""".stripMargin
 
-  private val ad = AclDeleted(Path("/a/b/c"), 2L, Instant.EPOCH, Anonymous)
+  private val ad = AclDeleted(ProjectAcl("a", "b"), 2L, Instant.EPOCH, Anonymous)
   private val adString =
     """|{
-       |  "path": "/a/b/c",
+       |  "target": "/a/b",
        |  "rev": 2,
        |  "instant": "1970-01-01T00:00:00Z",
        |  "subject": {

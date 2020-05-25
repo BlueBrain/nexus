@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.acls
 
 import akka.http.scaladsl.model.StatusCodes.{BadRequest, Conflict, NotFound}
-import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.ResourceRejection
 import ch.epfl.bluebrain.nexus.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.permissions.Permission
@@ -18,44 +17,45 @@ object AclRejection extends Codecs {
   /**
     * Signals an attempt to append/subtract ACLs that won't change the current state.
     *
-    * @param path the target path for the ACL
+    * @param target the target location for the ACL
     */
-  final case class NothingToBeUpdated(path: Path)
-      extends AclRejection(s"The ACL on path '$path' will not change after applying the provided update.")
+  final case class NothingToBeUpdated(target: AclTarget)
+      extends AclRejection(s"The ACL on location '$target' will not change after applying the provided update.")
 
   /**
     * Signals an attempt to modify ACLs that do not exists.
     *
-    * @param path the target path for the ACL
+    * @param target the target location for the ACL
     */
-  final case class AclNotFound(path: Path) extends AclRejection(s"The ACL on path '$path' does not exists.")
+  final case class AclNotFound(target: AclTarget)
+      extends AclRejection(s"The ACL on location '$target' does not exists.")
 
   /**
     * Signals an attempt to delete ACLs that are already empty.
     *
-    * @param path the target path for the ACL
+    * @param target the target location for the ACL
     */
-  final case class AclIsEmpty(path: Path) extends AclRejection(s"The ACL on path '$path' is empty.")
+  final case class AclIsEmpty(target: AclTarget) extends AclRejection(s"The ACL on location '$target' is empty.")
 
   /**
     * Signals an attempt to interact with an ACL collection with an incorrect revision.
     *
-    * @param path the target path for the ACL
+    * @param target the target location for the ACL
     * @param provided the provided revision
     * @param expected the expected revision
     */
-  final case class IncorrectRev(path: Path, provided: Long, expected: Long)
+  final case class IncorrectRev(target: AclTarget, provided: Long, expected: Long)
       extends AclRejection(
-        s"Incorrect revision '$provided' provided, expected '$expected', the ACL on path '$path' may have been updated since last seen."
+        s"Incorrect revision '$provided' provided, expected '$expected', the ACL on location '$target' may have been updated since last seen."
       )
 
   /**
     * Signals an attempt to create/replace/append/subtract ACL collection which contains void permissions.
     *
-    * @param path the target path for the ACL
+    * @param target the target location for the ACL
     */
-  final case class AclCannotContainEmptyPermissionCollection(path: Path)
-      extends AclRejection(s"The ACL for path '$path' cannot contain an empty permission collection.")
+  final case class AclCannotContainEmptyPermissionCollection(target: AclTarget)
+      extends AclRejection(s"The ACL for location '$target' cannot contain an empty permission collection.")
 
   /**
     * Signals that an acl operation could not be performed because of unknown referenced permissions.

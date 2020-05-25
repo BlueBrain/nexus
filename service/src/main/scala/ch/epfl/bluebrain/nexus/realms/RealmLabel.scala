@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.realms
 
 import io.circe.{Decoder, Encoder}
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
+import ch.epfl.bluebrain.nexus.acls.AclTarget
+import ch.epfl.bluebrain.nexus.acls.AclTarget.OrgAcl
 
 import scala.util.matching.Regex
 
@@ -19,10 +20,10 @@ final case class RealmLabel private (value: String) {
     base.copy(path = base.path.?/(value))
 
   /**
-    * Builds a rooted path from the ''value''.
+    * the ACL target for the following organization.
     */
-  def rootedPath: Path =
-    Path./ + value
+  def aclTarget: AclTarget =
+    OrgAcl(value)
 }
 
 object RealmLabel {

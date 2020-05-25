@@ -4,11 +4,11 @@ import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri.Path
 import cats.Monad
 import cats.effect.{Clock, Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.ServiceError
+import ch.epfl.bluebrain.nexus.acls.AclTarget.RootAcl
 import ch.epfl.bluebrain.nexus.acls.Acls
 import ch.epfl.bluebrain.nexus.auth.Caller
 import ch.epfl.bluebrain.nexus.config.AppConfig.{HttpConfig, PermissionsConfig}
@@ -136,7 +136,7 @@ class Permissions[F[_]](
 
   private def check(permission: Permission)(implicit caller: Caller): F[Unit] =
     acls
-      .flatMap(_.hasPermission(Path./, permission, ancestors = false))
+      .flatMap(_.hasPermission(RootAcl, permission, ancestors = false))
       .ifM(F.unit, F.raiseError(ServiceError.AccessDenied(id, permission)))
 }
 

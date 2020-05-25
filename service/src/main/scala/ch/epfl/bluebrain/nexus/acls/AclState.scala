@@ -2,8 +2,6 @@ package ch.epfl.bluebrain.nexus.acls
 
 import java.time.Instant
 
-import akka.http.scaladsl.model.Uri.Path
-import akka.http.scaladsl.model.Uri.Path.Slash
 import ch.epfl.bluebrain.nexus.ResourceF
 import ch.epfl.bluebrain.nexus.ResourceF.ResourceMetadata
 import ch.epfl.bluebrain.nexus.auth.Identity.Subject
@@ -25,7 +23,7 @@ object AclState {
   /**
     * An existing ACLs state.
     *
-    * @param path      the target path for the ACL
+    * @param target    the target location for the ACL
     * @param acl       the AccessControl collection
     * @param rev       the ACLs revision
     * @param createdAt the instant when the resource was created
@@ -35,7 +33,7 @@ object AclState {
     */
 //noinspection NameBooleanParameters
   final case class Current(
-      path: Path,
+      target: AclTarget,
       acl: AccessControlList,
       rev: Long,
       createdAt: Instant,
@@ -48,8 +46,7 @@ object AclState {
       * @return the current state in a [[Resource]] representation
       */
     def resource(implicit http: HttpConfig): Resource = {
-      val rootedPath = if (path.startsWithSlash) path else Slash(path)
-      val id         = http.aclsUri.copy(path = http.aclsUri.path ++ rootedPath)
+      val id = http.aclsUri.copy(path = http.aclsUri.path ++ target.toPath)
       ResourceF(id, rev, types, createdAt, createdBy, updatedAt, updatedBy, acl)
 
     }

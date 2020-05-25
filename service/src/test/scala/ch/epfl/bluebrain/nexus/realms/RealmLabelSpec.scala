@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.realms
 
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
+import ch.epfl.bluebrain.nexus.acls.AclTarget.OrgAcl
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Randomness}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -25,7 +25,7 @@ class RealmLabelSpec extends AnyWordSpecLike with Matchers with Randomness with 
       }
     }
     "return its path representation" in {
-      RealmLabel.unsafe("abc").rootedPath shouldEqual Path("/abc")
+      RealmLabel.unsafe("abc").aclTarget shouldEqual OrgAcl("abc")
     }
     "return an iri representation" in {
       forAll(List(Uri("http://localhost"), Uri("http://localhost/"))) { base =>

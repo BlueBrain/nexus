@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.directives
 
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server.{Directive0, Directive1}
@@ -9,6 +8,7 @@ import cats.effect.Effect
 import cats.effect.syntax.all._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.ServiceError
+import ch.epfl.bluebrain.nexus.acls.AclTarget.RootAcl
 import ch.epfl.bluebrain.nexus.acls.Acls
 import ch.epfl.bluebrain.nexus.auth.{AccessToken, Caller}
 import ch.epfl.bluebrain.nexus.config.AppConfig.HttpConfig
@@ -51,7 +51,7 @@ object AuthDirectives {
     extractResourceAddress.flatMap { address =>
       onSuccess {
         acls
-          .hasPermission(Path./, permission, ancestors = false)
+          .hasPermission(RootAcl, permission, ancestors = false)
           .ifM(F.unit, F.raiseError(ServiceError.AccessDenied(address, permission)))
           .toIO
           .unsafeToFuture()

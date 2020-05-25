@@ -8,11 +8,6 @@ trait PathSyntax {
 }
 
 final class PathUtilsOps(private val path: Path) extends AnyVal {
-  def parent: Path =
-    PathUtils.parent(path)
-
-  def segments: Seq[String] =
-    PathUtils.segments(path)
 
   def lastSegment: Option[String] =
     PathUtils.lastSegment(path)
