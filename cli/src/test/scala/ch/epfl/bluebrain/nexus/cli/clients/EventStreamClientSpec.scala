@@ -46,7 +46,6 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
   }
 
   override def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
     make[Client[IO]].from { cfg: AppConfig =>
       val token = cfg.env.token
       val httpApp = HttpApp[IO] {

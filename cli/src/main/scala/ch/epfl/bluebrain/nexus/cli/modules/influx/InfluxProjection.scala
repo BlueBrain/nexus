@@ -15,7 +15,7 @@ import retry.CatsEffect._
 import retry.{RetryDetails, RetryPolicy}
 import retry.syntax.all._
 
-class InfluxProjection[F[_]: ContextShift](
+final class InfluxProjection[F[_]: ContextShift](
     console: Console[F],
     esc: EventStreamClient[F],
     spc: SparqlClient[F],

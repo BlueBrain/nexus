@@ -25,7 +25,7 @@ import retry.{RetryDetails, RetryPolicy}
 
 import scala.util.control.NonFatal
 
-class PostgresProjection[F[_]: ContextShift](
+final class PostgresProjection[F[_]: ContextShift](
     console: Console[F],
     esc: EventStreamClient[F],
     spc: SparqlClient[F],

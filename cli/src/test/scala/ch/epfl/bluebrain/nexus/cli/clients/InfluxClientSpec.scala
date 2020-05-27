@@ -25,8 +25,7 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
   private val allowedQuery        = """SELECT * FROM "m1""""
   private val influxQlResultsJson = jsonContentOf("/templates/influxql-results.json")
 
-  override def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
+  override protected def overrides: ModuleDef = new ModuleDef {
     make[Client[IO]].from { cfg: AppConfig =>
       val httpApp = HttpApp[IO] {
         case req @ POST -> Root / "query" db cfg.influx.database =>

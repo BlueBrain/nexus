@@ -21,8 +21,7 @@ class SparqlClientSpec extends AbstractCliSpec with Http4sExtras with OptionValu
   private val sparqlResults     = sparqlResultsJson.as[SparqlResults].toOption.value
   private val query             = "SELECT * {?s ?p ?o} LIMIT 10"
 
-  override def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
+  override protected def overrides: ModuleDef = new ModuleDef {
     make[Client[IO]].from { cfg: AppConfig =>
       val token = cfg.env.token
       val ct    = `Content-Type`(SparqlClient.`application/sparql-query`)

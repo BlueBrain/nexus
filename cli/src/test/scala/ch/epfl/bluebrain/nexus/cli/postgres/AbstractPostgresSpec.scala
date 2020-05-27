@@ -11,9 +11,7 @@ import scala.concurrent.duration._
 
 class AbstractPostgresSpec extends AbstractCliSpec {
 
-  override protected def defaultModules: Module = {
-    super.defaultModules ++ new PostgresDocker.Module[IO]
-  }
+  override protected def overrides: Module = new PostgresDocker.Module[IO]
 
   override def testModule: ModuleDef = new ModuleDef {
     make[AppConfig].fromEffect { host: PostgresHostConfig =>
