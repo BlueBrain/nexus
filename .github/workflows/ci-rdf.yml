@@ -1,4 +1,4 @@
-name: Continuous Integration Service
+name: Continuous Integration RDF
 on:
   push:
     branches:

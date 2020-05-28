@@ -208,8 +208,7 @@ lazy val rdf = project
   .settings(shared, compilation, coverage, release)
   .settings(
     name            := "rdf",
-    moduleName      := "rdf",
-    coverageMinimum := 70d
+    moduleName      := "rdf"
   )
   .settings(
     libraryDependencies ++= Seq(
