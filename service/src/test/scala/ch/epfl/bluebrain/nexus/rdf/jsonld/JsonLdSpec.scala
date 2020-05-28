@@ -446,10 +446,11 @@ class JsonLdSpec extends RdfSpec {
         val json     = context1 deepMerge Json.obj("one" -> Json.fromInt(1), "two" -> Json.fromInt(2))
         val context2 = jsonContentOf("/rdf/context/context2.json")
         val json2    = context2 deepMerge Json.obj("three" -> Json.fromInt(3), "four" -> Json.fromInt(4))
-        json appendContextOf json2 shouldEqual (jsonContentOf("/rdf/context/context_merged-array.json") deepMerge Json.obj(
-          "one" -> Json.fromInt(1),
-          "two" -> Json.fromInt(2)
-        ))
+        json appendContextOf json2 shouldEqual (jsonContentOf("/rdf/context/context_merged-array.json") deepMerge Json
+          .obj(
+            "one" -> Json.fromInt(1),
+            "two" -> Json.fromInt(2)
+          ))
       }
 
       "replace context" in {

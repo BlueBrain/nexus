@@ -16,7 +16,7 @@ import org.apache.jena.rdf.model.ModelFactory
 
 import scala.util.Try
 
-private[jsonld] final class JenaWriterCleanup(ctx: Json) extends JsonLdSyntax {
+final private[jsonld] class JenaWriterCleanup(ctx: Json) extends JsonLdSyntax {
 
   private lazy val m = Jena.parse(ctx.noSpaces).getOrElse(ModelFactory.createDefaultModel())
 
@@ -117,9 +117,7 @@ private[jsonld] final class JenaWriterCleanup(ctx: Json) extends JsonLdSyntax {
         .getOrElse(inner(v))
 
     def expandWithBase(s: String) =
-      (maybeBase -> Iri.relative(s.substring(3))).mapN { (base, relative) =>
-        relative.resolve(base).asString
-      }
+      (maybeBase -> Iri.relative(s.substring(3))).mapN { (base, relative) => relative.resolve(base).asString }
 
     def deleteType(jObj: JsonObject): Json =
       typeAliases.find(tpe => jObj.contains(tpe) && jObj.contains("@value") && jObj.size == 2) match {

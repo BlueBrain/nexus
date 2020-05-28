@@ -274,9 +274,7 @@ object JsonLd {
     * @return [[GraphDecoder]] instance
     */
   def toJsonDecoder(context: Json): GraphDecoder[Json] =
-    GraphDecoder.instance { c =>
-      toJson(c.graph, context).leftMap(str => DecodingError(str, c.top.history))
-    }
+    GraphDecoder.instance { c => toJson(c.graph, context).leftMap(str => DecodingError(str, c.top.history)) }
 
   /**
     * Convert [[Graph]] to [[Json]] by applying provided context.

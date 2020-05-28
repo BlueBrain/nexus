@@ -12,7 +12,7 @@ class JenaWriterCleanupSpec extends RdfSpec {
 
       new JenaWriterCleanup(Json.obj())
         .cleanFromJson(jsonContentOf("/rdf/jena/json-with-types.json"), Graph(BNode())) shouldEqual jsonContentOf(
-        "/jena/json-without-types.json"
+        "/rdf/jena/json-without-types.json"
       )
 
     }

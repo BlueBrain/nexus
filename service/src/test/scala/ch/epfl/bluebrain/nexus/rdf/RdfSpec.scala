@@ -32,7 +32,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{EitherValues, Inspectors, OptionValues, TryValues}
 
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
@@ -64,7 +64,7 @@ trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
     new EitherValuable(either, p)
 
   final def jsonContentOf(resourcePath: String): Json =
-    parse(Source.fromInputStream(getClass.getResourceAsStream(resourcePath)).mkString)
+    parse(Source.fromInputStream(getClass.getResourceAsStream(resourcePath))(Codec.UTF8).mkString)
       .getOrElse(throw new IllegalArgumentException)
 
   final def jsonWithContext(resourcePath: String): Json =
