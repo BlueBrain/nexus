@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.cli.influx
 import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import distage.TagK
 import izumi.distage.docker.Docker.{ContainerConfig, DockerPort}
-import izumi.distage.docker.modules.DockerContainerModule
+import izumi.distage.docker.modules.DockerSupportModule
 import izumi.distage.docker.{ContainerDef, Docker}
 import izumi.distage.model.definition.ModuleDef
 import org.http4s.Uri
@@ -31,7 +31,7 @@ object InfluxDocker extends ContainerDef {
     }
 
     // add docker dependencies and override default configuration
-    include(new DockerContainerModule[F] overridenBy new ModuleDef {
+    include(new DockerSupportModule[F] overridenBy new ModuleDef {
       make[Docker.ClientConfig].from {
         Docker.ClientConfig(
           readTimeoutMs = 60000, // long timeout for gh actions

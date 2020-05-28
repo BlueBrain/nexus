@@ -16,7 +16,7 @@ val scalacSilencerVersion    = "1.6.0"
 
 val akkaHttpVersion                 = "10.1.12"
 val akkaHttpCirceVersion            = "1.32.0"
-val akkaCorsVersion                 = "0.4.3"
+val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.0"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaVersion                     = "2.6.5"
@@ -26,7 +26,7 @@ val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.1.1"
 val circeVersion                    = "0.13.0"
 val declineVersion                  = "1.2.0"
-val distageVersion                  = "0.10.8"
+val distageVersion                  = "0.10.10"
 val doobieVersion                   = "0.9.0"
 val fs2Version                      = "2.3.0"
 val http4sVersion                   = "0.21.4"
@@ -36,15 +36,16 @@ val kanelaAgentVersion              = "1.0.5"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
-val magnoliaVersion                 = "0.15.0"
-val mockitoVersion                  = "1.14.2"
+val magnoliaVersion                 = "0.16.0"
+val mockitoVersion                  = "1.14.3"
 val monixVersion                    = "3.2.1"
-val nimbusJoseJwtVersion            = "8.17"
+val nimbusJoseJwtVersion            = "8.17.1"
 val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
 val splitBrainLithiumVersion        = "0.11.2"
+val topBraidVersion                 = "1.3.2"
 
 lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
 lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
@@ -95,6 +96,7 @@ lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-loggi
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
 // splitBrainLithium should be exchanged for Akka Split Brain Resolver as soon as Akka merge it into Akka Cluster
 lazy val splitBrainLithium = "com.swissborg" %% "lithium" % splitBrainLithiumVersion
+lazy val topBraidShacl     = "org.topbraid"  % "shacl"    % topBraidVersion
 
 lazy val docs = project
   .in(file("docs"))
@@ -261,6 +263,7 @@ lazy val service = project
       nimbusJoseJwt,
       parboiled2,
       splitBrainLithium,
+      topBraidShacl,
       akkaSlf4j       % Test,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,

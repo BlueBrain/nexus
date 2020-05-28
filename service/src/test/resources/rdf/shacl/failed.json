@@ -1,0 +1,34 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+  "@type" : "sh:ValidationReport",
+  "conforms" : false,
+  "targetedNodes" : 1,
+  "result" : {
+    "@type" : "sh:ValidationResult",
+    "detail" : [
+      {
+        "@type" : "sh:ValidationResult",
+        "focusNode" : "_:b3",
+        "resultMessage" : "Focus node has 2^^http://www.w3.org/2001/XMLSchema#integer of the shapes from the 'exactly one' list",
+        "resultSeverity" : "sh:Violation",
+        "sourceConstraintComponent" : "sh:XoneConstraintComponent",
+        "sourceShape" : "_:b4",
+        "value" : "_:b3"
+      },
+      {
+        "@type" : "sh:ValidationResult",
+        "focusNode" : "_:b3",
+        "resultMessage" : "Value does not have shape http://localhost/v0/schemas/nexus/schemaorg/quantitativevalue/v0.1.0/shapes/QuantitativeValueShape",
+        "resultSeverity" : "sh:Violation",
+        "sourceConstraintComponent" : "sh:NodeConstraintComponent",
+        "sourceShape" : "_:b5",
+        "value" : "_:b3"
+      }
+    ],
+    "focusNode" : "_:b3",
+    "resultSeverity" : "sh:Violation",
+    "sourceConstraintComponent" : "sh:AndConstraintComponent",
+    "sourceShape" : "http://localhost/v0/schemas/nexus/core/quantitativevalue/v0.1.0/shapes/QuantitativeValueShape",
+    "value" : "_:b3"
+  }
+}
