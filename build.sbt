@@ -13,10 +13,11 @@ scalafmt: {
 
 val javaSpecificationVersion = "11"
 val scalacSilencerVersion    = "1.6.0"
+val scalaCompilerVersion     = "2.13.1"
 
 val akkaHttpVersion                 = "10.1.12"
 val akkaHttpCirceVersion            = "1.32.0"
-val akkaCorsVersion                 = "0.4.3"
+val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.0"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaVersion                     = "2.6.5"
@@ -26,7 +27,7 @@ val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.1.1"
 val circeVersion                    = "0.13.0"
 val declineVersion                  = "1.2.0"
-val distageVersion                  = "0.10.8"
+val distageVersion                  = "0.10.10"
 val doobieVersion                   = "0.9.0"
 val fs2Version                      = "2.3.0"
 val http4sVersion                   = "0.21.4"
@@ -36,14 +37,16 @@ val kanelaAgentVersion              = "1.0.5"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
-val mockitoVersion                  = "1.14.2"
+val magnoliaVersion                 = "0.16.0"
+val mockitoVersion                  = "1.14.3"
 val monixVersion                    = "3.2.1"
-val nimbusJoseJwtVersion            = "8.17"
+val nimbusJoseJwtVersion            = "8.17.1"
 val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
 val splitBrainLithiumVersion        = "0.11.2"
+val topBraidVersion                 = "1.3.2"
 
 lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
 lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
@@ -84,6 +87,7 @@ lazy val kanelaAgent              = "io.kamon"                   % "kanela-agent
 lazy val kindProjector            = "org.typelevel"              %% "kind-projector"                      % kindProjectorVersion
 lazy val kryo                     = "io.altoo"                   %% "akka-kryo-serialization"             % kryoVersion
 lazy val logback                  = "ch.qos.logback"             % "logback-classic"                      % logbackVersion
+lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
 lazy val nimbusJoseJwt            = "com.nimbusds"               % "nimbus-jose-jwt"                      % nimbusJoseJwtVersion
@@ -92,8 +96,9 @@ lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"
 lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
 // splitBrainLithium should be exchanged for Akka Split Brain Resolver as soon as Akka merge it into Akka Cluster
-lazy val splitBrainLithium = "com.swissborg" %% "lithium" % splitBrainLithiumVersion
-
+lazy val splitBrainLithium = "com.swissborg"  %% "lithium"      % splitBrainLithiumVersion
+lazy val topBraidShacl     = "org.topbraid"   % "shacl"         % topBraidVersion
+lazy val scalaReflect      = "org.scala-lang" % "scala-reflect" % scalaCompilerVersion
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
@@ -198,10 +203,37 @@ lazy val sourcing = project
     ),
     Test / fork := true
   )
+lazy val rdf = project
+  .in(file("rdf"))
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    name       := "rdf",
+    moduleName := "rdf"
+  )
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaHttp,
+      akkaHttpCirce,
+      alleycatsCore,
+      catsCore,
+      jenaArq,
+      magnolia,
+      nimbusJoseJwt,
+      parboiled2,
+      scalaReflect,
+      topBraidShacl,
+      akkaSlf4j    % Test,
+      akkaTestKit  % Test,
+      circeLiteral % Test,
+      logback      % Test,
+      scalaTest    % Test
+    ),
+    Test / fork := true
+  )
 
 lazy val service = project
   .in(file("service"))
-  .dependsOn(sourcing)
+  .dependsOn(sourcing, rdf)
   .settings(shared, compilation, coverage, release)
   .settings(
     name            := "service",
@@ -217,16 +249,22 @@ lazy val service = project
       akkaHttp,
       akkaHttpCirce,
       akkaHttpCors,
+      alleycatsCore,
       catsCore,
       catsEffectRetry,
       catsEffect,
+      jenaArq,
       kryo,
+      magnolia,
       monixEval,
       nimbusJoseJwt,
+      parboiled2,
       splitBrainLithium,
+      topBraidShacl,
       akkaSlf4j       % Test,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,
+      circeLiteral    % Test,
       logback         % Test,
       mockito         % Test,
       scalaTest       % Test
@@ -238,7 +276,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, service)
+  .aggregate(docs, cli, sourcing, rdf, service)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -269,7 +307,7 @@ lazy val kamonSettings = Seq(
 )
 
 lazy val compilation = Seq(
-  scalaVersion := "2.13.1", // scapegoat plugin not published yet for 2.13.2
+  scalaVersion := scalaCompilerVersion, // scapegoat plugin not published yet for 2.13.2
   // to be removed when migrating to 2.13.2 and replaced with @nowarn (scapegoat plugin not published yet for 2.13.2)
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % scalacSilencerVersion cross CrossVersion.full),

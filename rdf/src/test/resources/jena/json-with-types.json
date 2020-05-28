@@ -1,0 +1,38 @@
+{
+  "boolean": {
+    "@type": "http://www.w3.org/2001/XMLSchema#boolean",
+    "@value": "true"
+  },
+  "int": {
+    "@type": "http://www.w3.org/2001/XMLSchema#int",
+    "@value": "1"
+  },
+  "integer": {
+    "@type": "http://www.w3.org/2001/XMLSchema#integer",
+    "@value": "2"
+  },
+  "long": {
+    "@type": "http://www.w3.org/2001/XMLSchema#long",
+    "@value": "3"
+  },
+  "float": {
+    "@type": "http://www.w3.org/2001/XMLSchema#float",
+    "@value": "1.2"
+  },
+  "decimal": {
+    "@type": "http://www.w3.org/2001/XMLSchema#decimal",
+    "@value": "2.3"
+  },
+  "double": {
+    "@type": "http://www.w3.org/2001/XMLSchema#double",
+    "@value": "3.4"
+  },
+  "dateTime": {
+    "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+    "@value": "2020-01-20T10:04:47Z"
+  },
+  "string": {
+    "@type": "http://www.w3.org/2001/XMLSchema#string",
+    "@value": "someString"
+  }
+}

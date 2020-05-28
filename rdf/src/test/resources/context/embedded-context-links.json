@@ -1,0 +1,21 @@
+{
+  "@context": "http://example.com/1",
+  "field1": {
+    "@context": "http://example.com/2",
+    "field2": {
+      "field3": "Other text"
+    }
+  },
+  "field3": [
+    {
+      "@context": {
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
+      }
+    },
+    {
+      "@context": "http://example.com/3",
+      "field4": 2
+    }
+  ],
+  "field5": "Some text"
+}

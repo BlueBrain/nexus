@@ -1,0 +1,35 @@
+{
+  "@context": {
+    "nxsh": "https://bluebrain.github.io/nexus/vocabulary/shacl/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "targetedNodes": "nxsh:targetedNodes",
+    "conforms": "sh:conforms",
+    "result": "sh:result",
+    "resultMessage": "sh:resultMessage",
+    "focusNode": {
+      "@id": "sh:focusNode",
+      "@type": "@id"
+    },
+    "resultSeverity": {
+      "@id": "sh:resultSeverity",
+      "@type": "@id"
+    },
+    "sourceConstraintComponent": {
+      "@id": "sh:sourceConstraintComponent",
+      "@type": "@id"
+    },
+    "sourceShape": {
+      "@id": "sh:sourceShape",
+      "@type": "@id"
+    },
+    "value": {
+      "@id": "sh:value",
+      "@type": "@id"
+    },
+    "detail": {
+      "@id": "sh:detail",
+      "@container": "@set"
+    }
+  }
+}

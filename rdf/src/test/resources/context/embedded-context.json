@@ -1,0 +1,31 @@
+{
+  "@context": {
+    "foaf": "http://xmlns.com/foaf/0.1/"
+  },
+  "foaf:field1": {
+    "@context": {
+      "foaf:page": {
+        "@type": "xsd:float"
+      }
+    },
+    "foaf:other-1": {
+      "foaf:other-inner": "Other text"
+    }
+  },
+  "foaf:field2": [
+    {
+      "@context": {
+        "foaf:other": {
+          "@type": "@id"
+        }
+      }
+    },
+    {
+      "@context": {
+        "xsd": "http://www.w3.org/2001/XMLSchema#"
+      },
+      "foaf:other-2": 2
+    }
+  ],
+  "foaf:other-3": "Some text"
+}

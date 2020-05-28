@@ -1,0 +1,27 @@
+{
+  "@context": [
+    {
+      "foaf": "http://xmlns.com/foaf/0.1/",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "foaf:page": {
+        "@type": "xsd:float"
+      }
+    },
+    {
+      "foaf:other": {
+        "@type": "@id"
+      }
+    },
+    {
+      "foaf": "http://xmlns.com/foaf/0.33/",
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+      "rev": {
+        "@id": "nxv:rev",
+        "@type": "@id"
+      },
+      "foaf:other": {
+        "@type": "xsd:double"
+      }
+    }
+  ]
+}

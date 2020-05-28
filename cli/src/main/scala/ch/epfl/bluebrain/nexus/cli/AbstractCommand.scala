@@ -13,7 +13,7 @@ import distage.{Injector, TagK}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.StandardAxis.Repo
 import izumi.distage.model.definition.{Activation, Module, ModuleDef}
-import izumi.distage.model.plan.GCMode
+import izumi.distage.model.plan.Roots
 import izumi.distage.model.recursive.LocatorRef
 
 abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locatorOpt: Option[LocatorRef])(
@@ -42,7 +42,9 @@ abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locato
               }
             })(_ => F.unit)
 
-            res.flatMap { modules => Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, GCMode.NoGC).toCats }
+            res.flatMap { modules =>
+              Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, Roots.Everything).toCats
+            }
         }
     }
 }
