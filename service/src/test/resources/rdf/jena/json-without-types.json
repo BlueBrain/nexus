@@ -1,0 +1,11 @@
+{
+  "boolean": true,
+  "int": 1,
+  "integer": 2,
+  "long": 3,
+  "float": 1.2,
+  "decimal": 2.3,
+  "double": 3.4,
+  "dateTime": "2020-01-20T10:04:47Z",
+  "string": "someString"
+}

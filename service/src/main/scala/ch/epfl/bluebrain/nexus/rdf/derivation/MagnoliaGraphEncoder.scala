@@ -17,7 +17,7 @@ private[derivation] object MagnoliaGraphEncoder {
       }
     }.toMap
 
-    if (paramPredicateLookup.values.toList.distinct.size != caseClass.parameters.length) {
+    if (paramPredicateLookup.values.toVector.distinct.size != caseClass.parameters.length) {
       throw DerivationError("Duplicate key detected after applying transformation function for case class parameters")
     }
 

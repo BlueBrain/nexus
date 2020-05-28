@@ -1,0 +1,15 @@
+{
+  "@context": [
+    {
+      "id1": "@id",
+      "key": {
+        "@id": "http://example.com/key",
+        "@container": "@set"
+      }
+    },
+    {
+      "id2": "@id",
+      "key2": "http://example.com/key3"
+    }
+  ]
+}
