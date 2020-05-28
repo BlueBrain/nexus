@@ -170,71 +170,39 @@ lazy val cli = project
     )
   )
 
-lazy val sourcingCore = project
-  .in(file("sourcing/core"))
-  .settings(
-    name       := "sourcing-core",
-    moduleName := "sourcing-core"
-  )
+lazy val sourcing = project
+  .in(file("sourcing"))
+  .settings(name := "sourcing", moduleName := "sourcing")
   .settings(shared, compilation, coverage, release)
-  .settings(
-    libraryDependencies ++= Seq(
-      akkaClusterSharding,
-      akkaPersistence,
-      akkaPersistenceQuery,
-      catsCore,
-      catsEffectRetry,
-      catsEffect,
-      pureconfig,
-      akkaPersistenceInMem % Test,
-      akkaSlf4j            % Test,
-      akkaTestKit          % Test,
-      kryo                 % Test,
-      logback              % Test,
-      scalaTest            % Test,
-      pureconfig           % Test
-    ),
-    Test / fork := true
-  )
-
-lazy val sourcingProjections = project
-  .in(file("sourcing/projections"))
-  .settings(
-    name       := "sourcing-projections",
-    moduleName := "sourcing-projections"
-  )
-  .settings(shared, compilation, coverage, release)
-  .dependsOn(sourcingCore, sourcingCore % "test->test")
   .settings(
     libraryDependencies ++= Seq(
       akkaActor,
       akkaCluster,
+      akkaClusterSharding,
+      akkaPersistence,
       akkaPersistenceCassandra,
+      akkaPersistenceQuery,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
       circeCore,
       circeGenericExtras,
       circeParser,
       scalaLogging,
       pureconfig,
+      akkaPersistenceInMem    % Test,
       akkaPersistenceLauncher % Test,
+      akkaSlf4j               % Test,
       akkaTestKit             % Test,
       akkaHttpTestKit         % Test,
-      akkaSlf4j               % Test,
+      kryo                    % Test,
+      logback                 % Test,
+      scalaTest               % Test,
       mockito                 % Test,
-      pureconfig              % Test,
-      scalaTest               % Test
+      pureconfig              % Test
     ),
     Test / fork := true
   )
-
-lazy val sourcing = project
-  .in(file("sourcing"))
-  .settings(noPublish)
-  .settings(
-    name       := "sourcing",
-    moduleName := "sourcing"
-  )
-  .aggregate(sourcingCore, sourcingProjections)
-
 lazy val rdf = project
   .in(file("rdf"))
   .settings(shared, compilation, coverage, release)
@@ -276,7 +244,7 @@ lazy val rdf = project
 
 lazy val service = project
   .in(file("service"))
-  .dependsOn(sourcingProjections, rdf)
+  .dependsOn(sourcing, rdf)
   .settings(shared, compilation, coverage, release)
   .settings(
     name            := "service",
