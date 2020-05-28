@@ -453,7 +453,7 @@ object IriParser {
             if ((i < numChars) && (c == '%')) throw new IllegalArgumentException("URLDecoder: Incomplete trailing escape (%) pattern")
             sb.append(new String(bytes, 0, pos, charset))
           } catch {
-            case e: NumberFormatException =>
+            case e: Throwable =>
               throw new IllegalArgumentException("URLDecoder: Illegal hex characters in escape (%) pattern - " + e.getMessage)
           }
           needToChange = true

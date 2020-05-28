@@ -36,6 +36,7 @@ val kanelaAgentVersion              = "1.0.5"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
+val magnoliaVersion                 = "0.15.0"
 val mockitoVersion                  = "1.14.2"
 val monixVersion                    = "3.2.1"
 val nimbusJoseJwtVersion            = "8.17"
@@ -84,6 +85,7 @@ lazy val kanelaAgent              = "io.kamon"                   % "kanela-agent
 lazy val kindProjector            = "org.typelevel"              %% "kind-projector"                      % kindProjectorVersion
 lazy val kryo                     = "io.altoo"                   %% "akka-kryo-serialization"             % kryoVersion
 lazy val logback                  = "ch.qos.logback"             % "logback-classic"                      % logbackVersion
+lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
 lazy val nimbusJoseJwt            = "com.nimbusds"               % "nimbus-jose-jwt"                      % nimbusJoseJwtVersion
@@ -254,6 +256,7 @@ lazy val service = project
       catsEffect,
       jenaArq,
       kryo,
+      magnolia,
       monixEval,
       nimbusJoseJwt,
       parboiled2,
@@ -261,6 +264,7 @@ lazy val service = project
       akkaSlf4j       % Test,
       akkaTestKit     % Test,
       akkaHttpTestKit % Test,
+      circeLiteral    % Test,
       logback         % Test,
       mockito         % Test,
       scalaTest       % Test
