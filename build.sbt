@@ -13,6 +13,7 @@ scalafmt: {
 
 val javaSpecificationVersion = "11"
 val scalacSilencerVersion    = "1.6.0"
+val scalaCompileVersion      = "2.13.1"
 
 val akkaHttpVersion                 = "10.1.12"
 val akkaHttpCirceVersion            = "1.32.0"
@@ -95,9 +96,9 @@ lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"
 lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
 // splitBrainLithium should be exchanged for Akka Split Brain Resolver as soon as Akka merge it into Akka Cluster
-lazy val splitBrainLithium = "com.swissborg" %% "lithium" % splitBrainLithiumVersion
-lazy val topBraidShacl     = "org.topbraid"  % "shacl"    % topBraidVersion
-
+lazy val splitBrainLithium = "com.swissborg"  %% "lithium"      % splitBrainLithiumVersion
+lazy val topBraidShacl     = "org.topbraid"   % "shacl"         % topBraidVersion
+lazy val scalaReflect      = "org.scala-lang" % "scala-reflect" % scalaCompileVersion
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
@@ -234,9 +235,48 @@ lazy val sourcing = project
   )
   .aggregate(sourcingCore, sourcingProjections)
 
+lazy val rdf = project
+  .in(file("rdf"))
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    name            := "rdf",
+    moduleName      := "rdf",
+    coverageMinimum := 70d
+  )
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaClusterSharding,
+      akkaPersistence,
+      akkaPersistenceQuery,
+      akkaHttp,
+      akkaHttpCirce,
+      akkaHttpCors,
+      alleycatsCore,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
+      jenaArq,
+      kryo,
+      magnolia,
+      monixEval,
+      nimbusJoseJwt,
+      parboiled2,
+      scalaReflect,
+      topBraidShacl,
+      akkaSlf4j       % Test,
+      akkaTestKit     % Test,
+      akkaHttpTestKit % Test,
+      circeLiteral    % Test,
+      logback         % Test,
+      mockito         % Test,
+      scalaTest       % Test
+    ),
+    Test / fork := true
+  )
+
 lazy val service = project
   .in(file("service"))
-  .dependsOn(sourcingProjections)
+  .dependsOn(sourcingProjections, rdf)
   .settings(shared, compilation, coverage, release)
   .settings(
     name            := "service",
@@ -279,7 +319,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, service)
+  .aggregate(docs, cli, sourcing, rdf, service)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -310,7 +350,7 @@ lazy val kamonSettings = Seq(
 )
 
 lazy val compilation = Seq(
-  scalaVersion := "2.13.1", // scapegoat plugin not published yet for 2.13.2
+  scalaVersion := scalaCompileVersion, // scapegoat plugin not published yet for 2.13.2
   // to be removed when migrating to 2.13.2 and replaced with @nowarn (scapegoat plugin not published yet for 2.13.2)
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % scalacSilencerVersion cross CrossVersion.full),
