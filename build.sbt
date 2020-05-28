@@ -13,7 +13,7 @@ scalafmt: {
 
 val javaSpecificationVersion = "11"
 val scalacSilencerVersion    = "1.6.0"
-val scalaCompileVersion      = "2.13.1"
+val scalaCompilerVersion     = "2.13.1"
 
 val akkaHttpVersion                 = "10.1.12"
 val akkaHttpCirceVersion            = "1.32.0"
@@ -98,7 +98,7 @@ lazy val scalaTest                = "org.scalatest"              %% "scalatest" 
 // splitBrainLithium should be exchanged for Akka Split Brain Resolver as soon as Akka merge it into Akka Cluster
 lazy val splitBrainLithium = "com.swissborg"  %% "lithium"      % splitBrainLithiumVersion
 lazy val topBraidShacl     = "org.topbraid"   % "shacl"         % topBraidVersion
-lazy val scalaReflect      = "org.scala-lang" % "scala-reflect" % scalaCompileVersion
+lazy val scalaReflect      = "org.scala-lang" % "scala-reflect" % scalaCompilerVersion
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
@@ -207,36 +207,26 @@ lazy val rdf = project
   .in(file("rdf"))
   .settings(shared, compilation, coverage, release)
   .settings(
-    name            := "rdf",
-    moduleName      := "rdf"
+    name       := "rdf",
+    moduleName := "rdf"
   )
   .settings(
     libraryDependencies ++= Seq(
-      akkaClusterSharding,
-      akkaPersistence,
-      akkaPersistenceQuery,
       akkaHttp,
       akkaHttpCirce,
-      akkaHttpCors,
       alleycatsCore,
       catsCore,
-      catsEffectRetry,
-      catsEffect,
       jenaArq,
-      kryo,
       magnolia,
-      monixEval,
       nimbusJoseJwt,
       parboiled2,
       scalaReflect,
       topBraidShacl,
-      akkaSlf4j       % Test,
-      akkaTestKit     % Test,
-      akkaHttpTestKit % Test,
-      circeLiteral    % Test,
-      logback         % Test,
-      mockito         % Test,
-      scalaTest       % Test
+      akkaSlf4j    % Test,
+      akkaTestKit  % Test,
+      circeLiteral % Test,
+      logback      % Test,
+      scalaTest    % Test
     ),
     Test / fork := true
   )
@@ -317,7 +307,7 @@ lazy val kamonSettings = Seq(
 )
 
 lazy val compilation = Seq(
-  scalaVersion := scalaCompileVersion, // scapegoat plugin not published yet for 2.13.2
+  scalaVersion := scalaCompilerVersion, // scapegoat plugin not published yet for 2.13.2
   // to be removed when migrating to 2.13.2 and replaced with @nowarn (scapegoat plugin not published yet for 2.13.2)
   libraryDependencies ++= Seq(
     compilerPlugin("com.github.ghik" % "silencer-plugin" % scalacSilencerVersion cross CrossVersion.full),

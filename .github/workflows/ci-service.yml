@@ -12,7 +12,7 @@ on:
   pull_request:
     paths:
       - 'sourcing/**'
-      - 'df/**'
+      - 'rdf/**'
       - 'service/**'
       - 'build.sbt'
       - 'project/**'
