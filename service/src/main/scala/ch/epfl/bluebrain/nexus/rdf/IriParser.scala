@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.rdf.IriParser._
 import scala.collection.immutable.{SortedMap, SortedSet}
 
 // format: off
-@SuppressWarnings(Array("MethodNames", "unused", "UnsafeTraversableMethods"))
+@SuppressWarnings(Array("MethodNames", "unused", "UnsafeTraversableMethods", "CatchException", "CatchThrowable"))
 @silent
 private[rdf] class IriParser(val input: ParserInput)
   (implicit formatter: ErrorFormatter = new ErrorFormatter(showExpected = false, showTraces = false))
@@ -453,7 +453,7 @@ object IriParser {
             if ((i < numChars) && (c == '%')) throw new IllegalArgumentException("URLDecoder: Incomplete trailing escape (%) pattern")
             sb.append(new String(bytes, 0, pos, charset))
           } catch {
-            case e: Throwable =>
+            case e: NumberFormatException =>
               throw new IllegalArgumentException("URLDecoder: Illegal hex characters in escape (%) pattern - " + e.getMessage)
           }
           needToChange = true

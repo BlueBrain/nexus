@@ -1,0 +1,27 @@
+{
+  "@context": {
+    "@base": "http://example.com/",
+    "@vocab": "http://schema.org/",
+    "xml": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": "a",
+  "@type": "Person",
+  "name": {
+    "@value": "A",
+    "@language": "en"
+  },
+  "age": [
+    {
+      "@value": "16",
+      "@type": "xml:int"
+    },
+    {
+      "@type": "QuantitativeValue",
+      "value": {
+        "@value": "16",
+        "@type": "xml:int"
+      },
+      "unitText": "years"
+    }
+  ]
+}
