@@ -5,9 +5,8 @@ import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient.BulkOp
 import ch.epfl.bluebrain.nexus.commons.es.server.embed.ElasticServer
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
-import ch.epfl.bluebrain.nexus.commons.test.io.IOValues
-import ch.epfl.bluebrain.nexus.commons.test.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.util.{IOValues, Randomness, Resources}
 import io.circe.Json
 import org.openjdk.jmh.annotations._
 

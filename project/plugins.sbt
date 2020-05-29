@@ -12,3 +12,5 @@ addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.6.7")
 addSbtPlugin("io.github.jonas"       % "sbt-paradox-material-theme" % "0.5.1")
 
 addSbtPlugin("ch.epfl.scala" % "sbt-release-early" % "2.1.1")
+
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.7")

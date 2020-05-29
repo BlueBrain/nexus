@@ -3,11 +3,9 @@ package ch.epfl.bluebrain.nexus.commons.es.server.embed
 import java.nio.file.Files
 import java.util.Arrays._
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.commons.es.server.embed.ElasticServer.MyNode
-import ch.epfl.bluebrain.nexus.commons.test.Randomness
+import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, Randomness}
 import org.apache.commons.io.FileUtils
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.index.reindex.ReindexPlugin
@@ -23,7 +21,7 @@ import scala.util.Try
 
 // $COVERAGE-OFF$
 abstract class ElasticServer
-    extends TestKit(ActorSystem("ElasticServer"))
+    extends ActorSystemFixture("ElasticServer")
     with AnyWordSpecLike
     with BeforeAndAfterAll
     with Randomness {
@@ -36,7 +34,6 @@ abstract class ElasticServer
   override protected def afterAll(): Unit = {
     stopElastic()
     super.afterAll()
-    TestKit.shutdownActorSystem(system)
   }
 
   val startPort = freePort()

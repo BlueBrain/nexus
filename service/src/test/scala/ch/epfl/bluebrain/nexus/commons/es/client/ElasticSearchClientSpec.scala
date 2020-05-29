@@ -13,9 +13,8 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult._
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults._
 import ch.epfl.bluebrain.nexus.commons.search.{Pagination, QueryResults, Sort, SortList}
-import ch.epfl.bluebrain.nexus.commons.test.Resources
-import ch.epfl.bluebrain.nexus.commons.test.io.IOValues
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.util.{IOValues, Resources}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.parser.parse
 import io.circe.{Decoder, Json}
@@ -48,8 +47,8 @@ class ElasticSearchClientSpec
 
   "An ElasticSearchClient" when {
     val cl: ElasticSearchClient[IO] = ElasticSearchClient[IO](esUri)
-    val indexPayload                = jsonContentOf("/index_payload.json")
-    val mappingPayload              = jsonContentOf("/mapping_payload.json")
+    val indexPayload                = jsonContentOf("/commons/es/index_payload.json")
+    val mappingPayload              = jsonContentOf("/commons/es/mapping_payload.json")
     def genJson(k: String, k2: String): Json =
       Json.obj(k -> Json.fromString(genString()), k2 -> Json.fromString(genString()))
     def getValue(key: String, json: Json): String = json.hcursor.get[String](key).getOrElse("")
@@ -141,7 +140,7 @@ class ElasticSearchClientSpec
       "search for some specific keys and values" in {
         val (_, json) = list.head
         val query = jsonContentOf(
-          "/query.json",
+          "/commons/es/query.json",
           Map(
             Pattern.quote("{{value1}}") -> getValue("key", json),
             Pattern.quote("{{value2}}") -> getValue("key2", json)
@@ -154,7 +153,7 @@ class ElasticSearchClientSpec
       "search for some specific keys and values with wildcard index" in {
         val (_, json) = list.head
         val query = jsonContentOf(
-          "/query.json",
+          "/commons/es/query.json",
           Map(
             Pattern.quote("{{value1}}") -> getValue("key", json),
             Pattern.quote("{{value2}}") -> getValue("key2", json)
@@ -173,7 +172,7 @@ class ElasticSearchClientSpec
       "search which returns only specified fields" in {
         val (_, json) = list.head
         val query = jsonContentOf(
-          "/query.json",
+          "/commons/es/query.json",
           Map(
             Pattern.quote("{{value1}}") -> getValue("key", json),
             Pattern.quote("{{value2}}") -> getValue("key2", json)
@@ -260,7 +259,7 @@ class ElasticSearchClientSpec
 
       "search which returns 0 values" in {
         val query = jsonContentOf(
-          "/simple_query.json",
+          "/commons/es/simple_query.json",
           Map(Pattern.quote("{{k}}") -> "key", Pattern.quote("{{v}}") -> genString())
         )
         val qrs = UnscoredQueryResults(0L, List.empty)
@@ -284,7 +283,7 @@ class ElasticSearchClientSpec
           list.sortWith((e1, e2) => getValue("key", e1._2) < getValue("key", e2._2))
 
         val json = cl.searchRaw(sortedMatchAll, Set(indexSanitized)).ioValue
-        val expectedResponse = jsonContentOf("/elastic_search_response.json").mapObject { obj =>
+        val expectedResponse = jsonContentOf("/commons/es/elastic_search_response.json").mapObject { obj =>
           obj
             .add("took", json.asObject.value("took").value)
             .add(
@@ -325,7 +324,7 @@ class ElasticSearchClientSpec
           list.sortWith((e1, e2) => getValue("key", e1._2) > getValue("key", e2._2))
 
         val json = cl.searchRaw(sortedMatchAll, Set(indexSanitized)).ioValue
-        val expectedResponse = jsonContentOf("/elastic_search_response.json").mapObject { obj =>
+        val expectedResponse = jsonContentOf("/commons/es/elastic_search_response.json").mapObject { obj =>
           obj
             .add("took", json.asObject.value("took").value)
             .add(
@@ -358,7 +357,7 @@ class ElasticSearchClientSpec
         val result: ElasticSearchClientError =
           cl.searchRaw(query, Set(indexSanitized)).failed[ElasticSearchClientError]
         result.status shouldEqual StatusCodes.BadRequest
-        parse(result.body).toOption.value shouldEqual jsonContentOf("/elastic_client_error.json")
+        parse(result.body).toOption.value shouldEqual jsonContentOf("/commons/es/elastic_client_error.json")
 
       }
 
@@ -369,7 +368,7 @@ class ElasticSearchClientSpec
       "update key field on documents" in {
         forAll(listModified) {
           case (id, json) =>
-            val updateScript = jsonContentOf("/update.json", Map(Pattern.quote("{{value}}") -> getValue("key", json)))
+            val updateScript = jsonContentOf("/commons/es/update.json", Map(Pattern.quote("{{value}}") -> getValue("key", json)))
             cl.update(index, id, updateScript).ioValue shouldEqual ()
             cl.get[Json](index, id).ioValue.value shouldEqual json
             val jsonWithKey = Json.obj("key" -> Json.fromString(getValue("key", json)))
@@ -388,11 +387,11 @@ class ElasticSearchClientSpec
           case (id, json) =>
             val query =
               jsonContentOf(
-                "/simple_query.json",
+                "/commons/es/simple_query.json",
                 Map(Pattern.quote("{{k}}") -> "key", Pattern.quote("{{v}}") -> getValue("key", json))
               )
             val updateScript =
-              jsonContentOf("/update.json", Map(Pattern.quote("{{value}}") -> getValue("key", mapModified(id))))
+              jsonContentOf("/commons/es/update.json", Map(Pattern.quote("{{value}}") -> getValue("key", mapModified(id))))
 
             cl.updateDocuments(Set(indexSanitized), query, updateScript).ioValue shouldEqual ()
             cl.get[Json](index, id).ioValue.value shouldEqual mapModified(id)
@@ -416,7 +415,7 @@ class ElasticSearchClientSpec
           case (id, json) =>
             val query =
               jsonContentOf(
-                "/simple_query.json",
+                "/commons/es/simple_query.json",
                 Map(Pattern.quote("{{k}}") -> "key", Pattern.quote("{{v}}") -> getValue("key", json))
               )
             cl.deleteDocuments(Set(indexSanitized), query).ioValue shouldEqual ()
