@@ -1,0 +1,41 @@
+{
+  "head" : {
+    "vars" : [
+      "s",
+      "p",
+      "o"
+    ]
+  },
+  "results" : {
+    "bindings" : [
+      {
+        "s" : {
+          "type" : "uri",
+          "value" : "http://localhost/{id}"
+        },
+        "p" : {
+          "type" : "uri",
+          "value" : "http://schema.org/value"
+        },
+        "o" : {
+          "type" : "literal",
+          "value" : "{value}"
+        }
+      },
+      {
+        "s" : {
+          "type" : "uri",
+          "value" : "http://localhost/{id}"
+        },
+        "p" : {
+          "type" : "uri",
+          "value" : "http://www.w3.org/2000/01/rdf-schema#label"
+        },
+        "o" : {
+          "type" : "literal",
+          "value" : "{label}"
+        }
+      }
+    ]
+  }
+}

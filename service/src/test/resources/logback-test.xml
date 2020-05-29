@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -14,8 +13,12 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="akka.remote" level="WARN" />
     <logger name="akka.cluster" level="WARN" />
+    <logger name="akka.event.slf4j" level="WARN"/>
+    <logger name="akka.remote" level="WARN" />
+    <logger name="com.datastax.driver" level="WARN"/>
     <logger name="es.weso.shacl" level="WARN" />
-
+    <logger name="es.weso.schema" level="WARN" />
+    <logger name="org.eclipse.jetty" level="INFO"/>
+    <logger name="akka.util.ManifestInfo" level="ERROR"/>
 </configuration>
