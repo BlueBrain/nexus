@@ -1,0 +1,16 @@
+{
+  "query" : {
+    "constant_score" : {
+      "filter" : {
+        "bool" : {
+          "must" : {
+            "term" : {"key" : "{{value1}}"}
+          },
+          "must" : {
+            "term" : {"key2" : "{{value2}}"}
+          }
+        }
+      }
+    }
+  }
+}
