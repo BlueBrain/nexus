@@ -1,0 +1,16 @@
+{
+  "@context": [
+    {
+      "code": {
+        "@code": "nxv:code"
+      },
+      "details": {
+        "@id": "nxv:details"
+      },
+      "message": {
+        "@id": "nxv:message"
+      }
+    }
+  ],
+  "@id": "{{base}}/contexts/context2"
+}

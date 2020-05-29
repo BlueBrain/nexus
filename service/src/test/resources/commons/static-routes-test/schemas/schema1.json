@@ -1,0 +1,29 @@
+{
+  "@context": [
+    "https://bbp-nexus.epfl.ch/staging/v0/contexts/nexus/core/schema/v0.2.0",
+    {
+      "this": "https://bbp-nexus.epfl.ch/staging/v0/schemas/nexus/core/digest/v0.1.0/shapes/"
+    },
+    "https://bbp-nexus.epfl.ch/staging/v0/contexts/nexus/core/resource/v0.3.0"
+  ],
+  "@id": "{{base}}/schemas/schema1",
+  "@type": "sh:NodeShape",
+  "property": [
+    {
+      "datatype": "xsd:string",
+      "description": "The digest value.",
+      "maxCount": 1,
+      "minCount": 1,
+      "name": "Digest",
+      "path": "schema:value"
+    },
+    {
+      "datatype": "xsd:string",
+      "description": "The digest algorithm.",
+      "maxCount": 1,
+      "minCount": 1,
+      "name": "Algorithm",
+      "path": "schema:algorithm"
+    }
+  ]
+}
