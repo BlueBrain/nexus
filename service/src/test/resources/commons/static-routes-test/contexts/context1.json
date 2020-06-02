@@ -1,0 +1,238 @@
+{
+  "@context": {
+    "distribution": {
+      "@id": "http://schema.org/distribution"
+    },
+    "id": "@id",
+    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "type": "@type",
+    "links": {
+      "@id": "nxv:links"
+    },
+    "dcterms": "http://purl.org/dc/terms/",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "schema": "http://schema.org/",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "shsh": "http://www.w3.org/ns/shacl-shacl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "shext": "http://www.w3.org/ns/shacl/ext#",
+    "class": {
+      "@id": "sh:class",
+      "@type": "@id"
+    },
+    "rootClass": {
+      "@id": "shext:rootClass",
+      "@type": "@id"
+    },
+    "path": {
+      "@id": "sh:path",
+      "@type": "@id"
+    },
+    "qualifiedValueShape": {
+      "@id": "sh:qualifiedValueShape",
+      "@type": "@id"
+    },
+    "qualifiedValueShapesDisjoint": {
+      "@id": "sh:qualifiedValueShapesDisjoint",
+      "@type": "xsd:boolean"
+    },
+    "qualifiedMinCount": {
+      "@id": "sh:qualifiedMinCount",
+      "@type": "xsd:integer"
+    },
+    "qualifiedMaxCount": {
+      "@id": "sh:qualifiedMaxCount",
+      "@type": "xsd:integer"
+    },
+    "maxCount": {
+      "@id": "sh:maxCount",
+      "@type": "xsd:integer"
+    },
+    "minCount": {
+      "@id": "sh:minCount",
+      "@type": "xsd:integer"
+    },
+    "minInclusive": {
+      "@id": "sh:minInclusive"
+    },
+    "maxInclusive": {
+      "@id": "sh:maxInclusive"
+    },
+    "maxExclusive": {
+      "@id": "sh:maxExclusive"
+    },
+    "minExclusive": {
+      "@id": "sh:minExclusive"
+    },
+    "in": {
+      "@id": "sh:in",
+      "@container": "@list"
+    },
+    "imports": {
+      "@id": "owl:imports",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "datatype": {
+      "@id": "sh:datatype",
+      "@type": "@id"
+    },
+    "description": {
+      "@id": "sh:description"
+    },
+    "name": {
+      "@id": "sh:name"
+    },
+    "severity": {
+      "@id": "sh:severity"
+    },
+    "nodeKind": {
+      "@id": "sh:nodeKind",
+      "@type": "@id"
+    },
+    "BlankNode": {
+      "@id": "sh:BlankNode"
+    },
+    "BlankNodeOrIRI": {
+      "@id": "sh:BlankNodeOrIRI"
+    },
+    "BlankNodeOrLiteral": {
+      "@id": "sh:BlankNodeOrLiteral"
+    },
+    "IRI": {
+      "@id": "sh:IRI"
+    },
+    "IRIOrLiteral": {
+      "@id": "sh:IRIOrLiteral"
+    },
+    "Literal": {
+      "@id": "sh:Literal"
+    },
+    "prefix": {
+      "@id": "sh:prefix",
+      "@type": "xsd:string"
+    },
+    "declare": {
+      "@id": "sh:declare"
+    },
+    "namespace": {
+      "@id": "sh:namespace",
+      "@type": "xsd:anyURI"
+    },
+    "Violation": {
+      "@id": "sh:Violation"
+    },
+    "suggestedShapesGraph": {
+      "@id": "sh:suggestedShapesGraph",
+      "@type": "@id"
+    },
+    "shapesGraph": {
+      "@id": "sh:shapesGraph",
+      "@type": "@id"
+    },
+    "node": {
+      "@id": "sh:node",
+      "@type": "@id"
+    },
+    "property": {
+      "@id": "sh:property",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "targetClass": {
+      "@id": "sh:targetClass",
+      "@type": "@id"
+    },
+    "targetObjectsOf": {
+      "@id": "sh:targetObjectsOf",
+      "@type": "@id"
+    },
+    "targetSubjectsOf": {
+      "@id": "sh:targetSubjectsOf",
+      "@type": "@id"
+    },
+    "targetNode": {
+      "@id": "sh:targetNode",
+      "@type": "@id"
+    },
+    "target": {
+      "@id": "sh:target",
+      "@type": "@id"
+    },
+    "isDefinedBy": {
+      "@id": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+      "@type": "@id"
+    },
+    "shapes": {
+      "@reverse": "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "Shape": {
+      "@id": "sh:Shape"
+    },
+    "NodeShape": {
+      "@id": "sh:NodeShape"
+    },
+    "PropertyShape": {
+      "@id": "sh:PropertyShape"
+    },
+    "or": {
+      "@id": "sh:or",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "and": {
+      "@id": "sh:and",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "xone": {
+      "@id": "sh:xone",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "not": {
+      "@id": "sh:not",
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "lessThan": {
+      "@id": "sh:lessThan",
+      "@type": "@id"
+    },
+    "hasValue": {
+      "@id": "sh:hasValue"
+    },
+    "resultMessage": {
+      "@id": "sh:message"
+    },
+    "deactivated": {
+      "@id": "sh:deactivated"
+    },
+    "pattern": {
+      "@id": "sh:pattern"
+    },
+    "label": {
+      "@id": "rdfs:label",
+      "@type": "xsd:string"
+    },
+    "comment": {
+      "@id": "rdfs:comment",
+      "@type": "xsd:string"
+    },
+    "editorialNote": {
+      "@id": "skos:editorialNote",
+      "@type": "xsd:string"
+    },
+    "seeAlso": {
+      "@id": "rdfs:seeAlso",
+      "@type": "@id"
+    }
+  },
+  "@id": "{{base}}/contexts/context1"
+}

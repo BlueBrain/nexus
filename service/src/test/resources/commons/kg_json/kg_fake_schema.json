@@ -1,0 +1,14 @@
+{
+  "@context": "https://bbp-nexus.epfl.ch/dev/v0/contexts/bbp/core/context/v0.1.0",
+  "@id": "https://bbp-nexus.epfl.ch/dev/v0/schemas/bbp/core/schema/v0.1.0",
+  "@type": "owl:Ontology",
+  "a": "aValue",
+  "c": "cValue",
+  "nxv:rev": 1,
+  "nxv:published": true,
+  "nxv:deprecated": false,
+  "links": {
+    "self": "http://localhost/link1",
+    "schema": "http://localhost/link2"
+  }
+}

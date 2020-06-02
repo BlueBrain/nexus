@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <root level="${LOG_LEVEL:-INFO}">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <logger name="akka.cluster" level="WARN" />
+    <logger name="akka.event.slf4j" level="WARN"/>
+    <logger name="akka.remote" level="WARN" />
+    <logger name="com.datastax.driver" level="WARN"/>
+    <logger name="es.weso.shacl" level="WARN" />
+    <logger name="es.weso.schema" level="WARN" />
+    <logger name="org.eclipse.jetty" level="INFO"/>
+    <logger name="akka.util.ManifestInfo" level="ERROR"/>
+</configuration>

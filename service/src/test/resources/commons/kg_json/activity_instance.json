@@ -1,0 +1,73 @@
+{
+  "links": {
+    "self": "https://bbp-nexus.epfl.ch/dev/v0/data/bbp/experiment/brainslicing/v0.1.0/40178581-6ac4-47ee-9990-e97853a64e52",
+    "schema": "https://bbp-nexus.epfl.ch/dev/v0/schemas/bbp/experiment/brainslicing/v0.1.0",
+    "@context": "https://bbp-nexus.epfl.ch/dev/v0/contexts/bbp/core/links/v0.1.0"
+  },
+  "@id": "https://bbp-nexus.epfl.ch/dev/v0/data/bbp/experiment/brainslicing/v0.1.0/40178581-6ac4-47ee-9990-e97853a64e52",
+  "nxv:rev": 3,
+  "@context": {
+    "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "generated": "http://www.w3.org/ns/prov#generated",
+    "hadProtocol": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/hadProtocol",
+    "hadRole": "http://www.w3.org/ns/prov#hadRole",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "name": "http://schema.org/name",
+    "startedAtTime": "http://www.w3.org/ns/prov#startedAtTime",
+    "used": "http://www.w3.org/ns/prov#used",
+    "wasStartedBy": "http://www.w3.org/ns/prov#wasStartedBy",
+    "brainLocation": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/brainLocation",
+    "brainRegion": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/brainRegion"
+  },
+  "@type": [
+    "prov:Activity",
+    "nsg:BrainSlicing"
+  ],
+  "generated": [
+    {
+      "@id": "https://bbp-nexus.epfl.ch/dev/v0/data/bbp/experiment/slice/v0.1.0/399f7f36-e399-4470-950f-c2bd62705255",
+      "@type": [
+        "nsg:Slice",
+        "prov:Entity"
+      ]
+    }
+  ],
+  "nxv:deprecated": false,
+  "hadProtocol": [
+    {
+      "@id": "https://bbp-nexus.epfl.ch/dev/v0/data/bbp/experiment/protocol/v0.1.0/3f427a96-a366-43d8-b39e-b85cb378d326",
+      "@type": "nsg:Protocol"
+    }
+  ],
+  "startedAtTime": "2000-06-01T00:00:00",
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "http://www.FIXME.org/whs_sd_ontology/0000004",
+      "label": "Somatosensory cortex hindlimb"
+    }
+  },
+  "used": [
+    {
+      "@id": "https://bbp-nexus.epfl.ch/dev/v0/data/bbp/experiment/subject/v0.1.0/922f7353-7510-43f0-8699-5ef7828f1548",
+      "@type": [
+        "nsg:Subject",
+        "prov:Entity"
+      ]
+    }
+  ],
+  "wasAssociatedWith": [
+    {
+      "@id": "https://bbp-nexus.epfl.ch/dev/v0/data/bbp/core/person/v0.1.0/b147cbfa-96f1-41a9-8ac6-8c049f158ef7",
+      "@type": "prov:Agent",
+      "name": "Maria Toledo"
+    }
+  ],
+  "wasStartedBy": [
+    {
+      "@id": "https://bbp-nexus.epfl.ch/dev/v0/data/bbp/core/person/v0.1.0/b147cbfa-96f1-41a9-8ac6-8c049f158ef7",
+      "@type": "prov:Agent"
+    }
+  ]
+}

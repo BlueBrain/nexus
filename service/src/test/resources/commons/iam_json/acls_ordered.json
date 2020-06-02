@@ -1,0 +1,31 @@
+{
+  "@context": "https://bbp-nexus.epfl.ch/dev/v0/contexts/bbp/core/context/v0.1.0",
+  "acl": [
+    {
+      "identity": {
+        "@id": "https://bbp-nexus.epfl.ch/staging/v0/anonymous",
+        "@type": "Anonymous"
+      },
+      "permissions": [
+        "read",
+        "write",
+        "own",
+        "publish"
+      ]
+    },
+    {
+      "identity": {
+        "@id": "https://bbp-nexus.epfl.ch/staging/v0/realms/BBP/groups/bbp-ou-nexus",
+        "@type": "GroupRef",
+        "realm": "BBP",
+        "group": "bbp-ou-nexus"
+      },
+      "permissions": [
+        "publish",
+        "write",
+        "own",
+        "read"
+      ]
+    }
+  ]
+}

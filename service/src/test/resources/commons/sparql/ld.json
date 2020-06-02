@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "value": "http://schema.org/value"
+  },
+  "@id": "http://localhost/{{ID}}",
+  "label": "{{LABEL}}",
+  "value": "{{VALUE}}"
+}

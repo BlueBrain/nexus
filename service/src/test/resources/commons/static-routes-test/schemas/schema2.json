@@ -1,0 +1,46 @@
+{
+  "@context": [
+    "https://bbp-nexus.epfl.ch/staging/v0/contexts/nexus/core/schema/v0.2.0",
+    {
+      "this": "https://bbp-nexus.epfl.ch/staging/v0/schemas/nexus/core/instance/v0.1.0/shapes/"
+    },
+    "https://bbp-nexus.epfl.ch/staging/v0/contexts/nexus/core/resource/v0.3.0"
+  ],
+  "@id": "{{base}}/schema/schema2",
+  "@type": "nxv:Schema",
+  "imports": [
+    "https://bbp-nexus.epfl.ch/staging/v0/schemas/nexus/core/resource/v0.1.0",
+    "https://bbp-nexus.epfl.ch/staging/v0/schemas/nexus/core/distribution/v0.1.0"
+  ],
+  "shapes": [
+    {
+      "@id": "this:InstanceShape",
+      "@type": "sh:NodeShape",
+      "and": [
+        {
+          "node": "https://bbp-nexus.epfl.ch/staging/v0/schemas/nexus/core/resource/v0.1.0/shapes/ResourceShape"
+        },
+        {
+          "property": [
+            {
+              "description": "The shape for the attached data metadata (e.g. content size, download url).",
+              "name": "Distribution",
+              "node": "https://bbp-nexus.epfl.ch/staging/v0/schemas/nexus/core/distribution/v0.1.0/shapes/DistributionShape",
+              "path": "schema:distribution"
+            }
+          ]
+        }
+      ],
+      "comment": "A Nexus instance is a Nexus resource (with rev, deprecated and links properties) and potentially has distributions information to download the data it describes.",
+      "label": "Nexus instance shape",
+      "targetClass": [
+        "nxv:Instance"
+      ],
+      "targetSubjectsOf": [
+        "nxv:rev",
+        "nxv:deprecated",
+        "nxv:links"
+      ]
+    }
+  ]
+}

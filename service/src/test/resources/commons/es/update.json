@@ -1,0 +1,8 @@
+{
+  "script" : {
+    "source": "ctx._source.key = params.key",
+    "params" : {
+      "key" : "{{value}}"
+    }
+  }
+}

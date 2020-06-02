@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.util
 
+import java.net.InetSocketAddress
+import java.nio.channels.ServerSocketChannel
+
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -34,6 +37,17 @@ trait Randomness {
     */
   final def genInt(max: Int = 100): Int =
     Random.nextInt(max)
+
+  /**
+    * @return a random available port on the loopback interface
+    */
+  final def freePort(): Int = {
+    val serverSocket = ServerSocketChannel.open().socket()
+    serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
+    val port = serverSocket.getLocalPort
+    serverSocket.close()
+    port
+  }
 }
 
 object Randomness extends Randomness
