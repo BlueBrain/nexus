@@ -90,8 +90,8 @@ object HttpClient {
     */
   final def untyped[F[_]](implicit L: LiftIO[F], as: ActorSystem, mt: Materializer): UntypedHttpClient[F] =
     new HttpClient[F, HttpResponse] {
-      private implicit val ec: ExecutionContextExecutor   = as.dispatcher
-      private implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
+      implicit private val ec: ExecutionContextExecutor   = as.dispatcher
+      implicit private val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
       override def apply(req: HttpRequest): F[HttpResponse] =
         L.liftIO(IO.fromFuture(IO(Http().singleRequest(req))))
@@ -129,7 +129,7 @@ object HttpClient {
       um: FromEntityUnmarshaller[A]
   ): HttpClient[F, A] =
     new HttpClient[F, A] {
-      private implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
+      implicit private val contextShift: ContextShift[IO] = IO.contextShift(ec)
       private val logger                                  = Logger(s"TypedHttpClient[${implicitly[ClassTag[A]]}]")
 
       override def apply(req: HttpRequest): F[A] =

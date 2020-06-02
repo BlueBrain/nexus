@@ -31,8 +31,12 @@ class JsonSyntaxSpec extends AnyWordSpecLike with Matchers with Resources with I
 
     "dealing with KG data" should {
       val list = List(
-        jsonContentOf("/commons/kg_json/activity_schema.json")   -> jsonContentOf("/commons/kg_json/activity_schema_ordered.json"),
-        jsonContentOf("/commons/kg_json/activity_instance.json") -> jsonContentOf("/commons/kg_json/activity_instance_ordered.json"),
+        jsonContentOf("/commons/kg_json/activity_schema.json") -> jsonContentOf(
+          "/commons/kg_json/activity_schema_ordered.json"
+        ),
+        jsonContentOf("/commons/kg_json/activity_instance.json") -> jsonContentOf(
+          "/commons/kg_json/activity_instance_ordered.json"
+        ),
         jsonContentOf("/commons/kg_json/activity_instance_att.json") -> jsonContentOf(
           "/commons/kg_json/activity_instance_att_ordered.json"
         )

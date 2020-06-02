@@ -57,19 +57,19 @@ object QueryResults {
 
   }
 
-  final implicit def scoredQueryResultsFunctor(implicit F: Functor[QueryResult]): Functor[ScoredQueryResults] =
+  implicit final def scoredQueryResultsFunctor(implicit F: Functor[QueryResult]): Functor[ScoredQueryResults] =
     new Functor[ScoredQueryResults] {
       override def map[A, B](fa: ScoredQueryResults[A])(f: A => B): ScoredQueryResults[B] =
         fa.copy(results = fa.results.map(qr => F.map(qr)(f)))
     }
 
-  final implicit def unscoreduQeryResultsFunctor(implicit F: Functor[QueryResult]): Functor[UnscoredQueryResults] =
+  implicit final def unscoreduQeryResultsFunctor(implicit F: Functor[QueryResult]): Functor[UnscoredQueryResults] =
     new Functor[UnscoredQueryResults] {
       override def map[A, B](fa: UnscoredQueryResults[A])(f: A => B): UnscoredQueryResults[B] =
         fa.copy(results = fa.results.map(qr => F.map(qr)(f)))
     }
 
-  final implicit def queryResultsFunctor(implicit F: Functor[QueryResult]): Functor[QueryResults] =
+  implicit final def queryResultsFunctor(implicit F: Functor[QueryResult]): Functor[QueryResults] =
     new Functor[QueryResults] {
 
       import cats.syntax.functor._
@@ -81,7 +81,7 @@ object QueryResults {
         }
     }
 
-  final implicit def queryResultEncoder[A](
+  implicit final def queryResultEncoder[A](
       implicit
       S: Encoder[ScoredQueryResults[A]],
       U: Encoder[UnscoredQueryResults[A]]

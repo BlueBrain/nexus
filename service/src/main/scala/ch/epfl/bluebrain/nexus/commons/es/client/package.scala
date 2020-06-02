@@ -12,7 +12,7 @@ package object client {
     if (uri.path.endsWithSlash) uri.copy(path = uri.path + path)
     else append(path, uri.copy(path = uri.path ++ SingleSlash))
 
-  private[client] implicit class UriSyntax(private val uri: Uri) extends AnyVal {
+  implicit private[client] class UriSyntax(private val uri: Uri) extends AnyVal {
     def /(path: String): Uri = append(path, uri)
   }
 }

@@ -160,17 +160,15 @@ object SparqlResults {
     def asNode: Option[Node] = asLiteral orElse asIriOrBNode
   }
 
-  private[client] implicit val uriEncoder: Encoder[Uri] = Encoder.encodeString.contramap(_.toString)
-  private[client] implicit val uriDecoder: Decoder[Uri] = Decoder.decodeString.emapTry(uri => Try(Uri(uri)))
+  implicit private[client] val uriEncoder: Encoder[Uri] = Encoder.encodeString.contramap(_.toString)
+  implicit private[client] val uriDecoder: Decoder[Uri] = Decoder.decodeString.emapTry(uri => Try(Uri(uri)))
 
-  final implicit val sparqlResultsEncoder: Encoder[SparqlResults] = deriveEncoder[SparqlResults]
+  implicit final val sparqlResultsEncoder: Encoder[SparqlResults] = deriveEncoder[SparqlResults]
 
   private val askResultDecoder: Decoder[SparqlResults] =
-    Decoder.instance(_.get[Boolean]("boolean").map { boolean =>
-      SparqlResults(Head(), Bindings(), Some(boolean))
-    })
+    Decoder.instance(_.get[Boolean]("boolean").map { boolean => SparqlResults(Head(), Bindings(), Some(boolean)) })
 
-  final implicit val sparqlResultsDecoder: Decoder[SparqlResults] = {
+  implicit final val sparqlResultsDecoder: Decoder[SparqlResults] = {
     val default = deriveDecoder[SparqlResults]
     Decoder.instance(hc => default(hc) orElse askResultDecoder(hc))
 

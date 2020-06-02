@@ -184,11 +184,11 @@ object KeyValueStore {
     implicit def logErrors: (Throwable, RetryDetails) => F[Unit] =
       (err, details) => Effect[F].pure(log.warn(s"Retrying on cache with id '$id' on retry details '$details'", err))
 
-    private implicit val node: Cluster                  = Cluster(as)
+    implicit private val node: Cluster                  = Cluster(as)
     private val uniqueAddr: SelfUniqueAddress           = SelfUniqueAddress(node.selfUniqueAddress)
-    private implicit val registerClock: Clock[V]        = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
-    private implicit val timeout: Timeout               = Timeout(askTimeout)
-    private implicit val contextShift: ContextShift[IO] = IO.contextShift(as.dispatcher)
+    implicit private val registerClock: Clock[V]        = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
+    implicit private val timeout: Timeout               = Timeout(askTimeout)
+    implicit private val contextShift: ContextShift[IO] = IO.contextShift(as.dispatcher)
 
     private val F                       = implicitly[Async[F]]
     private val replicator              = DistributedData(as).replicator

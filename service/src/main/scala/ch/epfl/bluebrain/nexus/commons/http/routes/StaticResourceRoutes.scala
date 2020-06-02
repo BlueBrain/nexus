@@ -37,9 +37,7 @@ class StaticResourceRoutes(resourcePaths: Map[String, String], prefix: String, b
 
   private lazy val resources: Map[String, Json] =
     resourcePaths.view
-      .mapValues { resource =>
-        parse(contentOf(resource, baseReplacement)).toOption
-      }
+      .mapValues { resource => parse(contentOf(resource, baseReplacement)).toOption }
       .flatMap {
         case (key, value) =>
           value match {

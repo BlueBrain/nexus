@@ -34,8 +34,8 @@ class HttpSparqlClient[F[_]: Timer](endpoint: Uri, credentials: Option[HttpCrede
 ) extends SparqlClient[F] {
 
   private val log                             = Logger[this.type]
-  private implicit val policy: RetryPolicy[F] = retryConfig.retryPolicy[F]
-  private implicit val logErrors: (Throwable, RetryDetails) => F[Unit] =
+  implicit private val policy: RetryPolicy[F] = retryConfig.retryPolicy[F]
+  implicit private val logErrors: (Throwable, RetryDetails) => F[Unit] =
     (err, details) => F.pure(log.warn(s"Retrying on query details '$details'", err))
 
   def query[A](query: String, isWorthRetry: (Throwable => Boolean) = defaultWorthRetry)(
@@ -84,9 +84,7 @@ class HttpSparqlClient[F[_]: Timer](endpoint: Uri, credentials: Option[HttpCrede
     }
 
   private[client] def error[A](req: HttpRequest, resp: HttpResponse, op: String): F[A] =
-    cl.toString(resp.entity).flatMap { body =>
-      error(req, body, resp.status, op)
-    }
+    cl.toString(resp.entity).flatMap { body => error(req, body, resp.status, op) }
 
   private def error[A](req: HttpRequest, body: String, status: StatusCode, op: String): F[A] = {
     log.error(s"""Unexpected Blazegraph response for '$op':

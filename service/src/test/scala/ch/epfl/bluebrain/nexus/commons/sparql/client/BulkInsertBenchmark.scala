@@ -42,14 +42,14 @@ import scala.util.Try
 @State(Scope.Thread)
 class BulkInsertBenchmark extends IOValues with Resources with Randomness with EitherValues {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 2.milliseconds)
+  implicit override val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 2.milliseconds)
 
   var dataList: Seq[Graph]         = Seq.empty
   var client: BlazegraphClient[IO] = _
 
   def graphUri: Uri = s"http://nexus.example.com/graphs/${genString(length = 5)}"
 
-  private implicit var system: ActorSystem = _
+  implicit private var system: ActorSystem = _
   private var server: Server               = _
 
   @Setup(Level.Trial) def doSetup(): Unit = {
@@ -85,9 +85,7 @@ class BulkInsertBenchmark extends IOValues with Resources with Randomness with E
 
   @Benchmark
   def bulk1(): Unit =
-    dataList.foreach { data =>
-      client.bulk(Seq(replace(graphUri, data))).ioValue
-    }
+    dataList.foreach { data => client.bulk(Seq(replace(graphUri, data))).ioValue }
   @Benchmark
   def bulk10(): Unit = {
     val iter = dataList.iterator

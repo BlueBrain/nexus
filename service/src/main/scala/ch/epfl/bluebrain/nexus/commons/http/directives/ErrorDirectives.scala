@@ -26,7 +26,7 @@ object ErrorDirectives {
     * @param printer a pretty-printer for JSON values
     * @return a ''ToResponseMarshaller'' that will generate an appropriate JSON-LD response
     */
-  final implicit def jsonLdMarshallerFromStatusAndEncoder[A](
+  implicit final def jsonLdMarshallerFromStatusAndEncoder[A](
       implicit
       statusFrom: StatusFrom[A],
       encoder: Encoder[A],

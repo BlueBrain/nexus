@@ -17,15 +17,15 @@ class AkkaCoproductSerializer[C <: Coproduct](override val identifier: Int)(
     U: Unifier[C]
 ) extends SerializerWithStringManifest {
 
-  override final def manifest(o: AnyRef): String =
+  final override def manifest(o: AnyRef): String =
     C.manifest(o)
       .getOrElse(throw new IllegalArgumentException(s"Unable to compute manifest; unknown type '$o'"))
 
-  override final def toBinary(o: AnyRef): Array[Byte] =
+  final override def toBinary(o: AnyRef): Array[Byte] =
     C.toBinary(o)
       .getOrElse(throw new IllegalArgumentException(s"Unable to encode to binary; unknown type '$o'"))
 
-  override final def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
+  final override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     C.fromBinary(bytes, manifest)
       .map(c => c.unify.asInstanceOf[AnyRef])
       .getOrElse(throw new IllegalArgumentException(s"Unable to decode from binary; unknown manifest '$manifest'"))

@@ -27,5 +27,5 @@ object PatchStrategy {
     RemoveButPredicates(predicates)
 }
 
-private[client] final case class RemovePredicates(predicates: Set[Uri])    extends PatchStrategy
-private[client] final case class RemoveButPredicates(predicates: Set[Uri]) extends PatchStrategy
+final private[client] case class RemovePredicates(predicates: Set[Uri])    extends PatchStrategy
+final private[client] case class RemoveButPredicates(predicates: Set[Uri]) extends PatchStrategy

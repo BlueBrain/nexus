@@ -49,7 +49,7 @@ class BlazegraphClientSpec
     with CirceEq
     with Eventually {
 
-  private implicit val printer = Printer.noSpaces.copy(dropNullValues = true)
+  implicit private val printer = Printer.noSpaces.copy(dropNullValues = true)
 
   private val port = freePort()
 
@@ -58,7 +58,7 @@ class BlazegraphClientSpec
     NanoSparqlServer.newInstance(port, null, null)
   }
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 500.milliseconds)
+  implicit override val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 500.milliseconds)
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -71,11 +71,11 @@ class BlazegraphClientSpec
     super.afterAll()
   }
 
-  private implicit val ec          = system.dispatcher
-  private implicit val timer       = IO.timer(ec)
-  private implicit val uc          = untyped[IO]
-  private implicit val jc          = withUnmarshaller[IO, SparqlResults]
-  private implicit val retryConfig = RetryStrategyConfig("once", 100.millis, 0.millis, 0, 0.millis)
+  implicit private val ec          = system.dispatcher
+  implicit private val timer       = IO.timer(ec)
+  implicit private val uc          = untyped[IO]
+  implicit private val jc          = withUnmarshaller[IO, SparqlResults]
+  implicit private val retryConfig = RetryStrategyConfig("once", 100.millis, 0.millis, 0, 0.millis)
 
   "A BlazegraphClient" should {
     def client(ns: String) = BlazegraphClient[IO](s"http://$localhost:$port/blazegraph", ns, None)
@@ -246,9 +246,7 @@ class BlazegraphClientSpec
     private def triplesFor(query: String) =
       cl.queryRaw(query).map {
         case SparqlResults(_, Bindings(mapList), _) =>
-          mapList.map { triples =>
-            (triples("s").value, triples("p").value, triples("o").value)
-          }
+          mapList.map { triples => (triples("s").value, triples("p").value, triples("o").value) }
       }
 
     def triples(graph: Uri): List[(String, String, String)] =
@@ -259,11 +257,13 @@ class BlazegraphClientSpec
   }
 
   private def load(id: String, label: String, value: String): Graph =
-    jsonContentOf("/commons/sparql/ld.json", Map(quote("{{ID}}") -> id, quote("{{LABEL}}") -> label, quote("{{VALUE}}") -> value))
-      .asRdfGraph(url"http://localhost/$id")
+    jsonContentOf(
+      "/commons/sparql/ld.json",
+      Map(quote("{{ID}}") -> id, quote("{{LABEL}}") -> label, quote("{{VALUE}}") -> value)
+    ).asRdfGraph(url"http://localhost/$id")
       .rightValue
 
-  private implicit class AsGraph(json: Json) {
+  implicit private class AsGraph(json: Json) {
     def asRdfGraph(root: IriOrBNode): Either[String, Graph] =
       Jena.parse(json.noSpaces).flatMap(_.asRdfGraph(root))
   }

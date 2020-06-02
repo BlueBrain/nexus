@@ -166,7 +166,8 @@ class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQuer
               )
               F.raiseError(ElasticSearchClientError(BadRequest, body))
           }
-        } else
+        }
+      else
         ElasticSearchFailure.fromResponse(resp).flatMap { f =>
           log.error(
             s"Unexpected ElasticSearch response for intent 'bulk update':\nRequest: '${req.method} ${req.uri}' \nResponse: '${resp.status}', '${f.body}'"

@@ -100,7 +100,7 @@ object AkkaCoproductSerializerSpec {
     final case class TheCommand(arg: Int) extends Command
   }
 
-  private[serialization] implicit val config: Configuration = Configuration.default.withDiscriminator("type")
+  implicit private[serialization] val config: Configuration = Configuration.default.withDiscriminator("type")
 
   class EventSerializer extends AkkaCoproductSerializer[Command :+: Event :+: CNil](9210)
 }

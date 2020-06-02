@@ -90,9 +90,7 @@ private[client] class ElasticSearchQueryClient[F[_]: Timer](base: Uri)(
       rs: HttpClient[F, Json]
   ): F[Json] =
     rs(Post((base / indexPath(indices) / searchPath).withQuery(qp), query))
-      .map { esResponse =>
-        esResponse.mapObject(_.add("_shards", shards))
-      }
+      .map { esResponse => esResponse.mapObject(_.add("_shards", shards)) }
       .recoverWith {
         case UnexpectedUnsuccessfulHttpResponse(r, body) =>
           F.raiseError(ElasticSearchFailure.fromStatusCode(r.status, body))
@@ -115,9 +113,9 @@ object ElasticSearchQueryClient {
   ): ElasticSearchQueryClient[F] =
     new ElasticSearchQueryClient(base)
 
-  private[client] implicit class JsonOpsSearch(query: Json) {
+  implicit private[client] class JsonOpsSearch(query: Json) {
 
-    private implicit val sortEncoder: Encoder[Sort] =
+    implicit private val sortEncoder: Encoder[Sort] =
       Encoder.encodeJson.contramap(sort => Json.obj(s"${sort.value}" -> Json.fromString(sort.order.show)))
 
     /**

@@ -62,7 +62,7 @@ object CoproductSerializer {
   /**
     * Base recursion case for deriving serializers.
     */
-  final implicit val cnilSerializer: CoproductSerializer[CNil] = new CoproductSerializer[CNil] {
+  implicit final val cnilSerializer: CoproductSerializer[CNil] = new CoproductSerializer[CNil] {
     override def manifest(x: Any): Option[String]                               = None
     override def toBinary(x: Any): Option[Array[Byte]]                          = None
     override def fromBinary(bytes: Array[Byte], manifest: String): Option[CNil] = None
@@ -80,7 +80,7 @@ object CoproductSerializer {
     * @tparam T the type of the coproduct tail
     * @return a new ''CoproductSerializer'' that prepends a new type ''H'' to the list of known serialization types
     */
-  final implicit def cconsSerializer[H, T <: Coproduct](
+  implicit final def cconsSerializer[H, T <: Coproduct](
       implicit
       headTypeable: Typeable[H],
       headEncoder: Encoder[H],

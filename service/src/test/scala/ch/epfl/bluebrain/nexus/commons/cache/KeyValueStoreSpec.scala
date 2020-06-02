@@ -23,10 +23,10 @@ class KeyValueStoreSpec
     with IOOptionValues
     with Eventually {
 
-  private implicit val ec = system.dispatcher
-  private implicit val t  = timer(ec)
+  implicit private val ec = system.dispatcher
+  implicit private val t  = timer(ec)
 
-  override implicit def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   "A KeyValueStore" should {
 

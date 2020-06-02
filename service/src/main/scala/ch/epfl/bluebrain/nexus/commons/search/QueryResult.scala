@@ -30,7 +30,7 @@ object QueryResult {
     */
   final case class UnscoredQueryResult[A](source: A) extends QueryResult[A]
 
-  final implicit val queryResultFunctor: Functor[QueryResult] =
+  implicit final val queryResultFunctor: Functor[QueryResult] =
     new Functor[QueryResult] {
       override def map[A, B](fa: QueryResult[A])(f: A => B): QueryResult[B] =
         fa match {
@@ -39,19 +39,19 @@ object QueryResult {
         }
     }
 
-  final implicit val scoredQueryResultFunctor: Functor[ScoredQueryResult] =
+  implicit final val scoredQueryResultFunctor: Functor[ScoredQueryResult] =
     new Functor[ScoredQueryResult] {
       override def map[A, B](fa: ScoredQueryResult[A])(f: A => B): ScoredQueryResult[B] =
         fa.copy(source = f(fa.source))
     }
 
-  final implicit val sourceQueryResultFunctor: Functor[UnscoredQueryResult] =
+  implicit final val sourceQueryResultFunctor: Functor[UnscoredQueryResult] =
     new Functor[UnscoredQueryResult] {
       override def map[A, B](fa: UnscoredQueryResult[A])(f: A => B): UnscoredQueryResult[B] =
         fa.copy(source = f(fa.source))
     }
 
-  final implicit def queryResultEncoder[A](
+  implicit final def queryResultEncoder[A](
       implicit
       S: Encoder[ScoredQueryResult[A]],
       U: Encoder[UnscoredQueryResult[A]]

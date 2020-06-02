@@ -28,8 +28,8 @@ abstract class ElasticSearchBaseClient[F[_]: Timer](
 
   private[client] val log = Logger[this.type]
 
-  private[client] implicit val retryPolicy: RetryPolicy[F] = retryConfig.retryPolicy[F]
-  private[client] implicit val logErrors: (Throwable, RetryDetails) => F[Unit] =
+  implicit private[client] val retryPolicy: RetryPolicy[F] = retryConfig.retryPolicy[F]
+  implicit private[client] val logErrors: (Throwable, RetryDetails) => F[Unit] =
     (err, details) => F.pure(log.warn(s"Retrying on query details '$details'", err))
 
   private[client] val defaultWorthRetry: Throwable => Boolean = {

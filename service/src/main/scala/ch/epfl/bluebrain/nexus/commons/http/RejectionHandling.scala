@@ -21,9 +21,9 @@ object RejectionHandling {
 
   final val errorContextIri = "https://bluebrain.github.io/nexus/contexts/error.json"
 
-  private final case class Error(`@type`: String, reason: String)
+  final private case class Error(`@type`: String, reason: String)
   private object Error {
-    final implicit val genericEncoder: Encoder[Error] =
+    implicit final val genericEncoder: Encoder[Error] =
       deriveEncoder[Error].mapJson { json =>
         val context = Json.obj("@context" -> Json.fromString(errorContextIri))
         json deepMerge context

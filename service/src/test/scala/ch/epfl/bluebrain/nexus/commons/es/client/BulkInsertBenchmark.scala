@@ -31,13 +31,13 @@ import scala.concurrent.duration._
 @State(Scope.Thread)
 class BulkInsertBenchmark extends IOValues with Resources with Randomness {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 2.milliseconds)
+  implicit override val patienceConfig: PatienceConfig = PatienceConfig(10.seconds, 2.milliseconds)
 
   var dataList: Seq[Json]             = Seq.empty
   var client: ElasticSearchClient[IO] = _
   val index: String                   = genString()
 
-  private implicit var system: ActorSystem = _
+  implicit private var system: ActorSystem = _
   private var server: ElasticServer        = _
 
   @Setup(Level.Trial) def doSetup(): Unit = {
@@ -67,9 +67,7 @@ class BulkInsertBenchmark extends IOValues with Resources with Randomness {
 
   @Benchmark
   def bulk1(): Unit =
-    dataList.foreach { data =>
-      client.create(index, genString(), data).ioValue
-    }
+    dataList.foreach { data => client.create(index, genString(), data).ioValue }
 
   @Benchmark
   def bulk10(): Unit = {

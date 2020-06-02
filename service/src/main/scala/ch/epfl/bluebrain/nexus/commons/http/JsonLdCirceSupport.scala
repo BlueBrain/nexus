@@ -42,7 +42,7 @@ trait JsonLdCirceSupport extends FailFastCirceSupport {
     *
     * @return marshaller for JSON-LD value
     */
-  final implicit def jsonLdMarshaller(
+  implicit final def jsonLdMarshaller(
       implicit printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       keys: OrderedKeys = OrderedKeys()
   ): ToEntityMarshaller[Json] =
