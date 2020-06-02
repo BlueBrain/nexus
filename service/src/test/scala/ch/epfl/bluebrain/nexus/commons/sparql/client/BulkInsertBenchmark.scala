@@ -10,12 +10,11 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClientFixture._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlWriteQuery._
-import ch.epfl.bluebrain.nexus.commons.test.io.IOValues
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness, Resources}
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Node.blank
-import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.rdf.jsonld.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.util.{EitherValues, IOValues, Randomness, Resources}
 import com.bigdata.rdf.sail.webapp.NanoSparqlServer
 import org.apache.commons.io.FileUtils
 import org.eclipse.jetty.server.Server

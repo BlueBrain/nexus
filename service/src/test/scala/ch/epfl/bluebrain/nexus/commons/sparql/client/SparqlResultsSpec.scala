@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.commons.sparql.client
 
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlResults.{Binding, Bindings, Head}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlResultsSpec.{nxv, xsd}
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Node
 import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
-import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.rdf.syntax.all._
+import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources}
 import io.circe.syntax._
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -20,10 +20,10 @@ class SparqlResultsSpec
     with CirceEq
     with OptionValues {
   "A Sparql Json result" should {
-    val json          = jsonContentOf("/results/query-result.json")
-    val constructJson = jsonContentOf("/results/construct-result.json")
-    val askJson       = jsonContentOf("/results/ask-result.json")
-    val askJson2      = jsonContentOf("/results/ask-result-2.json")
+    val json          = jsonContentOf("/commons/sparql/results/query-result.json")
+    val constructJson = jsonContentOf("/commons/sparql/results/construct-result.json")
+    val askJson       = jsonContentOf("/commons/sparql/results/ask-result.json")
+    val askJson2      = jsonContentOf("/commons/sparql/results/ask-result-2.json")
 
     val blurb = Binding(
       "literal",

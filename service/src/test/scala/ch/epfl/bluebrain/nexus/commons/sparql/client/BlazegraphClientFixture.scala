@@ -4,7 +4,7 @@ import java.util.Properties
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClientFixture._
-import ch.epfl.bluebrain.nexus.commons.test.Randomness._
+import ch.epfl.bluebrain.nexus.util.Randomness._
 
 import scala.jdk.CollectionConverters._
 
@@ -22,7 +22,7 @@ object BlazegraphClientFixture {
 
   val localhost = "127.0.0.1"
 
-  def properties(file: String = "/index.properties"): Map[String, String] = {
+  def properties(file: String = "/commons/sparql/index.properties"): Map[String, String] = {
     val props = new Properties()
     props.load(getClass.getResourceAsStream(file))
     props.asScala.toMap

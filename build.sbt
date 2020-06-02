@@ -23,6 +23,7 @@ val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaVersion                     = "2.6.5"
 val asmVersion                      = "7.3.1"
 val byteBuddyAgentVersion           = "1.10.10"
+val blazegraphVersion               = "2.1.5"
 val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.1.1"
@@ -33,6 +34,8 @@ val doobieVersion                   = "0.9.0"
 val elasticSearchVersion            = "7.5.1"
 val fs2Version                      = "2.3.0"
 val http4sVersion                   = "0.21.4"
+val jacksonVersion                  = "2.10.2"
+val jacksonBindVersion              = "2.10.2"
 val jenaVersion                     = "3.15.0"
 val kamonVersion                    = "2.1.0"
 val kanelaAgentVersion              = "1.0.5"
@@ -67,6 +70,7 @@ lazy val akkaSlf4j                = "com.typesafe.akka"                 %% "akka
 lazy val akkaTestKit              = "com.typesafe.akka"                 %% "akka-testkit"                        % akkaVersion
 lazy val alleycatsCore            = "org.typelevel"                     %% "alleycats-core"                      % catsVersion
 lazy val asm                      = "org.ow2.asm"                       % "asm"                                  % asmVersion
+lazy val blazegraph               = "com.blazegraph"                    % "blazegraph-jar"                       % blazegraphVersion
 lazy val byteBuddyAgent           = "net.bytebuddy"                     % "byte-buddy-agent"                     % byteBuddyAgentVersion
 lazy val catsCore                 = "org.typelevel"                     %% "cats-core"                           % catsVersion
 lazy val catsEffect               = "org.typelevel"                     %% "cats-effect"                         % catsEffectVersion
@@ -91,6 +95,9 @@ lazy val fs2                      = "co.fs2"                            %% "fs2-
 lazy val http4sCirce              = "org.http4s"                        %% "http4s-circe"                        % http4sVersion
 lazy val http4sClient             = "org.http4s"                        %% "http4s-blaze-client"                 % http4sVersion
 lazy val http4sDsl                = "org.http4s"                        %% "http4s-dsl"                          % http4sVersion
+lazy val jacksonAnnotations       = "com.fasterxml.jackson.core"        % "jackson-annotations"                  % jacksonVersion
+lazy val jacksonCore              = "com.fasterxml.jackson.core"        % "jackson-core"                         % jacksonVersion
+lazy val jacksonDatabind          = "com.fasterxml.jackson.core"        % "jackson-databind"                     % jacksonBindVersion
 lazy val jenaArq                  = "org.apache.jena"                   % "jena-arq"                             % jenaVersion
 lazy val kanelaAgent              = "io.kamon"                          % "kanela-agent"                         % kanelaAgentVersion
 lazy val kindProjector            = "org.typelevel"                     %% "kind-projector"                      % kindProjectorVersion
@@ -273,21 +280,25 @@ lazy val service = project
       parboiled2,
       splitBrainLithium,
       topBraidShacl,
-      akkaSlf4j         % Test,
-      akkaTestKit       % Test,
-      akkaHttpTestKit   % Test,
-      asm               % Test,
-      circeLiteral      % Test,
-      esCore            % Test,
-      esPainless        % Test,
-      esReindex         % Test,
-      esRestClient      % Test,
-      esTransportClient % Test,
-      logback           % Test,
-      log4jCore         % Test,
-      log4jApi          % Test,
-      mockito           % Test,
-      scalaTest         % Test
+      akkaSlf4j          % Test,
+      akkaTestKit        % Test,
+      akkaHttpTestKit    % Test,
+      asm                % Test,
+      blazegraph         % Test,
+      circeLiteral       % Test,
+      esCore             % Test,
+      esPainless         % Test,
+      esReindex          % Test,
+      esRestClient       % Test,
+      esTransportClient  % Test,
+      jacksonAnnotations % Test,
+      jacksonCore        % Test,
+      jacksonDatabind    % Test,
+      logback            % Test,
+      log4jCore          % Test,
+      log4jApi           % Test,
+      mockito            % Test,
+      scalaTest          % Test
     ),
     sourceDirectory in Jmh     := (sourceDirectory in Test).value,
     classDirectory in Jmh      := (classDirectory in Test).value,

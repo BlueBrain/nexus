@@ -3,9 +3,7 @@ package ch.epfl.bluebrain.nexus.commons.sparql.client
 import java.io.File
 import java.util.regex.Pattern.quote
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
-import akka.testkit.TestKit
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -13,16 +11,16 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClientFixture._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlFailure.{SparqlClientError, SparqlServerError}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlResults._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlWriteQuery._
-import ch.epfl.bluebrain.nexus.commons.test.Resources._
-import ch.epfl.bluebrain.nexus.commons.test.io.IOValues
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues, Randomness}
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Node.IriOrBNode
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
-import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.rdf.syntax.all._
+import ch.epfl.bluebrain.nexus.rdf.jsonld.syntax._
+import ch.epfl.bluebrain.nexus.rdf.jena.syntax.all._
 import ch.epfl.bluebrain.nexus.rdf.jena.Jena
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, CirceEq, EitherValues, IOValues, Randomness, Resources}
 import com.bigdata.rdf.sail.webapp.NanoSparqlServer
 import io.circe.{Json, Printer}
 import io.circe.parser._
@@ -39,13 +37,14 @@ import scala.util.Try
 
 //noinspection TypeAnnotation
 class BlazegraphClientSpec
-    extends TestKit(ActorSystem("BlazegraphClientSpec"))
+    extends ActorSystemFixture("BlazegraphClientSpec")
     with AnyWordSpecLike
     with Matchers
     with IOValues
     with EitherValues
     with BeforeAndAfterAll
     with Randomness
+    with Resources
     with OptionValues
     with CirceEq
     with Eventually {
@@ -68,7 +67,6 @@ class BlazegraphClientSpec
   }
 
   override protected def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
     server.stop()
     super.afterAll()
   }
@@ -99,7 +97,7 @@ class BlazegraphClientSpec
 
     "create index with wrong payload" in new BlazegraphClientFixture {
       val cl = client(namespace)
-      cl.createNamespace(properties("/wrong.properties")).failed[SparqlServerError]
+      cl.createNamespace(properties("/commons/sparql/wrong.properties")).failed[SparqlServerError]
     }
 
     "delete an index" in new BlazegraphClientFixture {
@@ -158,7 +156,7 @@ class BlazegraphClientSpec
       cl.createNamespace(properties()).ioValue
       cl.replace(graph, load(id, label, value)).ioValue
       val expected = jsonContentOf(
-        "/sparql-json.json",
+        "/commons/sparql/sparql-json.json",
         Map(quote("{id}") -> id, quote("{label}") -> label, quote("{value}") -> value)
       )
       val result = cl.queryRaw(s"SELECT * WHERE { GRAPH <$graph> { ?s ?p ?o } }").ioValue.asJson
@@ -261,7 +259,7 @@ class BlazegraphClientSpec
   }
 
   private def load(id: String, label: String, value: String): Graph =
-    jsonContentOf("/ld.json", Map(quote("{{ID}}") -> id, quote("{{LABEL}}") -> label, quote("{{VALUE}}") -> value))
+    jsonContentOf("/commons/sparql/ld.json", Map(quote("{{ID}}") -> id, quote("{{LABEL}}") -> label, quote("{{VALUE}}") -> value))
       .asRdfGraph(url"http://localhost/$id")
       .rightValue
 
