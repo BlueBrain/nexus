@@ -260,8 +260,7 @@ class BlazegraphClientSpec
     jsonContentOf(
       "/commons/sparql/ld.json",
       Map(quote("{{ID}}") -> id, quote("{{LABEL}}") -> label, quote("{{VALUE}}") -> value)
-    ).asRdfGraph(url"http://localhost/$id")
-      .rightValue
+    ).asRdfGraph(url"http://localhost/$id").rightValue
 
   implicit private class AsGraph(json: Json) {
     def asRdfGraph(root: IriOrBNode): Either[String, Graph] =
