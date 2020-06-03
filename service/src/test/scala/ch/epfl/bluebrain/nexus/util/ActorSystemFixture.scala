@@ -16,7 +16,7 @@ class ActorSystemFixture(name: String, startCluster: Boolean = false, configs: V
     extends TestKit(
       ActorSystem(
         name,
-        (configs :+ ConfigFactory.load("service-test.conf"))
+        (configs :+ ConfigFactory.load("test.conf"))
           .foldLeft(ConfigFactory.empty()) { case (c, e) => c withFallback e }
           .resolve()
       )

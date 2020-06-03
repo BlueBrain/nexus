@@ -1,0 +1,16 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/iam.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "http://example.com/id",
+  "@type": [
+    "AccessControlList",
+    "Realm"
+  ],
+  "_rev": 1,
+  "_createdAt": "1970-01-01T01:00:00Z",
+  "_createdBy": "http://nexus.example.com/v1/realms/myrealm/users/mysubject",
+  "_updatedAt": "1970-01-01T01:00:00Z",
+  "_updatedBy": "http://nexus.example.com/v1/realms/myrealm/users/mysubject2"
+}

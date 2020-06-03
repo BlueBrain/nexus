@@ -1,0 +1,5 @@
+{
+  "name": "The Realm",
+  "openIdConfig": "http://localhost:8080/realm",
+  "logo": "http://localhost:8080/realm/logo"
+}

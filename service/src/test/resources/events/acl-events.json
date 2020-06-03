@@ -1,0 +1,118 @@
+[
+  {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/iam.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "_path": "/myorg/myproj",
+    "_rev": 1,
+    "acl": [
+      {
+        "identity": {
+          "@id": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+          "@type": "User",
+          "realm": "myrealm",
+          "subject": "uuid"
+        },
+        "permissions": [
+          "acls/write"
+        ]
+      },
+      {
+        "identity": {
+          "@id": "http://127.0.0.1:8080/v1/realms/myrealm/groups/mygroup",
+          "@type": "Group",
+          "realm": "myrealm",
+          "group": "mygroup"
+        },
+        "permissions": [
+          "acls/write"
+        ]
+      }
+    ],
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+    "@type": "AclReplaced"
+  },
+  {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/iam.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "_path": "/myorg/myproj",
+    "_rev": 1,
+    "acl": [
+      {
+        "identity": {
+          "@id": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+          "@type": "User",
+          "realm": "myrealm",
+          "subject": "uuid"
+        },
+        "permissions": [
+          "acls/write"
+        ]
+      },
+      {
+        "identity": {
+          "@id": "http://127.0.0.1:8080/v1/realms/myrealm/groups/mygroup",
+          "@type": "Group",
+          "realm": "myrealm",
+          "group": "mygroup"
+        },
+        "permissions": [
+          "acls/write"
+        ]
+      }
+    ],
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+    "@type": "AclAppended"
+  },
+  {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/iam.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "_path": "/myorg/myproj",
+    "_rev": 1,
+    "acl": [
+      {
+        "identity": {
+          "@id": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+          "@type": "User",
+          "realm": "myrealm",
+          "subject": "uuid"
+        },
+        "permissions": [
+          "acls/write"
+        ]
+      },
+      {
+        "identity": {
+          "@id": "http://127.0.0.1:8080/v1/realms/myrealm/groups/mygroup",
+          "@type": "Group",
+          "realm": "myrealm",
+          "group": "mygroup"
+        },
+        "permissions": [
+          "acls/write"
+        ]
+      }
+    ],
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+    "@type": "AclSubtracted"
+  },
+  {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/iam.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "_path": "/myorg/myproj",
+    "_rev": 1,
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+    "@type": "AclDeleted"
+  }
+]
