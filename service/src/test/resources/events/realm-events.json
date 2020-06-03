@@ -1,0 +1,82 @@
+[
+  {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/iam.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "@id": "http://127.0.0.1:8080/v1/realms/myrealm",
+    "name": "The Realm",
+    "openIdConfig": "http://localhost:8080/myrealm",
+    "logo": "http://localhost:8080/myrealm/logo",
+    "_label": "myrealm",
+    "_issuer": "issuer",
+    "_grantTypes": [
+      "implicit"
+    ],
+    "_authorizationEndpoint": "https://localhost/auth",
+    "_tokenEndpoint": "https://localhost/auth/token",
+    "_userInfoEndpoint": "https://localhost/auth/userinfo",
+    "_revocationEndpoint": "https://localhost/auth/revoke",
+    "_endSessionEndpoint": "https://localhost/auth/logout",
+    "_keys": [
+      {
+        "kid": "AlALVuZlTj0NoBS4T1HOolEPeCmH0QnmqtXBtoqIxyc",
+        "kty": "RSA",
+        "alg": "RS256",
+        "use": "sig",
+        "n": "hqdh70sbz5WcdqJm8RiLGR0rhybItynHbbS9lB7kG1WJohqxnKxBZeH-mGUDCKKNsZYTX7eH3tN5UnwahnYNN1NaMabI2w3x4Sazc7nyYaEWHClvnv5p8SY_esVWXLbcMOrzvEzlTASZxgzrjbmHJDtarZikYNqDdXYk6U_xeZHnTnzOCT3wk4c0RhYrCCEjrXADu5jCZrjxj6nvF3WMLGJGMdifL6IhOxphtXyeG0OxwV4RavHfnknjvl6cgcLm82zwugnjCjD8P_gK7hkpBYk5EIfY4j8T2zjWnnGUQawYHr4L3hOm7o6WfxmhipaVDyOVAohJLZPCDiPP6qHFJw",
+        "e": "AQAB"
+      }
+    ],
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+    "_rev": 1,
+    "@type": "RealmCreated"
+  },
+  {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/iam.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "@id": "http://127.0.0.1:8080/v1/realms/myrealm",
+    "name": "The Realm",
+    "openIdConfig": "http://localhost:8080/myrealm",
+    "logo": "http://localhost:8080/myrealm/logo",
+    "_label": "myrealm",
+    "_issuer": "issuer",
+    "_grantTypes": [
+      "implicit"
+    ],
+    "_authorizationEndpoint": "https://localhost/auth",
+    "_tokenEndpoint": "https://localhost/auth/token",
+    "_userInfoEndpoint": "https://localhost/auth/userinfo",
+    "_revocationEndpoint": "https://localhost/auth/revoke",
+    "_endSessionEndpoint": "https://localhost/auth/logout",
+    "_keys": [
+      {
+        "kid": "AlALVuZlTj0NoBS4T1HOolEPeCmH0QnmqtXBtoqIxyc",
+        "kty": "RSA",
+        "alg": "RS256",
+        "use": "sig",
+        "n": "hqdh70sbz5WcdqJm8RiLGR0rhybItynHbbS9lB7kG1WJohqxnKxBZeH-mGUDCKKNsZYTX7eH3tN5UnwahnYNN1NaMabI2w3x4Sazc7nyYaEWHClvnv5p8SY_esVWXLbcMOrzvEzlTASZxgzrjbmHJDtarZikYNqDdXYk6U_xeZHnTnzOCT3wk4c0RhYrCCEjrXADu5jCZrjxj6nvF3WMLGJGMdifL6IhOxphtXyeG0OxwV4RavHfnknjvl6cgcLm82zwugnjCjD8P_gK7hkpBYk5EIfY4j8T2zjWnnGUQawYHr4L3hOm7o6WfxmhipaVDyOVAohJLZPCDiPP6qHFJw",
+        "e": "AQAB"
+      }
+    ],
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+    "_rev": 1,
+    "@type": "RealmUpdated"
+  },
+  {
+    "@context": [
+      "https://bluebrain.github.io/nexus/contexts/iam.json",
+      "https://bluebrain.github.io/nexus/contexts/resource.json"
+    ],
+    "@id": "http://127.0.0.1:8080/v1/realms/myrealm",
+    "_label": "myrealm",
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid",
+    "_rev": 1,
+    "@type": "RealmDeprecated"
+  }
+]
