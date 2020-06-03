@@ -1,0 +1,12 @@
+{
+  "@type": "ProjectDeprecated",
+  "id": "27f5429c-b56f-4f8e-8481-f4334ebb334c",
+  "rev": 42,
+  "instant": "2018-12-21T15:37:44.203831Z",
+  "subject": {
+    "@id": "http://localhost:8080/v1/realms/bbp/users/alice",
+    "@type": "User",
+    "realm": "bbp",
+    "subject": "alice"
+  }
+}

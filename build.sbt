@@ -34,6 +34,7 @@ val doobieVersion                   = "0.9.0"
 val elasticSearchVersion            = "7.5.1"
 val fs2Version                      = "2.3.0"
 val http4sVersion                   = "0.21.4"
+val iamVersion                      = "1.3.0"
 val jacksonVersion                  = "2.10.2"
 val jacksonBindVersion              = "2.10.2"
 val jenaVersion                     = "3.15.0"
@@ -95,6 +96,7 @@ lazy val fs2                      = "co.fs2"                            %% "fs2-
 lazy val http4sCirce              = "org.http4s"                        %% "http4s-circe"                        % http4sVersion
 lazy val http4sClient             = "org.http4s"                        %% "http4s-blaze-client"                 % http4sVersion
 lazy val http4sDsl                = "org.http4s"                        %% "http4s-dsl"                          % http4sVersion
+lazy val iamClient                = "ch.epfl.bluebrain.nexus"           %% "iam-client"                          % iamVersion
 lazy val jacksonAnnotations       = "com.fasterxml.jackson.core"        % "jackson-annotations"                  % jacksonVersion
 lazy val jacksonCore              = "com.fasterxml.jackson.core"        % "jackson-core"                         % jacksonVersion
 lazy val jacksonDatabind          = "com.fasterxml.jackson.core"        % "jackson-databind"                     % jacksonBindVersion
@@ -267,12 +269,14 @@ lazy val service = project
       akkaHttpCirce,
       akkaHttpCors,
       akkaPersistence,
+      akkaPersistenceCassandra,
       akkaPersistenceQuery,
       akkaSlf4j,
       alleycatsCore,
       catsCore,
       catsEffectRetry,
       catsEffect,
+      iamClient,
       jenaArq,
       kryo,
       logback,
