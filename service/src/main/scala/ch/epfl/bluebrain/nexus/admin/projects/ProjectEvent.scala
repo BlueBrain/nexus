@@ -117,7 +117,7 @@ object ProjectEvent {
 
   object JsonLd {
     @silent // implicits are not recognized as being used
-    final implicit def projectEventEncoder(implicit ic: IamClientConfig): Encoder[ProjectEvent] = {
+    implicit final def projectEventEncoder(implicit ic: IamClientConfig): Encoder[ProjectEvent] = {
       implicit val config: Configuration = Configuration.default
         .withDiscriminator("@type")
         .copy(transformMemberNames = {

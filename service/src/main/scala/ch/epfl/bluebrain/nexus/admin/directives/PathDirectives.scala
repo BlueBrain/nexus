@@ -19,12 +19,11 @@ object PathDirectives {
   def org(implicit cache: OrganizationCache[Task], s: Scheduler): Directive1[String] =
     pathPrefix(Segment).flatMap { segment =>
       Try(UUID.fromString(segment))
-        .map(
-          uuid =>
-            onSuccess(cache.get(uuid).runToFuture).map {
-              case Some(resource) => resource.value.label
-              case None           => segment
-            }
+        .map(uuid =>
+          onSuccess(cache.get(uuid).runToFuture).map {
+            case Some(resource) => resource.value.label
+            case None           => segment
+          }
         )
         .getOrElse(provide(segment))
     }

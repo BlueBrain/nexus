@@ -40,14 +40,14 @@ class ProjectsSpec
     with IOEitherValues
     with IOOptionValues {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
-  private implicit val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
-  private implicit val timer: Timer[IO]                = IO.timer(system.dispatcher)
-  private implicit val iamCredentials                  = Some(AuthToken("token"))
+  implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
+  implicit private val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
+  implicit private val timer: Timer[IO]                = IO.timer(system.dispatcher)
+  implicit private val iamCredentials                  = Some(AuthToken("token"))
 
   private val instant               = Instant.now
-  private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
-  private implicit val appConfig = Settings(system).appConfig.copy(
+  implicit private val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
+  implicit private val appConfig = Settings(system).appConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
     iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second)
   )
@@ -60,7 +60,7 @@ class ProjectsSpec
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
-  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  implicit private val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
   private val projects             = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
 
   override protected def beforeEach(): Unit =

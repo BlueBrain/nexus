@@ -29,8 +29,8 @@ class PathDirectivesSpec
     with EitherValues
     with IdiomaticMockito {
 
-  private implicit val orgCache: OrganizationCache[Task] = mock[OrganizationCache[Task]]
-  private implicit val projCache: ProjectCache[Task]     = mock[ProjectCache[Task]]
+  implicit private val orgCache: OrganizationCache[Task] = mock[OrganizationCache[Task]]
+  implicit private val projCache: ProjectCache[Task]     = mock[ProjectCache[Task]]
 
   private def genIri: AbsoluteIri = url"http://nexus.example.com/${UUID.randomUUID()}"
 
@@ -45,9 +45,7 @@ class PathDirectivesSpec
     "handing organization segment" should {
       def routes: Route = {
         import monix.execution.Scheduler.Implicits.global
-        (get & org) { label =>
-          complete(label)
-        }
+        (get & org) { label => complete(label) }
       }
 
       "return the label" in {

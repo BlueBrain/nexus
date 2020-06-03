@@ -35,7 +35,7 @@ class AuthDirectivesSpec
   private val directives = new AuthDirectives(iamClient)(global) {}
 
   private val appConfig: AppConfig      = Settings(system).appConfig
-  private implicit val http: HttpConfig = appConfig.http
+  implicit private val http: HttpConfig = appConfig.http
 
   private val token   = Some(AuthToken("token"))
   private val cred    = OAuth2BearerToken("token")

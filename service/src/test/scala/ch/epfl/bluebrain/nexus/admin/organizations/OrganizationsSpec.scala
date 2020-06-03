@@ -41,26 +41,26 @@ class OrganizationsSpec
     with ArgumentMatchersSugar
     with BeforeAndAfter {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
+  implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
 
-  private implicit val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  private implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  private implicit val timer: Timer[IO]      = IO.timer(system.dispatcher)
+  implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
+  implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit private val timer: Timer[IO]      = IO.timer(system.dispatcher)
 
-  private implicit val caller: Subject = Caller.anonymous.subject
+  implicit private val caller: Subject = Caller.anonymous.subject
   private val instant                  = clock.instant()
-  private implicit val appConfig = Settings(system).appConfig.copy(
+  implicit private val appConfig = Settings(system).appConfig.copy(
     http = HttpConfig("some", 8080, "v1", "http://nexus.example.com"),
     iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second)
   )
-  private implicit val iamCredentials = Some(AuthToken("token"))
+  implicit private val iamCredentials = Some(AuthToken("token"))
 
   private val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
 
   private val index     = OrganizationCache[IO]
   private val iamClient = mock[IamClient[IO]]
 
-  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  implicit private val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
 
   private val orgs = aggF.map(new Organizations(_, index, iamClient)).unsafeRunSync()
 

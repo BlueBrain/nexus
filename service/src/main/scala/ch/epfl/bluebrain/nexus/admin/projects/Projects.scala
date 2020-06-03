@@ -62,7 +62,7 @@ class Projects[F[_]: Timer](
     ownerPermissions: Set[Permission]
 ) {
 
-  private implicit val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
+  implicit private val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
 
   private def invalidIriGeneration(organization: String, label: String, param: String): String =
     s"the value of the project's '$param' could not be generated properly from the provided project '$organization/$label'"
@@ -250,9 +250,7 @@ class Projects[F[_]: Timer](
       .evaluateS(command.id.toString, command)
       .flatMap {
         case Right(c: Current) =>
-          toResource(c).flatMap { resource =>
-            index.replace(c.id, resource) >> F.pure(Right(resource.discard))
-          }
+          toResource(c).flatMap { resource => index.replace(c.id, resource) >> F.pure(Right(resource.discard)) }
         case Left(rejection) => F.pure(Left(rejection))
         case Right(Initial)  => F.raiseError(UnexpectedState(command.id.toString))
       }

@@ -102,7 +102,7 @@ object OrganizationEvent {
   object JsonLd {
 
     @silent
-    private implicit val config: Configuration = Configuration.default
+    implicit private val config: Configuration = Configuration.default
       .withDiscriminator("@type")
       .copy(transformMemberNames = {
         case nxv.`@id`.name   => nxv.uuid.prefix
@@ -114,11 +114,11 @@ object OrganizationEvent {
       })
 
     @silent
-    private implicit def subjectIdEncoder(implicit ic: IamClientConfig): Encoder[Subject] =
+    implicit private def subjectIdEncoder(implicit ic: IamClientConfig): Encoder[Subject] =
       Encoder.encodeJson.contramap(_.id.asJson)
 
     @silent
-    final implicit def orgEventEncoder(implicit ic: IamClientConfig): Encoder[OrganizationEvent] =
+    implicit final def orgEventEncoder(implicit ic: IamClientConfig): Encoder[OrganizationEvent] =
       Encoder.encodeJson.contramap[OrganizationEvent] { ev =>
         deriveConfiguredEncoder[OrganizationEvent]
           .mapJson { json =>

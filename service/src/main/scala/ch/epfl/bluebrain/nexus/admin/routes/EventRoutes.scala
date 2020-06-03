@@ -65,9 +65,7 @@ class EventRoutes(
     (get & pathPrefix(pm) & pathEndOrSingleSlash) {
       extractToken { implicit token =>
         authorizeOn(Path./, permission).apply {
-          lastEventId { offset =>
-            complete(source(tag, offset, toSse))
-          }
+          lastEventId { offset => complete(source(tag, offset, toSse)) }
         }
       }
     }

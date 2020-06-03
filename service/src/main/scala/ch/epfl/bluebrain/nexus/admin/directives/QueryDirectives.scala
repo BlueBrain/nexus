@@ -51,7 +51,7 @@ trait QueryDirectives {
         SearchParams(None, None, deprecated, rev, createdBy, updatedBy, types.toSet)
     }
 
-  private implicit def iriFromStringUnmarshaller: Unmarshaller[String, AbsoluteIri] =
+  implicit private def iriFromStringUnmarshaller: Unmarshaller[String, AbsoluteIri] =
     Unmarshaller.strict[String, AbsoluteIri] { string =>
       Iri.url(string) match {
         case Right(iri) => iri

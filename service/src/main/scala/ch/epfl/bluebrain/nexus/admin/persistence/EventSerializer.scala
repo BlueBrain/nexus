@@ -17,14 +17,14 @@ import shapeless.{:+:, CNil}
 @silent // implicits are not recognized as being used
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
-  private implicit val iamClientConfig: IamClientConfig = Settings(system).appConfig.iam
+  implicit private val iamClientConfig: IamClientConfig = Settings(system).appConfig.iam
 
-  private implicit val config: Configuration = Configuration.default.withDiscriminator("@type")
+  implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")
 
-  private implicit val projectEventDecoder: Decoder[ProjectEvent]           = deriveConfiguredDecoder[ProjectEvent]
-  private implicit val projectEventEncoder: Encoder[ProjectEvent]           = deriveConfiguredEncoder[ProjectEvent]
-  private implicit val organizationEventDecoder: Decoder[OrganizationEvent] = deriveConfiguredDecoder[OrganizationEvent]
-  private implicit val organizationEventEncoder: Encoder[OrganizationEvent] = deriveConfiguredEncoder[OrganizationEvent]
+  implicit private val projectEventDecoder: Decoder[ProjectEvent]           = deriveConfiguredDecoder[ProjectEvent]
+  implicit private val projectEventEncoder: Encoder[ProjectEvent]           = deriveConfiguredEncoder[ProjectEvent]
+  implicit private val organizationEventDecoder: Decoder[OrganizationEvent] = deriveConfiguredDecoder[OrganizationEvent]
+  implicit private val organizationEventEncoder: Encoder[OrganizationEvent] = deriveConfiguredEncoder[OrganizationEvent]
 
   private val serializer = new AkkaCoproductSerializer[OrganizationEvent :+: ProjectEvent :+: CNil](1129)
 

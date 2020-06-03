@@ -34,11 +34,11 @@ class OrganizationCacheSpec
     with IOOptionValues {
 
   private val instant                   = Instant.now()
-  private implicit val timer: Timer[IO] = IO.timer(system.dispatcher)
-  private implicit val subject          = Caller.anonymous.subject
-  private implicit val appConfig        = Settings(system).appConfig
+  implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
+  implicit private val subject          = Caller.anonymous.subject
+  implicit private val appConfig        = Settings(system).appConfig
   implicit val iamClientConfig          = appConfig.iam
-  private implicit val keyStoreConfig   = appConfig.keyValueStore
+  implicit private val keyStoreConfig   = appConfig.keyValueStore
 
   val index        = OrganizationCache[IO]
   val organization = Organization(genString(), Some(genString()))
@@ -55,7 +55,7 @@ class OrganizationCacheSpec
     organization
   )
 
-  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
 
   "An organization cache" should {
 

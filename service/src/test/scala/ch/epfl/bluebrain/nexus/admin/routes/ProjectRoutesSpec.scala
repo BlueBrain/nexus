@@ -58,8 +58,8 @@ class ProjectRoutesSpec
   private val projects  = mock[Projects[Task]]
 
   private val appConfig: AppConfig            = Settings(system).appConfig
-  private implicit val httpConfig: HttpConfig = appConfig.http
-  private implicit val iamClientConfig = IamClientConfig(
+  implicit private val httpConfig: HttpConfig = appConfig.http
+  implicit private val iamClientConfig = IamClientConfig(
     url"https://nexus.example.com",
     url"http://localhost:8080",
     "v1"

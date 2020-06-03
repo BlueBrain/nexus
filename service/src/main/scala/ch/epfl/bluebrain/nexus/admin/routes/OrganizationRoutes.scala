@@ -104,9 +104,9 @@ object OrganizationRoutes {
     *
     * @param description an optional description
     */
-  private[routes] final case class OrganizationDescription(description: Option[String])
+  final private[routes] case class OrganizationDescription(description: Option[String])
 
-  private[routes] implicit val descriptionDecoder: Decoder[OrganizationDescription] =
+  implicit private[routes] val descriptionDecoder: Decoder[OrganizationDescription] =
     deriveDecoder[OrganizationDescription]
 
   def apply(organizations: Organizations[Task])(

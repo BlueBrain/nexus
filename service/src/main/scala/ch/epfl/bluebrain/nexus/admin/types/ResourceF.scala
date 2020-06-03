@@ -106,9 +106,7 @@ object ResourceF {
     }
 
   implicit def resourceEncoder[A: Encoder](implicit iamClientConfig: IamClientConfig): Encoder[ResourceF[A]] =
-    Encoder.encodeJson.contramap { resource =>
-      resource.discard.asJson.deepMerge(resource.value.asJson)
-    }
+    Encoder.encodeJson.contramap { resource => resource.discard.asJson.deepMerge(resource.value.asJson) }
 
   implicit def uqrsEncoder[A: Encoder](
       implicit iamClientConfig: IamClientConfig
@@ -123,11 +121,9 @@ object ResourceF {
     }
   }
 
-  implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) =>
-    value.rev
-  }
+  implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) => value.rev }
 
-  private implicit class AbsoluteIriSyntax(private val iri: AbsoluteIri) extends AnyVal {
+  implicit private class AbsoluteIriSyntax(private val iri: AbsoluteIri) extends AnyVal {
     def lastSegment: Option[String] =
       iri.path.head match {
         case segment: String => Some(segment)

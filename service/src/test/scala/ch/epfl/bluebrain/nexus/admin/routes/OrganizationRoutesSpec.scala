@@ -55,8 +55,8 @@ class OrganizationRoutesSpec
   private val organizations     = mock[Organizations[Task]]
 
   private val appConfig: AppConfig            = Settings(system).appConfig
-  private implicit val httpConfig: HttpConfig = appConfig.http
-  private implicit val iamClientConfig: IamClientConfig = IamClientConfig(
+  implicit private val httpConfig: HttpConfig = appConfig.http
+  implicit private val iamClientConfig: IamClientConfig = IamClientConfig(
     url"https://nexus.example.com",
     url"http://localhost:8080",
     "v1"

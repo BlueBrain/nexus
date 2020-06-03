@@ -33,7 +33,7 @@ class QueryDirectivesSpec
   private def genIri: AbsoluteIri              = url"http://nexus.example.com/${UUID.randomUUID()}"
   private def encode(url: AbsoluteIri): String = URLEncoder.encode(url.asString, "UTF-8")
   private val appConfig: AppConfig             = Settings(system).appConfig
-  private implicit val http: HttpConfig        = appConfig.http
+  implicit private val http: HttpConfig        = appConfig.http
 
   private def routes(inner: Route): Route =
     Routes.wrap(inner)
@@ -75,9 +75,7 @@ class QueryDirectivesSpec
       val type2     = genIri
       def projectParams =
         Routes.wrap(
-          (get & QueryDirectives.searchParamsProjects) { params =>
-            complete(StatusCodes.OK -> params)
-          }
+          (get & QueryDirectives.searchParamsProjects) { params => complete(StatusCodes.OK -> params) }
         )
 
       Get("/") ~> routes(projectParams) ~> check {

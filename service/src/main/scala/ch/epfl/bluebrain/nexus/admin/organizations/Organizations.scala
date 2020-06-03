@@ -51,7 +51,7 @@ class Organizations[F[_]: Timer](agg: Agg[F], private val index: OrganizationCac
     ownerPermissions: Set[Permission]
 ) {
 
-  private implicit val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
+  implicit private val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
 
   /**
     * Create an organization.

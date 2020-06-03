@@ -46,15 +46,14 @@ object instances extends FailFastCirceSupport {
     *
     * @return marshaller for JSON-LD value
     */
-  final implicit def jsonLd(
+  implicit final def jsonLd(
       implicit printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       keys: OrderedKeys = orderedKeys
   ): ToEntityMarshaller[Json] = {
-    val marshallers = Seq(`application/ld+json`, `application/json`).map(
-      contentType =>
-        Marshaller.withFixedContentType[Json, MessageEntity](contentType) { json =>
-          HttpEntity(`application/ld+json`, printer.print(json.sortKeys))
-        }
+    val marshallers = Seq(`application/ld+json`, `application/json`).map(contentType =>
+      Marshaller.withFixedContentType[Json, MessageEntity](contentType) { json =>
+        HttpEntity(`application/ld+json`, printer.print(json.sortKeys))
+      }
     )
     Marshaller.oneOf(marshallers: _*)
   }
@@ -65,7 +64,7 @@ object instances extends FailFastCirceSupport {
     * @tparam A type to encode
     * @return marshaller for any `A` value
     */
-  final implicit def httpEntity[A](
+  implicit final def httpEntity[A](
       implicit encoder: Encoder[A],
       printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       keys: OrderedKeys = orderedKeys

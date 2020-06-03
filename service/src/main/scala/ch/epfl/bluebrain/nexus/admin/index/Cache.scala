@@ -30,7 +30,7 @@ abstract class Cache[F[_]: Monad, V](val store: KeyValueStore[F, UUID, ResourceF
 
 object Cache {
 
-  private[index] final implicit class AclsSyntax(private val acls: AccessControlLists) extends AnyVal {
+  implicit final private[index] class AclsSyntax(private val acls: AccessControlLists) extends AnyVal {
 
     /**
       * Checks if on the list of ACLs there are some which contains the provided ''permission'' on either the /

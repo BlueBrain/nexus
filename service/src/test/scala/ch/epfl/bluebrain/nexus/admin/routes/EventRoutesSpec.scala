@@ -50,16 +50,16 @@ class EventRoutesSpec
     with Inspectors
     with IdiomaticMockito {
 
-  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.second, 100.milliseconds)
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 100.milliseconds)
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
   private val appConfig     = Settings(system).appConfig
-  private implicit val http = appConfig.http
-  private implicit val pc   = appConfig.persistence
-  private implicit val ic   = appConfig.iam
+  implicit private val http = appConfig.http
+  implicit private val pc   = appConfig.persistence
+  implicit private val ic   = appConfig.iam
 
-  private implicit val client = mock[IamClient[Task]]
+  implicit private val client = mock[IamClient[Task]]
 
   before {
     Mockito.reset(client)

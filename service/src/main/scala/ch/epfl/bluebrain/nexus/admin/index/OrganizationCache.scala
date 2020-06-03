@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
 class OrganizationCache[F[_]: Monad](store: KeyValueStore[F, UUID, OrganizationResource])
     extends Cache[F, Organization](store) {
 
-  private implicit val ordering: Ordering[OrganizationResource] = Ordering.by { org: OrganizationResource =>
+  implicit private val ordering: Ordering[OrganizationResource] = Ordering.by { org: OrganizationResource =>
     org.value.label
   }
 
