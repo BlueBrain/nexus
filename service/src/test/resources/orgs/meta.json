@@ -1,0 +1,15 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "http://nexus.example.com/v1/orgs/org",
+  "@type": "Organization",
+  "_uuid": "{uuid}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "{instant}",
+  "_createdBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+  "_updatedAt": "{instant}",
+  "_updatedBy": "https://nexus.example.com/v1/realms/alice/users/realm"
+}

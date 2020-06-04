@@ -1,0 +1,91 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "@id": "http://nexus.example.com/v1/projects/org/label1",
+      "@type": "Project",
+      "description": "Project description",
+      "base": "https://nexus.example.com/base",
+      "vocab": "https://nexus.example.com/voc",
+      "apiMappings": [
+        {
+          "prefix": "nxv",
+          "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+        },
+        {
+          "prefix": "rdf",
+          "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        }
+      ],
+      "_uuid": "{uuid}",
+      "_label": "label1",
+      "_organizationUuid": "{orgUuid}",
+      "_organizationLabel": "org",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdAt": "{instant}",
+      "_createdBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_updatedAt": "{instant}",
+      "_updatedBy": "https://nexus.example.com/v1/realms/alice/users/realm"
+    },
+    {
+      "@id": "http://nexus.example.com/v1/projects/org/label2",
+      "@type": "Project",
+      "description": "Project description",
+      "base": "https://nexus.example.com/base",
+      "vocab": "https://nexus.example.com/voc",
+      "apiMappings": [
+        {
+          "prefix": "nxv",
+          "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+        },
+        {
+          "prefix": "rdf",
+          "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        }
+      ],
+      "_uuid": "{uuid}",
+      "_label": "label2",
+      "_organizationUuid": "{orgUuid}",
+      "_organizationLabel": "org",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdAt": "{instant}",
+      "_createdBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_updatedAt": "{instant}",
+      "_updatedBy": "https://nexus.example.com/v1/realms/alice/users/realm"
+    },
+    {
+      "@id": "http://nexus.example.com/v1/projects/org/label3",
+      "@type": "Project",
+      "description": "Project description",
+      "base": "https://nexus.example.com/base",
+      "vocab": "https://nexus.example.com/voc",
+      "apiMappings": [
+        {
+          "prefix": "nxv",
+          "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+        },
+        {
+          "prefix": "rdf",
+          "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        }
+      ],
+      "_uuid": "{uuid}",
+      "_label": "label3",
+      "_organizationUuid": "{orgUuid}",
+      "_organizationLabel": "org",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdAt": "{instant}",
+      "_createdBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_updatedAt": "{instant}",
+      "_updatedBy": "https://nexus.example.com/v1/realms/alice/users/realm"
+    }
+  ]
+}

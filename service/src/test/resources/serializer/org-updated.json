@@ -1,0 +1,14 @@
+{
+  "@type": "OrganizationUpdated",
+  "id": "d8cf3015-1bce-4dda-ba80-80cd4b5281e5",
+  "label": "myorg",
+  "description": "My organization",
+  "rev": 42,
+  "instant": "2018-12-21T15:37:44.203831Z",
+  "subject": {
+    "@id": "http://localhost:8080/v1/realms/bbp/users/alice",
+    "@type": "User",
+    "realm": "bbp",
+    "subject": "alice"
+  }
+}
