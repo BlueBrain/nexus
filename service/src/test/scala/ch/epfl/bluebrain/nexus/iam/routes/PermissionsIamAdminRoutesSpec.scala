@@ -27,7 +27,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation,RedundantDefaultArgument
-class PermissionsRoutesSpec
+class PermissionsIamAdminRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -75,7 +75,7 @@ class PermissionsRoutesSpec
     jsonContentOf("/permissions/missing-rev.json")
 
   "A PermissionsRoute" should {
-    val routes = Routes.wrap(new PermissionsRoutes(perms, realms).routes)
+    val routes = IamRoutes.wrap(new PermissionsRoutes(perms, realms).routes)
     "return the default minimum permissions" in {
       perms.fetch(any[Caller]) shouldReturn Task.pure(resource(0L, appConfig.permissions.minimum))
       Get("/permissions") ~> routes ~> check {

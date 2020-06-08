@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.{HttpConfig, Persistence
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
-import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
+import ch.epfl.bluebrain.nexus.admin.routes.EventIamAdminRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -37,7 +37,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
-class EventRoutesSpec
+class EventIamAdminRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -224,7 +224,7 @@ class EventRoutesSpec
 
 }
 
-object EventRoutesSpec {
+object EventIamAdminRoutesSpec {
 
   //noinspection TypeAnnotation
   class TestableEventRoutes(
@@ -232,7 +232,7 @@ object EventRoutesSpec {
   )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig, ic: IamClientConfig, cl: IamClient[Task])
       extends EventRoutes() {
 
-    override def routes: Route = Routes.wrap(super.routes)
+    override def routes: Route = AdminRoutes.wrap(super.routes)
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>

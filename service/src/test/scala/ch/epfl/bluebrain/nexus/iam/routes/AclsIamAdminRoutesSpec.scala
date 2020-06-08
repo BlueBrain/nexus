@@ -32,7 +32,7 @@ import org.scalatest.{BeforeAndAfter, OptionValues}
 import scala.concurrent.duration._
 
 //noinspection NameBooleanParameters
-class AclsRoutesSpec
+class AclsIamAdminRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with EitherValues
@@ -54,7 +54,7 @@ class AclsRoutesSpec
 
   private val acls: Acls[Task]     = mock[Acls[Task]]
   private val realms: Realms[Task] = mock[Realms[Task]]
-  private val routes               = Routes.wrap(new AclsRoutes(acls, realms).routes)
+  private val routes               = IamRoutes.wrap(new AclsRoutes(acls, realms).routes)
 
   before {
     Mockito.reset(acls)

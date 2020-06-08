@@ -27,7 +27,7 @@ import org.scalatest.BeforeAndAfter
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation,NameBooleanParameters
-class RealmsRoutesSpec
+class RealmsIamAdminRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -107,7 +107,7 @@ class RealmsRoutesSpec
     )
 
   "A RealmsRoute" should {
-    val routes       = Routes.wrap(new RealmsRoutes(realms).routes)
+    val routes       = IamRoutes.wrap(new RealmsRoutes(realms).routes)
     val label        = Label.unsafe("therealm")
     val name         = "The Realm"
     val openIdConfig = Url("http://localhost:8080/realm").rightValue

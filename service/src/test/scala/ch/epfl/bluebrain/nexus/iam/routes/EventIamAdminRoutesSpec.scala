@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.iam.config.Settings
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.routes.EventRoutesSpec.TestableEventRoutes
+import ch.epfl.bluebrain.nexus.iam.routes.EventIamAdminRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, GrantType, Label, Permission}
@@ -37,7 +37,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
-class EventRoutesSpec
+class EventIamAdminRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -154,7 +154,7 @@ class EventRoutesSpec
 
   "The EventRoutes" should {
     "return the acl events in the right order" in {
-      val routes = Routes.wrap(new TestableEventRoutes(aclEvents, acls, realms).routes)
+      val routes = IamRoutes.wrap(new TestableEventRoutes(aclEvents, acls, realms).routes)
       forAll(List("/acls/events", "/acls/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected = jsonContentOf("/events/acl-events.json").asArray.value
@@ -165,7 +165,7 @@ class EventRoutesSpec
     }
 
     "return the realm events in the right order" in {
-      val routes = Routes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
+      val routes = IamRoutes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
       forAll(List("/realms/events", "/realms/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected = jsonContentOf("/events/realm-events.json").asArray.value
@@ -176,7 +176,7 @@ class EventRoutesSpec
     }
 
     "return the permissions events in the right order" in {
-      val routes = Routes.wrap(new TestableEventRoutes(permissionsEvents, acls, realms).routes)
+      val routes = IamRoutes.wrap(new TestableEventRoutes(permissionsEvents, acls, realms).routes)
       forAll(List("/permissions/events", "/permissions/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected = jsonContentOf("/events/permissions-events.json").asArray.value
@@ -188,7 +188,7 @@ class EventRoutesSpec
 
     "return all the events in the right order" in {
       val routes =
-        Routes.wrap(new TestableEventRoutes(aclEvents ++ realmEvents ++ permissionsEvents, acls, realms).routes)
+        IamRoutes.wrap(new TestableEventRoutes(aclEvents ++ realmEvents ++ permissionsEvents, acls, realms).routes)
       forAll(List("/events", "/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected =
@@ -202,7 +202,7 @@ class EventRoutesSpec
     }
 
     "return events from the last seen" in {
-      val routes = Routes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
+      val routes = IamRoutes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
       Get("/realms/events").addHeader(`Last-Event-ID`(0.toString)) ~> routes ~> check {
         val expected = jsonContentOf("/events/realm-events.json").asArray.value
         status shouldEqual StatusCodes.OK
@@ -212,7 +212,7 @@ class EventRoutesSpec
 
     "return Forbidden when requesting the log with no permissions" in {
       acls.hasPermission(Path./, any[Permission], ancestors = false)(any[Caller]) shouldReturn Task.pure(false)
-      val routes = Routes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
+      val routes = IamRoutes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
       Get("/realms/events") ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
       }
@@ -221,7 +221,7 @@ class EventRoutesSpec
 
 }
 
-object EventRoutesSpec {
+object EventIamAdminRoutesSpec {
   //noinspection TypeAnnotation
   class TestableEventRoutes(
       events: List[Any],

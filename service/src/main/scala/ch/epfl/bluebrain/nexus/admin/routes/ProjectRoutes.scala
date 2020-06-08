@@ -20,17 +20,21 @@ import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import monix.eval.Task
 import monix.execution.Scheduler
 
-class ProjectRoutes(projects: Projects[Task])(
-    implicit ic: IamClient[Task],
+class ProjectRoutes(
+    projects: Projects[Task],
     orgCache: OrganizationCache[Task],
     projCache: ProjectCache[Task],
-    icc: IamClientConfig,
+    ic: IamClient[Task]
+)(
+    implicit icc: IamClientConfig,
     hc: HttpConfig,
     pagination: PaginationConfig,
     s: Scheduler
 ) extends AuthDirectives(ic)
     with QueryDirectives {
 
+  implicit val oc = orgCache
+  implicit val pc = projCache
   def routes: Route = (pathPrefix("projects") & extractToken) { implicit token =>
     concat(
       // fetch
@@ -119,14 +123,16 @@ class ProjectRoutes(projects: Projects[Task])(
 }
 
 object ProjectRoutes {
-  def apply(projects: Projects[Task])(
-      implicit ic: IamClient[Task],
+  def apply(
+      projects: Projects[Task],
       orgCache: OrganizationCache[Task],
       projCache: ProjectCache[Task],
-      icc: IamClientConfig,
+      ic: IamClient[Task]
+  )(
+      implicit icc: IamClientConfig,
       hc: HttpConfig,
       pagination: PaginationConfig,
       s: Scheduler
   ): ProjectRoutes =
-    new ProjectRoutes(projects)
+    new ProjectRoutes(projects, orgCache, projCache, ic)
 }

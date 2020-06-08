@@ -23,7 +23,7 @@ import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 
-object Routes {
+object IamRoutes {
 
   private[this] val logger = Logger[this.type]
 

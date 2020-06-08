@@ -39,11 +39,10 @@ import scala.util.{Failure, Success, Try}
 /**
   * Server Sent Events routes for organizations, projects and the entire event log.
   */
-class EventRoutes(
+class EventRoutes(ic: IamClient[Task])(
     implicit as: ActorSystem,
     pc: PersistenceConfig,
-    icc: IamClientConfig,
-    ic: IamClient[Task]
+    icc: IamClientConfig
 ) extends AuthDirectives(ic) {
 
   private val pq: EventsByTagQuery = PersistenceQuery(as).readJournalFor[EventsByTagQuery](pc.queryJournalPlugin)
@@ -120,6 +119,6 @@ class EventRoutes(
 }
 
 object EventRoutes {
-  def apply()(implicit as: ActorSystem, pc: PersistenceConfig, icc: IamClientConfig, ic: IamClient[Task]): EventRoutes =
-    new EventRoutes
+  def apply(ic: IamClient[Task])(implicit as: ActorSystem, pc: PersistenceConfig, icc: IamClientConfig): EventRoutes =
+    new EventRoutes(ic)
 }

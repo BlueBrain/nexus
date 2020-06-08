@@ -41,7 +41,7 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 
 //noinspection TypeAnnotation
-class ProjectRoutesSpec
+class ProjectIamAdminRoutesSpec
     extends AnyWordSpecLike
     with IdiomaticMockito
     with ArgumentMatchersSugar
@@ -66,7 +66,7 @@ class ProjectRoutesSpec
   )
 
   private val routes =
-    Routes.wrap(
+    AdminRoutes.wrap(
       ProjectRoutes(projects)(
         iamClient,
         orgCache,

@@ -12,7 +12,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Future
 
-class AppInfoRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRouteTest with IdiomaticMockito {
+class AppInfoIamAdminRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRouteTest with IdiomaticMockito {
 
   private val cassandra   = mock[CassandraHealthChecker]
   private val cluster     = mock[ClusterHealthChecker]

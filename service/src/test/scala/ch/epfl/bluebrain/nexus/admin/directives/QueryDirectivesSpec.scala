@@ -10,7 +10,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.{AdminConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
-import ch.epfl.bluebrain.nexus.admin.routes.{Routes, SearchParams}
+import ch.epfl.bluebrain.nexus.admin.routes.{AdminRoutes, SearchParams}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
@@ -36,12 +36,12 @@ class QueryDirectivesSpec
   implicit private val http: HttpConfig        = appConfig.http
 
   private def routes(inner: Route): Route =
-    Routes.wrap(inner)
+    AdminRoutes.wrap(inner)
 
   "Query directives" should {
     "handle pagination" in {
       def paginated(from: Int, size: Int) =
-        Routes.wrap(
+        AdminRoutes.wrap(
           (get & QueryDirectives.paginated(AdminConfig.PaginationConfig(50, 100))) { pagination =>
             pagination shouldEqual FromPagination(from, size)
             complete(StatusCodes.Accepted)
@@ -74,7 +74,7 @@ class QueryDirectivesSpec
       val type1     = genIri
       val type2     = genIri
       def projectParams =
-        Routes.wrap(
+        AdminRoutes.wrap(
           (get & QueryDirectives.searchParamsProjects) { params => complete(StatusCodes.OK -> params) }
         )
 

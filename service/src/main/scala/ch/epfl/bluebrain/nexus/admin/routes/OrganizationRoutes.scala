@@ -22,16 +22,15 @@ import io.circe.generic.semiauto.deriveDecoder
 import monix.eval.Task
 import monix.execution.Scheduler
 
-class OrganizationRoutes(organizations: Organizations[Task])(
-    implicit ic: IamClient[Task],
-    cache: OrganizationCache[Task],
-    icc: IamClientConfig,
+class OrganizationRoutes(organizations: Organizations[Task], cache: OrganizationCache[Task], ic: IamClient[Task])(
+    implicit icc: IamClientConfig,
     hc: HttpConfig,
     pc: PaginationConfig,
     s: Scheduler
 ) extends AuthDirectives(ic)
     with QueryDirectives {
 
+  implicit val oc = cache
   def routes: Route = (pathPrefix("orgs") & extractToken) { implicit token =>
     concat(
       // fetch
@@ -110,13 +109,11 @@ object OrganizationRoutes {
   implicit private[routes] val descriptionDecoder: Decoder[OrganizationDescription] =
     deriveDecoder[OrganizationDescription]
 
-  def apply(organizations: Organizations[Task])(
-      implicit ic: IamClient[Task],
-      cache: OrganizationCache[Task],
-      icc: IamClientConfig,
+  def apply(organizations: Organizations[Task], cache: OrganizationCache[Task], ic: IamClient[Task])(
+      implicit icc: IamClientConfig,
       hc: HttpConfig,
       pagination: PaginationConfig,
       s: Scheduler
   ): OrganizationRoutes =
-    new OrganizationRoutes(organizations)
+    new OrganizationRoutes(organizations, cache, ic)
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.headers.{HttpChallenges, Location, `WWW-Authenticate`}
+import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges, Location}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
@@ -26,7 +26,7 @@ import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-object Routes {
+object AdminRoutes {
 
   private[this] val logger = Logger[this.type]
 
@@ -99,13 +99,13 @@ object Routes {
     */
   final def apply(
       orgs: Organizations[Task],
-      projects: Projects[Task]
+      projects: Projects[Task],
+      orgCache: OrganizationCache[Task],
+      projCache: ProjectCache[Task],
+      ic: IamClient[Task]
   )(
-                   implicit as: ActorSystem,
-                   cfg: ServiceConfig,
-                   ic: IamClient[Task],
-                   orgCache: OrganizationCache[Task],
-                   projCache: ProjectCache[Task]
+      implicit as: ActorSystem,
+      cfg: ServiceConfig
   ): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
@@ -113,9 +113,9 @@ object Routes {
     implicit val pgc: PaginationConfig = cfg.admin.pagination
     val cluster                        = Cluster(as)
 
-    val eventsRoutes  = EventRoutes().routes
-    val orgRoutes     = OrganizationRoutes(orgs).routes
-    val projectRoutes = ProjectRoutes(projects).routes
+    val eventsRoutes  = EventRoutes(ic).routes
+    val orgRoutes     = OrganizationRoutes(orgs, orgCache, ic).routes
+    val projectRoutes = ProjectRoutes(projects, orgCache, projCache, ic).routes
     val infoRoutes = AppInfoRoutes(
       cfg.description,
       ClusterHealthChecker(cluster),

@@ -25,7 +25,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
-class IdentitiesRoutesSpec
+class IdentitiesIamAdminRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -49,7 +49,7 @@ class IdentitiesRoutesSpec
   }
 
   "The IdentitiesRoutes" should {
-    val routes = Routes.wrap(new IdentitiesRoutes(realms).routes)
+    val routes = IamRoutes.wrap(new IdentitiesRoutes(realms).routes)
     "return forbidden" in {
       val err = InvalidAccessToken(TokenRejection.InvalidAccessToken)
       realms.caller(any[AccessToken]) shouldReturn Task.raiseError(err)

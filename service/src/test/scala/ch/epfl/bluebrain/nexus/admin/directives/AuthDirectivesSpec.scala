@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.{AdminConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
-import ch.epfl.bluebrain.nexus.admin.routes.Routes
+import ch.epfl.bluebrain.nexus.admin.routes.AdminRoutes
 import ch.epfl.bluebrain.nexus.admin.{Error, ExpectedException}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, AuthToken, Caller, Permission}
@@ -47,14 +47,14 @@ class AuthDirectivesSpec
   private val permission = Permission.unsafe("write")
 
   private def authorizeOnRoute(path: Path, permission: Permission)(implicit cred: Option[AuthToken]): Route =
-    Routes.wrap(
+    AdminRoutes.wrap(
       (get & directives.authorizeOn(path, permission)) {
         complete(StatusCodes.Accepted)
       }
     )
 
   private def authCaller(caller: Caller)(implicit cred: Option[AuthToken]): Route =
-    Routes.wrap(
+    AdminRoutes.wrap(
       (get & directives.extractSubject) { subject =>
         subject shouldEqual caller.subject
         complete(StatusCodes.Accepted)
@@ -105,7 +105,7 @@ class AuthDirectivesSpec
       iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(
         IamClientError.UnknownError(StatusCodes.InternalServerError, "")
       )
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.InternalServerError
       }
@@ -114,7 +114,7 @@ class AuthDirectivesSpec
     "fail extracting acls when  the client returns Unauthorized for caller acls" in {
       implicit val token: Option[AuthToken] = None
       iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Unauthorized(""))
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.Unauthorized
       }
@@ -123,7 +123,7 @@ class AuthDirectivesSpec
     "fail extracting acls when  the client returns Forbidden for caller acls" in {
       implicit val token: Option[AuthToken] = None
       iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Forbidden(""))
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.Forbidden
       }
@@ -132,7 +132,7 @@ class AuthDirectivesSpec
     "extract caller acls" in {
       implicit val token: Option[AuthToken] = None
       iamClient.acls("*" / "*", true, true) shouldReturn Task.pure(AccessControlLists.empty)
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply { acls =>
+      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply { acls =>
         acls shouldEqual AccessControlLists.empty
         complete(StatusCodes.Accepted)
       })
