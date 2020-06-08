@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges, Location}
+import akka.http.scaladsl.model.headers.{HttpChallenges, Location, `WWW-Authenticate`}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
@@ -19,6 +18,8 @@ import ch.epfl.bluebrain.nexus.commons.http.RejectionHandling
 import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.scalalogging.Logger
@@ -100,16 +101,16 @@ object Routes {
       orgs: Organizations[Task],
       projects: Projects[Task]
   )(
-      implicit as: ActorSystem,
-      cfg: AppConfig,
-      ic: IamClient[Task],
-      orgCache: OrganizationCache[Task],
-      projCache: ProjectCache[Task]
+                   implicit as: ActorSystem,
+                   cfg: ServiceConfig,
+                   ic: IamClient[Task],
+                   orgCache: OrganizationCache[Task],
+                   projCache: ProjectCache[Task]
   ): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
-    implicit val icc: IamClientConfig  = cfg.iam
-    implicit val pgc: PaginationConfig = cfg.pagination
+    implicit val icc: IamClientConfig  = cfg.admin.iam
+    implicit val pgc: PaginationConfig = cfg.admin.pagination
     val cluster                        = Cluster(as)
 
     val eventsRoutes  = EventRoutes().routes

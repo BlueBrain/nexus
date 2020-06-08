@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.iam.types
 
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import io.circe.syntax._
 import org.scalatest.Inspectors

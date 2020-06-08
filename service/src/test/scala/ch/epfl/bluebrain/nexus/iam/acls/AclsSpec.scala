@@ -4,9 +4,9 @@ import java.time.Instant
 
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.iam.acls.AclRejection._
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig._
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig._
 import ch.epfl.bluebrain.nexus.iam.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.types.IamError.AccessDenied
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
@@ -35,7 +35,7 @@ class AclsSpec
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.milliseconds)
 
-  implicit val appConfig: AppConfig = Settings(system).appConfig
+  implicit val appConfig: IamConfig = Settings(system).appConfig
   val http                          = appConfig.http
   val pc                            = appConfig.permissions
 

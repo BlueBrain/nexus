@@ -9,9 +9,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.iam.ExpectedException
 import ch.epfl.bluebrain.nexus.iam.acls._
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
@@ -48,7 +48,7 @@ class AclsRoutesSpec
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
 
   private val http = HttpConfig("some", 8080, "v1", "http://nexus.example.com")
-  implicit private val appConfig: AppConfig = new Settings(ConfigFactory.parseResources("app.conf").resolve()).appConfig
+  implicit private val appConfig: IamConfig = new Settings(ConfigFactory.parseResources("app.conf").resolve()).appConfig
     .copy(http = http)
   implicit private val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
 

@@ -6,8 +6,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.config.{AdminConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.routes.Routes
@@ -34,7 +34,7 @@ class AuthDirectivesSpec
   private val iamClient  = mock[IamClient[Task]]
   private val directives = new AuthDirectives(iamClient)(global) {}
 
-  private val appConfig: AppConfig      = Settings(system).appConfig
+  private val appConfig: AdminConfig      = Settings(system).appConfig
   implicit private val http: HttpConfig = appConfig.http
 
   private val token   = Some(AuthToken("token"))

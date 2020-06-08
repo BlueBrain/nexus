@@ -10,8 +10,8 @@ import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig._
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.instances._
@@ -31,6 +31,8 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -273,7 +275,7 @@ object Projects {
     *
     * @param index           the project and organization label index
     * @param iamClient       the IAM client
-    * @param appConfig       the application configuration
+    * @param serviceConfig       the application configuration
     * @tparam F              a [[cats.effect.ConcurrentEffect]] instance
     * @return the operations bundle in an ''F'' context.
     */
@@ -281,10 +283,12 @@ object Projects {
       index: ProjectCache[F],
       organizations: Organizations[F],
       iamClient: IamClient[F]
-  )(implicit appConfig: AppConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
-    implicit val retryPolicy: RetryPolicy[F]       = appConfig.aggregate.retry.retryPolicy[F]
+  )(implicit serviceConfig: ServiceConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
+    implicit val iamCredentials: Option[AuthToken] = serviceConfig.admin.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission] = serviceConfig.admin.permissions.ownerPermissions
+    implicit val retryPolicy: RetryPolicy[F]       = serviceConfig.admin.aggregate.retry.retryPolicy[F]
+    implicit val adminConfig: AdminConfig          = serviceConfig.admin
+    implicit val httpConfig: HttpConfig            = serviceConfig.http
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -292,17 +296,17 @@ object Projects {
         ProjectState.Initial,
         next,
         Eval.apply[F],
-        appConfig.aggregate.passivationStrategy(),
-        appConfig.aggregate.akkaAggregateConfig,
-        appConfig.cluster.shards
+        serviceConfig.admin.aggregate.passivationStrategy(),
+        serviceConfig.admin.aggregate.akkaAggregateConfig,
+        serviceConfig.cluster.shards
       )
     aggF.map(agg => new Projects(agg, index, organizations, iamClient))
   }
 
   def indexer[F[_]: Timer](
       projects: Projects[F]
-  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
-    implicit val ac: AggregateConfig  = config.aggregate
+  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem): F[Unit] = {
+    implicit val ac: AggregateConfig  = config.admin.aggregate
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 
@@ -314,7 +318,7 @@ object Projects {
 
     val flow = ProgressFlowElem[F, Any]
       .collectCast[ProjectEvent]
-      .groupedWithin(config.indexing.batch, config.indexing.batchTimeout)
+      .groupedWithin(config.admin.indexing.batch, config.admin.indexing.batchTimeout)
       .distinct()
       .mergeEmit()
       .mapAsync(ev => projects.fetch(ev.id))

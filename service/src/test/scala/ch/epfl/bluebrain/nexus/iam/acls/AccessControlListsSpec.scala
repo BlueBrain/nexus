@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.iam.acls
 import java.time.{Clock, Instant, ZoneId}
 
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types.{Permission, ResourceF}

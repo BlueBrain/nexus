@@ -12,7 +12,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._

@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.admin.persistence
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
-import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.commons.serialization.AkkaCoproductSerializer
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import com.github.ghik.silencer.silent
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
@@ -17,7 +17,7 @@ import shapeless.{:+:, CNil}
 @silent // implicits are not recognized as being used
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
-  implicit private val iamClientConfig: IamClientConfig = Settings(system).appConfig.iam
+  implicit private val iamClientConfig: IamClientConfig = Settings(system).serviceConfig.admin.iam
 
   implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")
 

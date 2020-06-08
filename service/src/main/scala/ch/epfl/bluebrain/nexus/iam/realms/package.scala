@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.iam
 import _root_.io.circe.Json
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.iam.types.{Label, Permission, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 
 package object realms {
@@ -31,7 +31,7 @@ package object realms {
   /**
     * The constant collection of realm types.
     */
-  final val types: Set[AbsoluteIri] = Set(nxv.Realm)
+  final val types: Set[AbsoluteIri] = Set(nxv.Realm.value)
 
   /* Constant permissions */
   final val read  = Permission.unsafe("realms/read")

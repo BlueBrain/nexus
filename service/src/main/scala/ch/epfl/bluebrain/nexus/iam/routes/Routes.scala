@@ -11,13 +11,13 @@ import ch.epfl.bluebrain.nexus.commons.http.RejectionHandling
 import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.iam.acls.{AclRejection, Acls}
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.permissions.{Permissions, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.iam.realms.{RealmRejection, Realms}
 import ch.epfl.bluebrain.nexus.iam.types.IamError.{InternalError, InvalidAccessToken}
 import ch.epfl.bluebrain.nexus.iam.types.{IamError, ResourceRejection}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.scalalogging.Logger
@@ -90,7 +90,7 @@ object Routes {
       acls: Acls[Task],
       realms: Realms[Task],
       perms: Permissions[Task]
-  )(implicit as: ActorSystem, cfg: AppConfig): Route = {
+  )(implicit as: ActorSystem, cfg: ServiceConfig): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
     val cass                           = CassandraHeath(as)

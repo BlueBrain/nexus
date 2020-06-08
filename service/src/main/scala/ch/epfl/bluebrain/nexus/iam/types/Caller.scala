@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.iam.types
 
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.config.Contexts._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import io.circe.{Encoder, Json}
 
 /**

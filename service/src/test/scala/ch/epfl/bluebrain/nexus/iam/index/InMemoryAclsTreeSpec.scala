@@ -4,8 +4,8 @@ import java.time.{Clock, Instant, ZoneId}
 
 import cats.Id
 import ch.epfl.bluebrain.nexus.iam.acls.{read => readAcls, _}
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig._
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig._
+import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
@@ -25,7 +25,7 @@ class InMemoryAclsTreeSpec
     with EitherValues {
 
   private val clock: Clock                  = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  implicit private val appConfig: AppConfig = Settings(system).appConfig
+  implicit private val appConfig: IamConfig = Settings(system).appConfig
   private val http                          = appConfig.http
   private val instant                       = clock.instant()
 

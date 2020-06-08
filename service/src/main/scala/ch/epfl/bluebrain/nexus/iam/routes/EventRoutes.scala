@@ -16,8 +16,6 @@ import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.iam.acls.AclEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.acls.{AclEvent, Acls}
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.iam.io.TaggingAdapter._
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
@@ -28,6 +26,8 @@ import ch.epfl.bluebrain.nexus.iam.realms.{RealmEvent, Realms}
 import ch.epfl.bluebrain.nexus.iam.routes.EventRoutes._
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.iam.{acls => aclsp, permissions => permissionsp, realms => realmsp}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -105,7 +105,7 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(
       }
 
   private def aToSse[A: Encoder](a: A, offset: Offset): ServerSentEvent = {
-    val json = a.asJson.sortKeys(AppConfig.orderedKeys)
+    val json = a.asJson.sortKeys(ServiceConfig.orderedKeys)
     ServerSentEvent(
       data = json.printWith(printer),
       eventType = json.hcursor.get[String]("@type").toOption,

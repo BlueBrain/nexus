@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.realms._
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
@@ -42,7 +42,7 @@ class RealmsRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val appConfig: AppConfig = Settings(system).appConfig
+  private val appConfig: IamConfig = Settings(system).appConfig
   implicit private val http        = appConfig.http
 
   private val realms: Realms[Task] = mock[Realms[Task]]

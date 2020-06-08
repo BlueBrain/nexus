@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig._
 import ch.epfl.bluebrain.nexus.admin.routes.HealthChecker._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import io.circe.Json

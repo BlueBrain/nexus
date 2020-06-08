@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.admin.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.Description
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.routes.AppInfoRoutes._
 import ch.epfl.bluebrain.nexus.admin.routes.HealthChecker.Status
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.Description
 import io.circe.generic.auto._
 
 import scala.concurrent.{ExecutionContext, Future}

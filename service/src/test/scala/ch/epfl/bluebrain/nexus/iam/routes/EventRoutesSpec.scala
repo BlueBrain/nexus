@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, Acls}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.iam.config.Settings
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}

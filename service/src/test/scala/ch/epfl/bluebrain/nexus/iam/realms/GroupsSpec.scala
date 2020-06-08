@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.HttpRequest
 import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.sourcing.akka.statemachine.{StateMachineConfig => GroupsConfig}
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.realms.GroupsSpec._
 import ch.epfl.bluebrain.nexus.iam.realms.WellKnownSpec.userInfoUrl
 import ch.epfl.bluebrain.nexus.iam.realms.WellKnownSpec._
@@ -34,7 +34,7 @@ class GroupsSpec
     with Randomness
     with IdiomaticMockito {
 
-  val appConfig: AppConfig = Settings(system).appConfig
+  val appConfig: IamConfig = Settings(system).appConfig
 
   implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
   implicit val gc: GroupsConfig = appConfig.groups

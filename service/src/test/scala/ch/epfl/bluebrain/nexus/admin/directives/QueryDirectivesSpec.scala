@@ -7,8 +7,8 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.{complete, get}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.config.{AdminConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.routes.{Routes, SearchParams}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -32,7 +32,7 @@ class QueryDirectivesSpec
 
   private def genIri: AbsoluteIri              = url"http://nexus.example.com/${UUID.randomUUID()}"
   private def encode(url: AbsoluteIri): String = URLEncoder.encode(url.asString, "UTF-8")
-  private val appConfig: AppConfig             = Settings(system).appConfig
+  private val appConfig: AdminConfig             = Settings(system).appConfig
   implicit private val http: HttpConfig        = appConfig.http
 
   private def routes(inner: Route): Route =
@@ -42,7 +42,7 @@ class QueryDirectivesSpec
     "handle pagination" in {
       def paginated(from: Int, size: Int) =
         Routes.wrap(
-          (get & QueryDirectives.paginated(AppConfig.PaginationConfig(50, 100))) { pagination =>
+          (get & QueryDirectives.paginated(AdminConfig.PaginationConfig(50, 100))) { pagination =>
             pagination shouldEqual FromPagination(from, size)
             complete(StatusCodes.Accepted)
           }

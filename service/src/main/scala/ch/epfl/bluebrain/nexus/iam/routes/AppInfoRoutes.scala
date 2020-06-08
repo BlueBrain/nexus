@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.iam.routes
 import akka.cluster.{Cluster, MemberStatus}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.Description
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.routes.AppInfoRoutes.Status.{Inaccessible, Up}
 import ch.epfl.bluebrain.nexus.iam.routes.AppInfoRoutes.{Health, ServiceDescription, Status}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.Description
 import io.circe.Encoder
 import io.circe.generic.auto._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName

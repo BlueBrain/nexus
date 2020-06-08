@@ -4,7 +4,7 @@ import java.time.{Clock, Instant, ZoneId}
 import java.util.UUID
 
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache

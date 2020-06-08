@@ -4,8 +4,8 @@ import java.time.Instant
 
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PermissionsConfig}
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.{HttpConfig, PermissionsConfig}
+import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.iam.types.IamError.AccessDenied
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
@@ -29,7 +29,7 @@ class PermissionsSpec
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.milliseconds)
 
-  val appConfig: AppConfig           = Settings(system).appConfig
+  val appConfig: IamConfig           = Settings(system).appConfig
   implicit val http: HttpConfig      = appConfig.http
   implicit val pc: PermissionsConfig = appConfig.permissions
 

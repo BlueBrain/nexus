@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.iam.acls
 
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.config.Contexts._
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 

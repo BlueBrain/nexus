@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.{Clock, Instant, ZoneId}
 
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache

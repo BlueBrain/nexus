@@ -1,13 +1,14 @@
-package ch.epfl.bluebrain.nexus.admin.config
+package ch.epfl.bluebrain.nexus.service.config
 
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import pureconfig.generic.auto._
-import pureconfig.ConvertHelpers.catchReadError
+import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.{ConfigConvert, ConfigSource}
 
 /**
@@ -19,14 +20,20 @@ import pureconfig.{ConfigConvert, ConfigSource}
 @SuppressWarnings(Array("LooksLikeInterpolatedString"))
 class Settings(config: Config) extends Extension {
 
-  @silent // implicit val definitions are not recognized as being used
-  val appConfig: AppConfig = {
-    implicit val uriConverter: ConfigConvert[Uri] =
-      ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)
-    implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
-      ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s"), _.toString)
-    ConfigSource.fromConfig(config).at("app").loadOrThrow[AppConfig]
-  }
+  @silent // not recognized as used... but it is below
+  implicit private val uriConverter: ConfigConvert[Uri] =
+    ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)
+
+  @silent // not recognized as used... but it is below
+  implicit private val permissionConverter: ConfigConvert[Permission] =
+    ConfigConvert.viaString[Permission](optF(Permission(_)), _.toString)
+
+  @silent // not recognized as used... but it is below
+  implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
+    ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s"), _.toString)
+
+  val serviceConfig: ServiceConfig =
+    ConfigSource.fromConfig(config).at("app").loadOrThrow[ServiceConfig]
 }
 
 object Settings extends ExtensionId[Settings] with ExtensionIdProvider {

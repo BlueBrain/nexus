@@ -9,10 +9,10 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error.classNameOf
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Permissions, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.{AdminConfig, Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
@@ -54,7 +54,7 @@ class OrganizationRoutesSpec
   private val organizationCache = mock[OrganizationCache[Task]]
   private val organizations     = mock[Organizations[Task]]
 
-  private val appConfig: AppConfig            = Settings(system).appConfig
+  private val appConfig: AdminConfig            = Settings(system).appConfig
   implicit private val httpConfig: HttpConfig = appConfig.http
   implicit private val iamClientConfig: IamClientConfig = IamClientConfig(
     url"https://nexus.example.com",

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.directives
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.Unmarshaller
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination

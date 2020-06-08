@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.iam.acls
 
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}

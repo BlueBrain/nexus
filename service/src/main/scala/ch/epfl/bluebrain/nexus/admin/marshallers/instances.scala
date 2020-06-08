@@ -4,7 +4,7 @@ import akka.http.scaladsl.marshalling.GenericMarshallers.eitherMarshaller
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.orderedKeys
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.orderedKeys
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InternalError
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection

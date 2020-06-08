@@ -13,8 +13,6 @@ import akka.http.scaladsl.server.{Directive1, PathMatcher0, Route}
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.persistence.query._
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PersistenceConfig
 import ch.epfl.bluebrain.nexus.admin.config.Permissions._
 import ch.epfl.bluebrain.nexus.admin.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
@@ -27,6 +25,8 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Permission
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PersistenceConfig
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
 import monix.eval.Task
@@ -93,7 +93,7 @@ class EventRoutes(
       }
 
   private def aToSse[A: Encoder](a: A, offset: Offset): ServerSentEvent = {
-    val json = a.asJson.sortKeys(AppConfig.orderedKeys)
+    val json = a.asJson.sortKeys(ServiceConfig.orderedKeys)
     ServerSentEvent(
       data = json.printWith(printer),
       eventType = json.hcursor.get[String]("@type").toOption,

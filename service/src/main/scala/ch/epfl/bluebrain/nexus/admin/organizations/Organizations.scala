@@ -10,8 +10,7 @@ import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PermissionsConfig, _}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PermissionsConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.instances._
@@ -29,6 +28,8 @@ import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -203,19 +204,22 @@ object Organizations {
   def apply[F[_]: ConcurrentEffect: Timer](
       index: OrganizationCache[F],
       iamClient: IamClient[F]
-  )(implicit appConfig: AppConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
-    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
-    implicit val retryPolicy: RetryPolicy[F]       = appConfig.aggregate.retry.retryPolicy[F]
+  )(implicit serviceConfig: ServiceConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
+    implicit val iamCredentials: Option[AuthToken] = serviceConfig.admin.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission] = serviceConfig.admin.permissions.ownerPermissions
+    implicit val retryPolicy: RetryPolicy[F]       = serviceConfig.admin.aggregate.retry.retryPolicy[F]
+    implicit val httpConfig                        = serviceConfig.http
+    implicit val adminConfig                       = serviceConfig.admin
+    implicit val iamClientConfig                   = serviceConfig.admin.iam
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",
         Initial,
         next,
         evaluate[F],
-        appConfig.aggregate.passivationStrategy(),
-        appConfig.aggregate.akkaAggregateConfig,
-        appConfig.cluster.shards
+        serviceConfig.admin.aggregate.passivationStrategy(),
+        serviceConfig.admin.aggregate.akkaAggregateConfig,
+        serviceConfig.cluster.shards
       )
 
     aggF.map(new Organizations(_, index, iamClient))
@@ -223,20 +227,20 @@ object Organizations {
 
   def indexer[F[_]: Timer](
       organizations: Organizations[F]
-  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
-    implicit val ac: AggregateConfig  = config.aggregate
+  )(implicit F: Effect[F], serviceConfig: ServiceConfig, as: ActorSystem): F[Unit] = {
+    implicit val ac: AggregateConfig  = serviceConfig.admin.aggregate
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 
     val projectionId = "orgs-indexer"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
-      .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+      .readJournalFor[EventsByTagQuery](serviceConfig.persistence.queryJournalPlugin)
       .eventsByTag(TaggingAdapter.OrganizationTag, NoOffset)
       .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
 
     val flow = ProgressFlowElem[F, Any]
       .collectCast[OrganizationEvent]
-      .groupedWithin(config.indexing.batch, config.indexing.batchTimeout)
+      .groupedWithin(serviceConfig.admin.indexing.batch, serviceConfig.admin.indexing.batchTimeout)
       .distinct()
       .mergeEmit()
       .mapAsync(ev => organizations.fetch(ev.id))

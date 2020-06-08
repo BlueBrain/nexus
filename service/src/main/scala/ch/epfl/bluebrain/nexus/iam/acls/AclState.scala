@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.iam.acls
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{ResourceF, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 
 /**
   * Enumeration of ACLs states.

@@ -7,8 +7,8 @@ import akka.http.scaladsl.client.RequestBuilding._
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, RealmsConfig}
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.{HttpConfig, RealmsConfig}
+import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmsSpec.token
 import ch.epfl.bluebrain.nexus.iam.realms.WellKnownSpec._
@@ -40,7 +40,7 @@ class RealmsSpec
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.milliseconds)
 
-  val appConfig: AppConfig      = Settings(system).appConfig
+  val appConfig: IamConfig      = Settings(system).appConfig
   implicit val http: HttpConfig = appConfig.http
   implicit val rc: RealmsConfig = appConfig.realms
 

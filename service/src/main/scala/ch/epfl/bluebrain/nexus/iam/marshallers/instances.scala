@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.iam.acls.AclRejection
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.orderedKeys
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsRejection
 import ch.epfl.bluebrain.nexus.iam.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.iam.types.IamError.InternalError
