@@ -7,8 +7,7 @@ import akka.http.scaladsl.client.RequestBuilding._
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.IamConfig.{HttpConfig, RealmsConfig}
-import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.RealmsConfig
 import ch.epfl.bluebrain.nexus.iam.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmsSpec.token
 import ch.epfl.bluebrain.nexus.iam.realms.WellKnownSpec._
@@ -17,6 +16,8 @@ import ch.epfl.bluebrain.nexus.iam.types.IamError.AccessDenied
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, IamError, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{Path, Url}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.util._
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
@@ -40,9 +41,9 @@ class RealmsSpec
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.milliseconds)
 
-  val appConfig: IamConfig      = Settings(system).appConfig
-  implicit val http: HttpConfig = appConfig.http
-  implicit val rc: RealmsConfig = appConfig.realms
+  val config                    = Settings(system).serviceConfig
+  implicit val http: HttpConfig = config.http
+  implicit val rc: RealmsConfig = config.iam.realms
 
   implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)

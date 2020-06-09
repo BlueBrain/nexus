@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.iam.types
 
 import java.time.{Clock, Instant, ZoneId}
 
+import ch.epfl.bluebrain.nexus.iam.client.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.config.IamConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import io.circe.Printer
 import io.circe.syntax._
 import org.scalatest.Inspectors
@@ -28,13 +28,14 @@ class ResourceFSpec extends AnyWordSpecLike with Matchers with Inspectors with E
 
     "be converted to Json correctly" when {
       "using multiple types" in {
-        val json  = jsonContentOf("/resources/write-response.json")
-        val model = ResourceMetadata(id, 1L, Set(nxv.AccessControlList, nxv.Realm), instant, user, instant, user2)
+        val json = jsonContentOf("/resources/write-response.json")
+        val model =
+          ResourceMetadata(id, 1L, Set(nxv.AccessControlList.value, nxv.Realm.value), instant, user, instant, user2)
         model.asJson.sort.printWith(printer) shouldEqual json.printWith(printer)
       }
       "using a single type" in {
         val json  = jsonContentOf("/resources/write-response-singletype.json")
-        val model = ResourceMetadata(id, 1L, Set(nxv.AccessControlList), instant, user, instant, user2)
+        val model = ResourceMetadata(id, 1L, Set(nxv.AccessControlList.value), instant, user, instant, user2)
         model.asJson.sort.printWith(printer) shouldEqual json.printWith(printer)
       }
       "using no types" in {

@@ -7,15 +7,17 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.{complete, get}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.admin.config.{AdminConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
-import ch.epfl.bluebrain.nexus.admin.routes.{AdminRoutes, SearchParams}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import io.circe.generic.auto._
 import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
@@ -32,16 +34,16 @@ class QueryDirectivesSpec
 
   private def genIri: AbsoluteIri              = url"http://nexus.example.com/${UUID.randomUUID()}"
   private def encode(url: AbsoluteIri): String = URLEncoder.encode(url.asString, "UTF-8")
-  private val appConfig: AdminConfig           = Settings(system).appConfig
-  implicit private val http: HttpConfig        = appConfig.http
+  private val config                           = Settings(system).serviceConfig
+  implicit private val http: HttpConfig        = config.http
 
   private def routes(inner: Route): Route =
-    AdminRoutes.wrap(inner)
+    Routes.wrap(inner)
 
   "Query directives" should {
     "handle pagination" in {
       def paginated(from: Int, size: Int) =
-        AdminRoutes.wrap(
+        Routes.wrap(
           (get & QueryDirectives.paginated(AdminConfig.PaginationConfig(50, 100))) { pagination =>
             pagination shouldEqual FromPagination(from, size)
             complete(StatusCodes.Accepted)
@@ -74,7 +76,7 @@ class QueryDirectivesSpec
       val type1     = genIri
       val type2     = genIri
       def projectParams =
-        AdminRoutes.wrap(
+        Routes.wrap(
           (get & QueryDirectives.searchParamsProjects) { params => complete(StatusCodes.OK -> params) }
         )
 

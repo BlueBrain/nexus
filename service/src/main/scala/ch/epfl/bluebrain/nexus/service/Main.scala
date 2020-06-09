@@ -128,6 +128,7 @@ object Main {
     implicit val serviceConfig = Settings(config).serviceConfig
     implicit val as            = ActorSystem(serviceConfig.description.fullName, config)
     implicit val ec            = as.dispatcher
+    implicit val hc            = serviceConfig.http
     val cluster                = Cluster(as)
     val seeds: List[Address] = serviceConfig.cluster.seeds.toList
       .flatMap(_.split(","))
@@ -151,7 +152,7 @@ object Main {
 
       val httpBinding = {
         Http().bindAndHandle(
-          RouteResult.route2HandlerFlow(infoRoutes ~ Routes.wrap(iamRoutes ~ adminRoutes, serviceConfig.http)),
+          RouteResult.route2HandlerFlow(infoRoutes ~ Routes.wrap(iamRoutes ~ adminRoutes)),
           serviceConfig.http.interface,
           serviceConfig.http.port
         )

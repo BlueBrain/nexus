@@ -5,8 +5,7 @@ import java.util.UUID
 
 import akka.testkit._
 import cats.effect.{IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.{Permissions, Settings}
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.admin.config.Permissions
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
@@ -19,6 +18,8 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 
@@ -36,9 +37,9 @@ class OrganizationCacheSpec
   private val instant                   = Instant.now()
   implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
   implicit private val subject          = Caller.anonymous.subject
-  implicit private val appConfig        = Settings(system).appConfig
-  implicit val iamClientConfig          = appConfig.iam
-  implicit private val keyStoreConfig   = appConfig.keyValueStore
+  implicit private val config           = Settings(system).serviceConfig
+  implicit val iamClientConfig          = config.admin.iam
+  implicit private val keyStoreConfig   = config.admin.keyValueStore
 
   val index        = OrganizationCache[IO]
   val organization = Organization(genString(), Some(genString()))

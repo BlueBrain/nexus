@@ -14,17 +14,18 @@ import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, Acls}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.IamConfig.{HttpConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.iam.config.Settings
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.routes.EventIamAdminRoutesSpec.TestableEventRoutes
+import ch.epfl.bluebrain.nexus.iam.routes.EventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, GrantType, Label, Permission}
 import ch.epfl.bluebrain.nexus.iam.{acls => aclp}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{Path, Url}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.matchers.MacroBasedMatchers
@@ -37,7 +38,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
-class EventIamAdminRoutesSpec
+class EventRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -52,9 +53,9 @@ class EventIamAdminRoutesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 100.milliseconds)
 
-  private val appConfig     = Settings(system).appConfig
-  implicit private val http = appConfig.http
-  implicit private val pc   = appConfig.persistence
+  private val config        = Settings(system).serviceConfig
+  implicit private val http = config.http
+  implicit private val pc   = config.persistence
 
   private val realms: Realms[Task] = mock[Realms[Task]]
   private val acls: Acls[Task]     = mock[Acls[Task]]
@@ -154,7 +155,7 @@ class EventIamAdminRoutesSpec
 
   "The EventRoutes" should {
     "return the acl events in the right order" in {
-      val routes = IamRoutes.wrap(new TestableEventRoutes(aclEvents, acls, realms).routes)
+      val routes = Routes.wrap(new TestableEventRoutes(aclEvents, acls, realms).routes)
       forAll(List("/acls/events", "/acls/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected = jsonContentOf("/events/acl-events.json").asArray.value
@@ -165,7 +166,7 @@ class EventIamAdminRoutesSpec
     }
 
     "return the realm events in the right order" in {
-      val routes = IamRoutes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
+      val routes = Routes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
       forAll(List("/realms/events", "/realms/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected = jsonContentOf("/events/realm-events.json").asArray.value
@@ -176,7 +177,7 @@ class EventIamAdminRoutesSpec
     }
 
     "return the permissions events in the right order" in {
-      val routes = IamRoutes.wrap(new TestableEventRoutes(permissionsEvents, acls, realms).routes)
+      val routes = Routes.wrap(new TestableEventRoutes(permissionsEvents, acls, realms).routes)
       forAll(List("/permissions/events", "/permissions/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected = jsonContentOf("/events/permissions-events.json").asArray.value
@@ -188,7 +189,7 @@ class EventIamAdminRoutesSpec
 
     "return all the events in the right order" in {
       val routes =
-        IamRoutes.wrap(new TestableEventRoutes(aclEvents ++ realmEvents ++ permissionsEvents, acls, realms).routes)
+        Routes.wrap(new TestableEventRoutes(aclEvents ++ realmEvents ++ permissionsEvents, acls, realms).routes)
       forAll(List("/events", "/events/")) { path =>
         Get(path) ~> routes ~> check {
           val expected =
@@ -202,7 +203,7 @@ class EventIamAdminRoutesSpec
     }
 
     "return events from the last seen" in {
-      val routes = IamRoutes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
+      val routes = Routes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
       Get("/realms/events").addHeader(`Last-Event-ID`(0.toString)) ~> routes ~> check {
         val expected = jsonContentOf("/events/realm-events.json").asArray.value
         status shouldEqual StatusCodes.OK
@@ -212,7 +213,7 @@ class EventIamAdminRoutesSpec
 
     "return Forbidden when requesting the log with no permissions" in {
       acls.hasPermission(Path./, any[Permission], ancestors = false)(any[Caller]) shouldReturn Task.pure(false)
-      val routes = IamRoutes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
+      val routes = Routes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
       Get("/realms/events") ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
       }
@@ -221,7 +222,7 @@ class EventIamAdminRoutesSpec
 
 }
 
-object EventIamAdminRoutesSpec {
+object EventRoutesSpec {
   //noinspection TypeAnnotation
   class TestableEventRoutes(
       events: List[Any],

@@ -12,11 +12,9 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.{HttpConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
-import ch.epfl.bluebrain.nexus.admin.routes.EventIamAdminRoutesSpec.TestableEventRoutes
+import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -24,6 +22,9 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import monix.eval.Task
@@ -37,7 +38,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
-class EventIamAdminRoutesSpec
+class EventRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -54,10 +55,10 @@ class EventIamAdminRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val appConfig     = Settings(system).appConfig
-  implicit private val http = appConfig.http
-  implicit private val pc   = appConfig.persistence
-  implicit private val ic   = appConfig.iam
+  private val config        = Settings(system).serviceConfig
+  implicit private val http = config.http
+  implicit private val pc   = config.persistence
+  implicit private val ic   = config.admin.iam
 
   implicit private val client = mock[IamClient[Task]]
 
@@ -224,15 +225,15 @@ class EventIamAdminRoutesSpec
 
 }
 
-object EventIamAdminRoutesSpec {
+object EventRoutesSpec {
 
   //noinspection TypeAnnotation
   class TestableEventRoutes(
       events: List[Any]
   )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig, ic: IamClientConfig, cl: IamClient[Task])
-      extends EventRoutes() {
+      extends EventRoutes(cl) {
 
-    override def routes: Route = AdminRoutes.wrap(super.routes)
+    override def routes: Route = Routes.wrap(super.routes)
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>

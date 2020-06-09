@@ -7,14 +7,13 @@ import java.util.Date
 import akka.http.scaladsl.model.HttpRequest
 import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.sourcing.akka.statemachine.{StateMachineConfig => GroupsConfig}
-import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.realms.GroupsSpec._
-import ch.epfl.bluebrain.nexus.iam.realms.WellKnownSpec.userInfoUrl
-import ch.epfl.bluebrain.nexus.iam.realms.WellKnownSpec._
+import ch.epfl.bluebrain.nexus.iam.realms.WellKnownSpec.{userInfoUrl, _}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Group
 import ch.epfl.bluebrain.nexus.iam.types.Label
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.sourcing.akka.statemachine.{StateMachineConfig => GroupsConfig}
 import ch.epfl.bluebrain.nexus.util._
 import com.nimbusds.jwt.JWTClaimsSet
 import io.circe.Json
@@ -34,10 +33,10 @@ class GroupsSpec
     with Randomness
     with IdiomaticMockito {
 
-  val appConfig: IamConfig = Settings(system).appConfig
+  val config = Settings(system).serviceConfig
 
   implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
-  implicit val gc: GroupsConfig = appConfig.groups
+  implicit val gc: GroupsConfig = config.iam.groups
 
   def httpClient(response: Json): HttpJsonClient[IO] = {
     val m = mock[HttpJsonClient[IO]]

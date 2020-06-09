@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.iam.marshallers
 
-import akka.http.scaladsl.marshalling.GenericMarshallers.eitherMarshaller
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
@@ -46,47 +45,6 @@ object instances extends FailFastCirceSupport {
 
   override def unmarshallerContentTypes: Seq[ContentTypeRange] =
     List(`application/json`, `application/ld+json`, `application/sparql-results+json`)
-
-  /**
-    * `Json` => HTTP entity
-    *
-    * @return marshaller for JSON-LD value
-    */
-  implicit final def jsonLd(
-      implicit printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
-      keys: OrderedKeys = orderedKeys
-  ): ToEntityMarshaller[Json] = {
-    val marshallers = Seq(`application/ld+json`, `application/json`).map(contentType =>
-      Marshaller.withFixedContentType[Json, MessageEntity](contentType) { json =>
-        HttpEntity(`application/ld+json`, printer.print(json.sortKeys))
-      }
-    )
-    Marshaller.oneOf(marshallers: _*)
-  }
-
-  /**
-    * `A` => HTTP entity
-    *
-    * @tparam A type to encode
-    * @return marshaller for any `A` value
-    */
-  implicit final def httpEntity[A](
-      implicit encoder: Encoder[A],
-      printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
-      keys: OrderedKeys = orderedKeys
-  ): ToEntityMarshaller[A] =
-    jsonLd.compose(encoder.apply)
-
-  /**
-    * `Either[Rejection,A]` => HTTP entity
-    *
-    * @tparam A type to encode
-    * @return marshaller for any `A` value
-    */
-  implicit final def either[A: Encoder, B <: ResourceRejection: StatusFrom: Encoder](
-      implicit printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
-  ): ToResponseMarshaller[Either[B, A]] =
-    eitherMarshaller(rejection[B], httpEntity[A])
 
   /**
     * `Rejection` => HTTP response

@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.iam.acls
 import java.time.{Clock, Instant, ZoneId}
 
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.config.IamConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types.{Permission, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -31,7 +31,7 @@ class AccessControlListsSpec extends AnyWordSpecLike with Matchers with Resource
     val readWrite = Set(Permission.unsafe("acls/read"), Permission.unsafe("acls/write"))
     val manage    = Set(Permission.unsafe("acls/manage"))
 
-    val tpes = Set[AbsoluteIri](nxv.AccessControlList)
+    val tpes = Set[AbsoluteIri](nxv.AccessControlList.value)
 
     val acl =
       ResourceF(

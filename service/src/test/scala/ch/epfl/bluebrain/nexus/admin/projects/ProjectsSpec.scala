@@ -4,9 +4,6 @@ import java.time.{Clock, Instant, ZoneId}
 import java.util.UUID
 
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig._
-import ch.epfl.bluebrain.nexus.admin.config.Settings
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
@@ -20,6 +17,9 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, MockitoSugar}
 import org.scalatest.BeforeAndAfterEach
@@ -47,10 +47,16 @@ class ProjectsSpec
 
   private val instant               = Instant.now
   implicit private val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
-  implicit private val appConfig = Settings(system).appConfig.copy(
+
+  private val serviceConfig = Settings(system).serviceConfig
+  implicit private val config = serviceConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
-    iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second)
+    admin = serviceConfig.admin
+      .copy(iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second))
   )
+  implicit private val hc = config.http
+  implicit private val ic = config.admin.iam
+  implicit private val pc = config.admin.permissions
 
   private val index     = mock[ProjectCache[IO]]
   private val orgs      = mock[Organizations[IO]]

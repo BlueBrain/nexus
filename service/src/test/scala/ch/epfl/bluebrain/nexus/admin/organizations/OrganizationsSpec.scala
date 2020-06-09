@@ -3,9 +3,6 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.{Clock, Instant, ZoneId}
 
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig._
-import ch.epfl.bluebrain.nexus.admin.config.Settings
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
@@ -21,6 +18,9 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
 import org.scalatest.BeforeAndAfter
@@ -49,11 +49,19 @@ class OrganizationsSpec
 
   implicit private val caller: Subject = Caller.anonymous.subject
   private val instant                  = clock.instant()
-  implicit private val appConfig = Settings(system).appConfig.copy(
-    http = HttpConfig("some", 8080, "v1", "http://nexus.example.com"),
-    iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second)
+
+  private val serviceConfig = Settings(system).serviceConfig
+  implicit private val config = serviceConfig.copy(
+    http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
+    admin = serviceConfig.admin
+      .copy(iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second))
   )
+
   implicit private val iamCredentials = Some(AuthToken("token"))
+  implicit private val hc             = config.http
+  implicit private val ic             = config.admin.iam
+  implicit private val pc             = config.admin.permissions
+  implicit private val kvc            = config.admin.keyValueStore
 
   private val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
 

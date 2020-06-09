@@ -6,13 +6,14 @@ import java.util.regex.Pattern.quote
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.{IamConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.permissions._
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util.{Randomness, Resources}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
@@ -27,7 +28,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation,RedundantDefaultArgument
-class PermissionsIamAdminRoutesSpec
+class PermissionsRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -42,8 +43,8 @@ class PermissionsIamAdminRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val appConfig: IamConfig = Settings(system).appConfig
-  implicit private val http        = appConfig.http
+  private val config        = Settings(system).serviceConfig
+  implicit private val http = config.http
 
   private val perms: Permissions[Task] = mock[Permissions[Task]]
   private val realms: Realms[Task]     = mock[Realms[Task]]
@@ -75,9 +76,9 @@ class PermissionsIamAdminRoutesSpec
     jsonContentOf("/permissions/missing-rev.json")
 
   "A PermissionsRoute" should {
-    val routes = IamRoutes.wrap(new PermissionsRoutes(perms, realms).routes)
+    val routes = Routes.wrap(new PermissionsRoutes(perms, realms).routes)
     "return the default minimum permissions" in {
-      perms.fetch(any[Caller]) shouldReturn Task.pure(resource(0L, appConfig.permissions.minimum))
+      perms.fetch(any[Caller]) shouldReturn Task.pure(resource(0L, config.iam.permissions.minimum))
       Get("/permissions") ~> routes ~> check {
         responseAs[Json].sort shouldEqual response(0L).sort
         status shouldEqual StatusCodes.OK
@@ -139,7 +140,7 @@ class PermissionsIamAdminRoutesSpec
       }
     }
     "return 200 for correct revision" in {
-      perms.fetchAt(any[Long])(any[Caller]) shouldReturn Task.pure(Some(resource(3L, appConfig.permissions.minimum)))
+      perms.fetchAt(any[Long])(any[Caller]) shouldReturn Task.pure(Some(resource(3L, config.iam.permissions.minimum)))
       Get("/permissions?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].sort shouldEqual response(3L).sort

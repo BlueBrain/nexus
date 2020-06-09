@@ -6,17 +6,17 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error._
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.admin.config.{AdminConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
-import ch.epfl.bluebrain.nexus.admin.routes.AdminRoutes
 import ch.epfl.bluebrain.nexus.admin.{Error, ExpectedException}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, AuthToken, Caller, Permission}
 import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamClientError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.IdiomaticMockito
@@ -34,8 +34,8 @@ class AuthDirectivesSpec
   private val iamClient  = mock[IamClient[Task]]
   private val directives = new AuthDirectives(iamClient)(global) {}
 
-  private val appConfig: AdminConfig    = Settings(system).appConfig
-  implicit private val http: HttpConfig = appConfig.http
+  private val config                    = Settings(system).serviceConfig
+  implicit private val http: HttpConfig = config.http
 
   private val token   = Some(AuthToken("token"))
   private val cred    = OAuth2BearerToken("token")
@@ -47,14 +47,14 @@ class AuthDirectivesSpec
   private val permission = Permission.unsafe("write")
 
   private def authorizeOnRoute(path: Path, permission: Permission)(implicit cred: Option[AuthToken]): Route =
-    AdminRoutes.wrap(
+    Routes.wrap(
       (get & directives.authorizeOn(path, permission)) {
         complete(StatusCodes.Accepted)
       }
     )
 
   private def authCaller(caller: Caller)(implicit cred: Option[AuthToken]): Route =
-    AdminRoutes.wrap(
+    Routes.wrap(
       (get & directives.extractSubject) { subject =>
         subject shouldEqual caller.subject
         complete(StatusCodes.Accepted)
@@ -105,7 +105,7 @@ class AuthDirectivesSpec
       iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(
         IamClientError.UnknownError(StatusCodes.InternalServerError, "")
       )
-      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.InternalServerError
       }
@@ -114,7 +114,7 @@ class AuthDirectivesSpec
     "fail extracting acls when  the client returns Unauthorized for caller acls" in {
       implicit val token: Option[AuthToken] = None
       iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Unauthorized(""))
-      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.Unauthorized
       }
@@ -123,7 +123,7 @@ class AuthDirectivesSpec
     "fail extracting acls when  the client returns Forbidden for caller acls" in {
       implicit val token: Option[AuthToken] = None
       iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Forbidden(""))
-      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.Forbidden
       }
@@ -132,7 +132,7 @@ class AuthDirectivesSpec
     "extract caller acls" in {
       implicit val token: Option[AuthToken] = None
       iamClient.acls("*" / "*", true, true) shouldReturn Task.pure(AccessControlLists.empty)
-      val route = AdminRoutes.wrap(directives.extractCallerAcls("*" / "*").apply { acls =>
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply { acls =>
         acls shouldEqual AccessControlLists.empty
         complete(StatusCodes.Accepted)
       })
