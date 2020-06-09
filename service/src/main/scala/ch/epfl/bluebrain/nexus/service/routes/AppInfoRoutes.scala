@@ -1,12 +1,13 @@
-package ch.epfl.bluebrain.nexus.iam.routes
+package ch.epfl.bluebrain.nexus.service.routes
 
+import akka.actor.ActorSystem
 import akka.cluster.{Cluster, MemberStatus}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
-import ch.epfl.bluebrain.nexus.iam.routes.AppInfoRoutes.Status.{Inaccessible, Up}
-import ch.epfl.bluebrain.nexus.iam.routes.AppInfoRoutes.{Health, ServiceDescription, Status}
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.Description
+import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes.Status.{Inaccessible, Up}
+import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes.{Health, ServiceDescription, Status}
 import io.circe.Encoder
 import io.circe.generic.auto._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -16,7 +17,7 @@ import scala.util._
 /**
   * Akka HTTP route definition for service description and health status
   */
-class AppInfoRoutes(serviceDescription: ServiceDescription, cluster: Cluster, cassandraHealth: CassandraHeath) {
+class AppInfoRoutes(serviceDescription: ServiceDescription, cluster: Cluster, cassandraHealth: CassandraHealth) {
 
   private def clusterStatus: Status =
     Status(
@@ -94,7 +95,9 @@ object AppInfoRoutes {
     * @param cluster    the cluster
     * @return a new [[AppInfoRoutes]] instance
     */
-  def apply(descConfig: Description, cluster: Cluster, cassandraHealth: CassandraHeath): AppInfoRoutes =
+  def apply(descConfig: Description, cluster: Cluster)(implicit as: ActorSystem): AppInfoRoutes = {
+    val cassandraHealth = CassandraHealth(as)
     new AppInfoRoutes(ServiceDescription(descConfig.name, descConfig.version), cluster, cassandraHealth)
+  }
 
 }

@@ -34,7 +34,7 @@ class AuthDirectivesSpec
   private val iamClient  = mock[IamClient[Task]]
   private val directives = new AuthDirectives(iamClient)(global) {}
 
-  private val appConfig: AdminConfig      = Settings(system).appConfig
+  private val appConfig: AdminConfig    = Settings(system).appConfig
   implicit private val http: HttpConfig = appConfig.http
 
   private val token   = Some(AuthToken("token"))

@@ -34,6 +34,7 @@ object AdminConfig {
   final case class ServiceAccountConfig(token: Option[String]) {
     def credentials: Option[AuthToken] = token.map(AuthToken)
   }
+
   /**
     * Permissions configuration.
     *

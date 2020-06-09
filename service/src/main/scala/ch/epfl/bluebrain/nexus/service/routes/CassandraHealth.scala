@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.iam.routes
+package ch.epfl.bluebrain.nexus.service.routes
 
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.event.Logging
@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.Projections._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait CassandraHeath extends Extension {
+trait CassandraHealth extends Extension {
 
   /**
     * Performs a query against cassandra DB to check the connectivity.
@@ -19,18 +19,18 @@ trait CassandraHeath extends Extension {
   def check: Future[Boolean]
 }
 
-object CassandraHeath extends ExtensionId[CassandraHeath] with ExtensionIdProvider {
+object CassandraHealth extends ExtensionId[CassandraHealth] with ExtensionIdProvider {
 
-  override def lookup(): ExtensionId[_ <: Extension] = CassandraHeath
+  override def lookup(): ExtensionId[_ <: Extension] = CassandraHealth
 
-  override def createExtension(as: ExtendedActorSystem): CassandraHeath = {
+  override def createExtension(as: ExtendedActorSystem): CassandraHealth = {
     implicit val ec: ExecutionContext = as.dispatcher
 
     val log              = Logging(as, "CassandraHeathCheck")
     val keyspace: String = journalConfig(as).getString("keyspace")
     val session          = CassandraSessionRegistry.get(as).sessionFor(CassandraSessionSettings(cassandraDefaultConfigPath))
 
-    new CassandraHeath {
+    new CassandraHealth {
       private val query = s"SELECT now() FROM $keyspace.messages;"
 
       override def check: Future[Boolean] = {

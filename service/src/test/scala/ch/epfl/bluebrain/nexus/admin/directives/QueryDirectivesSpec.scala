@@ -32,7 +32,7 @@ class QueryDirectivesSpec
 
   private def genIri: AbsoluteIri              = url"http://nexus.example.com/${UUID.randomUUID()}"
   private def encode(url: AbsoluteIri): String = URLEncoder.encode(url.asString, "UTF-8")
-  private val appConfig: AdminConfig             = Settings(system).appConfig
+  private val appConfig: AdminConfig           = Settings(system).appConfig
   implicit private val http: HttpConfig        = appConfig.http
 
   private def routes(inner: Route): Route =

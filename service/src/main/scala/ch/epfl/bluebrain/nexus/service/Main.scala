@@ -6,8 +6,8 @@ import akka.actor.{ActorSystem, Address, AddressFromURIString}
 import akka.cluster.Cluster
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.{Route, RouteResult}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.RouteResult
 import cats.effect.Effect
 import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.{Groups, Realms}
 import ch.epfl.bluebrain.nexus.iam.routes.IamRoutes
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.routes.{AppInfoRoutes, Routes}
 import com.github.jsonldjava.core.DocumentLoader
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
@@ -93,9 +94,9 @@ object Main {
   ): (Organizations[Task], Projects[Task], OrganizationCache[Task], ProjectCache[Task], IamClient[Task]) = {
     implicit val scheduler         = Scheduler.global
     implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
-    implicit val icc = cfg.admin.iam
-    implicit val kvc = cfg.admin.keyValueStore
-    implicit val pm  = CanBlock.permit
+    implicit val icc               = cfg.admin.iam
+    implicit val kvc               = cfg.admin.keyValueStore
+    implicit val pm                = CanBlock.permit
 
     val ic = IamClient[Task]
     val oc = OrganizationCache[Task]
@@ -144,12 +145,13 @@ object Main {
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
       bootstrapIndexers(acls, realms, orgs, projects)
-      val iamRoutes: Route   = IamRoutes(acls, realms, perms)
-      val adminRoutes: Route = AdminRoutes(orgs, projects, orgCache, projectCache, iamClient)
+      val iamRoutes   = IamRoutes(acls, realms, perms)
+      val adminRoutes = AdminRoutes(orgs, projects, orgCache, projectCache, iamClient)
+      val infoRoutes  = AppInfoRoutes(serviceConfig.description, cluster).routes
 
       val httpBinding = {
         Http().bindAndHandle(
-          RouteResult.route2HandlerFlow(iamRoutes ~ adminRoutes),
+          RouteResult.route2HandlerFlow(infoRoutes ~ Routes.wrap(iamRoutes ~ adminRoutes, serviceConfig.http)),
           serviceConfig.http.interface,
           serviceConfig.http.port
         )

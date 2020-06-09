@@ -54,7 +54,7 @@ class OrganizationIamAdminRoutesSpec
   private val organizationCache = mock[OrganizationCache[Task]]
   private val organizations     = mock[Organizations[Task]]
 
-  private val appConfig: AdminConfig            = Settings(system).appConfig
+  private val appConfig: AdminConfig          = Settings(system).appConfig
   implicit private val httpConfig: HttpConfig = appConfig.http
   implicit private val iamClientConfig: IamClientConfig = IamClientConfig(
     url"https://nexus.example.com",

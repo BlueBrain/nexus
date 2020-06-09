@@ -1,14 +1,10 @@
 package ch.epfl.bluebrain.nexus.iam.routes
 
 import akka.actor.ActorSystem
-import akka.cluster.Cluster
-import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.commons.http.RejectionHandling
-import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.iam.acls.{AclRejection, Acls}
 import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
@@ -18,8 +14,7 @@ import ch.epfl.bluebrain.nexus.iam.types.IamError.{InternalError, InvalidAccessT
 import ch.epfl.bluebrain.nexus.iam.types.{IamError, ResourceRejection}
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
-import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.corsRejectionHandler
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 
@@ -71,21 +66,6 @@ object IamRoutes {
     corsRejectionHandler withFallback custom withFallback RejectionHandling.notFound withFallback RejectionHandler.default
   }
 
-  final def wrap(route: Route)(implicit hc: HttpConfig): Route = {
-    val corsSettings = CorsSettings.defaultSettings
-      .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
-      .withExposedHeaders(List(Location.name))
-    cors(corsSettings) {
-      handleExceptions(exceptionHandler) {
-        handleRejections(rejectionHandler) {
-          uriPrefix(hc.publicUri) {
-            route
-          }
-        }
-      }
-    }
-  }
-
   final def apply(
       acls: Acls[Task],
       realms: Realms[Task],
@@ -93,20 +73,15 @@ object IamRoutes {
   )(implicit as: ActorSystem, cfg: ServiceConfig): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
-    val cass                           = CassandraHeath(as)
-    val cluster                        = Cluster(as)
 
     val eventsRoutes = new EventRoutes(acls, realms).routes
     val idsRoutes    = new IdentitiesRoutes(realms).routes
     val permsRoutes  = new PermissionsRoutes(perms, realms).routes
     val realmsRoutes = new RealmsRoutes(realms).routes
     val aclsRoutes   = new AclsRoutes(acls, realms).routes
-    val infoRoutes   = AppInfoRoutes(cfg.description, cluster, cass).routes
 
-    wrap(
-      pathPrefix(cfg.http.prefix) {
-        eventsRoutes ~ aclsRoutes ~ permsRoutes ~ realmsRoutes ~ idsRoutes
-      } ~ infoRoutes
-    )
+    pathPrefix(cfg.http.prefix) {
+      eventsRoutes ~ aclsRoutes ~ permsRoutes ~ realmsRoutes ~ idsRoutes
+    }
   }
 }

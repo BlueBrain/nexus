@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.routes
 
 import akka.actor.ActorSystem
-import akka.cluster.Cluster
-import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges, Location}
+import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
@@ -15,13 +13,11 @@ import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationRejection, Organ
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectRejection, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceRejection
 import ch.epfl.bluebrain.nexus.commons.http.RejectionHandling
-import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
-import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.corsRejectionHandler
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -72,26 +68,6 @@ object AdminRoutes {
   }
 
   /**
-    * Wraps the provided route with CORS, rejection and exception handling.
-    *
-    * @param route the route to wrap
-    */
-  final def wrap(route: Route)(implicit hc: HttpConfig): Route = {
-    val corsSettings = CorsSettings.defaultSettings
-      .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
-      .withExposedHeaders(List(Location.name))
-    cors(corsSettings) {
-      handleExceptions(exceptionHandler) {
-        handleRejections(rejectionHandler) {
-          uriPrefix(hc.publicUri) {
-            route
-          }
-        }
-      }
-    }
-  }
-
-  /**
     * Pulls together all service routes and wraps them with CORS, rejection and exception handling.
     *
     * @param orgs     the organizations api bundle
@@ -111,21 +87,13 @@ object AdminRoutes {
     implicit val pc: PersistenceConfig = cfg.persistence
     implicit val icc: IamClientConfig  = cfg.admin.iam
     implicit val pgc: PaginationConfig = cfg.admin.pagination
-    val cluster                        = Cluster(as)
 
     val eventsRoutes  = EventRoutes(ic).routes
     val orgRoutes     = OrganizationRoutes(orgs, orgCache, ic).routes
     val projectRoutes = ProjectRoutes(projects, orgCache, projCache, ic).routes
-    val infoRoutes = AppInfoRoutes(
-      cfg.description,
-      ClusterHealthChecker(cluster),
-      CassandraHealthChecker()
-    ).routes
 
-    wrap(
-      pathPrefix(cfg.http.prefix) {
-        eventsRoutes ~ orgRoutes ~ projectRoutes
-      } ~ infoRoutes
-    )
+    pathPrefix(cfg.http.prefix) {
+      eventsRoutes ~ orgRoutes ~ projectRoutes
+    }
   }
 }

@@ -55,7 +55,6 @@ object IamConfig {
       indexing: IndexingConfig
   )
 
-
   implicit def toPermissionConfig(implicit appConfig: IamConfig): PermissionsConfig = appConfig.permissions
   implicit def toAclsConfig(implicit appConfig: IamConfig): AclsConfig              = appConfig.acls
   implicit def toIndexing(implicit appConfig: IamConfig): IndexingConfig            = appConfig.indexing
