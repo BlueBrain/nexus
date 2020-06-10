@@ -9,6 +9,7 @@ import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
+@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 abstract class ServiceError(val msg: String) extends Exception with Product with Serializable
 
 object ServiceError {
@@ -18,6 +19,7 @@ object ServiceError {
     *
     * @param reason the underlying error reason
     */
+  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   final case class InternalError(reason: String) extends ServiceError(reason)
 
   @silent
