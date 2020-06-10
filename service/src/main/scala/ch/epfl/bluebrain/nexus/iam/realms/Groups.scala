@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.iam.instances._
 import ch.epfl.bluebrain.nexus.iam.realms.GroupsCache.Write
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Group
 import ch.epfl.bluebrain.nexus.iam.types.{IamError, Label}
+import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
 import ch.epfl.bluebrain.nexus.sourcing.StateMachine
 import ch.epfl.bluebrain.nexus.sourcing.akka.StopStrategy
 import ch.epfl.bluebrain.nexus.sourcing.akka.statemachine.{AkkaStateMachine, StateMachineConfig => GroupsConfig}
@@ -99,7 +100,7 @@ class Groups[F[_]: Timer](cache: GroupsCache[F])(implicit cfg: GroupsConfig, hc:
             logger.warn(
               s"A call to get the groups from the OIDC provider failed unexpectedly, status '${resp.status}', reason: '$body'"
             )
-            F.raiseError(IamError.InternalError("Unable to extract group information from the OIDC provider."))
+            F.raiseError(ServiceError.InternalError("Unable to extract group information from the OIDC provider."))
           }
       }
   }

@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.iam
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary.nxv
+
 import ch.epfl.bluebrain.nexus.iam.types.{Permission, ResourceF, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 
 package object permissions {
@@ -28,7 +29,7 @@ package object permissions {
   /**
     * The constant collection of permissions types.
     */
-  final val types: Set[AbsoluteIri] = Set(nxv.Permissions)
+  final val types: Set[AbsoluteIri] = Set(nxv.Permissions.value)
 
   /* Constant permissions */
   final val read  = Permission.unsafe("permissions/read")

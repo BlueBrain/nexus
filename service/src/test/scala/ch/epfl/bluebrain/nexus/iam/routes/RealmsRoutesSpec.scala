@@ -5,24 +5,25 @@ import java.util.regex.Pattern.quote
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
-import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.realms._
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, GrantType, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
+import ch.epfl.bluebrain.nexus.service.routes.Routes
+import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.matchers.MacroBasedMatchers
 import org.mockito.{IdiomaticMockito, Mockito}
+import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.BeforeAndAfter
 
 import scala.concurrent.duration._
 
@@ -42,8 +43,8 @@ class RealmsRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val appConfig: AppConfig = Settings(system).appConfig
-  implicit private val http        = appConfig.http
+  private val config        = Settings(system).serviceConfig
+  implicit private val http = config.http
 
   private val realms: Realms[Task] = mock[Realms[Task]]
 

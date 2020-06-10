@@ -8,7 +8,7 @@ import cats.Monad
 import cats.effect.{Clock, Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PermissionsConfig}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.PermissionsConfig
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent._
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsState.{Current, Initia
 import ch.epfl.bluebrain.nexus.iam.types.IamError.{AccessDenied, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.iam.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AkkaAggregate
 import retry.RetryPolicy
 

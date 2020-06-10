@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.admin.exceptions
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Contexts._
+import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
 import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -15,10 +16,7 @@ import io.circe.{Encoder, Json}
   * @param msg the reason why the error occurred
   */
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-sealed abstract class AdminError(val msg: String) extends Exception with Product with Serializable {
-  override def fillInStackTrace(): Throwable = this
-  override def getMessage: String            = msg
-}
+sealed abstract class AdminError(msg: String) extends ServiceError(msg)
 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object AdminError {
@@ -36,13 +34,6 @@ object AdminError {
     * @param reason a descriptive message on the operation that timed out
     */
   final case class OperationTimedOut(reason: String) extends AdminError(reason)
-
-  /**
-    * Generic wrapper for iam errors that should not be exposed to clients.
-    *
-    * @param reason the underlying error reason
-    */
-  final case class InternalError(reason: String) extends AdminError(reason)
 
   /**
     * Signals that the requested resource was not found

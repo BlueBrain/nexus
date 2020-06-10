@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.types.{ResourceF, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 
 /**
   * Enumeration of organization states.

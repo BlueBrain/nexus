@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.iam.realms
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.realms.RealmState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{GrantType, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import io.circe.Json
 
 /**

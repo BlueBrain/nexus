@@ -12,8 +12,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
@@ -24,6 +22,9 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import monix.eval.Task
@@ -54,10 +55,10 @@ class EventRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val appConfig     = Settings(system).appConfig
-  implicit private val http = appConfig.http
-  implicit private val pc   = appConfig.persistence
-  implicit private val ic   = appConfig.iam
+  private val config        = Settings(system).serviceConfig
+  implicit private val http = config.http
+  implicit private val pc   = config.persistence
+  implicit private val ic   = config.admin.iam
 
   implicit private val client = mock[IamClient[Task]]
 
@@ -230,7 +231,7 @@ object EventRoutesSpec {
   class TestableEventRoutes(
       events: List[Any]
   )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig, ic: IamClientConfig, cl: IamClient[Task])
-      extends EventRoutes() {
+      extends EventRoutes(cl) {
 
     override def routes: Route = Routes.wrap(super.routes)
 

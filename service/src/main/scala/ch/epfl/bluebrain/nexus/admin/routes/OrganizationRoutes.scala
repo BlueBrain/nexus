@@ -3,34 +3,34 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
-import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.routes.OrganizationRoutes._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import monix.eval.Task
 import monix.execution.Scheduler
 
-class OrganizationRoutes(organizations: Organizations[Task])(
-    implicit ic: IamClient[Task],
-    cache: OrganizationCache[Task],
-    icc: IamClientConfig,
+class OrganizationRoutes(organizations: Organizations[Task], cache: OrganizationCache[Task], ic: IamClient[Task])(
+    implicit icc: IamClientConfig,
     hc: HttpConfig,
     pc: PaginationConfig,
     s: Scheduler
 ) extends AuthDirectives(ic)
     with QueryDirectives {
 
+  implicit val oc = cache
   def routes: Route = (pathPrefix("orgs") & extractToken) { implicit token =>
     concat(
       // fetch
@@ -109,13 +109,11 @@ object OrganizationRoutes {
   implicit private[routes] val descriptionDecoder: Decoder[OrganizationDescription] =
     deriveDecoder[OrganizationDescription]
 
-  def apply(organizations: Organizations[Task])(
-      implicit ic: IamClient[Task],
-      cache: OrganizationCache[Task],
-      icc: IamClientConfig,
+  def apply(organizations: Organizations[Task], cache: OrganizationCache[Task], ic: IamClient[Task])(
+      implicit icc: IamClientConfig,
       hc: HttpConfig,
       pagination: PaginationConfig,
       s: Scheduler
   ): OrganizationRoutes =
-    new OrganizationRoutes(organizations)
+    new OrganizationRoutes(organizations, cache, ic)
 }

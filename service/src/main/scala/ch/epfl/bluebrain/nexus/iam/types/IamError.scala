@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.iam.types
 
 import ch.epfl.bluebrain.nexus.iam.auth.TokenRejection
-import ch.epfl.bluebrain.nexus.iam.config.Contexts.errorCtxUri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Contexts._
+import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
@@ -14,10 +15,7 @@ import io.circe.{Encoder, Json}
   * @param msg the reason why the error occurred
   */
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-sealed abstract class IamError(val msg: String) extends Exception with Product with Serializable {
-  override def fillInStackTrace(): Throwable = this
-  override def getMessage: String            = msg
-}
+sealed abstract class IamError(msg: String) extends ServiceError(msg)
 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object IamError {
@@ -45,13 +43,6 @@ object IamError {
     * @param reason a descriptive message on the operation that timed out
     */
   final case class OperationTimedOut(reason: String) extends IamError(reason)
-
-  /**
-    * Generic wrapper for iam errors that should not be exposed to clients.
-    *
-    * @param reason the underlying error reason
-    */
-  final case class InternalError(reason: String) extends IamError(reason)
 
   /**
     * Signals that an error occurred while attempting to perform an operation with an invalid access token.

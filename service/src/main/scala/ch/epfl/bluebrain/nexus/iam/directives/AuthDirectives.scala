@@ -8,11 +8,11 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.IamError.AccessDenied
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import monix.eval.Task
 import monix.execution.Scheduler
 

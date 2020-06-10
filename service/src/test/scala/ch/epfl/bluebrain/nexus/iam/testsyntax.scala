@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.iam
 
 import _root_.io.circe._
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 
 object testsyntax {
 
   implicit class RichJson(json: Json) {
-    private val keys = AppConfig.orderedKeys
+    private val keys = ServiceConfig.orderedKeys
     def sort: Json = {
       import _root_.io.circe.syntax._
       implicit val ord: Ordering[String] = new Ordering[String] {

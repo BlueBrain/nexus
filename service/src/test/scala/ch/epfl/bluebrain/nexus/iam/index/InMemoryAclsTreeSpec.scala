@@ -4,12 +4,11 @@ import java.time.{Clock, Instant, ZoneId}
 
 import cats.Id
 import ch.epfl.bluebrain.nexus.iam.acls.{read => readAcls, _}
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig._
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, EitherValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -24,10 +23,11 @@ class InMemoryAclsTreeSpec
     with Inspectors
     with EitherValues {
 
-  private val clock: Clock                  = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  implicit private val appConfig: AppConfig = Settings(system).appConfig
-  private val http                          = appConfig.http
-  private val instant                       = clock.instant()
+  private val clock: Clock    = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
+  implicit private val config = Settings(system).serviceConfig
+  implicit private val http   = config.http
+  implicit private val pc     = config.iam.permissions
+  private val instant         = clock.instant()
 
   "A in memory Acls index" should {
     val index = InMemoryAclsTree[Id]

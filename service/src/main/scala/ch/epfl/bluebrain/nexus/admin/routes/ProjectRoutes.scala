@@ -3,12 +3,11 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.{projects => pp}
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
-import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
@@ -16,20 +15,26 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import monix.eval.Task
 import monix.execution.Scheduler
 
-class ProjectRoutes(projects: Projects[Task])(
-    implicit ic: IamClient[Task],
+class ProjectRoutes(
+    projects: Projects[Task],
     orgCache: OrganizationCache[Task],
     projCache: ProjectCache[Task],
-    icc: IamClientConfig,
+    ic: IamClient[Task]
+)(
+    implicit icc: IamClientConfig,
     hc: HttpConfig,
     pagination: PaginationConfig,
     s: Scheduler
 ) extends AuthDirectives(ic)
     with QueryDirectives {
 
+  implicit val oc = orgCache
+  implicit val pc = projCache
   def routes: Route = (pathPrefix("projects") & extractToken) { implicit token =>
     concat(
       // fetch
@@ -118,14 +123,16 @@ class ProjectRoutes(projects: Projects[Task])(
 }
 
 object ProjectRoutes {
-  def apply(projects: Projects[Task])(
-      implicit ic: IamClient[Task],
+  def apply(
+      projects: Projects[Task],
       orgCache: OrganizationCache[Task],
       projCache: ProjectCache[Task],
-      icc: IamClientConfig,
+      ic: IamClient[Task]
+  )(
+      implicit icc: IamClientConfig,
       hc: HttpConfig,
       pagination: PaginationConfig,
       s: Scheduler
   ): ProjectRoutes =
-    new ProjectRoutes(projects)
+    new ProjectRoutes(projects, orgCache, projCache, ic)
 }

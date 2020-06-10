@@ -1,45 +1,26 @@
-package ch.epfl.bluebrain.nexus.iam.config
+package ch.epfl.bluebrain.nexus.service.config
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig._
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.iam.types.Permission
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.akka.statemachine.StateMachineConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.IndexingConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{ClusterConfig, Description, HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 
-/**
-  * Application configuration
-  *
-  * @param description service description
-  * @param http        http interface configuration
-  * @param cluster     akka cluster configuration
-  * @param persistence persistence configuration
-  * @param indexing    indexing configuration
-  * @param acls        configuration for acls
-  * @param permissions configuration for permissions
-  * @param realms      configuration for realms
-  * @param groups      configuration for groups
-  */
-final case class AppConfig(
+final case class ServiceConfig(
     description: Description,
-    http: HttpConfig,
     cluster: ClusterConfig,
     persistence: PersistenceConfig,
-    indexing: IndexingConfig,
-    acls: AclsConfig,
-    permissions: PermissionsConfig,
-    realms: RealmsConfig,
-    groups: StateMachineConfig
+    http: HttpConfig,
+    admin: AdminConfig,
+    iam: IamConfig
 )
 
-object AppConfig {
+object ServiceConfig {
 
   /**
     * Service description
@@ -51,7 +32,7 @@ object AppConfig {
     /**
       * @return the version of the service
       */
-//    val version: String = BuildInfo.version
+    //    val version: String = BuildInfo.version
     val version: String = "SNAPSHOT"
 
     /**
@@ -75,6 +56,9 @@ object AppConfig {
     lazy val aclsIri: AbsoluteIri        = url"$publicUri/$prefix/acls"
     lazy val permissionsIri: AbsoluteIri = url"$publicUri/$prefix/permissions"
     lazy val realmsIri: AbsoluteIri      = url"$publicUri/$prefix/realms"
+    lazy val projectsIri: AbsoluteIri    = prefixIri + "projects"
+    lazy val orgsBaseIri: AbsoluteIri    = prefixIri + "orgs"
+
   }
 
   /**
@@ -101,47 +85,29 @@ object AppConfig {
     */
   final case class PersistenceConfig(journalPlugin: String, snapshotStorePlugin: String, queryJournalPlugin: String)
 
-  /**
-    * ACLs configuration
-    *
-    * @param aggregate the acls aggregate configuration
-    * @param indexing the indexing configuration
-    */
-  final case class AclsConfig(aggregate: AggregateConfig, indexing: IndexingConfig)
-
-  /**
-    * Permissions configuration.
-    *
-    * @param aggregate the permissions aggregate configuration
-    * @param minimum  the minimum set of permissions
-    */
-  final case class PermissionsConfig(aggregate: AggregateConfig, minimum: Set[Permission])
-
-  /**
-    * Realms configuration.
-    *
-    * @param aggregate      the realms aggregate configuration
-    * @param keyValueStore the key value store configuration
-    * @param indexing      the indexing configuration
-    */
-  final case class RealmsConfig(
-      aggregate: AggregateConfig,
-      keyValueStore: KeyValueStoreConfig,
-      indexing: IndexingConfig
-  )
-
   val orderedKeys: OrderedKeys = OrderedKeys(
     List(
       "@context",
       "@id",
       "@type",
+      "code",
+      "message",
+      "details",
       nxv.reason.prefix,
       nxv.total.prefix,
       nxv.maxScore.prefix,
       nxv.results.prefix,
       nxv.score.prefix,
+      nxv.description.name,
+      nxv.`@base`.name,
+      nxv.`@vocab`.name,
+      nxv.apiMappings.name,
+      nxv.prefix.name,
+      nxv.namespace.name,
       "",
       nxv.label.prefix,
+      nxv.organizationUuid.prefix,
+      nxv.organizationLabel.prefix,
       nxv.path.prefix,
       nxv.grantTypes.prefix,
       nxv.issuer.prefix,
@@ -164,10 +130,4 @@ object AppConfig {
       nxv.subject.prefix
     )
   )
-
-  implicit def toPersistence(implicit appConfig: AppConfig): PersistenceConfig      = appConfig.persistence
-  implicit def toHttp(implicit appConfig: AppConfig): HttpConfig                    = appConfig.http
-  implicit def toPermissionConfig(implicit appConfig: AppConfig): PermissionsConfig = appConfig.permissions
-  implicit def toAclsConfig(implicit appConfig: AppConfig): AclsConfig              = appConfig.acls
-  implicit def toIndexing(implicit appConfig: AppConfig): IndexingConfig            = appConfig.indexing
 }

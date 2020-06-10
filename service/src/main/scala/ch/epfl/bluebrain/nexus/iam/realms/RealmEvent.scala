@@ -2,13 +2,13 @@ package ch.epfl.bluebrain.nexus.iam.realms
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.iam.config.Contexts._
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{GrantType, Identity, Label}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Contexts._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.generic.extras.Configuration
 import io.circe.{Encoder, Json}
 

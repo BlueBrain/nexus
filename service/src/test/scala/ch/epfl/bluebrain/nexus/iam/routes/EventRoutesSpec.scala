@@ -14,8 +14,6 @@ import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, Acls}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.iam.config.Settings
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
@@ -25,6 +23,9 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, GrantType, Label, Permission}
 import ch.epfl.bluebrain.nexus.iam.{acls => aclp}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{Path, Url}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.matchers.MacroBasedMatchers
@@ -52,9 +53,9 @@ class EventRoutesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 100.milliseconds)
 
-  private val appConfig     = Settings(system).appConfig
-  implicit private val http = appConfig.http
-  implicit private val pc   = appConfig.persistence
+  private val config        = Settings(system).serviceConfig
+  implicit private val http = config.http
+  implicit private val pc   = config.persistence
 
   private val realms: Realms[Task] = mock[Realms[Task]]
   private val acls: Acls[Task]     = mock[Acls[Task]]

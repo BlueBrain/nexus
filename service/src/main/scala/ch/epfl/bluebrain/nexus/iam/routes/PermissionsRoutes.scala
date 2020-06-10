@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.iam.routes
 import akka.http.javadsl.server.Rejections._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives.authenticator
-import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.routes.PermissionsRoutes.PatchPermissions
 import ch.epfl.bluebrain.nexus.iam.routes.PermissionsRoutes.PatchPermissions.{Append, Replace, Subtract}
 import ch.epfl.bluebrain.nexus.iam.types.ResourceF._
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.{Decoder, DecodingFailure}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task

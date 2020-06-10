@@ -9,18 +9,17 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.iam.ExpectedException
 import ch.epfl.bluebrain.nexus.iam.acls._
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.iam.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
-import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util._
-import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
@@ -47,9 +46,7 @@ class AclsRoutesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
 
-  private val http = HttpConfig("some", 8080, "v1", "http://nexus.example.com")
-  implicit private val appConfig: AppConfig = new Settings(ConfigFactory.parseResources("app.conf").resolve()).appConfig
-    .copy(http = http)
+  implicit private val http         = HttpConfig("some", 8080, "v1", "http://nexus.example.com")
   implicit private val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
 
   private val acls: Acls[Task]     = mock[Acls[Task]]
@@ -79,7 +76,7 @@ class AclsRoutesSpec
     val resourceAcl1 = ResourceF(
       http.aclsIri + "id1",
       1L,
-      Set[AbsoluteIri](nxv.AccessControlList),
+      Set[AbsoluteIri](nxv.AccessControlList.value),
       clock.instant(),
       user,
       clock.instant(),
@@ -89,7 +86,7 @@ class AclsRoutesSpec
     val resourceAcl2 = ResourceF(
       http.aclsIri + "id2",
       2L,
-      Set[AbsoluteIri](nxv.AccessControlList),
+      Set[AbsoluteIri](nxv.AccessControlList.value),
       clock.instant(),
       user,
       clock.instant(),
@@ -113,7 +110,7 @@ class AclsRoutesSpec
     realms.caller(AccessToken(token.token)) shouldReturn Task.pure(caller)
 
     val responseMeta =
-      ResourceMetadata(id, 1L, Set(nxv.AccessControlList), clock.instant(), user, clock.instant(), user)
+      ResourceMetadata(id, 1L, Set(nxv.AccessControlList.value), clock.instant(), user, clock.instant(), user)
 
     "create ACL" in {
       acls.replace(path, 0L, acl) shouldReturn Task.pure[MetaOrRejection](Right(responseMeta))

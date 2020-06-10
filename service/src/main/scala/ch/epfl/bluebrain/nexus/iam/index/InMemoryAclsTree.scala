@@ -1,15 +1,17 @@
 package ch.epfl.bluebrain.nexus.iam.index
+
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.BiFunction
 
 import cats.Applicative
 import ch.epfl.bluebrain.nexus.iam.acls._
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PermissionsConfig}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.PermissionsConfig
 import ch.epfl.bluebrain.nexus.iam.index.InMemoryAclsTree._
 import ch.epfl.bluebrain.nexus.iam.syntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path.Segment
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 
 import scala.annotation.tailrec
 

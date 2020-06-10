@@ -1,19 +1,23 @@
-package ch.epfl.bluebrain.nexus.admin.marshallers
+package ch.epfl.bluebrain.nexus.service.marshallers
 
 import akka.http.scaladsl.marshalling.GenericMarshallers.eitherMarshaller
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.orderedKeys
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
-import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InternalError
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection
-import ch.epfl.bluebrain.nexus.admin.types.ResourceRejection
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
+import ch.epfl.bluebrain.nexus.iam.acls.AclRejection
+import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsRejection
+import ch.epfl.bluebrain.nexus.iam.realms.RealmRejection
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.orderedKeys
+import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
+import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError.InternalError
+import ch.epfl.bluebrain.nexus.service.routes.ResourceRejection
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe._
 import io.circe.syntax._
@@ -22,20 +26,30 @@ import monix.execution.Scheduler
 
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 object instances extends FailFastCirceSupport {
+
+  implicit val finiteDurationEncoder: Encoder[FiniteDuration] =
+    Encoder.encodeString.contramap(fd => s"${fd.toMillis} ms")
 
   implicit val resourceRejectionEncoder: Encoder[ResourceRejection] =
     Encoder.instance {
       case r: ProjectRejection      => Encoder[ProjectRejection].apply(r)
       case r: OrganizationRejection => Encoder[OrganizationRejection].apply(r)
-      case _                        => Encoder[AdminError].apply(InternalError("unspecified"))
+      case r: AclRejection          => Encoder[AclRejection].apply(r)
+      case r: RealmRejection        => Encoder[RealmRejection].apply(r)
+      case r: PermissionsRejection  => Encoder[PermissionsRejection].apply(r)
+      case _                        => Encoder[ServiceError].apply(InternalError("unspecified"))
     }
 
   implicit val resourceRejectionStatusFrom: StatusFrom[ResourceRejection] =
     StatusFrom {
       case r: OrganizationRejection => OrganizationRejection.organizationStatusFrom(r)
       case r: ProjectRejection      => ProjectRejection.projectStatusFrom(r)
+      case r: AclRejection          => AclRejection.aclRejectionStatusFrom(r)
+      case r: RealmRejection        => RealmRejection.realmRejectionStatusFrom(r)
+      case r: PermissionsRejection  => PermissionsRejection.permissionsRejectionStatusFrom(r)
     }
 
   override def unmarshallerContentTypes: Seq[ContentTypeRange] =

@@ -4,13 +4,14 @@ import java.time.Instant
 
 import cats.effect.{Clock, ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.config.AppConfig.{HttpConfig, PermissionsConfig}
-import ch.epfl.bluebrain.nexus.iam.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig.PermissionsConfig
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.iam.types.IamError.AccessDenied
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.util._
 import org.mockito.IdiomaticMockito
 import org.scalatest.matchers.should.Matchers
@@ -29,9 +30,9 @@ class PermissionsSpec
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.milliseconds)
 
-  val appConfig: AppConfig           = Settings(system).appConfig
-  implicit val http: HttpConfig      = appConfig.http
-  implicit val pc: PermissionsConfig = appConfig.permissions
+  val config                         = Settings(system).serviceConfig
+  implicit val http: HttpConfig      = config.http
+  implicit val pc: PermissionsConfig = config.iam.permissions
 
   implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)

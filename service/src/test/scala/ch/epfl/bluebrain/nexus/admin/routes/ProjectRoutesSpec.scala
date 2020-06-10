@@ -9,20 +9,18 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Permissions, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.admin.config.Permissions
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
-import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
@@ -31,14 +29,19 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
+import ch.epfl.bluebrain.nexus.service.routes.Routes
 import io.circe.Json
 import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.Inspectors
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 //noinspection TypeAnnotation
 class ProjectRoutesSpec
@@ -57,8 +60,8 @@ class ProjectRoutesSpec
   private val projCache = mock[ProjectCache[Task]]
   private val projects  = mock[Projects[Task]]
 
-  private val appConfig: AppConfig            = Settings(system).appConfig
-  implicit private val httpConfig: HttpConfig = appConfig.http
+  private val config: ServiceConfig           = Settings(system).serviceConfig
+  implicit private val httpConfig: HttpConfig = config.http
   implicit private val iamClientConfig = IamClientConfig(
     url"https://nexus.example.com",
     url"http://localhost:8080",
@@ -67,10 +70,7 @@ class ProjectRoutesSpec
 
   private val routes =
     Routes.wrap(
-      ProjectRoutes(projects)(
-        iamClient,
-        orgCache,
-        projCache,
+      ProjectRoutes(projects, orgCache, projCache, iamClient)(
         iamClientConfig,
         httpConfig,
         PaginationConfig(50, 100),

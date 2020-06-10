@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin
 
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 
 package object projects {

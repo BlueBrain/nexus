@@ -14,7 +14,7 @@ import io.circe.parser.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class StaticResourceRoutesSpec
+class StaticResourceIamAdminRoutesSpec
     extends AnyWordSpecLike
     with Matchers
     with Inspectors
