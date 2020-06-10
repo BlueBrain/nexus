@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 
 import scala.concurrent.duration.FiniteDuration
 
-case class ServiceConfig(
+final case class ServiceConfig(
     description: Description,
     cluster: ClusterConfig,
     persistence: PersistenceConfig,

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin
 
-import ch.epfl.bluebrain.nexus.admin.config.Contexts
+import ch.epfl.bluebrain.nexus.service.config.Contexts
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import shapeless.Typeable

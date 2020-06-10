@@ -4,8 +4,8 @@ import akka.actor.ActorSystem
 import akka.cluster.{Cluster, MemberStatus}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.Description
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes.Status.{Inaccessible, Up}
 import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes.{Health, ServiceDescription, Status}
 import io.circe.Encoder

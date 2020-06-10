@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.iam.acls
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.iam.config.Contexts._
 import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import com.github.ghik.silencer.silent
 import io.circe.Encoder

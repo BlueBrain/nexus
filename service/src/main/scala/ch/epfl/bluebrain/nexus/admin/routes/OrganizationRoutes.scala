@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
-import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.routes.OrganizationRoutes._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
@@ -16,6 +15,7 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder

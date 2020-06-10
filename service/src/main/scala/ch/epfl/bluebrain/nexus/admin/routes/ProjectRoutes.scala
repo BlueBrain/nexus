@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.admin.config.Permissions.{projects => pp}
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
-import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import monix.eval.Task
 import monix.execution.Scheduler
 

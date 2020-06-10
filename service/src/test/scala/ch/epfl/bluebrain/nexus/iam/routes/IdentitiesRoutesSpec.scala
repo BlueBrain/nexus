@@ -4,13 +4,13 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.iam.auth.{AccessToken, TokenRejection}
-import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.realms._
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.IamError.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated, User}
 import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util.Resources
 import com.typesafe.config.{Config, ConfigFactory}

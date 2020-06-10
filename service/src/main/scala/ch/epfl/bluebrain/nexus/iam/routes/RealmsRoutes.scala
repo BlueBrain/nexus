@@ -3,18 +3,18 @@ package ch.epfl.bluebrain.nexus.iam.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.iam.config.Contexts.{iamCtxUri, resourceCtxUri, searchCtxUri}
 import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives.authenticator
 import ch.epfl.bluebrain.nexus.iam.directives.RealmDirectives._
-import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.realms.{Realms, Resource, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.iam.routes.RealmsRoutes._
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.ResourceF.resourceMetaEncoder
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Contexts.{iamCtxUri, resourceCtxUri, searchCtxUri}
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}

@@ -6,8 +6,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error._
-import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
-import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.{Error, ExpectedException}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, AuthToken, Caller, Permission}
@@ -16,6 +14,8 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import monix.eval.Task
 import monix.execution.Scheduler.global
@@ -94,7 +94,7 @@ class AuthDirectivesSpec
       Get("/") ~> authorizeOnRoute(path2, permission)(None) ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[Error] shouldEqual Error(
-          classNameOf[AdminError.InternalError.type],
+          classNameOf[ServiceError.InternalError.type],
           "The system experienced an unexpected error, please try again later."
         )
       }

@@ -6,13 +6,13 @@ import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route}
 import ch.epfl.bluebrain.nexus.iam.acls._
 import ch.epfl.bluebrain.nexus.iam.directives.AclDirectives._
 import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives._
-import ch.epfl.bluebrain.nexus.iam.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.routes.AclsRoutes.PatchAcl.{AppendAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.iam.routes.AclsRoutes._
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.{Decoder, DecodingFailure}
 import kamon.instrumentation.akka.http.TracingDirectives._
 import monix.eval.Task
