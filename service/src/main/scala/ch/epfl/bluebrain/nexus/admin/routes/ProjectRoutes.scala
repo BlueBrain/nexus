@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
@@ -24,24 +25,27 @@ class ProjectRoutes(
     projects: Projects[Task],
     orgCache: OrganizationCache[Task],
     projCache: ProjectCache[Task],
-    ic: IamClient[Task]
+    acls: Acls[Task],
+    realms: Realms[Task]
 )(
-    implicit icc: IamClientConfig,
+    implicit
     hc: HttpConfig,
     pagination: PaginationConfig,
     s: Scheduler
-) extends AuthDirectives(ic)
+) extends AuthDirectives(acls, realms)
     with QueryDirectives {
 
-  implicit val oc = orgCache
-  implicit val pc = projCache
-  def routes: Route = (pathPrefix("projects") & extractToken) { implicit token =>
+  implicit private val oc: OrganizationCache[Task] = orgCache
+  implicit private val pc: ProjectCache[Task]      = projCache
+
+  def routes: Route = (pathPrefix("projects") & extractCaller) { caller =>
+    implicit val subject: Subject = caller.subject
     concat(
       // fetch
       (get & project & pathEndOrSingleSlash) {
         case (orgLabel, projectLabel) =>
           traceOne {
-            authorizeOn(pathOf(orgLabel, projectLabel), pp.read).apply {
+            authorizeOn(pathOf(orgLabel, projectLabel), pp.read)(caller) {
               parameter("rev".as[Long].?) {
                 case Some(rev) =>
                   complete(projects.fetch(orgLabel, projectLabel, rev).runToFuture)
@@ -52,47 +56,42 @@ class ProjectRoutes(
           }
       },
       // writes
-      extractSubject.apply { implicit subject =>
-        concat(
-          (project & pathEndOrSingleSlash) {
-            case (orgLabel, projectLabel) =>
-              traceOne {
-                concat(
-                  // deprecate
-                  (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
-                    complete(projects.deprecate(orgLabel, projectLabel, rev).runToFuture)
-                  },
-                  // update
-                  (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
-                    entity(as[ProjectDescription]) { project =>
-                      complete(projects.update(orgLabel, projectLabel, project, rev).runToFuture)
-                    }
-                  }
-                )
-              }
-          },
-          // create
-          (pathPrefix(Segment / Segment) & pathEndOrSingleSlash) { (orgLabel, projectLabel) =>
-            traceOne {
-              (put & authorizeOn(pathOf(orgLabel), pp.create)) {
+      (project & pathEndOrSingleSlash) {
+        case (orgLabel, projectLabel) =>
+          traceOne {
+            concat(
+              // deprecate
+              (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)(caller)) {
+                rev => complete(projects.deprecate(orgLabel, projectLabel, rev).runToFuture)
+              },
+              // update
+              (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)(caller)) { rev =>
                 entity(as[ProjectDescription]) { project =>
-                  complete(projects.create(orgLabel, projectLabel, project).runWithStatus(Created))
+                  complete(projects.update(orgLabel, projectLabel, project, rev).runToFuture)
                 }
               }
+            )
+          }
+      },
+      // create
+      (pathPrefix(Segment / Segment) & pathEndOrSingleSlash) { (orgLabel, projectLabel) =>
+        traceOne {
+          (put & authorizeOn(pathOf(orgLabel), pp.create)(caller)) {
+            entity(as[ProjectDescription]) { project =>
+              complete(projects.create(orgLabel, projectLabel, project).runWithStatus(Created))
             }
           }
-        )
-
+        }
       },
       // list all projects
-      (get & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)) {
+      (get & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)(caller)) {
         (pagination, params, acls) =>
           traceCol {
             complete(projects.list(params, pagination)(acls).runToFuture)
           }
       },
       // list projects in organization
-      (get & org & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)) {
+      (get & org & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)(caller)) {
         (orgLabel, pagination, params, acls) =>
           traceOrgCol {
             val orgField = Some(Field(orgLabel, exactMatch = true))
@@ -120,19 +119,4 @@ class ProjectRoutes(
 
   private def traceOne: Directive0 =
     operationName(s"/${hc.prefix}/projects/{}/{}")
-}
-
-object ProjectRoutes {
-  def apply(
-      projects: Projects[Task],
-      orgCache: OrganizationCache[Task],
-      projCache: ProjectCache[Task],
-      ic: IamClient[Task]
-  )(
-      implicit icc: IamClientConfig,
-      hc: HttpConfig,
-      pagination: PaginationConfig,
-      s: Scheduler
-  ): ProjectRoutes =
-    new ProjectRoutes(projects, orgCache, projCache, ic)
 }

@@ -10,7 +10,6 @@ import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PermissionsConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.instances._
@@ -23,10 +22,10 @@ import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
@@ -42,17 +41,19 @@ import scala.concurrent.ExecutionContext
 /**
   * Organizations operations bundle
   */
-class Organizations[F[_]: Timer](agg: Agg[F], private val index: OrganizationCache[F], iamClient: IamClient[F])(
+class Organizations[F[_]: Timer](
+    agg: Agg[F],
+    private val index: OrganizationCache[F],
+    aclsApi: Acls[F],
+    saCaller: Caller
+)(
     implicit F: Effect[F],
     clock: Clock,
-    permissionsConfig: PermissionsConfig,
-    http: HttpConfig,
-    iam: IamClientConfig,
-    iamCredentials: Option[AuthToken],
-    ownerPermissions: Set[Permission]
+    cfg: ServiceConfig
 ) {
 
-  implicit private val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
+  implicit private val httpConfig: HttpConfig      = cfg.http
+  implicit private val retryPolicy: RetryPolicy[F] = cfg.admin.permissions.retry.retryPolicy[F]
 
   /**
     * Create an organization.
@@ -77,19 +78,21 @@ class Organizations[F[_]: Timer](agg: Agg[F], private val index: OrganizationCac
       case (acc, (_, acl)) => acc ++ acl.value.permissions
     }
     val orgAcl = acls.value.get(/ + orgLabel).map(_.value.value).getOrElse(Map.empty)
-    val rev    = acls.value.get(/ + orgLabel).map(_.rev)
-
-    if (ownerPermissions.subsetOf(currentPermissions)) F.unit
-    else iamClient.putAcls(/ + orgLabel, AccessControlList(orgAcl + (subject -> ownerPermissions)), rev)
+    val rev    = acls.value.get(/ + orgLabel).fold(0L)(_.rev)
+    if (cfg.admin.permissions.ownerPermissions.subsetOf(currentPermissions))
+      F.unit
+    else {
+      val replaceAcls = AccessControlList(orgAcl + (subject -> cfg.admin.permissions.ownerPermissions))
+      aclsApi.replace(/ + orgLabel, rev, replaceAcls)(saCaller) >> F.unit
+    }
 
   }
 
-  private def setOwnerPermissions(orgLabel: String, subject: Subject): F[Unit] = {
+  private def setOwnerPermissions(orgLabel: String, subject: Subject): F[Unit] =
     for {
-      acls <- iamClient.acls(/ + orgLabel, ancestors = true, self = false)
+      acls <- aclsApi.list(/ + orgLabel, ancestors = true, self = false)(saCaller)
       _    <- setPermissions(orgLabel, acls, subject)
     } yield ()
-  }
 
   /**
     * Update an organization.
@@ -203,14 +206,10 @@ object Organizations {
     */
   def apply[F[_]: ConcurrentEffect: Timer](
       index: OrganizationCache[F],
-      iamClient: IamClient[F]
+      aclsApi: Acls[F],
+      realms: Realms[F]
   )(implicit serviceConfig: ServiceConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
-    implicit val iamCredentials: Option[AuthToken] = serviceConfig.admin.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission] = serviceConfig.admin.permissions.ownerPermissions
-    implicit val retryPolicy: RetryPolicy[F]       = serviceConfig.admin.aggregate.retry.retryPolicy[F]
-    implicit val httpConfig                        = serviceConfig.http
-    implicit val adminConfig                       = serviceConfig.admin
-    implicit val iamClientConfig                   = serviceConfig.admin.iam
+    implicit val retryPolicy: RetryPolicy[F] = serviceConfig.admin.aggregate.retry.retryPolicy[F]
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",
@@ -221,8 +220,10 @@ object Organizations {
         serviceConfig.admin.aggregate.akkaAggregateConfig,
         serviceConfig.cluster.shards
       )
-
-    aggF.map(new Organizations(_, index, iamClient))
+    for {
+      saCaller <- serviceConfig.admin.serviceAccount.credentials.map(realms.caller).getOrElse(Caller.anonymous.pure[F])
+      agg      <- aggF
+    } yield new Organizations(agg, index, aclsApi, saCaller)
   }
 
   def indexer[F[_]: Timer](

@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.routes.OrganizationRoutes._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
@@ -22,61 +23,62 @@ import io.circe.generic.semiauto.deriveDecoder
 import monix.eval.Task
 import monix.execution.Scheduler
 
-class OrganizationRoutes(organizations: Organizations[Task], cache: OrganizationCache[Task], ic: IamClient[Task])(
-    implicit icc: IamClientConfig,
+class OrganizationRoutes(
+    organizations: Organizations[Task],
+    cache: OrganizationCache[Task],
+    acls: Acls[Task],
+    realms: Realms[Task]
+)(
+    implicit
     hc: HttpConfig,
     pc: PaginationConfig,
     s: Scheduler
-) extends AuthDirectives(ic)
+) extends AuthDirectives(acls, realms)
     with QueryDirectives {
 
   implicit val oc = cache
-  def routes: Route = (pathPrefix("orgs") & extractToken) { implicit token =>
+  def routes: Route = (pathPrefix("orgs") & extractCaller) { caller =>
+    implicit val subject: Subject = caller.subject
     concat(
       // fetch
       (get & org & pathEndOrSingleSlash & parameter("rev".as[Long].?)) { (orgLabel, optRev) =>
-        authorizeOn(pathOf(orgLabel), orgs.read).apply {
+        authorizeOn(pathOf(orgLabel), orgs.read)(caller) {
           traceOne {
             complete(organizations.fetch(orgLabel, optRev).runNotFound)
           }
         }
       },
       // writes
-      extractSubject.apply { implicit subject =>
-        concat(
-          (org & pathEndOrSingleSlash) {
-            orgLabel =>
-              traceOne {
-                concat(
-                  // deprecate
-                  (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
-                    complete(organizations.deprecate(orgLabel, rev).runToFuture)
-                  },
-                  // update
-                  (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
-                    entity(as[OrganizationDescription]) { org =>
-                      complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
-                    } ~
-                      complete(organizations.update(orgLabel, Organization(orgLabel, None), rev).runToFuture)
-                  }
-                )
-              }
-          },
-          // create
-          (pathPrefix(Segment) & pathEndOrSingleSlash) { orgLabel =>
-            traceOne {
-              (put & authorizeOn(pathOf(orgLabel), orgs.create)) {
-                entity(as[OrganizationDescription]) { org =>
-                  complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
-                } ~
-                  complete(organizations.create(Organization(orgLabel, None)).runWithStatus(Created))
-              }
+      (org & pathEndOrSingleSlash) { orgLabel =>
+        traceOne {
+          concat(
+            // deprecate
+            (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
+              complete(organizations.deprecate(orgLabel, rev).runToFuture)
+            },
+            // update
+            (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
+              entity(as[OrganizationDescription]) { org =>
+                complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
+              } ~
+                complete(organizations.update(orgLabel, Organization(orgLabel, None), rev).runToFuture)
             }
+          )
+        }
+      },
+      // create
+      (pathPrefix(Segment) & pathEndOrSingleSlash) { orgLabel =>
+        traceOne {
+          (put & authorizeOn(pathOf(orgLabel), orgs.create)(caller)) {
+            entity(as[OrganizationDescription]) { org =>
+              complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
+            } ~
+              complete(organizations.create(Organization(orgLabel, None)).runWithStatus(Created))
           }
-        )
+        }
       },
       // listing
-      (get & pathEndOrSingleSlash & paginated & searchParamsOrgs & extractCallerAcls(anyOrg)) {
+      (get & pathEndOrSingleSlash & paginated & searchParamsOrgs & extractCallerAcls(anyOrg)(caller)) {
         (pagination, params, acls) =>
           traceCol {
             complete(organizations.list(params, pagination)(acls).runToFuture)
@@ -108,12 +110,4 @@ object OrganizationRoutes {
 
   implicit private[routes] val descriptionDecoder: Decoder[OrganizationDescription] =
     deriveDecoder[OrganizationDescription]
-
-  def apply(organizations: Organizations[Task], cache: OrganizationCache[Task], ic: IamClient[Task])(
-      implicit icc: IamClientConfig,
-      hc: HttpConfig,
-      pagination: PaginationConfig,
-      s: Scheduler
-  ): OrganizationRoutes =
-    new OrganizationRoutes(organizations, cache, ic)
 }

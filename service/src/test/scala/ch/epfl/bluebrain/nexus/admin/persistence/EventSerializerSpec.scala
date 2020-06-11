@@ -6,9 +6,9 @@ import java.util.UUID
 import akka.actor.ExtendedActorSystem
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity
+import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.util._
 import io.circe.Json
 import io.circe.parser.parse
 import org.scalatest.Inspectors

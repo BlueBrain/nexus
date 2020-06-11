@@ -5,7 +5,8 @@ import java.util.UUID
 import cats.Monad
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStore
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Permission}
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 
 abstract class Cache[F[_]: Monad, V](val store: KeyValueStore[F, UUID, ResourceF[V]]) {

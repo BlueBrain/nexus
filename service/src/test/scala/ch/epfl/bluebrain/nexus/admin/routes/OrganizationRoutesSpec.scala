@@ -19,11 +19,11 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.routes.Routes
+import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import io.circe.Json
 import monix.eval.Task
 import monix.execution.Scheduler.global
@@ -53,22 +54,18 @@ class OrganizationRoutesSpec
     with Matchers
     with Inspectors {
 
-  private val iamClient         = mock[IamClient[Task]]
+  private val aclsApi           = mock[Acls[Task]]
+  private val realmsApi         = mock[Realms[Task]]
   private val organizationCache = mock[OrganizationCache[Task]]
   private val organizations     = mock[Organizations[Task]]
 
-  private val config: ServiceConfig           = Settings(system).serviceConfig
+  private val config: ServiceConfig =
+    Settings(system).serviceConfig.copy(http = HttpConfig("some", 80, "v1", "https://nexus.example.com"))
   implicit private val httpConfig: HttpConfig = config.http
-  implicit private val iamClientConfig: IamClientConfig = IamClientConfig(
-    url"https://nexus.example.com",
-    url"http://localhost:8080",
-    "v1"
-  )
 
   private val routes =
     Routes.wrap(
-      OrganizationRoutes(organizations, organizationCache, iamClient)(
-        iamClientConfig,
+      new OrganizationRoutes(organizations, organizationCache, aclsApi, realmsApi)(
         httpConfig,
         PaginationConfig(50, 100),
         global
@@ -79,10 +76,10 @@ class OrganizationRoutesSpec
   trait Context {
     implicit val caller: Caller            = Caller(Identity.User("realm", "alice"), Set.empty)
     implicit val subject: Identity.Subject = caller.subject
-    implicit val token: Some[AuthToken]    = Some(AuthToken("token"))
+    val token                              = AccessToken("token")
 
     val acls: AccessControlLists = AccessControlLists(
-      Path./ -> ResourceAccessControlList(
+      Path./ -> IamResourceF(
         url"http://localhost/",
         1L,
         Set.empty,
@@ -118,13 +115,28 @@ class OrganizationRoutesSpec
     )
     val meta         = resource.discard
     val replacements = Map(quote("{instant}") -> instant.toString, quote("{uuid}") -> orgId.toString)
+
+    realmsApi.caller(token) shouldReturn Task.pure(caller)
+    aclsApi.list(path, ancestors = true, self = true)(caller) shouldReturn
+      Task.pure(
+        AccessControlLists(
+          path -> IamResourceF(
+            url"http://nexus.example.com/$path",
+            1L,
+            Set.empty,
+            Instant.now(),
+            subject,
+            Instant.now(),
+            subject,
+            AccessControlList(subject -> Set(create, write, read))
+          )
+        )
+      )
   }
 
   "Organizations routes" should {
 
     "create an organization" in new Context {
-      iamClient.hasPermission(path, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Right(meta))
 
       Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
@@ -134,8 +146,6 @@ class OrganizationRoutesSpec
     }
 
     "create an organization without payload" in new Context {
-      iamClient.hasPermission(path, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.create(organization.copy(description = None)) shouldReturn Task(Right(meta))
 
       Put("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
@@ -145,8 +155,6 @@ class OrganizationRoutesSpec
     }
 
     "create an organization with empty payload" in new Context {
-      iamClient.hasPermission(path, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.create(organization.copy(description = None)) shouldReturn Task(Right(meta))
 
       Put("/orgs/org", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
@@ -156,8 +164,6 @@ class OrganizationRoutesSpec
     }
 
     "updates an organization" in new Context {
-      iamClient.hasPermission(path, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.update(organization.label, organization, 2L) shouldReturn Task(Right(meta))
 
       Put("/orgs/org?rev=2", description) ~> addCredentials(cred) ~> routes ~> check {
@@ -167,8 +173,6 @@ class OrganizationRoutesSpec
     }
 
     "updates an organization with empty payload" in new Context {
-      iamClient.hasPermission(path, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.update(organization.label, organization.copy(description = None), 1L) shouldReturn Task(Right(meta))
 
       Put("/orgs/org?rev=1", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
@@ -178,8 +182,6 @@ class OrganizationRoutesSpec
     }
 
     "reject the creation of an organization which already exists" in new Context {
-      iamClient.hasPermission(path, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Left(OrganizationAlreadyExists("org")))
 
       Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
@@ -189,9 +191,6 @@ class OrganizationRoutesSpec
     }
 
     "reject the creation of an organization without a label" in new Context {
-      iamClient.hasPermission(Path./, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
-
       Put("/orgs/", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.MethodNotAllowed
         responseAs[Error].`@type` shouldEqual "HttpMethodNotAllowed"
@@ -199,8 +198,6 @@ class OrganizationRoutesSpec
     }
 
     "fetch an organization" in new Context {
-      iamClient.hasPermission(path, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org") shouldReturn Task(Some(resource))
       organizationCache.get(resource.uuid) shouldReturn Task(Some(resource))
       val endpoints = List("/orgs/org", s"/orgs/${resource.uuid}")
@@ -213,8 +210,6 @@ class OrganizationRoutesSpec
     }
 
     "return not found for a non-existent organization" in new Context {
-      iamClient.hasPermission(path, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org") shouldReturn Task(None)
 
       Get("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
@@ -223,8 +218,6 @@ class OrganizationRoutesSpec
     }
 
     "fetch a specific organization revision" in new Context {
-      iamClient.hasPermission(path, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org", Some(2L)) shouldReturn Task(Some(resource))
 
       Get("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
@@ -234,8 +227,6 @@ class OrganizationRoutesSpec
     }
 
     "deprecate an organization" in new Context {
-      iamClient.hasPermission(path, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Right(meta))
 
       Delete("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
@@ -245,9 +236,6 @@ class OrganizationRoutesSpec
     }
 
     "reject the deprecation of an organization without rev" in new Context {
-      iamClient.hasPermission(path, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
-
       Delete("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].`@type` shouldEqual "MissingQueryParam"
@@ -255,8 +243,6 @@ class OrganizationRoutesSpec
     }
 
     "reject the deprecation of an organization with incorrect rev" in new Context {
-      iamClient.hasPermission(path, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Left(IncorrectRev(3L, 2L)))
 
       Delete("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
@@ -266,9 +252,8 @@ class OrganizationRoutesSpec
     }
 
     "reject unauthorized requests" in new Context {
-      iamClient.hasPermission(path, read)(None) shouldReturn Task.pure(false)
-      iamClient.identities(None) shouldReturn Task(Caller.anonymous)
-
+      aclsApi.list(Path("/org").rightValue, ancestors = true, self = true)(Caller.anonymous) shouldReturn
+        Task.pure(AccessControlLists.empty)
       Get("/orgs/org") ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         responseAs[Error].`@type` shouldEqual "AuthorizationFailed"
@@ -283,10 +268,9 @@ class OrganizationRoutesSpec
     }
 
     "list organizations" in new Context {
-      iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
-      iamClient.acls(Path("/*").rightValue, ancestors = true, self = true) shouldReturn Task(acls)
+
+      aclsApi.list(Path("/*").rightValue, ancestors = true, self = true)(caller) shouldReturn
+        Task.pure(acls)
 
       val orgs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").rightValue
@@ -305,10 +289,7 @@ class OrganizationRoutesSpec
     }
 
     "list deprecated organizations" in new Context {
-      iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.identities shouldReturn Task(caller)
-      iamClient.acls(Path("/*").rightValue, ancestors = true, self = true) shouldReturn Task(acls)
+      aclsApi.list(Path("/*").rightValue, ancestors = true, self = true) shouldReturn Task(acls)
 
       val orgs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").rightValue

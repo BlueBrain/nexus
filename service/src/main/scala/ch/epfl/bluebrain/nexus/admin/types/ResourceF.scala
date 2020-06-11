@@ -5,11 +5,11 @@ import java.util.UUID
 
 import akka.cluster.ddata.LWWRegister.Clock
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -83,7 +83,7 @@ object ResourceF {
   ): ResourceF[Unit] =
     ResourceF(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy, ())
 
-  implicit def resourceMetaEncoder(implicit iamClientConfig: IamClientConfig): Encoder[ResourceMetadata] =
+  implicit def resourceMetaEncoder(implicit http: HttpConfig): Encoder[ResourceMetadata] =
     Encoder.encodeJson.contramap {
       case ResourceF(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy, _: Unit) =>
         val jsonTypes = types.toList match {
@@ -105,12 +105,10 @@ object ResourceF {
         )
     }
 
-  implicit def resourceEncoder[A: Encoder](implicit iamClientConfig: IamClientConfig): Encoder[ResourceF[A]] =
+  implicit def resourceEncoder[A: Encoder](implicit http: HttpConfig): Encoder[ResourceF[A]] =
     Encoder.encodeJson.contramap { resource => resource.discard.asJson.deepMerge(resource.value.asJson) }
 
-  implicit def uqrsEncoder[A: Encoder](
-      implicit iamClientConfig: IamClientConfig
-  ): Encoder[UnscoredQueryResults[ResourceF[A]]] = {
+  implicit def uqrsEncoder[A: Encoder](implicit http: HttpConfig): Encoder[UnscoredQueryResults[ResourceF[A]]] = {
     Encoder.encodeJson.contramap {
       case UnscoredQueryResults(total, results, _) =>
         Json.obj(

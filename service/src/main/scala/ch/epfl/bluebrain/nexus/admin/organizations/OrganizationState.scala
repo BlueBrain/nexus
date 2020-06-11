@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.admin.types.{ResourceF, ResourceMetadata}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 

@@ -12,28 +12,29 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
+import ch.epfl.bluebrain.nexus.admin.config.Permissions.{events, orgs, projects}
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, ResourceF => IamResourceF}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.routes.Routes
+import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.matchers.MacroBasedMatchers
 import org.mockito.{IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 
@@ -58,13 +59,26 @@ class EventRoutesSpec
   private val config        = Settings(system).serviceConfig
   implicit private val http = config.http
   implicit private val pc   = config.persistence
-  implicit private val ic   = config.admin.iam
-
-  implicit private val client = mock[IamClient[Task]]
+  private val aclsApi       = mock[Acls[Task]]
+  private val realmsApi     = mock[Realms[Task]]
 
   before {
-    Mockito.reset(client)
-    client.hasPermission(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+    Mockito.reset(aclsApi, realmsApi)
+    aclsApi.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task.pure(
+      AccessControlLists(
+        Path./ -> IamResourceF(
+          url"http://nexus.example.com/",
+          1L,
+          Set.empty,
+          Instant.now(),
+          subject,
+          Instant.now(),
+          subject,
+          AccessControlList(Anonymous -> Set(events.read, orgs.read, projects.read))
+        )
+      )
+    )
+//    client.hasPermission(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.pure(true)
   }
 
   val instant = Instant.EPOCH
@@ -167,7 +181,7 @@ class EventRoutesSpec
 
   "The EventRoutes" should {
     "return the organization events in the right order" in {
-      val routes = new TestableEventRoutes(orgEvents).routes
+      val routes = new TestableEventRoutes(orgEvents, aclsApi, realmsApi).routes
       forAll(List("/orgs/events", "/orgs/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
@@ -176,7 +190,7 @@ class EventRoutesSpec
       }
     }
     "return the project events in the right order" in {
-      val routes = new TestableEventRoutes(projectEvents).routes
+      val routes = new TestableEventRoutes(projectEvents, aclsApi, realmsApi).routes
       forAll(List("/projects/events", "/projects/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
@@ -185,7 +199,7 @@ class EventRoutesSpec
       }
     }
     "return all events in the right order" in {
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents).routes
+      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
       forAll(List("/events", "/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
@@ -194,7 +208,7 @@ class EventRoutesSpec
       }
     }
     "return events from the last seen" in {
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents).routes
+      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
       forAll(List("/events", "/events/")) { path =>
         Get(path).addHeader(`Last-Event-ID`(1.toString)) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
@@ -204,9 +218,9 @@ class EventRoutesSpec
     }
 
     "return Forbidden when requesting the log with no permissions" in {
-      Mockito.reset(client)
-      client.hasPermission(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.pure(false)
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents).routes
+      Mockito.reset(aclsApi)
+      aclsApi.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task(AccessControlLists.empty)
+      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
       val endpoints = List(
         "/events",
         "/events/",
@@ -229,9 +243,11 @@ object EventRoutesSpec {
 
   //noinspection TypeAnnotation
   class TestableEventRoutes(
-      events: List[Any]
-  )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig, ic: IamClientConfig, cl: IamClient[Task])
-      extends EventRoutes(cl) {
+      events: List[Any],
+      acls: Acls[Task],
+      realms: Realms[Task]
+  )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig)
+      extends EventRoutes(acls, realms) {
 
     override def routes: Route = Routes.wrap(super.routes)
 

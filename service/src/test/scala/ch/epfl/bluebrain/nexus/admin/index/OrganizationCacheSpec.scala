@@ -8,18 +8,19 @@ import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.config.Permissions
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
+import ch.epfl.bluebrain.nexus.iam.types.{ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues, Randomness}
-import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util._
 import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 
@@ -38,7 +39,7 @@ class OrganizationCacheSpec
   implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
   implicit private val subject          = Caller.anonymous.subject
   implicit private val config           = Settings(system).serviceConfig
-  implicit val iamClientConfig          = config.admin.iam
+  implicit val http                     = config.http
   implicit private val keyStoreConfig   = config.admin.keyValueStore
 
   val index        = OrganizationCache[IO]
@@ -68,7 +69,7 @@ class OrganizationCacheSpec
 
     "list organizations" in {
       implicit val acls: AccessControlLists = AccessControlLists(
-        Path./ -> ResourceAccessControlList(
+        Path./ -> IamResourceF(
           url"http://localhost/",
           1L,
           Set.empty,
@@ -104,7 +105,7 @@ class OrganizationCacheSpec
       def sortedOrgsRev(rev: Long) = sortedOrgsNotDeprecated.filter(_.source.rev == rev)
 
       val aclsOrg1 = AccessControlLists(
-        Path(s"/${orgLabels.head}").rightValue -> ResourceAccessControlList(
+        Path(s"/${orgLabels.head}").rightValue -> IamResourceF(
           url"http://localhost/",
           1L,
           Set.empty,
@@ -121,10 +122,10 @@ class OrganizationCacheSpec
         UnscoredQueryResults(26L, sortedOrgsNotDeprecated)
       index.list(SearchParams(rev = Some(24), deprecated = Some(false)), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(1L, sortedOrgsRev(24))
-      index.list(SearchParams.empty, FromPagination(0, 100))(aclsOrg1, iamClientConfig).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(0, 100))(aclsOrg1).ioValue shouldEqual
         UnscoredQueryResults(1L, List(UnscoredQueryResult(orgResources.head)))
       index
-        .list(SearchParams.empty, FromPagination(0, 100))(AccessControlLists.empty, iamClientConfig)
+        .list(SearchParams.empty, FromPagination(0, 100))(AccessControlLists.empty)
         .ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
       index.list(SearchParams.empty, FromPagination(0, 10)).ioValue shouldEqual
         UnscoredQueryResults(51L, sortedOrgs.slice(0, 10))
