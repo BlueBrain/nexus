@@ -18,9 +18,9 @@ val scalaCompilerVersion     = "2.13.1"
 val akkaHttpVersion                 = "10.1.12"
 val akkaHttpCirceVersion            = "1.32.0"
 val akkaCorsVersion                 = "1.0.0"
-val akkaPersistenceCassandraVersion = "1.0.0"
+val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
-val akkaVersion                     = "2.6.5"
+val akkaVersion                     = "2.6.6"
 val asmVersion                      = "7.3.1"
 val byteBuddyAgentVersion           = "1.10.10"
 val blazegraphVersion               = "2.1.5"
@@ -29,7 +29,7 @@ val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.1.1"
 val circeVersion                    = "0.13.0"
 val declineVersion                  = "1.2.0"
-val distageVersion                  = "0.10.10"
+val distageVersion                  = "0.10.12"
 val doobieVersion                   = "0.9.0"
 val elasticSearchVersion            = "7.5.1"
 val fs2Version                      = "2.3.0"
@@ -43,16 +43,15 @@ val kanelaAgentVersion              = "1.0.5"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
-val log4jVersion                    = "2.13.0"
+val log4jVersion                    = "2.13.3"
 val magnoliaVersion                 = "0.16.0"
-val mockitoVersion                  = "1.14.3"
-val monixVersion                    = "3.2.1"
-val nimbusJoseJwtVersion            = "8.17.1"
+val mockitoVersion                  = "1.14.4"
+val monixVersion                    = "3.2.2"
+val nimbusJoseJwtVersion            = "8.19"
 val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
-val splitBrainLithiumVersion        = "0.11.2"
 val topBraidVersion                 = "1.3.2"
 
 lazy val akkaActor                = "com.typesafe.akka"                 %% "akka-actor"                          % akkaVersion
@@ -116,7 +115,6 @@ lazy val pureconfig               = "com.github.pureconfig"             %% "pure
 lazy val scalaLogging             = "com.typesafe.scala-logging"        %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"                     %% "scalatest"                           % scalaTestVersion
 // splitBrainLithium should be exchanged for Akka Split Brain Resolver as soon as Akka merge it into Akka Cluster
-lazy val splitBrainLithium = "com.swissborg"  %% "lithium"      % splitBrainLithiumVersion
 lazy val topBraidShacl     = "org.topbraid"   % "shacl"         % topBraidVersion
 lazy val scalaReflect      = "org.scala-lang" % "scala-reflect" % scalaCompilerVersion
 lazy val docs = project
@@ -283,7 +281,6 @@ lazy val service = project
       monixEval,
       nimbusJoseJwt,
       parboiled2,
-      splitBrainLithium,
       topBraidShacl,
       akkaHttpTestKit         % Test,
       akkaPersistenceInMem    % Test,

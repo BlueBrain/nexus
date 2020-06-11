@@ -10,7 +10,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class JWKSetSerializerSpec
-    extends TestKit(ActorSystem("JWKSetSerializerSpec", ConfigFactory.load("akka-test.conf")))
+    extends TestKit(ActorSystem("JWKSetSerializerSpec", ConfigFactory.load("test.conf")))
     with AnyWordSpecLike
     with Matchers
     with TryValues {
