@@ -4,7 +4,6 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 
 /**
   * Enumeration of Organization collection command types.
