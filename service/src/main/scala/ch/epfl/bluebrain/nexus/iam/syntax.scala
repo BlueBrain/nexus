@@ -11,7 +11,7 @@ object syntax {
   implicit final def absoluteIriSyntax(iri: AbsoluteIri): AbsoluteIriSyntax        = new AbsoluteIriSyntax(iri)
 
   final class IdentitiesSyntax(private val identities: Set[Identity]) extends AnyVal {
-    private def findUser: Option[User]      = identities.collectFirst { case user: User      => user }
+    private def findUser: Option[User]      = identities.collectFirst { case user: User => user }
     private def findAnon: Option[Anonymous] = identities.collectFirst { case anon: Anonymous => anon }
 
     /**

@@ -128,9 +128,9 @@ class Permissions[F[_]](
     agg
       .evaluateS(persistenceId, cmd)
       .flatMap {
-        case Left(rej) => F.pure(Left(rej))
+        case Left(rej)         => F.pure(Left(rej))
         // $COVERAGE-OFF$
-        case Right(Initial) => F.raiseError(UnexpectedInitialState(id))
+        case Right(Initial)    => F.raiseError(UnexpectedInitialState(id))
         // $COVERAGE-ON$
         case Right(c: Current) => F.pure(Right(c.resourceMetadata))
       }
@@ -146,8 +146,8 @@ object Permissions {
   /**
     * Constructs a new permissions aggregate.
     */
-  def aggregate[F[_]: Effect: Timer](
-      implicit as: ActorSystem,
+  def aggregate[F[_]: Effect: Timer](implicit
+      as: ActorSystem,
       pc: PermissionsConfig
   ): F[Agg[F]] = {
     implicit val retryPolicy: RetryPolicy[F] = pc.aggregate.retry.retryPolicy[F]
@@ -168,8 +168,7 @@ object Permissions {
     * @param agg  the permissions aggregate
     * @param acls a lazy reference to the ACL api
     */
-  def apply[F[_]: Effect](agg: Agg[F], acls: F[Acls[F]])(
-      implicit
+  def apply[F[_]: Effect](agg: Agg[F], acls: F[Acls[F]])(implicit
       http: HttpConfig,
       pc: PermissionsConfig
   ): Permissions[F] =
@@ -180,8 +179,7 @@ object Permissions {
     *
     * @param acls a lazy reference to the ACL api
     */
-  def apply[F[_]: Effect: Timer](acls: F[Acls[F]])(
-      implicit
+  def apply[F[_]: Effect: Timer](acls: F[Acls[F]])(implicit
       as: ActorSystem,
       http: HttpConfig,
       pc: PermissionsConfig
@@ -194,32 +192,35 @@ object Permissions {
     * @param agg  a lazy reference to the permissions aggregate
     * @param acls a lazy reference to the ACL api
     */
-  def delay[F[_]: Effect](agg: F[Agg[F]], acls: F[Acls[F]])(
-      implicit
+  def delay[F[_]: Effect](agg: F[Agg[F]], acls: F[Acls[F]])(implicit
       http: HttpConfig,
       pc: PermissionsConfig
   ): F[Permissions[F]] =
     agg.map(apply(_, acls))
 
   private[permissions] def next(pc: PermissionsConfig)(state: State, event: Event): State = {
-    implicit val p: PermissionsConfig = pc
-    def appended(e: PermissionsAppended): State = state match {
-      case s: Initial if e.rev == 1L        => s.withPermissions(e.permissions, e.instant, e.subject)
-      case s: Current if s.rev + 1 == e.rev => s.withPermissions(s.permissions ++ e.permissions, e.instant, e.subject)
-      case other                            => other
-    }
-    def replaced(e: PermissionsReplaced): State = state match {
-      case s if s.rev + 1 == e.rev => s.withPermissions(e.permissions, e.instant, e.subject)
-      case other                   => other
-    }
-    def subtracted(e: PermissionsSubtracted): State = state match {
-      case s: Current if s.rev + 1 == e.rev => s.withPermissions(s.permissions -- e.permissions, e.instant, e.subject)
-      case other                            => other
-    }
-    def deleted(e: PermissionsDeleted): State = state match {
-      case s: Current if s.rev + 1 == e.rev => s.withPermissions(Set.empty, e.instant, e.subject)
-      case other                            => other
-    }
+    implicit val p: PermissionsConfig               = pc
+    def appended(e: PermissionsAppended): State     =
+      state match {
+        case s: Initial if e.rev == 1L        => s.withPermissions(e.permissions, e.instant, e.subject)
+        case s: Current if s.rev + 1 == e.rev => s.withPermissions(s.permissions ++ e.permissions, e.instant, e.subject)
+        case other                            => other
+      }
+    def replaced(e: PermissionsReplaced): State     =
+      state match {
+        case s if s.rev + 1 == e.rev => s.withPermissions(e.permissions, e.instant, e.subject)
+        case other                   => other
+      }
+    def subtracted(e: PermissionsSubtracted): State =
+      state match {
+        case s: Current if s.rev + 1 == e.rev => s.withPermissions(s.permissions -- e.permissions, e.instant, e.subject)
+        case other                            => other
+      }
+    def deleted(e: PermissionsDeleted): State       =
+      state match {
+        case s: Current if s.rev + 1 == e.rev => s.withPermissions(Set.empty, e.instant, e.subject)
+        case other                            => other
+      }
     event match {
       case e: PermissionsAppended   => appended(e)
       case e: PermissionsReplaced   => replaced(e)
@@ -229,45 +230,48 @@ object Permissions {
   }
 
   private def evaluate[F[_]: Monad: Clock](pc: PermissionsConfig)(state: State, cmd: Command): F[EventOrRejection] = {
-    val F = implicitly[Monad[F]]
-    val C = implicitly[Clock[F]]
-    def accept(f: Instant => PermissionsEvent): F[EventOrRejection] =
+    val F                                                            = implicitly[Monad[F]]
+    val C                                                            = implicitly[Clock[F]]
+    def accept(f: Instant => PermissionsEvent): F[EventOrRejection]  =
       C.realTime(TimeUnit.MILLISECONDS).map(rtl => Right(f(Instant.ofEpochMilli(rtl))))
     def reject(rejection: PermissionsRejection): F[EventOrRejection] =
       F.pure(Left(rejection))
 
-    def replace(c: ReplacePermissions): F[EventOrRejection] =
+    def replace(c: ReplacePermissions): F[EventOrRejection]   =
       if (c.rev != state.rev) reject(IncorrectRev(c.rev, state.rev))
       else if (c.permissions.isEmpty) reject(CannotReplaceWithEmptyCollection)
       else if ((c.permissions -- pc.minimum).isEmpty) reject(CannotReplaceWithEmptyCollection)
       else accept(PermissionsReplaced(c.rev + 1, c.permissions, _, c.subject))
-    def append(c: AppendPermissions): F[EventOrRejection] = state match {
-      case _ if state.rev != c.rev    => reject(IncorrectRev(c.rev, state.rev))
-      case _ if c.permissions.isEmpty => reject(CannotAppendEmptyCollection)
-      case Initial                    => accept(PermissionsAppended(1L, c.permissions, _, c.subject))
-      case s: Current =>
-        val appended = c.permissions -- s.permissions
-        if (appended.isEmpty) reject(CannotAppendEmptyCollection)
-        else accept(PermissionsAppended(c.rev + 1, c.permissions, _, c.subject))
-    }
-    def subtract(c: SubtractPermissions): F[EventOrRejection] = state match {
-      case _ if state.rev != c.rev    => reject(IncorrectRev(c.rev, state.rev))
-      case _ if c.permissions.isEmpty => reject(CannotSubtractEmptyCollection)
-      case Initial                    => reject(CannotSubtractFromMinimumCollection(pc.minimum))
-      case s: Current =>
-        val intendedDelta = c.permissions -- s.permissions
-        val delta         = c.permissions & s.permissions
-        val subtracted    = delta -- pc.minimum
-        if (intendedDelta.nonEmpty) reject(CannotSubtractUndefinedPermissions(intendedDelta))
-        else if (subtracted.isEmpty) reject(CannotSubtractFromMinimumCollection(pc.minimum))
-        else accept(PermissionsSubtracted(c.rev + 1, delta, _, c.subject))
-    }
-    def delete(c: DeletePermissions): F[EventOrRejection] = state match {
-      case _ if state.rev != c.rev                   => reject(IncorrectRev(c.rev, state.rev))
-      case Initial                                   => reject(CannotDeleteMinimumCollection)
-      case s: Current if s.permissions == pc.minimum => reject(CannotDeleteMinimumCollection)
-      case _: Current                                => accept(PermissionsDeleted(c.rev + 1, _, c.subject))
-    }
+    def append(c: AppendPermissions): F[EventOrRejection]     =
+      state match {
+        case _ if state.rev != c.rev    => reject(IncorrectRev(c.rev, state.rev))
+        case _ if c.permissions.isEmpty => reject(CannotAppendEmptyCollection)
+        case Initial                    => accept(PermissionsAppended(1L, c.permissions, _, c.subject))
+        case s: Current                 =>
+          val appended = c.permissions -- s.permissions
+          if (appended.isEmpty) reject(CannotAppendEmptyCollection)
+          else accept(PermissionsAppended(c.rev + 1, c.permissions, _, c.subject))
+      }
+    def subtract(c: SubtractPermissions): F[EventOrRejection] =
+      state match {
+        case _ if state.rev != c.rev    => reject(IncorrectRev(c.rev, state.rev))
+        case _ if c.permissions.isEmpty => reject(CannotSubtractEmptyCollection)
+        case Initial                    => reject(CannotSubtractFromMinimumCollection(pc.minimum))
+        case s: Current                 =>
+          val intendedDelta = c.permissions -- s.permissions
+          val delta         = c.permissions & s.permissions
+          val subtracted    = delta -- pc.minimum
+          if (intendedDelta.nonEmpty) reject(CannotSubtractUndefinedPermissions(intendedDelta))
+          else if (subtracted.isEmpty) reject(CannotSubtractFromMinimumCollection(pc.minimum))
+          else accept(PermissionsSubtracted(c.rev + 1, delta, _, c.subject))
+      }
+    def delete(c: DeletePermissions): F[EventOrRejection]     =
+      state match {
+        case _ if state.rev != c.rev                   => reject(IncorrectRev(c.rev, state.rev))
+        case Initial                                   => reject(CannotDeleteMinimumCollection)
+        case s: Current if s.permissions == pc.minimum => reject(CannotDeleteMinimumCollection)
+        case _: Current                                => accept(PermissionsDeleted(c.rev + 1, _, c.subject))
+      }
 
     cmd match {
       case c: ReplacePermissions  => replace(c)

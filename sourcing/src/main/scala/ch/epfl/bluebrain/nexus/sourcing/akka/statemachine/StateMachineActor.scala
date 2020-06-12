@@ -52,7 +52,7 @@ abstract private[statemachine] class StateMachineActor[
   private val Command   = implicitly[ClassTag[Command]]
   private val Rejection = implicitly[ClassTag[Rejection]]
 
-  private var state = initialState
+  private var state                  = initialState
   //noinspection ActorMutableStateInspection
   private var stopRequested: Boolean = false
 
@@ -70,18 +70,18 @@ abstract private[statemachine] class StateMachineActor[
   }
 
   override def receive: Receive = {
-    case GetCurrentState(mid) if mid == id =>
+    case GetCurrentState(mid) if mid == id    =>
       updateStopAfterInactivity()
       sender() ! CurrentState(id, state)
       log.debug("Replied with CurrentState '{}' from actor '{}'", state, id)
-    case Evaluate(mid, value) if mid == id =>
+    case Evaluate(mid, value) if mid == id    =>
       value match {
         case Command(cmd) =>
           log.debug("Evaluating command '{}' on actor '{}'", cmd, id)
           evaluateCommand(cmd)
           context.become(evaluating(cmd, sender()))
         // $COVERAGE-OFF$
-        case _ =>
+        case _            =>
           log.error(
             "Received a command '{}' incompatible with the expected type '{}'",
             value,
@@ -92,14 +92,14 @@ abstract private[statemachine] class StateMachineActor[
         // $COVERAGE-ON$
       }
 
-    case Test(mid, value) if mid == id =>
+    case Test(mid, value) if mid == id        =>
       value match {
         case Command(cmd) =>
           log.debug("Testing command '{}' on actor '{}'", cmd, id)
           evaluateCommand(cmd, test = true)
           context.become(testing(cmd, sender()))
         // $COVERAGE-OFF$
-        case _ =>
+        case _            =>
           log.error(
             "Received a command '{}' incompatible with the expected type '{}'",
             value,
@@ -119,7 +119,7 @@ abstract private[statemachine] class StateMachineActor[
   }
 
   private def evaluating(cmd: Command, previous: ActorRef): Receive = {
-    case GetCurrentState(mid) if mid == id =>
+    case GetCurrentState(mid) if mid == id        =>
       updateStopAfterInactivity()
       sender() ! CurrentState(id, state)
       log.debug("Replied with CurrentState '{}' from actor '{}'", state, id)
@@ -129,38 +129,38 @@ abstract private[statemachine] class StateMachineActor[
       previous ! Evaluated[Rejection, State](id, Left(rejection))
       context.become(receive)
       unstashAll()
-    case Evaluated(_, Right(State(newState))) =>
+    case Evaluated(_, Right(State(newState)))     =>
       state = newState
       log.debug("Applied state '{}' to actor '{}'", state, id)
       updateStopAfterInactivity(Some(cmd))
       previous ! Evaluated[Rejection, State](id, Right(state))
       context.become(receive)
       unstashAll()
-    case cet: CommandEvaluationTimeout[_] =>
+    case cet: CommandEvaluationTimeout[_]         =>
       log.debug("Returning the command evaluation timeout on actor '{}' to the sender", id)
       updateStopAfterInactivity(Some(cmd))
       previous ! cet
       context.become(receive)
       unstashAll()
-    case cee: CommandEvaluationError[_] =>
+    case cee: CommandEvaluationError[_]           =>
       log.debug("Returning the command evaluation error on actor '{}' to the sender", id)
       updateStopAfterInactivity(Some(cmd))
       previous ! cee
       context.become(receive)
       unstashAll()
     // $COVERAGE-OFF$
-    case msg: StateMachineMsg if msg.id != id =>
+    case msg: StateMachineMsg if msg.id != id     =>
       log.warning("Unexpected message id '{}' received in actor with id '{}'", msg.id, id)
       updateStopAfterInactivity()
       sender() ! UnexpectedMsgId(id, msg.id)
     // $COVERAGE-ON$
-    case other =>
+    case other                                    =>
       log.debug("New message '{}' received for '{}' while evaluating a command, stashing", other, id)
       stash()
   }
 
   private def testing(cmd: Command, previous: ActorRef): Receive = {
-    case GetCurrentState(mid) if mid == id =>
+    case GetCurrentState(mid) if mid == id        =>
       sender() ! CurrentState(id, state)
       log.debug("Replied with CurrentState '{}' from actor '{}'", state, id)
       updateStopAfterInactivity()
@@ -170,59 +170,60 @@ abstract private[statemachine] class StateMachineActor[
       context.become(receive)
       unstashAll()
       updateStopAfterInactivity()
-    case Evaluated(_, Right(State(newState))) =>
+    case Evaluated(_, Right(State(newState)))     =>
       previous ! Tested[Rejection, State](id, Right(newState))
       log.debug("Accepted test command '{}' on actor '{}' producing '{}'", cmd, id, newState)
       context.become(receive)
       unstashAll()
       updateStopAfterInactivity()
-    case cet: CommandEvaluationTimeout[_] =>
+    case cet: CommandEvaluationTimeout[_]         =>
       log.debug("Returning the command testing timeout on actor '{}' to the sender", id)
       updateStopAfterInactivity(Some(cmd))
       previous ! cet
       context.become(receive)
       unstashAll()
-    case cee: CommandEvaluationError[_] =>
+    case cee: CommandEvaluationError[_]           =>
       log.debug("Returning the command testing error on actor '{}' to the sender", id)
       updateStopAfterInactivity(Some(cmd))
       previous ! cee
       context.become(receive)
       unstashAll()
-    case msg: StateMachineMsg if msg.id != id =>
+    case msg: StateMachineMsg if msg.id != id     =>
       // $COVERAGE-OFF$
       log.warning("Unexpected message id '{}' received in actor with id '{}'", msg.id, id)
       updateStopAfterInactivity()
       sender() ! UnexpectedMsgId(id, msg.id)
     // $COVERAGE-ON$
-    case other =>
+    case other                                    =>
       log.debug("New message '{}' received for '{}' while testing a command, stashing", other, id)
       stash()
   }
 
   // $COVERAGE-OFF$
-  override def unhandled(message: Any): Unit = message match {
-    case ReceiveTimeout => context.stop(self)
-    case Done(_)        => context.stop(self)
-    case other =>
-      log.error("Received unknown message '{}' for actor with id '{}'", other, id)
-      super.unhandled(other)
-      updateStopAfterInactivity()
-  }
+  override def unhandled(message: Any): Unit =
+    message match {
+      case ReceiveTimeout => context.stop(self)
+      case Done(_)        => context.stop(self)
+      case other          =>
+        log.error("Received unknown message '{}' for actor with id '{}'", other, id)
+        super.unhandled(other)
+        updateStopAfterInactivity()
+    }
   // $COVERAGE-ON$
 
   private def evaluateCommand(cmd: Command, test: Boolean = false): Unit = {
     val scope = if (test) "testing" else "evaluating"
-    val eval = for {
+    val eval  = for {
       _           <- IO.shift(config.commandEvaluationExecutionContext)
       eitherState <- evaluate(state, cmd).toIO.timeout(config.commandEvaluationMaxDuration)
       _           <- IO.shift(context.dispatcher)
       _           <- IO(self ! Evaluated(id, eitherState))
     } yield ()
-    val io = eval.onError {
+    val io    = eval.onError {
       case th: TimeoutException =>
         log.error(th, s"Timed out while $scope command '{}' on actor '{}'", cmd, id)
         IO.shift(context.dispatcher) >> IO(self ! CommandEvaluationTimeout(id, cmd))
-      case NonFatal(th) =>
+      case NonFatal(th)         =>
         log.error(th, s"Error while $scope command '{}' on actor '{}'", cmd, id)
         IO.shift(context.dispatcher) >> IO(self ! CommandEvaluationError(id, cmd, Option(th.getMessage)))
     }
@@ -258,7 +259,7 @@ private[statemachine] class ParentStateMachineActor(name: String, childProps: St
   private val buffer = mutable.Map.empty[String, Vector[(ActorRef, StateMachineMsg)]]
 
   def receive: Receive = {
-    case Done(id) if !buffer.contains(id) =>
+    case Done(id) if !buffer.contains(id)                =>
       val child = sender()
       context.watchWith(child, Terminated(id, child))
       buffer.put(id, Vector.empty)
@@ -267,11 +268,11 @@ private[statemachine] class ParentStateMachineActor(name: String, childProps: St
       // must buffer messages
       val messages = buffer(msg.id) :+ (sender() -> msg)
       val _        = buffer.put(msg.id, messages)
-    case msg: StateMachineMsg =>
+    case msg: StateMachineMsg                            =>
       val childName = s"$name-${msg.id}"
       log.debug("Routing message '{}' to child '{}'", msg, childName)
       child(msg.id).forward(msg)
-    case Terminated(id, _) if buffer.contains(id) =>
+    case Terminated(id, _) if buffer.contains(id)        =>
       val messages = buffer(id)
       if (messages.nonEmpty) {
         val newChild = child(id)
@@ -279,7 +280,7 @@ private[statemachine] class ParentStateMachineActor(name: String, childProps: St
           case (s, msg) => newChild.!(msg)(s)
         }
       }
-      val _ = buffer.remove(id)
+      val _        = buffer.remove(id)
   }
 
   private def child(id: String): ActorRef = {
@@ -302,7 +303,13 @@ private[statemachine] class ChildStateMachineActor[
     evaluate: (State, Command) => F[Either[Rejection, State]],
     invalidationStrategy: StopStrategy[State, Command],
     config: AkkaStateMachineConfig
-) extends StateMachineActor[F, State, Command, Rejection](name, initialState, evaluate, invalidationStrategy, config) {
+) extends StateMachineActor[F, State, Command, Rejection](
+      name,
+      initialState,
+      evaluate,
+      invalidationStrategy,
+      config
+    ) {
 
   override def targetedActorRef(): ActorRef = context.parent
 
@@ -319,7 +326,13 @@ private[statemachine] class ShardedStateMachineActor[
     evaluate: (State, Command) => F[Either[Rejection, State]],
     invalidationStrategy: StopStrategy[State, Command],
     config: AkkaStateMachineConfig
-) extends StateMachineActor[F, State, Command, Rejection](name, initialState, evaluate, invalidationStrategy, config) {
+) extends StateMachineActor[F, State, Command, Rejection](
+      name,
+      initialState,
+      evaluate,
+      invalidationStrategy,
+      config
+    ) {
 
   override def id: String = URLDecoder.decode(self.path.name, "UTF-8")
 

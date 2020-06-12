@@ -11,7 +11,7 @@ class MagnoliaGraphEncoderSpec extends RdfSpec {
 
   "A MagnoliaEncoder" should {
     "derive an Encoder for fixed ElasticSearchView" in {
-      val view = ElasticSearchView(
+      val view     = ElasticSearchView(
         id = url"http://example.com/id",
         uuid = Some(UUID.fromString("3aa14a1a-81e7-4147-8306-136d8270bb01")),
         notAMapping = mapping,
@@ -27,7 +27,7 @@ class MagnoliaGraphEncoderSpec extends RdfSpec {
       model.isIsomorphicWith(expected) shouldEqual true
     }
     "derive an Encoder for fixed AggregateElasticSearchView" in {
-      val view = AggregateElasticSearchView(
+      val view     = AggregateElasticSearchView(
         id = url"http://example.com/id",
         uuid = Some(UUID.fromString("3aa14a1a-81e7-4147-8306-136d8270bb01")),
         views = List(

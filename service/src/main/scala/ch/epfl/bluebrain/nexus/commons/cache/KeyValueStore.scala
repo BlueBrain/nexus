@@ -70,7 +70,7 @@ trait KeyValueStore[F[_], K, V] {
       case Some(value) =>
         val computedValue = f(value)
         put(key, computedValue).map(_ => Some(computedValue))
-      case other => F.pure(other)
+      case other       => F.pure(other)
     }
 
   /**
@@ -97,7 +97,7 @@ trait KeyValueStore[F[_], K, V] {
     * @param f the predicate to the satisfied
     * @return the first (key, value) pair that satisfies the predicate or None if none are found
     */
-  def find(f: (K, V) => Boolean)(implicit F: Functor[F]): F[Option[(K, V)]] =
+  def find(f: (K, V) => Boolean)(implicit F: Functor[F]): F[Option[(K, V)]]                 =
     entries.map(_.find { case (k, v) => f(k, v) })
 
   /**
@@ -208,7 +208,7 @@ object KeyValueStore {
     }
 
     override def put(key: K, value: V): F[Unit] = {
-      val msg =
+      val msg    =
         Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.put(uniqueAddr, key, value, registerClock))
       val future = IO(replicator ? msg)
       val fa     = IO.fromFuture(future).to[F]
@@ -244,7 +244,7 @@ object KeyValueStore {
           case g @ GetSuccess(`mapKey`, _) => F.pure(g.get(mapKey).entries)
           case _: NotFound[_]              => F.pure(Map.empty)
           // $COVERAGE-OFF$
-          case _: GetFailure[_] => F.raiseError(consistencyTimeoutError)
+          case _: GetFailure[_]            => F.raiseError(consistencyTimeoutError)
           // $COVERAGE-ON$
         }
         .retryingOnSomeErrors(isWorthRetrying)

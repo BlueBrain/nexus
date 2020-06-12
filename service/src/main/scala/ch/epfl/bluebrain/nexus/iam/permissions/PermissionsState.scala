@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsState.{Current, Initia
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.iam.types.{Permission, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
-import com.github.ghik.silencer.silent
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of Permissions states.
@@ -35,7 +36,7 @@ sealed trait PermissionsState extends Product with Serializable {
       subject: Subject
   )(implicit pc: PermissionsConfig): Current =
     this match {
-      case _: Initial =>
+      case _: Initial       =>
         Current(
           rev = 1L,
           permissions = permissions ++ pc.minimum,
@@ -88,7 +89,7 @@ object PermissionsState {
       updatedBy: Subject
   ) extends PermissionsState {
 
-    override def resource(implicit http: HttpConfig, @silent pc: PermissionsConfig): Resource =
+    override def resource(implicit http: HttpConfig, @nowarn("cat=unused") pc: PermissionsConfig): Resource =
       resourceMetadata.map(_ => permissions)
 
     override def resourceMetadata(implicit http: HttpConfig): ResourceMetadata =

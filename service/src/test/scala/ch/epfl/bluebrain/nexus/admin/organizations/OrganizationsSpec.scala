@@ -50,8 +50,8 @@ class OrganizationsSpec
   private val saCaller: Caller          = Caller(User("admin", "realm"), Set(Anonymous, Authenticated("realm")))
   implicit private val permissions      = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
 
-  private val serviceConfig = Settings(system).serviceConfig
-  implicit private val config = serviceConfig.copy(
+  private val serviceConfig                               = Settings(system).serviceConfig
+  implicit private val config                             = serviceConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
     admin =
       serviceConfig.admin.copy(permissions = serviceConfig.admin.permissions.copy(owner = permissions.map(_.value)))
@@ -196,7 +196,7 @@ class OrganizationsSpec
       aclsApi.list(orgPath, ancestors = true, self = false)(saCaller) shouldReturn IO
         .pure(
           AccessControlLists(
-            / -> IamResourceF(
+            /       -> IamResourceF(
               url"http://nexus.example.com/acls/",
               5L,
               Set.empty,

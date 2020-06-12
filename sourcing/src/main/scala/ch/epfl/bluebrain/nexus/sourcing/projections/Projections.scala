@@ -94,15 +94,15 @@ object Projections {
     createSession[F].flatMap(session => apply(session))
 
   private class Statements(as: ActorSystem) {
-    val journalCfg: Config = journalConfig(as)
-    val keyspace: String   = journalCfg.getString("keyspace")
+    val journalCfg: Config          = journalConfig(as)
+    val keyspace: String            = journalCfg.getString("keyspace")
     val replicationStrategy: String = getReplicationStrategy(
       journalCfg.getString("replication-strategy"),
       journalCfg.getInt("replication-factor"),
       getListFromConfig(journalCfg, "data-center-replication-factors")
     )
-    val progressTable: String = journalCfg.getString("projection-progress-table")
-    val failuresTable: String = journalCfg.getString("projection-failures-table")
+    val progressTable: String       = journalCfg.getString("projection-progress-table")
+    val failuresTable: String       = journalCfg.getString("projection-failures-table")
 
     val createKeyspace: String =
       s"""CREATE KEYSPACE IF NOT EXISTS $keyspace
@@ -149,12 +149,12 @@ object Projections {
           throw new IllegalArgumentException(
             "data-center-replication-factors cannot be empty when using NetworkTopologyStrategy."
           )
-        case dcrfs =>
+        case dcrfs      =>
           dcrfs.map { dataCenterWithReplicationFactor =>
             dataCenterWithReplicationFactor.split(":") match {
               case Array(dataCenter, replicationFactor) =>
                 s"'$dataCenter':$replicationFactor"
-              case msg =>
+              case msg                                  =>
                 throw new IllegalArgumentException(
                   s"A data-center-replication-factor must have the form [dataCenterName:replicationFactor] but was: $msg."
                 )
@@ -165,11 +165,11 @@ object Projections {
     }
 
     strategy.toLowerCase() match {
-      case "simplestrategy" =>
+      case "simplestrategy"          =>
         s"'SimpleStrategy','replication_factor':$replicationFactor"
       case "networktopologystrategy" =>
         s"'NetworkTopologyStrategy',${getDataCenterReplicationFactorList(dataCenterReplicationFactors)}"
-      case unknownStrategy =>
+      case unknownStrategy           =>
         throw new IllegalArgumentException(s"$unknownStrategy as replication strategy is unknown and not supported.")
     }
   }
@@ -181,7 +181,7 @@ object Projections {
     */
   private def getListFromConfig(config: Config, key: String): List[String] = {
     config.getValue(key).valueType() match {
-      case ConfigValueType.LIST => config.getStringList(key).asScala.toList
+      case ConfigValueType.LIST   => config.getStringList(key).asScala.toList
       // case ConfigValueType.OBJECT is needed to handle dot notation (x.0=y x.1=z) due to Typesafe Config implementation quirk.
       // https://github.com/lightbend/config/blob/master/config/src/main/java/com/typesafe/config/impl/DefaultTransformer.java#L83
       case ConfigValueType.OBJECT => config.getStringList(key).asScala.toList
@@ -239,8 +239,8 @@ object Projections {
       keyspaceAutoCreate: Boolean,
       tablesAutoCreate: Boolean,
       stmts: Statements
-  )(
-      implicit as: ActorSystem,
+  )(implicit
+      as: ActorSystem,
       F: Async[F]
   ): F[Unit] = {
     implicit val ec: ExecutionContextExecutor = as.dispatcher

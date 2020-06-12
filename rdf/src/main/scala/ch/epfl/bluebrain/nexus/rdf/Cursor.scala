@@ -135,23 +135,25 @@ object Cursor {
       SetCursor(cs, this, CursorOp.UpSet(p), g)
     }
 
-    override def down(p: IriNode): Cursor = node match {
-      case s: IriOrBNode =>
-        val os = g.select(s, p)
-        os.take(2).toList match {
-          case o :: Nil => NodeCursor(o, this, CursorOp.Down(p), g)
-          case _        => FailedCursor(this, CursorOp.Down(p), g)
-        }
-      case _: Literal => FailedCursor(this, CursorOp.Down(p), g)
-    }
+    override def down(p: IriNode): Cursor =
+      node match {
+        case s: IriOrBNode =>
+          val os = g.select(s, p)
+          os.take(2).toList match {
+            case o :: Nil => NodeCursor(o, this, CursorOp.Down(p), g)
+            case _        => FailedCursor(this, CursorOp.Down(p), g)
+          }
+        case _: Literal    => FailedCursor(this, CursorOp.Down(p), g)
+      }
 
-    override def downSet(p: IriNode): Cursor = node match {
-      case s: IriOrBNode =>
-        val os = g.select(s, p)
-        val cs = os.map(o => NodeCursor(o, this, CursorOp.DownSet(p), g))
-        SetCursor(cs, this, CursorOp.DownSet(p), g)
-      case _: Literal => FailedCursor(this, CursorOp.DownSet(p), g)
-    }
+    override def downSet(p: IriNode): Cursor =
+      node match {
+        case s: IriOrBNode =>
+          val os = g.select(s, p)
+          val cs = os.map(o => NodeCursor(o, this, CursorOp.DownSet(p), g))
+          SetCursor(cs, this, CursorOp.DownSet(p), g)
+        case _: Literal    => FailedCursor(this, CursorOp.DownSet(p), g)
+      }
 
   }
 
@@ -226,7 +228,7 @@ object Cursor {
                 case o :: Nil => set + NodeCursor(o, c, CursorOp.Down(p), g)
                 case _        => set
               }
-            case _ => set
+            case _             => set
           }
       }
       SetCursor(cs, this, CursorOp.Down(p), g)
@@ -239,7 +241,7 @@ object Cursor {
             case s: IriOrBNode =>
               val os = g.select(s, p)
               set union os.map(o => NodeCursor(o, c, CursorOp.Down(p), g))
-            case _ => set
+            case _             => set
           }
       }
       SetCursor(cs, this, CursorOp.Down(p), g)

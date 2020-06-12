@@ -41,7 +41,7 @@ class AclsRoutes(acls: Acls[Task], realms: Realms[Task])(implicit hc: HttpConfig
                     complete(acls.replace(path, rev, acl).runWithStatus(status))
                   },
                   (patch & entity(as[PatchAcl])) {
-                    case AppendAcl(acl) =>
+                    case AppendAcl(acl)   =>
                       complete(acls.append(path, rev, acl).runWithStatus(status))
                     case SubtractAcl(acl) =>
                       complete(acls.subtract(path, rev, acl).runToFuture)
@@ -52,17 +52,17 @@ class AclsRoutes(acls: Acls[Task], realms: Realms[Task])(implicit hc: HttpConfig
                 )
               },
               (get & parameter("rev".as[Long].?) & parameter("ancestors" ? false) & parameter("self" ? true)) {
-                case (Some(_), true, _) =>
+                case (Some(_), true, _)                                  =>
                   reject(simultaneousRevAndAncestorsRejection)
-                case (Some(_), _, _) if path.segments.contains(any) =>
+                case (Some(_), _, _) if path.segments.contains(any)      =>
                   reject(simultaneousRevAndAnyRejection)
                 case (_, ancestors, self) if path.segments.contains(any) =>
                   complete(acls.list(path, ancestors, self).runToFuture)
-                case (Some(rev), false, self) =>
+                case (Some(rev), false, self)                            =>
                   complete(acls.fetch(path, rev, self).toSingleList(path).runToFuture)
-                case (_, false, self) =>
+                case (_, false, self)                                    =>
                   complete(acls.fetch(path, self).toSingleList(path).runToFuture)
-                case (_, true, self) =>
+                case (_, true, self)                                     =>
                   complete(acls.list(path, ancestors = true, self).runToFuture)
               }
             )
@@ -75,11 +75,12 @@ class AclsRoutes(acls: Acls[Task], realms: Realms[Task])(implicit hc: HttpConfig
 object AclsRoutes {
 
   implicit private[routes] class TaskResourceACLSyntax(private val value: Task[ResourceOpt]) extends AnyVal {
-    def toSingleList(path: Path): Task[AccessControlLists] = value.map {
-      case None                                              => AccessControlLists.empty
-      case Some(acl) if acl.value == AccessControlList.empty => AccessControlLists.empty
-      case Some(acl)                                         => AccessControlLists(path -> acl)
-    }
+    def toSingleList(path: Path): Task[AccessControlLists] =
+      value.map {
+        case None                                              => AccessControlLists.empty
+        case Some(acl) if acl.value == AccessControlList.empty => AccessControlLists.empty
+        case Some(acl)                                         => AccessControlLists(path -> acl)
+      }
   }
 
   sealed private[routes] trait PatchAcl
@@ -92,13 +93,13 @@ object AclsRoutes {
     implicit val patchAclDecoder: Decoder[PatchAcl] =
       Decoder.instance { hc =>
         for {
-          tpe <- hc.get[String]("@type")
-          acl <- hc.value.as[AccessControlList]
+          tpe   <- hc.get[String]("@type")
+          acl   <- hc.value.as[AccessControlList]
           patch <- tpe match {
-                    case "Append"   => Right(AppendAcl(acl))
-                    case "Subtract" => Right(SubtractAcl(acl))
-                    case _          => Left(DecodingFailure("@type field must have Append or Subtract value", hc.history))
-                  }
+                     case "Append"   => Right(AppendAcl(acl))
+                     case "Subtract" => Right(SubtractAcl(acl))
+                     case _          => Left(DecodingFailure("@type field must have Append or Subtract value", hc.history))
+                   }
         } yield patch
       }
   }

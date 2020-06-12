@@ -7,10 +7,11 @@ import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.routes.ResourceRejection
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 sealed abstract class OrganizationRejection(val msg: String) extends ResourceRejection
 
@@ -34,7 +35,7 @@ object OrganizationRejection {
     */
   final case class OrganizationNotFound private (override val msg: String) extends OrganizationRejection(msg)
   object OrganizationNotFound {
-    def apply(uuid: UUID): OrganizationNotFound =
+    def apply(uuid: UUID): OrganizationNotFound    =
       OrganizationNotFound(s"Organization with uuid '${uuid.toString.toLowerCase()}' not found.")
     def apply(label: String): OrganizationNotFound =
       new OrganizationNotFound(s"Organization with label '$label' not found.")
@@ -51,7 +52,7 @@ object OrganizationRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the organization may have been updated since last seen."
       )
 
-  @silent
+  @nowarn("cat=unused")
   implicit val organizationRejectionEncoder: Encoder[OrganizationRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[OrganizationRejection].mapJson(_ addContext errorCtxUri)

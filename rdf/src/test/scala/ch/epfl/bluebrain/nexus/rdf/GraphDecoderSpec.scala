@@ -163,7 +163,7 @@ class GraphDecoderSpec extends RdfSpec {
     "recurse until right in tailrecM" in {
       val succeedsThirdTime: Int => GraphDecoder[Either[Int, String]] =
         int => GraphDecoder.instance { _ => if (int == 3) Right(Right("success")) else Right(Left(int + 1)) }
-      val decoder = MonadError[GraphDecoder, DecodingError].tailRecM(1)(int => succeedsThirdTime(int))
+      val decoder                                                     = MonadError[GraphDecoder, DecodingError].tailRecM(1)(int => succeedsThirdTime(int))
       decoder(c).rightValue shouldEqual "success"
     }
   }

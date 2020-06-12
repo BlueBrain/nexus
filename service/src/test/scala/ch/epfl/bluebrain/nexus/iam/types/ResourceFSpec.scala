@@ -28,7 +28,7 @@ class ResourceFSpec extends AnyWordSpecLike with Matchers with Inspectors with E
 
     "be converted to Json correctly" when {
       "using multiple types" in {
-        val json = jsonContentOf("/resources/write-response.json")
+        val json  = jsonContentOf("/resources/write-response.json")
         val model =
           ResourceMetadata(id, 1L, Set(nxv.AccessControlList.value, nxv.Realm.value), instant, user, instant, user2)
         model.asJson.sort.printWith(printer) shouldEqual json.printWith(printer)

@@ -28,7 +28,7 @@ class PrefixDirectivesSpec extends AnyWordSpecLike with Matchers with Inspectors
         ).toList
       ) {
         case (suffix, prefix) =>
-          val uri = Uri("http://localhost:80" + suffix)
+          val uri   = Uri("http://localhost:80" + suffix)
           val route = uriPrefix(uri) {
             path("remainder") {
               get {

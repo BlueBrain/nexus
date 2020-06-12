@@ -70,7 +70,7 @@ class RealmsRoutesSpec
       )
     ) deepMerge Json.obj("_rev" -> Json.fromLong(rev))
 
-  def listResponse(label: Label, deprecated: Boolean): Json =
+  def listResponse(label: Label, deprecated: Boolean): Json        =
     jsonContentOf(
       "/realms/list-realms-template.json",
       Map(
@@ -84,7 +84,7 @@ class RealmsRoutesSpec
   def resource(label: Label, rev: Long, realm: ActiveRealm): Resource =
     ResourceF(label.toIri(http.realmsIri), rev, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Right(realm))
 
-  def metaResponse(label: Label, rev: Long, deprecated: Boolean): Json =
+  def metaResponse(label: Label, rev: Long, deprecated: Boolean): Json     =
     jsonContentOf(
       "/realms/realm-meta-template.json",
       Map(
@@ -130,7 +130,7 @@ class RealmsRoutesSpec
         responseAs[Json].sort shouldEqual metaResponse(label, 1L, false).sort
       }
     }
-    val realm = ActiveRealm(
+    val realm        = ActiveRealm(
       label,
       name,
       openIdConfig,

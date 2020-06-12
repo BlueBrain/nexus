@@ -26,13 +26,14 @@ import com.typesafe.scalalogging.Logger
 
 object Routes {
 
-  private def iamErrorStatusFrom: StatusFrom[IamError] = StatusFrom {
-    case _: IamError.AccessDenied           => StatusCodes.Forbidden
-    case _: IamError.UnexpectedInitialState => StatusCodes.InternalServerError
-    case _: IamError.OperationTimedOut      => StatusCodes.InternalServerError
-    case _: IamError.InvalidAccessToken     => StatusCodes.Unauthorized
-    case IamError.NotFound                  => StatusCodes.NotFound
-  }
+  private def iamErrorStatusFrom: StatusFrom[IamError] =
+    StatusFrom {
+      case _: IamError.AccessDenied           => StatusCodes.Forbidden
+      case _: IamError.UnexpectedInitialState => StatusCodes.InternalServerError
+      case _: IamError.OperationTimedOut      => StatusCodes.InternalServerError
+      case _: IamError.InvalidAccessToken     => StatusCodes.Unauthorized
+      case IamError.NotFound                  => StatusCodes.NotFound
+    }
 
   /**
     * Wraps the provided route with CORS, rejection and exception handling.
@@ -61,31 +62,31 @@ object Routes {
     */
   final val exceptionHandler: ExceptionHandler =
     ExceptionHandler {
-      case NotFound =>
+      case NotFound                    =>
         // suppress errors for not found
         complete(AdminError.adminErrorStatusFrom(NotFound) -> (NotFound: AdminError))
-      case AuthenticationFailed =>
+      case AuthenticationFailed        =>
         // suppress errors for authentication failures
         val status            = AdminError.adminErrorStatusFrom(AuthenticationFailed)
         val header            = `WWW-Authenticate`(HttpChallenges.oAuth2("*"))
         val error: AdminError = AuthenticationFailed
         complete((status, List(header), error))
-      case AuthorizationFailed =>
+      case AuthorizationFailed         =>
         // suppress errors for authorization failures
         complete(AdminError.adminErrorStatusFrom(AuthorizationFailed) -> (AuthorizationFailed: AdminError))
-      case InvalidFormat =>
+      case InvalidFormat               =>
         // suppress errors for invalid format
         complete(AdminError.adminErrorStatusFrom(InvalidFormat) -> (InvalidFormat: AdminError))
-      case err: InvalidAccessToken =>
+      case err: InvalidAccessToken     =>
         // suppress errors for invalid tokens
         complete(iamErrorStatusFrom(err) -> (err: IamError))
       case err: IamError.NotFound.type =>
         // suppress errors for not found
         complete(iamErrorStatusFrom(err) -> (err: IamError))
-      case err: IamError =>
+      case err: IamError               =>
         logger.error("Exception caught during routes processing ", err)
         complete(iamErrorStatusFrom(err) -> err)
-      case err =>
+      case err                         =>
         logger.error("Exception caught during routes processing ", err)
         val serviceError: InternalError =
           InternalError("The system experienced an unexpected error, please try again later.")
@@ -100,16 +101,16 @@ object Routes {
       case rejection: OrganizationRejection =>
         logger.debug(s"Handling organization rejection '$rejection'")
         OrganizationRejection.organizationStatusFrom(rejection) -> rejection
-      case rejection: ProjectRejection =>
+      case rejection: ProjectRejection      =>
         logger.debug(s"Handling project rejection '$rejection'")
         ProjectRejection.projectStatusFrom(rejection) -> rejection
-      case rejection: RealmRejection =>
+      case rejection: RealmRejection        =>
         logger.debug(s"Handling realm rejection '$rejection'")
         RealmRejection.realmRejectionStatusFrom(rejection) -> rejection
-      case rejection: AclRejection =>
+      case rejection: AclRejection          =>
         logger.debug(s"Handling acl rejection '$rejection'")
         AclRejection.aclRejectionStatusFrom(rejection) -> rejection
-      case rejection: PermissionsRejection =>
+      case rejection: PermissionsRejection  =>
         logger.debug(s"Handling permission rejection '$rejection'")
         PermissionsRejection.permissionsRejectionStatusFrom(rejection) -> rejection
     })

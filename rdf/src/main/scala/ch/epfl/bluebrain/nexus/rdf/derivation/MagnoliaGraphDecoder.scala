@@ -41,10 +41,10 @@ private[derivation] object MagnoliaGraphDecoder {
           case Some(values) =>
             sealedTrait.subtypes.find(st => values.contains(IriNode(config.base + st.typeName.short))) match {
               case Some(st) => st.typeclass.apply(c)
-              case None =>
+              case None     =>
                 Left(DecodingError(s"Unable to find type discriminator for ${sealedTrait.typeName.short}", c.history))
             }
-          case None =>
+          case None         =>
             Left(DecodingError(s"Unable to find type discriminator for ${sealedTrait.typeName.short}", c.history))
         }
       }

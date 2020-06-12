@@ -63,7 +63,7 @@ class GraphEncoderSpec extends RdfSpec {
 
     "correctly encode Sets" when {
       "the values are objects" in {
-        val set = Set(
+        val set      = Set(
           IntValue(url"${example}1", 1),
           IntValue(url"${example}2", 2),
           IntValue(url"${example}3", 3)
@@ -73,12 +73,12 @@ class GraphEncoderSpec extends RdfSpec {
           (url"${example}2", schema.value, 2),
           (url"${example}3", schema.value, 3)
         )
-        val g = GraphEncoder[Set[IntValue]].apply(set)
+        val g        = GraphEncoder[Set[IntValue]].apply(set)
         g.triples shouldEqual expected
       }
       "the values are primitives" in {
-        val set = Set(1, 2, 3)
-        val g   = GraphEncoder[Set[Int]].apply(set)
+        val set             = Set(1, 2, 3)
+        val g               = GraphEncoder[Set[Int]].apply(set)
         // a set graph of primitives has no triples
         g.triples.isEmpty shouldEqual true
         // one of the nodes is selected as the root
@@ -132,12 +132,12 @@ class GraphEncoderSpec extends RdfSpec {
     }
 
     "correctly encode sequences of objects" when {
-      val seq: Seq[IntValue] = List(
+      val seq: Seq[IntValue]    = List(
         IntValue(url"${example}1", 1),
         IntValue(url"${example}2", 2),
         IntValue(url"${example}3", 3)
       )
-      val seqExpected = toJenaModel(
+      val seqExpected           = toJenaModel(
         Graph(
           b"1",
           Set(
@@ -156,7 +156,7 @@ class GraphEncoderSpec extends RdfSpec {
       val oneSeq: Seq[IntValue] = List(
         IntValue(url"${example}1", 1)
       )
-      val oneSeqExpected = toJenaModel(
+      val oneSeqExpected        = toJenaModel(
         Graph(
           b"1",
           Set(
@@ -224,8 +224,8 @@ class GraphEncoderSpec extends RdfSpec {
     }
 
     "correctly encode sequences of primitives" when {
-      val seq: Seq[Int] = List(1, 2, 3)
-      val seqExpected = toJenaModel(
+      val seq: Seq[Int]    = List(1, 2, 3)
+      val seqExpected      = toJenaModel(
         Graph(
           b"1",
           Set[Triple](
@@ -239,7 +239,7 @@ class GraphEncoderSpec extends RdfSpec {
         )
       )
       val oneSeq: Seq[Int] = List(1)
-      val oneSeqExpected = toJenaModel(
+      val oneSeqExpected   = toJenaModel(
         Graph(
           b"1",
           Set(

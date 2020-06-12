@@ -30,11 +30,11 @@ class JsonSyntaxSpec extends AnyWordSpecLike with Matchers with Resources with I
       ContextUri(url"https://bbp-nexus.epfl.ch/dev/v0/contexts/bbp/core/context/v0.1.0")
 
     "dealing with KG data" should {
-      val list = List(
-        jsonContentOf("/commons/kg_json/activity_schema.json") -> jsonContentOf(
+      val list                              = List(
+        jsonContentOf("/commons/kg_json/activity_schema.json")       -> jsonContentOf(
           "/commons/kg_json/activity_schema_ordered.json"
         ),
-        jsonContentOf("/commons/kg_json/activity_instance.json") -> jsonContentOf(
+        jsonContentOf("/commons/kg_json/activity_instance.json")     -> jsonContentOf(
           "/commons/kg_json/activity_instance_ordered.json"
         ),
         jsonContentOf("/commons/kg_json/activity_instance_att.json") -> jsonContentOf(
@@ -148,9 +148,9 @@ class JsonSyntaxSpec extends AnyWordSpecLike with Matchers with Resources with I
         Json.obj("@id"        -> Json.fromString("foo-id"), "nxv:rev" -> Json.fromLong(1)) ->
           Json.obj("@context" -> contextString, "@id"                 -> Json.fromString("foo-id"), "nxv:rev" -> Json.fromLong(1)),
         Json.obj(
-          "@context" -> Json.fromString("http://foo.domain/some/context"),
-          "@id"      -> Json.fromString("foo-id"),
-          "nxv:rev"  -> Json.fromLong(1)
+          "@context"   -> Json.fromString("http://foo.domain/some/context"),
+          "@id"        -> Json.fromString("foo-id"),
+          "nxv:rev"    -> Json.fromLong(1)
         ) ->
           Json.obj(
             "@context" -> Json.arr(Json.fromString("http://foo.domain/some/context"), contextString),
@@ -158,12 +158,12 @@ class JsonSyntaxSpec extends AnyWordSpecLike with Matchers with Resources with I
             "nxv:rev"  -> Json.fromLong(1)
           ),
         Json.obj(
-          "@context" -> Json.arr(
+          "@context"   -> Json.arr(
             Json.fromString("http://foo.domain/some/context"),
             Json.fromString("http://bar.domain/another/context")
           ),
-          "@id"     -> Json.fromString("foo-id"),
-          "nxv:rev" -> Json.fromLong(1)
+          "@id"        -> Json.fromString("foo-id"),
+          "nxv:rev"    -> Json.fromLong(1)
         ) ->
           Json.obj(
             "@context" -> Json.arr(
@@ -171,16 +171,16 @@ class JsonSyntaxSpec extends AnyWordSpecLike with Matchers with Resources with I
               Json.fromString("http://bar.domain/another/context"),
               contextString
             ),
-            "@id"     -> Json.fromString("foo-id"),
-            "nxv:rev" -> Json.fromLong(1)
+            "@id"      -> Json.fromString("foo-id"),
+            "nxv:rev"  -> Json.fromLong(1)
           ),
         Json.obj(
-          "@context" -> Json.obj(
+          "@context"   -> Json.obj(
             "foo" -> Json.fromString("http://foo.domain/some/context"),
             "bar" -> Json.fromString("http://bar.domain/another/context")
           ),
-          "@id"     -> Json.fromString("foo-id"),
-          "nxv:rev" -> Json.fromLong(1)
+          "@id"        -> Json.fromString("foo-id"),
+          "nxv:rev"    -> Json.fromLong(1)
         ) ->
           Json.obj(
             "@context" -> Json.arr(
@@ -190,8 +190,8 @@ class JsonSyntaxSpec extends AnyWordSpecLike with Matchers with Resources with I
               ),
               contextString
             ),
-            "@id"     -> Json.fromString("foo-id"),
-            "nxv:rev" -> Json.fromLong(1)
+            "@id"      -> Json.fromString("foo-id"),
+            "nxv:rev"  -> Json.fromLong(1)
           )
       )
 
@@ -224,15 +224,15 @@ object JsonSyntaxSpec {
       `@type`: String
   )
 
-  sealed trait User extends Product with Serializable {
+  sealed trait User                                                               extends Product with Serializable {
     def identities: mutable.LinkedHashSet[Identity]
   }
   final case class AuthenticatedUser(identities: mutable.LinkedHashSet[Identity]) extends User
-  sealed trait Identity extends Product with Serializable {
+  sealed trait Identity                                                           extends Product with Serializable {
     def `@id`: String
   }
-  final case class GroupRef(group: String, realm: String, `@id`: String)  extends Identity
-  final case class UserRef(sub: String, realm: String, `@id`: String)     extends Identity
-  final case class AuthenticatedRef(realm: Option[String], `@id`: String) extends Identity
-  final case class Anonymous(`@id`: String)                               extends Identity
+  final case class GroupRef(group: String, realm: String, `@id`: String)          extends Identity
+  final case class UserRef(sub: String, realm: String, `@id`: String)             extends Identity
+  final case class AuthenticatedRef(realm: Option[String], `@id`: String)         extends Identity
+  final case class Anonymous(`@id`: String)                                       extends Identity
 }

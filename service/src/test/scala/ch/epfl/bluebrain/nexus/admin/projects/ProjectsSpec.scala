@@ -48,7 +48,7 @@ class ProjectsSpec
   private val instant               = Instant.now
   implicit private val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
-  private val serviceConfig = Settings(system).serviceConfig
+  private val serviceConfig   = Settings(system).serviceConfig
   implicit private val config = serviceConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
     admin =
@@ -61,7 +61,7 @@ class ProjectsSpec
 
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
-  private val aclsApi = mock[Acls[IO]]
+  private val aclsApi           = mock[Acls[IO]]
 
   private val projects = aggF.map(agg => new Projects[IO](agg, index, orgs, aclsApi, saCaller)).unsafeRunSync()
 
@@ -70,17 +70,17 @@ class ProjectsSpec
 
 //noinspection TypeAnnotation,NameBooleanParameters
   trait Context {
-    val types  = Set(nxv.Project.value)
-    val desc   = Some("Project description")
-    val orgId  = UUID.randomUUID
-    val projId = UUID.randomUUID
-    val iri    = url"http://nexus.example.com/v1/projects/org/proj"
-    val mappings = Map(
+    val types        = Set(nxv.Project.value)
+    val desc         = Some("Project description")
+    val orgId        = UUID.randomUUID
+    val projId       = UUID.randomUUID
+    val iri          = url"http://nexus.example.com/v1/projects/org/proj"
+    val mappings     = Map(
       "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
       "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
     )
-    val base = url"https://nexus.example.com/base/"
-    val voc  = url"https://nexus.example.com/voc/"
+    val base         = url"https://nexus.example.com/base/"
+    val voc          = url"https://nexus.example.com/voc/"
     val organization = ResourceF(
       url"http://nexus.example.com/v1/orgs/org",
       orgId,
@@ -93,9 +93,9 @@ class ProjectsSpec
       subject,
       Organization("org", Some("Org description"))
     )
-    val payload  = ProjectDescription(desc, mappings, Some(base), Some(voc))
-    val project  = Project("proj", orgId, "org", desc, mappings, base, voc)
-    val resource = ResourceF(iri, projId, 1L, false, types, instant, subject, instant, subject, project)
+    val payload      = ProjectDescription(desc, mappings, Some(base), Some(voc))
+    val project      = Project("proj", orgId, "org", desc, mappings, base, voc)
+    val resource     = ResourceF(iri, projId, 1L, false, types, instant, subject, instant, subject, project)
   }
 
   "The Projects operations bundle" should {
@@ -140,7 +140,7 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       mockAclsCalls()
-      val created = projects.create("org", "proj", payload)(subject).accepted
+      val created    = projects.create("org", "proj", payload)(subject).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(subject).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(
@@ -157,7 +157,7 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       mockAclsCalls()
-      val created = projects.create("org", "proj", payload)(subject).accepted
+      val created    = projects.create("org", "proj", payload)(subject).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(subject).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(
@@ -197,7 +197,7 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       mockAclsCalls()
-      val created = projects.create("org", "proj", payload)(subject).accepted
+      val created      = projects.create("org", "proj", payload)(subject).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val wrongPayload = payload.copy(base = Some(url"http://example.com/a"))
       projects
@@ -224,7 +224,7 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       mockAclsCalls()
-      val created = projects.create("org", "proj", payload)(subject).accepted
+      val created      = projects.create("org", "proj", payload)(subject).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a"))
       projects
@@ -315,7 +315,7 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       mockAclsCalls()
-      val created = projects.create("org", "proj", payload)(subject).accepted
+      val created    = projects.create("org", "proj", payload)(subject).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(subject).accepted
       deprecated.id shouldEqual iri

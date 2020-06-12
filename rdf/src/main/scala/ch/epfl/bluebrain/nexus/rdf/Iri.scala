@@ -184,13 +184,13 @@ object Iri {
       authority match {
         case Some(_) =>
           Url(base.scheme, authority, path, query, fragment)
-        case None =>
+        case None    =>
           val (p, q) = path match {
-            case Empty =>
+            case Empty                    =>
               base.path -> (if (query.isDefined) query else base.query)
             case _ if path.startWithSlash =>
               removeDotSegments(path) -> query
-            case _ =>
+            case _                        =>
               merge(base) -> query
           }
           base.copy(query = q, path = p, fragment = fragment)
@@ -198,11 +198,11 @@ object Iri {
 
     private def resolveUrn(base: Urn): AbsoluteIri = {
       val (p, q) = path match {
-        case Empty =>
+        case Empty                    =>
           base.nss -> (if (query.isDefined) query else base.q)
         case _ if path.startWithSlash =>
           path -> query
-        case _ =>
+        case _                        =>
           merge(base) -> query
       }
       base.copy(q = q, nss = p, fragment = fragment)
@@ -228,20 +228,20 @@ object Iri {
       def inner(input: Path, output: Path): Path =
         input match {
           // -> "../" or "./"
-          case Segment("..", Slash(rest)) => inner(rest, output)
-          case Segment(".", Slash(rest))  => inner(rest, output)
+          case Segment("..", Slash(rest))                 => inner(rest, output)
+          case Segment(".", Slash(rest))                  => inner(rest, output)
           // -> "/./" or "/.",
-          case Slash(Segment(".", Slash(rest))) => inner(Slash(rest), output)
-          case Slash(Segment(".", rest))        => inner(Slash(rest), output)
+          case Slash(Segment(".", Slash(rest)))           => inner(Slash(rest), output)
+          case Slash(Segment(".", rest))                  => inner(Slash(rest), output)
           // -> "/../" or "/.."
-          case Slash(Segment("..", Slash(rest))) => inner(Slash(rest), deleteLast(output, withSlash = true))
-          case Slash(Segment("..", rest))        => inner(Slash(rest), deleteLast(output, withSlash = true))
+          case Slash(Segment("..", Slash(rest)))          => inner(Slash(rest), deleteLast(output, withSlash = true))
+          case Slash(Segment("..", rest))                 => inner(Slash(rest), deleteLast(output, withSlash = true))
           // only "." or ".."
           case Segment(".", Empty) | Segment("..", Empty) => inner(Path.Empty, output)
           // move
-          case Slash(rest)      => inner(rest, Slash(output))
-          case Segment(s, rest) => inner(rest, output + s)
-          case Empty            => output
+          case Slash(rest)                                => inner(rest, Slash(output))
+          case Segment(s, rest)                           => inner(rest, output + s)
+          case Empty                                      => output
         }
 
       inner(path.reverse, Path.Empty)
@@ -331,10 +331,10 @@ object Iri {
       query: Option[Query],
       fragment: Option[Fragment]
   ) extends AbsoluteIri {
-    override def isUrl: Boolean     = true
-    override def asUrl: Option[Url] = Some(this)
-    override def isUrn: Boolean     = false
-    override def asUrn: Option[Urn] = None
+    override def isUrl: Boolean                  = true
+    override def asUrl: Option[Url]              = Some(this)
+    override def isUrn: Boolean                  = false
+    override def asUrn: Option[Urn]              = None
     override def +(segment: String): AbsoluteIri =
       if (segment.startsWith("/")) this + segment.drop(1)
       else if (path.endsWithSlash) copy(path = path + segment)
@@ -370,7 +370,7 @@ object Iri {
 
   object Url {
 
-    private val defaultSchemePortMapping: Map[Scheme, Port] = Map(
+    private val defaultSchemePortMapping: Map[Scheme, Port]                = Map(
       "ftp"    -> 21,
       "ssh"    -> 22,
       "telnet" -> 23,
@@ -663,7 +663,7 @@ object Iri {
     final case class IPv4Host private[rdf] (bytes: immutable.Seq[Byte]) extends Host {
       override def isIPv4: Boolean          = true
       override def asIPv4: Option[IPv4Host] = Some(this)
-      override lazy val value: String       = bytes.map(_ & 0xFF).mkString(".")
+      override lazy val value: String       = bytes.map(_ & 0xff).mkString(".")
       override lazy val pctEncoded          = value
       override lazy val asString            = value
     }
@@ -729,7 +729,7 @@ object Iri {
         bytesToString(bytes.view)
 
       lazy val asMixedString: String =
-        bytesToString(bytes.view.slice(0, 12)) + ":" + bytes.view.slice(12, 16).map(_ & 0xFF).mkString(".")
+        bytesToString(bytes.view.slice(0, 12)) + ":" + bytes.view.slice(12, 16).map(_ & 0xff).mkString(".")
 
       private def bytesToString(bytes: View[Byte]): String =
         bytes.grouped(2).map(two => Integer.toHexString(BigInt(two.toArray).intValue)).mkString(":")
@@ -924,11 +924,12 @@ object Iri {
       */
     def reverse: Path = {
       @tailrec
-      def inner(acc: Path, remaining: Path): Path = remaining match {
-        case Empty         => acc
-        case Segment(h, t) => inner(Segment(h, acc), t)
-        case Slash(t)      => inner(Slash(acc), t)
-      }
+      def inner(acc: Path, remaining: Path): Path =
+        remaining match {
+          case Empty         => acc
+          case Segment(h, t) => inner(Segment(h, acc), t)
+          case Slash(t)      => inner(Slash(acc), t)
+        }
       inner(Empty, this)
     }
 
@@ -1068,24 +1069,24 @@ object Iri {
       */
     final case class Slash(rest: Path) extends Path {
       type Head = Char
-      def isEmpty: Boolean               = false
-      def head                           = '/'
-      def tail(dropSlash: Boolean): Path = if (dropSlash && rest.endsWithSlash) rest.tail(dropSlash) else rest
-      def isSlash: Boolean               = true
-      def isSegment: Boolean             = false
-      def asEmpty: Option[Empty]         = None
-      def asSlash: Option[Slash]         = Some(this)
-      def asSegment: Option[Segment]     = None
-      def asString: String               = rest.asString + "/"
-      def pctEncoded: String             = rest.pctEncoded + "/"
-      def startWithSlash: Boolean        = if (rest.isEmpty) true else rest.startWithSlash
+      def isEmpty: Boolean                                   = false
+      def head                                               = '/'
+      def tail(dropSlash: Boolean): Path                     = if (dropSlash && rest.endsWithSlash) rest.tail(dropSlash) else rest
+      def isSlash: Boolean                                   = true
+      def isSegment: Boolean                                 = false
+      def asEmpty: Option[Empty]                             = None
+      def asSlash: Option[Slash]                             = Some(this)
+      def asSegment: Option[Segment]                         = None
+      def asString: String                                   = rest.asString + "/"
+      def pctEncoded: String                                 = rest.pctEncoded + "/"
+      def startWithSlash: Boolean                            = if (rest.isEmpty) true else rest.startWithSlash
       def prepend(other: Path, allowSlashDup: Boolean): Path =
         if (!allowSlashDup && other.endsWithSlash) prepend(other.tail(), allowSlashDup)
         else Slash(rest.prepend(other, allowSlashDup))
-      def +(segment: String): Path    = if (segment.isEmpty) this else Segment(segment, this)
-      def segments: Seq[String]       = rest.segments
-      def lastSegment: Option[String] = rest.lastSegment
-      def size: Int                   = rest.size
+      def +(segment: String): Path                           = if (segment.isEmpty) this else Segment(segment, this)
+      def segments: Seq[String]                              = rest.segments
+      def lastSegment: Option[String]                        = rest.lastSegment
+      def size: Int                                          = rest.size
     }
 
     /**
@@ -1300,11 +1301,11 @@ object Iri {
     */
   final case class Urn(nid: Nid, nss: Path, r: Option[Component], q: Option[Query], fragment: Option[Fragment])
       extends AbsoluteIri {
-    override def isUrl: Boolean     = false
-    override def asUrl: Option[Url] = None
-    override def isUrn: Boolean     = true
-    override def asUrn: Option[Urn] = Some(this)
-    override val path: Path         = nss
+    override def isUrl: Boolean                  = false
+    override def asUrl: Option[Url]              = None
+    override def isUrn: Boolean                  = true
+    override def asUrn: Option[Urn]              = Some(this)
+    override val path: Path                      = nss
     override def +(segment: String): AbsoluteIri =
       if (nss.endsWithSlash) copy(nss = nss + segment) else copy(nss = nss / segment)
 
@@ -1347,7 +1348,7 @@ object Iri {
     implicit final val urnEq: Eq[Urn] = Eq.fromUniversalEquals
   }
 
-  implicit final val iriEq: Eq[Iri] = Eq.fromUniversalEquals
+  implicit final val iriEq: Eq[Iri]                                                                                  = Eq.fromUniversalEquals
   implicit final def iriShow(implicit urnShow: Show[Urn], urlShow: Show[Url], relShow: Show[RelativeIri]): Show[Iri] =
     Show.show {
       case r: RelativeIri => r.show

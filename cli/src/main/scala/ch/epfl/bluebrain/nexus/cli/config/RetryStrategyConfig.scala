@@ -60,7 +60,8 @@ object RetryStrategyConfig {
       {
         case UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries) =>
           RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, ())
-      }, {
+      },
+      {
         case RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, _) =>
           UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries)
       }

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcing.akka
 
-import com.github.ghik.silencer.silent
-
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 
 /**
@@ -40,7 +39,7 @@ trait StopStrategy[State, Command] {
 //noinspection ConvertibleToMethodValue
 object StopStrategy {
 
-  @silent
+  @nowarn("cat=unused")
   @SuppressWarnings(Array("UnusedMethodParameter"))
   private[akka] def neverDuration[State, Command](
       name: String,
@@ -49,7 +48,7 @@ object StopStrategy {
       cmd: Option[Command]
   ): Option[FiniteDuration] = None
 
-  @silent
+  @nowarn("cat=unused")
   @SuppressWarnings(Array("UnusedMethodParameter"))
   private[akka] def immediatelyDurationFn[State, Command](
       name: String,
@@ -69,7 +68,7 @@ object StopStrategy {
           id: String,
           st: State,
           cmd: Option[Command]
-      ): Option[FiniteDuration] =
+      ): Option[FiniteDuration]                                       =
         updateInvalidationTimer(name, id, st, cmd)
     }
 

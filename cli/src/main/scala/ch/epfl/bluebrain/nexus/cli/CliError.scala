@@ -53,12 +53,12 @@ object CliError {
       */
     def unsafe(code: Status, message: String): ClientError =
       code.responseClass match {
-        case Status.Successful =>
+        case Status.Successful  =>
           throw new IllegalArgumentException(s"Successful code '$code cannot be converted to a ClientError'")
         case Status.ClientError =>
           ClientStatusError(code, message)
         case Status.ServerError => ServerStatusError(code, message)
-        case _ =>
+        case _                  =>
           UnexpectedStatusError(code, message)
       }
 
@@ -71,7 +71,7 @@ object CliError {
       */
     final case class SerializationError(message: String, tpe: String, original: Option[String] = None)
         extends ClientError {
-      val reason: String = s"an HTTP response could not be converted to type '$tpe'"
+      val reason: String      = s"an HTTP response could not be converted to type '$tpe'"
       val lines: List[String] = List(s"the serialization failed due to '$message'") ++
         original.map(orig => s"The message attempted to serialized was: '$orig'.").toList
     }
@@ -139,7 +139,7 @@ object CliError {
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   object ConfigError {
     final case class ReadConvertError(failures: ConfigReaderFailures) extends ConfigError {
-      val reason: String = "the application configuration failed to be loaded into a configuration object"
+      val reason: String      = "the application configuration failed to be loaded into a configuration object"
       val lines: List[String] =
         failures.toList.flatMap { f =>
           f.location match {
@@ -151,21 +151,21 @@ object CliError {
 
     // $COVERAGE-OFF$
     final case class ReadError(path: Path, message: String) extends ConfigError {
-      val reason: String = s"the application configuration failed to be loaded from the path '$path'"
+      val reason: String      = s"the application configuration failed to be loaded from the path '$path'"
       val lines: List[String] = List(
         s"The following error arise while attempting to load the application configuration to disk: '$message'"
       )
     }
 
     final case class WritingFileError(path: Path, message: String) extends ConfigError {
-      val reason: String = s"the application configuration failed to be saved on the path '$path'"
+      val reason: String      = s"the application configuration failed to be saved on the path '$path'"
       val lines: List[String] = List(
         s"The following error arise while attempting to save the application configuration to disk: '$message'"
       )
     }
 
     final case object UserHomeNotDefined extends ConfigError {
-      val reason: String = "the 'user.home' system property was not defined"
+      val reason: String      = "the 'user.home' system property was not defined"
       val lines: List[String] = List(
         "The 'user.home' property is required for determining where the application",
         "configuration needs to be stored or read from. The JVM automatically detects",

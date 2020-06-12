@@ -74,7 +74,7 @@ class RealmsRoutes(realms: Realms[Task])(implicit http: HttpConfig) {
                           case Realm(name, openIdConfig, logo) =>
                             complete(realms.update(id, rev, name, openIdConfig, logo).runToFuture)
                         }
-                      case None =>
+                      case None      =>
                         entity(as[Realm]) {
                           case Realm(name, openIdConfig, logo) =>
                             complete(realms.create(id, name, openIdConfig, logo).runWithStatus(StatusCodes.Created))
@@ -85,7 +85,7 @@ class RealmsRoutes(realms: Realms[Task])(implicit http: HttpConfig) {
                     parameter("rev".as[Long].?) {
                       case Some(rev) =>
                         complete(realms.fetch(id, rev).runNotFound)
-                      case None =>
+                      case None      =>
                         complete(realms.fetch(id).runNotFound)
                     }
                   },

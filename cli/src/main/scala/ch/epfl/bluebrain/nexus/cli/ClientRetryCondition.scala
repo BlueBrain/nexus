@@ -65,11 +65,12 @@ object ClientRetryCondition {
     * Alternatively, retries when the Client returns an Unexpected error
     */
   final case object OnServerError extends ClientRetryCondition {
-    override def apply(error: ClientError): Boolean = error match {
-      case ServerStatusError(status, _) => status != Status.GatewayTimeout
-      case _: Unexpected                => true
-      case _                            => false
-    }
+    override def apply(error: ClientError): Boolean =
+      error match {
+        case ServerStatusError(status, _) => status != Status.GatewayTimeout
+        case _: Unexpected                => true
+        case _                            => false
+      }
   }
 
   /**
@@ -85,7 +86,7 @@ object ClientRetryCondition {
         case "always"          => Right(Always)
         case "on-server-error" => Right(OnServerError)
         case "never"           => Right(Never)
-        case other =>
+        case other             =>
           Left(
             CannotConvert(
               other,
@@ -93,7 +94,8 @@ object ClientRetryCondition {
               s"Unknown value 'other', accepted values are: [always, on-server-error, never]"
             )
           )
-      }, {
+      },
+      {
         case Always        => "always"
         case OnServerError => "on-server-error"
         case Never         => "never"

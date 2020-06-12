@@ -115,7 +115,7 @@ object RejectionHandling {
       }
       .handle {
         case MalformedRequestContentRejection(msg, throwable) =>
-          val e = Error("MalformedRequestContent", s"The request content was malformed: '$msg'.")
+          val e      = Error("MalformedRequestContent", s"The request content was malformed: '$msg'.")
           val status = throwable match {
             case _: EntityStreamSizeException => PayloadTooLarge
             case _                            => BadRequest
@@ -174,14 +174,14 @@ object RejectionHandling {
           val ranges = unsatisfiableRanges.mkString("'", "', '", "'")
           val reason =
             s"None of the following requested Ranges were satisfiable for actual entity length '$actualEntityLength': $ranges"
-          val e = Error("UnsatisfiableRange", reason)
+          val e      = Error("UnsatisfiableRange", reason)
           rejectRequestEntityAndComplete(RangeNotSatisfiable -> e)
       }
       .handleAll[AuthenticationFailedRejection] { rejections =>
         val reason = rejections.headOption.map(_.cause) match {
           case Some(CredentialsMissing) =>
             "The resource requires authentication, which was not supplied with the request."
-          case _ => "The supplied authentication is invalid."
+          case _                        => "The supplied authentication is invalid."
         }
         val e      = Error("AuthenticationFailed", reason)
         val header = `WWW-Authenticate`(HttpChallenges.oAuth2("*"))

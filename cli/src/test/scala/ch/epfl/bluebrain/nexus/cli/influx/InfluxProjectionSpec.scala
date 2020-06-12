@@ -21,8 +21,8 @@ class InfluxProjectionSpec extends AbstractInfluxSpec {
         _                <- proj.run
         brainQueryResult <- client.query("""SELECT * FROM "brainParcelation"""")
         cellQueryResult  <- client.query("""SELECT * FROM "cellRecord"""")
-        _                = brainQueryResult shouldEqual Right(brainParcelationExpected)
-        _                = cellQueryResult shouldEqual Right(cellRecordExpected)
+        _                 = brainQueryResult shouldEqual Right(brainParcelationExpected)
+        _                 = cellQueryResult shouldEqual Right(cellRecordExpected)
       } yield ()
     }
     "save offset" in { (cfg: AppConfig, blocker: Blocker, proj: InfluxProjection[IO], console: Console[IO]) =>
@@ -31,10 +31,10 @@ class InfluxProjectionSpec extends AbstractInfluxSpec {
       for {
         _      <- proj.run
         exists <- io.file.exists[IO](blocker, cfg.influx.offsetFile)
-        _      = exists shouldEqual true
-        _      = println(s"Offset file content '${Files.readString(cfg.influx.offsetFile)}'")
+        _       = exists shouldEqual true
+        _       = println(s"Offset file content '${Files.readString(cfg.influx.offsetFile)}'")
         offset <- Offset.load(cfg.influx.offsetFile)
-        _      = offset.nonEmpty shouldEqual true
+        _       = offset.nonEmpty shouldEqual true
       } yield ()
     }
   }

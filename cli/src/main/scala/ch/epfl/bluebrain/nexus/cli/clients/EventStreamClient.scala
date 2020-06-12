@@ -58,7 +58,7 @@ object EventStreamClient {
   )(implicit F: Concurrent[F])
       extends EventStreamClient[F] {
 
-    private val retry = env.httpClient.retry
+    private val retry            = env.httpClient.retry
     private lazy val offsetError =
       SerializationError("The expected offset was not found or had the wrong format", "Offset")
 
@@ -73,21 +73,21 @@ object EventStreamClient {
           client
             .stream(req)
             .evalMap[F, Response[F]] {
-              case r if retry.condition == Always && !r.status.isSuccess =>
+              case r if retry.condition == Always && !r.status.isSuccess                                             =>
                 F.raiseError(ClientError.unsafe(r.status, "Error when fetching SSEs"))
               case r if retry.condition == OnServerError && !r.status.isSuccess && r.status != Status.GatewayTimeout =>
                 F.raiseError(ClientError.unsafe(r.status, "Error when fetching SSEs"))
-              case r => F.pure(r)
+              case r                                                                                                 => F.pure(r)
             }
             .flatMap(_.body.through(ServerSentEvent.decoder[F]))
             .collect { case ServerSentEvent(data, _, Some(id), _) => id -> data }
             .evalMap {
               case (id, data) =>
                 val resultT = for {
-                  off         <- fromEither[F](Offset(id.value).toRight[ClientError](offsetError))
-                  _           <- right[ClientError](lastEventIdCache.update(_ => Some(off)))
-                  event       <- fromEither[F](decodeEvent(data))
-                  labels      <- EitherT(projectClient.labels(event.organization, event.project))
+                  off        <- fromEither[F](Offset(id.value).toRight[ClientError](offsetError))
+                  _          <- right[ClientError](lastEventIdCache.update(_ => Some(off)))
+                  event      <- fromEither[F](decodeEvent(data))
+                  labels     <- EitherT(projectClient.labels(event.organization, event.project))
                   (org, proj) = labels
                 } yield (event, org, proj)
                 resultT.value

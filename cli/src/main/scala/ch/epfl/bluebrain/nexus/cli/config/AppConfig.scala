@@ -67,9 +67,9 @@ object AppConfig {
 
     val nexusHome: Either[ConfigError, Path] =
       sys.props.get("user.home").toRight(UserHomeNotDefined).map(home => Paths.get(home, ".nexus"))
-    val envFile      = nexusHome.map { value => envConfigFile.getOrElse(value.resolve("env.conf")) }
-    val postgresFile = nexusHome.map { value => postgresConfigFile.getOrElse(value.resolve("postgres.conf")) }
-    val influxFile   = nexusHome.map { value => influxConfigFile.getOrElse(value.resolve("influx.conf")) }
+    val envFile                              = nexusHome.map { value => envConfigFile.getOrElse(value.resolve("env.conf")) }
+    val postgresFile                         = nexusHome.map { value => postgresConfigFile.getOrElse(value.resolve("postgres.conf")) }
+    val influxFile                           = nexusHome.map { value => influxConfigFile.getOrElse(value.resolve("influx.conf")) }
 
     def loadFileIfExists(file: Path): EitherT[F, ConfigError, ConfigObjectSource] = {
       EitherT(F.delay {
@@ -90,12 +90,13 @@ object AppConfig {
       env          <- loadFileIfExists(envFile)
       postgres     <- loadFileIfExists(postgresFile)
       influx       <- loadFileIfExists(influxFile)
-      overrides    = ConfigSource.defaultOverrides
-      reference    = ConfigSource.defaultReference
-      stack        = extra withFallback overrides withFallback postgres withFallback influx withFallback env withFallback reference
+      overrides     = ConfigSource.defaultOverrides
+      reference     = ConfigSource.defaultReference
+      stack         =
+        extra withFallback overrides withFallback postgres withFallback influx withFallback env withFallback reference
       cfg          <- EitherT(F.delay(stack.load[TConfig].leftMap[ConfigError](ReadConvertError)))
-      cfgToken     = if (token.contains(None)) cfg.withoutPath("env.token") else cfg
-      source       = ConfigSource.fromConfig(cfgToken)
+      cfgToken      = if (token.contains(None)) cfg.withoutPath("env.token") else cfg
+      source        = ConfigSource.fromConfig(cfgToken)
     } yield source
   }
 

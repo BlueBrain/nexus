@@ -36,7 +36,7 @@ class MagnoliaGraphDecoderSpec extends RdfSpec {
       val emptyp    = nxv.base + "empty"
       val nonEmptyp = nxv.base + "nonEmpty"
       val errTypes  = Array("NonEmptyString", "NonEmptyList", "NonEmptySet")
-      val list = List(
+      val list      = List(
         Graph(id, Set((id, rdf.tpe, nxv.base + "StringValue"), (id, emptyp, ""), (id, nonEmptyp, ""))),
         Graph(id, Set((id, rdf.tpe, nxv.base + "ListValue"), (id, emptyp, rdf.nil), (id, nonEmptyp, rdf.nil))),
         Graph(id, Set((id, rdf.tpe, nxv.base + "SetValue")))
@@ -67,8 +67,8 @@ class MagnoliaGraphDecoderSpec extends RdfSpec {
     }
 
     "derive a Decoder for fixed AggregateElasticSearchView" in {
-      val model = toJenaModel(jsonWithContext("/aggregate-elasticsearch-view.json"))
-      val graph = fromJenaModel(url"http://example.com/id", model)
+      val model    = toJenaModel(jsonWithContext("/aggregate-elasticsearch-view.json"))
+      val graph    = fromJenaModel(url"http://example.com/id", model)
       val expected = AggregateElasticSearchView(
         id = url"http://example.com/id",
         uuid = Some(UUID.fromString("3aa14a1a-81e7-4147-8306-136d8270bb01")),

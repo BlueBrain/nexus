@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
-import com.github.ghik.silencer.silent
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of ACL event types.
@@ -110,9 +111,9 @@ object AclEvent {
   object JsonLd {
     import io.circe.generic.extras.semiauto._
 
-    @silent // defined implicits are not recognized as being used
+    @nowarn("cat=unused")
     implicit def aclEventEncoder(implicit httpConfig: HttpConfig): Encoder[AclEvent] = {
-      implicit val config: Configuration = Configuration.default
+      implicit val config: Configuration                    = Configuration.default
         .withDiscriminator("@type")
         .copy(transformMemberNames = {
           case "rev"     => "_rev"

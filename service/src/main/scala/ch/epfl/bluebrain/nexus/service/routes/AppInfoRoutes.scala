@@ -26,21 +26,22 @@ class AppInfoRoutes(serviceDescription: ServiceDescription, cluster: Cluster, ca
         !cluster.state.members.exists(_.status != MemberStatus.Up) && cluster.state.unreachable.isEmpty
     )
 
-  def routes: Route = concat(
-    (get & pathEndOrSingleSlash) {
-      operationName("/") {
-        complete(serviceDescription)
-      }
-    },
-    (pathPrefix("health") & get & pathEndOrSingleSlash) {
-      operationName("/health") {
-        onComplete(cassandraHealth.check) {
-          case Success(true) => complete(Health(cluster = clusterStatus, cassandra = Up))
-          case _             => complete(Health(cluster = clusterStatus, cassandra = Inaccessible))
+  def routes: Route =
+    concat(
+      (get & pathEndOrSingleSlash) {
+        operationName("/") {
+          complete(serviceDescription)
+        }
+      },
+      (pathPrefix("health") & get & pathEndOrSingleSlash) {
+        operationName("/health") {
+          onComplete(cassandraHealth.check) {
+            case Success(true) => complete(Health(cluster = clusterStatus, cassandra = Up))
+            case _             => complete(Health(cluster = clusterStatus, cassandra = Inaccessible))
+          }
         }
       }
-    }
-  )
+    )
 }
 
 object AppInfoRoutes {

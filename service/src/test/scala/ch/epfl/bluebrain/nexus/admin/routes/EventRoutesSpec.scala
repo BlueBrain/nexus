@@ -92,7 +92,7 @@ class EventRoutesSpec
   val projectDescription = "the project description"
   val projectBase        = url"http://localhost:8080/base/"
   val projectVocab       = url"http://localhost:8080/vocab/"
-  val apiMappings = Map(
+  val apiMappings        = Map(
     "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
     "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   )
@@ -220,7 +220,7 @@ class EventRoutesSpec
     "return Forbidden when requesting the log with no permissions" in {
       Mockito.reset(aclsApi)
       aclsApi.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task(AccessControlLists.empty)
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
+      val routes    = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
       val endpoints = List(
         "/events",
         "/events/",

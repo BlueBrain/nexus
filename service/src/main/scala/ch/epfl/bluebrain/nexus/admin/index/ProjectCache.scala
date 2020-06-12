@@ -54,8 +54,8 @@ class ProjectCache[F[_]: Monad](store: KeyValueStore[F, UUID, ProjectResource])(
             params.types.subsetOf(types) &&
             acls.exists(project.organizationLabel, project.label, projects.read)
       }
-      val count  = filtered.size.toLong
-      val result = filtered.toList.sorted.slice(pagination.from, pagination.from + pagination.size)
+      val count    = filtered.size.toLong
+      val result   = filtered.toList.sorted.slice(pagination.from, pagination.from + pagination.size)
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
     }
 
@@ -83,8 +83,8 @@ object ProjectCache {
   /**
     * Creates a new project index.
     */
-  def apply[F[_]: Effect: Timer](
-      implicit as: ActorSystem,
+  def apply[F[_]: Effect: Timer](implicit
+      as: ActorSystem,
       config: KeyValueStoreConfig,
       http: HttpConfig
   ): ProjectCache[F] = {

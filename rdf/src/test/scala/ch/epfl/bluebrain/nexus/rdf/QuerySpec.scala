@@ -43,7 +43,9 @@ class QuerySpec extends RdfSpec {
       val encodedUtf8  = urlEncode(utf8)
       val allowedDelim = "!:@!$()*,"
       val encodedDelim = urlEncode("[]#")
-      Query(utf8 + encodedUtf8 + allowedDelim + encodedDelim).rightValue.pctEncoded shouldEqual (encodedUtf8 + encodedUtf8 + allowedDelim + encodedDelim)
+      Query(
+        utf8 + encodedUtf8 + allowedDelim + encodedDelim
+      ).rightValue.pctEncoded shouldEqual (encodedUtf8 + encodedUtf8 + allowedDelim + encodedDelim)
     }
     "eq" in {
       val lhs = Query("a=b&a=b&a=c&a&b&b&b=c&d&e").rightValue

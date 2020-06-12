@@ -108,7 +108,7 @@ class JsonLdSpec extends RdfSpec {
       "contexts are nested" in {
         val contextUri1 = url"http://context1.example.com"
         val contextUri2 = url"http://context2.example.com"
-        val json =
+        val json        =
           json"""
           {
             "@context": [
@@ -165,7 +165,7 @@ class JsonLdSpec extends RdfSpec {
 
       "there are scoped contexts" in {
         val contextUri = url"http://context.example.com"
-        val json =
+        val json       =
           json"""
            {
              "@context": {
@@ -192,7 +192,7 @@ class JsonLdSpec extends RdfSpec {
             }
           }
           """
-        val expected =
+        val expected     =
           json"""
           {
             "@context": {
@@ -223,7 +223,7 @@ class JsonLdSpec extends RdfSpec {
       "there are circular dependencies in contexts" in {
         val contextUri1 = url"http://context1.example.com"
         val contextUri2 = url"http://context2.example.com"
-        val json =
+        val json        =
           json"""
           {
             "@context": [
@@ -324,9 +324,9 @@ class JsonLdSpec extends RdfSpec {
         Json.obj("@id"        -> Json.fromString("foo-id"), "nxv:rev" -> Json.fromLong(1)) ->
           Json.obj("@context" -> contextString, "@id"                 -> Json.fromString("foo-id"), "nxv:rev" -> Json.fromLong(1)),
         Json.obj(
-          "@context" -> Json.fromString("http://foo.domain/some/context"),
-          "@id"      -> Json.fromString("foo-id"),
-          "nxv:rev"  -> Json.fromLong(1)
+          "@context"   -> Json.fromString("http://foo.domain/some/context"),
+          "@id"        -> Json.fromString("foo-id"),
+          "nxv:rev"    -> Json.fromLong(1)
         ) ->
           Json.obj(
             "@context" -> Json.arr(Json.fromString("http://foo.domain/some/context"), contextString),
@@ -334,13 +334,13 @@ class JsonLdSpec extends RdfSpec {
             "nxv:rev"  -> Json.fromLong(1)
           ),
         Json.obj(
-          "@context" -> Json
+          "@context"   -> Json
             .arr(
               Json.fromString("http://foo.domain/some/context"),
               Json.fromString("http://bar.domain/another/context")
             ),
-          "@id"     -> Json.fromString("foo-id"),
-          "nxv:rev" -> Json.fromLong(1)
+          "@id"        -> Json.fromString("foo-id"),
+          "nxv:rev"    -> Json.fromLong(1)
         ) ->
           Json.obj(
             "@context" -> Json.arr(
@@ -348,16 +348,16 @@ class JsonLdSpec extends RdfSpec {
               Json.fromString("http://bar.domain/another/context"),
               contextString
             ),
-            "@id"     -> Json.fromString("foo-id"),
-            "nxv:rev" -> Json.fromLong(1)
+            "@id"      -> Json.fromString("foo-id"),
+            "nxv:rev"  -> Json.fromLong(1)
           ),
         Json.obj(
-          "@context" -> Json.obj(
+          "@context"   -> Json.obj(
             "foo" -> Json.fromString("http://foo.domain/some/context"),
             "bar" -> Json.fromString("http://bar.domain/another/context")
           ),
-          "@id"     -> Json.fromString("foo-id"),
-          "nxv:rev" -> Json.fromLong(1)
+          "@id"        -> Json.fromString("foo-id"),
+          "nxv:rev"    -> Json.fromLong(1)
         ) ->
           Json.obj(
             "@context" -> Json.arr(
@@ -367,8 +367,8 @@ class JsonLdSpec extends RdfSpec {
               ),
               contextString
             ),
-            "@id"     -> Json.fromString("foo-id"),
-            "nxv:rev" -> Json.fromLong(1)
+            "@id"      -> Json.fromString("foo-id"),
+            "nxv:rev"  -> Json.fromLong(1)
           )
       )
 
@@ -503,8 +503,8 @@ class JsonLdSpec extends RdfSpec {
       }
 
       "add @id" in {
-        val json = Json.obj("key" -> Json.fromString("value"))
-        val id   = url"http://example.com/id"
+        val json    = Json.obj("key" -> Json.fromString("value"))
+        val id      = url"http://example.com/id"
         json.id(id) shouldEqual
           Json.obj("key" -> Json.fromString("value"), "@id" -> Json.fromString(id.asString))
 
@@ -515,7 +515,9 @@ class JsonLdSpec extends RdfSpec {
       }
 
       "find top level @id in Json" in {
-        jsonContentOf("/context/simple-iri-context.json").id.rightValue shouldEqual url"http://nexus.example.com/john-doé"
+        jsonContentOf(
+          "/context/simple-iri-context.json"
+        ).id.rightValue shouldEqual url"http://nexus.example.com/john-doé"
       }
     }
 

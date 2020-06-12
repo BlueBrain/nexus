@@ -65,7 +65,7 @@ class KeyValueStoreSubscriber[K, V] private (key: LWWMapKey[K, V], onChange: OnK
       previous = recent
       log.debug("Received a Changed message from the key value store. Values changed: '{}'", changes)
 
-    case other =>
+    case other              =>
       log.error("Skipping received a message different from Changed. Message: '{}'", other)
 
   }
@@ -120,8 +120,8 @@ object KeyValueStoreSubscriber {
     * @tparam V the value type
     * @return an [[ActorRef]] of the [[KeyValueStoreSubscriber]] actor
     */
-  final def apply[K, V](mapKey: LWWMapKey[K, V], onChange: OnKeyValueStoreChange[K, V])(
-      implicit as: ActorSystem
+  final def apply[K, V](mapKey: LWWMapKey[K, V], onChange: OnKeyValueStoreChange[K, V])(implicit
+      as: ActorSystem
   ): ActorRef =
     as.actorOf(Props(new KeyValueStoreSubscriber(mapKey, onChange)), UUID.randomUUID().toString)
 }

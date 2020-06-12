@@ -13,7 +13,7 @@ import fs2.{Pipe, Stream}
 class TestEventStreamClient[F[_]](events: List[Event], projectClient: ProjectClient[F])(implicit F: Sync[F])
     extends EventStreamClient[F] {
 
-  private val noOffset: Offset = Offset(new UUID(0L, 0L))
+  private val noOffset: Offset                   = Offset(new UUID(0L, 0L))
   private val offsetEvents: Seq[(Offset, Event)] = events.map { ev =>
     (Offset(new UUID(ev.instant.toEpochMilli, 0L)), ev)
   }
@@ -21,7 +21,7 @@ class TestEventStreamClient[F[_]](events: List[Event], projectClient: ProjectCli
   private def saveOffset(lastEventIdCache: Ref[F, Option[Offset]]): Pipe[F, (Offset, Event), Event] =
     _.evalMap { case (offset, event) => lastEventIdCache.update(_ => Some(offset)) >> F.pure(event) }
 
-  private def eventsFrom(lastEventIdCache: Ref[F, Option[Offset]]): F[Seq[(Offset, Event)]] =
+  private def eventsFrom(lastEventIdCache: Ref[F, Option[Offset]]): F[Seq[(Offset, Event)]]         =
     lastEventIdCache.get.map(lastEventId =>
       offsetEvents.dropWhile {
         case (offset, _) =>
@@ -32,7 +32,7 @@ class TestEventStreamClient[F[_]](events: List[Event], projectClient: ProjectCli
   private def eventAndLabels(event: Event): F[ClientErrOr[LabeledEvent]] =
     projectClient.labels(event.organization, event.project).map(_.map { case (org, proj) => (event, org, proj) })
 
-  override def apply(lastEventId: Option[Offset]): F[EventStream[F]] =
+  override def apply(lastEventId: Option[Offset]): F[EventStream[F]]     =
     Ref.of(lastEventId).flatMap { ref =>
       val stream = eventsFrom(ref).map { events =>
         Stream.fromIterator[F](events.iterator).through(saveOffset(ref)).evalMap(eventAndLabels)

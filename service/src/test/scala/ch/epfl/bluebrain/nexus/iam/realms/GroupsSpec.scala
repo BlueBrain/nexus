@@ -71,7 +71,7 @@ class GroupsSpec
     "correctly extract the groups" when {
       val expected = Set("one", "two", "three").map(Group(_, "realm"))
       "the claimset contains comma separated group values" in {
-        val claims = csb
+        val claims      = csb
           .claim("groups", "one, two ,three,")
           .build()
         implicit val hc = httpClient(userinfoNoGroups)
@@ -79,7 +79,7 @@ class GroupsSpec
       }
 
       "the claimset contains array group values" in {
-        val claims = csb
+        val claims      = csb
           .claim("groups", util.Arrays.asList("one", " two ", "three", ""))
           .build()
         implicit val hc = httpClient(userinfoNoGroups)
@@ -143,7 +143,7 @@ object GroupsSpec {
       |  "email": "noreply@epfl.ch"
       |}
     """.stripMargin
-  val userinfoArrayGroups = parse(userinfoArrayGroupsString).rightValue
+  val userinfoArrayGroups       = parse(userinfoArrayGroupsString).rightValue
 
   val userinfoCsvGroupsString =
     """{
@@ -157,7 +157,7 @@ object GroupsSpec {
       |  "email": "noreply@epfl.ch"
       |}
     """.stripMargin
-  val userinfoCsvGroups = parse(userinfoCsvGroupsString).rightValue
+  val userinfoCsvGroups       = parse(userinfoCsvGroupsString).rightValue
 
   val userinfoNoGroupsString =
     """{
@@ -170,7 +170,7 @@ object GroupsSpec {
       |  "email": "noreply@epfl.ch"
       |}
     """.stripMargin
-  val userinfoNoGroups = parse(userinfoNoGroupsString).rightValue
+  val userinfoNoGroups       = parse(userinfoNoGroupsString).rightValue
 
   val userinfoWrongGroupsString =
     """{
@@ -184,5 +184,5 @@ object GroupsSpec {
       |  "email": "noreply@epfl.ch"
       |}
     """.stripMargin
-  val userinfoWrongGroups = parse(userinfoWrongGroupsString).rightValue
+  val userinfoWrongGroups       = parse(userinfoWrongGroupsString).rightValue
 }

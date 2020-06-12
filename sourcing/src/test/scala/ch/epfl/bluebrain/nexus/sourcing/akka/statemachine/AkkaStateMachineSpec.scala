@@ -50,7 +50,7 @@ class AkkaStateMachineSpec
       val invalidation   = StopStrategy.immediately[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "immediate-invalidation-no-retries"
-      val cache = AkkaStateMachine
+      val cache          = AkkaStateMachine
         .sharded[IO](name, initialState, evaluate[IO], invalidation, config, shards = 10)
         .unsafeRunSync()
 
@@ -69,7 +69,7 @@ class AkkaStateMachineSpec
       val invalidation   = StopStrategy.never[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "no-invalidation-no-retries"
-      val cache = AkkaStateMachine
+      val cache          = AkkaStateMachine
         .sharded[IO](name, initialState, evaluate[IO], invalidation, config, shards = 10)
         .unsafeRunSync()
 
@@ -82,7 +82,7 @@ class AkkaStateMachineSpec
       val invalidation   = StopStrategy.lapsedSinceLastInteraction[State, Command](6.seconds.dilated)
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "interaction-invalidation-no-retries"
-      val cache = AkkaStateMachine
+      val cache          = AkkaStateMachine
         .sharded[IO](name, initialState, evaluate[IO], invalidation, config, shards = 10)
         .unsafeRunSync()
 
@@ -96,7 +96,7 @@ class AkkaStateMachineSpec
       implicit val retry          = neverStrategy.retryPolicy[IO]
       val name                    = "interaction-ignored-invalidation-no-retries"
       val configNoInvalidateOnGet = config.copy(influenceInvalidationOnGet = false)
-      val cache = AkkaStateMachine
+      val cache                   = AkkaStateMachine
         .sharded[IO](name, initialState, evaluate[IO], invalidation, configNoInvalidateOnGet, shards = 10)
         .unsafeRunSync()
 
@@ -118,7 +118,7 @@ class AkkaStateMachineSpec
     "configured with a retry strategy" should {
       def eval(failCount: Int) = {
         val evaluations = new AtomicInteger(0)
-        val f = (state: State, cmd: Command) => {
+        val f           = (state: State, cmd: Command) => {
           if (evaluations.get() < failCount)
             IO.pure(evaluations.incrementAndGet()) >> IO.raiseError(new RuntimeException)
           else IO.pure(evaluations.incrementAndGet()) >> evaluate[IO](state, cmd)
@@ -131,7 +131,7 @@ class AkkaStateMachineSpec
         val invalidation     = StopStrategy.never[State, Command]
         val name             = "no-invalidation-single-retry-success"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val cache = AkkaStateMachine
+        val cache            = AkkaStateMachine
           .sharded[IO](name, initialState, f, invalidation, config, shards = 10)
           .unsafeRunSync()
 
@@ -147,7 +147,7 @@ class AkkaStateMachineSpec
         val invalidation     = StopStrategy.never[State, Command]
         val name             = "no-invalidation-single-retry-failure"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val cache = AkkaStateMachine
+        val cache            = AkkaStateMachine
           .sharded[IO](name, initialState, f, invalidation, config, shards = 10)
           .unsafeRunSync()
 
@@ -165,7 +165,7 @@ class AkkaStateMachineSpec
         val invalidation     = StopStrategy.never[State, Command]
         val name             = "no-invalidation-exponential-retry-failure"
         implicit val retry   = RetryStrategyConfig("exponential", 10.millis, 10.seconds, 3, 1.second).retryPolicy[IO]
-        val cache = AkkaStateMachine
+        val cache            = AkkaStateMachine
           .sharded[IO](name, initialState, f, invalidation, config, shards = 10)
           .unsafeRunSync()
 
@@ -187,7 +187,7 @@ class AkkaStateMachineSpec
       val invalidation   = StopStrategy.immediately[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "immediate-invalidation-no-retries"
-      val cache = AkkaStateMachine
+      val cache          = AkkaStateMachine
         .tree[IO](name, initialState, evaluate[IO], invalidation, config, poolSize = 10)
         .unsafeRunSync()
 
@@ -207,7 +207,7 @@ class AkkaStateMachineSpec
       val invalidation   = StopStrategy.never[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "no-invalidation-no-retries"
-      val cache = AkkaStateMachine
+      val cache          = AkkaStateMachine
         .tree[IO](name, initialState, evaluate[IO], invalidation, config, poolSize = 10)
         .unsafeRunSync()
 
@@ -220,7 +220,7 @@ class AkkaStateMachineSpec
       val invalidation   = StopStrategy.lapsedSinceLastInteraction[State, Command](6.seconds.dilated)
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "interaction-invalidation-no-retries"
-      val cache = AkkaStateMachine
+      val cache          = AkkaStateMachine
         .tree[IO](name, initialState, evaluate[IO], invalidation, config, poolSize = 10)
         .unsafeRunSync()
 
@@ -232,7 +232,7 @@ class AkkaStateMachineSpec
     "configured with a retry strategy" should {
       def eval(failCount: Int) = {
         val evaluations = new AtomicInteger(0)
-        val f = (state: State, cmd: Command) => {
+        val f           = (state: State, cmd: Command) => {
           if (evaluations.get() < failCount)
             IO.pure(evaluations.incrementAndGet()) >> IO.raiseError(new RuntimeException)
           else IO.pure(evaluations.incrementAndGet()) >> evaluate[IO](state, cmd)
@@ -245,7 +245,7 @@ class AkkaStateMachineSpec
         val invalidation     = StopStrategy.never[State, Command]
         val name             = "no-invalidation-single-retry-success"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val cache = AkkaStateMachine
+        val cache            = AkkaStateMachine
           .tree[IO](name, initialState, f, invalidation, config, poolSize = 10)
           .unsafeRunSync()
 
@@ -259,12 +259,12 @@ class AkkaStateMachineSpec
         val invalidation     = StopStrategy.never[State, Command]
         val name             = "no-invalidation-single-retry-failure"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val cache = AkkaStateMachine
+        val cache            = AkkaStateMachine
           .tree[IO](name, initialState, f, invalidation, config, poolSize = 10)
           .unsafeRunSync()
 
         val first = genString()
-        val ex = intercept[CommandEvaluationError[Command]] {
+        val ex    = intercept[CommandEvaluationError[Command]] {
           cache.evaluate(first, Increment(0, 2)).unsafeRunSync()
         }
         ex shouldEqual CommandEvaluationError(first, Increment(0, 2), None)
@@ -276,12 +276,12 @@ class AkkaStateMachineSpec
         val invalidation     = StopStrategy.never[State, Command]
         val name             = "no-invalidation-exponential-retry-failure"
         implicit val retry   = RetryStrategyConfig("exponential", 10.millis, 10.seconds, 3, 1.second).retryPolicy[IO]
-        val cache = AkkaStateMachine
+        val cache            = AkkaStateMachine
           .tree[IO](name, initialState, f, invalidation, config, poolSize = 10)
           .unsafeRunSync()
 
         val first = genString()
-        val ex = intercept[CommandEvaluationError[Command]] {
+        val ex    = intercept[CommandEvaluationError[Command]] {
           cache.evaluate(first, Increment(0, 2)).unsafeRunSync()
         }
 

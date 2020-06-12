@@ -49,18 +49,18 @@ trait HttpClient[F[_], A] {
     */
   def toString(entity: HttpEntity): F[String]
 
-  private[http] def handleError(req: HttpRequest, resp: HttpResponse, log: Logger)(
-      implicit F: MonadError[F, Throwable]
+  private[http] def handleError(req: HttpRequest, resp: HttpResponse, log: Logger)(implicit
+      F: MonadError[F, Throwable]
   ): F[A] =
     toString(resp.entity).flatMap { body =>
       resp.status match {
-        case _: ServerError =>
+        case _: ServerError         =>
           log.error(s"Server Error HTTP response for '${req.uri}', status: '${resp.status}', body: $body")
           F.raiseError(UnexpectedUnsuccessfulHttpResponse(resp, body))
         case StatusCodes.BadRequest =>
           log.warn(s"BadRequest HTTP response for '${req.uri}', body: $body")
           F.raiseError(UnexpectedUnsuccessfulHttpResponse(resp, body))
-        case _ =>
+        case _                      =>
           log.debug(s"HTTP response for '${req.uri}', status: '${resp.status}', body: $body")
           F.raiseError(UnexpectedUnsuccessfulHttpResponse(resp, body))
       }
@@ -119,8 +119,7 @@ object HttpClient {
     * @tparam F the effect type
     * @tparam A the specific type to which the response entity should be unmarshalled into
     */
-  final def withUnmarshaller[F[_], A: ClassTag](
-      implicit
+  final def withUnmarshaller[F[_], A: ClassTag](implicit
       L: LiftIO[F],
       F: MonadError[F, Throwable],
       ec: ExecutionContext,
@@ -150,11 +149,13 @@ object HttpClient {
     *
     * @param ec an implicitly available ExecutionContext
     */
-  implicit def futureLiftIOInstance(implicit ec: ExecutionContext): LiftIO[Future] = new LiftIO[Future] {
-    override def liftIO[A](ioa: IO[A]): Future[A] = ioa.attempt.unsafeToFuture().flatMap {
-      case Right(a) => Future.successful(a)
-      case Left(e)  => Future.failed(e)
+  implicit def futureLiftIOInstance(implicit ec: ExecutionContext): LiftIO[Future] =
+    new LiftIO[Future] {
+      override def liftIO[A](ioa: IO[A]): Future[A] =
+        ioa.attempt.unsafeToFuture().flatMap {
+          case Right(a) => Future.successful(a)
+          case Left(e)  => Future.failed(e)
+        }
     }
-  }
 }
 // $COVERAGE-ON$

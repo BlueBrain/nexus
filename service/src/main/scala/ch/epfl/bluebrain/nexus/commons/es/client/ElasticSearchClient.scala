@@ -33,8 +33,8 @@ import scala.util.control.NonFatal
   * @param queryClient the query client
   * @tparam F the monadic effect type
   */
-class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQueryClient[F])(
-    implicit retryConfig: RetryStrategyConfig,
+class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQueryClient[F])(implicit
+    retryConfig: RetryStrategyConfig,
     cl: UntypedHttpClient[F],
     serviceDescClient: HttpClient[F, ServiceDescription],
     ec: ExecutionContext,
@@ -85,7 +85,7 @@ class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQuer
     existsIndex(sanitized) flatMap {
       case false =>
         execute(Put(base / sanitized, payload), Set(OK, Created), Set.empty, "create index", isWorthRetry)
-      case true => F.pure(false)
+      case true  => F.pure(false)
     }
   }
 
@@ -147,12 +147,13 @@ class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQuer
     * @param ops          the list of operations to be included in the bulk update
     * @param isWorthRetry a function to decide if it is needed to retry
     */
-  def bulk(ops: Seq[BulkOp], isWorthRetry: (Throwable => Boolean) = defaultWorthRetry): F[Unit] = ops match {
-    case Nil => F.unit
-    case _ =>
-      val entity = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
-      bulkExecute(Post(base / "_bulk", entity)).retryingOnSomeErrors(isWorthRetry)
-  }
+  def bulk(ops: Seq[BulkOp], isWorthRetry: (Throwable => Boolean) = defaultWorthRetry): F[Unit] =
+    ops match {
+      case Nil => F.unit
+      case _   =>
+        val entity = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
+        bulkExecute(Post(base / "_bulk", entity)).retryingOnSomeErrors(isWorthRetry)
+    }
 
   private def bulkExecute(req: HttpRequest): F[Unit] =
     cl(req).handleErrorWith(handleError(req, "bulk update")).flatMap { resp =>
@@ -160,7 +161,7 @@ class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQuer
         cl.toString(resp.entity).flatMap { body =>
           parse(body).flatMap(_.hcursor.get[Boolean]("errors")) match {
             case Right(false) => F.unit
-            case _ =>
+            case _            =>
               log.error(
                 s"Errors on ElasticSearch response for intent 'bulk update':\nRequest: '${req.method} ${req.uri}' \nResponse: '${resp.status}', '$body'"
               )
@@ -270,21 +271,21 @@ class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQuer
       include: Set[String] = Set.empty,
       exclude: Set[String] = Set.empty,
       isWorthRetry: (Throwable => Boolean) = defaultWorthRetry
-  )(
-      implicit rs: HttpClient[F, A]
+  )(implicit
+      rs: HttpClient[F, A]
   ): F[Option[A]] = {
     val includeMap: Map[String, String] =
       if (include.isEmpty) Map.empty else Map(includeFieldsQueryParam -> include.mkString(","))
     val excludeMap: Map[String, String] =
       if (exclude.isEmpty) Map.empty else Map(excludeFieldsQueryParam -> exclude.mkString(","))
-    val uri = base / sanitize(index, allowWildCard = false) / source / urlEncode(id)
+    val uri                             = base / sanitize(index, allowWildCard = false) / source / urlEncode(id)
     rs(Get(uri.withQuery(Query(includeMap ++ excludeMap))))
       .map(Option.apply)
       .handleErrorWith {
         case UnexpectedUnsuccessfulHttpResponse(r, _) if r.status == StatusCodes.NotFound => F.pure[Option[A]](None)
-        case UnexpectedUnsuccessfulHttpResponse(r, body) =>
+        case UnexpectedUnsuccessfulHttpResponse(r, body)                                  =>
           F.raiseError(ElasticSearchFailure.fromStatusCode(r.status, body))
-        case NonFatal(th) =>
+        case NonFatal(th)                                                                 =>
           log.error(s"Unexpected response for ElasticSearch 'get' call. Request: 'GET $uri'", th)
           F.raiseError(ElasticUnexpectedError(StatusCodes.InternalServerError, th.getMessage))
       }
@@ -309,8 +310,7 @@ class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQuer
       qp: Query = Query(ignoreUnavailable -> "true", allowNoIndices -> "true"),
       isWorthRetry: (Throwable => Boolean) = defaultWorthRetry
   )(page: Pagination, totalHits: Boolean = true, fields: Set[String] = Set.empty, sort: SortList = SortList.Empty)(
-      implicit
-      rs: HttpClient[F, QueryResults[A]]
+      implicit rs: HttpClient[F, QueryResults[A]]
   ): F[QueryResults[A]] =
     queryClient(query, indices, qp, isWorthRetry)(page, fields, sort, totalHits)
 
@@ -328,8 +328,7 @@ class ElasticSearchClient[F[_]: Timer](base: Uri, queryClient: ElasticSearchQuer
       indices: Set[String] = Set.empty,
       qp: Query = Query(ignoreUnavailable -> "true", allowNoIndices -> "true"),
       isWorthRetry: (Throwable => Boolean) = defaultWorthRetry
-  )(
-      implicit
+  )(implicit
       rs: HttpClient[F, Json]
   ): F[Json] =
     queryClient.searchRaw(query, indices, qp, isWorthRetry)
@@ -365,10 +364,10 @@ object ElasticSearchClient {
   }
 
   object BulkOp {
-    final case class Index(index: String, id: String, content: Json) extends BulkOp {
+    final case class Index(index: String, id: String, content: Json)                  extends BulkOp {
       def payload: String = Json.obj("index" -> json).noSpaces + newLine + content.noSpaces
     }
-    final case class Create(index: String, id: String, content: Json) extends BulkOp {
+    final case class Create(index: String, id: String, content: Json)                 extends BulkOp {
       def payload: String = Json.obj("create" -> json).noSpaces + newLine + content.noSpaces
     }
     final case class Update(index: String, id: String, content: Json, retry: Int = 0) extends BulkOp {
@@ -376,19 +375,19 @@ object ElasticSearchClient {
 
       def payload: String = Json.obj("update" -> modified).noSpaces + newLine + content.noSpaces
     }
-    final case class Delete(index: String, id: String) extends BulkOp {
+    final case class Delete(index: String, id: String)                                extends BulkOp {
       def payload: String = Json.obj("delete" -> json).noSpaces + newLine
     }
   }
 
-  private[client] val updatePath              = "_update"
-  private[client] val createPath              = "_create"
-  private[client] val docPath                 = "_doc"
-  private[client] val updateByQueryPath       = "_update_by_query"
-  private[client] val deleteByQueryPath       = "_delete_by_query"
-  private[client] val includeFieldsQueryParam = "_source_includes"
-  private[client] val excludeFieldsQueryParam = "_source_excludes"
-  private[client] val newLine                 = System.lineSeparator()
+  private[client] val updatePath                                         = "_update"
+  private[client] val createPath                                         = "_create"
+  private[client] val docPath                                            = "_doc"
+  private[client] val updateByQueryPath                                  = "_update_by_query"
+  private[client] val deleteByQueryPath                                  = "_delete_by_query"
+  private[client] val includeFieldsQueryParam                            = "_source_includes"
+  private[client] val excludeFieldsQueryParam                            = "_source_excludes"
+  private[client] val newLine                                            = System.lineSeparator()
   private[client] val `application/x-ndjson`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
 
@@ -398,8 +397,8 @@ object ElasticSearchClient {
     * @param base        the base uri of the ElasticSearch endpoint
     * @tparam F the monadic effect type
     */
-  final def apply[F[_]: Effect: Timer](base: Uri)(
-      implicit retryConfig: RetryStrategyConfig,
+  final def apply[F[_]: Effect: Timer](base: Uri)(implicit
+      retryConfig: RetryStrategyConfig,
       cl: UntypedHttpClient[F],
       ec: ExecutionContext,
       mt: Materializer

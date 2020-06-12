@@ -19,7 +19,7 @@ trait Resources {
   final def contentOf(resourcePath: String): String = {
     val fromClass       = Option(getClass.getResourceAsStream(resourcePath))
     val fromClassLoader = Option(getClass.getClassLoader.getResourceAsStream(resourcePath))
-    val is = (fromClass orElse fromClassLoader).getOrElse(
+    val is              = (fromClass orElse fromClassLoader).getOrElse(
       throw new IllegalArgumentException(s"Unable to load resource '$resourcePath' from classpath.")
     )
     Source.fromInputStream(is).mkString

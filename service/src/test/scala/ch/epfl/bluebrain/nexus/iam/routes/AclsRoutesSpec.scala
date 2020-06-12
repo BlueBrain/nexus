@@ -94,7 +94,7 @@ class AclsRoutesSpec
       AccessControlList(user -> readWrite)
     )
 
-    val aclsFetch =
+    val aclsFetch                                                                        =
       AccessControlLists(Path("/one/two").rightValue -> resourceAcl1, Path("/one").rightValue -> resourceAcl2)
 
     def response(rev: Long, createdBy: Identity, updatedBty: Identity, path: Path): Json =
@@ -201,7 +201,9 @@ class AclsRoutesSpec
           "/acls/error.json",
           Map(
             quote("{code}") -> "MalformedQueryParam",
-            quote("{msg}")  -> "The query parameter 'rev' was malformed: 'rev and ancestors query parameters cannot be present simultaneously'."
+            quote(
+              "{msg}"
+            )               -> "The query parameter 'rev' was malformed: 'rev and ancestors query parameters cannot be present simultaneously'."
           )
         )
         status shouldEqual StatusCodes.BadRequest
@@ -214,7 +216,9 @@ class AclsRoutesSpec
           "/acls/error.json",
           Map(
             quote("{code}") -> "MalformedQueryParam",
-            quote("{msg}")  -> "The query parameter 'rev' was malformed: 'rev query parameter and path containing * cannot be present simultaneously'."
+            quote(
+              "{msg}"
+            )               -> "The query parameter 'rev' was malformed: 'rev query parameter and path containing * cannot be present simultaneously'."
           )
         )
         status shouldEqual StatusCodes.BadRequest
@@ -227,7 +231,9 @@ class AclsRoutesSpec
           "/acls/error.json",
           Map(
             quote("{code}") -> "MalformedQueryParam",
-            quote("{msg}")  -> "The query parameter 'rev' was malformed: ''2ancestors=true' is not a valid 64-bit signed integer value'."
+            quote(
+              "{msg}"
+            )               -> "The query parameter 'rev' was malformed: ''2ancestors=true' is not a valid 64-bit signed integer value'."
           )
         )
         status shouldEqual StatusCodes.BadRequest

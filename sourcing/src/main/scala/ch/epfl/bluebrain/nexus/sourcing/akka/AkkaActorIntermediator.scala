@@ -29,8 +29,8 @@ abstract private[akka] class AkkaActorIntermediator[F[_]: Timer](
   implicit private[akka] def noop[A]: (A, RetryDetails) => F[Unit] = retry.noop[F, A]
   implicit private val timeout: Timeout                            = askTimeout
 
-  private[akka] def send[M <: Msg, Reply, A](id: String, msg: M, f: Reply => A)(
-      implicit Reply: ClassTag[Reply]
+  private[akka] def send[M <: Msg, Reply, A](id: String, msg: M, f: Reply => A)(implicit
+      Reply: ClassTag[Reply]
   ): F[A] =
     selection(name, id).flatMap { ref =>
       val future = IO(ref ? msg)

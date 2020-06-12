@@ -54,7 +54,7 @@ class PermissionsRoutesSpec
     realms.caller(any[AccessToken]) shouldReturn Task.pure(Caller.anonymous)
   }
 
-  def response(rev: Long): Json =
+  def response(rev: Long): Json                           =
     jsonContentOf(
       "/permissions/permissions-template.json",
       Map(quote("{createdBy}") -> Anonymous.id.asString, quote("{updatedBy}") -> Anonymous.id.asString)
@@ -63,7 +63,7 @@ class PermissionsRoutesSpec
   def resource(rev: Long, set: Set[Permission]): Resource =
     ResourceF(id, rev, types, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, set)
 
-  def metaResponse(rev: Long): Json =
+  def metaResponse(rev: Long): Json    =
     jsonContentOf(
       "/permissions/permissions-meta-template.json",
       Map(quote("{createdBy}") -> Anonymous.id.asString, quote("{updatedBy}") -> Anonymous.id.asString)

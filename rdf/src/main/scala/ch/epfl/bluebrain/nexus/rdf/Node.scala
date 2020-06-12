@@ -175,11 +175,12 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
   }
 
   object IriOrBNode {
-    implicit final def iriOrBNodeShow(implicit I: Show[IriNode], B: Show[BNode]): Show[IriOrBNode] = Show.show {
-      case v: IriNode => I.show(v)
-      case v: BNode   => B.show(v)
-    }
-    implicit final def iriOrBNodeEq: Eq[IriOrBNode] = Eq.fromUniversalEquals
+    implicit final def iriOrBNodeShow(implicit I: Show[IriNode], B: Show[BNode]): Show[IriOrBNode] =
+      Show.show {
+        case v: IriNode => I.show(v)
+        case v: BNode   => B.show(v)
+      }
+    implicit final def iriOrBNodeEq: Eq[IriOrBNode]                                                = Eq.fromUniversalEquals
   }
 
   /**
@@ -525,12 +526,13 @@ object Node extends PrimitiveNodeConversions with StandardNodeConversions with F
     }
   }
 
-  implicit final def nodeShow(implicit I: Show[IriNode], B: Show[BNode], L: Show[Literal]): Show[Node] = Show.show {
-    case v: IriNode => I.show(v)
-    case v: BNode   => B.show(v)
-    case v: Literal => L.show(v)
-  }
-  implicit final def nodeEq: Eq[Node] = Eq.fromUniversalEquals
+  implicit final def nodeShow(implicit I: Show[IriNode], B: Show[BNode], L: Show[Literal]): Show[Node] =
+    Show.show {
+      case v: IriNode => I.show(v)
+      case v: BNode   => B.show(v)
+      case v: Literal => L.show(v)
+    }
+  implicit final def nodeEq: Eq[Node]                                                                  = Eq.fromUniversalEquals
 }
 
 trait PrimitiveNodeConversions {

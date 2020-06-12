@@ -53,8 +53,8 @@ import scala.util.Try
   * @param index an index implementation for realms
   * @tparam F    the effect type
   */
-class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], groups: Groups[F])(
-    implicit F: Effect[F],
+class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], groups: Groups[F])(implicit
+    F: Effect[F],
     http: HttpConfig
 ) {
 
@@ -102,7 +102,7 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
     list().flatMap {
       case realms if openIdConfigExists(id, openIdConfig, realms) =>
         F.pure(Left(RealmOpenIdConfigAlreadyExists(id, openIdConfig)))
-      case _ => eval
+      case _                                                      => eval
     }
 
   private def openIdConfigExists(excludeLabel: Label, matchOpenIdConfig: Url, resources: List[Resource]): Boolean =
@@ -166,13 +166,13 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
     * @return a caller reference if the token is valid, or an error in the F context otherwise
     */
   def caller(token: AccessToken): F[Caller] = {
-    def jwt: Either[TokenRejection, SignedJWT] =
+    def jwt: Either[TokenRejection, SignedJWT]                              =
       Either
         .catchNonFatal(SignedJWT.parse(token.value))
         .leftMap(_ => InvalidAccessTokenFormat)
-    def claims(jwt: SignedJWT): Either[TokenRejection, JWTClaimsSet] =
+    def claims(jwt: SignedJWT): Either[TokenRejection, JWTClaimsSet]        =
       Try(jwt.getJWTClaimsSet).filter(_ != null).toEither.leftMap(_ => InvalidAccessTokenFormat)
-    def issuer(claimsSet: JWTClaimsSet): Either[TokenRejection, String] =
+    def issuer(claimsSet: JWTClaimsSet): Either[TokenRejection, String]     =
       Option(claimsSet.getIssuer).map(Right.apply).getOrElse(Left(AccessTokenDoesNotContainAnIssuer))
     def activeRealm(issuer: String): F[Either[TokenRejection, ActiveRealm]] =
       index.values
@@ -210,12 +210,12 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
     } yield (signed, cs, iss)
 
     val eitherCaller = for {
-      t                 <- EitherT.fromEither[F](triple)
+      t                <- EitherT.fromEither[F](triple)
       (signed, cs, iss) = t
-      realm             <- EitherT(activeRealm(iss))
-      _                 <- EitherT.fromEither[F](valid(signed, realm.keySet))
+      realm            <- EitherT(activeRealm(iss))
+      _                <- EitherT.fromEither[F](valid(signed, realm.keySet))
       exp               = Try(signed.getJWTClaimsSet.getExpirationTime.toInstant).toOption
-      result            <- EitherT(caller(cs, realm, exp))
+      result           <- EitherT(caller(cs, realm, exp))
     } yield result
 
     eitherCaller.value.flatMap {
@@ -254,9 +254,9 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
     agg
       .evaluateS(cmd.id.value, cmd)
       .flatMap {
-        case Left(rej) => F.pure(Left(rej))
+        case Left(rej)         => F.pure(Left(rej))
         // $COVERAGE-OFF$
-        case Right(Initial) => F.raiseError(UnexpectedInitialState(cmd.id.toIri(http.realmsIri)))
+        case Right(Initial)    => F.raiseError(UnexpectedInitialState(cmd.id.toIri(http.realmsIri)))
         // $COVERAGE-ON$
         case Right(c: Current) => F.pure(Right(c.resourceMetadata))
       }
@@ -282,8 +282,8 @@ object Realms {
   /**
     * Constructs a new realms aggregate.
     */
-  def aggregate[F[_]: Effect: Timer: Clock](
-      implicit as: ActorSystem,
+  def aggregate[F[_]: Effect: Timer: Clock](implicit
+      as: ActorSystem,
       rc: RealmsConfig,
       hc: HttpClient[F, Json]
   ): F[Agg[F]] = {
@@ -321,8 +321,7 @@ object Realms {
     * @param acls   a lazy reference to the ACL api
     * @param groups a groups provider reference
     */
-  def apply[F[_]: Effect: Timer: Clock](acls: F[Acls[F]], groups: Groups[F])(
-      implicit
+  def apply[F[_]: Effect: Timer: Clock](acls: F[Acls[F]], groups: Groups[F])(implicit
       as: ActorSystem,
       http: HttpConfig,
       hc: HttpClient[F, Json],
@@ -356,7 +355,7 @@ object Realms {
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 
-    val projectionId = "realm-index"
+    val projectionId                    = "realm-index"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
       .readJournalFor[EventsByTagQuery](rc.aggregate.queryJournalPlugin)
       .eventsByTag(TaggingAdapter.realmEventTag, NoOffset)
@@ -373,7 +372,9 @@ object Realms {
       .flow
       .map(_ => ())
 
-    F.delay[StreamSupervisor[F, Unit]](StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)) >> F.unit
+    F.delay[StreamSupervisor[F, Unit]](
+      StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)
+    ) >> F.unit
 
   }
 
@@ -400,11 +401,11 @@ object Realms {
   }
 
   private def evaluate[F[_]: Effect: Clock: HttpJsonClient](state: State, cmd: Command): F[EventOrRejection] = {
-    val F = implicitly[Monad[F]]
-    val C = implicitly[Clock[F]]
-    def instantF: F[Instant] =
+    val F                                                 = implicitly[Monad[F]]
+    val C                                                 = implicitly[Clock[F]]
+    def instantF: F[Instant]                              =
       C.realTime(TimeUnit.MILLISECONDS).map(Instant.ofEpochMilli)
-    def accept(f: Instant => Event): F[EventOrRejection] =
+    def accept(f: Instant => Event): F[EventOrRejection]  =
       instantF.map { instant => Right(f(instant)) }
     def reject(rejection: Rejection): F[EventOrRejection] =
       F.pure(Left(rejection))

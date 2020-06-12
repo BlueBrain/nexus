@@ -7,10 +7,11 @@ import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.routes.ResourceRejection
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 sealed abstract class ProjectRejection(val msg: String) extends ResourceRejection
 
@@ -35,7 +36,7 @@ object ProjectRejection {
     */
   final case class ProjectNotFound(override val msg: String) extends ProjectRejection(msg)
   object ProjectNotFound {
-    def apply(uuid: UUID): ProjectNotFound =
+    def apply(uuid: UUID): ProjectNotFound                      =
       ProjectNotFound(s"Project with uuid '${uuid.toString.toLowerCase()}' not found.")
     def apply(orgLabel: String, label: String): ProjectNotFound =
       ProjectNotFound(s"Project with label '$orgLabel/$label' not found.")
@@ -70,7 +71,7 @@ object ProjectRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the project may have been updated since last seen."
       )
 
-  @silent // the rejectionConfig is not seen as used
+  @nowarn("cat=unused")
   implicit val projectRejectionEncoder: Encoder[ProjectRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[ProjectRejection].mapJson(_ addContext errorCtxUri)

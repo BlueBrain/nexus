@@ -20,8 +20,8 @@ import scala.concurrent.ExecutionContext
   * @param namespace   the namespace that this client targets
   * @param credentials the credentials to use when communicating with the sparql endpoint
   */
-class BlazegraphClient[F[_]: Timer](base: Uri, namespace: String, credentials: Option[HttpCredentials])(
-    implicit retryConfig: RetryStrategyConfig,
+class BlazegraphClient[F[_]: Timer](base: Uri, namespace: String, credentials: Option[HttpCredentials])(implicit
+    retryConfig: RetryStrategyConfig,
     F: Effect[F],
     cl: UntypedHttpClient[F],
     rsJson: HttpClient[F, SparqlResults],
@@ -112,8 +112,8 @@ class BlazegraphClient[F[_]: Timer](base: Uri, namespace: String, credentials: O
 }
 
 object BlazegraphClient {
-  def apply[F[_]: Effect: Timer](base: Uri, namespace: String, credentials: Option[HttpCredentials])(
-      implicit retryConfig: RetryStrategyConfig,
+  def apply[F[_]: Effect: Timer](base: Uri, namespace: String, credentials: Option[HttpCredentials])(implicit
+      retryConfig: RetryStrategyConfig,
       mt: Materializer,
       cl: UntypedHttpClient[F],
       rsJson: HttpClient[F, SparqlResults],

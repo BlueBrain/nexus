@@ -56,21 +56,21 @@ object Main {
     }
   }
 
-  def bootstrapIam()(
-      implicit system: ActorSystem,
+  def bootstrapIam()(implicit
+      system: ActorSystem,
       cfg: ServiceConfig
   ): (Permissions[Task], Acls[Task], Realms[Task]) = {
     implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
     import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-    implicit val pc = cfg.iam.permissions
-    implicit val ac = cfg.iam.acls
-    implicit val rc = cfg.iam.realms
-    implicit val gc = cfg.iam.groups
-    implicit val hc = cfg.http
-    implicit val pm = CanBlock.permit
-    implicit val cl = HttpClient.untyped[Task]
+    implicit val pc                = cfg.iam.permissions
+    implicit val ac                = cfg.iam.acls
+    implicit val rc                = cfg.iam.realms
+    implicit val gc                = cfg.iam.groups
+    implicit val hc                = cfg.http
+    implicit val pm                = CanBlock.permit
+    implicit val cl                = HttpClient.untyped[Task]
     import system.dispatcher
-    implicit val jc = HttpClient.withUnmarshaller[Task, Json]
+    implicit val jc                = HttpClient.withUnmarshaller[Task, Json]
 
     val deferred = for {
       //IAM dependencies
@@ -88,8 +88,8 @@ object Main {
     deferred.runSyncUnsafe()(Scheduler.global, pm)
   }
 
-  def bootstrapAdmin(acls: Acls[Task], realms: Realms[Task])(
-      implicit system: ActorSystem,
+  def bootstrapAdmin(acls: Acls[Task], realms: Realms[Task])(implicit
+      system: ActorSystem,
       cfg: ServiceConfig
   ): (Organizations[Task], Projects[Task], OrganizationCache[Task], ProjectCache[Task]) = {
     implicit val http: HttpConfig  = cfg.http
@@ -98,8 +98,8 @@ object Main {
     implicit val kvc               = cfg.admin.keyValueStore
     implicit val pm                = CanBlock.permit
 
-    val oc = OrganizationCache[Task]
-    val pc = ProjectCache[Task]
+    val oc       = OrganizationCache[Task]
+    val pc       = ProjectCache[Task]
     val deferred = for {
       orgs  <- Organizations(oc, acls, realms)
       projs <- Projects(pc, orgs, acls, realms)
@@ -108,7 +108,8 @@ object Main {
   }
 
   def bootstrapIndexers(acls: Acls[Task], realms: Realms[Task], orgs: Organizations[Task], projects: Projects[Task])(
-      implicit as: ActorSystem,
+      implicit
+      as: ActorSystem,
       cfg: ServiceConfig
   ): Unit = {
     implicit val ac                = cfg.iam.acls
@@ -122,14 +123,14 @@ object Main {
 
   @SuppressWarnings(Array("UnusedMethodParameter"))
   def main(args: Array[String]): Unit = {
-    val config = loadConfig()
+    val config                 = loadConfig()
     setupMonitoring(config)
     implicit val serviceConfig = Settings(config).serviceConfig
     implicit val as            = ActorSystem(serviceConfig.description.fullName, config)
     implicit val ec            = as.dispatcher
     implicit val hc            = serviceConfig.http
     val cluster                = Cluster(as)
-    val seeds: List[Address] = serviceConfig.cluster.seeds.toList
+    val seeds: List[Address]   = serviceConfig.cluster.seeds.toList
       .flatMap(_.split(","))
       .map(addr => AddressFromURIString(s"akka://${serviceConfig.description.fullName}@$addr")) match {
       case Nil      => List(cluster.selfAddress)
@@ -159,7 +160,7 @@ object Main {
       httpBinding onComplete {
         case Success(binding) =>
           logger.info(s"Bound to ${binding.localAddress.getHostString}: ${binding.localAddress.getPort}")
-        case Failure(th) =>
+        case Failure(th)      =>
           logger.error(
             th,
             "Failed to perform an http binding on {}:{}",

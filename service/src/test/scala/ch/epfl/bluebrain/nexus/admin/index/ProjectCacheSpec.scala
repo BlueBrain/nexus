@@ -45,10 +45,10 @@ class ProjectCacheSpec
   implicit private val httpConfig       = config.http
   implicit private val keyStoreConfig   = config.admin.keyValueStore
 
-  val orgIndex     = OrganizationCache[IO]
-  val index        = ProjectCache[IO]
-  val organization = Organization(genString(), Some(genString()))
-  val orgResource = ResourceF(
+  val orgIndex        = OrganizationCache[IO]
+  val index           = ProjectCache[IO]
+  val organization    = Organization(genString(), Some(genString()))
+  val orgResource     = ResourceF(
     url"http://nexus.example.com/v1/orgs/${organization.label}",
     UUID.randomUUID(),
     2L,
@@ -60,13 +60,13 @@ class ProjectCacheSpec
     subject,
     organization
   )
-  val mappings = Map(
+  val mappings        = Map(
     "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
     "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
   )
-  val base = url"http://nexus.example.com/base"
-  val voc  = url"http://nexus.example.com/voc"
-  val project =
+  val base            = url"http://nexus.example.com/base"
+  val voc             = url"http://nexus.example.com/voc"
+  val project         =
     Project(genString(), UUID.randomUUID(), organization.label, Some(genString()), mappings, base, voc)
   val projectResource = ResourceF(
     url"http://nexus.example.com/v1/orgs/org",

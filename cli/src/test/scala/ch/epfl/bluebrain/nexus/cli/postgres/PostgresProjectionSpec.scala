@@ -19,21 +19,21 @@ class PostgresProjectionSpec extends AbstractPostgresSpec {
       import doobie.implicits._
       (xa: Transactor[IO], proj: PostgresProjection[IO]) =>
         for {
-          _     <- proj.run
-          count <- sql"select count(id) from schemas;".query[Int].unique.transact(xa)
-          _     = count shouldEqual 175
-          maxImport <- sql"select id, count(import) from schema_imports group by id order by count desc limit 1;"
-                        .query[(String, Int)]
-                        .unique
-                        .transact(xa)
+          _                                <- proj.run
+          count                            <- sql"select count(id) from schemas;".query[Int].unique.transact(xa)
+          _                                 = count shouldEqual 175
+          maxImport                        <- sql"select id, count(import) from schema_imports group by id order by count desc limit 1;"
+                                                .query[(String, Int)]
+                                                .unique
+                                                .transact(xa)
           (maxImportSchema, maxImportCount) = maxImport
           _                                 = maxImportSchema shouldEqual "https://neuroshapes.org/commons/entity"
           _                                 = maxImportCount shouldEqual 7
-          lastUpdated <- sql"select last_updated from schemas where id = 'https://neuroshapes.org/commons/entity'"
-                          .query[OffsetDateTime]
-                          .unique
-                          .transact(xa)
-          _ = lastUpdated.toInstant.toEpochMilli shouldEqual 1584615316089L
+          lastUpdated                      <- sql"select last_updated from schemas where id = 'https://neuroshapes.org/commons/entity'"
+                                                .query[OffsetDateTime]
+                                                .unique
+                                                .transact(xa)
+          _                                 = lastUpdated.toInstant.toEpochMilli shouldEqual 1584615316089L
         } yield ()
     }
     "save offset" in { (cfg: AppConfig, blocker: Blocker, proj: PostgresProjection[IO], console: Console[IO]) =>
@@ -43,9 +43,9 @@ class PostgresProjectionSpec extends AbstractPostgresSpec {
       for {
         _      <- proj.run
         exists <- io.file.exists[IO](blocker, cfg.postgres.offsetFile)
-        _      = exists shouldEqual true
+        _       = exists shouldEqual true
         offset <- Offset.load(cfg.postgres.offsetFile)
-        _      = offset.nonEmpty shouldEqual true
+        _       = offset.nonEmpty shouldEqual true
       } yield ()
     }
   }

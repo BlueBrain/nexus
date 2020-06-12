@@ -35,7 +35,7 @@ private[derivation] object MagnoliaGraphEncoder {
             }
           }
         }
-      case None =>
+      case None     =>
         new GraphEncoder[A] {
           override def apply(a: A): Graph = {
             caseClass.parameters.foldLeft(Graph(BNode())) {
@@ -63,7 +63,7 @@ private[derivation] object MagnoliaGraphEncoder {
                   (ibn, IriNode(config.discriminatorPredicate), IriNode(config.base + sealedTrait.typeName.short))
                 g + discriminatorTriple + rootTriple
               } else g + discriminatorTriple
-            case _ => g
+            case _               => g
           }
         }
     }

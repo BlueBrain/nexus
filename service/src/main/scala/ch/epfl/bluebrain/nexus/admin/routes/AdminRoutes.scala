@@ -30,8 +30,8 @@ object AdminRoutes {
       projCache: ProjectCache[Task],
       acls: Acls[Task],
       realms: Realms[Task]
-  )(
-      implicit as: ActorSystem,
+  )(implicit
+      as: ActorSystem,
       cfg: ServiceConfig
   ): Route = {
     implicit val hc: HttpConfig        = cfg.http

@@ -45,33 +45,38 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
     stream.through(utf8Encode)
   }
 
-  override def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
-    make[Client[IO]].from { cfg: AppConfig =>
-      val token = cfg.env.token
-      val httpApp = HttpApp[IO] {
-        // global events with offset
-        case GET -> `v1` / "events" optbearer `token` lastEventId offset =>
-          Response[IO](Status.Ok).withEntity(streamFor(Some(offset))).pure[IO]
-        // global events
-        case GET -> `v1` / "events" optbearer `token` =>
-          Response[IO](Status.Ok).withEntity(streamFor(None)).pure[IO]
-        // org events with offset
-        case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / "events" optbearer `token` lastEventId offset =>
-          Response[IO](Status.Ok).withEntity(streamFor(Some(offset))).pure[IO]
-        // org events
-        case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / "events" optbearer `token` =>
-          Response[IO](Status.Ok).withEntity(streamFor(None)).pure[IO]
-        // project events with offset
-        case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / "events" optbearer `token` lastEventId offset =>
-          Response[IO](Status.Ok).withEntity(streamFor(Some(offset))).pure[IO]
-        // project events
-        case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(`projectLabel`) / "events" optbearer `token` =>
-          Response[IO](Status.Ok).withEntity(streamFor(None)).pure[IO]
+  override def overrides: ModuleDef =
+    new ModuleDef {
+      include(defaultModules)
+      make[Client[IO]].from { cfg: AppConfig =>
+        val token   = cfg.env.token
+        val httpApp = HttpApp[IO] {
+          // global events with offset
+          case GET -> `v1` / "events" optbearer `token` lastEventId offset                                         =>
+            Response[IO](Status.Ok).withEntity(streamFor(Some(offset))).pure[IO]
+          // global events
+          case GET -> `v1` / "events" optbearer `token`                                                            =>
+            Response[IO](Status.Ok).withEntity(streamFor(None)).pure[IO]
+          // org events with offset
+          case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / "events" optbearer `token` lastEventId offset =>
+            Response[IO](Status.Ok).withEntity(streamFor(Some(offset))).pure[IO]
+          // org events
+          case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / "events" optbearer `token`                    =>
+            Response[IO](Status.Ok).withEntity(streamFor(None)).pure[IO]
+          // project events with offset
+          case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(
+                `projectLabel`
+              ) / "events" optbearer `token` lastEventId offset =>
+            Response[IO](Status.Ok).withEntity(streamFor(Some(offset))).pure[IO]
+          // project events
+          case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / ProjectLabelVar(
+                `projectLabel`
+              ) / "events" optbearer `token` =>
+            Response[IO](Status.Ok).withEntity(streamFor(None)).pure[IO]
+        }
+        Client.fromHttpApp(httpApp)
       }
-      Client.fromHttpApp(httpApp)
     }
-  }
 
   "An EventStreamClient" should {
     "return all events" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -80,7 +85,7 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         eventStream <- ec.apply(None)
         stream      <- eventStream.value
         eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _           = eventList shouldEqual events
+        _            = eventList shouldEqual events
       } yield ()
     }
     "return all events from offset" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -89,7 +94,7 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         eventStream <- ec.apply(offset)
         stream      <- eventStream.value
         eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _           = eventList shouldEqual events.drop(3)
+        _            = eventList shouldEqual events.drop(3)
       } yield ()
     }
     "return all org events" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -98,7 +103,7 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         eventStream <- ec.apply(orgLabel, None)
         stream      <- eventStream.value
         eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _           = eventList shouldEqual events
+        _            = eventList shouldEqual events
       } yield ()
     }
     "return all org events from offset" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -107,7 +112,7 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         eventStream <- ec.apply(orgLabel, offset)
         stream      <- eventStream.value
         eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _           = eventList shouldEqual events.drop(3)
+        _            = eventList shouldEqual events.drop(3)
       } yield ()
     }
     "return all proj events" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -116,7 +121,7 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         eventStream <- ec.apply(orgLabel, projectLabel, None)
         stream      <- eventStream.value
         eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _           = eventList shouldEqual events
+        _            = eventList shouldEqual events
       } yield ()
     }
     "return all proj events from offset" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -125,7 +130,7 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         eventStream <- ec.apply(orgLabel, projectLabel, offset)
         stream      <- eventStream.value
         eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _           = eventList shouldEqual events.drop(3)
+        _            = eventList shouldEqual events.drop(3)
       } yield ()
     }
   }

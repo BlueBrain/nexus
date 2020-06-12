@@ -22,7 +22,9 @@ class AkkaConvertersSpec extends RdfSpec {
     "fail to convert" when {
       "it's not an IriNode" in {
         BNode("1").rightValue.asAkka.leftValue shouldEqual "_:1 cannot be converted to URI."
-        Literal(true).asAkka.leftValue shouldEqual "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> cannot be converted to URI."
+        Literal(
+          true
+        ).asAkka.leftValue shouldEqual "\"true\"^^<http://www.w3.org/2001/XMLSchema#boolean> cannot be converted to URI."
       }
     }
   }

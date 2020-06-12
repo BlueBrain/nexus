@@ -61,11 +61,11 @@ object WellKnown {
     */
   def apply[F[_]](address: Url)(implicit cl: HttpClient[F, Json], F: Effect[F]): F[Either[Rejection, WellKnown]] = {
     import GrantType.Snake._
-    def fetchConfig: EitherT[F, Rejection, Json] =
+    def fetchConfig: EitherT[F, Rejection, Json]                     =
       EitherT(cl(Get(address.asUri)).map[Either[Rejection, Json]](Right.apply).handleErrorWith {
         case NonFatal(_) => F.pure(Left(UnsuccessfulOpenIdConfigResponse(address)))
       })
-    def issuer(json: Json): Either[Rejection, String] =
+    def issuer(json: Json): Either[Rejection, String]                =
       json.hcursor
         .get[String]("issuer")
         .leftMap(df => IllegalIssuerFormat(address, CursorOp.opsToPath(df.history)))
@@ -73,21 +73,21 @@ object WellKnown {
           case iss if iss.trim.isEmpty => Left(IllegalIssuerFormat(address, ".issuer"))
           case iss                     => Right(iss)
         }
-    def grantTypes(json: Json): Either[Rejection, Set[GrantType]] =
+    def grantTypes(json: Json): Either[Rejection, Set[GrantType]]    =
       json.hcursor
         .get[Option[Set[GrantType]]]("grant_types_supported")
         .map(_.getOrElse(Set.empty))
         .leftMap(df => IllegalGrantTypeFormat(address, CursorOp.opsToPath(df.history)))
-    def jwksUrl(json: Json): Either[Rejection, Url] =
+    def jwksUrl(json: Json): Either[Rejection, Url]                  =
       json.hcursor
         .get[String]("jwks_uri")
         .leftMap(df => IllegalJwksUriFormat(address, CursorOp.opsToPath(df.history)))
         .flatMap(str => Url(str).leftMap(_ => IllegalJwksUriFormat(address, ".jwks_uri")))
-    def endpoints(json: Json): Either[Rejection, Endpoints] =
+    def endpoints(json: Json): Either[Rejection, Endpoints]          =
       Endpoints
         .endpointsDecoder(json.hcursor)
         .leftMap(df => IllegalEndpointFormat(address, CursorOp.opsToPath(df.history)))
-    def fetchJwks(address: Url): EitherT[F, Rejection, Json] =
+    def fetchJwks(address: Url): EitherT[F, Rejection, Json]         =
       EitherT(cl(Get(address.asUri)).map[Either[Rejection, Json]](Right.apply).handleErrorWith {
         case NonFatal(_) => F.pure(Left(UnsuccessfulJwksResponse(address)))
       })
@@ -109,11 +109,11 @@ object WellKnown {
       val tupled: Either[Rejection, (String, Set[GrantType], Url, Endpoints)] =
         (issuer(cfgJson), grantTypes(cfgJson), jwksUrl(cfgJson), endpoints(cfgJson)).tupled
       tupled match {
-        case Left(rej) => EitherT.leftT[F, WellKnown](rej)
+        case Left(rej)                              => EitherT.leftT[F, WellKnown](rej)
         case Right((iss, gts, jwksAddress, endpts)) =>
           fetchJwks(jwksAddress).flatMap { jwksJson =>
             jwks(jwksAddress, jwksJson).flatMap(keys => selectValidKeys(keys, jwksAddress)) match {
-              case Left(rej) => EitherT.leftT[F, WellKnown](rej)
+              case Left(rej)   => EitherT.leftT[F, WellKnown](rej)
               case Right(keys) =>
                 val wk = WellKnown(
                   iss,

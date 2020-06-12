@@ -209,8 +209,7 @@ object Acls {
     *
     * @param perms a lazy reference to the permissions api
     */
-  def apply[F[_]: Effect: Timer: Clock](perms: F[Permissions[F]])(
-      implicit
+  def apply[F[_]: Effect: Timer: Clock](perms: F[Permissions[F]])(implicit
       as: ActorSystem,
       http: HttpConfig,
       ac: AclsConfig,
@@ -240,7 +239,7 @@ object Acls {
     implicit val ec: ExecutionContext  = as.dispatcher
     implicit val timeout: Timeout      = aggc.askTimeout
 
-    val projectionId: String = "acl-index"
+    val projectionId: String            = "acl-index"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
       .readJournalFor[EventsByTagQuery](ac.aggregate.queryJournalPlugin)
       .eventsByTag(TaggingAdapter.aclEventTag, NoOffset)
@@ -257,27 +256,33 @@ object Acls {
       .flow
       .map(_ => ())
 
-    F.delay[StreamSupervisor[F, Unit]](StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)) >> F.unit
+    F.delay[StreamSupervisor[F, Unit]](
+      StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)
+    ) >> F.unit
 
   }
 
   private[acls] def next(state: State, event: Event): AclState = {
-    def replaced(e: AclReplaced): State = state match {
-      case Initial    => Current(e.path, e.acl, 1L, e.instant, e.instant, e.subject, e.subject)
-      case c: Current => c.copy(acl = e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
-    }
-    def appended(e: AclAppended): State = state match {
-      case Initial    => Current(e.path, e.acl, 1L, e.instant, e.instant, e.subject, e.subject)
-      case c: Current => c.copy(acl = c.acl ++ e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
-    }
-    def subtracted(e: AclSubtracted): State = state match {
-      case Initial    => Current(e.path, e.acl, 1L, e.instant, e.instant, e.subject, e.subject)
-      case c: Current => c.copy(acl = c.acl -- e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
-    }
-    def deleted(e: AclDeleted): State = state match {
-      case Initial    => Initial
-      case c: Current => c.copy(acl = empty, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
-    }
+    def replaced(e: AclReplaced): State     =
+      state match {
+        case Initial    => Current(e.path, e.acl, 1L, e.instant, e.instant, e.subject, e.subject)
+        case c: Current => c.copy(acl = e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
+    def appended(e: AclAppended): State     =
+      state match {
+        case Initial    => Current(e.path, e.acl, 1L, e.instant, e.instant, e.subject, e.subject)
+        case c: Current => c.copy(acl = c.acl ++ e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
+    def subtracted(e: AclSubtracted): State =
+      state match {
+        case Initial    => Current(e.path, e.acl, 1L, e.instant, e.instant, e.subject, e.subject)
+        case c: Current => c.copy(acl = c.acl -- e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
+    def deleted(e: AclDeleted): State       =
+      state match {
+        case Initial    => Initial
+        case c: Current => c.copy(acl = empty, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
     event match {
       case ev: AclReplaced   => replaced(ev)
       case ev: AclAppended   => appended(ev)
@@ -289,11 +294,11 @@ object Acls {
   private def evaluate[F[_]: Monad: Clock](
       perms: F[Permissions[F]]
   )(state: State, cmd: Command): F[EventOrRejection] = {
-    val F = implicitly[Monad[F]]
-    val C = implicitly[Clock[F]]
-    def accept(f: Instant => Event): F[EventOrRejection] =
+    val F                                                                                = implicitly[Monad[F]]
+    val C                                                                                = implicitly[Clock[F]]
+    def accept(f: Instant => Event): F[EventOrRejection]                                 =
       C.realTime(TimeUnit.MILLISECONDS).map(rtl => Right(f(Instant.ofEpochMilli(rtl))))
-    def reject(rejection: Rejection): F[EventOrRejection] =
+    def reject(rejection: Rejection): F[EventOrRejection]                                =
       F.pure(Left(rejection))
     def acceptChecking(acl: AccessControlList)(f: Instant => Event): F[EventOrRejection] =
       perms.flatMap(_.effectivePermissionsUnsafe.flatMap {
@@ -301,38 +306,43 @@ object Acls {
         case ps                                 => reject(UnknownPermissions(acl.permissions -- ps))
       })
 
-    def replaced(c: ReplaceAcl): F[EventOrRejection] = state match {
-      case _ if c.acl.hasVoidPermissions                                 => reject(AclCannotContainEmptyPermissionCollection(c.path))
-      case Initial if c.rev == 0L                                        => acceptChecking(c.acl)(AclReplaced(c.path, c.acl, 1L, _, c.subject))
-      case Initial                                                       => reject(IncorrectRev(c.path, c.rev, 0L))
-      case ss: Current if ss.acl.permissions.nonEmpty && c.rev != ss.rev => reject(IncorrectRev(c.path, c.rev, ss.rev))
-      case ss: Current if ss.acl.permissions.isEmpty && c.rev != ss.rev && c.rev != 0L =>
-        reject(IncorrectRev(c.path, c.rev, ss.rev))
-      case ss: Current => acceptChecking(c.acl)(AclReplaced(c.path, c.acl, ss.rev + 1, _, c.subject))
-    }
-    def append(c: AppendAcl): F[EventOrRejection] = state match {
-      case Initial if c.rev == 0L                                     => acceptChecking(c.acl)(AclAppended(c.path, c.acl, c.rev + 1, _, c.subject))
-      case Initial                                                    => reject(IncorrectRev(c.path, c.rev, 0L))
-      case s: Current if s.acl.permissions.nonEmpty && c.rev != s.rev => reject(IncorrectRev(c.path, c.rev, s.rev))
-      case s: Current if s.acl.permissions.isEmpty && c.rev != s.rev & c.rev != 0L =>
-        reject(IncorrectRev(c.path, c.rev, s.rev))
-      case _: Current if c.acl.hasVoidPermissions => reject(AclCannotContainEmptyPermissionCollection(c.path))
-      case s: Current if s.acl ++ c.acl == s.acl  => reject(NothingToBeUpdated(c.path))
-      case s: Current                             => acceptChecking(c.acl)(AclAppended(c.path, c.acl, s.rev + 1, _, c.subject))
-    }
-    def subtract(c: SubtractAcl): F[EventOrRejection] = state match {
-      case Initial                                => reject(AclNotFound(c.path))
-      case s: Current if c.rev != s.rev           => reject(IncorrectRev(c.path, c.rev, s.rev))
-      case _: Current if c.acl.hasVoidPermissions => reject(AclCannotContainEmptyPermissionCollection(c.path))
-      case s: Current if s.acl -- c.acl == s.acl  => reject(NothingToBeUpdated(c.path))
-      case _: Current                             => acceptChecking(c.acl)(AclSubtracted(c.path, c.acl, c.rev + 1, _, c.subject))
-    }
-    def delete(c: DeleteAcl): F[EventOrRejection] = state match {
-      case Initial                      => reject(AclNotFound(c.path))
-      case s: Current if c.rev != s.rev => reject(IncorrectRev(c.path, c.rev, s.rev))
-      case s: Current if s.acl == empty => reject(AclIsEmpty(c.path))
-      case _: Current                   => accept(AclDeleted(c.path, c.rev + 1, _, c.subject))
-    }
+    def replaced(c: ReplaceAcl): F[EventOrRejection]  =
+      state match {
+        case _ if c.acl.hasVoidPermissions                                               => reject(AclCannotContainEmptyPermissionCollection(c.path))
+        case Initial if c.rev == 0L                                                      => acceptChecking(c.acl)(AclReplaced(c.path, c.acl, 1L, _, c.subject))
+        case Initial                                                                     => reject(IncorrectRev(c.path, c.rev, 0L))
+        case ss: Current if ss.acl.permissions.nonEmpty && c.rev != ss.rev               =>
+          reject(IncorrectRev(c.path, c.rev, ss.rev))
+        case ss: Current if ss.acl.permissions.isEmpty && c.rev != ss.rev && c.rev != 0L =>
+          reject(IncorrectRev(c.path, c.rev, ss.rev))
+        case ss: Current                                                                 => acceptChecking(c.acl)(AclReplaced(c.path, c.acl, ss.rev + 1, _, c.subject))
+      }
+    def append(c: AppendAcl): F[EventOrRejection]     =
+      state match {
+        case Initial if c.rev == 0L                                                  => acceptChecking(c.acl)(AclAppended(c.path, c.acl, c.rev + 1, _, c.subject))
+        case Initial                                                                 => reject(IncorrectRev(c.path, c.rev, 0L))
+        case s: Current if s.acl.permissions.nonEmpty && c.rev != s.rev              => reject(IncorrectRev(c.path, c.rev, s.rev))
+        case s: Current if s.acl.permissions.isEmpty && c.rev != s.rev & c.rev != 0L =>
+          reject(IncorrectRev(c.path, c.rev, s.rev))
+        case _: Current if c.acl.hasVoidPermissions                                  => reject(AclCannotContainEmptyPermissionCollection(c.path))
+        case s: Current if s.acl ++ c.acl == s.acl                                   => reject(NothingToBeUpdated(c.path))
+        case s: Current                                                              => acceptChecking(c.acl)(AclAppended(c.path, c.acl, s.rev + 1, _, c.subject))
+      }
+    def subtract(c: SubtractAcl): F[EventOrRejection] =
+      state match {
+        case Initial                                => reject(AclNotFound(c.path))
+        case s: Current if c.rev != s.rev           => reject(IncorrectRev(c.path, c.rev, s.rev))
+        case _: Current if c.acl.hasVoidPermissions => reject(AclCannotContainEmptyPermissionCollection(c.path))
+        case s: Current if s.acl -- c.acl == s.acl  => reject(NothingToBeUpdated(c.path))
+        case _: Current                             => acceptChecking(c.acl)(AclSubtracted(c.path, c.acl, c.rev + 1, _, c.subject))
+      }
+    def delete(c: DeleteAcl): F[EventOrRejection]     =
+      state match {
+        case Initial                      => reject(AclNotFound(c.path))
+        case s: Current if c.rev != s.rev => reject(IncorrectRev(c.path, c.rev, s.rev))
+        case s: Current if s.acl == empty => reject(AclIsEmpty(c.path))
+        case _: Current                   => accept(AclDeleted(c.path, c.rev + 1, _, c.subject))
+      }
 
     cmd match {
       case c: ReplaceAcl  => replaced(c)

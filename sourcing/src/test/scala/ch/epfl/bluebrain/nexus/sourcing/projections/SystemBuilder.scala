@@ -18,7 +18,7 @@ object SystemBuilder {
   final def freePort(): Int = {
     val serverSocket = ServerSocketChannel.open().socket()
     serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
-    val port = serverSocket.getLocalPort
+    val port         = serverSocket.getLocalPort
     serverSocket.close()
     port
   }
@@ -30,7 +30,7 @@ object SystemBuilder {
     * @return an actor system with akka persistence configured to cassandra
     */
   final def persistence(name: String): ActorSystem = {
-    val free = CassandraLauncher.randomPort
+    val free   = CassandraLauncher.randomPort
     val config = ConfigFactory
       .parseString(s"""
          |test.cassandra-port = $free
@@ -50,7 +50,7 @@ object SystemBuilder {
   final def cluster(name: String): ActorSystem = {
     val cassandra = CassandraLauncher.randomPort
     val remote    = freePort()
-    val config = ConfigFactory
+    val config    = ConfigFactory
       .parseString(s"""
          |test.cassandra-port = $cassandra
          |test.remote-port = $remote

@@ -15,7 +15,7 @@ final case class TypeConfig(
     queries: List[QueryConfig]
 )
 object TypeConfig {
-  implicit val typeConfigProductHint: ProductHint[TypeConfig] = ProductHint[TypeConfig] {
+  implicit val typeConfigProductHint: ProductHint[TypeConfig]     = ProductHint[TypeConfig] {
     case "tpe" => "type"
     case other => other
   }

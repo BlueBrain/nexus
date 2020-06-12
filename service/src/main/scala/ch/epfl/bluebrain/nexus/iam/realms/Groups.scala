@@ -71,7 +71,7 @@ class Groups[F[_]: Timer](cache: GroupsCache[F])(implicit cfg: GroupsConfig, hc:
   private def fromUserInfo(token: AccessToken, realm: ActiveRealm, exp: Option[Instant]): F[Set[Group]] = {
     cache.get(token).flatMap {
       case Some(set) => F.pure(set)
-      case None =>
+      case None      =>
         for {
           set <- fetch(token, realm).retryingOnAllErrors[Throwable]
           _   <- cache.put(token, set, exp.getOrElse(Instant.now().plusMillis(sinceLast)))
@@ -132,7 +132,8 @@ private[realms] object GroupsCache {
 
     val invalidationStrategy: StopStrategy[State, Command] =
       StopStrategy(
-        sinceLast, {
+        sinceLast,
+        {
           case (_, _, _, None)      => None
           case (_, _, _, Some(cmd)) =>
             // passivate with the minimum duration (either the token expiry or the passivation timeout)
@@ -152,8 +153,8 @@ object Groups {
   /**
     * Constructs a Groups instance with its underlying cache from the provided implicit args.
     */
-  final def apply[F[_]: Effect: Timer]()(
-      implicit as: ActorSystem,
+  final def apply[F[_]: Effect: Timer]()(implicit
+      as: ActorSystem,
       cfg: GroupsConfig,
       hc: HttpClient[F, Json]
   ): F[Groups[F]] =

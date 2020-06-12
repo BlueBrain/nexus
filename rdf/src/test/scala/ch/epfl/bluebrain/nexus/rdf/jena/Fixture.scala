@@ -37,7 +37,7 @@ object Fixture {
     ResourceFactory.createProperty(schema.age.asUri),
     ResourceFactory.createTypedLiteral(16)
   )
-  val bnode = new ResourceImpl(AnonId.create("bnode"))
+  val bnode         = new ResourceImpl(AnonId.create("bnode"))
   model.add(
     a,
     ResourceFactory.createProperty(schema.age.asUri),

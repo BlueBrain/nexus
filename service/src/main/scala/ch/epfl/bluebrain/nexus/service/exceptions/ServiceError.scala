@@ -2,12 +2,13 @@ package ch.epfl.bluebrain.nexus.service.exceptions
 
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.iam.types.IamError
-import io.circe.{Encoder, Json}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 abstract class ServiceError(val msg: String) extends Exception with Product with Serializable
@@ -22,7 +23,7 @@ object ServiceError {
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   final case class InternalError(reason: String) extends ServiceError(reason)
 
-  @silent
+  @nowarn("cat=unused")
   implicit val internalErrorEncoder: Encoder[InternalError] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[InternalError].mapJson(_ addContext errorCtxUri)
@@ -35,7 +36,10 @@ object ServiceError {
   implicit val serviceErrorEncoder: Encoder[ServiceError] = Encoder.instance {
     case i: IamError   => IamError.iamErrorEncoder(i)
     case a: AdminError => AdminError.adminErrorEncoder(a)
-    case r =>
-      Json.obj("@type" -> Json.fromString(r.getClass.getSimpleName), "reason" -> Json.fromString(r.msg)) addContext errorCtxUri
+    case r             =>
+      Json.obj(
+        "@type"  -> Json.fromString(r.getClass.getSimpleName),
+        "reason" -> Json.fromString(r.msg)
+      ) addContext errorCtxUri
   }
 }

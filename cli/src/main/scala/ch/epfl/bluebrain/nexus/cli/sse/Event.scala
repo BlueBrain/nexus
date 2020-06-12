@@ -42,16 +42,17 @@ object Event extends Codecs {
       `_rev`: Option[Long],
       `_instant`: Instant
   ) {
-    def asEvent(raw: Json): Event = Event(
-      `@type`,
-      `_resourceId`,
-      `_rev`.getOrElse(1L),
-      OrgUuid(`_organizationUuid`),
-      ProjectUuid(`_projectUuid`),
-      `_types`.getOrElse(Set.empty[Uri]),
-      `_instant`,
-      raw
-    )
+    def asEvent(raw: Json): Event =
+      Event(
+        `@type`,
+        `_resourceId`,
+        `_rev`.getOrElse(1L),
+        OrgUuid(`_organizationUuid`),
+        ProjectUuid(`_projectUuid`),
+        `_types`.getOrElse(Set.empty[Uri]),
+        `_instant`,
+        raw
+      )
   }
 
   private[Event] object APIEvent {

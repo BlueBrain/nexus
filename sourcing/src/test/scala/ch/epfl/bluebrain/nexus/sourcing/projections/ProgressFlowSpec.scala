@@ -100,8 +100,8 @@ class ProgressFlowSpec
         .distinct()                 // remove duplicated persistenceIds: List[Event]
         .mapAsync(
           toResource { case ev if ev.offset != 2L => ev.toResource }
-        )                                         // convert to resource (None on 2): List[Option[Resource]]
-        .collectSome[Resource]                    // Discard None (on 2): List[Resource]
+        )                           // convert to resource (None on 2): List[Option[Resource]]
+        .collectSome[Resource] // Discard None (on 2): List[Resource]
         .runAsyncBatch(index)(Eval.After(offset)) //run index in batch
         .mergeEmit()
         .toProgress(progress)
@@ -124,8 +124,8 @@ class ProgressFlowSpec
         .distinct()                 // remove duplicated persistenceIds: List[Event]
         .mapAsync(
           toResource { case ev if ev.offset != 2L => ev.toResource }
-        )                                         // convert to resource (None on 2): List[Option[Resource]]
-        .collectSome[Resource]                    // Discard None (on 2): List[Resource]
+        )                           // convert to resource (None on 2): List[Option[Resource]]
+        .collectSome[Resource] // Discard None (on 2): List[Resource]
         .runAsyncBatch(index)(Eval.After(offset)) //run index in batch
         .mergeEmit()
         .toPersistedProgress(id, progress)
@@ -153,8 +153,8 @@ class ProgressFlowSpec
           .distinct()                 // remove duplicated persistenceIds: List[Event]
           .mapAsync(
             toResource { case ev if ev.offset != 2L => ev.toResource }
-          )                                 // convert to resource (None on 2): List[Option[Resource]]
-          .collectSome[Resource]            // Discard None (on 2): List[Resource]
+          )                           // convert to resource (None on 2): List[Option[Resource]]
+          .collectSome[Resource] // Discard None (on 2): List[Resource]
           .runAsync(index(_.offset != 3))() // indexing (fail on 3): List[Resource]
           .mergeEmit()
           .flow
@@ -165,8 +165,8 @@ class ProgressFlowSpec
           .mapAsync(res =>
             if (res.offset == 0L) IO.pure(None)
             else IO.pure(Option(res))
-          )                                 // None on 0, Some otherwise: List[Option[Resource]]
-          .collectSome[Resource]            // Discard None (on 0): List[Resource]
+          )              // None on 0, Some otherwise: List[Option[Resource]]
+          .collectSome[Resource] // Discard None (on 0): List[Resource]
           .runAsync(index(_.offset != 3))() // indexing (fail on 3): List[Resource]
           .flow
 
@@ -218,8 +218,8 @@ class ProgressFlowSpec
           .distinct()                 // remove duplicated persistenceIds: List[Event]
           .mapAsync(
             toResource { case ev if ev.offset != 2L => ev.toResource }
-          )                                                         // convert to resource (None on 2): List[Option[Resource]]
-          .collectSome[Resource]                                    // Discard None (on 2): List[Resource]
+          )                           // convert to resource (None on 2): List[Option[Resource]]
+          .collectSome[Resource] // Discard None (on 2): List[Resource]
           .runAsync(index(_.offset != 3))(Eval.After(Sequence(3L))) // indexing (fail on 3): List[Resource]
           .mergeEmit()
           .flow
@@ -231,8 +231,8 @@ class ProgressFlowSpec
           .mapAsync(res =>
             if (res.offset == 0L) IO.pure(None)
             else IO.pure(Option(res))
-          )                                 // None on 0, Some otherwise: List[Option[Resource]]
-          .collectSome[Resource]            // Discard None (on 0): List[Resource]
+          )                            // None on 0, Some otherwise: List[Option[Resource]]
+          .collectSome[Resource] // Discard None (on 0): List[Resource]
           .runAsync(index(_.offset != 3))() // indexing (fail on 3): List[Resource]
           .flow
 

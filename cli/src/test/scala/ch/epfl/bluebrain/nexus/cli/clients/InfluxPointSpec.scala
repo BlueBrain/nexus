@@ -60,7 +60,7 @@ class InfluxPointSpec extends AnyWordSpecLike with Matchers with Resources with 
     }
 
     "converted to string" in {
-      val point = InfluxPoint(
+      val point      = InfluxPoint(
         "m1",
         Map("created" -> created.toString, "project" -> "org/proj", "deprecated" -> "false"),
         Map("bytes"   -> "1234"),

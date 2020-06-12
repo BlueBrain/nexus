@@ -80,33 +80,33 @@ object CoproductSerializer {
     * @tparam T the type of the coproduct tail
     * @return a new ''CoproductSerializer'' that prepends a new type ''H'' to the list of known serialization types
     */
-  implicit final def cconsSerializer[H, T <: Coproduct](
-      implicit
+  implicit final def cconsSerializer[H, T <: Coproduct](implicit
       headTypeable: Typeable[H],
       headEncoder: Encoder[H],
       headDecoder: Decoder[H],
       tailSerializer: CoproductSerializer[T]
-  ): CoproductSerializer[H :+: T] = new CoproductSerializer[:+:[H, T]] {
+  ): CoproductSerializer[H :+: T] =
+    new CoproductSerializer[:+:[H, T]] {
 
-    override def manifest(x: Any): Option[String] =
-      headTypeable
-        .cast(x)
-        .map(_ => headTypeable.describe)
-        .orElse(tailSerializer.manifest(x))
+      override def manifest(x: Any): Option[String] =
+        headTypeable
+          .cast(x)
+          .map(_ => headTypeable.describe)
+          .orElse(tailSerializer.manifest(x))
 
-    override def toBinary(x: Any): Option[Array[Byte]] =
-      headTypeable
-        .cast(x)
-        .map(h => headEncoder(h).printWith(printer).getBytes(UTF_8))
-        .orElse(tailSerializer.toBinary(x))
+      override def toBinary(x: Any): Option[Array[Byte]] =
+        headTypeable
+          .cast(x)
+          .map(h => headEncoder(h).printWith(printer).getBytes(UTF_8))
+          .orElse(tailSerializer.toBinary(x))
 
-    override def fromBinary(bytes: Array[Byte], manifest: String): Option[H :+: T] =
-      if (headTypeable.describe == manifest) {
-        decode[H](new String(bytes, UTF_8)) match {
-          case Left(_)      => None
-          case Right(value) => Some(Coproduct(value))
-        }
-      } else tailSerializer.fromBinary(bytes, manifest).map(t => t.extendLeft[H])
-  }
+      override def fromBinary(bytes: Array[Byte], manifest: String): Option[H :+: T] =
+        if (headTypeable.describe == manifest) {
+          decode[H](new String(bytes, UTF_8)) match {
+            case Left(_)      => None
+            case Right(value) => Some(Coproduct(value))
+          }
+        } else tailSerializer.fromBinary(bytes, manifest).map(t => t.extendLeft[H])
+    }
 
 }

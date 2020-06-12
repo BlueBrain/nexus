@@ -107,8 +107,7 @@ final class AggregateTree[F[_]] {
       passivationStrategy: PassivationStrategy[State, Command],
       config: AkkaAggregateConfig,
       poolSize: Int
-  )(
-      implicit
+  )(implicit
       F: Effect[F],
       T: Timer[F],
       policy: RetryPolicy[F],
@@ -150,8 +149,7 @@ final class AggregateSharded[F[_]] {
       config: AkkaAggregateConfig,
       shards: Int,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(
-      implicit
+  )(implicit
       F: Effect[F],
       T: Timer[F],
       policy: RetryPolicy[F],
@@ -214,8 +212,8 @@ object AkkaAggregate {
   )(implicit as: ActorSystem, policy: RetryPolicy[F]): F[Aggregate[F, String, Event, State, Command, Rejection]] = {
     val F = implicitly[Effect[F]]
     F.delay {
-      val props  = AggregateActor.parentProps(name, initialState, next, evaluate, passivationStrategy, config)
-      val parent = as.actorOf(ConsistentHashingPool(poolSize).props(props), name)
+      val props     = AggregateActor.parentProps(name, initialState, next, evaluate, passivationStrategy, config)
+      val parent    = as.actorOf(ConsistentHashingPool(poolSize).props(props), name)
       // route all messages through the parent pool
       val selection = ActorRefSelection.const(parent)
       new AkkaAggregate(name, selection, config)
@@ -265,17 +263,17 @@ object AkkaAggregate {
       shards: Int,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem, policy: RetryPolicy[F]): F[Aggregate[F, String, Event, State, Command, Rejection]] = {
-    val settings = shardingSettings.getOrElse(ClusterShardingSettings(as))
-    val shardExtractor: ExtractShardId = {
+    val settings                         = shardingSettings.getOrElse(ClusterShardingSettings(as))
+    val shardExtractor: ExtractShardId   = {
       case msg: AggregateMsg => math.abs(msg.id.hashCode) % shards toString
     }
     val entityExtractor: ExtractEntityId = {
       case msg: AggregateMsg => (msg.id, msg)
     }
-    val F = implicitly[Effect[F]]
+    val F                                = implicitly[Effect[F]]
     F.delay {
-      val props = AggregateActor.shardedProps(name, initialState, next, evaluate, passivationStrategy, config)
-      val ref   = ClusterSharding(as).start(name, props, settings, entityExtractor, shardExtractor)
+      val props     = AggregateActor.shardedProps(name, initialState, next, evaluate, passivationStrategy, config)
+      val ref       = ClusterSharding(as).start(name, props, settings, entityExtractor, shardExtractor)
       // route all messages through the sharding coordination
       val selection = ActorRefSelection.const(ref)
       new AkkaAggregate(name, selection, config)

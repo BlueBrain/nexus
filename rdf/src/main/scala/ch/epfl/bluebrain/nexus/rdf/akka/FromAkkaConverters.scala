@@ -28,12 +28,13 @@ trait FromAkkaConverters {
     */
   def asIriPath(path: Uri.Path): Iri.Path = {
     @tailrec
-    def inner(acc: Iri.Path, remaining: Uri.Path): Iri.Path = remaining match {
-      case Uri.Path.SingleSlash         => Slash(acc)
-      case Uri.Path.Empty               => acc
-      case Uri.Path.Slash(tail)         => inner(Slash(acc), tail)
-      case Uri.Path.Segment(head, tail) => inner(Segment(head, acc), tail)
-    }
+    def inner(acc: Iri.Path, remaining: Uri.Path): Iri.Path =
+      remaining match {
+        case Uri.Path.SingleSlash         => Slash(acc)
+        case Uri.Path.Empty               => acc
+        case Uri.Path.Slash(tail)         => inner(Slash(acc), tail)
+        case Uri.Path.Segment(head, tail) => inner(Segment(head, acc), tail)
+      }
     inner(Path.Empty, path)
   }
 }

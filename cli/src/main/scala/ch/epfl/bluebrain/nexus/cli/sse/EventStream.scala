@@ -24,8 +24,9 @@ object EventStream {
   final def apply[F[_]](
       stream: F[Stream[F, ClientErrOr[LabeledEvent]]],
       ref: Ref[F, Option[Offset]]
-  ): EventStream[F] = new EventStream[F] {
-    override def value: F[Stream[F, ClientErrOr[LabeledEvent]]] = stream
-    override def currentEventId(): F[Option[Offset]]            = ref.get
-  }
+  ): EventStream[F] =
+    new EventStream[F] {
+      override def value: F[Stream[F, ClientErrOr[LabeledEvent]]] = stream
+      override def currentEventId(): F[Option[Offset]]            = ref.get
+    }
 }

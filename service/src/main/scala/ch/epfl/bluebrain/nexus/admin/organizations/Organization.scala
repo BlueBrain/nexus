@@ -15,6 +15,6 @@ object Organization {
   implicit val organizationEncoder: Encoder[Organization] = Encoder.encodeJson.contramap {
     case Organization(label, Some(desc)) =>
       Json.obj("_label" -> Json.fromString(label), "description" -> Json.fromString(desc))
-    case Organization(label, _) => Json.obj("_label" -> Json.fromString(label))
+    case Organization(label, _)          => Json.obj("_label" -> Json.fromString(label))
   }
 }

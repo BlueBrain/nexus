@@ -94,7 +94,7 @@ object Identity {
   private def decodeAuthenticated(hc: HCursor): Result[Identity] =
     hc.get[String]("realm").map(Authenticated)
 
-  private val attempts =
+  private val attempts        =
     List[HCursor => Result[Identity]](decodeAnonymous, decodeUser, decodeGroup, decodeAuthenticated)
   private val attemptsSubject = List[HCursor => Result[Subject]](decodeAnonymous, decodeUser)
 
@@ -107,9 +107,10 @@ object Identity {
     }
   }
 
-  implicit def subjectEncoder(implicit http: HttpConfig): Encoder[Subject] = Encoder.encodeJson.contramap {
-    identityEncoder.apply(_: Identity)
-  }
+  implicit def subjectEncoder(implicit http: HttpConfig): Encoder[Subject] =
+    Encoder.encodeJson.contramap {
+      identityEncoder.apply(_: Identity)
+    }
 
   def subjectIdEncoder(implicit http: HttpConfig): Encoder[Subject] =
     Encoder.encodeJson.contramap(_.id.asJson)

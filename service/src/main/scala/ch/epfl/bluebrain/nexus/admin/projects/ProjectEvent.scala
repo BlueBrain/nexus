@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 
 sealed trait ProjectEvent extends Product with Serializable {
@@ -116,9 +116,9 @@ object ProjectEvent {
   ) extends ProjectEvent
 
   object JsonLd {
-    @silent // implicits are not recognized as being used
+    @nowarn("cat=unused")
     implicit final def projectEventEncoder(implicit http: HttpConfig): Encoder[ProjectEvent] = {
-      implicit val config: Configuration = Configuration.default
+      implicit val config: Configuration                                = Configuration.default
         .withDiscriminator("@type")
         .copy(transformMemberNames = {
           case nxv.`@id`.name             => nxv.uuid.prefix
@@ -130,7 +130,7 @@ object ProjectEvent {
           case nxv.subject.name           => nxv.subject.prefix
           case other                      => other
         })
-      implicit val subjectIdEncoder: Encoder[Subject] = Encoder.encodeJson.contramap(_.id.asJson)
+      implicit val subjectIdEncoder: Encoder[Subject]                   = Encoder.encodeJson.contramap(_.id.asJson)
       implicit val apiMappingEncoder: Encoder[Map[String, AbsoluteIri]] =
         Encoder.encodeJson.contramap { map =>
           Json.arr(

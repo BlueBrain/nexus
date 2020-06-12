@@ -21,7 +21,7 @@ final case class TypeConfig(
     timestamp: String
 )
 object TypeConfig {
-  implicit val typeConfigProductHint: ProductHint[TypeConfig] = ProductHint[TypeConfig] {
+  implicit val typeConfigProductHint: ProductHint[TypeConfig]     = ProductHint[TypeConfig] {
     case "tpe" => "type"
     case other => other
   }

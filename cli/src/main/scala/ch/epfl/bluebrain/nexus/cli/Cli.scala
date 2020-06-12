@@ -16,10 +16,11 @@ import distage.{LocatorRef, TagK}
   */
 class Cli[F[_]: TagK: Parallel: ContextShift: Timer](locatorOpt: Option[LocatorRef])(implicit F: ConcurrentEffect[F]) {
 
-  private def console: Console[F] = locatorOpt match {
-    case Some(value) => value.get.get[Console[F]]
-    case None        => Console[F]
-  }
+  private def console: Console[F] =
+    locatorOpt match {
+      case Some(value) => value.get.get[Console[F]]
+      case None        => Console[F]
+    }
 
   private def printHelp(help: Help): F[ExitCode] =
     console.println(help.toString()).as {

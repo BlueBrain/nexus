@@ -28,9 +28,10 @@ trait GraphEncoder[A] extends Serializable { self =>
     * Creates a new [[GraphEncoder]] by applying a function to a value of type `B` to produce a value of type `A` and then
     * encoding the result using this.
     */
-  final def contramap[B](f: B => A): GraphEncoder[B] = new GraphEncoder[B] {
-    override def apply(a: B): Graph = self(f(a))
-  }
+  final def contramap[B](f: B => A): GraphEncoder[B] =
+    new GraphEncoder[B] {
+      override def apply(a: B): Graph = self(f(a))
+    }
 }
 
 object GraphEncoder
@@ -48,9 +49,10 @@ object GraphEncoder
   /**
     * Constructs an [[GraphEncoder]] from a function.
     */
-  final def instance[A](f: A => Graph): GraphEncoder[A] = new GraphEncoder[A] {
-    final def apply(a: A): Graph = f(a)
-  }
+  final def instance[A](f: A => Graph): GraphEncoder[A] =
+    new GraphEncoder[A] {
+      final def apply(a: A): Graph = f(a)
+    }
 
   implicit final val graphEncoderContravariant: Contravariant[GraphEncoder] = new Contravariant[GraphEncoder] {
     override def contramap[A, B](fa: GraphEncoder[A])(f: B => A): GraphEncoder[B] = fa.contramap(f)
@@ -69,7 +71,7 @@ object GraphEncoder
       def inner(acc: Graph, head: A): Graph = {
         if (it.hasNext) {
           val bnode = BNode()
-          val g =
+          val g     =
             acc
               .append(rdf.first, A(head))
               .append(rdf.rest, bnode)
@@ -112,12 +114,13 @@ trait StandardEncoderInstances {
   implicit final val graphEncodeInstant: GraphEncoder[Instant]               = instance(value => Graph(value.toString))
   implicit final val graphEncodePeriod: GraphEncoder[Period]                 = instance(value => Graph(value.toString))
 
-  implicit final def graphEncodeSet[A](implicit A: GraphEncoder[A]): GraphEncoder[Set[A]] = new GraphEncoder[Set[A]] {
-    override def apply(a: Set[A]): Graph = {
-      val graphs = a.map(A.apply)
-      SetGraph(graphs.headOption.map(_.root).getOrElse(BNode()), graphs)
+  implicit final def graphEncodeSet[A](implicit A: GraphEncoder[A]): GraphEncoder[Set[A]] =
+    new GraphEncoder[Set[A]] {
+      override def apply(a: Set[A]): Graph = {
+        val graphs = a.map(A.apply)
+        SetGraph(graphs.headOption.map(_.root).getOrElse(BNode()), graphs)
+      }
     }
-  }
 
   implicit final def graphEncodeList[A](implicit A: GraphEncoder[A]): GraphEncoder[List[A]] =
     GraphEncoder[List, A](_.iterator)
@@ -134,15 +137,16 @@ trait StandardEncoderInstances {
         OptionalGraph(a.map(A.apply))
     }
 
-  implicit final def graphEncodeEither[A, B](
-      implicit A: GraphEncoder[A],
+  implicit final def graphEncodeEither[A, B](implicit
+      A: GraphEncoder[A],
       B: GraphEncoder[B]
   ): GraphEncoder[Either[A, B]] =
     new GraphEncoder[Either[A, B]] {
-      override def apply(a: Either[A, B]): Graph = a match {
-        case Left(a)  => A(a)
-        case Right(b) => B(b)
-      }
+      override def apply(a: Either[A, B]): Graph =
+        a match {
+          case Left(a)  => A(a)
+          case Right(b) => B(b)
+        }
     }
 
   implicit final def graphEncodeNonEmptySet[A](implicit A: GraphEncoder[A]): GraphEncoder[NonEmptySet[A]] =

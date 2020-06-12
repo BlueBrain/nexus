@@ -19,7 +19,7 @@ trait IOEitherValues extends IOValues with EitherValues {
       val EE = implicitly[ClassTag[EE]]
       io.ioValue(config, pos).leftValue match {
         case EE(value) => value
-        case other =>
+        case other     =>
           fail(
             s"Wrong throwable type caught, expected: '${EE.runtimeClass.getName}', actual: '${other.getClass.getName}'"
           )

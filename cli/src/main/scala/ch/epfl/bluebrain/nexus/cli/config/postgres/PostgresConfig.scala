@@ -4,12 +4,12 @@ import java.nio.file.Path
 
 import ch.epfl.bluebrain.nexus.cli.config.{PrintConfig, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
-import com.github.ghik.silencer.silent
 import pureconfig.configurable._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto.deriveConvert
 import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -49,7 +49,7 @@ final case class PostgresConfig(
 
 object PostgresConfig {
 
-  @silent
+  @nowarn("cat=unused")
   implicit final val postgresConfigConvert: ConfigConvert[PostgresConfig] = {
     implicit val labelTupleMapReader: ConfigReader[Map[(OrgLabel, ProjectLabel), ProjectConfig]] =
       genericMapReader[(OrgLabel, ProjectLabel), ProjectConfig] { key =>

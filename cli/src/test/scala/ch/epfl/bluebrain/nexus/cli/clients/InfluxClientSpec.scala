@@ -17,43 +17,44 @@ import org.http4s.{HttpApp, Response, Status, UrlForm}
 
 class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransformation {
 
-  private val created = Instant.now()
-  private val updated = created.plusSeconds(5)
+  private val created      = Instant.now()
+  private val updated      = created.plusSeconds(5)
   private val allowedPoint =
     s"m1,created=${created.toString},project=org/proj,deprecated=false bytes=1234 ${toNano(updated)}"
 
   private val allowedQuery        = """SELECT * FROM "m1""""
   private val influxQlResultsJson = jsonContentOf("/templates/influxql-results.json")
 
-  override def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
-    make[Client[IO]].from { cfg: AppConfig =>
-      val httpApp = HttpApp[IO] {
-        case req @ POST -> Root / "query" db cfg.influx.database =>
-          req.as[UrlForm].flatMap {
-            case urlForm if urlForm.get("q").toList.mkString("") == allowedQuery =>
-              Response[IO](Status.Ok).withEntity(influxQlResultsJson).pure[IO]
-            case _ =>
-              Response[IO](Status.BadRequest).withEntity("some create db error").pure[IO]
-          }
-        case req @ POST -> Root / "query" =>
-          req.as[UrlForm].flatMap {
-            case urlForm if urlForm.get("q").toList.mkString("") == cfg.influx.dbCreationCommand =>
-              Response[IO](Status.Ok).pure[IO]
-            case _ =>
-              Response[IO](Status.BadRequest).withEntity("some create db error").pure[IO]
-          }
-        case req @ POST -> Root / "write" db cfg.influx.database =>
-          req.as[String].flatMap {
-            case `allowedPoint` => Response[IO](Status.Ok).pure[IO]
-            case _              => Response[IO](Status.BadRequest).withEntity("some write error").pure[IO]
-          }
-        case _ =>
-          Response[IO](Status.BadRequest).withEntity("some other error").pure[IO]
+  override def overrides: ModuleDef =
+    new ModuleDef {
+      include(defaultModules)
+      make[Client[IO]].from { cfg: AppConfig =>
+        val httpApp = HttpApp[IO] {
+          case req @ POST -> Root / "query" db cfg.influx.database =>
+            req.as[UrlForm].flatMap {
+              case urlForm if urlForm.get("q").toList.mkString("") == allowedQuery =>
+                Response[IO](Status.Ok).withEntity(influxQlResultsJson).pure[IO]
+              case _                                                               =>
+                Response[IO](Status.BadRequest).withEntity("some create db error").pure[IO]
+            }
+          case req @ POST -> Root / "query"                        =>
+            req.as[UrlForm].flatMap {
+              case urlForm if urlForm.get("q").toList.mkString("") == cfg.influx.dbCreationCommand =>
+                Response[IO](Status.Ok).pure[IO]
+              case _                                                                               =>
+                Response[IO](Status.BadRequest).withEntity("some create db error").pure[IO]
+            }
+          case req @ POST -> Root / "write" db cfg.influx.database =>
+            req.as[String].flatMap {
+              case `allowedPoint` => Response[IO](Status.Ok).pure[IO]
+              case _              => Response[IO](Status.BadRequest).withEntity("some write error").pure[IO]
+            }
+          case _                                                   =>
+            Response[IO](Status.BadRequest).withEntity("some other error").pure[IO]
+        }
+        Client.fromHttpApp(httpApp)
       }
-      Client.fromHttpApp(httpApp)
     }
-  }
 
   "An InfluxClient" should {
 
@@ -62,13 +63,13 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
       for {
         dbResult <- cl.createDb
         err      <- console.errQueue.tryDequeue1
-        _        = err shouldEqual None
-        _        = dbResult shouldEqual ()
+        _         = err shouldEqual None
+        _         = dbResult shouldEqual ()
       } yield ()
     }
 
     "write a point" in { (client: Client[IO], console: TestConsole[IO], cfg: AppConfig) =>
-      val cl = InfluxClient[IO](client, cfg, console)
+      val cl    = InfluxClient[IO](client, cfg, console)
       val point = InfluxPoint(
         "m1",
         Map("created" -> created.toString, "project" -> "org/proj", "deprecated" -> "false"),
@@ -77,9 +78,9 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
       )
       for {
         dbResult <- cl.write(point)
-        err      <- console.errQueue.tryDequeue1
-        _        = err shouldEqual None
-        _        = dbResult shouldEqual Right(())
+        err <- console.errQueue.tryDequeue1
+        _    = err shouldEqual None
+        _    = dbResult shouldEqual Right(())
       } yield ()
     }
 
@@ -89,8 +90,8 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
       for {
         result <- cl.write(point)
         err    <- console.errQueue.tryDequeue1
-        _      = err shouldEqual None
-        _      = result shouldEqual Left(ClientStatusError(Status.BadRequest, """"some write error""""))
+        _       = err shouldEqual None
+        _       = result shouldEqual Left(ClientStatusError(Status.BadRequest, """"some write error""""))
       } yield ()
     }
 
@@ -99,8 +100,8 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
       for {
         dbResult <- cl.query(allowedQuery)
         err      <- console.errQueue.tryDequeue1
-        _        = err shouldEqual None
-        _        = dbResult shouldEqual Right(influxQlResultsJson)
+        _         = err shouldEqual None
+        _         = dbResult shouldEqual Right(influxQlResultsJson)
       } yield ()
     }
   }

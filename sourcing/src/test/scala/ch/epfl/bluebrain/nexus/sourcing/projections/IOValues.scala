@@ -17,7 +17,7 @@ trait IOValues extends ScalaFutures {
       io.redeemWith(
           {
             case Ex(ex) => IO.pure(ex)
-            case other =>
+            case other  =>
               IO(
                 fail(
                   s"Wrong throwable type caught, expected: '${Ex.runtimeClass.getName}', actual: '${other.getClass.getName}'"

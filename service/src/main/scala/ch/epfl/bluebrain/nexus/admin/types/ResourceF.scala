@@ -92,7 +92,7 @@ object ResourceF {
           case _        => Json.arr(types.map(t => Json.fromString(t.lastSegment.getOrElse(t.asString))).toSeq: _*)
         }
         Json.obj(
-          "@context"            -> Json.arr(adminCtxUri.asJson, resourceCtxUri.asJson),
+          "@context" -> Json.arr(adminCtxUri.asJson, resourceCtxUri.asJson),
           "@id"                 -> id.asJson,
           "@type"               -> jsonTypes,
           nxv.uuid.prefix       -> Json.fromString(uuid.toString),

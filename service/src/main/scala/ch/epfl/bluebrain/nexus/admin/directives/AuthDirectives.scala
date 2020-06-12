@@ -37,7 +37,7 @@ abstract class AuthDirectives(acls: Acls[Task], realms: Realms[Task])(implicit s
         val found = aclsResults.value.exists { case (_, acl) => acl.value.permissions.contains(permission) }
         if (found) pass
         else failWith(AuthorizationFailed)
-      case Failure(err) =>
+      case Failure(err)         =>
         val message = "Unknown error when trying to check for permissions"
         logger.error(message, err)
         failWith(InternalError(message))
@@ -52,12 +52,12 @@ abstract class AuthDirectives(acls: Acls[Task], realms: Realms[Task])(implicit s
         onComplete(realms.caller(token).runToFuture).flatMap {
           case Success(caller)                  => provide(caller)
           case Failure(err: InvalidAccessToken) => failWith(err)
-          case Failure(err) =>
+          case Failure(err)                     =>
             val message = "Unknown error when trying to extract the subject"
             logger.error(message, err)
             failWith(InternalError(message))
         }
-      case None => provide(Caller.anonymous)
+      case None        => provide(Caller.anonymous)
     }
 
   /**
@@ -76,7 +76,7 @@ abstract class AuthDirectives(acls: Acls[Task], realms: Realms[Task])(implicit s
   def extractCallerAcls(path: Path)(implicit caller: Caller): Directive1[AccessControlLists] =
     onComplete(acls.list(path, ancestors = true, self = true).runToFuture).flatMap {
       case Success(aclsResults) => provide(aclsResults)
-      case Failure(err) =>
+      case Failure(err)         =>
         val message = "Error when trying to check for permissions"
         logger.error(message, err)
         failWith(InternalError(message))

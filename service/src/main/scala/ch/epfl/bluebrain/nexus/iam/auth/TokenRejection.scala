@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.iam.auth
 
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of token rejections.
@@ -47,7 +48,7 @@ object TokenRejection {
         "The token is invalid; possible causes are: incorrect signature, the token is expired or the 'nbf' value was not met."
       )
 
-  @silent // rejectionConfig is not recognized as being used
+  @nowarn("cat=unused")
   implicit val tokenRejectionEncoder: Encoder[TokenRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[TokenRejection]

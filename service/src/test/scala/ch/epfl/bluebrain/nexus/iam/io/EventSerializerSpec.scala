@@ -16,7 +16,7 @@ import org.scalatest.matchers.should.Matchers
 
 class EventSerializerSpec extends ActorSystemFixture("SerializerSpec") with Matchers with Inspectors with EitherValues {
 
-  private val pd = PermissionsDeleted(2L, Instant.EPOCH, Anonymous)
+  private val pd       = PermissionsDeleted(2L, Instant.EPOCH, Anonymous)
   private val pdString =
     """|{
        |  "rev": 2,
@@ -28,7 +28,7 @@ class EventSerializerSpec extends ActorSystemFixture("SerializerSpec") with Matc
        |  "@type": "PermissionsDeleted"
        |}""".stripMargin
 
-  private val ad = AclDeleted(Path("/a/b/c").rightValue, 2L, Instant.EPOCH, Anonymous)
+  private val ad       = AclDeleted(Path("/a/b/c").rightValue, 2L, Instant.EPOCH, Anonymous)
   private val adString =
     """|{
        |  "path": "/a/b/c",
@@ -41,7 +41,7 @@ class EventSerializerSpec extends ActorSystemFixture("SerializerSpec") with Matc
        |  "@type": "AclDeleted"
        |}""".stripMargin
 
-  private val rd = RealmDeprecated(Label.unsafe("blah"), 2L, Instant.EPOCH, Anonymous)
+  private val rd       = RealmDeprecated(Label.unsafe("blah"), 2L, Instant.EPOCH, Anonymous)
   private val rdString =
     """|{
        |  "id": "blah",

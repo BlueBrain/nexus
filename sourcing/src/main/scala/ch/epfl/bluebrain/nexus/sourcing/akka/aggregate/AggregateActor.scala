@@ -67,7 +67,7 @@ abstract private[aggregate] class AggregateActor[
   private val Rejection                   = implicitly[ClassTag[Rejection]]
   private val immediately: FiniteDuration = 0.millis
 
-  private var state = initialState
+  private var state                       = initialState
   //noinspection ActorMutableStateInspection
   private var passivateRequested: Boolean = false
 
@@ -88,7 +88,7 @@ abstract private[aggregate] class AggregateActor[
   }
 
   override def receiveRecover: Receive = {
-    case RecoveryCompleted =>
+    case RecoveryCompleted                  =>
       passivationStrategy.lapsedSinceRecoveryCompleted.foreach { duration =>
         context.system.scheduler.scheduleOnce(duration)(passivate(Some(immediately)))(context.dispatcher)
         log.debug("Configured actor with id '{}' to passivate after '{}' seconds", persistenceId, duration.toSeconds)
@@ -97,10 +97,10 @@ abstract private[aggregate] class AggregateActor[
     case SnapshotOffer(metadata, State(st)) =>
       state = st
       log.debug("Applied snapshot '{}' with seq nr '{}' recovery on actor '{}'", st, metadata.sequenceNr, persistenceId)
-    case Event(ev) =>
+    case Event(ev)                          =>
       state = next(state, ev)
       log.debug("Applied event '{}' to actor '{}'", ev, persistenceId)
-    case other =>
+    case other                              =>
       // $COVERAGE-OFF$
       log.error(
         "Unknown message '{}' during recovery of actor '{}', expected message of type '{}'",
@@ -112,7 +112,7 @@ abstract private[aggregate] class AggregateActor[
   }
 
   override def receiveCommand: Receive = {
-    case Append(mid, value) if mid == id =>
+    case Append(mid, value) if mid == id   =>
       value match {
         case Event(event) =>
           persist(event) { _ =>
@@ -122,7 +122,7 @@ abstract private[aggregate] class AggregateActor[
             updatePassivation()
           }
         // $COVERAGE-OFF$
-        case _ =>
+        case _            =>
           log.error(
             "Received an event '{}' incompatible with the expected type '{}'",
             value,
@@ -132,7 +132,7 @@ abstract private[aggregate] class AggregateActor[
           updatePassivation()
         // $COVERAGE-ON$
       }
-    case GetLastSeqNr(mid) if mid == id =>
+    case GetLastSeqNr(mid) if mid == id    =>
       sender() ! LastSeqNr(id, lastSequenceNr)
       log.debug("Replied with LastSeqNr '{}' from actor '{}'", lastSequenceNr, persistenceId)
       updatePassivation()
@@ -147,7 +147,7 @@ abstract private[aggregate] class AggregateActor[
           evaluateCommand(cmd)
           context.become(evaluating(cmd, sender()))
         // $COVERAGE-OFF$
-        case _ =>
+        case _            =>
           log.error(
             "Received a command '{}' incompatible with the expected type '{}'",
             value,
@@ -158,14 +158,14 @@ abstract private[aggregate] class AggregateActor[
         // $COVERAGE-ON$
       }
 
-    case Test(mid, value) if mid == id =>
+    case Test(mid, value) if mid == id     =>
       value match {
         case Command(cmd) =>
           log.debug("Testing command '{}' on actor '{}'", cmd, persistenceId)
           evaluateCommand(cmd, test = true)
           context.become(testing(cmd, sender()))
         // $COVERAGE-OFF$
-        case _ =>
+        case _            =>
           log.error(
             "Received a command '{}' incompatible with the expected type '{}'",
             value,
@@ -175,7 +175,7 @@ abstract private[aggregate] class AggregateActor[
           updatePassivation()
         // $COVERAGE-ON$
       }
-    case Snapshot(mid) if mid == id =>
+    case Snapshot(mid) if mid == id        =>
       log.debug("Taking snapshot on actor '{}'", persistenceId)
       saveSnapshot(state)
       context.become(snapshotting(sender()))
@@ -189,7 +189,7 @@ abstract private[aggregate] class AggregateActor[
   }
 
   private def evaluating(cmd: Command, previous: ActorRef): Receive = {
-    case GetLastSeqNr(mid) if mid == id =>
+    case GetLastSeqNr(mid) if mid == id    =>
       sender() ! LastSeqNr(id, lastSequenceNr)
       log.debug("Replied with LastSeqNr '{}' from actor '{}'", lastSequenceNr, persistenceId)
       updatePassivation()
@@ -197,13 +197,13 @@ abstract private[aggregate] class AggregateActor[
       sender() ! CurrentState(id, state)
       log.debug("Replied with CurrentState '{}' from actor '{}'", state, persistenceId)
       updatePassivation()
-    case Left(Rejection(rejection)) =>
+    case Left(Rejection(rejection))        =>
       previous ! Evaluated[Rejection, State, Event](id, Left(rejection))
       log.debug("Rejected command '{}' on actor '{}' because '{}'", cmd, persistenceId, rejection)
       context.become(receiveCommand)
       unstashAll()
       updatePassivation(Some(cmd))
-    case Right(Event(event)) =>
+    case Right(Event(event))               =>
       persist(event) { _ =>
         state = next(state, event)
         previous ! Evaluated[Rejection, State, Event](id, Right((state, event)))
@@ -212,13 +212,13 @@ abstract private[aggregate] class AggregateActor[
         unstashAll()
         updatePassivation(Some(cmd))
       }
-    case cet: CommandEvaluationTimeout[_] =>
+    case cet: CommandEvaluationTimeout[_]  =>
       log.debug("Returning the command evaluation timeout on actor '{}' to the sender", persistenceId)
       previous ! cet
       context.become(receiveCommand)
       unstashAll()
       updatePassivation(Some(cmd))
-    case cee: CommandEvaluationError[_] =>
+    case cee: CommandEvaluationError[_]    =>
       log.debug("Returning the command evaluation error on actor '{}' to the sender", persistenceId)
       previous ! cee
       context.become(receiveCommand)
@@ -230,13 +230,13 @@ abstract private[aggregate] class AggregateActor[
       sender() ! UnexpectedMsgId(id, msg.id)
       updatePassivation()
     // $COVERAGE-ON$
-    case other =>
+    case other                             =>
       log.debug("New message '{}' received for '{}' while evaluating a command, stashing", other, persistenceId)
       stash()
   }
 
   private def testing(cmd: Command, previous: ActorRef): Receive = {
-    case GetLastSeqNr(mid) if mid == id =>
+    case GetLastSeqNr(mid) if mid == id    =>
       sender() ! LastSeqNr(id, lastSequenceNr)
       log.debug("Replied with LastSeqNr '{}' from actor '{}'", lastSequenceNr, persistenceId)
       updatePassivation()
@@ -244,25 +244,25 @@ abstract private[aggregate] class AggregateActor[
       sender() ! CurrentState(id, state)
       log.debug("Replied with CurrentState '{}' from actor '{}'", state, persistenceId)
       updatePassivation()
-    case Left(Rejection(rejection)) =>
+    case Left(Rejection(rejection))        =>
       previous ! Tested[Rejection, State, Event](id, Left(rejection))
       log.debug("Rejected test command '{}' on actor '{}' because '{}'", cmd, persistenceId, rejection)
       context.become(receiveCommand)
       unstashAll()
       updatePassivation()
-    case Right(Event(event)) =>
+    case Right(Event(event))               =>
       previous ! Tested[Rejection, State, Event](id, Right((next(state, event), event)))
       log.debug("Accepted test command '{}' on actor '{}' producing '{}'", cmd, persistenceId, event)
       context.become(receiveCommand)
       unstashAll()
       updatePassivation()
-    case cet: CommandEvaluationTimeout[_] =>
+    case cet: CommandEvaluationTimeout[_]  =>
       log.debug("Returning the command testing timeout on actor '{}' to the sender", persistenceId)
       previous ! cet
       context.become(receiveCommand)
       unstashAll()
       updatePassivation(Some(cmd))
-    case cee: CommandEvaluationError[_] =>
+    case cee: CommandEvaluationError[_]    =>
       log.debug("Returning the command testing error on actor '{}' to the sender", persistenceId)
       previous ! cee
       context.become(receiveCommand)
@@ -274,23 +274,23 @@ abstract private[aggregate] class AggregateActor[
       sender() ! UnexpectedMsgId(id, msg.id)
       updatePassivation()
     // $COVERAGE-ON$
-    case other =>
+    case other                             =>
       log.debug("New message '{}' received for '{}' while testing a command, stashing", other, persistenceId)
       stash()
   }
 
   private def snapshotting(previous: ActorRef): Receive = {
-    case SaveSnapshotSuccess(metadata) =>
+    case SaveSnapshotSuccess(metadata)        =>
       previous ! Snapshotted(id, metadata.sequenceNr)
       log.debug("Saved snapshot on '{}' seq nr '{}'", persistenceId, metadata.sequenceNr)
       context.become(receiveCommand)
       unstashAll()
     // $COVERAGE-OFF$
-    case GetLastSeqNr(mid) if mid == id =>
+    case GetLastSeqNr(mid) if mid == id       =>
       sender() ! LastSeqNr(id, lastSequenceNr)
       log.debug("Replied with LastSeqNr '{}' from actor '{}'", lastSequenceNr, persistenceId)
       updatePassivation()
-    case GetCurrentState(mid) if mid == id =>
+    case GetCurrentState(mid) if mid == id    =>
       sender() ! CurrentState(id, state)
       log.debug("Replied with CurrentState '{}' from actor '{}'", state, persistenceId)
       updatePassivation()
@@ -299,40 +299,41 @@ abstract private[aggregate] class AggregateActor[
       log.error(cause, "Failed to save snapshot on '{}', seq nr '{}'", persistenceId, metadata.sequenceNr)
       context.become(receiveCommand)
       unstashAll()
-    case msg: AggregateMsg if msg.id != id =>
+    case msg: AggregateMsg if msg.id != id    =>
       log.warning("Unexpected message id '{}' received in actor with id '{}'", msg.id, persistenceId)
       sender() ! UnexpectedMsgId(id, msg.id)
       updatePassivation()
-    case other =>
+    case other                                =>
       log.debug("New message '{}' received for '{}' while creating a snapshot, stashing", other, persistenceId)
       stash()
     // $COVERAGE-ON$
   }
 
   // $COVERAGE-OFF$
-  override def unhandled(message: Any): Unit = message match {
-    case ReceiveTimeout => passivate(Some(immediately))
-    case Done(_)        => context.stop(self)
-    case other =>
-      log.error("Received unknown message '{}' for actor with id '{}'", other, persistenceId)
-      super.unhandled(other)
-      updatePassivation()
-  }
+  override def unhandled(message: Any): Unit =
+    message match {
+      case ReceiveTimeout => passivate(Some(immediately))
+      case Done(_)        => context.stop(self)
+      case other          =>
+        log.error("Received unknown message '{}' for actor with id '{}'", other, persistenceId)
+        super.unhandled(other)
+        updatePassivation()
+    }
   // $COVERAGE-ON$
 
   private def evaluateCommand(cmd: Command, test: Boolean = false): Unit = {
     val scope = if (test) "testing" else "evaluating"
-    val eval = for {
+    val eval  = for {
       _ <- IO.shift(config.commandEvaluationExecutionContext)
       r <- evaluate(state, cmd).toIO.timeout(config.commandEvaluationMaxDuration)
       _ <- IO.shift(context.dispatcher)
       _ <- IO(self ! r)
     } yield ()
-    val io = eval.onError {
+    val io    = eval.onError {
       case th: TimeoutException =>
         log.error(th, s"Timed out while $scope command '{}' on actor '{}'", cmd, persistenceId)
         IO.shift(context.dispatcher) >> IO(self ! CommandEvaluationTimeout(id, cmd))
-      case NonFatal(th) =>
+      case NonFatal(th)         =>
         log.error(th, s"Error while $scope command '{}' on actor '{}'", cmd, persistenceId)
         IO.shift(context.dispatcher) >> IO(self ! CommandEvaluationError(id, cmd, Option(th.getMessage)))
     }
@@ -372,7 +373,7 @@ private[aggregate] class ParentAggregateActor(name: String, childProps: String =
   private val buffer = mutable.Map.empty[String, Vector[(ActorRef, AggregateMsg)]]
 
   def receive: Receive = {
-    case Done(id) if !buffer.contains(id) =>
+    case Done(id) if !buffer.contains(id)             =>
       val child = sender()
       context.watchWith(child, Terminated(id, child))
       buffer.put(id, Vector.empty)
@@ -381,11 +382,11 @@ private[aggregate] class ParentAggregateActor(name: String, childProps: String =
       // must buffer messages
       val messages = buffer(msg.id) :+ (sender() -> msg)
       val _        = buffer.put(msg.id, messages)
-    case msg: AggregateMsg =>
+    case msg: AggregateMsg                            =>
       val childName = s"$name-${msg.id}"
       log.debug("Routing message '{}' to child '{}'", msg, childName)
       child(msg.id).forward(msg)
-    case Terminated(id, _) if buffer.contains(id) =>
+    case Terminated(id, _) if buffer.contains(id)     =>
       val messages = buffer(id)
       if (messages.nonEmpty) {
         val newChild = child(id)
@@ -393,7 +394,7 @@ private[aggregate] class ParentAggregateActor(name: String, childProps: String =
           case (s, msg) => newChild.!(msg)(s)
         }
       }
-      val _ = buffer.remove(id)
+      val _        = buffer.remove(id)
   }
 
   private def child(id: String): ActorRef = {

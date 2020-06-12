@@ -11,8 +11,8 @@ import izumi.distage.model.recursive.LocatorRef
 /**
   * CLI postgres specific options.
   */
-final class Postgres[F[_]: Timer: Parallel: ContextShift: TagK](locatorOpt: Option[LocatorRef])(
-    implicit F: ConcurrentEffect[F]
+final class Postgres[F[_]: Timer: Parallel: ContextShift: TagK](locatorOpt: Option[LocatorRef])(implicit
+    F: ConcurrentEffect[F]
 ) extends AbstractCommand[F](locatorOpt) {
 
   def subcommand: Opts[F[ExitCode]] =

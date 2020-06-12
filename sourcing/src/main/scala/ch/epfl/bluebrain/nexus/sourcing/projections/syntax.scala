@@ -17,7 +17,7 @@ trait TimeBasedUUIDSyntax {
 }
 
 object TimeBasedUUIDSyntax {
-  private val NUM_100NS_INTERVALS_SINCE_UUID_EPOCH = 0X01B21DD213814000L
+  private val NUM_100NS_INTERVALS_SINCE_UUID_EPOCH = 0x01b21dd213814000L
 
   final class TimeBasedUUIDOps(private val timeBased: TimeBasedUUID) extends AnyVal {
 

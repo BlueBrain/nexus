@@ -11,10 +11,11 @@ import org.scalactic.Equality
 class GraphSpec extends RdfSpec {
 
   implicit val graphEquality: Equality[Graph] = new Equality[Graph] {
-    override def areEqual(a: Graph, b: Any): Boolean = b match {
-      case bb: Graph => Eq.eqv(a, bb)
-      case _         => false
-    }
+    override def areEqual(a: Graph, b: Any): Boolean =
+      b match {
+        case bb: Graph => Eq.eqv(a, bb)
+        case _         => false
+      }
   }
 
   "A Graph" should {
@@ -181,7 +182,7 @@ class GraphSpec extends RdfSpec {
     }
 
     "remove a triple" in {
-      val triples = Set[Triple](
+      val triples        = Set[Triple](
         (id, schema.name, b"1"),
         (id, schema.name, b"2")
       )
@@ -190,7 +191,7 @@ class GraphSpec extends RdfSpec {
     }
 
     "remove no triple if it doesn't exist" in {
-      val triples = Set[Triple](
+      val triples        = Set[Triple](
         (id, schema.name, b"1"),
         (id, schema.name, b"2")
       )
@@ -199,7 +200,7 @@ class GraphSpec extends RdfSpec {
     }
 
     "remove many triples" in {
-      val triples = Set[Triple](
+      val triples  = Set[Triple](
         (id, schema.name, b"1"),
         (id, schema.name, b"2")
       )
@@ -211,7 +212,7 @@ class GraphSpec extends RdfSpec {
     }
 
     "remove a graph" in {
-      val triples = Set[Triple](
+      val triples  = Set[Triple](
         (id, schema.name, b"1"),
         (id, schema.name, b"2")
       )
@@ -269,7 +270,7 @@ class GraphSpec extends RdfSpec {
     }
 
     "replace a node" in {
-      val g = Graph(
+      val g   = Graph(
         id,
         Set(
           (id, schema.name, b"1"),
@@ -335,9 +336,9 @@ class GraphSpec extends RdfSpec {
     }
 
     "return the correct ntriples representation" in {
-      val jDoe  = url"http://nexus.example.com/john-doe"
-      val other = url"http://nexus.example.com/other"
-      val g = Graph(
+      val jDoe     = url"http://nexus.example.com/john-doe"
+      val other    = url"http://nexus.example.com/other"
+      val g        = Graph(
         jDoe,
         Set(
           (jDoe, url"http://schema.org/name", "John Doe"),
@@ -371,9 +372,9 @@ class GraphSpec extends RdfSpec {
     }
 
     "return the correct DOT representation" in {
-      val jDoe  = url"http://nexus.example.com/john-doe"
-      val other = url"http://nexus.example.com/other"
-      val graph = Graph(
+      val jDoe     = url"http://nexus.example.com/john-doe"
+      val other    = url"http://nexus.example.com/other"
+      val graph    = Graph(
         jDoe,
         Set(
           (jDoe, url"http://schema.org/name", "John Doe"),
@@ -407,15 +408,15 @@ class GraphSpec extends RdfSpec {
     }
 
     "return the correct DOT representation with prefix mappings" in {
-      val jDoe  = url"http://nexus.example.com/john-doe"
-      val other = url"http://nexus.example.com/other"
+      val jDoe                               = url"http://nexus.example.com/john-doe"
+      val other                              = url"http://nexus.example.com/other"
       val mappings: Map[AbsoluteIri, String] = Map(
         url"http://schema.org/deprecated"                    -> "deprecated",
         url"http://schema.org/Person"                        -> "Person",
         url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type" -> "@type",
         url"http://schema.org/"                              -> "schema"
       )
-      val graph = Graph(
+      val graph                              = Graph(
         jDoe,
         Set(
           (jDoe, url"http://schema.org/name", "John Doe"),
@@ -431,7 +432,7 @@ class GraphSpec extends RdfSpec {
           (jDoe, url"http://example.com/sibling", other)
         )
       )
-      val expected =
+      val expected                           =
         """digraph "http://nexus.example.com/john-doe" {
           |  "http://nexus.example.com/john-doe" -> "John Doe" [label = "schema:name"]
           |  "http://nexus.example.com/john-doe" -> "Some property" [label = "http://example.com/stringProperty"]
@@ -450,10 +451,10 @@ class GraphSpec extends RdfSpec {
     }
 
     "return the correct DOT representation with sequential blank node ids" in {
-      val jDoe   = url"http://nexus.example.com/john-doe"
-      val other  = BNode()
-      val other2 = BNode()
-      val graph = Graph(
+      val jDoe     = url"http://nexus.example.com/john-doe"
+      val other    = BNode()
+      val other2   = BNode()
+      val graph    = Graph(
         jDoe,
         Set(
           (jDoe, url"http://schema.org/name", "John Doe"),
@@ -489,14 +490,14 @@ class GraphSpec extends RdfSpec {
     }
 
     "return the correct DOT representation with prefix mappings and shortened URLs" in {
-      val jDoe  = url"http://nexus.example.com/john-doe"
-      val other = url"http://nexus.example.com/other/another"
+      val jDoe                               = url"http://nexus.example.com/john-doe"
+      val other                              = url"http://nexus.example.com/other/another"
       val mappings: Map[AbsoluteIri, String] = Map(
         url"http://schema.org/deprecated" -> "deprecated",
         url"http://schema.org/Person"     -> "Person",
         url"http://schema.org/"           -> "schema"
       )
-      val graph = Graph(
+      val graph                              = Graph(
         jDoe,
         Set(
           (jDoe, url"http://schema.org/name", "John Doe"),
@@ -512,7 +513,7 @@ class GraphSpec extends RdfSpec {
           (jDoe, url"http://example.com/sibling", other)
         )
       )
-      val expected =
+      val expected                           =
         """digraph "john-doe" {
           |  "john-doe" -> "John Doe" [label = "schema:name"]
           |  "john-doe" -> "Some property" [label = stringProperty]

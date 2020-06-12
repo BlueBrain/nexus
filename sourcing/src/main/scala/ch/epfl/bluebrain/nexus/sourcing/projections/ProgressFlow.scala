@@ -31,8 +31,8 @@ import scala.reflect.ClassTag
   * @tparam Out  the flow output type, which is going to be: COut[PairMsg[Out]]. Note that the API only offers operations with Out,
   *             e.g.: Out => F[B], hiding the rest of the types.
   **/
-sealed abstract class ProgressFlow[F[_], CIn[_]: Traverse, COut[_]: Traverse, In, Out](
-    implicit ec: ExecutionContext,
+sealed abstract class ProgressFlow[F[_], CIn[_]: Traverse, COut[_]: Traverse, In, Out](implicit
+    ec: ExecutionContext,
     F: Effect[F]
 ) {
 
@@ -108,12 +108,12 @@ sealed abstract class ProgressFlow[F[_], CIn[_]: Traverse, COut[_]: Traverse, In
     * If the function `f` throws an exception or if the `Future` is completed with failure, a Left will be emitted downstream.
     * If the passing message is a Left, the given function won't be applied.
     */
-  def mapAsync[B](f: Out => F[B]): R[B] =
+  def mapAsync[B](f: Out => F[B]): R[B]             =
     apply(flow.mapAsync(1)(_.map {
       case Right(message) =>
         val resultF = f(message.value).map[PairMsg[B]](r => Right(message.map(_ => r)))
         resultF.recoverWith(logAndFail[B](message, "mapAsync")).toIO.unsafeToFuture()
-      case Left(status) => Future.successful[PairMsg[B]](Left(status.discard()))
+      case Left(status)   => Future.successful[PairMsg[B]](Left(status.discard()))
     }.sequence))
 
   /**
@@ -130,10 +130,10 @@ sealed abstract class ProgressFlow[F[_], CIn[_]: Traverse, COut[_]: Traverse, In
     apply(flow.mapAsync(1)(_.map {
       case Right(message) if eval.isAfter && !message.offset.gt(eval.offset) =>
         Future.successful(Right(message))
-      case Right(message) =>
+      case Right(message)                                                    =>
         val resultF = f(message.value) >> F.pure[PairMsg[Out]](Right(message))
         resultF.recoverWith(logAndFail[Out](message, "runAsync")).toIO.unsafeToFuture()
-      case Left(status) => Future.successful[PairMsg[Out]](Left(status.discard()))
+      case Left(status)                                                      => Future.successful[PairMsg[Out]](Left(status.discard()))
     }.sequence))
 
   /**
@@ -167,8 +167,8 @@ object ProgressFlow {
     */
   final class ProgressFlowElem[F[_]: Timer, CIn[_]: Traverse, In, Out](
       val flow: Flow[CIn[PairMsg[In]], Id[PairMsg[Out]], _]
-  )(
-      implicit ec: ExecutionContext,
+  )(implicit
+      ec: ExecutionContext,
       F: Effect[F]
   ) extends ProgressFlow[F, CIn, Id, In, Out] {
 
@@ -180,7 +180,7 @@ object ProgressFlow {
     private def persistErrors()(implicit projections: Projections[F, String]): ProgressFlowElem[F, CIn, In, Out] =
       apply(flow.mapAsync[Id[PairMsg[Out]]](1) { value =>
         val msg = value.fold(identity, _.unit)
-        val f = msg
+        val f   = msg
           .failures()
           .map {
             case (failureId, Failed(error)) =>
@@ -200,8 +200,8 @@ object ProgressFlow {
       * @param initial the initial projection progress
       * @return a new [[Flow]] where the output is a [[ProjectionProgress]]
       */
-    def toPersistedProgress(id: String, initial: ProjectionProgress = NoProgress)(
-        implicit config: PersistProgressConfig,
+    def toPersistedProgress(id: String, initial: ProjectionProgress = NoProgress)(implicit
+        config: PersistProgressConfig,
         projections: Projections[F, String]
     ): Flow[I, ProjectionProgress, _] = {
 
@@ -269,8 +269,8 @@ object ProgressFlow {
     */
   final class ProgressFlowList[F[_]: Timer, CIn[_]: Traverse, In, Out](
       val flow: Flow[CIn[PairMsg[In]], List[PairMsg[Out]], _]
-  )(
-      implicit F: Effect[F],
+  )(implicit
+      F: Effect[F],
       ec: ExecutionContext
   ) extends ProgressFlow[F, CIn, List, In, Out] {
 
@@ -336,7 +336,7 @@ object ProgressFlow {
                       s"Exception caught while running 'runAsyncAll' for message '${msg.value}' in progress '${msg.currProgressId}'"
                     log.error(errMsg, err)
                     Left(msg.fail(s"$errMsg with message '${err.getMessage}'").unit)
-                  case other => other
+                  case other                                              => other
                 })
             }
             .toIO

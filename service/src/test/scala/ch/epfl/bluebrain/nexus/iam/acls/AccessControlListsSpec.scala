@@ -33,7 +33,7 @@ class AccessControlListsSpec extends AnyWordSpecLike with Matchers with Resource
 
     val tpes = Set[AbsoluteIri](nxv.AccessControlList.value)
 
-    val acl =
+    val acl  =
       ResourceF(
         http.aclsIri + "id1",
         1L,
@@ -56,8 +56,8 @@ class AccessControlListsSpec extends AnyWordSpecLike with Matchers with Resource
           "a" / "b" -> acl3
         )
 
-      AccessControlLists(/   -> acl) ++ AccessControlLists("a" / "b" -> acl2) shouldEqual
-        AccessControlLists(/ -> acl, "a" / "b"                       -> acl2)
+      AccessControlLists(/ -> acl) ++ AccessControlLists("a" / "b" -> acl2) shouldEqual
+        AccessControlLists(/ -> acl, "a" / "b" -> acl2)
     }
 
     "add ACL" in {
@@ -111,7 +111,7 @@ class AccessControlListsSpec extends AnyWordSpecLike with Matchers with Resource
     "converts ACL to Json" in {
       val acls =
         AccessControlLists(
-          Path("/one/two").rightValue -> acl.map(_ => AccessControlList(user  -> readWrite, group -> manage)),
+          Path("/one/two").rightValue -> acl.map(_ => AccessControlList(user -> readWrite, group -> manage)),
           Path("/one").rightValue     -> acl2.map(_ => AccessControlList(user -> readWrite))
         )
       val json = jsonContentOf("/acls/acls.json")

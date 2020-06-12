@@ -124,7 +124,7 @@ class BlazegraphClientSpec
     }
 
     "replace a named graph" in new BlazegraphClientFixture {
-      val cl = client(namespace)
+      val cl             = client(namespace)
       cl.createNamespace(properties()).ioValue
       cl.replace(graph, load(id, label, value)).ioValue
       val triple: Triple = ((url"http://example/com/$id", owl.sameAs, """{"key": "value"}"""))
@@ -152,14 +152,14 @@ class BlazegraphClientSpec
     }
 
     "return the JSON response from query" in new BlazegraphClientFixture {
-      val cl = client(namespace)
+      val cl       = client(namespace)
       cl.createNamespace(properties()).ioValue
       cl.replace(graph, load(id, label, value)).ioValue
       val expected = jsonContentOf(
         "/commons/sparql/sparql-json.json",
         Map(quote("{id}") -> id, quote("{label}") -> label, quote("{value}") -> value)
       )
-      val result = cl.queryRaw(s"SELECT * WHERE { GRAPH <$graph> { ?s ?p ?o } }").ioValue.asJson
+      val result   = cl.queryRaw(s"SELECT * WHERE { GRAPH <$graph> { ?s ?p ?o } }").ioValue.asJson
       result.asObject.value("head").value.removeKeys("link") shouldEqual expected.asObject.value("head").value
       val bindings =
         result.asObject.value("results").value.asObject.value("bindings").value.asArray.value.map(printer.print)
@@ -175,9 +175,9 @@ class BlazegraphClientSpec
     }
 
     "patch a named graph removing matching predicates" in new BlazegraphClientFixture {
-      val cl = client(namespace)
+      val cl       = client(namespace)
       cl.createNamespace(properties()).ioValue
-      val json = parse(
+      val json     = parse(
         s"""
            |{
            |  "@context": {
@@ -202,7 +202,7 @@ class BlazegraphClientSpec
       )
       cl.patch(graph, json.asRdfGraph(url"http://localhost/$id").rightValue, strategy).ioValue
       cl.triples() should have size 4
-      val results = cl.triples(graph)
+      val results  = cl.triples(graph)
       results should have size 4
       results.map(_._2).toSet should contain theSameElementsAs Set(
         "http://www.w3.org/2000/01/rdf-schema#label",
@@ -214,9 +214,9 @@ class BlazegraphClientSpec
     }
 
     "patch a named graph retaining matching predicates" in new BlazegraphClientFixture {
-      val cl = client(namespace)
+      val cl       = client(namespace)
       cl.createNamespace(properties()).ioValue
-      val json = parse(
+      val json     = parse(
         s"""
            |{
            |  "@context": {
@@ -236,7 +236,7 @@ class BlazegraphClientSpec
       cl.replace(graph, load(id, label, value)).ioValue
       val strategy = PatchStrategy.removeButPredicates(Set("http://schema.org/value"))
       cl.patch(graph, json.asRdfGraph(url"http://localhost/$id").rightValue, strategy).ioValue
-      val results = cl.triples(graph)
+      val results  = cl.triples(graph)
       results should have size 5
       results.map(_._3).toSet should contain allOf (label + "-updated", value, "name", "title")
     }

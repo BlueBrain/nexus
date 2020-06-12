@@ -8,11 +8,12 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of organization event states
@@ -101,7 +102,7 @@ object OrganizationEvent {
 
   object JsonLd {
 
-    @silent
+    @nowarn("cat=unused")
     implicit private val config: Configuration = Configuration.default
       .withDiscriminator("@type")
       .copy(transformMemberNames = {
@@ -113,11 +114,11 @@ object OrganizationEvent {
         case other            => other
       })
 
-    @silent
+    @nowarn("cat=unused")
     implicit private def subjectIdEncoder(implicit http: HttpConfig): Encoder[Subject] =
       Encoder.encodeJson.contramap(_.id.asJson)
 
-    @silent
+    @nowarn("cat=unused")
     implicit final def orgEventEncoder(implicit http: HttpConfig): Encoder[OrganizationEvent] =
       Encoder.encodeJson.contramap[OrganizationEvent] { ev =>
         deriveConfiguredEncoder[OrganizationEvent]
