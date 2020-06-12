@@ -36,7 +36,6 @@ object ServiceError {
     case i: IamError   => IamError.iamErrorEncoder(i)
     case a: AdminError => AdminError.adminErrorEncoder(a)
     case r =>
-      println("dupa dupa")
       Json.obj("@type" -> Json.fromString(r.getClass.getSimpleName), "reason" -> Json.fromString(r.msg)) addContext errorCtxUri
   }
 }

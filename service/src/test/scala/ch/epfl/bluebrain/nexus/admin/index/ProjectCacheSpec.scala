@@ -11,18 +11,18 @@ import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.iam.types.{ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
-import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
-import ch.epfl.bluebrain.nexus.commons.test.Randomness
-import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -42,7 +42,7 @@ class ProjectCacheSpec
   implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
   implicit private val subject          = Caller.anonymous.subject
   implicit private val config           = Settings(system).serviceConfig
-  implicit val iamClientConfig          = config.admin.iam
+  implicit private val httpConfig       = config.http
   implicit private val keyStoreConfig   = config.admin.keyValueStore
 
   val orgIndex     = OrganizationCache[IO]
@@ -91,7 +91,7 @@ class ProjectCacheSpec
 
     "list projects" in {
       implicit val acls: AccessControlLists = AccessControlLists(
-        / -> ResourceAccessControlList(
+        / -> IamResourceF(
           url"http://localhost/",
           1L,
           Set.empty,
@@ -133,7 +133,7 @@ class ProjectCacheSpec
       }
 
       val aclsProj1 = AccessControlLists(
-        orgLabel / projectLabels.head -> ResourceAccessControlList(
+        orgLabel / projectLabels.head -> IamResourceF(
           url"http://localhost/",
           1L,
           Set.empty,
@@ -193,10 +193,10 @@ class ProjectCacheSpec
       index.list(SearchParams(Some(Field(orgLabel2, exactMatch = true))), FromPagination(0, 5)).ioValue shouldEqual
         UnscoredQueryResults(10L, sortedProjects2.slice(0, 5))
       index
-        .list(SearchParams.empty, FromPagination(0, 100))(AccessControlLists.empty, iamClientConfig)
+        .list(SearchParams.empty, FromPagination(0, 100))(AccessControlLists.empty)
         .ioValue shouldEqual
         UnscoredQueryResults(0L, List.empty)
-      index.list(SearchParams.empty, FromPagination(0, 100))(aclsProj1, iamClientConfig).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(0, 100))(aclsProj1).ioValue shouldEqual
         UnscoredQueryResults(1L, List(UnscoredQueryResult(projectResources.head)))
     }
   }

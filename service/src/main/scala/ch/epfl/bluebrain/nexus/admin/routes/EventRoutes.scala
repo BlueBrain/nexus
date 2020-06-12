@@ -21,12 +21,12 @@ import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Permission
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PersistenceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
 import monix.eval.Task
@@ -39,11 +39,11 @@ import scala.util.{Failure, Success, Try}
 /**
   * Server Sent Events routes for organizations, projects and the entire event log.
   */
-class EventRoutes(ic: IamClient[Task])(
+class EventRoutes(acls: Acls[Task], realms: Realms[Task])(
     implicit as: ActorSystem,
     pc: PersistenceConfig,
-    icc: IamClientConfig
-) extends AuthDirectives(ic) {
+    http: HttpConfig
+) extends AuthDirectives(acls, realms) {
 
   private val pq: EventsByTagQuery = PersistenceQuery(as).readJournalFor[EventsByTagQuery](pc.queryJournalPlugin)
   private val printer: Printer     = Printer.noSpaces.copy(dropNullValues = true)
@@ -62,8 +62,8 @@ class EventRoutes(ic: IamClient[Task])(
       toSse: EventEnvelope => Option[ServerSentEvent]
   ): Route =
     (get & pathPrefix(pm) & pathEndOrSingleSlash) {
-      extractToken { implicit token =>
-        authorizeOn(Path./, permission).apply {
+      extractCaller { caller =>
+        authorizeOn(Path./, permission)(caller) {
           lastEventId { offset => complete(source(tag, offset, toSse)) }
         }
       }
@@ -116,9 +116,4 @@ class EventRoutes(ic: IamClient[Task])(
       case A(a) => Some(aToSse(a, envelope.offset))
       case _    => None
     }
-}
-
-object EventRoutes {
-  def apply(ic: IamClient[Task])(implicit as: ActorSystem, pc: PersistenceConfig, icc: IamClientConfig): EventRoutes =
-    new EventRoutes(ic)
 }

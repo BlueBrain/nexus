@@ -15,10 +15,10 @@ import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import monix.eval.Task
 
 class PathDirectivesSpec
@@ -38,7 +38,7 @@ class PathDirectivesSpec
   private val instant      = clock.instant()
 
   private def resource[A](uuid: UUID, value: A): ResourceF[A] =
-    ResourceF(genIri, uuid, 1L, false, Set(genIri), instant, Anonymous, instant, Anonymous, value)
+    ResourceF(genIri, uuid, 1L, deprecated = false, Set(genIri), instant, Anonymous, instant, Anonymous, value)
 
   "Path directives" when {
 

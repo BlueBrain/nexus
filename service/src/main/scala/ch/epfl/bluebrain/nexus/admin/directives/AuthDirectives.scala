@@ -5,9 +5,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{AuthenticationFailed, AuthorizationFailed}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, AuthToken, Permission}
-import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamClientError}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.IamError.InvalidAccessToken
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError.InternalError
@@ -19,10 +21,8 @@ import scala.util.{Failure, Success}
 
 /**
   * Akka HTTP directives that wrap authentication and authorization calls.
-  *
-  * @param iamClient the underlying IAM client
   */
-abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler) {
+abstract class AuthDirectives(acls: Acls[Task], realms: Realms[Task])(implicit s: Scheduler) {
 
   private val logger = Logger[this.type]
 
@@ -31,20 +31,12 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     *
     * @return forwards the provided resource [[Path]] if the caller has access.
     */
-  def authorizeOn(resource: Path, permission: Permission)(implicit cred: Option[AuthToken]): Directive0 =
-    onComplete(iamClient.hasPermission(resource, permission).runToFuture).flatMap {
-      case Success(true)                           => pass
-      case Success(false)                          => failWith(AuthorizationFailed)
-      case Failure(_: IamClientError.Unauthorized) => failWith(AuthenticationFailed)
-      case Failure(_: IamClientError.Forbidden)    => failWith(AuthorizationFailed)
-      case Failure(err: IamClientError.UnmarshallingError[_]) =>
-        val message = "Unmarshalling error when trying to check for permissions"
-        logger.error(message, err)
-        failWith(InternalError(message))
-      case Failure(err: IamClientError.UnknownError) =>
-        val message = "Unknown error when trying to check for permissions"
-        logger.error(message, err)
-        failWith(InternalError(message))
+  def authorizeOn(resource: Path, permission: Permission)(implicit caller: Caller): Directive0 =
+    onComplete(acls.list(resource, ancestors = true, self = true).runToFuture).flatMap {
+      case Success(aclsResults) =>
+        val found = aclsResults.value.exists { case (_, acl) => acl.value.permissions.contains(permission) }
+        if (found) pass
+        else failWith(AuthorizationFailed)
       case Failure(err) =>
         val message = "Unknown error when trying to check for permissions"
         logger.error(message, err)
@@ -52,27 +44,20 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     }
 
   /**
-    * Authenticates the request with the provided credentials.
-    *
-    * @return the [[Subject]] of the caller
+    * Authenticates the request with the provided credentials returning the caller.
     */
-  def extractSubject(implicit cred: Option[AuthToken]): Directive1[Subject] =
-    onComplete(iamClient.identities.runToFuture).flatMap {
-      case Success(caller)                         => provide(caller.subject)
-      case Failure(_: IamClientError.Unauthorized) => failWith(AuthenticationFailed)
-      case Failure(_: IamClientError.Forbidden)    => failWith(AuthorizationFailed)
-      case Failure(err: IamClientError.UnmarshallingError[_]) =>
-        val message = "Unmarshalling error when trying to extract the subject"
-        logger.error(message, err)
-        failWith(InternalError(message))
-      case Failure(err: IamClientError.UnknownError) =>
-        val message = "Unknown error when trying to extract the subject"
-        logger.error(message, err)
-        failWith(InternalError(message))
-      case Failure(err) =>
-        val message = "Unknown error when trying to extract the subject"
-        logger.error(message, err)
-        failWith(InternalError(message))
+  def extractCaller: Directive1[Caller] =
+    extractToken.flatMap {
+      case Some(token) =>
+        onComplete(realms.caller(token).runToFuture).flatMap {
+          case Success(caller)                  => provide(caller)
+          case Failure(err: InvalidAccessToken) => failWith(err)
+          case Failure(err) =>
+            val message = "Unknown error when trying to extract the subject"
+            logger.error(message, err)
+            failWith(InternalError(message))
+        }
+      case None => provide(Caller.anonymous)
     }
 
   /**
@@ -88,11 +73,9 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
   /**
     * Retrieves the caller ACLs.
     */
-  def extractCallerAcls(path: Path)(implicit cred: Option[AuthToken]): Directive1[AccessControlLists] =
-    onComplete(iamClient.acls(path, ancestors = true, self = true).runToFuture).flatMap {
-      case Success(result)                         => provide(result)
-      case Failure(_: IamClientError.Unauthorized) => failWith(AuthenticationFailed)
-      case Failure(_: IamClientError.Forbidden)    => failWith(AuthorizationFailed)
+  def extractCallerAcls(path: Path)(implicit caller: Caller): Directive1[AccessControlLists] =
+    onComplete(acls.list(path, ancestors = true, self = true).runToFuture).flatMap {
+      case Success(aclsResults) => provide(aclsResults)
       case Failure(err) =>
         val message = "Error when trying to check for permissions"
         logger.error(message, err)
@@ -100,13 +83,13 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     }
 
   /**
-    * Attempts to extract an [[AuthToken]] from the http headers.
+    * Attempts to extract an [[AccessToken]] from the http headers.
     *
     * @return an optional token
     */
-  def extractToken: Directive1[Option[AuthToken]] =
+  def extractToken: Directive1[Option[AccessToken]] =
     extractCredentials.flatMap {
-      case Some(OAuth2BearerToken(value)) => provide(Some(AuthToken(value)))
+      case Some(OAuth2BearerToken(value)) => provide(Some(AccessToken(value)))
       case Some(_)                        => failWith(AuthenticationFailed)
       case _                              => provide(None)
     }

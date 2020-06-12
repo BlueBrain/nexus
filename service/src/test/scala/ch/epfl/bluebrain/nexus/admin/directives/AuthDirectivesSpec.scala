@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.directives
 
+import java.time.Instant
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
@@ -7,11 +9,14 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error._
 import ch.epfl.bluebrain.nexus.admin.{Error, ExpectedException}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, AuthToken, Caller, Permission}
-import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamClientError}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
@@ -30,15 +35,15 @@ class AuthDirectivesSpec
     with Matchers
     with ScalaFutures
     with IdiomaticMockito {
-
-  private val iamClient  = mock[IamClient[Task]]
-  private val directives = new AuthDirectives(iamClient)(global) {}
+  private val aclsApi    = mock[Acls[Task]]
+  private val realmsApi  = mock[Realms[Task]]
+  private val directives = new AuthDirectives(aclsApi, realmsApi)(global) {}
 
   private val config                    = Settings(system).serviceConfig
   implicit private val http: HttpConfig = config.http
 
-  private val token   = Some(AuthToken("token"))
   private val cred    = OAuth2BearerToken("token")
+  private val token   = AccessToken(cred.token)
   private val subject = User("alice", "realm")
   private val caller  = Caller(subject, Set(Group("nexus", "bbp")))
 
@@ -46,17 +51,17 @@ class AuthDirectivesSpec
   private val path2      = "org2" / "proj2"
   private val permission = Permission.unsafe("write")
 
-  private def authorizeOnRoute(path: Path, permission: Permission)(implicit cred: Option[AuthToken]): Route =
+  private def authorizeOnRoute(path: Path, permission: Permission)(implicit cred: Caller): Route =
     Routes.wrap(
       (get & directives.authorizeOn(path, permission)) {
         complete(StatusCodes.Accepted)
       }
     )
 
-  private def authCaller(caller: Caller)(implicit cred: Option[AuthToken]): Route =
+  private def authCaller(caller: Caller): Route =
     Routes.wrap(
-      (get & directives.extractSubject) { subject =>
-        subject shouldEqual caller.subject
+      (get & directives.extractCaller) { extCaller =>
+        extCaller shouldEqual caller
         complete(StatusCodes.Accepted)
       }
     )
@@ -64,25 +69,52 @@ class AuthDirectivesSpec
   "Authorization directives" should {
 
     "return the caller" in {
-      iamClient.identities(token) shouldReturn Task(caller)
-      Get("/") ~> addCredentials(cred) ~> authCaller(caller)(token) ~> check {
+      realmsApi.caller(token) shouldReturn Task(caller)
+      Get("/") ~> addCredentials(cred) ~> authCaller(caller) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
 
-      iamClient.identities(None) shouldReturn Task(Caller.anonymous)
-      Get("/") ~> authCaller(Caller.anonymous)(None) ~> check {
+      Get("/") ~> authCaller(Caller.anonymous) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
     }
 
     "authorize on a path" in {
-      iamClient.hasPermission(path, permission)(token) shouldReturn Task.pure(true)
-      Get("/") ~> addCredentials(cred) ~> authorizeOnRoute(path, permission)(token) ~> check {
+      aclsApi.list(path, ancestors = true, self = true)(caller) shouldReturn Task.pure(
+        AccessControlLists(
+          / -> ResourceF(
+            url"http://example.com/1",
+            1L,
+            Set.empty,
+            Instant.now(),
+            caller.subject,
+            Instant.now,
+            caller.subject,
+            AccessControlList(caller.subject -> Set(permission))
+          )
+        )
+      )
+
+      Get("/") ~> addCredentials(cred) ~> authorizeOnRoute(path, permission)(caller) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
 
-      iamClient.hasPermission(path, permission)(None) shouldReturn Task.pure(false)
-      Get("/") ~> authorizeOnRoute(path, permission)(None) ~> check {
+      aclsApi.list(path, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task.pure(
+        AccessControlLists(
+          path -> ResourceF(
+            url"http://example.com/2",
+            1L,
+            Set.empty,
+            Instant.now(),
+            caller.subject,
+            Instant.now,
+            caller.subject,
+            AccessControlList.empty
+          )
+        )
+      )
+
+      Get("/") ~> authorizeOnRoute(path, permission)(Caller.anonymous) ~> check {
         status shouldEqual StatusCodes.Forbidden
         responseAs[Error] shouldEqual Error(
           "AuthorizationFailed",
@@ -90,8 +122,11 @@ class AuthDirectivesSpec
         )
       }
 
-      iamClient.hasPermission(path2, permission)(None) shouldReturn Task.raiseError(ExpectedException)
-      Get("/") ~> authorizeOnRoute(path2, permission)(None) ~> check {
+      aclsApi.list(path2, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task.raiseError(
+        ExpectedException
+      )
+
+      Get("/") ~> authorizeOnRoute(path2, permission)(Caller.anonymous) ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[Error] shouldEqual Error(
           classNameOf[ServiceError.InternalError.type],
@@ -101,38 +136,19 @@ class AuthDirectivesSpec
     }
 
     "fail extracting acls when the client throws an error for caller acls" in {
-      implicit val token: Option[AuthToken] = None
-      iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(
-        IamClientError.UnknownError(StatusCodes.InternalServerError, "")
-      )
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      aclsApi.list("*" / "*", ancestors = true, self = true)(Caller.anonymous) shouldReturn
+        Task.raiseError(new RuntimeException())
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*")(Caller.anonymous)(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.InternalServerError
       }
     }
 
-    "fail extracting acls when  the client returns Unauthorized for caller acls" in {
-      implicit val token: Option[AuthToken] = None
-      iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Unauthorized(""))
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
-      Get("/") ~> route ~> check {
-        status shouldEqual StatusCodes.Unauthorized
-      }
-    }
-
-    "fail extracting acls when  the client returns Forbidden for caller acls" in {
-      implicit val token: Option[AuthToken] = None
-      iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Forbidden(""))
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
-      Get("/") ~> route ~> check {
-        status shouldEqual StatusCodes.Forbidden
-      }
-    }
-
     "extract caller acls" in {
-      implicit val token: Option[AuthToken] = None
-      iamClient.acls("*" / "*", true, true) shouldReturn Task.pure(AccessControlLists.empty)
-      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply { acls =>
+      aclsApi.list("*" / "*", ancestors = true, self = true)(Caller.anonymous) shouldReturn Task.pure(
+        AccessControlLists.empty
+      )
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*")(Caller.anonymous) { acls =>
         acls shouldEqual AccessControlLists.empty
         complete(StatusCodes.Accepted)
       })

@@ -15,8 +15,8 @@ import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 
 /**
   * The project cache backed by a KeyValueStore using akka Distributed Data
@@ -24,7 +24,8 @@ import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
   * @param store the underlying Distributed Data LWWMap store.
   * @tparam F the effect type ''F[_]''
   */
-class ProjectCache[F[_]: Monad](store: KeyValueStore[F, UUID, ProjectResource]) extends Cache[F, Project](store) {
+class ProjectCache[F[_]: Monad](store: KeyValueStore[F, UUID, ProjectResource])(implicit http: HttpConfig)
+    extends Cache[F, Project](store) {
 
   implicit private val ordering: Ordering[ProjectResource] = Ordering.by { proj: ProjectResource =>
     s"${proj.value.organizationLabel}/${proj.value.label}"
@@ -40,7 +41,7 @@ class ProjectCache[F[_]: Monad](store: KeyValueStore[F, UUID, ProjectResource]) 
   def list(
       params: SearchParams,
       pagination: FromPagination
-  )(implicit acls: AccessControlLists, config: IamClientConfig): F[UnscoredQueryResults[ProjectResource]] =
+  )(implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
     store.values.map { values =>
       val filtered = values.filter {
         case ResourceF(_, _, rev, deprecated, types, _, createdBy, _, updatedBy, project: Project) =>
@@ -82,7 +83,11 @@ object ProjectCache {
   /**
     * Creates a new project index.
     */
-  def apply[F[_]: Effect: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig): ProjectCache[F] = {
+  def apply[F[_]: Effect: Timer](
+      implicit as: ActorSystem,
+      config: KeyValueStoreConfig,
+      http: HttpConfig
+  ): ProjectCache[F] = {
     val function: (Long, ProjectResource) => Long = { case (_, res) => res.rev }
     new ProjectCache(KeyValueStore.distributed("projects", function))
   }

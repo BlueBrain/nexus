@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.config
-import ch.epfl.bluebrain.nexus.iam.client.types.Permission
+
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 
 /**
   * Constant enumeration of permissions.

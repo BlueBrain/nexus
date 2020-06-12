@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 
 sealed trait ProjectCommand extends Product with Serializable {

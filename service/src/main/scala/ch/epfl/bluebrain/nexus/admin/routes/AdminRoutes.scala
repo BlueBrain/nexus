@@ -7,8 +7,9 @@ import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.projects.Projects
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.routes.EventRoutes
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
 import monix.eval.Task
@@ -27,19 +28,19 @@ object AdminRoutes {
       projects: Projects[Task],
       orgCache: OrganizationCache[Task],
       projCache: ProjectCache[Task],
-      ic: IamClient[Task]
+      acls: Acls[Task],
+      realms: Realms[Task]
   )(
       implicit as: ActorSystem,
       cfg: ServiceConfig
   ): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
-    implicit val icc: IamClientConfig  = cfg.admin.iam
     implicit val pgc: PaginationConfig = cfg.admin.pagination
 
-    val eventsRoutes  = EventRoutes(ic).routes
-    val orgRoutes     = OrganizationRoutes(orgs, orgCache, ic).routes
-    val projectRoutes = ProjectRoutes(projects, orgCache, projCache, ic).routes
+    val eventsRoutes  = new EventRoutes(acls, realms).routes
+    val orgRoutes     = new OrganizationRoutes(orgs, orgCache, acls, realms).routes
+    val projectRoutes = new ProjectRoutes(projects, orgCache, projCache, acls, realms).routes
 
     pathPrefix(cfg.http.prefix) {
       eventsRoutes ~ orgRoutes ~ projectRoutes

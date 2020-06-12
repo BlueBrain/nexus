@@ -10,8 +10,6 @@ import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig._
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.instances._
@@ -25,10 +23,10 @@ import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
@@ -53,18 +51,16 @@ class Projects[F[_]: Timer](
     agg: Agg[F],
     private val index: ProjectCache[F],
     organizations: Organizations[F],
-    iamClient: IamClient[F]
+    aclsApi: Acls[F],
+    saCaller: Caller
 )(
     implicit F: Effect[F],
-    http: HttpConfig,
-    iam: IamClientConfig,
     clock: Clock,
-    permissionsConfig: PermissionsConfig,
-    iamCredentials: Option[AuthToken],
-    ownerPermissions: Set[Permission]
+    cfg: ServiceConfig
 ) {
 
-  implicit private val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
+  implicit private val retryPolicy: RetryPolicy[F] = cfg.admin.permissions.retry.retryPolicy[F]
+  implicit private val http: HttpConfig            = cfg.http
 
   private def invalidIriGeneration(organization: String, label: String, param: String): String =
     s"the value of the project's '$param' could not be generated properly from the provided project '$organization/$label'"
@@ -110,16 +106,20 @@ class Projects[F[_]: Timer](
       case (acc, (_, acl)) => acc ++ acl.value.permissions
     }
     val projectAcl = acls.value.get(orgLabel / projectLabel).map(_.value.value).getOrElse(Map.empty)
-    val rev        = acls.value.get(orgLabel / projectLabel).map(_.rev)
+    val rev        = acls.value.get(orgLabel / projectLabel).fold(0L)(_.rev)
 
-    if (ownerPermissions.subsetOf(currentPermissions)) F.unit
-    else iamClient.putAcls(orgLabel / projectLabel, AccessControlList(projectAcl + (subject -> ownerPermissions)), rev)
+    if (cfg.admin.permissions.ownerPermissions.subsetOf(currentPermissions))
+      F.unit
+    else {
+      val replaceAcls = AccessControlList(projectAcl + (subject -> cfg.admin.permissions.ownerPermissions))
+      aclsApi.replace(orgLabel / projectLabel, rev, replaceAcls)(saCaller) >> F.unit
+    }
 
   }
 
   private def setOwnerPermissions(orgLabel: String, projectLabel: String, subject: Subject): F[Unit] = {
     for {
-      acls <- iamClient.acls(orgLabel / projectLabel, ancestors = true, self = false)
+      acls <- aclsApi.list(orgLabel / projectLabel, ancestors = true, self = false)(saCaller)
       _    <- setPermissions(orgLabel, projectLabel, acls, subject)
     } yield ()
   }
@@ -259,7 +259,7 @@ class Projects[F[_]: Timer](
 
   private def toResource(c: Current): F[ProjectResource] = organizations.fetch(c.organizationUuid).flatMap {
     case Some(org) =>
-      val iri     = http.projectsIri + org.value.label + c.label
+      val iri     = cfg.http.projectsIri + org.value.label + c.label
       val project = Project(c.label, org.uuid, org.value.label, c.description, c.apiMappings, c.base, c.vocab)
       F.pure(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, project))
     case None =>
@@ -274,7 +274,6 @@ object Projects {
     * Constructs a [[ch.epfl.bluebrain.nexus.admin.projects.Projects]] operations bundle.
     *
     * @param index           the project and organization label index
-    * @param iamClient       the IAM client
     * @param serviceConfig       the application configuration
     * @tparam F              a [[cats.effect.ConcurrentEffect]] instance
     * @return the operations bundle in an ''F'' context.
@@ -282,13 +281,10 @@ object Projects {
   def apply[F[_]: ConcurrentEffect: Timer](
       index: ProjectCache[F],
       organizations: Organizations[F],
-      iamClient: IamClient[F]
+      aclsApi: Acls[F],
+      realms: Realms[F]
   )(implicit serviceConfig: ServiceConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val iamCredentials: Option[AuthToken] = serviceConfig.admin.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission] = serviceConfig.admin.permissions.ownerPermissions
-    implicit val retryPolicy: RetryPolicy[F]       = serviceConfig.admin.aggregate.retry.retryPolicy[F]
-    implicit val adminConfig: AdminConfig          = serviceConfig.admin
-    implicit val httpConfig: HttpConfig            = serviceConfig.http
+    implicit val retryPolicy: RetryPolicy[F] = serviceConfig.admin.aggregate.retry.retryPolicy[F]
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -300,7 +296,11 @@ object Projects {
         serviceConfig.admin.aggregate.akkaAggregateConfig,
         serviceConfig.cluster.shards
       )
-    aggF.map(agg => new Projects(agg, index, organizations, iamClient))
+
+    for {
+      saCaller <- serviceConfig.admin.serviceAccount.credentials.map(realms.caller).getOrElse(Caller.anonymous.pure[F])
+      agg      <- aggF
+    } yield new Projects(agg, index, organizations, aclsApi, saCaller)
   }
 
   def indexer[F[_]: Timer](

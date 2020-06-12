@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.iam.types
 
 import java.time.{Clock, Instant, ZoneId}
 
-import ch.epfl.bluebrain.nexus.iam.client.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Printer
 import io.circe.syntax._
 import org.scalatest.Inspectors

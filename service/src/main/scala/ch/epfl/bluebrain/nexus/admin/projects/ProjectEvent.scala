@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
@@ -117,7 +117,7 @@ object ProjectEvent {
 
   object JsonLd {
     @silent // implicits are not recognized as being used
-    implicit final def projectEventEncoder(implicit ic: IamClientConfig): Encoder[ProjectEvent] = {
+    implicit final def projectEventEncoder(implicit http: HttpConfig): Encoder[ProjectEvent] = {
       implicit val config: Configuration = Configuration.default
         .withDiscriminator("@type")
         .copy(transformMemberNames = {

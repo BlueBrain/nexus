@@ -16,10 +16,10 @@ import ch.epfl.bluebrain.nexus.admin.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.routes.AdminRoutes
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.{Groups, Realms}
 import ch.epfl.bluebrain.nexus.iam.routes.IamRoutes
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import ch.epfl.bluebrain.nexus.service.routes.{AppInfoRoutes, Routes}
 import com.github.jsonldjava.core.DocumentLoader
@@ -88,23 +88,22 @@ object Main {
     deferred.runSyncUnsafe()(Scheduler.global, pm)
   }
 
-  def bootstrapAdmin()(
+  def bootstrapAdmin(acls: Acls[Task], realms: Realms[Task])(
       implicit system: ActorSystem,
       cfg: ServiceConfig
-  ): (Organizations[Task], Projects[Task], OrganizationCache[Task], ProjectCache[Task], IamClient[Task]) = {
+  ): (Organizations[Task], Projects[Task], OrganizationCache[Task], ProjectCache[Task]) = {
+    implicit val http: HttpConfig  = cfg.http
     implicit val scheduler         = Scheduler.global
     implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
-    implicit val icc               = cfg.admin.iam
     implicit val kvc               = cfg.admin.keyValueStore
     implicit val pm                = CanBlock.permit
 
-    val ic = IamClient[Task]
     val oc = OrganizationCache[Task]
     val pc = ProjectCache[Task]
     val deferred = for {
-      orgs  <- Organizations(oc, ic)
-      projs <- Projects(pc, orgs, ic)
-    } yield (orgs, projs, oc, pc, ic)
+      orgs  <- Organizations(oc, acls, realms)
+      projs <- Projects(pc, orgs, acls, realms)
+    } yield (orgs, projs, oc, pc)
     deferred.runSyncUnsafe()(Scheduler.global, pm)
   }
 
@@ -137,8 +136,8 @@ object Main {
       case nonEmpty => nonEmpty
     }
 
-    val (perms, acls, realms)                               = bootstrapIam()
-    val (orgs, projects, orgCache, projectCache, iamClient) = bootstrapAdmin()
+    val (perms, acls, realms)                    = bootstrapIam()
+    val (orgs, projects, orgCache, projectCache) = bootstrapAdmin(acls, realms)
 
     val logger = Logging(as, getClass)
     System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
@@ -147,7 +146,7 @@ object Main {
       logger.info("==== Cluster is Live ====")
       bootstrapIndexers(acls, realms, orgs, projects)
       val iamRoutes   = IamRoutes(acls, realms, perms)
-      val adminRoutes = AdminRoutes(orgs, projects, orgCache, projectCache, iamClient)
+      val adminRoutes = AdminRoutes(orgs, projects, orgCache, projectCache, acls, realms)
       val infoRoutes  = AppInfoRoutes(serviceConfig.description, cluster).routes
 
       val httpBinding = {

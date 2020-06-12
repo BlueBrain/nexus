@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
@@ -114,11 +114,11 @@ object OrganizationEvent {
       })
 
     @silent
-    implicit private def subjectIdEncoder(implicit ic: IamClientConfig): Encoder[Subject] =
+    implicit private def subjectIdEncoder(implicit http: HttpConfig): Encoder[Subject] =
       Encoder.encodeJson.contramap(_.id.asJson)
 
     @silent
-    implicit final def orgEventEncoder(implicit ic: IamClientConfig): Encoder[OrganizationEvent] =
+    implicit final def orgEventEncoder(implicit http: HttpConfig): Encoder[OrganizationEvent] =
       Encoder.encodeJson.contramap[OrganizationEvent] { ev =>
         deriveConfiguredEncoder[OrganizationEvent]
           .mapJson { json =>
