@@ -44,7 +44,7 @@ abstract class ElasticServer
 
   private val clusterName = "elasticsearch"
 
-  private val dataDir = Files.createTempDirectory("elasticsearch_data_").toFile
+  private val dataDir  = Files.createTempDirectory("elasticsearch_data_").toFile
   private val settings = Settings
     .builder()
     .put("path.home", dataDir.toString)

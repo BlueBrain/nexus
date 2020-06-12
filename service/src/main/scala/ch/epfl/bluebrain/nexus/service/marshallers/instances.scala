@@ -60,8 +60,8 @@ object instances extends FailFastCirceSupport {
     *
     * @return marshaller for JSON-LD value
     */
-  implicit final def jsonLd(
-      implicit printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
+  implicit final def jsonLd(implicit
+      printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       keys: OrderedKeys = orderedKeys
   ): ToEntityMarshaller[Json] = {
     val marshallers = Seq(`application/ld+json`, `application/json`).map(contentType =>
@@ -78,8 +78,8 @@ object instances extends FailFastCirceSupport {
     * @tparam A type to encode
     * @return marshaller for any `A` value
     */
-  implicit final def httpEntity[A](
-      implicit encoder: Encoder[A],
+  implicit final def httpEntity[A](implicit
+      encoder: Encoder[A],
       printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       keys: OrderedKeys = orderedKeys
   ): ToEntityMarshaller[A] =
@@ -91,8 +91,8 @@ object instances extends FailFastCirceSupport {
     * @tparam A type to encode
     * @return marshaller for any `A` value
     */
-  implicit final def either[A: Encoder, B <: ResourceRejection: StatusFrom: Encoder](
-      implicit printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
+  implicit final def either[A: Encoder, B <: ResourceRejection: StatusFrom: Encoder](implicit
+      printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
   ): ToResponseMarshaller[Either[B, A]] =
     eitherMarshaller(rejection[B], httpEntity[A])
 
@@ -101,8 +101,8 @@ object instances extends FailFastCirceSupport {
     *
     * @return marshaller for Rejection value
     */
-  implicit final def rejection[A <: ResourceRejection: Encoder](
-      implicit statusFrom: StatusFrom[A],
+  implicit final def rejection[A <: ResourceRejection: Encoder](implicit
+      statusFrom: StatusFrom[A],
       printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       ordered: OrderedKeys = orderedKeys
   ): ToResponseMarshaller[A] = {

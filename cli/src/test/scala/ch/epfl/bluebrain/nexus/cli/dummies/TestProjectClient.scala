@@ -14,7 +14,7 @@ class TestProjectClient[F[_]](map: Map[(OrgUuid, ProjectUuid), (OrgLabel, Projec
   override def labels(org: OrgUuid, proj: ProjectUuid): F[ClientErrOr[(OrgLabel, ProjectLabel)]] = {
     map.get((org, proj)) match {
       case Some(value) => F.pure(Right(value))
-      case None =>
+      case None        =>
         F.pure(
           Left(
             ClientStatusError(

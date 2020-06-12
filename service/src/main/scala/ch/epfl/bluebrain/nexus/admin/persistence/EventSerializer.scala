@@ -8,13 +8,14 @@ import ch.epfl.bluebrain.nexus.commons.serialization.AkkaCoproductSerializer
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
-import com.github.ghik.silencer.silent
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.{Decoder, Encoder}
 import shapeless.{:+:, CNil}
 
-@silent // implicits are not recognized as being used
+import scala.annotation.nowarn
+
+@nowarn("cat=unused")
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
   implicit private val httpConfig: HttpConfig = Settings(system).serviceConfig.http

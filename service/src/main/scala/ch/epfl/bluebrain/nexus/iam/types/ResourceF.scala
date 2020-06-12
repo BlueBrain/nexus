@@ -75,7 +75,7 @@ object ResourceF {
   ): ResourceF[Unit] =
     ResourceF(id, rev, types, createdAt, createdBy, updatedAt, updatedBy, ())
 
-  implicit val permsEncoder: Encoder[Set[Permission]] =
+  implicit val permsEncoder: Encoder[Set[Permission]]                                         =
     Encoder.instance(perms => Json.obj("permissions" -> Json.fromValues(perms.toList.sortBy(_.value).map(_.asJson))))
 
   implicit def resourceFEncoder[A: Encoder](implicit http: HttpConfig): Encoder[ResourceF[A]] =

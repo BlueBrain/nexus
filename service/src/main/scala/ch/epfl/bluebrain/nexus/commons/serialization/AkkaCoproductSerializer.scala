@@ -12,8 +12,8 @@ import shapeless.ops.coproduct.Unifier
   * @param U          a unifier instance for the coproduct ''C''
   * @tparam C the type of the underlying coproduct
   */
-class AkkaCoproductSerializer[C <: Coproduct](override val identifier: Int)(
-    implicit C: CoproductSerializer[C],
+class AkkaCoproductSerializer[C <: Coproduct](override val identifier: Int)(implicit
+    C: CoproductSerializer[C],
     U: Unifier[C]
 ) extends SerializerWithStringManifest {
 

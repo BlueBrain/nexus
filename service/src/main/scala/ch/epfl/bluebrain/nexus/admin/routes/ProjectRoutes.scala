@@ -27,8 +27,7 @@ class ProjectRoutes(
     projCache: ProjectCache[Task],
     acls: Acls[Task],
     realms: Realms[Task]
-)(
-    implicit
+)(implicit
     hc: HttpConfig,
     pagination: PaginationConfig,
     s: Scheduler
@@ -38,68 +37,70 @@ class ProjectRoutes(
   implicit private val oc: OrganizationCache[Task] = orgCache
   implicit private val pc: ProjectCache[Task]      = projCache
 
-  def routes: Route = (pathPrefix("projects") & extractCaller) { caller =>
-    implicit val subject: Subject = caller.subject
-    concat(
-      // fetch
-      (get & project & pathEndOrSingleSlash) {
-        case (orgLabel, projectLabel) =>
-          traceOne {
-            authorizeOn(pathOf(orgLabel, projectLabel), pp.read)(caller) {
-              parameter("rev".as[Long].?) {
-                case Some(rev) =>
-                  complete(projects.fetch(orgLabel, projectLabel, rev).runToFuture)
-                case None =>
-                  complete(projects.fetch(orgLabel, projectLabel).runNotFound)
-              }
-            }
-          }
-      },
-      // writes
-      (project & pathEndOrSingleSlash) {
-        case (orgLabel, projectLabel) =>
-          traceOne {
-            concat(
-              // deprecate
-              (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)(caller)) {
-                rev => complete(projects.deprecate(orgLabel, projectLabel, rev).runToFuture)
-              },
-              // update
-              (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)(caller)) { rev =>
-                entity(as[ProjectDescription]) { project =>
-                  complete(projects.update(orgLabel, projectLabel, project, rev).runToFuture)
+  def routes: Route =
+    (pathPrefix("projects") & extractCaller) { caller =>
+      implicit val subject: Subject = caller.subject
+      concat(
+        // fetch
+        (get & project & pathEndOrSingleSlash) {
+          case (orgLabel, projectLabel) =>
+            traceOne {
+              authorizeOn(pathOf(orgLabel, projectLabel), pp.read)(caller) {
+                parameter("rev".as[Long].?) {
+                  case Some(rev) =>
+                    complete(projects.fetch(orgLabel, projectLabel, rev).runToFuture)
+                  case None      =>
+                    complete(projects.fetch(orgLabel, projectLabel).runNotFound)
                 }
               }
-            )
-          }
-      },
-      // create
-      (pathPrefix(Segment / Segment) & pathEndOrSingleSlash) { (orgLabel, projectLabel) =>
-        traceOne {
-          (put & authorizeOn(pathOf(orgLabel), pp.create)(caller)) {
-            entity(as[ProjectDescription]) { project =>
-              complete(projects.create(orgLabel, projectLabel, project).runWithStatus(Created))
+            }
+        },
+        // writes
+        (project & pathEndOrSingleSlash) {
+          case (orgLabel, projectLabel) =>
+            traceOne {
+              concat(
+                // deprecate
+                (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)(caller)) {
+                  rev => complete(projects.deprecate(orgLabel, projectLabel, rev).runToFuture)
+                },
+                // update
+                (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)(caller)) {
+                  rev =>
+                    entity(as[ProjectDescription]) { project =>
+                      complete(projects.update(orgLabel, projectLabel, project, rev).runToFuture)
+                    }
+                }
+              )
+            }
+        },
+        // create
+        (pathPrefix(Segment / Segment) & pathEndOrSingleSlash) { (orgLabel, projectLabel) =>
+          traceOne {
+            (put & authorizeOn(pathOf(orgLabel), pp.create)(caller)) {
+              entity(as[ProjectDescription]) { project =>
+                complete(projects.create(orgLabel, projectLabel, project).runWithStatus(Created))
+              }
             }
           }
+        },
+        // list all projects
+        (get & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)(caller)) {
+          (pagination, params, acls) =>
+            traceCol {
+              complete(projects.list(params, pagination)(acls).runToFuture)
+            }
+        },
+        // list projects in organization
+        (get & org & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)(caller)) {
+          (orgLabel, pagination, params, acls) =>
+            traceOrgCol {
+              val orgField = Some(Field(orgLabel, exactMatch = true))
+              complete(projects.list(params.copy(organizationLabel = orgField), pagination)(acls).runToFuture)
+            }
         }
-      },
-      // list all projects
-      (get & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)(caller)) {
-        (pagination, params, acls) =>
-          traceCol {
-            complete(projects.list(params, pagination)(acls).runToFuture)
-          }
-      },
-      // list projects in organization
-      (get & org & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)(caller)) {
-        (orgLabel, pagination, params, acls) =>
-          traceOrgCol {
-            val orgField = Some(Field(orgLabel, exactMatch = true))
-            complete(projects.list(params.copy(organizationLabel = orgField), pagination)(acls).runToFuture)
-          }
-      }
-    )
-  }
+      )
+    }
 
   private def pathOf(orgLabel: String): Path = {
     import ch.epfl.bluebrain.nexus.rdf.Iri.Path._

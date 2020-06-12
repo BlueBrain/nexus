@@ -52,8 +52,8 @@ class OrganizationCache[F[_]: Monad](store: KeyValueStore[F, UUID, OrganizationR
             params.types.subsetOf(types) &&
             acls.exists(organization.label, orgs.read)
       }
-      val count  = filtered.size.toLong
-      val result = filtered.toList.sorted.slice(pagination.from, pagination.from + pagination.size)
+      val count    = filtered.size.toLong
+      val result   = filtered.toList.sorted.slice(pagination.from, pagination.from + pagination.size)
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
     }
 
@@ -70,8 +70,8 @@ object OrganizationCache {
   /**
     * Creates a new organization index.
     */
-  def apply[F[_]: Effect: Timer](
-      implicit as: ActorSystem,
+  def apply[F[_]: Effect: Timer](implicit
+      as: ActorSystem,
       config: KeyValueStoreConfig,
       http: HttpConfig
   ): OrganizationCache[F] = {

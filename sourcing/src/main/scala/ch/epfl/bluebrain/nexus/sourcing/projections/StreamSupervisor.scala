@@ -30,9 +30,10 @@ class StreamSupervisor[F[_], A](val actor: ActorRef)(implicit F: Effect[F], as: 
     *
     * @return latest state wrapped in [[F]]
     */
-  def state()(implicit A: ClassTag[Option[A]]): F[Option[A]] = IO.fromFuture(IO(actor ? FetchLatestState)).to[F].map {
-    case LatestState(A(state)) => state
-  }
+  def state()(implicit A: ClassTag[Option[A]]): F[Option[A]] =
+    IO.fromFuture(IO(actor ? FetchLatestState)).to[F].map {
+      case LatestState(A(state)) => state
+    }
 
   /**
     * Stops the stream.
@@ -59,7 +60,7 @@ object StreamSupervisor {
     implicit private val as: ActorSystem      = context.system
     implicit private val ec: ExecutionContext = as.dispatcher
     //noinspection ActorMutableStateInspection
-    private var state: Option[A] = None
+    private var state: Option[A]              = None
 
     override def preStart(): Unit = {
       super.preStart()
@@ -92,16 +93,16 @@ object StreamSupervisor {
       // $COVERAGE-OFF$
       case killSwitch: UniqueKillSwitch =>
         context.become(running(killSwitch))
-      case Stop =>
+      case Stop                         =>
         log.debug("Received stop signal while waiting for a start value, stopping")
         context.stop(self)
       // $COVERAGE-ON$
 
-      case FetchLatestState => sender() ! LatestState(state)
+      case FetchLatestState             => sender() ! LatestState(state)
     }
 
     private def running(killSwitch: UniqueKillSwitch): Receive = {
-      case Done =>
+      case Done               =>
         log.error("Stream finished unexpectedly, restarting")
         killSwitch.shutdown()
         initialize()
@@ -113,15 +114,15 @@ object StreamSupervisor {
         initialize()
         context.become(receive)
       // $COVERAGE-ON$
-      case Stop =>
+      case Stop               =>
         log.debug("Received stop signal, stopping stream")
         killSwitch.shutdown()
         context.become(stopping)
-      case FetchLatestState => sender() ! LatestState(state)
+      case FetchLatestState   => sender() ! LatestState(state)
     }
 
     private def stopping: Receive = {
-      case Done =>
+      case Done               =>
         log.debug("Stream finished, stopping")
         context.stop(self)
       // $COVERAGE-OFF$
@@ -129,7 +130,7 @@ object StreamSupervisor {
         log.error("Stream finished with an error", th)
         context.stop(self)
       // $COVERAGE-ON$
-      case FetchLatestState => sender() ! LatestState(state)
+      case FetchLatestState   => sender() ! LatestState(state)
     }
   }
 
@@ -142,8 +143,8 @@ object StreamSupervisor {
   private def props[F[_]: Effect, A](sourceF: F[Source[A, _]]): Props =
     Props(new StreamSupervisorActor(sourceF))
 
-  private def singletonProps[F[_]: Effect, A](sourceF: F[Source[A, _]])(
-      implicit as: ActorSystem
+  private def singletonProps[F[_]: Effect, A](sourceF: F[Source[A, _]])(implicit
+      as: ActorSystem
   ): Props =
     ClusterSingletonManager.props(
       Props(new StreamSupervisorActor(sourceF)),
@@ -160,8 +161,8 @@ object StreamSupervisor {
   final def start[F[_]: Effect, A](
       sourceF: F[Source[A, _]],
       name: String
-  )(
-      implicit as: ActorSystem,
+  )(implicit
+      as: ActorSystem,
       askTimeout: Timeout
   ): StreamSupervisor[F, A] =
     start(sourceF, name, as.actorOf)
@@ -177,8 +178,8 @@ object StreamSupervisor {
       sourceF: F[Source[A, _]],
       name: String,
       actorOf: (Props, String) => ActorRef
-  )(
-      implicit as: ActorSystem,
+  )(implicit
+      as: ActorSystem,
       askTimeout: Timeout
   ): StreamSupervisor[F, A] =
     new StreamSupervisor[F, A](actorOf(props(sourceF), name))
@@ -192,8 +193,8 @@ object StreamSupervisor {
   final def startSingleton[F[_]: Effect, A](
       sourceF: F[Source[A, _]],
       name: String
-  )(
-      implicit as: ActorSystem,
+  )(implicit
+      as: ActorSystem,
       askTimeout: Timeout
   ): StreamSupervisor[F, A] =
     start(sourceF, name, as.actorOf)
@@ -209,8 +210,8 @@ object StreamSupervisor {
       sourceF: F[Source[A, _]],
       name: String,
       actorOf: (Props, String) => ActorRef
-  )(
-      implicit as: ActorSystem,
+  )(implicit
+      as: ActorSystem,
       askTimeout: Timeout
   ): StreamSupervisor[F, A] =
     new StreamSupervisor[F, A](actorOf(singletonProps(sourceF), name))

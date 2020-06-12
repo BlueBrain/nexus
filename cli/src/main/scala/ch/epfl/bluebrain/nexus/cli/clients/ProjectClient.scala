@@ -57,10 +57,10 @@ object ProjectClient {
           // value in cache, return
           case Some(value) => F.pure(Right(value))
           // value not in cache, fetch, update and return
-          case None =>
+          case None        =>
             get(org, proj).flatMap {
               // propagate error
-              case l @ Left(_) => F.pure(l)
+              case l @ Left(_)      => F.pure(l)
               // success, update cache and return
               case r @ Right(value) =>
                 cache.modify(m => (m.updated((org, proj), value), value)) *> F.pure(r)

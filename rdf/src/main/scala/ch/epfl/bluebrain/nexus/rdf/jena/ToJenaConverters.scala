@@ -18,33 +18,36 @@ trait ToJenaConverters {
   /**
     * Converts the argument `node` to a Jena `RDFNode`.
     */
-  def asJena(node: Node): RDFNode = node match {
-    case in: IriNode  => asJena(in)
-    case bn: BNode    => asJena(bn)
-    case lit: Literal => asJena(lit)
-  }
+  def asJena(node: Node): RDFNode =
+    node match {
+      case in: IriNode  => asJena(in)
+      case bn: BNode    => asJena(bn)
+      case lit: Literal => asJena(lit)
+    }
 
   /**
     * Converts the argument `node` to a Jena `Resource`.
     */
-  def asJena(node: IriOrBNode): Resource = node match {
-    case in: IriNode => asJena(in)
-    case bn: BNode   => asJena(bn)
-  }
+  def asJena(node: IriOrBNode): Resource =
+    node match {
+      case in: IriNode => asJena(in)
+      case bn: BNode   => asJena(bn)
+    }
 
   /**
     * Converts the argument `literal` to a Jena `Literal`.
     */
-  def asJena(literal: Literal): model.Literal = literal match {
-    case Literal(lf, _, Some(LanguageTag(value))) => ResourceFactory.createLangLiteral(lf, value)
-    case Literal(lf, dt, _) =>
-      Try {
-        val tpe     = TypeMapper.getInstance().getSafeTypeByName(dt.asString)
-        val literal = ResourceFactory.createTypedLiteral(lf, tpe)
-        literal.getValue // It will throw whenever the literal does not match the desired datatype
-        literal
-      }.getOrElse(ResourceFactory.createStringLiteral(lf))
-  }
+  def asJena(literal: Literal): model.Literal =
+    literal match {
+      case Literal(lf, _, Some(LanguageTag(value))) => ResourceFactory.createLangLiteral(lf, value)
+      case Literal(lf, dt, _)                       =>
+        Try {
+          val tpe     = TypeMapper.getInstance().getSafeTypeByName(dt.asString)
+          val literal = ResourceFactory.createTypedLiteral(lf, tpe)
+          literal.getValue // It will throw whenever the literal does not match the desired datatype
+          literal
+        }.getOrElse(ResourceFactory.createStringLiteral(lf))
+    }
 
   /**
     * Converts the argument blank `node` to a Jena `Resource`.

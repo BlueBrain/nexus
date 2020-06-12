@@ -5,10 +5,11 @@ import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Generic error types global to the entire service.
@@ -56,7 +57,7 @@ object AdminError {
     */
   final case object InvalidFormat extends AdminError("The json representation is incorrectly formatted.")
 
-  @silent
+  @nowarn("cat=unused")
   implicit val adminErrorEncoder: Encoder[AdminError] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[AdminError].mapJson(_ addContext errorCtxUri)

@@ -44,8 +44,8 @@ class AccessControlListSpec
       val acl2  = AccessControlList(group -> Set(read))
 
       acl -- acl2 shouldEqual acl
-      acl -- AccessControlList(user -> Set(read), group                              -> Set(other)) shouldEqual AccessControlList(user -> Set(write))
-      acl -- AccessControlList(user -> Set(read)) shouldEqual AccessControlList(user -> Set(write), group                              -> Set(other))
+      acl -- AccessControlList(user -> Set(read), group -> Set(other)) shouldEqual AccessControlList(user -> Set(write))
+      acl -- AccessControlList(user -> Set(read)) shouldEqual AccessControlList(user -> Set(write), group -> Set(other))
     }
   }
 }

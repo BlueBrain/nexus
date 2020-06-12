@@ -27,10 +27,13 @@ final private[jsonld] class JenaWriterCleanup(ctx: Json) extends JsonLdSyntax {
     * @param json the json to be cleaned
     */
   def removeSingleGraph(json: Json): Json =
-    (json.hcursor.downField("@graph").focus.flatMap(_.asArray).flatMap {
-      case head +: IndexedSeq() => Some(head)
-      case _                    => None
-    }, json.asObject) match {
+    (
+      json.hcursor.downField("@graph").focus.flatMap(_.asArray).flatMap {
+        case head +: IndexedSeq() => Some(head)
+        case _                    => None
+      },
+      json.asObject
+    ) match {
       case (Some(entity), Some(obj)) => entity deepMerge obj.remove("@graph").asJson
       case _                         => json
     }
@@ -137,7 +140,7 @@ final private[jsonld] class JenaWriterCleanup(ctx: Json) extends JsonLdSyntax {
             }
             .flatten
             .getOrElse(recursiveFollow(jObj))
-        case _ =>
+        case _               =>
           recursiveFollow(jObj)
 
       }

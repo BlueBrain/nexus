@@ -43,8 +43,8 @@ trait CirceInstances {
     case o: NoOffset.type => encodeDiscriminated(o)
   }
 
-  implicit final def offsetDecoder(
-      implicit S: ClassTag[Sequence],
+  implicit final def offsetDecoder(implicit
+      S: ClassTag[Sequence],
       TBU: ClassTag[TimeBasedUUID],
       NO: ClassTag[NoOffset.type]
   ): Decoder[Offset] = {
@@ -58,7 +58,7 @@ trait CirceInstances {
         case `timeBasedUUID` => cursor.as[TimeBasedUUID]
         case `noOffset`      => cursor.as[NoOffset.type]
         //       $COVERAGE-OFF$
-        case other => Left(DecodingFailure(s"Unknown discriminator value '$other'", cursor.history))
+        case other           => Left(DecodingFailure(s"Unknown discriminator value '$other'", cursor.history))
         //       $COVERAGE-ON$
       }
     }

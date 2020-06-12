@@ -35,7 +35,7 @@ trait Http4sExtras {
       request.headers.get(Authorization) match {
         case Some(Authorization(Token(authScheme, token))) if authScheme === CaseInsensitiveString("bearer") =>
           Some((request, Some(BearerToken(token))))
-        case _ => Some((request, None))
+        case _                                                                                               => Some((request, None))
       }
   }
 

@@ -44,7 +44,7 @@ trait Randomness {
   final def freePort(): Int = {
     val serverSocket = ServerSocketChannel.open().socket()
     serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
-    val port = serverSocket.getLocalPort
+    val port         = serverSocket.getLocalPort
     serverSocket.close()
     port
   }

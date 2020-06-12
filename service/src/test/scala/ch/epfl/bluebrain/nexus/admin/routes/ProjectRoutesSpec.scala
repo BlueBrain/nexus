@@ -62,7 +62,7 @@ class ProjectRoutesSpec
   private val aclsApi   = mock[Acls[Task]]
   private val realmsApi = mock[Realms[Task]]
 
-  private val config: ServiceConfig =
+  private val config: ServiceConfig           =
     Settings(system).serviceConfig.copy(http = HttpConfig("some", 80, "v1", "https://nexus.example.com"))
   implicit private val httpConfig: HttpConfig = config.http
 
@@ -108,7 +108,7 @@ class ProjectRoutesSpec
     val voc     = url"https://nexus.example.com/voc"
     val iri     = url"http://nexus.example.com/v1/projects/org/label"
 
-    val payload = Json.obj(
+    val payload      = Json.obj(
       "description" -> Json.fromString("Project description"),
       "base"        -> Json.fromString("https://nexus.example.com/base"),
       "vocab"       -> Json.fromString("https://nexus.example.com/voc"),
@@ -135,12 +135,12 @@ class ProjectRoutesSpec
       caller.subject,
       Organization("org", Some("Org description"))
     )
-    val mappings = Map(
+    val mappings     = Map(
       "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
       "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     )
-    val project = ProjectDescription(desc, mappings, Some(base), Some(voc))
-    val resource =
+    val project      = ProjectDescription(desc, mappings, Some(base), Some(voc))
+    val resource     =
       ResourceF(
         iri,
         projId,
@@ -153,7 +153,7 @@ class ProjectRoutesSpec
         caller.subject,
         Project("label", orgId, "org", desc, mappings, base, voc)
       )
-    val meta = resource.discard
+    val meta         = resource.discard
     val replacements = Map(
       quote("{instant}") -> instant.toString,
       quote("{uuid}")    -> projId.toString,

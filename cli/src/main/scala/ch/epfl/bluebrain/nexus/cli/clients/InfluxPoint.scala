@@ -49,7 +49,7 @@ object InfluxPoint {
     results.results.bindings.flatMap { bindings =>
       val values = tc.values.flatMap(value => bindings.get(value).map(value -> _.value)).toMap
       Option.when(values.nonEmpty) {
-        val tags = bindings.view
+        val tags      = bindings.view
           .filterKeys(key => !tc.values(key) && key != tc.timestamp)
           .mapValues(_.value)
         val timestamp = bindings.get(tc.timestamp).flatMap(binding => Try(Instant.parse(binding.value)).toOption)

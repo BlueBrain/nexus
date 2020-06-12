@@ -10,16 +10,18 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
   */
 class TaggingAdapter extends WriteEventAdapter {
 
-  override def manifest(event: Any): String = event match {
-    case _: ProjectEvent      => ProjectTag
-    case _: OrganizationEvent => OrganizationTag
-  }
+  override def manifest(event: Any): String =
+    event match {
+      case _: ProjectEvent      => ProjectTag
+      case _: OrganizationEvent => OrganizationTag
+    }
 
-  override def toJournal(event: Any): Any = event match {
-    case pe: ProjectEvent      => Tagged(pe, Set(ProjectTag, EventTag))
-    case po: OrganizationEvent => Tagged(po, Set(OrganizationTag, EventTag))
-    case _                     => event
-  }
+  override def toJournal(event: Any): Any =
+    event match {
+      case pe: ProjectEvent      => Tagged(pe, Set(ProjectTag, EventTag))
+      case po: OrganizationEvent => Tagged(po, Set(OrganizationTag, EventTag))
+      case _                     => event
+    }
 }
 
 object TaggingAdapter {

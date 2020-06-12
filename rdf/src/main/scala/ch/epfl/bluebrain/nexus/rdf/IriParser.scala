@@ -5,19 +5,18 @@ import ch.epfl.bluebrain.nexus.rdf.Curie.Prefix
 import ch.epfl.bluebrain.nexus.rdf.Iri.Host.{IPv4Host, NamedHost}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path.{Segment, Slash}
 import ch.epfl.bluebrain.nexus.rdf.Iri._
-import com.github.ghik.silencer.silent
 import org.parboiled2.CharPredicate._
 import org.parboiled2.Parser.DeliveryScheme.{Either => E}
 import org.parboiled2._
 import java.lang.{StringBuilder => JStringBuilder}
 import java.nio.charset.Charset
+
 import ch.epfl.bluebrain.nexus.rdf.IriParser._
 
 import scala.collection.immutable.{SortedMap, SortedSet}
 
 // format: off
 @SuppressWarnings(Array("MethodNames", "unused", "UnsafeTraversableMethods", "CatchException", "CatchThrowable"))
-@silent
 private[rdf] class IriParser(val input: ParserInput)
   (implicit formatter: ErrorFormatter = new ErrorFormatter(showExpected = false, showTraces = false))
   extends Parser with StringBuilding {
@@ -289,7 +288,7 @@ private[rdf] class IriParser(val input: ParserInput)
     /*_*/
 
     def setQuery(seq: Seq[(String, String)]): Unit = {
-      val map = seq.groupBy(_._1).mapValues(e => SortedSet(e.map(_._2): _*))
+      val map = seq.groupBy(_._1).view.mapValues(e => SortedSet(e.map(_._2): _*))
       _query = Query(SortedMap(map.toList: _*))
     }
 

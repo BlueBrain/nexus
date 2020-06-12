@@ -25,10 +25,10 @@ trait FromJenaConverters {
     val triples = model.listStatements().asScala.foldLeft[Either[String, Set[Triple]]](Right(Set.empty)) {
       case (acc, st) =>
         for {
-          set    <- acc
-          s      <- asRdfIriOrBNode(st.getSubject)
-          p      <- asRdfIriNode(st.getPredicate)
-          o      <- asRdfNode(st.getObject)
+          set   <- acc
+          s     <- asRdfIriOrBNode(st.getSubject)
+          p     <- asRdfIriNode(st.getPredicate)
+          o     <- asRdfNode(st.getObject)
           triple = (s, p, o)
         } yield set + triple
     }

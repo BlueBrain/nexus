@@ -45,7 +45,7 @@ final case class Message[A](
     *
     * @return a copy of the current message with failed added to the progress map
     */
-  def fail(error: String): Message[A] =
+  def fail(error: String): Message[A]                =
     copy(progress = progress + (currProgressId -> ProgressStatus.Failed(error)))
 
   /**
@@ -53,7 +53,7 @@ final case class Message[A](
     *
     * @return a copy of the current message with discard added to the progress map
     */
-  def discard(): Message[A] =
+  def discard(): Message[A]                          =
     if (progress.getOrElse(currProgressId, ProgressStatus.Passed).failed) this
     else copy(progress = progress + (currProgressId -> ProgressStatus.Discarded))
 
@@ -84,7 +84,7 @@ object Message {
   final def apply[A](value: A, progressId: String, offset: Offset, persistenceId: String, rev: Long): Message[A] =
     Message(Map(progressId -> ProgressStatus.Passed), value, progressId, offset, persistenceId, rev)
 
-  final def apply(envelope: EventEnvelope, progressId: String): Message[Any] =
+  final def apply(envelope: EventEnvelope, progressId: String): Message[Any]                                     =
     apply(envelope.event, progressId, envelope.offset, envelope.persistenceId, envelope.sequenceNr)
 
   val empty: Message[Unit] =

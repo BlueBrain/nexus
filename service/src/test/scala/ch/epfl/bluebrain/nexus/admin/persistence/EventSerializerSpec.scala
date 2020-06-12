@@ -21,12 +21,12 @@ class EventSerializerSpec
     with EitherValues
     with Resources {
 
-  private val orgId   = UUID.fromString("d8cf3015-1bce-4dda-ba80-80cd4b5281e5")
-  private val projId  = UUID.fromString("27f5429c-b56f-4f8e-8481-f4334ebb334c")
-  private val instant = Instant.parse("2018-12-21T15:37:44.203831Z")
-  private val subject = Identity.User("alice", "bbp")
-  private val base    = url"http://localhost:8080/base"
-  private val voc     = url"http://localhost:8080/voc"
+  private val orgId    = UUID.fromString("d8cf3015-1bce-4dda-ba80-80cd4b5281e5")
+  private val projId   = UUID.fromString("27f5429c-b56f-4f8e-8481-f4334ebb334c")
+  private val instant  = Instant.parse("2018-12-21T15:37:44.203831Z")
+  private val subject  = Identity.User("alice", "bbp")
+  private val base     = url"http://localhost:8080/base"
+  private val voc      = url"http://localhost:8080/voc"
   private val mappings = Map(
     "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
     "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"

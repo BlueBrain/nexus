@@ -17,8 +17,8 @@ import retry.syntax.all._
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-class AbstractHttpClient[F[_]: Timer](client: Client[F], env: EnvConfig)(
-    implicit protected val F: Sync[F],
+class AbstractHttpClient[F[_]: Timer](client: Client[F], env: EnvConfig)(implicit
+    protected val F: Sync[F],
     protected val console: Console[F]
 ) {
 

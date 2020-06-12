@@ -27,7 +27,7 @@ object AuthDirectives {
     * @param realms the surface API for realms, which provides the Caler given the token
     */
   def authenticator(realms: Realms[Task])(implicit s: Scheduler): AsyncAuthenticator[Caller] = {
-    case Credentials.Missing => Future.successful(None)
+    case Credentials.Missing         => Future.successful(None)
     case Credentials.Provided(token) =>
       val cred = OAuth2BearerToken(token)
       realms.caller(AccessToken(cred.token)).map(c => Some(c)).runToFuture
@@ -44,8 +44,7 @@ object AuthDirectives {
     *
     * @param permission the permission to test for
     */
-  def authorizeFor(permission: Permission)(
-      implicit
+  def authorizeFor(permission: Permission)(implicit
       acls: Acls[Task],
       s: Scheduler,
       c: Caller,

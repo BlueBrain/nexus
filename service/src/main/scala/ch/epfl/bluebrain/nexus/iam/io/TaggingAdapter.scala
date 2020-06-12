@@ -11,19 +11,21 @@ import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent
   */
 class TaggingAdapter extends WriteEventAdapter {
 
-  override def manifest(event: Any): String = event match {
-    case _: PermissionsEvent => "permissions-event"
-    case _: AclEvent         => "acl-event"
-    case _: RealmEvent       => "realm-event"
-    case _                   => ""
-  }
+  override def manifest(event: Any): String =
+    event match {
+      case _: PermissionsEvent => "permissions-event"
+      case _: AclEvent         => "acl-event"
+      case _: RealmEvent       => "realm-event"
+      case _                   => ""
+    }
 
-  override def toJournal(event: Any): Any = event match {
-    case ev: PermissionsEvent => Tagged(ev, Set(permissionsEventTag, eventTag))
-    case ev: AclEvent         => Tagged(ev, Set(aclEventTag, eventTag))
-    case ev: RealmEvent       => Tagged(ev, Set(realmEventTag, eventTag))
-    case _                    => event
-  }
+  override def toJournal(event: Any): Any =
+    event match {
+      case ev: PermissionsEvent => Tagged(ev, Set(permissionsEventTag, eventTag))
+      case ev: AclEvent         => Tagged(ev, Set(aclEventTag, eventTag))
+      case ev: RealmEvent       => Tagged(ev, Set(realmEventTag, eventTag))
+      case _                    => event
+    }
 }
 
 object TaggingAdapter {

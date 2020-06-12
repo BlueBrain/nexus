@@ -44,8 +44,8 @@ import scala.util.{Failure, Success, Try}
   * @param acls   the acls api
   * @param realms the realms api
   */
-class EventRoutes(acls: Acls[Task], realms: Realms[Task])(
-    implicit as: ActorSystem,
+class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
+    as: ActorSystem,
     hc: HttpConfig,
     pc: PersistenceConfig
 ) {
@@ -101,7 +101,7 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(
             case Success(value) => provide(value)
             case Failure(_)     => reject(validationRejection("The value of the `Last-Event-ID` header is not valid."))
           }
-        case None => provide(NoOffset)
+        case None         => provide(NoOffset)
       }
 
   private def aToSse[A: Encoder](a: A, offset: Offset): ServerSentEvent = {

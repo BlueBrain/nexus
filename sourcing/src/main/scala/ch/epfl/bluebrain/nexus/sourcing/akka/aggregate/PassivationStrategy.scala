@@ -32,14 +32,14 @@ object PassivationStrategy {
   ): PassivationStrategy[State, Command] =
     new PassivationStrategy[State, Command] {
       override def lapsedSinceRecoveryCompleted: Option[FiniteDuration] = sinceRecovered
-      override def lapsedSinceLastInteraction: Option[FiniteDuration] =
+      override def lapsedSinceLastInteraction: Option[FiniteDuration]   =
         inactivityStopStrategy.lapsedSinceLastInteraction
       override def lapsedAfterEvaluation(
           name: String,
           id: String,
           st: State,
           cmd: Option[Command]
-      ): Option[FiniteDuration] =
+      ): Option[FiniteDuration]                                         =
         inactivityStopStrategy.lapsedAfterEvaluation(name, id, st, cmd)
     }
 

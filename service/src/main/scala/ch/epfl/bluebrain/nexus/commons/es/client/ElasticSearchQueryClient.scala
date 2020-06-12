@@ -27,8 +27,8 @@ import scala.concurrent.ExecutionContext
   * @param base the base uri of the ElasticSearch endpoint
   * @tparam F the monadic effect type
   */
-private[client] class ElasticSearchQueryClient[F[_]: Timer](base: Uri)(
-    implicit retryConfig: RetryStrategyConfig,
+private[client] class ElasticSearchQueryClient[F[_]: Timer](base: Uri)(implicit
+    retryConfig: RetryStrategyConfig,
     cl: UntypedHttpClient[F],
     ec: ExecutionContext,
     F: Effect[F]
@@ -61,8 +61,7 @@ private[client] class ElasticSearchQueryClient[F[_]: Timer](base: Uri)(
       qp: Query = Query(ignoreUnavailable -> "true", allowNoIndices -> "true"),
       isWorthRetry: (Throwable => Boolean) = defaultWorthRetry
   )(page: Pagination, fields: Set[String] = Set.empty, sort: SortList = SortList.Empty, totalHits: Boolean = true)(
-      implicit
-      rs: HttpClient[F, QueryResults[A]]
+      implicit rs: HttpClient[F, QueryResults[A]]
   ): F[QueryResults[A]] =
     rs(
       Post(
@@ -85,8 +84,7 @@ private[client] class ElasticSearchQueryClient[F[_]: Timer](base: Uri)(
       indices: Set[String] = Set.empty,
       qp: Query = Query(ignoreUnavailable -> "true", allowNoIndices -> "true"),
       isWorthRetry: (Throwable => Boolean) = defaultWorthRetry
-  )(
-      implicit
+  )(implicit
       rs: HttpClient[F, Json]
   ): F[Json] =
     rs(Post((base / indexPath(indices) / searchPath).withQuery(qp), query))
@@ -94,7 +92,7 @@ private[client] class ElasticSearchQueryClient[F[_]: Timer](base: Uri)(
       .recoverWith {
         case UnexpectedUnsuccessfulHttpResponse(r, body) =>
           F.raiseError(ElasticSearchFailure.fromStatusCode(r.status, body))
-        case other => F.raiseError(other)
+        case other                                       => F.raiseError(other)
       }
       .retryingOnSomeErrors(isWorthRetry)
 }
@@ -106,8 +104,8 @@ object ElasticSearchQueryClient {
     * @param base        the base uri of the ElasticSearch endpoint
     * @tparam F the monadic effect type
     */
-  final def apply[F[_]: Effect: Timer](base: Uri)(
-      implicit retryConfig: RetryStrategyConfig,
+  final def apply[F[_]: Effect: Timer](base: Uri)(implicit
+      retryConfig: RetryStrategyConfig,
       cl: UntypedHttpClient[F],
       ec: ExecutionContext
   ): ElasticSearchQueryClient[F] =
@@ -123,14 +121,15 @@ object ElasticSearchQueryClient {
       *
       * @param page the pagination information
       */
-    def addPage(page: Pagination): Json = page match {
-      case FromPagination(from, size) =>
-        query deepMerge Json.obj("from" -> Json.fromInt(from), "size" -> Json.fromInt(size))
-      case SearchAfterPagination(searchAfter, size) =>
-        query deepMerge Json.obj("search_after" -> searchAfter, "size" -> Json.fromInt(size))
-    }
+    def addPage(page: Pagination): Json             =
+      page match {
+        case FromPagination(from, size)               =>
+          query deepMerge Json.obj("from" -> Json.fromInt(from), "size" -> Json.fromInt(size))
+        case SearchAfterPagination(searchAfter, size) =>
+          query deepMerge Json.obj("search_after" -> searchAfter, "size" -> Json.fromInt(size))
+      }
 
-    def addTotalHits(value: Boolean): Json =
+    def addTotalHits(value: Boolean): Json    =
       query deepMerge Json.obj(trackTotalHits -> Json.fromBoolean(value))
 
     /**
@@ -147,7 +146,7 @@ object ElasticSearchQueryClient {
       *
       * @param sortList the list of sorts
       */
-    def addSort(sortList: SortList): Json =
+    def addSort(sortList: SortList): Json     =
       sortList match {
         case SortList.Empty  => query
         case SortList(sorts) => query deepMerge Json.obj("sort" -> sorts.asJson)

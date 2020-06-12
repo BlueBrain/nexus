@@ -33,7 +33,7 @@ class ElasticSearchDecoder[A](implicit D: Decoder[A]) {
   private def decodeScoredQueryResults(maxScore: Float): Decoder[QueryResults[A]] =
     Decoder.decodeJson.emap { json =>
       queryResults(json, scored = true) match {
-        case Right(list) => Right(ScoredQueryResults(fetchTotal(json), maxScore, list, token(json)))
+        case Right(list)   => Right(ScoredQueryResults(fetchTotal(json), maxScore, list, token(json)))
         // $COVERAGE-OFF$
         case Left(errJson) => Left(s"Could not decode source from value '$errJson'")
         // $COVERAGE-ON$
@@ -43,7 +43,7 @@ class ElasticSearchDecoder[A](implicit D: Decoder[A]) {
   private val decodeUnscoredResults: Decoder[QueryResults[A]] =
     Decoder.decodeJson.emap { json =>
       queryResults(json, scored = false) match {
-        case Right(list) => Right(UnscoredQueryResults(fetchTotal(json), list, token(json)))
+        case Right(list)   => Right(UnscoredQueryResults(fetchTotal(json), list, token(json)))
         // $COVERAGE-OFF$
         case Left(errJson) => Left(s"Could not decode source from value '$errJson'")
         // $COVERAGE-ON$

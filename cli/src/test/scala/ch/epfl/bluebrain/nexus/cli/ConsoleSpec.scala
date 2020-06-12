@@ -10,14 +10,14 @@ class ConsoleSpec extends AbstractCliSpec {
       for {
         _    <- c.println("line")
         line <- tc.stdQueue.dequeue1
-        _    = line shouldEqual "line"
+        _     = line shouldEqual "line"
       } yield ()
     }
     "record the printlnErr" in { (tc: TestConsole[IO], c: Console[IO]) =>
       for {
         _    <- c.printlnErr("line")
         line <- tc.errQueue.dequeue1
-        _    = line shouldEqual "line"
+        _     = line shouldEqual "line"
       } yield ()
     }
   }

@@ -45,9 +45,10 @@ class KeyValueStoreSpec
 
     implicit val config: KeyValueStoreConfig =
       KeyValueStoreConfig(4.seconds, 3.seconds, RetryStrategyConfig("never", 0.millis, 0.millis, 0, 0.millis))
-    val store =
+    val store                                =
       KeyValueStore.distributed[IO, String, RevisionedValue[String]](
-        "spec", { case (_, rv) => rv.rev }
+        "spec",
+        { case (_, rv) => rv.rev }
       )
 
     var subscription: Subscription = null
@@ -141,9 +142,12 @@ class KeyValueStoreSpec
     }
 
     "return empty entries" in {
-      val store = KeyValueStore.distributed[IO, String, RevisionedValue[String]]("empty", {
-        case (_, rv) => rv.rev
-      })
+      val store = KeyValueStore.distributed[IO, String, RevisionedValue[String]](
+        "empty",
+        {
+          case (_, rv) => rv.rev
+        }
+      )
       store.entries.ioValue shouldEqual Map.empty[String, RevisionedValue[String]]
     }
 

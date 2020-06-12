@@ -39,7 +39,7 @@ class StaticResourceIamAdminRoutesSpec
   val baseReplacement = Map(
     quote("{{base}}") -> baseUri
   )
-  val files = Map(
+  val files           = Map(
     "/v1/test/contexts/context1" -> jsonContentOf(
       "/commons/static-routes-test/contexts/context1.json",
       baseReplacement
@@ -48,8 +48,8 @@ class StaticResourceIamAdminRoutesSpec
       "/commons/static-routes-test/contexts/context2.json",
       baseReplacement
     ),
-    "/v1/test/schemas/schema1" -> jsonContentOf("/commons/static-routes-test/schemas/schema1.json", baseReplacement),
-    "/v1/test/schemas/schema2" -> jsonContentOf("/commons/static-routes-test/schemas/schema2.json", baseReplacement)
+    "/v1/test/schemas/schema1"   -> jsonContentOf("/commons/static-routes-test/schemas/schema1.json", baseReplacement),
+    "/v1/test/schemas/schema2"   -> jsonContentOf("/commons/static-routes-test/schemas/schema2.json", baseReplacement)
   )
 
   "A StaticResourceRoutes" should {

@@ -28,7 +28,7 @@ class OffsetSpec extends AnyWordSpecLike with Matchers with OptionValues {
       Files.writeString(file, uuid.toString)
       (for {
         offset <- Offset.load(file)
-        _      = offset.value shouldEqual Offset(uuid)
+        _       = offset.value shouldEqual Offset(uuid)
       } yield Files.deleteIfExists(file)).unsafeRunSync()
     }
 
@@ -36,7 +36,7 @@ class OffsetSpec extends AnyWordSpecLike with Matchers with OptionValues {
       Files.writeString(file, "not-an-uuid")
       (for {
         offset <- Offset.load(file)
-        _      = offset shouldEqual None
+        _       = offset shouldEqual None
       } yield Files.deleteIfExists(file)).unsafeRunSync()
     }
 
@@ -44,7 +44,7 @@ class OffsetSpec extends AnyWordSpecLike with Matchers with OptionValues {
       val offset = Offset(UUID.randomUUID())
       (for {
         _ <- offset.write(file)
-        _ = Files.readString(file) shouldEqual offset.value.toString
+        _  = Files.readString(file) shouldEqual offset.value.toString
       } yield Files.deleteIfExists(file)).unsafeRunSync()
     }
   }

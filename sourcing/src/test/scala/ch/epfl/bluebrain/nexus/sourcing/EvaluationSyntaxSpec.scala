@@ -13,17 +13,17 @@ class EvaluationSyntaxSpec extends SourcingSpec with ScalaFutures with EitherVal
       val eval: (State, Command) => State = {
         case (st, cmd) => (st + cmd)
       }
-      val evalEitherF = eval.toEitherF[IO]
+      val evalEitherF                     = eval.toEitherF[IO]
       evalEitherF(2, 3).unsafeRunSync().rightValue shouldEqual 5
     }
 
     "transform a '(state, command) => F(state)' evaluation into a '(state, command) => F(Right(state))'" in {
-      val err = new RuntimeException("error")
+      val err                                 = new RuntimeException("error")
       val eval: (State, Command) => IO[State] = {
         case (st, cmd) if st < 0 || cmd < 0 => IO.raiseError(err)
         case (st, cmd)                      => IO.pure(st + cmd)
       }
-      val evalEitherF = eval.toEither
+      val evalEitherF                         = eval.toEither
       evalEitherF(1, 2).unsafeRunSync().rightValue shouldEqual 3
       evalEitherF(-1, 3).unsafeToFuture().failed.futureValue shouldEqual err
       evalEitherF(1, -3).unsafeToFuture().failed.futureValue shouldEqual err

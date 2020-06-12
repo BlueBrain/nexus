@@ -40,7 +40,7 @@ class PermissionsRoutes(permissions: Permissions[Task], realms: Realms[Task])(im
               entity(as[PatchPermissions]) {
                 case Replace(set) =>
                   complete(permissions.replace(set, rev).runToFuture)
-                case _ => reject(validationRejection("Only @type 'Replace' is permitted when using 'put'."))
+                case _            => reject(validationRejection("Only @type 'Replace' is permitted when using 'put'."))
               }
             },
             delete {
@@ -48,11 +48,11 @@ class PermissionsRoutes(permissions: Permissions[Task], realms: Realms[Task])(im
             },
             (patch & parameter("rev" ? 0L)) { rev =>
               entity(as[PatchPermissions]) {
-                case Append(set) =>
+                case Append(set)   =>
                   complete(permissions.append(set, rev).runToFuture)
                 case Subtract(set) =>
                   complete(permissions.subtract(set, rev).runToFuture)
-                case _ =>
+                case _             =>
                   reject(validationRejection("Only @type 'Append' or 'Subtract' is permitted when using 'patch'."))
               }
             }
@@ -76,13 +76,13 @@ object PermissionsRoutes {
       Decoder.instance { hc =>
         for {
           permissions <- hc.get[Set[Permission]]("permissions")
-          tpe         = hc.get[String]("@type").getOrElse("Replace")
-          patch <- tpe match {
-                    case "Replace"  => Right(Replace(permissions))
-                    case "Append"   => Right(Append(permissions))
-                    case "Subtract" => Right(Subtract(permissions))
-                    case _          => Left(DecodingFailure("@type field must have Append or Subtract value", hc.history))
-                  }
+          tpe          = hc.get[String]("@type").getOrElse("Replace")
+          patch       <- tpe match {
+                           case "Replace"  => Right(Replace(permissions))
+                           case "Append"   => Right(Append(permissions))
+                           case "Subtract" => Right(Subtract(permissions))
+                           case _          => Left(DecodingFailure("@type field must have Append or Subtract value", hc.history))
+                         }
         } yield patch
       }
   }

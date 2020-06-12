@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri._
 
 class IriSpec extends RdfSpec {
   "An Iri" should {
-    val casesRelative = List(
+    val casesRelative        = List(
       "//me:me@hOst:443/a/b?a&e=f&b=c#frag" -> "//me:me@host:443/a/b?a&b=c&e=f#frag",
       "//me:me@hOst#frag"                   -> "//me:me@host#frag",
       "/some/:/path"                        -> "/some/:/path"
@@ -13,16 +13,16 @@ class IriSpec extends RdfSpec {
     val casesRelativeEncoded = List(
       "/some/!/path/€/other" -> "/some/!/path/%E2%82%AC/other"
     )
-    val casesUrn = List(
+    val casesUrn             = List(
       "urn:uUid:6e8bc430-9c3a-11d9-9669-0800200c9a66"      -> "urn:uuid:6e8bc430-9c3a-11d9-9669-0800200c9a66",
       "urn:example:a%C2%A3/b%C3%86c//:://?=a=b"            -> "urn:example:a£/bÆc//:://?=a=b",
       "urn:lex:eu:council:directive:2010-03-09;2010-19-UE" -> "urn:lex:eu:council:directive:2010-03-09;2010-19-UE"
     )
-    val casesUrnEncoded = List(
+    val casesUrnEncoded      = List(
       "urn:example:a%C2%A3/b%C3%86c//:://?=a=£"            -> "urn:example:a%C2%A3/b%C3%86c//:://?=a=%C2%A3",
       "urn:lex:eu:council:directive:2010-03-09;2010-19-UE" -> "urn:lex:eu:council:directive:2010-03-09;2010-19-UE"
     )
-    val casesUrl = List(
+    val casesUrl             = List(
       "hTtps://me:me@hOst:443/a%20path/b?a&e=f&b=c#frag"                                           -> "https://me:me@host/a%20path/b?a&b=c&e=f#frag",
       "hTtps://me:me@hOst#frag"                                                                    -> "https://me:me@host#frag",
       "hTtp://hOst%C2%A3:80/a%C2%A3/b%C3%86c//:://"                                                -> "http://host£/a£/bÆc//:://",

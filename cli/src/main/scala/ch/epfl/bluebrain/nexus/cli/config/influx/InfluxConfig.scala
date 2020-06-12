@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.cli.config.influx
 import java.nio.file.Path
 
 import ch.epfl.bluebrain.nexus.cli.config.PrintConfig
-import ch.epfl.bluebrain.nexus.cli.utils.Codecs._
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
-import com.github.ghik.silencer.silent
+import ch.epfl.bluebrain.nexus.cli.utils.Codecs._
 import org.http4s.Uri
 import pureconfig.configurable.{genericMapReader, genericMapWriter}
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto._
 import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -37,7 +37,7 @@ final case class InfluxConfig(
 
 object InfluxConfig {
 
-  @silent
+  @nowarn("cat=unused")
   implicit final val influxConfigConvert: ConfigConvert[InfluxConfig] = {
     implicit val labelTupleMapReader: ConfigReader[Map[(OrgLabel, ProjectLabel), ProjectConfig]] =
       genericMapReader[(OrgLabel, ProjectLabel), ProjectConfig] { key =>

@@ -37,10 +37,11 @@ object Label {
     * @param value the string value to lift into a Label
     * @return Left(error) if the provided value doesn't match the expected format or Right(label) otherwise.
     */
-  final def apply(value: String): Either[String, Label] = value match {
-    case regex() => Right(new Label(value))
-    case _       => Left(s"Label '$value' does not match pattern '${regex.regex}'")
-  }
+  final def apply(value: String): Either[String, Label] =
+    value match {
+      case regex() => Right(new Label(value))
+      case _       => Left(s"Label '$value' does not match pattern '${regex.regex}'")
+    }
 
   /**
     * Attempts to construct a ''Label'', throwing an [[IllegalArgumentException]] if the provided value does not match

@@ -25,21 +25,21 @@ import scala.util.control.NonFatal
   * @param endpoint    the sparql endpoint
   * @param credentials the credentials to use when communicating with the sparql endpoint
   */
-class HttpSparqlClient[F[_]: Timer](endpoint: Uri, credentials: Option[HttpCredentials])(
-    implicit F: Effect[F],
+class HttpSparqlClient[F[_]: Timer](endpoint: Uri, credentials: Option[HttpCredentials])(implicit
+    F: Effect[F],
     retryConfig: RetryStrategyConfig,
     cl: UntypedHttpClient[F],
     rsJson: HttpClient[F, SparqlResults],
     ec: ExecutionContext
 ) extends SparqlClient[F] {
 
-  private val log                             = Logger[this.type]
-  implicit private val policy: RetryPolicy[F] = retryConfig.retryPolicy[F]
+  private val log                                                      = Logger[this.type]
+  implicit private val policy: RetryPolicy[F]                          = retryConfig.retryPolicy[F]
   implicit private val logErrors: (Throwable, RetryDetails) => F[Unit] =
     (err, details) => F.pure(log.warn(s"Retrying on query details '$details'", err))
 
-  def query[A](query: String, isWorthRetry: (Throwable => Boolean) = defaultWorthRetry)(
-      implicit rs: HttpClient[F, A]
+  def query[A](query: String, isWorthRetry: (Throwable => Boolean) = defaultWorthRetry)(implicit
+      rs: HttpClient[F, A]
   ): F[A] = {
     val accept   = Accept(MediaRange.One(RdfMediaTypes.`application/sparql-results+json`, 1f))
     val formData = FormData("query" -> query)
@@ -48,7 +48,7 @@ class HttpSparqlClient[F[_]: Timer](endpoint: Uri, credentials: Option[HttpCrede
       .handleErrorWith {
         case UnexpectedUnsuccessfulHttpResponse(resp, body) =>
           error(req, body, resp.status, "sparql query")
-        case NonFatal(th) =>
+        case NonFatal(th)                                   =>
           log.error(s"""Unexpected Sparql response for sparql query:
                      |Request: '${req.method} ${req.uri}'
                      |Query: '$query'
@@ -64,9 +64,9 @@ class HttpSparqlClient[F[_]: Timer](endpoint: Uri, credentials: Option[HttpCrede
     pss.setCommandText(queryString)
     F.catchNonFatal(pss.asUpdate()).flatMap { _ =>
       val formData = FormData("update" -> queryString)
-      val qParams =
+      val qParams  =
         uniqueGraph(queries).map(graph => Query("using-named-graph-uri" -> graph.toString())).getOrElse(Query.Empty)
-      val req = Post(endpoint.withQuery(qParams), formData)
+      val req      = Post(endpoint.withQuery(qParams), formData)
       log.debug(s"Executing sparql update: '$queries'")
       cl(addCredentials(req)).handleErrorWith(handleError(req, "bulk update")).flatMap { resp =>
         resp.status match {
@@ -101,16 +101,17 @@ class HttpSparqlClient[F[_]: Timer](endpoint: Uri, credentials: Option[HttpCrede
       F.raiseError(SparqlUnexpectedError(StatusCodes.InternalServerError, th.getMessage))
   }
 
-  protected def addCredentials(req: HttpRequest): HttpRequest = credentials match {
-    case None        => req
-    case Some(value) => req.addCredentials(value)
-  }
+  protected def addCredentials(req: HttpRequest): HttpRequest =
+    credentials match {
+      case None        => req
+      case Some(value) => req.addCredentials(value)
+    }
 }
 
 object HttpSparqlClient {
 
-  def apply[F[_]: Effect: Timer](endpoint: Uri, credentials: Option[HttpCredentials])(
-      implicit retryConfig: RetryStrategyConfig,
+  def apply[F[_]: Effect: Timer](endpoint: Uri, credentials: Option[HttpCredentials])(implicit
+      retryConfig: RetryStrategyConfig,
       cl: UntypedHttpClient[F],
       rsJson: HttpClient[F, SparqlResults],
       ec: ExecutionContext

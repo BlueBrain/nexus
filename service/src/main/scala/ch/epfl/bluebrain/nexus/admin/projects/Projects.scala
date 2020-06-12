@@ -53,8 +53,8 @@ class Projects[F[_]: Timer](
     organizations: Organizations[F],
     aclsApi: Acls[F],
     saCaller: Caller
-)(
-    implicit F: Effect[F],
+)(implicit
+    F: Effect[F],
     clock: Clock,
     cfg: ServiceConfig
 ) {
@@ -74,14 +74,14 @@ class Projects[F[_]: Timer](
     * @param caller       an implicitly available caller
     * @return project the created project resource metadata if the operation was successful, a rejection otherwise
     */
-  def create(organization: String, label: String, project: ProjectDescription)(
-      implicit caller: Subject
+  def create(organization: String, label: String, project: ProjectDescription)(implicit
+      caller: Subject
   ): F[ProjectMetaOrRejection] =
     organizations.fetch(organization).flatMap {
       case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated(organization)))
-      case Some(org) =>
+      case Some(org)                   =>
         index.getBy(organization, label).flatMap {
-          case None =>
+          case None    =>
             val projectId = UUID.randomUUID
             project.baseOrGenerated(organization, label) -> project.vocabOrGenerated(organization, label) match {
               case (Some(base), Some(vocab)) =>
@@ -90,23 +90,23 @@ class Projects[F[_]: Timer](
                 // format: on
                 evaluateAndUpdateIndex(command) <* setOwnerPermissions(organization, label, caller)
                   .retryingOnAllErrors[Throwable]
-              case (None, _) =>
+              case (None, _)                 =>
                 F.pure(Left(InvalidProjectFormat(invalidIriGeneration(organization, label, "base"))))
-              case (_, None) =>
+              case (_, None)                 =>
                 F.pure(Left(InvalidProjectFormat(invalidIriGeneration(organization, label, "vocab"))))
             }
 
           case Some(_) => F.pure(Left(ProjectAlreadyExists(organization, label)))
         }
-      case None => F.pure(Left(OrganizationNotFound(organization)))
+      case None                        => F.pure(Left(OrganizationNotFound(organization)))
     }
 
   def setPermissions(orgLabel: String, projectLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
     val currentPermissions = acls.filter(Set(subject)).value.foldLeft(Set.empty[Permission]) {
       case (acc, (_, acl)) => acc ++ acl.value.permissions
     }
-    val projectAcl = acls.value.get(orgLabel / projectLabel).map(_.value.value).getOrElse(Map.empty)
-    val rev        = acls.value.get(orgLabel / projectLabel).fold(0L)(_.rev)
+    val projectAcl         = acls.value.get(orgLabel / projectLabel).map(_.value.value).getOrElse(Map.empty)
+    val rev                = acls.value.get(orgLabel / projectLabel).fold(0L)(_.rev)
 
     if (cfg.admin.permissions.ownerPermissions.subsetOf(currentPermissions))
       F.unit
@@ -134,12 +134,12 @@ class Projects[F[_]: Timer](
     * @param caller       an implicitly available caller
     * @return the updated project resource metadata if the operation was successful, a rejection otherwise
     */
-  def update(organization: String, label: String, project: ProjectDescription, rev: Long)(
-      implicit caller: Subject
+  def update(organization: String, label: String, project: ProjectDescription, rev: Long)(implicit
+      caller: Subject
   ): F[ProjectMetaOrRejection] =
     organizations.fetch(organization).flatMap {
       case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated(organization)))
-      case Some(_) =>
+      case Some(_)                     =>
         index.getBy(organization, label).flatMap {
           case Some(proj) =>
             val cmd = UpdateProject(
@@ -154,9 +154,9 @@ class Projects[F[_]: Timer](
               caller
             )
             evaluateAndUpdateIndex(cmd)
-          case None => F.pure(Left(ProjectNotFound(organization, label)))
+          case None       => F.pure(Left(ProjectNotFound(organization, label)))
         }
-      case None => F.pure(Left(OrganizationNotFound(organization)))
+      case None                        => F.pure(Left(OrganizationNotFound(organization)))
     }
 
   /**
@@ -171,14 +171,14 @@ class Projects[F[_]: Timer](
   def deprecate(organization: String, label: String, rev: Long)(implicit caller: Subject): F[ProjectMetaOrRejection] =
     organizations.fetch(organization).flatMap {
       case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated(organization)))
-      case Some(_) =>
+      case Some(_)                     =>
         index.getBy(organization, label).flatMap {
           case Some(proj) =>
             val cmd = DeprecateProject(proj.uuid, rev, clock.instant, caller)
             evaluateAndUpdateIndex(cmd)
-          case None => F.pure(Left(ProjectNotFound(organization, label)))
+          case None       => F.pure(Left(ProjectNotFound(organization, label)))
         }
-      case None => F.pure(Left(OrganizationNotFound(organization)))
+      case None                        => F.pure(Left(OrganizationNotFound(organization)))
     }
 
   /**
@@ -197,10 +197,11 @@ class Projects[F[_]: Timer](
     * @param uuid the project permanent identifier
     * @return Some(project) if found, None otherwise
     */
-  def fetch(uuid: UUID): F[Option[ProjectResource]] = agg.currentState(uuid.toString).flatMap {
-    case c: Current => toResource(c).map(Some(_))
-    case Initial    => F.pure(None)
-  }
+  def fetch(uuid: UUID): F[Option[ProjectResource]] =
+    agg.currentState(uuid.toString).flatMap {
+      case c: Current => toResource(c).map(Some(_))
+      case Initial    => F.pure(None)
+    }
 
   /**
     * Fetches a specific revision of a project from the aggregate.
@@ -242,8 +243,8 @@ class Projects[F[_]: Timer](
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(params: SearchParams, pagination: FromPagination)(
-      implicit acls: AccessControlLists
+  def list(params: SearchParams, pagination: FromPagination)(implicit
+      acls: AccessControlLists
   ): F[UnscoredQueryResults[ProjectResource]] =
     index.list(params, pagination)
 
@@ -253,18 +254,19 @@ class Projects[F[_]: Timer](
       .flatMap {
         case Right(c: Current) =>
           toResource(c).flatMap { resource => index.replace(c.id, resource) >> F.pure(Right(resource.discard)) }
-        case Left(rejection) => F.pure(Left(rejection))
-        case Right(Initial)  => F.raiseError(UnexpectedState(command.id.toString))
+        case Left(rejection)   => F.pure(Left(rejection))
+        case Right(Initial)    => F.raiseError(UnexpectedState(command.id.toString))
       }
 
-  private def toResource(c: Current): F[ProjectResource] = organizations.fetch(c.organizationUuid).flatMap {
-    case Some(org) =>
-      val iri     = cfg.http.projectsIri + org.value.label + c.label
-      val project = Project(c.label, org.uuid, org.value.label, c.description, c.apiMappings, c.base, c.vocab)
-      F.pure(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, project))
-    case None =>
-      F.raiseError(UnexpectedState(s"Organization with uuid '${c.organizationUuid}' not found in cache"))
-  }
+  private def toResource(c: Current): F[ProjectResource] =
+    organizations.fetch(c.organizationUuid).flatMap {
+      case Some(org) =>
+        val iri     = cfg.http.projectsIri + org.value.label + c.label
+        val project = Project(c.label, org.uuid, org.value.label, c.description, c.apiMappings, c.base, c.vocab)
+        F.pure(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, project))
+      case None      =>
+        F.raiseError(UnexpectedState(s"Organization with uuid '${c.organizationUuid}' not found in cache"))
+    }
 
 }
 
@@ -310,7 +312,7 @@ object Projects {
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 
-    val projectionId = "projects-indexer"
+    val projectionId                    = "projects-indexer"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
       .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
       .eventsByTag(TaggingAdapter.ProjectTag, NoOffset)
@@ -327,7 +329,9 @@ object Projects {
       .flow
       .map(_ => ())
 
-    F.delay[StreamSupervisor[F, Unit]](StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)) >> F.unit
+    F.delay[StreamSupervisor[F, Unit]](
+      StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)
+    ) >> F.unit
   }
 
   /**
@@ -338,28 +342,29 @@ object Projects {
     * @param event the emitted event
     * @return the next state
     */
-  private[projects] def next(state: ProjectState, event: ProjectEvent): ProjectState = (state, event) match {
-    case (Initial, ProjectCreated(id, label, orgId, orgLabel, desc, am, base, vocab, instant, subject)) =>
-      Current(id, label, orgId, orgLabel, desc, am, base, vocab, 1L, instant, subject, deprecated = false)
-    // $COVERAGE-OFF$
-    case (Initial, _) => Initial
-    // $COVERAGE-ON$
-    case (c: Current, _) if c.deprecated => c
-    case (c, _: ProjectCreated)          => c
-    case (c: Current, ProjectUpdated(_, label, desc, am, base, vocab, rev, instant, subject)) =>
-      c.copy(
-        label = label,
-        description = desc,
-        apiMappings = am,
-        base = base,
-        vocab = vocab,
-        rev = rev,
-        instant = instant,
-        subject = subject
-      )
-    case (c: Current, ProjectDeprecated(_, rev, instant, subject)) =>
-      c.copy(rev = rev, instant = instant, subject = subject, deprecated = true)
-  }
+  private[projects] def next(state: ProjectState, event: ProjectEvent): ProjectState =
+    (state, event) match {
+      case (Initial, ProjectCreated(id, label, orgId, orgLabel, desc, am, base, vocab, instant, subject)) =>
+        Current(id, label, orgId, orgLabel, desc, am, base, vocab, 1L, instant, subject, deprecated = false)
+      // $COVERAGE-OFF$
+      case (Initial, _)                                                                                   => Initial
+      // $COVERAGE-ON$
+      case (c: Current, _) if c.deprecated                                                                => c
+      case (c, _: ProjectCreated)                                                                         => c
+      case (c: Current, ProjectUpdated(_, label, desc, am, base, vocab, rev, instant, subject))           =>
+        c.copy(
+          label = label,
+          description = desc,
+          apiMappings = am,
+          base = base,
+          vocab = vocab,
+          rev = rev,
+          instant = instant,
+          subject = subject
+        )
+      case (c: Current, ProjectDeprecated(_, rev, instant, subject))                                      =>
+        c.copy(rev = rev, instant = instant, subject = subject, deprecated = true)
+    }
 
   private[projects] object Eval {
 
@@ -373,7 +378,7 @@ object Projects {
       state match {
         case Initial if !endsWithHashOrSlash(c.base)  => Left(InvalidProjectFormat(invalidIriMessage("base")))
         case Initial if !endsWithHashOrSlash(c.vocab) => Left(InvalidProjectFormat(invalidIriMessage("vocab")))
-        case Initial =>
+        case Initial                                  =>
           Right(
             ProjectCreated(
               c.id,
@@ -388,7 +393,7 @@ object Projects {
               c.subject
             )
           )
-        case _ => Left(ProjectAlreadyExists(c.organizationLabel, c.label))
+        case _                                        => Left(ProjectAlreadyExists(c.organizationLabel, c.label))
       }
 
     private def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
@@ -435,8 +440,8 @@ object Projects {
       * @param cmd   the command to be evaluated
       * @return either a rejection or the event emitted
       */
-    final def apply[F[_]](state: ProjectState, cmd: ProjectCommand)(
-        implicit F: Async[F]
+    final def apply[F[_]](state: ProjectState, cmd: ProjectCommand)(implicit
+        F: Async[F]
     ): F[Either[ProjectRejection, ProjectEvent]] = {
 
       cmd match {

@@ -78,7 +78,7 @@ class RelativeIriSpec extends RdfSpec {
     }
 
     "resolve from base url http://a/b/c/d;p?q" in {
-      val base = Url("http://a/b/c/d;p?q").rightValue
+      val base  = Url("http://a/b/c/d;p?q").rightValue
       val cases = List(
         "g"             -> "http://a/b/c/g",
         "./g"           -> "http://a/b/c/g",
@@ -125,7 +125,7 @@ class RelativeIriSpec extends RdfSpec {
     }
 
     "resolve from base url http://a/b/c/" in {
-      val base = Url("http://a/b/c/").rightValue
+      val base  = Url("http://a/b/c/").rightValue
       val cases = List(
         "g"            -> "http://a/b/c/g",
         "./g"          -> "http://a/b/c/g",
@@ -156,7 +156,7 @@ class RelativeIriSpec extends RdfSpec {
     }
 
     "resolve from base url http://a/b/c/d#fragment" in {
-      val base = Url("http://a/b/c/").rightValue
+      val base  = Url("http://a/b/c/").rightValue
       val cases = List(
         "g"            -> "http://a/b/c/g",
         "./g"          -> "http://a/b/c/g",

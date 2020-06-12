@@ -73,12 +73,12 @@ trait OptsInstances {
         .leftMap(_ => s"Invalid Uri: '$string'")
         .ensure(s"Invalid Uri: '$string'")(uri => uri.scheme.isDefined)
         .toValidatedNel
-    override val defaultMetavar: String = "http://..."
+    override val defaultMetavar: String                          = "http://..."
   }
 
   implicit protected val pathArgument: Argument[Path] = new Argument[Path] {
     override def read(string: String): ValidatedNel[String, Path] =
       Try(Paths.get(string)).toOption.toRight(s"Invalid file path '$string'").toValidatedNel
-    override val defaultMetavar: String = "../file.conf"
+    override val defaultMetavar: String                           = "../file.conf"
   }
 }

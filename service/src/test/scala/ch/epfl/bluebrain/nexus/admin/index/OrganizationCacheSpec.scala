@@ -44,7 +44,7 @@ class OrganizationCacheSpec
 
   val index        = OrganizationCache[IO]
   val organization = Organization(genString(), Some(genString()))
-  val orgResource = ResourceF(
+  val orgResource  = ResourceF(
     url"http://nexus.example.com/v1/orgs/${organization.label}",
     UUID.randomUUID(),
     2L,
@@ -80,7 +80,7 @@ class OrganizationCacheSpec
           AccessControlList(Anonymous -> Set(Permissions.orgs.read))
         )
       )
-      val orgLabels = (1 to 50).map(_ => genString())
+      val orgLabels                         = (1 to 50).map(_ => genString())
 
       val orgResources = orgLabels.zipWithIndex.map {
         case (label, idx) =>

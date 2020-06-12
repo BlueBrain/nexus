@@ -23,24 +23,25 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
   type Cache    = Map[(OrgUuid, ProjectUuid), (OrgLabel, ProjectLabel)]
   type CacheRef = Ref[IO, Cache]
 
-  override def overrides: ModuleDef = new ModuleDef {
-    include(defaultModules)
-    make[Client[IO]].from { cfg: AppConfig =>
-      val token = cfg.env.token
-      val httpApp = HttpApp[IO] {
-        case GET -> `v1` / "projects" / OrgUuidVar(`orgUuid`) / ProjectUuidVar(`projectUuid`) optbearer `token` =>
-          Response[IO](Status.Ok).withEntity(projectJson).pure[IO]
-        case GET -> `v1` / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) optbearer `token` =>
-          Response[IO](Status.NotFound).withEntity(notFoundJson).pure[IO]
-        case GET -> `v1` / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) bearer (_: BearerToken) =>
-          Response[IO](Status.Forbidden).withEntity(authFailedJson).pure[IO]
+  override def overrides: ModuleDef =
+    new ModuleDef {
+      include(defaultModules)
+      make[Client[IO]].from { cfg: AppConfig =>
+        val token   = cfg.env.token
+        val httpApp = HttpApp[IO] {
+          case GET -> `v1` / "projects" / OrgUuidVar(`orgUuid`) / ProjectUuidVar(`projectUuid`) optbearer `token` =>
+            Response[IO](Status.Ok).withEntity(projectJson).pure[IO]
+          case GET -> `v1` / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) optbearer `token`                     =>
+            Response[IO](Status.NotFound).withEntity(notFoundJson).pure[IO]
+          case GET -> `v1` / "projects" / OrgUuidVar(_) / ProjectUuidVar(_) bearer (_: BearerToken)               =>
+            Response[IO](Status.Forbidden).withEntity(authFailedJson).pure[IO]
+        }
+        Client.fromHttpApp(httpApp)
       }
-      Client.fromHttpApp(httpApp)
+      make[CacheRef].fromEffect {
+        Ref.of[IO, Cache](Map.empty)
+      }
     }
-    make[CacheRef].fromEffect {
-      Ref.of[IO, Cache](Map.empty)
-    }
-  }
 
   "A ProjectClient" should {
     "resolve a known (orgUuid, projUuid) pair" in {
@@ -48,7 +49,7 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
         val cl = ProjectClient[IO](client, env, cache, console)
         for {
           labels <- cl.labels(orgUuid, projectUuid)
-          _      = labels shouldEqual Right((orgLabel, projectLabel))
+          _       = labels shouldEqual Right((orgLabel, projectLabel))
         } yield ()
     }
     "resolve from cache a known (orgUuid, projUuid) pair" in {
@@ -57,7 +58,7 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
         for {
           _      <- ProjectClient[IO](client, env, cache, console).labels(orgUuid, projectUuid)
           labels <- ProjectClient[IO](errClient, env, cache, console).labels(orgUuid, projectUuid)
-          _      = labels shouldEqual Right((orgLabel, projectLabel))
+          _       = labels shouldEqual Right((orgLabel, projectLabel))
         } yield ()
     }
     "fail to resolve an unknown (orgUuid, projUuid) pair" in {
@@ -65,7 +66,7 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
         val cl = ProjectClient[IO](client, env, cache, console)
         for {
           labels <- cl.labels(OrgUuid(UUID.randomUUID()), projectUuid)
-          _      = labels shouldEqual Left(ClientStatusError(Status.NotFound, notFoundJson.noSpaces))
+          _       = labels shouldEqual Left(ClientStatusError(Status.NotFound, notFoundJson.noSpaces))
         } yield ()
     }
     "fail to resolve a known (orgUuid, projUuid) pair with bad credentials" in {
@@ -73,7 +74,7 @@ class ProjectClientSpec extends AbstractCliSpec with Http4sExtras {
         val cl = ProjectClient[IO](client, env.copy(token = Some(BearerToken("bad"))), cache, console)
         for {
           labels <- cl.labels(orgUuid, projectUuid)
-          _      = labels shouldEqual Left(ClientStatusError(Status.Forbidden, authFailedJson.noSpaces))
+          _       = labels shouldEqual Left(ClientStatusError(Status.Forbidden, authFailedJson.noSpaces))
         } yield ()
     }
   }

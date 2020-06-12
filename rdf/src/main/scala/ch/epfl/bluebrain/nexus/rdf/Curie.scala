@@ -90,5 +90,5 @@ object Curie {
   implicit final def curieShow(implicit p: Show[Prefix], r: Show[RelativeIri]): Show[Curie] =
     Show.show { case Curie(prefix, reference) => prefix.show + ":" + reference.show }
 
-  implicit final val curieEq: Eq[Curie] = Eq.fromUniversalEquals
+  implicit final val curieEq: Eq[Curie]                                                     = Eq.fromUniversalEquals
 }

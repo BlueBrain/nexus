@@ -46,36 +46,39 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
 
   override val identifier: Int = 1225
 
-  override def manifest(o: AnyRef): String = o match {
-    case _: PermissionsEvent => "permissions-event"
-    case _: AclEvent         => "acl-event"
-    case _: RealmEvent       => "realm-event"
-    case other =>
-      throw new IllegalArgumentException(
-        s"Cannot determine manifest for unknown type: '${other.getClass.getCanonicalName}'"
-      )
-  }
-  override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case ev: PermissionsEvent => ev.asJson.printWith(printer).getBytes(utf8)
-    case ev: AclEvent         => ev.asJson.printWith(printer).getBytes(utf8)
-    case ev: RealmEvent       => ev.asJson.printWith(printer).getBytes(utf8)
-    case other =>
-      throw new IllegalArgumentException(s"Cannot serialize unknown type: '${other.getClass.getCanonicalName}'")
-  }
-  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case "permissions-event" =>
-      val str = new String(bytes, utf8)
-      decode[PermissionsEvent](str)
-        .getOrElse(throw new IllegalArgumentException(s"Cannot deserialize value: '$str' to 'PermissionsEvent'"))
-    case "acl-event" =>
-      val str = new String(bytes, utf8)
-      decode[AclEvent](str)
-        .getOrElse(throw new IllegalArgumentException(s"Cannot deserialize value: '$str' to 'AclEvent'"))
-    case "realm-event" =>
-      val str = new String(bytes, utf8)
-      decode[RealmEvent](str)
-        .getOrElse(throw new IllegalArgumentException(s"Cannot deserialize value: '$str' to 'RealmEvent'"))
-    case other =>
-      throw new IllegalArgumentException(s"Cannot deserialize type with unknown manifest: '$other'")
-  }
+  override def manifest(o: AnyRef): String                              =
+    o match {
+      case _: PermissionsEvent => "permissions-event"
+      case _: AclEvent         => "acl-event"
+      case _: RealmEvent       => "realm-event"
+      case other               =>
+        throw new IllegalArgumentException(
+          s"Cannot determine manifest for unknown type: '${other.getClass.getCanonicalName}'"
+        )
+    }
+  override def toBinary(o: AnyRef): Array[Byte]                         =
+    o match {
+      case ev: PermissionsEvent => ev.asJson.printWith(printer).getBytes(utf8)
+      case ev: AclEvent         => ev.asJson.printWith(printer).getBytes(utf8)
+      case ev: RealmEvent       => ev.asJson.printWith(printer).getBytes(utf8)
+      case other                =>
+        throw new IllegalArgumentException(s"Cannot serialize unknown type: '${other.getClass.getCanonicalName}'")
+    }
+  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
+    manifest match {
+      case "permissions-event" =>
+        val str = new String(bytes, utf8)
+        decode[PermissionsEvent](str)
+          .getOrElse(throw new IllegalArgumentException(s"Cannot deserialize value: '$str' to 'PermissionsEvent'"))
+      case "acl-event"         =>
+        val str = new String(bytes, utf8)
+        decode[AclEvent](str)
+          .getOrElse(throw new IllegalArgumentException(s"Cannot deserialize value: '$str' to 'AclEvent'"))
+      case "realm-event"       =>
+        val str = new String(bytes, utf8)
+        decode[RealmEvent](str)
+          .getOrElse(throw new IllegalArgumentException(s"Cannot deserialize value: '$str' to 'RealmEvent'"))
+      case other               =>
+        throw new IllegalArgumentException(s"Cannot deserialize type with unknown manifest: '$other'")
+    }
 }

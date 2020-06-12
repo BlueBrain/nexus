@@ -50,13 +50,13 @@ object JsonLd {
             _.foldLeft[Either[ContextResolutionError, Json]](Right(Json.obj())) {
               case (Right(accJ), Right(json)) =>
                 Right(accJ deepMerge json)
-              case (Left(rej), _) => Left(rej)
-              case (_, Left(rej)) => Left(rej)
+              case (Left(rej), _)             => Left(rej)
+              case (_, Left(rej))             => Left(rej)
             }
           })
 
-        case (_, _, Some(_)) => EitherT.rightT[F, ContextResolutionError](context)
-        case (_, _, _)       => EitherT.leftT[F, Json](IllegalContextValue(context.spaces2): ContextResolutionError)
+        case (_, _, Some(_))   => EitherT.rightT[F, ContextResolutionError](context)
+        case (_, _, _)         => EitherT.leftT[F, Json](IllegalContextValue(context.spaces2): ContextResolutionError)
       }
     inner(List.empty, contextValue(json))
       .map(flattened => replaceContext(json, Json.obj("@context" -> flattened)))
@@ -71,9 +71,9 @@ object JsonLd {
       case (Some(jObj), _) if jObj.nonEmpty =>
         val context = jObj("@context").getOrElse(Json.obj())
         jObj.remove("@context").values.foldLeft(context)((acc, c) => merge(acc, contextValue(c)))
-      case (_, Some(arr)) if arr.nonEmpty =>
+      case (_, Some(arr)) if arr.nonEmpty   =>
         arr.foldLeft(Json.obj())((acc, c) => merge(acc, contextValue(c)))
-      case _ =>
+      case _                                =>
         Json.obj()
     }
 
@@ -83,7 +83,7 @@ object JsonLd {
     * @param json the primary json
     * @param that the json with a @context to override the @context in the provided ''json''
     */
-  def replaceContext(json: Json, that: Json): Json =
+  def replaceContext(json: Json, that: Json): Json       =
     removeNestedKeys(json, "@context") deepMerge Json.obj("@context" -> contextValue(that))
 
   /**
@@ -127,26 +127,26 @@ object JsonLd {
     json.asObject match {
       case Some(jo) =>
         val updated = jo("@context") match {
-          case None => jo.add("@context", contextUriString)
+          case None        => jo.add("@context", contextUriString)
           case Some(value) =>
             (value.asObject, value.asArray, value.asString) match {
-              case (Some(vo), _, _) if vo.isEmpty =>
+              case (Some(vo), _, _) if vo.isEmpty                               =>
                 jo.add("@context", contextUriString)
-              case (_, Some(va), _) if va.isEmpty =>
+              case (_, Some(va), _) if va.isEmpty                               =>
                 jo.add("@context", contextUriString)
-              case (_, _, Some(vs)) if vs.isEmpty =>
+              case (_, _, Some(vs)) if vs.isEmpty                               =>
                 jo.add("@context", contextUriString)
               case (Some(vo), _, _) if !vo.values.exists(_ == contextUriString) =>
                 jo.add("@context", Json.arr(value, contextUriString))
-              case (_, Some(va), _) if !va.contains(contextUriString) =>
+              case (_, Some(va), _) if !va.contains(contextUriString)           =>
                 jo.add("@context", Json.fromValues(va :+ contextUriString))
-              case (_, _, Some(vs)) if vs != context.asString =>
+              case (_, _, Some(vs)) if vs != context.asString                   =>
                 jo.add("@context", Json.arr(value, contextUriString))
-              case _ => jo
+              case _                                                            => jo
             }
         }
         Json.fromJsonObject(updated)
-      case None => json
+      case None     => json
     }
   }
 
@@ -156,7 +156,7 @@ object JsonLd {
     * @return a new Json with the values of the ''@context'' key (this) and the provided ''that'' top ''@context'' key
     *         If two keys inside both contexts collide, the one in the ''other'' context will override the one in this context
     */
-  def mergeContext(json: Json, that: Json): Json =
+  def mergeContext(json: Json, that: Json): Json    =
     Json.obj("@context" -> merge(contextValue(json), contextValue(that)))
 
   /**
@@ -254,14 +254,14 @@ object JsonLd {
     * @return a set of aliases found for the given keyword
     */
   def contextAliases(json: Json, keyword: String): Set[String] = {
-    val jsonKeyword = Json.fromString(keyword)
+    val jsonKeyword                   = Json.fromString(keyword)
     def inner(ctx: Json): Set[String] =
       (ctx.asObject, ctx.asArray) match {
         case (Some(jObj), _) =>
           jObj.toMap.collect { case (k, `jsonKeyword`) => k }.toSet
         case (_, Some(jArr)) =>
           jArr.foldLeft(Set.empty[String])(_ ++ inner(_))
-        case _ => Set.empty
+        case _               => Set.empty
       }
 
     inner(contextValue(json))
@@ -292,13 +292,13 @@ object JsonLd {
     }
 
     def writeFramed(id: AbsoluteIri): Either[String, Json] = {
-      val opts = new JsonLdOptions()
+      val opts      = new JsonLdOptions()
       opts.setEmbed(true)
       opts.setProcessingMode(JsonLdOptions.JSON_LD_1_1)
       opts.setCompactArrays(true)
       opts.setPruneBlankNodeIdentifiers(true)
-      val frame = Json.obj("@id" -> Json.fromString(id.asUri)).appendContextOf(jenaCleanup.cleanFromCtx)
-      val ctx   = new JsonLDWriteContext
+      val frame     = Json.obj("@id" -> Json.fromString(id.asUri)).appendContextOf(jenaCleanup.cleanFromCtx)
+      val ctx       = new JsonLDWriteContext
       ctx.setFrame(frame.noSpaces)
       ctx.setOptions(opts)
       val jenaModel = graph.asJena
@@ -312,7 +312,7 @@ object JsonLd {
             .map(jenaCleanup.removeSingleGraph)
             .map(jenaCleanup.cleanFromJson(_, graph))
             .map(_ deepMerge justContextObj)
-        case Left(message) => Left(s"error while writing Json-LD. Reason '$message'")
+        case Left(message)     => Left(s"error while writing Json-LD. Reason '$message'")
       }
     }
 
@@ -360,7 +360,7 @@ object JsonLd {
   sealed abstract class ContextResolutionError(val msg: String) extends Exception with Product with Serializable {
     override def fillInStackTrace(): ContextResolutionError = this
     // $COVERAGE-OFF$
-    override def getMessage: String = msg
+    override def getMessage: String                         = msg
     // $COVERAGE-ON$
   }
 

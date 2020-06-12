@@ -51,8 +51,7 @@ object QueryResult {
         fa.copy(source = f(fa.source))
     }
 
-  implicit final def queryResultEncoder[A](
-      implicit
+  implicit final def queryResultEncoder[A](implicit
       S: Encoder[ScoredQueryResult[A]],
       U: Encoder[UnscoredQueryResult[A]]
   ): Encoder[QueryResult[A]] =

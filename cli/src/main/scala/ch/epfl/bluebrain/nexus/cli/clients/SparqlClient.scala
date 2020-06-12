@@ -71,7 +71,7 @@ object SparqlClient {
     ): F[ClientErrOr[SparqlResults]] = {
       val uri     = env.sparql(org, proj, view.getOrElse(env.defaultSparqlView))
       val headers = Headers(env.authorizationHeader.toList)
-      val req = Request[F](method = Method.POST, uri = uri, headers = headers)
+      val req     = Request[F](method = Method.POST, uri = uri, headers = headers)
         .withEntity(queryStr)
         .withContentType(`Content-Type`(`application/sparql-query`))
       executeParse[SparqlResults](req)

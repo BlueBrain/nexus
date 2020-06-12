@@ -7,10 +7,11 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts.errorCtxUri
 import ch.epfl.bluebrain.nexus.service.routes.ResourceRejection
-import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 sealed abstract class AclRejection(val msg: String) extends ResourceRejection
 
@@ -68,7 +69,7 @@ object AclRejection {
         s"Some of the permissions specified are not known: '${permissions.mkString("\"", ", ", "\"")}'"
       )
 
-  @silent // rejectionConfig is not recognized as being used
+  @nowarn("cat=unused")
   implicit val aclRejectionEncoder: Encoder[AclRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[AclRejection].mapJson(_ addContext errorCtxUri)

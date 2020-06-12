@@ -14,10 +14,11 @@ trait ToAkkaConverters {
   /**
     * Attempts to convert argument [[Node]] to Akka [[Uri]].
     */
-  def asAkka(node: Node): Either[String, Uri] = node match {
-    case IriNode(iri) => Right(asAkka(iri))
-    case other        => Left(s"${other.show} cannot be converted to URI.")
-  }
+  def asAkka(node: Node): Either[String, Uri] =
+    node match {
+      case IriNode(iri) => Right(asAkka(iri))
+      case other        => Left(s"${other.show} cannot be converted to URI.")
+    }
 
   /**
     * Attempts to convert argument [[AbsoluteIri]] to Akka [[Uri]].

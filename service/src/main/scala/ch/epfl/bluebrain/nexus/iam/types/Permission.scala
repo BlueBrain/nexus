@@ -20,10 +20,11 @@ object Permission {
     *
     * @param value the permission value
     */
-  final def apply(value: String): Option[Permission] = value match {
-    case valid() => Some(unsafe(value))
-    case _       => None
-  }
+  final def apply(value: String): Option[Permission] =
+    value match {
+      case valid() => Some(unsafe(value))
+      case _       => None
+    }
 
   /**
     * Constructs a [[Permission]] without validating it against the ''regex''

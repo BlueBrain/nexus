@@ -13,9 +13,10 @@ import scala.concurrent.ExecutionContext
   * Module definition that binds effect TC instances for an arbitrary F[_].
   */
 final class EffectModule[F[_]: Parallel: ConcurrentEffect: ContextShift: Timer: TagK] extends ModuleDef {
-  implicit private def diEffectRunner: DIEffectRunner[F] = new DIEffectRunner[F] {
-    override def run[A](f: => F[A]): A = ConcurrentEffect[F].toIO(f).unsafeRunSync()
-  }
+  implicit private def diEffectRunner: DIEffectRunner[F] =
+    new DIEffectRunner[F] {
+      override def run[A](f: => F[A]): A = ConcurrentEffect[F].toIO(f).unsafeRunSync()
+    }
 
   addImplicit[DIEffectRunner[F]]
   addImplicit[DIApplicative[F]]

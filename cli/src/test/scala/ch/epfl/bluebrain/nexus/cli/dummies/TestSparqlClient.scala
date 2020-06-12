@@ -63,7 +63,7 @@ class TestSparqlClient[F[_]](events: List[Event])(implicit F: Sync[F]) extends S
 
         val outputStream = new ByteArrayOutputStream()
         ResultSetFormatter.outputAsJSON(outputStream, results)
-        val json = new String(outputStream.toByteArray)
+        val json         = new String(outputStream.toByteArray)
         decode[SparqlResults](json).leftMap(_ =>
           SerializationError("Unable to decode sparql results", classOf[SparqlResults].getSimpleName, Some(json))
         )

@@ -8,13 +8,13 @@ trait IriSyntax {
 }
 
 final class IriContext(val sc: StringContext) extends AnyVal {
-  def url(args: Any*): Url =
+  def url(args: Any*): Url            =
     Url.unsafe(sc.s(args: _*))
-  def urn(args: Any*): Urn =
+  def urn(args: Any*): Urn            =
     Urn.unsafe(sc.s(args: _*))
-  def iri(args: Any*): Iri =
+  def iri(args: Any*): Iri            =
     Iri.unsafe(sc.s(args: _*))
-  def nxv(args: Any*): AbsoluteIri =
+  def nxv(args: Any*): AbsoluteIri    =
     Vocabulary.nxv.base + sc.s(args: _*)
   def schema(args: Any*): AbsoluteIri =
     Url.unsafe(Vocabulary.schema.base + sc.s(args: _*))

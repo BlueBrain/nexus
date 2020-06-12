@@ -28,8 +28,7 @@ trait JsonLdCirceSupport extends FailFastCirceSupport {
     * @tparam A type to encode
     * @return marshaller for any `A` value
     */
-  implicit final def marshallerHttp[A](
-      implicit
+  implicit final def marshallerHttp[A](implicit
       context: ContextUri,
       encoder: Encoder[A],
       printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
@@ -42,8 +41,8 @@ trait JsonLdCirceSupport extends FailFastCirceSupport {
     *
     * @return marshaller for JSON-LD value
     */
-  implicit final def jsonLdMarshaller(
-      implicit printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
+  implicit final def jsonLdMarshaller(implicit
+      printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
       keys: OrderedKeys = OrderedKeys()
   ): ToEntityMarshaller[Json] =
     Marshaller.withFixedContentType(RdfMediaTypes.`application/ld+json`) { json =>
@@ -61,7 +60,7 @@ object JsonLdCirceSupport extends JsonLdCirceSupport {
   final case class OrderedKeys(keys: List[String]) {
     lazy val withPosition: Map[String, Int] = keys.zipWithIndex.toMap
   }
-  object OrderedKeys {
+  object OrderedKeys                               {
 
     /**
       * Construct an empty [[OrderedKeys]]

@@ -5,11 +5,12 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.{ConfigConvert, ConfigSource}
+
+import scala.annotation.nowarn
 
 /**
   * Akka settings extension to expose application configuration.  It typically uses the configuration instance of the
@@ -20,15 +21,15 @@ import pureconfig.{ConfigConvert, ConfigSource}
 @SuppressWarnings(Array("LooksLikeInterpolatedString"))
 class Settings(config: Config) extends Extension {
 
-  @silent // not recognized as used... but it is below
+  @nowarn("cat=unused")
   implicit private val uriConverter: ConfigConvert[Uri] =
     ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)
 
-  @silent // not recognized as used... but it is below
+  @nowarn("cat=unused")
   implicit private val permissionConverter: ConfigConvert[Permission] =
     ConfigConvert.viaString[Permission](optF(Permission(_)), _.toString)
 
-  @silent // not recognized as used... but it is below
+  @nowarn("cat=unused")
   implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
     ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s"), _.toString)
 

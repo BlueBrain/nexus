@@ -42,7 +42,7 @@ final case class SparqlResults(head: Head, results: Bindings, boolean: Option[Bo
       val totalTriples = results.bindings.foldLeft(Set.empty[Triple]) {
         case (triples, map) if spo.subsetOf(map.keySet) =>
           triples ++ (map(s).asIriOrBNode, map(p).asIri, map(o).asNode).mapN((_, _, _))
-        case (triples, _) =>
+        case (triples, _)                               =>
           triples
       }
       Some(Graph(BNode(), totalTriples))

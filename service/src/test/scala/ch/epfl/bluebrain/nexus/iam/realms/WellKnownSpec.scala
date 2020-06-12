@@ -50,13 +50,13 @@ class WellKnownSpec
       "the openid contains empty grant_types" in {
         implicit val cl =
           httpMock(validOpenIdConfig.deepMerge(Json.obj("grant_types_supported" -> Json.arr())), validJwks)
-        val wk = WellKnown[IO](openIdUrl).accepted
+        val wk          = WellKnown[IO](openIdUrl).accepted
         wk.grantTypes shouldEqual Set.empty[GrantType]
       }
       "the openid contains no grant_types" in {
         implicit val cl =
           httpMock(validOpenIdConfig.hcursor.downField("grant_types_supported").delete.top.value, validJwks)
-        val wk = WellKnown[IO](openIdUrl).accepted
+        val wk          = WellKnown[IO](openIdUrl).accepted
         wk.grantTypes shouldEqual Set.empty[GrantType]
       }
       "the openid contains the expected endpoints" in {
@@ -79,7 +79,7 @@ class WellKnownSpec
         cl.apply(Get(openIdUrlString)) shouldReturn IO.raiseError(
           UnexpectedUnsuccessfulHttpResponse(HttpResponse(), "")
         )
-        val rej = WellKnown[IO](openIdUrl).rejected[UnsuccessfulOpenIdConfigResponse]
+        val rej         = WellKnown[IO](openIdUrl).rejected[UnsuccessfulOpenIdConfigResponse]
         rej.document shouldEqual openIdUrl
       }
       "the openid contains an invalid issuer" in {
@@ -97,14 +97,14 @@ class WellKnownSpec
       "the openid contains an invalid jwks_uri" in {
         implicit val cl =
           httpMock(validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromString("asd"))), validJwks)
-        val rej = WellKnown[IO](openIdUrl).rejected[IllegalJwksUriFormat]
+        val rej         = WellKnown[IO](openIdUrl).rejected[IllegalJwksUriFormat]
         rej.document shouldEqual openIdUrl
         rej.location shouldEqual ".jwks_uri"
       }
       "the openid contains a jwks_uri with an invalid type" in {
         implicit val cl =
           httpMock(validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromInt(3))), validJwks)
-        val rej = WellKnown[IO](openIdUrl).rejected[IllegalJwksUriFormat]
+        val rej         = WellKnown[IO](openIdUrl).rejected[IllegalJwksUriFormat]
         rej.document shouldEqual openIdUrl
         rej.location shouldEqual ".jwks_uri"
       }
@@ -114,7 +114,7 @@ class WellKnownSpec
             validOpenIdConfig.deepMerge(Json.obj("grant_types_supported" -> Json.fromString("incorrect"))),
             validJwks
           )
-        val rej = WellKnown[IO](openIdUrl).rejected[IllegalGrantTypeFormat]
+        val rej         = WellKnown[IO](openIdUrl).rejected[IllegalGrantTypeFormat]
         rej.document shouldEqual openIdUrl
         rej.location shouldEqual ".grant_types_supported"
       }
@@ -123,7 +123,7 @@ class WellKnownSpec
           validOpenIdConfig.deepMerge(Json.obj("grant_types_supported" -> Json.arr(Json.fromString("incorrect")))),
           validJwks
         )
-        val rej = WellKnown[IO](openIdUrl).rejected[IllegalGrantTypeFormat]
+        val rej         = WellKnown[IO](openIdUrl).rejected[IllegalGrantTypeFormat]
         rej.document shouldEqual openIdUrl
         rej.location shouldEqual ".grant_types_supported[0]"
       }
@@ -156,7 +156,7 @@ class WellKnownSpec
         implicit val cl = mock[HttpClient[IO, Json]]
         cl.apply(Get(openIdUrlString)) shouldReturn IO.pure(validOpenIdConfig)
         cl.apply(Get(jwksUrlString)) shouldReturn IO.raiseError(UnexpectedUnsuccessfulHttpResponse(HttpResponse(), ""))
-        val rej = WellKnown[IO](openIdUrl).rejected[UnsuccessfulJwksResponse]
+        val rej         = WellKnown[IO](openIdUrl).rejected[UnsuccessfulJwksResponse]
         rej.document shouldEqual jwksUrl
       }
       "the jwks document has an incorrect format" in {
@@ -217,7 +217,7 @@ object WellKnownSpec {
       |   "userinfo_endpoint": "${userInfoUrl.asUri}"
       | }
     """.stripMargin
-  val validOpenIdConfig = parse(validOpenIdConfigString).rightValue
+  val validOpenIdConfig       = parse(validOpenIdConfigString).rightValue
 
   val fullOpenIdConfigString =
     s"""
@@ -238,7 +238,7 @@ object WellKnownSpec {
        |   "end_session_endpoint": "${endSessionUrl.asUri}"
        | }
     """.stripMargin
-  val fullOpenIdConfig = parse(fullOpenIdConfigString).rightValue
+  val fullOpenIdConfig       = parse(fullOpenIdConfigString).rightValue
 
   val deprecatedOpenIdConfigString =
     s"""
@@ -257,7 +257,7 @@ object WellKnownSpec {
        |   "userinfo_endpoint": "${userInfoUrl.asUri}"
        | }
     """.stripMargin
-  val deprecatedOpenIdConfig = parse(deprecatedOpenIdConfigString).rightValue
+  val deprecatedOpenIdConfig       = parse(deprecatedOpenIdConfigString).rightValue
 
   val (kid, privateKey, publicKey) = {
     val rsaJWK = new RSAKeyGenerator(2048)

@@ -20,13 +20,13 @@ package object cli {
                          |${err.asString}
                          |
                          |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin)
-    case (Left(err), GivingUp(totalRetries, _)) =>
+    case (Left(err), GivingUp(totalRetries, _))                     =>
       console.println(s"""Error occurred while $action:
                          |
                          |${err.asString}
                          |
                          |Giving up ... (total retries: $totalRetries)""".stripMargin)
-    case _ => F.unit
+    case _                                                          => F.unit
 
   }
 

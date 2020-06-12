@@ -28,64 +28,64 @@ class OrganizationRoutes(
     cache: OrganizationCache[Task],
     acls: Acls[Task],
     realms: Realms[Task]
-)(
-    implicit
+)(implicit
     hc: HttpConfig,
     pc: PaginationConfig,
     s: Scheduler
 ) extends AuthDirectives(acls, realms)
     with QueryDirectives {
 
-  implicit val oc = cache
-  def routes: Route = (pathPrefix("orgs") & extractCaller) { caller =>
-    implicit val subject: Subject = caller.subject
-    concat(
-      // fetch
-      (get & org & pathEndOrSingleSlash & parameter("rev".as[Long].?)) { (orgLabel, optRev) =>
-        authorizeOn(pathOf(orgLabel), orgs.read)(caller) {
-          traceOne {
-            complete(organizations.fetch(orgLabel, optRev).runNotFound)
-          }
-        }
-      },
-      // writes
-      (org & pathEndOrSingleSlash) { orgLabel =>
-        traceOne {
-          concat(
-            // deprecate
-            (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
-              complete(organizations.deprecate(orgLabel, rev).runToFuture)
-            },
-            // update
-            (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
-              entity(as[OrganizationDescription]) { org =>
-                complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
-              } ~
-                complete(organizations.update(orgLabel, Organization(orgLabel, None), rev).runToFuture)
+  implicit val oc   = cache
+  def routes: Route =
+    (pathPrefix("orgs") & extractCaller) { caller =>
+      implicit val subject: Subject = caller.subject
+      concat(
+        // fetch
+        (get & org & pathEndOrSingleSlash & parameter("rev".as[Long].?)) { (orgLabel, optRev) =>
+          authorizeOn(pathOf(orgLabel), orgs.read)(caller) {
+            traceOne {
+              complete(organizations.fetch(orgLabel, optRev).runNotFound)
             }
-          )
-        }
-      },
-      // create
-      (pathPrefix(Segment) & pathEndOrSingleSlash) { orgLabel =>
-        traceOne {
-          (put & authorizeOn(pathOf(orgLabel), orgs.create)(caller)) {
-            entity(as[OrganizationDescription]) { org =>
-              complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
-            } ~
-              complete(organizations.create(Organization(orgLabel, None)).runWithStatus(Created))
           }
-        }
-      },
-      // listing
-      (get & pathEndOrSingleSlash & paginated & searchParamsOrgs & extractCallerAcls(anyOrg)(caller)) {
-        (pagination, params, acls) =>
-          traceCol {
-            complete(organizations.list(params, pagination)(acls).runToFuture)
+        },
+        // writes
+        (org & pathEndOrSingleSlash) { orgLabel =>
+          traceOne {
+            concat(
+              // deprecate
+              (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
+                complete(organizations.deprecate(orgLabel, rev).runToFuture)
+              },
+              // update
+              (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
+                entity(as[OrganizationDescription]) { org =>
+                  complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
+                } ~
+                  complete(organizations.update(orgLabel, Organization(orgLabel, None), rev).runToFuture)
+              }
+            )
           }
-      }
-    )
-  }
+        },
+        // create
+        (pathPrefix(Segment) & pathEndOrSingleSlash) { orgLabel =>
+          traceOne {
+            (put & authorizeOn(pathOf(orgLabel), orgs.create)(caller)) {
+              entity(as[OrganizationDescription]) { org =>
+                complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
+              } ~
+                complete(organizations.create(Organization(orgLabel, None)).runWithStatus(Created))
+            }
+          }
+        },
+        // listing
+        (get & pathEndOrSingleSlash & paginated & searchParamsOrgs & extractCallerAcls(anyOrg)(caller)) {
+          (pagination, params, acls) =>
+            traceCol {
+              complete(organizations.list(params, pagination)(acls).runToFuture)
+            }
+        }
+      )
+    }
 
   private def pathOf(orgLabel: String): Path = {
     import ch.epfl.bluebrain.nexus.rdf.Iri.Path._

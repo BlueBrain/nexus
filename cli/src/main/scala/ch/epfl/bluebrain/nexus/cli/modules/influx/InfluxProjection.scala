@@ -34,15 +34,15 @@ class InfluxProjection[F[_]: ContextShift](
       _           <- inc.createDb
       offset      <- Offset.load(ic.offsetFile)
       eventStream <- esc(offset)
-      stream      = executeStream(eventStream)
-      saveOffset  = writeOffsetPeriodically(eventStream)
+      stream       = executeStream(eventStream)
+      saveOffset   = writeOffsetPeriodically(eventStream)
       _           <- F.race(stream, saveOffset)
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
     implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
       logRetryErrors[F, A]("executing the projection")
-    def successCondition[A] = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+    def successCondition[A]                                               = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
 
     val compiledStream = eventStream.value.flatMap { stream =>
       stream
@@ -57,16 +57,16 @@ class InfluxProjection[F[_]: ContextShift](
                   }
                 )
             )
-          case Left(err) => Left(err)
+          case Left(err)              => Left(err)
         }
         .through(printEventProgress(console))
         .evalMap {
           case (pc, tc, ev, org, proj) =>
             val query = tc.query
-              .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
-              .replaceAllLiterally("{resource_type}", tc.tpe)
-              .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
-              .replaceAllLiterally("{event_rev}", ev.rev.toString)
+              .replace("{resource_id}", ev.resourceId.renderString)
+              .replace("{resource_type}", tc.tpe)
+              .replace("{resource_project}", s"${org.show}/${proj.show}")
+              .replace("{event_rev}", ev.rev.toString)
             spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res))
         }
         .through(printProjectionProgress(console))
@@ -84,7 +84,7 @@ class InfluxProjection[F[_]: ContextShift](
       res: Either[ClientError, SparqlResults]
   ): F[Either[ClientError, Unit]] =
     res match {
-      case Left(err) => F.pure(Left(err))
+      case Left(err)      => F.pure(Left(err))
       case Right(results) =>
         InfluxPoint
           .fromSparqlResults(results, tc)

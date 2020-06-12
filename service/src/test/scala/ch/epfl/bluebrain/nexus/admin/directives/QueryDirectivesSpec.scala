@@ -71,10 +71,10 @@ class QueryDirectivesSpec
     }
 
     "handle query params" in {
-      val createdBy = genIri
-      val updatedBy = genIri
-      val type1     = genIri
-      val type2     = genIri
+      val createdBy     = genIri
+      val updatedBy     = genIri
+      val type1         = genIri
+      val type2         = genIri
       def projectParams =
         Routes.wrap(
           (get & QueryDirectives.searchParamsProjects) { params => complete(StatusCodes.OK -> params) }

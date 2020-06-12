@@ -49,8 +49,8 @@ object ProjectDescription {
   implicit val descriptionDecoder: Decoder[ProjectDescription] = Decoder.instance { hc =>
     for {
       desc <- hc.downField("description").as[Option[String]]
-      lam  = hc.downField("apiMappings").as[List[Mapping]].getOrElse(List.empty)
-      map  = lam.map(am => am.prefix -> am.namespace).toMap
+      lam   = hc.downField("apiMappings").as[List[Mapping]].getOrElse(List.empty)
+      map   = lam.map(am => am.prefix -> am.namespace).toMap
       base <- hc.downField("base").as[Option[AbsoluteIri]]
       voc  <- hc.downField("vocab").as[Option[AbsoluteIri]]
     } yield ProjectDescription(desc, map, base, voc)

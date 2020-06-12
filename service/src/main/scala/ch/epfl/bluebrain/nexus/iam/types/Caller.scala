@@ -22,8 +22,7 @@ object Caller {
   val anonymous: Caller = Caller(Anonymous: Subject, Set[Identity](Anonymous))
 
   object JsonLd {
-    implicit final def callerEncoder(
-        implicit
+    implicit final def callerEncoder(implicit
         I: Encoder[Identity],
         http: HttpConfig
     ): Encoder[Caller] =

@@ -59,7 +59,7 @@ class OrganizationRoutesSpec
   private val organizationCache = mock[OrganizationCache[Task]]
   private val organizations     = mock[Organizations[Task]]
 
-  private val config: ServiceConfig =
+  private val config: ServiceConfig           =
     Settings(system).serviceConfig.copy(http = HttpConfig("some", 80, "v1", "https://nexus.example.com"))
   implicit private val httpConfig: HttpConfig = config.http
 
@@ -101,7 +101,7 @@ class OrganizationRoutesSpec
 
     val description  = Json.obj("description" -> Json.fromString("Org description"))
     val organization = Organization("org", Some("Org description"))
-    val resource = ResourceF(
+    val resource     = ResourceF(
       iri,
       orgId,
       1L,

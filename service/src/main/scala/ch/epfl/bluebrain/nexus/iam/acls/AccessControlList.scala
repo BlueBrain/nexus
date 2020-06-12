@@ -23,7 +23,7 @@ final case class AccessControlList(value: Map[Identity, Set[Permission]]) {
     val toAddKeys   = acl.value.keySet -- value.keySet
     val toMergeKeys = acl.value.keySet -- toAddKeys
     val added       = value ++ acl.value.view.filterKeys(toAddKeys.contains)
-    val merged = value.view.filterKeys(toMergeKeys.contains).map {
+    val merged      = value.view.filterKeys(toMergeKeys.contains).map {
       case (ident, perms) => ident -> (perms ++ acl.value.getOrElse(ident, Set.empty))
     }
     AccessControlList(added ++ merged)

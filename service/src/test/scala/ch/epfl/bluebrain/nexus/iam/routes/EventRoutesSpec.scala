@@ -66,10 +66,10 @@ class EventRoutesSpec
     acls.hasPermission(Path./, any[Permission], ancestors = false)(any[Caller]) shouldReturn Task.pure(true)
   }
 
-  val path    = Path.Empty / "myorg" / "myproj"
-  val rev     = 1L
-  val subject = User("uuid", "myrealm")
-  val acl = AccessControlList(
+  val path         = Path.Empty / "myorg" / "myproj"
+  val rev          = 1L
+  val subject      = User("uuid", "myrealm")
+  val acl          = AccessControlList(
     Group("mygroup", "myrealm") -> Set(aclp.write),
     subject                     -> Set(aclp.write)
   )

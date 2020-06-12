@@ -9,7 +9,7 @@ object testsyntax {
     private val keys = ServiceConfig.orderedKeys
     def sort: Json = {
       import _root_.io.circe.syntax._
-      implicit val ord: Ordering[String] = new Ordering[String] {
+      implicit val ord: Ordering[String]                  = new Ordering[String] {
         private val middlePos = keys.withPosition("")
 
         private def position(key: String): Int = keys.withPosition.getOrElse(key, middlePos)
@@ -28,7 +28,7 @@ object testsyntax {
             case _                        => true
           }
         }
-      def canonicalJson(json: Json): Json =
+      def canonicalJson(json: Json): Json                 =
         json.arrayOrObject[Json](
           json,
           arr => Json.fromValues(sortStrings(arr.map(canonicalJson))),

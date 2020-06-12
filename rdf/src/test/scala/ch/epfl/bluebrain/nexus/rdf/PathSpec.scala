@@ -88,7 +88,9 @@ class PathSpec extends RdfSpec {
     }
     "show" in {
       val encodedDelims = urlEncode("/#[]?")
-      Path("/" + encodedDelims + "/%20a/b//c/d/£¤¥").rightValue.show shouldEqual "/" + encodedDelims + "/%20a/b//c/d/£¤¥"
+      Path(
+        "/" + encodedDelims + "/%20a/b//c/d/£¤¥"
+      ).rightValue.show shouldEqual "/" + encodedDelims + "/%20a/b//c/d/£¤¥"
     }
     "pct encoded representation" in {
       val encodedDelims = urlEncode("/#[]?")

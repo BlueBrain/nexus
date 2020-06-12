@@ -44,15 +44,15 @@ class PostgresProjection[F[_]: ContextShift](
       _           <- ddl
       offset      <- Offset.load(pc.offsetFile)
       eventStream <- esc(offset)
-      stream      = executeStream(eventStream)
-      saveOffset  = writeOffsetPeriodically(eventStream)
+      stream       = executeStream(eventStream)
+      saveOffset   = writeOffsetPeriodically(eventStream)
       _           <- F.race(stream, saveOffset)
     } yield ()
 
   private def executeStream(eventStream: EventStream[F]): F[Unit] = {
     implicit def logOnError[A]: (ClientErrOr[A], RetryDetails) => F[Unit] =
       logRetryErrors[F, A]("executing the projection")
-    def successCondition[A] = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
+    def successCondition[A]                                               = cfg.env.httpClient.retry.condition.notRetryFromEither[A] _
 
     val compiledStream = eventStream.value.flatMap { stream =>
       stream
@@ -67,7 +67,7 @@ class PostgresProjection[F[_]: ContextShift](
                   }
                 )
             )
-          case Left(err) => Left(err)
+          case Left(err)              => Left(err)
         }
         .through(printEventProgress(console))
         .evalMap {
@@ -75,10 +75,10 @@ class PostgresProjection[F[_]: ContextShift](
             tc.queries
               .map { qc =>
                 val query = qc.query
-                  .replaceAllLiterally("{resource_id}", ev.resourceId.renderString)
-                  .replaceAllLiterally("{resource_type}", tc.tpe)
-                  .replaceAllLiterally("{resource_project}", s"${org.show}/${proj.show}")
-                  .replaceAllLiterally("{event_rev}", ev.rev.toString)
+                  .replace("{resource_id}", ev.resourceId.renderString)
+                  .replace("{resource_type}", tc.tpe)
+                  .replace("{resource_project}", s"${org.show}/${proj.show}")
+                  .replace("{event_rev}", ev.rev.toString)
                 spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
               }
               .sequence
@@ -95,7 +95,7 @@ class PostgresProjection[F[_]: ContextShift](
 
   private def insert(qc: QueryConfig, res: Either[ClientError, SparqlResults]): F[Either[ClientError, Unit]] = {
     res match {
-      case Left(value) => F.pure(Left(value))
+      case Left(value)    => F.pure(Left(value))
       case Right(results) =>
         import doobie._
         import doobie.implicits._
@@ -113,7 +113,7 @@ class PostgresProjection[F[_]: ContextShift](
              |values (${results.head.vars.map(_ => "?").mkString(", ")});
              |""".stripMargin
 
-        val elems = results.results.bindings.map { map =>
+        val elems      = results.results.bindings.map { map =>
           map.toList.sortBy(_._1).map(_._2).map(binding => toElem(binding))
         }
         val statements = Fragment.const(delete).update :: elems.map(row => Fragment(insert, row).update)
@@ -142,9 +142,9 @@ class PostgresProjection[F[_]: ContextShift](
       case (Some(Literal(lexicalForm, dataType, _)), _, _)
           if dataType.renderString == "http://www.w3.org/2001/XMLSchema#dateTime" =>
         Elem.Arg[Instant](Instant.parse(lexicalForm), Put[Instant])
-      case (None, Some(uri), _) =>
+      case (None, Some(uri), _)                            =>
         Elem.Arg[String](uri.renderString, Put[String])
-      case (None, None, Some(bnode)) =>
+      case (None, None, Some(bnode))                       =>
         Elem.Arg[String](bnode, Put[String])
       case (Some(Literal(lexicalForm, dataType, _)), _, _) =>
         throw new RuntimeException(s"Unknown lexicalform: '$lexicalForm', dataType: '$dataType'")
@@ -154,7 +154,7 @@ class PostgresProjection[F[_]: ContextShift](
   private def ddl: F[Unit] = {
     import doobie._
     import doobie.implicits._
-    val ddls = for {
+    val ddls                                               = for {
       projectConfig <- pc.projects.values.toList
       typeConfig    <- projectConfig.types
       queryConfig   <- typeConfig.queries
@@ -172,7 +172,7 @@ class PostgresProjection[F[_]: ContextShift](
                          |
                          |Error message: '${Option(err.getMessage).getOrElse("no message")}'
                          |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin)
-    case (NonFatal(err), GivingUp(totalRetries, _)) =>
+    case (NonFatal(err), GivingUp(totalRetries, _))                     =>
       console.println(s"""Error occurred while executing the following SQL statements:
                          |
                          |${statements.map("\t" + _.sql).mkString("\n")}

@@ -10,7 +10,10 @@ class DecodingErrorSpec extends AnyWordSpecLike with Matchers {
   "A DecodingError" should {
     "return the provided message" in {
       DecodingError("message", Nil).getMessage shouldEqual "message"
-      DecodingError("message", Top :: Down(rdf.first) :: Nil).getMessage shouldEqual "message: Top,Down(http://www.w3.org/1999/02/22-rdf-syntax-ns#first)"
+      DecodingError(
+        "message",
+        Top :: Down(rdf.first) :: Nil
+      ).getMessage shouldEqual "message: Top,Down(http://www.w3.org/1999/02/22-rdf-syntax-ns#first)"
     }
   }
 

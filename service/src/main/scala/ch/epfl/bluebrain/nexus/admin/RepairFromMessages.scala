@@ -31,7 +31,7 @@ object RepairFromMessages {
       .mapAsync(1) {
         case OrgId(uuid)  => (o.fetch(uuid) >> Task.unit).runToFuture
         case ProjId(uuid) => (p.fetch(uuid) >> Task.unit).runToFuture
-        case other =>
+        case other        =>
           log.warn(s"Unknown persistence id '$other'")
           Future.successful(())
       }
@@ -44,11 +44,11 @@ object RepairFromMessages {
   }
 
   sealed abstract class PersistenceId(prefix: String) {
-    private val len = prefix.length
+    private val len                        = prefix.length
     def unapply(arg: String): Option[UUID] =
       if (arg.startsWith(prefix)) Try(UUID.fromString(arg.drop(len))).toOption
       else None
   }
-  object OrgId  extends PersistenceId("organizations-")
+  object OrgId extends PersistenceId("organizations-")
   object ProjId extends PersistenceId("projects-")
 }

@@ -40,12 +40,12 @@ object Project {
         "_label"             -> Json.fromString(p.label),
         "_organizationUuid"  -> Json.fromString(p.organizationUuid.toString),
         "_organizationLabel" -> Json.fromString(p.organizationLabel),
-        "apiMappings" -> Json.arr(p.apiMappings.toList.map {
+        "apiMappings"        -> Json.arr(p.apiMappings.toList.map {
           case (prefix, namespace) =>
             Json.obj("prefix" -> Json.fromString(prefix), "namespace" -> Json.fromString(namespace.asString))
         }: _*),
-        "base"  -> Json.fromString(p.base.asString),
-        "vocab" -> Json.fromString(p.vocab.asString)
+        "base"               -> Json.fromString(p.base.asString),
+        "vocab"              -> Json.fromString(p.vocab.asString)
       )
       .deepMerge(p.description match {
         case Some(desc) => Json.obj("description" -> Json.fromString(desc))

@@ -27,39 +27,41 @@ sealed abstract class Graph extends Product with Serializable {
     * Adds a new triple (s, p, this.node) to this graph yielding a new one. The provided subject becomes the new graph
     * root.
     */
-  def ::(subjectAndPredicate: (IriOrBNode, IriNode)): Graph = this match {
-    case OptionalGraph(None) => this
-    case _                   => prepend(Graph(subjectAndPredicate._1), subjectAndPredicate._2)
-  }
+  def ::(subjectAndPredicate: (IriOrBNode, IriNode)): Graph =
+    this match {
+      case OptionalGraph(None) => this
+      case _                   => prepend(Graph(subjectAndPredicate._1), subjectAndPredicate._2)
+    }
 
   /**
     * Merges this graph with the provided one and additionally generates a new triple (g.root, predicate, this.root)
     * that represents a relationship between the two sub-graphs. The root of the resulting graph is `g.root`.
     */
-  def prepend(g: Graph, predicate: IriNode): Graph = this match {
-    case SetGraph(_, graphs) =>
-      g.root match {
-        case s: IriOrBNode =>
-          Graph(s, g.triples ++ triples ++ graphs.map(e => (s, predicate, e.root)))
-        case _ =>
-          Graph(g.root, g.triples ++ triples)
-      }
-    case OptionalGraph(None) => g
-    case OptionalGraph(Some(graph)) =>
-      graph.prepend(g, predicate)
-    case _ =>
-      g match {
-        case OptionalGraph(None) => this
-        case _ =>
-          g.root match {
-            case s: IriOrBNode =>
-              val link = (s, predicate, root)
-              Graph(g.root, g.triples ++ triples + link)
-            case _ =>
-              Graph(g.root, g.triples ++ triples)
-          }
-      }
-  }
+  def prepend(g: Graph, predicate: IriNode): Graph =
+    this match {
+      case SetGraph(_, graphs)        =>
+        g.root match {
+          case s: IriOrBNode =>
+            Graph(s, g.triples ++ triples ++ graphs.map(e => (s, predicate, e.root)))
+          case _             =>
+            Graph(g.root, g.triples ++ triples)
+        }
+      case OptionalGraph(None)        => g
+      case OptionalGraph(Some(graph)) =>
+        graph.prepend(g, predicate)
+      case _                          =>
+        g match {
+          case OptionalGraph(None) => this
+          case _                   =>
+            g.root match {
+              case s: IriOrBNode =>
+                val link = (s, predicate, root)
+                Graph(g.root, g.triples ++ triples + link)
+              case _             =>
+                Graph(g.root, g.triples ++ triples)
+            }
+        }
+    }
 
   /**
     * Merges this graph with the provided one and additionally generates a new triple (this.root, predicate, g.root)
@@ -74,7 +76,7 @@ sealed abstract class Graph extends Product with Serializable {
   def append(p: IriNode, o: Node): Graph =
     this match {
       case OptionalGraph(None) => this
-      case _ =>
+      case _                   =>
         root match {
           case ibn: IriOrBNode => this + ((ibn, p, o))
           case _               => this
@@ -156,23 +158,27 @@ sealed abstract class Graph extends Product with Serializable {
   /**
     * Replaces a node in the graph.
     */
-  def replaceNode(target: IriOrBNode, value: IriOrBNode): Graph = this match {
-    case _: SingleNodeGraph if target == root => SingleNodeGraph(value)
-    case _: SingleNodeGraph                   => this
-    case OptionalGraph(Some(g))               => OptionalGraph(Some(g.replaceNode(target, value)))
-    case g @ OptionalGraph(None)              => g
-    case SetGraph(_, graphs) =>
-      val newNode = if (root == target) value else root
-      SetGraph(newNode, graphs.map(_.replaceNode(target, value)))
-    case _: MultiNodeGraph =>
-      val newNode = if (root == target) value else root
-      MultiNodeGraph(newNode, triples.map {
-        case (`target`, p, `target`) => (value, p, value)
-        case (`target`, p, o)        => (value, p, o)
-        case (s, p, `target`)        => (s, p, value)
-        case default                 => default
-      })
-  }
+  def replaceNode(target: IriOrBNode, value: IriOrBNode): Graph =
+    this match {
+      case _: SingleNodeGraph if target == root => SingleNodeGraph(value)
+      case _: SingleNodeGraph                   => this
+      case OptionalGraph(Some(g))               => OptionalGraph(Some(g.replaceNode(target, value)))
+      case g @ OptionalGraph(None)              => g
+      case SetGraph(_, graphs)                  =>
+        val newNode = if (root == target) value else root
+        SetGraph(newNode, graphs.map(_.replaceNode(target, value)))
+      case _: MultiNodeGraph                    =>
+        val newNode = if (root == target) value else root
+        MultiNodeGraph(
+          newNode,
+          triples.map {
+            case (`target`, p, `target`) => (value, p, value)
+            case (`target`, p, o)        => (value, p, o)
+            case (s, p, `target`)        => (s, p, value)
+            case default                 => default
+          }
+        )
+    }
 
   /**
     * Folds over the collection of triples.
@@ -219,7 +225,7 @@ sealed abstract class Graph extends Product with Serializable {
     val alphanum = "a-zA-Z\u0080-\u00ff_"
     s"[${alphanum}][${alphanum}0-9]*".r
   }
-  private val dotNumeralRegex = "[-]?(.[0-9]+|[0-9]+(.[0-9]*)?)".r
+  private val dotNumeralRegex                                        = "[-]?(.[0-9]+|[0-9]+(.[0-9]*)?)".r
 
   /**
     * Returns a DOT representation of this graph.
@@ -235,10 +241,11 @@ sealed abstract class Graph extends Product with Serializable {
       stripPrefixes: Boolean = false
   ): String = {
 
-    def escapeChar(c: Char): String = c match {
-      case '"' => "\\\""
-      case x   => x.toString
-    }
+    def escapeChar(c: Char): String =
+      c match {
+        case '"' => "\\\""
+        case x   => x.toString
+      }
 
     def escape(str: String): String =
       str.flatMap(escapeChar(_: Char))
@@ -338,7 +345,7 @@ object Graph {
   }
 
   final private[rdf] case class OptionalGraph(graph: Option[Graph]) extends Graph {
-    override lazy val root: Node = graph.map(_.root).getOrElse(BNode())
+    override lazy val root: Node           = graph.map(_.root).getOrElse(BNode())
     override lazy val triples: Set[Triple] =
       graph.map(_.triples).getOrElse(Set.empty)
   }

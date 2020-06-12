@@ -21,27 +21,27 @@ object AggregateFixture {
 
   def evaluate[F[_]](state: State, cmd: Command)(implicit F: Async[F], T: Timer[F]): F[Either[Rejection, Event]] =
     (state, cmd) match {
-      case (Current(revS, _), Boom(revC, message)) if revS == revC => F.raiseError(new RuntimeException(message))
-      case (Initial, Boom(rev, message)) if rev == 0               => F.raiseError(new RuntimeException(message))
-      case (_, Boom(rev, _))                                       => F.pure(Left(InvalidRevision(rev)))
-      case (Current(revS, _), Never(revC)) if revS == revC         => F.never
-      case (Initial, Never(rev)) if rev == 0                       => F.never
-      case (_, Never(rev))                                         => F.pure(Left(InvalidRevision(rev)))
-      case (Initial, Increment(rev, step)) if rev == 0             => F.pure(Right(Incremented(1, step)))
-      case (Initial, Increment(rev, _))                            => F.pure(Left(InvalidRevision(rev)))
-      case (Initial, IncrementAsync(rev, step, duration)) if rev == 0 =>
+      case (Current(revS, _), Boom(revC, message)) if revS == revC                  => F.raiseError(new RuntimeException(message))
+      case (Initial, Boom(rev, message)) if rev == 0                                => F.raiseError(new RuntimeException(message))
+      case (_, Boom(rev, _))                                                        => F.pure(Left(InvalidRevision(rev)))
+      case (Current(revS, _), Never(revC)) if revS == revC                          => F.never
+      case (Initial, Never(rev)) if rev == 0                                        => F.never
+      case (_, Never(rev))                                                          => F.pure(Left(InvalidRevision(rev)))
+      case (Initial, Increment(rev, step)) if rev == 0                              => F.pure(Right(Incremented(1, step)))
+      case (Initial, Increment(rev, _))                                             => F.pure(Left(InvalidRevision(rev)))
+      case (Initial, IncrementAsync(rev, step, duration)) if rev == 0               =>
         T.sleep(duration) >> F.pure(Right(Incremented(1, step)))
-      case (Initial, IncrementAsync(rev, _, _))                      => F.pure(Left(InvalidRevision(rev)))
-      case (Initial, Initialize(rev)) if rev == 0                    => F.pure(Right(Initialized(1)))
-      case (Initial, Initialize(rev))                                => F.pure(Left(InvalidRevision(rev)))
-      case (Current(revS, _), Increment(revC, step)) if revS == revC => F.pure(Right(Incremented(revS + 1, step)))
-      case (Current(_, _), Increment(revC, _))                       => F.pure(Left(InvalidRevision(revC)))
+      case (Initial, IncrementAsync(rev, _, _))                                     => F.pure(Left(InvalidRevision(rev)))
+      case (Initial, Initialize(rev)) if rev == 0                                   => F.pure(Right(Initialized(1)))
+      case (Initial, Initialize(rev))                                               => F.pure(Left(InvalidRevision(rev)))
+      case (Current(revS, _), Increment(revC, step)) if revS == revC                => F.pure(Right(Incremented(revS + 1, step)))
+      case (Current(_, _), Increment(revC, _))                                      => F.pure(Left(InvalidRevision(revC)))
       case (Current(revS, _), IncrementAsync(revC, step, duration)) if revS == revC =>
         T.sleep(duration) >> F.pure(Right(Incremented(revS + 1, step)))
-      case (Current(_, _), IncrementAsync(revC, _, duration)) =>
+      case (Current(_, _), IncrementAsync(revC, _, duration))                       =>
         T.sleep(duration) >> F.pure(Left(InvalidRevision(revC)))
-      case (Current(revS, _), Initialize(revC)) if revS == revC => F.pure(Right(Initialized(revS + 1)))
-      case (Current(_, _), Initialize(rev))                     => F.pure(Left(InvalidRevision(rev)))
+      case (Current(revS, _), Initialize(revC)) if revS == revC                     => F.pure(Right(Initialized(revS + 1)))
+      case (Current(_, _), Initialize(rev))                                         => F.pure(Left(InvalidRevision(rev)))
     }
 
 }

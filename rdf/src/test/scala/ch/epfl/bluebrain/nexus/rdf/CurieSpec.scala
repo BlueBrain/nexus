@@ -30,7 +30,7 @@ class CurieSpec extends RdfSpec {
   }
 
   "A Curie" should {
-    val valid = List(
+    val valid   = List(
       ("rdf:type", "rdf", "type"),
       ("prefix://me:me@hOst:443/a/b?a&e=f&b=c#frag", "prefix", "//me:me@host:443/a/b?a&b=c&e=f#frag"),
       ("PrEfIx://me:me@hOst#frag", "PrEfIx", "//me:me@host#frag"),
@@ -84,7 +84,7 @@ class CurieSpec extends RdfSpec {
       val c      = Curie("rdf:type").rightValue
       val iri    = Iri.absolute("http://example.com/a").rightValue
       val prefix = Prefix("a").rightValue
-      c.toIri(Map(prefix                   -> iri)).leftValue
+      c.toIri(Map(prefix -> iri)).leftValue
       c.toIriUnsafePrefix(Map(prefix.value -> iri)).leftValue
     }
 

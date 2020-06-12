@@ -15,13 +15,14 @@ object XmlTransformer {
     */
   def transformer(blacklist: ModuleFilter): RuleTransformer =
     new RuleTransformer(new RewriteRule {
-      override def transform(node: Node): NodeSeq = node match {
-        case e: Elem if e.label == "dependency" =>
-          val organization = e.child.filter(_.label == "groupId").flatMap(_.text).mkString
-          val artifact     = e.child.filter(_.label == "artifactId").flatMap(_.text).mkString
-          val version      = e.child.filter(_.label == "version").flatMap(_.text).mkString
-          if (blacklist(organization % artifact % version)) NodeSeq.Empty else node
-        case _ => node
-      }
+      override def transform(node: Node): NodeSeq =
+        node match {
+          case e: Elem if e.label == "dependency" =>
+            val organization = e.child.filter(_.label == "groupId").flatMap(_.text).mkString
+            val artifact     = e.child.filter(_.label == "artifactId").flatMap(_.text).mkString
+            val version      = e.child.filter(_.label == "version").flatMap(_.text).mkString
+            if (blacklist(organization % artifact % version)) NodeSeq.Empty else node
+          case _                                  => node
+        }
     })
 }

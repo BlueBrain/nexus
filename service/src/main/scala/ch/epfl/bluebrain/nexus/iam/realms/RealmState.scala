@@ -17,10 +17,11 @@ sealed trait RealmState extends Product with Serializable {
   /**
     * @return an optional resource representation for this tate
     */
-  def optResource(implicit http: HttpConfig): OptResource = this match {
-    case Initial    => None
-    case c: Current => Some(c.resource)
-  }
+  def optResource(implicit http: HttpConfig): OptResource =
+    this match {
+      case Initial    => None
+      case c: Current => Some(c.resource)
+    }
 }
 
 object RealmState {
@@ -93,10 +94,11 @@ object RealmState {
     /**
       * @return the current state in a [[Resource]] representation
       */
-    def resource(implicit http: HttpConfig): Resource = this match {
-      case s: Active     => s.activeResource.map(Right.apply)
-      case s: Deprecated => s.deprecatedResource.map(Left.apply)
-    }
+    def resource(implicit http: HttpConfig): Resource =
+      this match {
+        case s: Active     => s.activeResource.map(Right.apply)
+        case s: Deprecated => s.deprecatedResource.map(Left.apply)
+      }
 
     /**
       * @return the current state in a [[ResourceMetadata]] representation

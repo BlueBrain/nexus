@@ -27,7 +27,7 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
         List(user -> userJson, group -> groupJson, Anonymous -> anonymousJson, authenticated -> authenticatedJson)
 
       forAll(cases) {
-        case (model: Subject, json) =>
+        case (model: Subject, json)  =>
           model.asJson shouldEqual json
           (model: Identity).asJson shouldEqual json
         case (model: Identity, json) => model.asJson shouldEqual json
@@ -38,10 +38,10 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
       val groupJson         = jsonContentOf("/identities/consume/group.json")
       val authenticatedJson = jsonContentOf("/identities/consume/authenticated.json")
       val anonymousJson     = jsonContentOf("/identities/consume/anonymous.json")
-      val cases =
+      val cases             =
         List(user -> userJson, group -> groupJson, Anonymous -> anonymousJson, authenticated -> authenticatedJson)
       forAll(cases) {
-        case (model: Subject, json) =>
+        case (model: Subject, json)  =>
           json.as[Subject].rightValue shouldEqual model
           json.as[Identity].rightValue shouldEqual (model: Identity)
         case (model: Identity, json) => json.as[Identity].rightValue shouldEqual model

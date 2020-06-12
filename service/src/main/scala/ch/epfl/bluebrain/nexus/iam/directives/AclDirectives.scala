@@ -13,15 +13,16 @@ trait AclDirectives {
     * Extracts the [[Path]] from the unmatched segments.
     * Remove the trailing slash if the path is not empty. E.g.: /my/path/ -> /my/path
     */
-  def extractResourcePath: Directive1[Path] = extractUnmatchedPath.flatMap { path =>
-    path.asIriPath match {
-      case p if p.asString.contains("//") =>
-        reject(validationRejection(s"Path '${p.asString}' cannot contain double slash."))
-      case p if p.isEmpty         => provide(Path./)
-      case Slash(p) if p != Empty => provide(p)
-      case p                      => provide(p)
+  def extractResourcePath: Directive1[Path] =
+    extractUnmatchedPath.flatMap { path =>
+      path.asIriPath match {
+        case p if p.asString.contains("//") =>
+          reject(validationRejection(s"Path '${p.asString}' cannot contain double slash."))
+        case p if p.isEmpty                 => provide(Path./)
+        case Slash(p) if p != Empty         => provide(p)
+        case p                              => provide(p)
+      }
     }
-  }
 }
 
 object AclDirectives extends AclDirectives

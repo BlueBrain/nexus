@@ -81,8 +81,7 @@ object QueryResults {
         }
     }
 
-  implicit final def queryResultEncoder[A](
-      implicit
+  implicit final def queryResultEncoder[A](implicit
       S: Encoder[ScoredQueryResults[A]],
       U: Encoder[UnscoredQueryResults[A]]
   ): Encoder[QueryResults[A]] =

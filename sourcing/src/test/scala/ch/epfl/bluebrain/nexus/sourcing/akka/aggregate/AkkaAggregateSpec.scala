@@ -50,7 +50,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.immediately[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "immediate-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .sharded[IO](name, initialState, next, evaluate[IO], passivation, config, shards = 10)
         .unsafeRunSync()
 
@@ -63,7 +63,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.never[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "no-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .sharded[IO](name, initialState, next, evaluate[IO], passivation, config, shards = 10)
         .unsafeRunSync()
 
@@ -76,7 +76,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.lapsedSinceRecoveryCompleted[State, Command](10.milliseconds.dilated)
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "fixed-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .sharded[IO](name, initialState, next, evaluate[IO], passivation, config, shards = 10)
         .unsafeRunSync()
 
@@ -89,7 +89,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.lapsedSinceLastInteraction[State, Command](10.milliseconds.dilated)
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "interaction-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .sharded[IO](name, initialState, next, evaluate[IO], passivation, config, shards = 10)
         .unsafeRunSync()
 
@@ -101,7 +101,7 @@ class AkkaAggregateSpec
     "configured with a retry strategy" should {
       def eval(failCount: Int) = {
         val evaluations = new AtomicInteger(0)
-        val f = (state: State, cmd: Command) => {
+        val f           = (state: State, cmd: Command) => {
           if (evaluations.get() < failCount)
             IO.pure(evaluations.incrementAndGet()) >> IO.raiseError(new RuntimeException)
           else IO.pure(evaluations.incrementAndGet()) >> evaluate[IO](state, cmd)
@@ -114,7 +114,7 @@ class AkkaAggregateSpec
         val passivation      = PassivationStrategy.never[State, Command]
         val name             = "no-passivation-single-retry-success"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val agg = AkkaAggregate
+        val agg              = AkkaAggregate
           .sharded[IO](name, initialState, next, f, passivation, config, shards = 10)
           .unsafeRunSync()
 
@@ -129,7 +129,7 @@ class AkkaAggregateSpec
         val passivation      = PassivationStrategy.never[State, Command]
         val name             = "no-passivation-single-retry-failure"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val agg = AkkaAggregate
+        val agg              = AkkaAggregate
           .sharded[IO](name, initialState, next, f, passivation, config, shards = 10)
           .unsafeRunSync()
 
@@ -147,7 +147,7 @@ class AkkaAggregateSpec
         val passivation      = PassivationStrategy.never[State, Command]
         val name             = "no-passivation-exponential-retry-failure"
         implicit val retry   = RetryStrategyConfig("exponential", 10.millis, 10.seconds, 3, 1.second).retryPolicy[IO]
-        val agg = AkkaAggregate
+        val agg              = AkkaAggregate
           .sharded[IO](name, initialState, next, f, passivation, config, shards = 10)
           .unsafeRunSync()
 
@@ -169,7 +169,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.immediately[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "immediate-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .tree[IO](name, initialState, next, evaluate[IO], passivation, config, poolSize = 10)
         .unsafeRunSync()
 
@@ -182,7 +182,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.never[State, Command]
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "no-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .tree[IO](name, initialState, next, evaluate[IO], passivation, config, poolSize = 10)
         .unsafeRunSync()
 
@@ -195,7 +195,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.lapsedSinceRecoveryCompleted[State, Command](10.milliseconds.dilated)
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "fixed-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .tree[IO](name, initialState, next, evaluate[IO], passivation, config, poolSize = 10)
         .unsafeRunSync()
 
@@ -208,7 +208,7 @@ class AkkaAggregateSpec
       val passivation    = PassivationStrategy.lapsedSinceLastInteraction[State, Command](10.milliseconds.dilated)
       implicit val retry = neverStrategy.retryPolicy[IO]
       val name           = "interaction-passivation-no-retries"
-      val agg = AkkaAggregate
+      val agg            = AkkaAggregate
         .tree[IO](name, initialState, next, evaluate[IO], passivation, config, poolSize = 10)
         .unsafeRunSync()
 
@@ -220,7 +220,7 @@ class AkkaAggregateSpec
     "configured with a retry strategy" should {
       def eval(failCount: Int) = {
         val evaluations = new AtomicInteger(0)
-        val f = (state: State, cmd: Command) => {
+        val f           = (state: State, cmd: Command) => {
           if (evaluations.get() < failCount)
             IO.pure(evaluations.incrementAndGet()) >> IO.raiseError(new RuntimeException)
           else IO.pure(evaluations.incrementAndGet()) >> evaluate[IO](state, cmd)
@@ -233,7 +233,7 @@ class AkkaAggregateSpec
         val passivation      = PassivationStrategy.never[State, Command]
         val name             = "no-passivation-single-retry-success"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val agg = AkkaAggregate
+        val agg              = AkkaAggregate
           .tree[IO](name, initialState, next, f, passivation, config, poolSize = 10)
           .unsafeRunSync()
 
@@ -247,12 +247,12 @@ class AkkaAggregateSpec
         val passivation      = PassivationStrategy.never[State, Command]
         val name             = "no-passivation-single-retry-failure"
         implicit val retry   = neverStrategy.copy(strategy = "once", initialDelay = 10.millis).retryPolicy[IO]
-        val agg = AkkaAggregate
+        val agg              = AkkaAggregate
           .tree[IO](name, initialState, next, f, passivation, config, poolSize = 10)
           .unsafeRunSync()
 
         val first = genString()
-        val ex = intercept[CommandEvaluationError[Command]] {
+        val ex    = intercept[CommandEvaluationError[Command]] {
           agg.evaluate(first, Increment(0, 2)).unsafeRunSync()
         }
         ex shouldEqual CommandEvaluationError(first, Increment(0, 2), None)
@@ -264,12 +264,12 @@ class AkkaAggregateSpec
         val passivation      = PassivationStrategy.never[State, Command]
         val name             = "no-passivation-exponential-retry-failure"
         implicit val retry   = RetryStrategyConfig("exponential", 10.millis, 10.seconds, 3, 1.second).retryPolicy[IO]
-        val agg = AkkaAggregate
+        val agg              = AkkaAggregate
           .tree[IO](name, initialState, next, f, passivation, config, poolSize = 10)
           .unsafeRunSync()
 
         val first = genString()
-        val ex = intercept[CommandEvaluationError[Command]] {
+        val ex    = intercept[CommandEvaluationError[Command]] {
           agg.evaluate(first, Increment(0, 2)).unsafeRunSync()
         }
 

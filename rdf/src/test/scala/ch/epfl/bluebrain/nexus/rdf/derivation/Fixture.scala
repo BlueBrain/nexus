@@ -9,12 +9,13 @@ import ch.epfl.bluebrain.nexus.rdf.derivation.decoder.semiauto.deriveGraphDecode
 import ch.epfl.bluebrain.nexus.rdf.derivation.encoder.semiauto.deriveGraphEncoder
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import ch.epfl.bluebrain.nexus.rdf.{GraphDecoder, GraphEncoder, NonEmptyString}
-import com.github.ghik.silencer.silent
 import io.circe.Json
 import io.circe.literal._
 import io.circe.parser._
 
-@silent
+import scala.annotation.nowarn
+
+@nowarn("cat=unused")
 object Fixture {
   sealed trait View   extends Product with Serializable
   sealed trait Values extends Product with Serializable

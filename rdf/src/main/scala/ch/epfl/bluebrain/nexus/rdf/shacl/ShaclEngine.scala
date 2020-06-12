@@ -90,8 +90,8 @@ object ShaclEngine {
     val shapesGraphURI = SHACLUtil.createRandomShapesGraphURI()
     val dataset        = ARQFactory.get.getDataset(dataModel)
     dataset.addNamedModel(shapesGraphURI.toString, finalShapesModel)
-    val shapesGraph = new ShapesGraph(finalShapesModel)
-    val engine      = new ShaclEngine(dataset, shapesGraphURI, shapesGraph)
+    val shapesGraph    = new ShapesGraph(finalShapesModel)
+    val engine         = new ShaclEngine(dataset, shapesGraphURI, shapesGraph)
     engine.setConfiguration(
       new ValidationEngineConfiguration().setReportDetails(reportDetails).setValidateShapes(validateShapes)
     )
@@ -99,7 +99,7 @@ object ShaclEngine {
       engine.applyEntailments()
       engine.validateAll()
     } match {
-      case Failure(ex) =>
+      case Failure(ex)       =>
         Left(ex.getMessage)
       case Success(resource) => ValidationReport(resource)
     }

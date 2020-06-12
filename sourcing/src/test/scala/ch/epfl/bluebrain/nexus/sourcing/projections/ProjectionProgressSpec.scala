@@ -14,11 +14,11 @@ class ProjectionProgressSpec extends AnyWordSpecLike with Matchers with Inspecto
 
   "A ProjectionProgress" should {
     val mapping = Map(
-      OffsetProgress(Sequence(14L), 2, 0, 1) ->
+      OffsetProgress(Sequence(14L), 2, 0, 1)                                                            ->
         jsonContentOf("/indexing/sequence-offset-progress.json"),
       OffsetProgress(TimeBasedUUID(UUID.fromString("ee7e4360-39ca-11e9-9ed5-dbdaa32f8986")), 32, 5, 10) ->
         jsonContentOf("/indexing/timebaseduuid-offset-progress.json"),
-      NoProgress ->
+      NoProgress                                                                                        ->
         jsonContentOf("/indexing/no-offset-progress.json"),
       OffsetsProgress(Map("noOffset" -> NoProgress, "other" -> OffsetProgress(Sequence(2L), 10L, 2L, 0L))) ->
         jsonContentOf("/indexing/offsets-progress.json")
@@ -65,9 +65,12 @@ class ProjectionProgressSpec extends AnyWordSpecLike with Matchers with Inspecto
     }
 
     "test TimeBasedUUIDd ordering" in {
-      val time1           = TimeBasedUUID(UUID.fromString("49225740-2019-11ea-a752-ffae2393b6e4")) // 2019-12-16T15:32:36.148Z[UTC]
-      val time2           = TimeBasedUUID(UUID.fromString("91be23d0-2019-11ea-a752-ffae2393b6e4")) // 2019-12-16T15:34:37.965Z[UTC]
-      val time3           = TimeBasedUUID(UUID.fromString("91f95810-2019-11ea-a752-ffae2393b6e4")) // 2019-12-16T15:34:38.353Z[UTC]
+      val time1 =
+        TimeBasedUUID(UUID.fromString("49225740-2019-11ea-a752-ffae2393b6e4")) // 2019-12-16T15:32:36.148Z[UTC]
+      val time2 =
+        TimeBasedUUID(UUID.fromString("91be23d0-2019-11ea-a752-ffae2393b6e4")) // 2019-12-16T15:34:37.965Z[UTC]
+      val time3 =
+        TimeBasedUUID(UUID.fromString("91f95810-2019-11ea-a752-ffae2393b6e4")) // 2019-12-16T15:34:38.353Z[UTC]
       val offset1: Offset = time1
       val offset2: Offset = time2
       val offset3: Offset = time3

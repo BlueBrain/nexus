@@ -14,11 +14,12 @@ trait PrefixDirectives {
 
   final def stripTrailingSlashes(path: Path): Path = {
     @tailrec
-    def strip(p: Path): Path = p match {
-      case Path.Empty       => Path.Empty
-      case Path.Slash(rest) => strip(rest)
-      case other            => other
-    }
+    def strip(p: Path): Path =
+      p match {
+        case Path.Empty       => Path.Empty
+        case Path.Slash(rest) => strip(rest)
+        case other            => other
+      }
     strip(path.reverse).reverse
   }
 

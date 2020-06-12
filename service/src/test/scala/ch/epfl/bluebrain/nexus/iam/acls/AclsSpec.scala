@@ -88,7 +88,7 @@ class AclsSpec
 
     "performing get operations" should {
       "fetch initial ACLs" in new Context {
-        acls.fetch(/, self = true).some.value shouldEqual AccessControlList(Anonymous  -> pc.minimum)
+        acls.fetch(/, self = true).some.value shouldEqual AccessControlList(Anonymous -> pc.minimum)
         acls.fetch(/, self = false).some.value shouldEqual AccessControlList(Anonymous -> pc.minimum)
       }
 
@@ -151,7 +151,7 @@ class AclsSpec
         val replaced         = AccessControlList(user1 -> permsUser1)
         val updatedBy        = User(genString(), genString())
         val otherIds: Caller = Caller(updatedBy, Set(Group("admin", "realm"), updatedBy, Anonymous))
-        val metadata =
+        val metadata         =
           ResourceMetadata(id, 2L, Set(nxv.AccessControlList.value), instant, createdBy, instant, updatedBy)
         acls.replace(path, 1L, replaced)(otherIds).accepted shouldEqual metadata
         acls.fetch(path, self = false).some shouldEqual metadata.map(_ => replaced)
@@ -211,7 +211,7 @@ class AclsSpec
       }
 
       "reject when trying to append the partially already existing ACL" in new AppendCtx {
-        val _      = acls.replace(path, 0L, acl).accepted
+        acls.replace(path, 0L, acl).accepted
         val append = AccessControlList(user1 -> permsUser1)
         acls.append(path, 1L, append).rejected[NothingToBeUpdated].path shouldEqual path
       }

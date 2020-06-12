@@ -41,23 +41,33 @@ trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
   def urlEncode(s: String): String = URLEncoder.encode(s, UTF_8.displayName())
 
   class EitherValuable[L, R](either: Either[L, R], pos: source.Position) {
-    def rightValue: R = either match {
-      case Right(value) => value
-      case Left(th: Throwable) =>
-        throw new TestFailedException(
-          (_: StackDepthException) => Some("The Either value is not a Right(_)"),
-          Some(th),
-          pos
-        )
-      case Left(_) =>
-        throw new TestFailedException((_: StackDepthException) => Some("The Either value is not a Right(_)"), None, pos)
-    }
+    def rightValue: R =
+      either match {
+        case Right(value)        => value
+        case Left(th: Throwable) =>
+          throw new TestFailedException(
+            (_: StackDepthException) => Some("The Either value is not a Right(_)"),
+            Some(th),
+            pos
+          )
+        case Left(_)             =>
+          throw new TestFailedException(
+            (_: StackDepthException) => Some("The Either value is not a Right(_)"),
+            None,
+            pos
+          )
+      }
 
-    def leftValue: L = either match {
-      case Left(value) => value
-      case Right(_) =>
-        throw new TestFailedException((_: StackDepthException) => Some("The Either value is not a Left(_)"), None, pos)
-    }
+    def leftValue: L =
+      either match {
+        case Left(value) => value
+        case Right(_)    =>
+          throw new TestFailedException(
+            (_: StackDepthException) => Some("The Either value is not a Left(_)"),
+            None,
+            pos
+          )
+      }
   }
 
   implicit def convertEitherToValuable[L, R](either: Either[L, R])(implicit p: source.Position): EitherValuable[L, R] =
@@ -83,18 +93,18 @@ trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
     val model = ModelFactory.createDefaultModel()
     g.triples.foreach {
       case (s, p, o) =>
-        val sr = s match {
+        val sr   = s match {
           case IriNode(iri) => ResourceFactory.createResource(iri.asUri)
           case BNode(id)    => new ResourceImpl(AnonId.create(id))
         }
-        val pp = ResourceFactory.createProperty(p.value.asUri)
-        val or = o match {
+        val pp   = ResourceFactory.createProperty(p.value.asUri)
+        val or   = o match {
           case Literal(lf, rdf.langString, Some(LanguageTag(tag))) =>
             ResourceFactory.createLangLiteral(lf, tag)
-          case Literal(lf, dataType, _) =>
+          case Literal(lf, dataType, _)                            =>
             castToDatatype(lf, dataType).getOrElse(ResourceFactory.createStringLiteral(lf))
-          case IriNode(iri) => ResourceFactory.createResource(iri.asUri)
-          case BNode(id)    => new ResourceImpl(AnonId.create(id))
+          case IriNode(iri)                                        => ResourceFactory.createResource(iri.asUri)
+          case BNode(id)                                           => new ResourceImpl(AnonId.create(id))
         }
         val stmt = ResourceFactory.createStatement(sr, pp, or)
         model.add(stmt)
@@ -118,7 +128,7 @@ trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
           Option(literal.getDatatypeURI) match {
             case Some(dataType) =>
               Iri.url(dataType).leftMap(errorMsg(dataType, _)).map(Literal(literal.getLexicalForm, _))
-            case _ => Right(Literal(literal.getLexicalForm))
+            case _              => Right(Literal(literal.getLexicalForm))
           }
       else
         Right(
@@ -131,7 +141,7 @@ trait RdfSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
       Option(resource.getURI) match {
         case Some(uri) if !uri.isEmpty =>
           Iri.absolute(uri).map(IriNode(_)).leftMap(errorMsg(uri, _))
-        case _ =>
+        case _                         =>
           Right(b"${resource.getId.getLabelString}")
       }
 

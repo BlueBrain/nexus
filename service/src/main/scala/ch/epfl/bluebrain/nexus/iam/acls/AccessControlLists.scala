@@ -28,7 +28,7 @@ final case class AccessControlLists(value: Map[Path, Resource]) {
     val toAddKeys   = acls.value.keySet -- value.keySet
     val toMergeKeys = acls.value.keySet -- toAddKeys
     val added       = value ++ acls.value.view.filterKeys(toAddKeys.contains)
-    val merged = value.view.filterKeys(toMergeKeys.contains).map {
+    val merged      = value.view.filterKeys(toMergeKeys.contains).map {
       case (p, currResourceAcl) => p -> currResourceAcl.map(_ ++ acls.value(p).value)
     }
     AccessControlLists(added ++ merged)
@@ -48,7 +48,7 @@ final case class AccessControlLists(value: Map[Path, Resource]) {
   /**
     * @return new [[AccessControlLists]] with the same elements as the current one but sorted by [[Path]] (alphabetically)
     */
-  def sorted: AccessControlLists =
+  def sorted: AccessControlLists                            =
     AccessControlLists(ListMap(value.toSeq.sortBy { case (path, _) => path.asString }: _*))
 
   /**
@@ -67,7 +67,7 @@ final case class AccessControlLists(value: Map[Path, Resource]) {
   def removeEmpty: AccessControlLists =
     AccessControlLists(value.foldLeft(Map.empty[Path, Resource]) {
       case (acc, (_, acl)) if acl.value.value.isEmpty => acc
-      case (acc, (p, acl)) =>
+      case (acc, (p, acl))                            =>
         val filteredAcl = acl.value.value.filterNot { case (_, v) => v.isEmpty }
         if (filteredAcl.isEmpty) acc
         else acc + (p -> acl.map(_ => AccessControlList(filteredAcl)))
@@ -87,16 +87,17 @@ object AccessControlLists {
     */
   final def apply(tuple: (Path, Resource)*): AccessControlLists = AccessControlLists(tuple.toMap)
 
-  implicit def aclsEncoder(implicit http: HttpConfig): Encoder[AccessControlLists] = Encoder.encodeJson.contramap {
-    case AccessControlLists(value) =>
-      val arr = value.map {
-        case (path, acl) =>
-          Json.obj("_path" -> Json.fromString(path.asString)) deepMerge acl.asJson.removeKeys("@context")
-      }
-      Json
-        .obj(nxv.total.prefix -> Json.fromInt(arr.size), nxv.results.prefix -> Json.arr(arr.toSeq: _*))
-        .addContext(resourceCtxUri)
-        .addContext(iamCtxUri)
-        .addContext(searchCtxUri)
-  }
+  implicit def aclsEncoder(implicit http: HttpConfig): Encoder[AccessControlLists] =
+    Encoder.encodeJson.contramap {
+      case AccessControlLists(value) =>
+        val arr = value.map {
+          case (path, acl) =>
+            Json.obj("_path" -> Json.fromString(path.asString)) deepMerge acl.asJson.removeKeys("@context")
+        }
+        Json
+          .obj(nxv.total.prefix -> Json.fromInt(arr.size), nxv.results.prefix -> Json.arr(arr.toSeq: _*))
+          .addContext(resourceCtxUri)
+          .addContext(iamCtxUri)
+          .addContext(searchCtxUri)
+    }
 }

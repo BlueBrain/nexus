@@ -23,8 +23,11 @@ import scala.annotation.tailrec
   * @param tree the data structure used to build the tree with the parent paths and the children paths
   * @param acls a data structure used to store the ACLs for a path
   */
-class InMemoryAclsTree[F[_]] private (tree: ConcurrentHashMap[Path, Set[Path]], acls: ConcurrentHashMap[Path, Resource])(
-    implicit F: Applicative[F],
+class InMemoryAclsTree[F[_]] private (
+    tree: ConcurrentHashMap[Path, Set[Path]],
+    acls: ConcurrentHashMap[Path, Resource]
+)(implicit
+    F: Applicative[F],
     pc: PermissionsConfig,
     http: HttpConfig
 ) extends AclsIndex[F] {
@@ -46,22 +49,22 @@ class InMemoryAclsTree[F[_]] private (tree: ConcurrentHashMap[Path, Set[Path]], 
         case c if rev > c.rev => aclResource
         case other            => other
       }
-    val updated = acls.merge(path, aclResource, f)
+    val updated                                     = acls.merge(path, aclResource, f)
 
     val update = updated == aclResource
     if (update) inner(path, Set.empty)
     F.pure(update)
   }
 
-  override def get(path: Path, ancestors: Boolean, self: Boolean)(
-      implicit identities: Set[Identity]
+  override def get(path: Path, ancestors: Boolean, self: Boolean)(implicit
+      identities: Set[Identity]
   ): F[AccessControlLists] = {
 
     def removeNotOwn(currentAcls: AccessControlLists): AccessControlLists = {
       def containsAclsRead(acl: AccessControlList): Boolean =
         acl.value.exists { case (ident, perms) => identities.contains(ident) && perms.contains(read) }
 
-      val (_, result) = currentAcls.sorted.value
+      val (_, result)                                       = currentAcls.sorted.value
         .foldLeft(Set.empty[Path] -> AccessControlLists.empty) {
           case ((ownPaths, acc), entry @ (p, _)) if ownPaths.exists(p.startsWith) => ownPaths     -> (acc + entry)
           case ((ownPaths, acc), entry @ (p, acl)) if containsAclsRead(acl.value) => ownPaths + p -> (acc + entry)
@@ -105,14 +108,14 @@ class InMemoryAclsTree[F[_]] private (tree: ConcurrentHashMap[Path, Set[Path]], 
             AccessControlLists(children.foldLeft(Map.empty[Path, Resource]) { (acc, p) =>
               acls.getSafe(p).map(r => acc + (p -> r)).getOrElse(acc)
             })
-          case Some(children) =>
+          case Some(children)                                       =>
             children.foldLeft(AccessControlLists.empty) {
               case (acc, Segment(head, _)) =>
                 val toConsumeNew = (consumed :+ head) ++ segments.takeRight(segments.size - 1 - consumed.size)
                 acc ++ inner(toConsumeNew)
-              case (acc, _) => acc
+              case (acc, _)                => acc
             }
-          case None => initialAcls(path)
+          case None                                                 => initialAcls(path)
         }
       } else {
         val path = pathOf(toConsume)

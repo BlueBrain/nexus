@@ -28,7 +28,7 @@ class ValidationReportSpec extends RdfSpec {
       report.conforms shouldEqual false
       report.targetedNodes shouldEqual 1
       report.isValid() shouldEqual false
-      val array = report.json.hcursor.downField("result").downField("detail").focus.flatMap(_.asArray).value
+      val array  = report.json.hcursor.downField("result").downField("detail").focus.flatMap(_.asArray).value
       array.map(_.hcursor.get[String]("resultMessage").rightValue).sorted shouldEqual Vector(
         "Focus node has 2^^http://www.w3.org/2001/XMLSchema#integer of the shapes from the 'exactly one' list",
         "Value does not have shape http://localhost/v0/schemas/nexus/schemaorg/quantitativevalue/v0.1.0/shapes/QuantitativeValueShape"

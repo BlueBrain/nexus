@@ -53,7 +53,7 @@ class QueryResultsSpec extends AnyWordSpecLike with Matchers {
         1L,
         List(UnscoredQueryResult("1"))
       )
-      val scored = QueryResults(1L, List(ScoredQueryResult(1f, 1)))
+      val scored   = QueryResults(1L, List(ScoredQueryResult(1f, 1)))
       scored.copyWith(scored.results.map(_.map(_.toString))) shouldEqual QueryResults(
         1L,
         List(ScoredQueryResult(1f, "1"))

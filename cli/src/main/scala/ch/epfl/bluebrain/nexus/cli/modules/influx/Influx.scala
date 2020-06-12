@@ -11,8 +11,8 @@ import izumi.distage.model.recursive.LocatorRef
 /**
   * CLI InfluxDB specific options.
   */
-final class Influx[F[_]: Timer: Parallel: ContextShift: TagK](locatorOpt: Option[LocatorRef])(
-    implicit F: ConcurrentEffect[F]
+final class Influx[F[_]: Timer: Parallel: ContextShift: TagK](locatorOpt: Option[LocatorRef])(implicit
+    F: ConcurrentEffect[F]
 ) extends AbstractCommand[F](locatorOpt) {
 
   def subcommand: Opts[F[ExitCode]] =

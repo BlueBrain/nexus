@@ -37,7 +37,7 @@ object RepairFromMessages {
         case PermissionsId() => p.agg.currentState(p.persistenceId).runToFuture
         case RealmId(label)  => r.agg.currentState(label.value).runToFuture
         case AclId(path)     => a.agg.currentState(path.asString).runToFuture
-        case other =>
+        case other           =>
           log.warn(s"Unknown persistence id '$other'")
           Future.successful(())
       }
@@ -52,7 +52,7 @@ object RepairFromMessages {
   }
 
   sealed abstract class PersistenceId(prefix: String) {
-    private val len = prefix.length
+    private val len                                       = prefix.length
     protected def dropPrefix(arg: String): Option[String] =
       if (arg.startsWith(prefix)) Some(arg.drop(len))
       else None
@@ -65,7 +65,7 @@ object RepairFromMessages {
     def unapply(arg: String): Option[Path] =
       dropPrefix(arg).flatMap(str => Path(URLDecoder.decode(str, "UTF-8")).toOption)
   }
-  object PermissionsId {
+  object PermissionsId                                {
     def unapply(arg: String): Boolean =
       arg == "permissions-permissions"
   }

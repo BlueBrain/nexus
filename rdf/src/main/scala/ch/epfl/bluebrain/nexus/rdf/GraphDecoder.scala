@@ -33,66 +33,73 @@ trait GraphDecoder[A] extends Serializable { self =>
   /**
     * Creates a new Decoder by mapping the argument function over the result of this Decoder.
     */
-  final def map[B](f: A => B): GraphDecoder[B] = new GraphDecoder[B] {
-    final def apply(cursor: Cursor): Result[B] =
-      self(cursor).map(f)
-  }
+  final def map[B](f: A => B): GraphDecoder[B] =
+    new GraphDecoder[B] {
+      final def apply(cursor: Cursor): Result[B] =
+        self(cursor).map(f)
+    }
 
   /**
     * Binds the argument function over this Decoder.
     */
-  final def flatMap[B](f: A => GraphDecoder[B]): GraphDecoder[B] = new GraphDecoder[B] {
-    final def apply(cursor: Cursor): Result[B] = self(cursor) match {
-      case Right(a)    => f(a)(cursor)
-      case l @ Left(_) => l.asInstanceOf[Result[B]]
+  final def flatMap[B](f: A => GraphDecoder[B]): GraphDecoder[B] =
+    new GraphDecoder[B] {
+      final def apply(cursor: Cursor): Result[B] =
+        self(cursor) match {
+          case Right(a)    => f(a)(cursor)
+          case l @ Left(_) => l.asInstanceOf[Result[B]]
+        }
     }
-  }
 
   /**
     * If this Decoder is successful return its result or fallback on the argument Decoder.
     */
-  final def or[AA >: A](d: => GraphDecoder[AA]): GraphDecoder[AA] = new GraphDecoder[AA] {
-    final def apply(cursor: Cursor): Result[AA] =
-      self(cursor) match {
-        case Left(_)      => d(cursor)
-        case r @ Right(_) => r
-      }
-  }
+  final def or[AA >: A](d: => GraphDecoder[AA]): GraphDecoder[AA] =
+    new GraphDecoder[AA] {
+      final def apply(cursor: Cursor): Result[AA] =
+        self(cursor) match {
+          case Left(_)      => d(cursor)
+          case r @ Right(_) => r
+        }
+    }
 
   /**
     * If this Decoder is successful applies the argument function to the result producing either a error message or
     * a new result.
     */
-  final def emap[B](f: A => Either[String, B]): GraphDecoder[B] = new GraphDecoder[B] {
-    final def apply(c: Cursor): GraphDecoder.Result[B] =
-      self(c) match {
-        case Right(a) =>
-          f(a) match {
-            case r @ Right(_)  => r.asInstanceOf[Result[B]]
-            case Left(message) => Left(DecodingError(message, c.history))
-          }
-        case l @ Left(_) => l.asInstanceOf[Result[B]]
-      }
-  }
+  final def emap[B](f: A => Either[String, B]): GraphDecoder[B] =
+    new GraphDecoder[B] {
+      final def apply(c: Cursor): GraphDecoder.Result[B] =
+        self(c) match {
+          case Right(a)    =>
+            f(a) match {
+              case r @ Right(_)  => r.asInstanceOf[Result[B]]
+              case Left(message) => Left(DecodingError(message, c.history))
+            }
+          case l @ Left(_) => l.asInstanceOf[Result[B]]
+        }
+    }
 
   /**
     * Runs both decoders (self and the provided decoder) and returns the result as a pair.
     */
-  final def product[B](db: GraphDecoder[B]): GraphDecoder[(A, B)] = new GraphDecoder[(A, B)] {
-    override def apply(cursor: Cursor): Result[(A, B)] =
-      self.flatMap(a => db.map(b => (a, b)))(cursor)
-  }
+  final def product[B](db: GraphDecoder[B]): GraphDecoder[(A, B)] =
+    new GraphDecoder[(A, B)] {
+      override def apply(cursor: Cursor): Result[(A, B)] =
+        self.flatMap(a => db.map(b => (a, b)))(cursor)
+    }
 
   /**
     * If this Decoder is successful return its result or recover using the provided function.
     */
-  final def handleErrorWith(f: DecodingError => GraphDecoder[A]): GraphDecoder[A] = new GraphDecoder[A] {
-    override def apply(cursor: Cursor): Result[A] =
-      self(cursor) match {
-        case Left(err)    => f(err)(cursor)
-        case r @ Right(_) => r
-      }
-  }
+  final def handleErrorWith(f: DecodingError => GraphDecoder[A]): GraphDecoder[A] =
+    new GraphDecoder[A] {
+      override def apply(cursor: Cursor): Result[A] =
+        self(cursor) match {
+          case Left(err)    => f(err)(cursor)
+          case r @ Right(_) => r
+        }
+    }
 
 }
 
@@ -115,23 +122,26 @@ object GraphDecoder
   /**
     * Constructs a [[GraphDecoder]] from a function.
     */
-  final def instance[A](f: Cursor => Result[A]): GraphDecoder[A] = new GraphDecoder[A] {
-    final def apply(c: Cursor): Result[A] = f(c)
-  }
+  final def instance[A](f: Cursor => Result[A]): GraphDecoder[A] =
+    new GraphDecoder[A] {
+      final def apply(c: Cursor): Result[A] = f(c)
+    }
 
   /**
     * Constructs a [[GraphDecoder]] that always succeeds with the provided value.
     */
-  final def const[A](a: A): GraphDecoder[A] = new GraphDecoder[A] {
-    override def apply(cursor: Cursor): Result[A] = Right(a)
-  }
+  final def const[A](a: A): GraphDecoder[A] =
+    new GraphDecoder[A] {
+      override def apply(cursor: Cursor): Result[A] = Right(a)
+    }
 
   /**
     * Constructs a failed [[GraphDecoder]] using the provided error.
     */
-  final def failed[A](error: DecodingError): GraphDecoder[A] = new GraphDecoder[A] {
-    override def apply(cursor: Cursor): Result[A] = Left(error)
-  }
+  final def failed[A](error: DecodingError): GraphDecoder[A] =
+    new GraphDecoder[A] {
+      override def apply(cursor: Cursor): Result[A] = Left(error)
+    }
 
   implicit final val graphDecodeCursor: GraphDecoder[Cursor] = instance(Right(_))
 
@@ -144,20 +154,22 @@ object GraphDecoder
       final override def product[A, B](fa: GraphDecoder[A], fb: GraphDecoder[B]): GraphDecoder[(A, B)] = fa.product(fb)
       final def flatMap[A, B](fa: GraphDecoder[A])(f: A => GraphDecoder[B]): GraphDecoder[B]           = fa.flatMap(f)
 
-      final def raiseError[A](e: DecodingError): GraphDecoder[A] = GraphDecoder.failed(e)
+      final def raiseError[A](e: DecodingError): GraphDecoder[A]                                              = GraphDecoder.failed(e)
       final def handleErrorWith[A](fa: GraphDecoder[A])(f: DecodingError => GraphDecoder[A]): GraphDecoder[A] =
         fa.handleErrorWith(f)
 
-      final def tailRecM[A, B](a: A)(f: A => GraphDecoder[Either[A, B]]): GraphDecoder[B] = new GraphDecoder[B] {
-        @tailrec
-        private[this] def step(c: Cursor, a1: A): Result[B] = f(a1)(c) match {
-          case l @ Left(_)     => l.asInstanceOf[Result[B]]
-          case Right(Left(a2)) => step(c, a2)
-          case Right(Right(b)) => Right(b)
-        }
+      final def tailRecM[A, B](a: A)(f: A => GraphDecoder[Either[A, B]]): GraphDecoder[B] =
+        new GraphDecoder[B] {
+          @tailrec
+          private[this] def step(c: Cursor, a1: A): Result[B] =
+            f(a1)(c) match {
+              case l @ Left(_)     => l.asInstanceOf[Result[B]]
+              case Right(Left(a2)) => step(c, a2)
+              case Right(Right(b)) => Right(b)
+            }
 
-        final def apply(c: Cursor): Result[B] = step(c, a)
-      }
+          final def apply(c: Cursor): Result[B] = step(c, a)
+        }
     }
 }
 
@@ -178,7 +190,7 @@ trait PrimitiveGraphDecoderInstances {
       case Some(lit: Literal) if lit.isBoolean =>
         lit.lexicalForm.toBooleanOption
           .toRight(DecodingError("Unable to decode node as a literal Boolean", c.history))
-      case _ => Left(DecodingError("Unable to decode node as a literal Boolean", c.history))
+      case _                                   => Left(DecodingError("Unable to decode node as a literal Boolean", c.history))
     }
   }
 
@@ -195,12 +207,12 @@ trait PrimitiveGraphDecoderInstances {
         case Some(lit: Literal) if lit.isNumeric =>
           f(lit.lexicalForm) match {
             case Some(a) => Right(a)
-            case None =>
+            case None    =>
               Left(
                 DecodingError(s"Unable to decode node as a literal ${A.runtimeClass.getSimpleName}", c.history)
               )
           }
-        case _ =>
+        case _                                   =>
           Left(DecodingError(s"Unable to decode node as a literal ${A.runtimeClass.getSimpleName}", c.history))
       }
     }
@@ -214,7 +226,7 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
       case Some(lit: Literal) if lit.isString =>
         Try(UUID.fromString(lit.lexicalForm)).toEither.left
           .map(_ => DecodingError("Unable to decode node as an UUID", c.history))
-      case _ => Left(DecodingError("Unable to decode node as an UUID", c.history))
+      case _                                  => Left(DecodingError("Unable to decode node as an UUID", c.history))
     }
   }
 
@@ -235,12 +247,13 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
   implicit final val graphDecodePeriod: GraphDecoder[Period] =
     graphDecodeString.emap { str => Try(Period.parse(str)).toEither.leftMap(_ => "Unable to decode node as a Period") }
 
-  implicit final def graphDecodeSet[A](implicit A: GraphDecoder[A]): GraphDecoder[Set[A]] = GraphDecoder.instance { c =>
-    c.cursors match {
-      case Some(cs) => cs.traverse(A.apply)
-      case None     => A(c).map(a => Set(a))
+  implicit final def graphDecodeSet[A](implicit A: GraphDecoder[A]): GraphDecoder[Set[A]] =
+    GraphDecoder.instance { c =>
+      c.cursors match {
+        case Some(cs) => cs.traverse(A.apply)
+        case None     => A(c).map(a => Set(a))
+      }
     }
-  }
 
   final def graphDecodeSeqFromList[C[_], A](f: Factory[A, C[A]])(implicit A: GraphDecoder[A]): GraphDecoder[C[A]] = {
     import scala.collection.mutable
@@ -249,7 +262,7 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
       acc match {
         case l @ Left(_)                                                  => l.asInstanceOf[Either[DecodingError, C[A]]]
         case Right(builder) if c.narrow.as[AbsoluteIri] == Right(rdf.nil) => Right(builder.result())
-        case Right(builder) =>
+        case Right(builder)                                               =>
           val first = c.down(rdf.first).as[A]
           val rest  = c.down(rdf.rest)
           inner(rest, first.map(a => builder.addOne(a)))
@@ -285,8 +298,8 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
     }
   }
 
-  implicit final def graphDecodeEither[A, B](
-      implicit A: GraphDecoder[A],
+  implicit final def graphDecodeEither[A, B](implicit
+      A: GraphDecoder[A],
       B: GraphDecoder[B]
   ): GraphDecoder[Either[A, B]] =
     GraphDecoder.instance { c =>
@@ -320,36 +333,36 @@ trait StandardGraphDecoderInstances { this: PrimitiveGraphDecoderInstances =>
 trait RdfGraphDecoderInstances {
   implicit final val graphDecodeAbsoluteIri: GraphDecoder[AbsoluteIri] = GraphDecoder.instance { c =>
     c.narrow.focus match {
-      case Some(IriNode(iri)) => Right(iri)
+      case Some(IriNode(iri))      => Right(iri)
       case Some(Literal(lf, _, _)) =>
         Iri.absolute(lf).leftMap(_ => DecodingError("Unable to decode node as an AbsoluteIri", c.history))
-      case _ => Left(DecodingError("Unable to decode node as an AbsoluteIri", c.history))
+      case _                       => Left(DecodingError("Unable to decode node as an AbsoluteIri", c.history))
     }
   }
 
   implicit final val graphDecodeUrl: GraphDecoder[Url] = GraphDecoder.instance { c =>
     c.narrow.focus match {
-      case Some(IriNode(iri)) =>
+      case Some(IriNode(iri))      =>
         iri.asUrl match {
           case Some(url) => Right(url)
           case None      => Left(DecodingError("Unable to decode node as an Url", c.history))
         }
       case Some(Literal(lf, _, _)) =>
         Iri.url(lf).leftMap(_ => DecodingError("Unable to decode node as an Url", c.history))
-      case _ => Left(DecodingError("Unable to decode node as an Url", c.history))
+      case _                       => Left(DecodingError("Unable to decode node as an Url", c.history))
     }
   }
 
   implicit final val graphDecodeUrn: GraphDecoder[Urn] = GraphDecoder.instance { c =>
     c.narrow.focus match {
-      case Some(IriNode(iri)) =>
+      case Some(IriNode(iri))      =>
         iri.asUrn match {
           case Some(urn) => Right(urn)
           case None      => Left(DecodingError("Unable to decode node as an Urn", c.history))
         }
       case Some(Literal(lf, _, _)) =>
         Iri.urn(lf).leftMap(_ => DecodingError("Unable to decode node as an Urn", c.history))
-      case _ => Left(DecodingError("Unable to decode node as an Urn", c.history))
+      case _                       => Left(DecodingError("Unable to decode node as an Urn", c.history))
     }
   }
 

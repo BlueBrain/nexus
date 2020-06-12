@@ -390,7 +390,7 @@ class RealmsSpec
             .generate()
           (rsaJWK.getKeyID, rsaJWK.toRSAPrivateKey)
         }
-        val csb = new JWTClaimsSet.Builder()
+        val csb    = new JWTClaimsSet.Builder()
           .subject("sub")
           .issuer(issuer)
           .expirationTime(Date.from(Instant.now().plusSeconds(3600)))
@@ -440,7 +440,7 @@ object RealmsSpec {
       preferredUsername: Option[String] = None
   ): AccessToken = {
     val signer = new RSASSASigner(privateKey)
-    val csb = new JWTClaimsSet.Builder()
+    val csb    = new JWTClaimsSet.Builder()
       .issuer(issuer)
       .subject(subject)
       .expirationTime(exp)

@@ -73,8 +73,7 @@ final class StateMachineTree[F[_]] {
       invalidationStrategy: StopStrategy[State, Command],
       config: AkkaStateMachineConfig,
       poolSize: Int
-  )(
-      implicit
+  )(implicit
       F: Effect[F],
       T: Timer[F],
       policy: RetryPolicy[F],
@@ -112,8 +111,7 @@ final class StateMachineSharded[F[_]] {
       config: AkkaStateMachineConfig,
       shards: Int,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(
-      implicit
+  )(implicit
       F: Effect[F],
       T: Timer[F],
       policy: RetryPolicy[F],
@@ -171,8 +169,8 @@ object AkkaStateMachine {
   )(implicit as: ActorSystem, policy: RetryPolicy[F]): F[StateMachine[F, String, State, Command, Rejection]] = {
     val F = implicitly[Effect[F]]
     F.delay {
-      val props  = StateMachineActor.parentProps(name, initialState, evaluate, invalidationStrategy, config)
-      val parent = as.actorOf(ConsistentHashingPool(poolSize).props(props), name)
+      val props     = StateMachineActor.parentProps(name, initialState, evaluate, invalidationStrategy, config)
+      val parent    = as.actorOf(ConsistentHashingPool(poolSize).props(props), name)
       // route all messages through the parent pool
       val selection = ActorRefSelection.const(parent)
       new AkkaStateMachine(name, selection, config)
@@ -218,17 +216,17 @@ object AkkaStateMachine {
       shards: Int,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem, policy: RetryPolicy[F]): F[StateMachine[F, String, State, Command, Rejection]] = {
-    val settings = shardingSettings.getOrElse(ClusterShardingSettings(as))
-    val shardExtractor: ExtractShardId = {
+    val settings                         = shardingSettings.getOrElse(ClusterShardingSettings(as))
+    val shardExtractor: ExtractShardId   = {
       case msg: StateMachineMsg => math.abs(msg.id.hashCode) % shards toString
     }
     val entityExtractor: ExtractEntityId = {
       case msg: StateMachineMsg => (msg.id, msg)
     }
-    val F = implicitly[Effect[F]]
+    val F                                = implicitly[Effect[F]]
     F.delay {
-      val props = StateMachineActor.shardedProps(name, initialState, evaluate, invalidationStrategy, config)
-      val ref   = ClusterSharding(as).start(name, props, settings, entityExtractor, shardExtractor)
+      val props     = StateMachineActor.shardedProps(name, initialState, evaluate, invalidationStrategy, config)
+      val ref       = ClusterSharding(as).start(name, props, settings, entityExtractor, shardExtractor)
       // route all messages through the sharding coordination
       val selection = ActorRefSelection.const(ref)
       new AkkaStateMachine(name, selection, config)

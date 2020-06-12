@@ -16,7 +16,7 @@ final class TestConsole[F[_]](
     val errQueue: Queue[F, String]
 ) extends Console[F] {
 
-  override def println(line: String): F[Unit] =
+  override def println(line: String): F[Unit]    =
     stdQueue.enqueue1(line)
   override def printlnErr(line: String): F[Unit] =
     errQueue.enqueue1(line)

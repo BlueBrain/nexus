@@ -20,15 +20,15 @@ import scala.util.control.NonFatal
   *
   * @tparam F the monadic effect type
   */
-abstract class ElasticSearchBaseClient[F[_]: Timer](
-    implicit retryConfig: RetryStrategyConfig,
+abstract class ElasticSearchBaseClient[F[_]: Timer](implicit
+    retryConfig: RetryStrategyConfig,
     cl: UntypedHttpClient[F],
     F: Effect[F]
 ) {
 
   private[client] val log = Logger[this.type]
 
-  implicit private[client] val retryPolicy: RetryPolicy[F] = retryConfig.retryPolicy[F]
+  implicit private[client] val retryPolicy: RetryPolicy[F]                     = retryConfig.retryPolicy[F]
   implicit private[client] val logErrors: (Throwable, RetryDetails) => F[Unit] =
     (err, details) => F.pure(log.warn(s"Retrying on query details '$details'", err))
 
