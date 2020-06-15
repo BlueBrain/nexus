@@ -2,6 +2,7 @@ Usage:
     nexus-cli config
     nexus-cli postgres
     nexus-cli influxdb
+    nexus-cli literature
 
 Nexus CLI
 
@@ -16,3 +17,5 @@ Subcommands:
         Postgres database projection.
     influxdb
         influxDB projection.
+    literature
+        literature extraction projection.

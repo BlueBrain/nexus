@@ -41,7 +41,9 @@ object ProjectionPipes {
     * @return it returns the successfully evaluated projections, ignoring the failures
     */
   def printProjectionProgress[F[_], A, E <: CliError](
-      console: Console[F]
+      console: Console[F],
+      line: (Long, Long) => String = (success, errors) =>
+        s"Processed ${success + errors} events (success: $success, errors: $errors)"
   )(implicit F: Monad[F], cfg: PrintConfig): Pipe[F, Either[E, A], A]         =
     _.evalMapAccumulate[F, (Long, Long), Either[E, A]]((0L, 0L)) {
       case ((success, errors), v @ Right(_))  =>
@@ -52,7 +54,7 @@ object ProjectionPipes {
         case ((successes, errors), v)
             if cfg.progressInterval
               .exists(interval => (successes + errors) % interval == 0) && (successes + errors) != 0L =>
-          console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)").as(v)
+          console.println(line(successes, errors)).as(v)
         case ((_, _), v) => F.pure(v)
       }
       .collect { case Right(v) => v }

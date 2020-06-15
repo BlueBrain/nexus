@@ -9,6 +9,7 @@ import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 package object cli {
 
   type ClientErrOr[A] = Either[ClientError, A]
+  type CliErrOr[A]    = Either[CliError, A]
   type LabeledEvent   = (Event, OrgLabel, ProjectLabel)
 
   def logRetryErrors[F[_], A](

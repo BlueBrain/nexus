@@ -8,6 +8,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliError.ConfigError
 import ch.epfl.bluebrain.nexus.cli.CliError.ConfigError.{ReadConvertError, UserHomeNotDefined}
 import ch.epfl.bluebrain.nexus.cli.config.influx.InfluxConfig
+import ch.epfl.bluebrain.nexus.cli.config.literature.LiteratureConfig
 import ch.epfl.bluebrain.nexus.cli.config.postgres.PostgresConfig
 import ch.epfl.bluebrain.nexus.cli.sse.BearerToken
 import com.typesafe.config.{Config => TConfig}
@@ -17,14 +18,16 @@ import pureconfig.{ConfigConvert, ConfigObjectSource, ConfigSource}
 /**
   * Complete application configuration.
   *
-  * @param env      the environment configuration
-  * @param postgres the postgres configuration
-  * @param influx   the influxDB configuration
+  * @param env        the environment configuration
+  * @param postgres   the postgres configuration
+  * @param influx     the influxDB configuration
+  * @param literature the literature extraction configuration
   */
 final case class AppConfig(
     env: EnvConfig,
     postgres: PostgresConfig,
-    influx: InfluxConfig
+    influx: InfluxConfig,
+    literature: LiteratureConfig
 )
 
 object AppConfig {
@@ -35,6 +38,7 @@ object AppConfig {
     * @param envConfigFile      an optional env config file location
     * @param postgresConfigFile an optional postgres config file location
     * @param influxConfigFile   an optional influx config file location
+    * @param literatureConfigFile   an optional literature extraction config file location
     * @param token              an optional token configuration None - unset, Some(None) - wipe token, Some(Some) -
     *                           overridden token
     */
@@ -42,26 +46,29 @@ object AppConfig {
       envConfigFile: Option[Path] = None,
       postgresConfigFile: Option[Path] = None,
       influxConfigFile: Option[Path] = None,
+      literatureConfigFile: Option[Path] = None,
       token: Option[Option[BearerToken]] = None
   )(implicit F: Sync[F]): F[Either[ConfigError, AppConfig]] =
     (for {
-      cfg    <- assembleConfig(envConfigFile, postgresConfigFile, influxConfigFile, token)
+      cfg    <- assembleConfig(envConfigFile, postgresConfigFile, influxConfigFile, literatureConfigFile, token)
       appCfg <- EitherT.fromEither[F](cfg.load[AppConfig].leftMap[ConfigError](ReadConvertError))
     } yield appCfg).value
 
   /**
     * Assembles the configuration using possible file config location overrides.
     *
-    * @param envConfigFile      an optional env config file location
-    * @param postgresConfigFile an optional postgres config file location
-    * @param influxConfigFile   an optional influx config file location
-    * @param token              an optional token configuration None - unset, Some(None) - wipe token, Some(Some) -
-    *                           overridden token
+    * @param envConfigFile        an optional env config file location
+    * @param postgresConfigFile   an optional postgres config file location
+    * @param influxConfigFile     an optional influx config file location
+    * @param literatureConfigFile an optional literature extraction config file location
+    * @param token                an optional token configuration None - unset, Some(None) - wipe token, Some(Some) -
+    *                             overridden token
     */
   def assembleConfig[F[_]](
       envConfigFile: Option[Path] = None,
       postgresConfigFile: Option[Path] = None,
       influxConfigFile: Option[Path] = None,
+      literatureConfigFile: Option[Path] = None,
       token: Option[Option[BearerToken]] = None
   )(implicit F: Sync[F]): EitherT[F, ConfigError, ConfigObjectSource] = {
 
@@ -70,6 +77,7 @@ object AppConfig {
     val envFile                              = nexusHome.map { value => envConfigFile.getOrElse(value.resolve("env.conf")) }
     val postgresFile                         = nexusHome.map { value => postgresConfigFile.getOrElse(value.resolve("postgres.conf")) }
     val influxFile                           = nexusHome.map { value => influxConfigFile.getOrElse(value.resolve("influx.conf")) }
+    val literatureFile                       = nexusHome.map { value => literatureConfigFile.getOrElse(value.resolve("literature.conf")) }
 
     def loadFileIfExists(file: Path): EitherT[F, ConfigError, ConfigObjectSource] = {
       EitherT(F.delay {
@@ -84,19 +92,21 @@ object AppConfig {
     }
 
     for {
-      envFile      <- EitherT.fromEither[F](envFile)
-      postgresFile <- EitherT.fromEither[F](postgresFile)
-      influxFile   <- EitherT.fromEither[F](influxFile)
-      env          <- loadFileIfExists(envFile)
-      postgres     <- loadFileIfExists(postgresFile)
-      influx       <- loadFileIfExists(influxFile)
-      overrides     = ConfigSource.defaultOverrides
-      reference     = ConfigSource.defaultReference
-      stack         =
-        extra withFallback overrides withFallback postgres withFallback influx withFallback env withFallback reference
-      cfg          <- EitherT(F.delay(stack.load[TConfig].leftMap[ConfigError](ReadConvertError)))
-      cfgToken      = if (token.contains(None)) cfg.withoutPath("env.token") else cfg
-      source        = ConfigSource.fromConfig(cfgToken)
+      envFile        <- EitherT.fromEither[F](envFile)
+      postgresFile   <- EitherT.fromEither[F](postgresFile)
+      influxFile     <- EitherT.fromEither[F](influxFile)
+      literatureFile <- EitherT.fromEither[F](literatureFile)
+      env            <- loadFileIfExists(envFile)
+      postgres       <- loadFileIfExists(postgresFile)
+      influx         <- loadFileIfExists(influxFile)
+      literature     <- loadFileIfExists(literatureFile)
+      overrides       = ConfigSource.defaultOverrides
+      reference       = ConfigSource.defaultReference
+      stack           =
+        extra withFallback overrides withFallback postgres withFallback influx withFallback literature withFallback env withFallback reference
+      cfg            <- EitherT(F.delay(stack.load[TConfig].leftMap[ConfigError](ReadConvertError)))
+      cfgToken        = if (token.contains(None)) cfg.withoutPath("env.token") else cfg
+      source          = ConfigSource.fromConfig(cfgToken)
     } yield source
   }
 

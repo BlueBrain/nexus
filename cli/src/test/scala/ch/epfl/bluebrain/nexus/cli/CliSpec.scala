@@ -14,8 +14,9 @@ class CliSpec extends AbstractCliSpec {
       for {
         code        <- cli.command(assemble("config show"))
         replacements = Map(
-                         quote("{postgres-offset-file}") -> cfg.postgres.offsetFile.toString,
-                         quote("{influx-offset-file}")   -> cfg.influx.offsetFile.toString
+                         quote("{postgres-offset-file}")   -> cfg.postgres.offsetFile.toString,
+                         quote("{influx-offset-file}")     -> cfg.influx.offsetFile.toString,
+                         quote("{literature-offset-file}") -> cfg.literature.offsetFile.toString
                        )
         expected     = contentOf("cli/config-show.txt", replacements)
         lines       <- console.stdQueue.dequeue1
@@ -34,16 +35,18 @@ class CliSpec extends AbstractCliSpec {
     }
   }
 
-  override def copyConfigs: IO[(Path, Path, Path)] =
+  override def copyConfigs: IO[(Path, Path, Path, Path)] =
     IO {
-      val parent       = Files.createTempDirectory(".nexus")
-      val envFile      = parent.resolve("env.conf")
-      val postgresFile = parent.resolve("postgres.conf")
-      val influxFile   = parent.resolve("influx.conf")
+      val parent         = Files.createTempDirectory(".nexus")
+      val envFile        = parent.resolve("env.conf")
+      val postgresFile   = parent.resolve("postgres.conf")
+      val influxFile     = parent.resolve("influx.conf")
+      val literatureFile = parent.resolve("literature.conf")
       Files.copy(getClass.getClassLoader.getResourceAsStream("env.conf"), envFile)
       Files.copy(getClass.getClassLoader.getResourceAsStream("postgres-noprojects.conf"), postgresFile)
       Files.copy(getClass.getClassLoader.getResourceAsStream("influx-noprojects.conf"), influxFile)
-      (envFile, postgresFile, influxFile)
+      Files.copy(getClass.getClassLoader.getResourceAsStream("literature-noprojects.conf"), literatureFile)
+      (envFile, postgresFile, influxFile, literatureFile)
     }
 
   def assemble(string: String): List[String] =

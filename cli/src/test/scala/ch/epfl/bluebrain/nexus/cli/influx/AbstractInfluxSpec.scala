@@ -20,7 +20,7 @@ class AbstractInfluxSpec extends AbstractCliSpec {
     new ModuleDef {
       make[AppConfig].fromEffect { host: InfluxHostConfig =>
         copyConfigs.flatMap {
-          case (envFile, _, influxFile) =>
+          case (envFile, _, influxFile, _) =>
             AppConfig.load[IO](Some(envFile), influxConfigFile = Some(influxFile)).flatMap {
               case Left(value)  => IO.raiseError(value)
               case Right(value) =>

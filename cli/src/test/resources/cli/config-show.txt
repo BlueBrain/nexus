@@ -23,6 +23,56 @@ influx {
     }
     projects {}
 }
+literature {
+    blue-brain-search {
+        endpoint="http://localhost:32797/v1"
+        model-types=[
+            {
+                dimensions=512
+                name=USE
+            },
+            {
+                dimensions=768
+                name=SBIOBERT
+            },
+            {
+                dimensions=768
+                name=SBERT
+            },
+            {
+                dimensions=700
+                name=BSV
+            }
+        ]
+    }
+    elastic-search {
+        endpoint="http://localhost:9200"
+        model-indices=[
+            {
+                index="my_index_use"
+                name=USE
+            },
+            {
+                index="my_index_sbiobert"
+                name=SBIOBERT
+            },
+            {
+                index="my_index_sbert"
+                name=SBERT
+            },
+            {
+                index="my_index_bsv"
+                name=BSV
+            }
+        ]
+    }
+    offset-file="{literature-offset-file}"
+    offset-save-interval="1m"
+    print {
+        progress-interval=100
+    }
+    projects {}
+}
 postgres {
     database=postgres
     host="127.0.0.1"
