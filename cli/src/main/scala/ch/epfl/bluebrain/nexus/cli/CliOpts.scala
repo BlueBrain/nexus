@@ -63,6 +63,12 @@ object CliOpts extends OptsInstances {
       help = "The influx configuration file"
     )
 
+  val literatureConfig: Opts[Path] = Opts
+    .option[Path](
+      long = "config",
+      help = "The literature extraction configuration file"
+    )
+
 }
 
 trait OptsInstances {

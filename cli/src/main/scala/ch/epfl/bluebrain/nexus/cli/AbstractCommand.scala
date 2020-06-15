@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.cli.CliOpts._
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.modules.config.ConfigModule
 import ch.epfl.bluebrain.nexus.cli.modules.influx.InfluxModule
+import ch.epfl.bluebrain.nexus.cli.modules.literature.LiteratureModule
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresModule
 import com.monovore.decline.Opts
 import distage.{Injector, TagK}
@@ -24,18 +25,19 @@ abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locato
     locatorOpt match {
       case Some(value) => Opts(Resource.make(F.delay(value.get))(_ => F.unit))
       case None        =>
-        (envConfig.orNone, postgresConfig.orNone, influxConfig.orNone, token.orNone).mapN {
-          case (e, p, i, t) =>
+        (envConfig.orNone, postgresConfig.orNone, influxConfig.orNone, literatureConfig.orNone, token.orNone).mapN {
+          case (e, p, i, l, t) =>
             val res: Resource[F, Module] = Resource.make({
-              AppConfig.load[F](e, p, i, t).flatMap[Module] {
+              AppConfig.load[F](e, p, i, l, t).flatMap[Module] {
                 case Left(err)    => F.raiseError(err)
                 case Right(value) =>
-                  val effects  = EffectModule[F]
-                  val cli      = CliModule[F]
-                  val config   = ConfigModule[F]
-                  val postgres = PostgresModule[F]
-                  val influx   = InfluxModule[F]
-                  val modules  = effects ++ cli ++ config ++ postgres ++ influx ++ new ModuleDef {
+                  val effects    = EffectModule[F]
+                  val cli        = CliModule[F]
+                  val config     = ConfigModule[F]
+                  val postgres   = PostgresModule[F]
+                  val influx     = InfluxModule[F]
+                  val literature = LiteratureModule[F]
+                  val modules    = effects ++ cli ++ config ++ postgres ++ influx ++ literature ++ new ModuleDef {
                     make[AppConfig].from(value)
                   }
                   F.pure(modules)
