@@ -1,0 +1,22 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@id" : "{id}",
+  "@type" : "File",
+  "_bytes" : 1024,
+  "_digest" : {
+    "_algorithm" : "SHA-256",
+    "_value" : "digest1"
+  },
+  "_mediaType" : "text/plain",
+  "_storageId": "nxv:diskStorageDefault",
+  "_filename" : "filename1.txt",
+  "_self" : "http://127.0.0.1:8080/v1/files/{account}/{proj}/{id}",
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/file.json",
+  "_project" : "http://localhost:8080/v1/projects/{account}/{proj}",
+  "_createdAt" : "1970-01-01T01:00:00Z",
+  "_createdBy" : "http://localhost:8080/v1/realms/realm/users/dmontero",
+  "_updatedAt" : "1970-01-01T01:00:00Z",
+  "_updatedBy" : "http://localhost:8080/v1/realms/realm/users/dmontero",
+  "_rev" : 1,
+  "_deprecated" : false
+}

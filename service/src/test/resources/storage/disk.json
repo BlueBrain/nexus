@@ -1,0 +1,6 @@
+{
+  "@id": "http://example.com/id",
+  "@type": "DiskStorage",
+  "volume": "/tmp",
+  "default": false
+}

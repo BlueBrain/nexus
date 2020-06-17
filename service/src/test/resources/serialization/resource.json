@@ -1,0 +1,23 @@
+{
+  "@id": "http://example.com/prefix/myId",
+  "@type": [
+    "https://example.com/vocab/B",
+    "https://example.com/vocab/A"
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": {
+    "@id": "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+  },
+  "https://bluebrain.github.io/nexus/vocabulary/createdAt": "2020-01-17T12:45:01.479676Z",
+  "https://bluebrain.github.io/nexus/vocabulary/createdBy": "https://nexus.example.com/v1/realms/bbp/users/john",
+  "https://bluebrain.github.io/nexus/vocabulary/deprecated": false,
+  "https://bluebrain.github.io/nexus/vocabulary/incoming": "http://example.com/prefix/myId/incoming",
+  "https://bluebrain.github.io/nexus/vocabulary/outgoing": "http://example.com/prefix/myId/outgoing",
+  "https://bluebrain.github.io/nexus/vocabulary/project": {
+    "@id": "https://nexus.example.com/v1/projects/org/project"
+  },
+  "https://bluebrain.github.io/nexus/vocabulary/rev": 1,
+  "https://bluebrain.github.io/nexus/vocabulary/self": "http://example.com/prefix/myId",
+  "https://bluebrain.github.io/nexus/vocabulary/updatedAt": "2020-01-17T13:45:01.479676Z",
+  "https://bluebrain.github.io/nexus/vocabulary/updatedBy": "https://nexus.example.com/v1/realms/bbp/users/brenda",
+  "https://example.com/vocab/name": "My example"
+}

@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_total": "nxv:total",
+    "_results": {
+      "@id": "nxv:results",
+      "@container": "@list"
+    },
+    "paths": {
+      "@type": "@id",
+      "@container": "@list"
+    },
+    "_maxScore": "nxv:maxScore",
+    "_score": "nxv:score"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/search.json"
+}

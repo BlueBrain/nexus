@@ -1,0 +1,5 @@
+{
+  "@id": "http://example.com/id",
+  "@type": "DiskStorage",
+  "default": false
+}

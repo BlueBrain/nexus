@@ -1,0 +1,48 @@
+prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
+
+SELECT ?total ?s ?paths ?types ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy
+
+WITH {
+  SELECT ?s ((GROUP_CONCAT(?p)) as ?paths) ?types ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy {
+    SELECT ?s ?p (GROUP_CONCAT(DISTINCT ?type) AS ?types) ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy (count(?mid) as ?pos) WHERE {
+      GRAPH <{graph}> {
+        <{id}> (!<>)* ?mid .
+        ?mid (!<>)* ?x .
+        ?x ?p ?y .
+        ?y (!<>)* ?s .
+          FILTER(isIri(?s) && ?p NOT IN (nxv:updatedBy, nxv:createdBy, nxv:constrainedBy, nxv:project, rdf:type, nxv:self, nxv:incoming, nxv:outgoing) && NOT EXISTS {?ss rdf:type ?s})
+      }
+      OPTIONAL {
+        GRAPH ?g2 {
+        ?s nxv:self ?_self .
+        ?s nxv:constrainedBy ?_constrainedBy .
+        ?s nxv:project ?_project .
+        ?s nxv:rev ?_rev .
+        ?s nxv:deprecated ?_deprecated .
+        ?s nxv:createdAt ?_createdAt .
+        ?s nxv:createdBy ?_createdBy .
+        ?s nxv:updatedAt ?_updatedAt .
+        ?s nxv:updatedBy ?_updatedBy .
+        ?s rdf:type ?type .
+          FILTER(?g2 != <{graph}>)
+        }
+      } .
+      OPTIONAL {
+        GRAPH <{graph}>  { ?s rdf:type ?type }
+      }
+    } GROUP BY ?x ?p ?y ?s ?types ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy ORDER BY ?pos
+  } GROUP BY ?s ?types ?paths ?_self ?_constrainedBy ?_project ?_rev ?_deprecated ?_createdAt  ?_createdBy ?_updatedAt ?_updatedBy
+} AS %resultSet
+
+WHERE {
+  {
+    SELECT (COUNT(?s) AS ?total)
+    WHERE { INCLUDE %resultSet }
+  }
+  UNION
+  {
+    SELECT *
+    WHERE { INCLUDE %resultSet }
+    ORDER BY ?_createdBy ?s ?paths LIMIT {size} OFFSET {offset}
+  }
+}

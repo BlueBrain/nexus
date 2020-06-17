@@ -1,0 +1,18 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "View",
+    "AggregateElasticSearchView"
+  ],
+  "views": [
+    {
+      "project": "account2/project1",
+      "viewId": "http://example.com/id4"
+    },
+    {
+      "project": "account2/project2",
+      "viewId": "http://example.com/id5"
+    }
+  ],
+  "_uuid": "3aa14a1a-81e7-4147-8306-136d8270bb01"
+}

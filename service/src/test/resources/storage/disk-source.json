@@ -1,0 +1,12 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/storage.json",
+  "@type": [
+    "DiskStorage",
+    "Storage"
+  ],
+  "volume": "/tmp",
+  "default": false,
+  "readPermission": "resources/read",
+  "writePermission": "files/write",
+  "maxFileSize": 10737418240
+}

@@ -1,0 +1,10 @@
+{
+  "@id": "http://example.com/id",
+  "@type": "RemoteDiskStorage",
+  "endpoint": "http://example.com/some",
+  "folder": "{folder}",
+  "credentials": "{cred}",
+  "default": false,
+  "readPermission": "{read}",
+  "writePermission": "{write}"
+}

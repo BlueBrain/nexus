@@ -1,0 +1,23 @@
+{
+  "@context": {
+      "this": "https://bluebrain.github.io/nexus/schemas/myschema/shapes/",
+      "ex": "http://example.com/"
+  },
+  "@id": "https://bluebrain.github.io/nexus/schemas/myschema",
+  "@type": "nxv:Schema",
+  "shapes": [
+    {
+      "@id": "this:MyShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": "ex:Custom",
+      "property": [
+        {
+          "path": "ex:name",
+          "datatype": "xsd:string",
+          "minCount": 1
+        }
+      ]
+    }
+  ]
+}

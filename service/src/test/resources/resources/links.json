@@ -1,0 +1,31 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total" : 20,
+  "_next": "{next}",
+  "_results" : [
+    {
+      "@id" : "{id2}",
+      "@type" : [
+        "https://bluebrain.github.io/nexus/vocabulary/Resolver",
+        "https://bluebrain.github.io/nexus/vocabulary/Schema"
+      ],
+      "paths" : "{property2}",
+      "_self" : "{self2}",
+      "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
+      "_project" : "{project2}",
+      "_rev" : 1,
+      "_deprecated" : false,
+      "_createdAt" : "1970-01-01T00:00:00Z",
+      "_createdBy" : "{author}",
+      "_updatedAt" : "1970-01-01T00:00:00Z",
+      "_updatedBy" : "{author}"
+    },
+    {
+      "@id" : "{id1}",
+      "paths" : "{property1}"
+    }
+  ]
+}

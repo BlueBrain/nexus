@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/storage.json",
+  "@type": [
+    "RemoteDiskStorage",
+    "Storage"
+  ],
+  "default": false,
+  "endpoint": "http://example.com/some",
+  "folder": "folder",
+  "maxFileSize": 10737418240,
+  "readPermission": "resources/read",
+  "writePermission": "files/write"
+}

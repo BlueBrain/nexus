@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/tag.json",
+  "tags": [
+    {
+      "rev": 2,
+      "tag": "name2"
+    },
+    {
+      "rev": 1,
+      "tag": "name1"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json",
+  "@type" : "{type}",
+  "projectionId" : "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+  "sourceId" : "{sourceId}",
+  "value" : {value},
+  "instant": "{instant}"
+}

@@ -1,0 +1,28 @@
+{
+  "project": "4947db1e-33d8-462b-9754-3e8ae74fcd4e",
+  "id": "https://bbp.epfl.ch/nexus/data/resourceName",
+  "organization": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+  "storage": {
+    "id": "https://bbp.epfl.ch/nexus/storages/org/proj/remote",
+    "rev": 1,
+    "@type": "RemoteDiskStorageReference"
+  },
+  "rev": 2,
+  "attributes": {
+    "location": "file:///some/remote/location/data/project/proj42/nexus/0d06da77-b13a-48f4-8a37-a411fd6f21c9/b/c/6/5/e/7/c/1/r160127_0101_04.json",
+    "bytes": 257813,
+    "digest": {
+      "algorithm": "MD5",
+      "value": "1234"
+    },
+    "mediaType": "application/json"
+  },
+  "instant": "{timestamp}",
+  "subject": {
+    "@id": "http://localhost:8080/v1/realms/realm/users/sub:1234",
+    "@type": "User",
+    "realm": "realm",
+    "subject": "sub:1234"
+  },
+  "@type": "FileAttributesUpdated"
+}

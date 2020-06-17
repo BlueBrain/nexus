@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "nexus": {
+          "type": "custom",
+          "tokenizer": "classic",
+          "filter": [
+            "my_multiplexer"
+          ]
+        }
+      },
+      "filter": {
+        "my_multiplexer": {
+          "type": "multiplexer",
+          "filters": [
+            "uuid_type_4",
+            "word_delimiter_nexus"
+          ]
+        },
+        "uuid_type_4": {
+          "type": "pattern_capture",
+          "preserve_original": true,
+          "patterns": [
+            "([a-f0-9]{8})\\-([a-f0-9]{4})\\-([a-f0-9]{4})\\-([a-f0-9]{4})\\-([a-f0-9]{12})"
+          ]
+        },
+        "word_delimiter_nexus": {
+          "type": "word_delimiter",
+          "split_on_numerics": false
+        }
+      }
+    }
+  }
+}

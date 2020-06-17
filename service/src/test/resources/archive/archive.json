@@ -1,0 +1,16 @@
+{
+  "resources": [
+    {
+      "resourceId": "https://example.com/v1/gandalf",
+      "@type": "Resource",
+      "originalSource": false,
+      "rev": 1
+    },
+    {
+      "resourceId": "https://example.com/v1/epfl",
+      "@type": "File",
+      "project": "myorg/myproject",
+      "path": "another/path"
+    }
+  ]
+}

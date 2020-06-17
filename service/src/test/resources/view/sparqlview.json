@@ -1,0 +1,8 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "View",
+    "SparqlView"
+  ],
+  "_uuid": "247d223b-1d38-4c6e-8fed-f9a8c2ccb4a1"
+}

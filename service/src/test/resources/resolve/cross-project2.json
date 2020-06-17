@@ -1,0 +1,21 @@
+{
+  "@id": "http://example.com/id",
+  "@type": ["Resolver", "CrossProject"],
+  "projects": [
+    "accountId/projectId",
+    "accountId2/projectId2"
+  ],
+  "identities": [
+    {
+      "@type": "Group",
+      "realm": "ldap2",
+      "group": "bbp-ou-neuroinformatics"
+    },
+    {
+      "@type": "User",
+      "realm": "ldap",
+      "subject": "dmontero"
+    }
+  ],
+  "priority": 50
+}

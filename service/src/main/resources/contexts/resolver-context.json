@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "resourceTypes": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "projects": {
+      "@container": "@list"
+    },
+    "identities": {
+      "@container": "@set"
+    },
+    "subject": "nxv:subject"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/resolver.json"
+}

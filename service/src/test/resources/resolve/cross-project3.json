@@ -1,0 +1,15 @@
+{
+  "@id": "http://example.com/id",
+  "@type": ["Resolver", "CrossProject"],
+  "resourceTypes": ["nxv:Schema"],
+  "projects": [
+    "account1/project1",
+    "account1/project2"
+  ],
+  "identities": [
+    {
+      "@type": "Anonymous"
+    }
+  ],
+  "priority": 50
+}

@@ -1,0 +1,17 @@
+{
+  "@id" : "http://example.com/id",
+  "@type" : [
+    "Storage",
+    "RemoteDiskStorage"
+  ],
+  "credentials" : "credentials",
+  "default" : false,
+  "endpoint" : "http://example.com/some",
+  "folder" : "folder",
+  "readPermission" : "myRead",
+  "writePermission" : "myWrite",
+  "maxFileSize" : 2000,
+  "_deprecated" : false,
+  "_rev" : 1,
+  "_algorithm" : "SHA-256"
+}

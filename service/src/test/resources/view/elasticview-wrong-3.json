@@ -1,0 +1,15 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "View",
+    "ElasticSearchView"
+  ],
+  "_uuid": "3aa14a1a-81e7-4147-8306-136d8270bb01",
+  "resourceSchemas": [
+    "nxv:Schema",
+    "nxv:Resource"
+  ],
+  "resourceTag": "one",
+  "sourceAsText": "should-have-been-string",
+  "mapping": "{\"properties\": {\"@type\": {\"type\": \"keyword\"}, \"@id\": {\"type\": \"keyword\"}, \"_rev\": {\"type\": \"long\"}, \"_deprecated\": {\"type\": \"boolean\"}, \"_createdAt\": {\"type\": \"date\"}, \"_updatedAt\": {\"type\": \"date\"}, \"_createdBy\": {\"type\": \"keyword\"}, \"_updatedBy\": {\"type\": \"keyword\"}, \"_constrainedBy\": {\"type\": \"keyword\"}, \"_project\": {\"type\": \"keyword\"}, \"_self\": {\"type\": \"keyword\"}, \"_original_source\": {\"type\": \"text\"}, \"_bytes\": {\"type\": \"long\"}, \"_mediaType\": {\"type\": \"keyword\"}, \"_storageId\": {\"type\": \"keyword\"}, \"_filename\": {\"type\": \"keyword\"}, \"_digest\": {\"type\": \"nested\", \"properties\": {\"_algorithm\": {\"type\": \"keyword\"}, \"_value\": {\"type\": \"keyword\"} } } }, \"dynamic\": false }"
+}
