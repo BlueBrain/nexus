@@ -47,7 +47,7 @@ class DiskStorageSpec
   implicit val ec: ExecutionContext = system.dispatcher
 
   val rootPath = Files.createTempDirectory("storage-test")
-  val sConfig  = StorageConfig(rootPath, Paths.get("nexus"), fixerEnabled = true, List("/bin/echo"))
+  val sConfig  = StorageConfig(rootPath, Paths.get("nexus"), fixerEnabled = true, Vector("/bin/echo"))
   val dConfig  = DigestConfig("SHA-256", 1L, 1, 1, 1.second)
   val cache    = mock[AttributesCache[IO]]
   val storage  = new DiskStorage[IO](sConfig, dConfig, cache)
