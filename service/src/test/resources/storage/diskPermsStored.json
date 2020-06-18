@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/storage.json",
+  "@id": "http://example.com/id",
+  "@type": [
+    "Storage",
+    "DiskStorage"
+  ],
+  "volume": "/tmp",
+  "default": false,
+  "readPermission": "{read}",
+  "writePermission": "{write}",
+  "_algorithm": "SHA-256"
+}

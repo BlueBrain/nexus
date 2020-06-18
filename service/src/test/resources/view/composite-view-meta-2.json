@@ -1,0 +1,39 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "View",
+    "CompositeView",
+    "Beta"
+  ],
+  "sources": [
+    {
+      "@id" : "http://example.com/source2",
+      "@type": "CrossProjectEventStream",
+      "includeDeprecated": true,
+      "project": "account1/project1",
+      "identities": [
+        {
+          "@id": "{base}/anonymous",
+          "@type": "Anonymous"
+        }
+      ]
+    }
+  ],
+  "projections": [
+    {
+      "@id" : "http://example.com/sparql",
+      "@type": "SparqlProjection",
+      "query": "CONSTRUCT {{resource_id} ?p ?o} WHERE {?ss ?pp ?oo}",
+      "includeDeprecated": true,
+      "includeMetadata": true,
+      "_uuid": "247d223b-1d38-4c6e-8fed-f9a8c2ccb4a3"
+    }
+  ],
+  "rebuildStrategy": {
+    "@type": "Interval",
+    "value": "20 minutes"
+  },
+  "_deprecated" : false,
+  "_rev" : 1,
+  "_uuid": "247d223b-1d38-4c6e-8fed-f9a8c2ccb4a1"
+}

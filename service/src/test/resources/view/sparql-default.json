@@ -1,0 +1,14 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/view.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id" : "nxv:defaultSparqlIndex",
+  "@type" : [
+    "View",
+    "SparqlView"
+  ],
+  "includeDeprecated" : true,
+  "includeMetadata" : true,
+  "_uuid" : "d88b71d2-b8a4-4744-bf22-2d99ef5bd26b"
+}

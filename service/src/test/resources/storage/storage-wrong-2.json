@@ -1,0 +1,7 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "S3Storage"
+  ],
+  "default": true
+}

@@ -1,0 +1,28 @@
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "_all_fields": "some text"
+          }
+        },
+        {
+          "term": {
+            "_constrainedBy": "http://nexus.example.com/testSchema"
+          }
+        },
+        {
+          "term": {
+            "_rev": 1
+          }
+        },
+        {
+          "term": {
+            "_createdBy": "http://nexus.example.com/user"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/offset.json",
+  "@type" : "CompositeViewOffset",
+  "values" : [
+    {
+      "@type" : "{type}",
+      "projectionId" : "{proj}",
+      "sourceId" : "{sourceId}",
+      "value" : {value},
+      "instant": "{instant}"
+    }
+  ]
+}

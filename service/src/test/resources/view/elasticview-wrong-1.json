@@ -1,0 +1,14 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "View",
+    "ElasticSearchView"
+  ],
+  "resourceSchemas": [
+    "nxv:Schema",
+    "nxv:Resource"
+  ],
+  "resourceTag": "one",
+  "sourceAsText": true,
+  "mapping": "{\"mappings\": {\"{{docType}}\": {\"properties\": {\"@type\": {\"type\": \"keyword\"}, \"@id\": {\"type\": \"keyword\"}, \"_rev\": {\"type\": \"long\"}, \"_deprecated\": {\"type\": \"boolean\"}, \"_createdAt\": {\"type\": \"date\"}, \"_updatedAt\": {\"type\": \"date\"}, \"_createdBy\": {\"type\": \"keyword\"}, \"_updatedBy\": {\"type\": \"keyword\"}, \"_constrainedBy\": {\"type\": \"keyword\"}, \"_original_source\": {\"type\": \"text\"} }, \"dynamic\": false } } }"
+}

@@ -18,6 +18,7 @@ import io.circe.{Json, JsonObject}
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.{JsonLDWriteContext, RDFFormat, RDFWriter}
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 object JsonLd {
@@ -283,6 +284,7 @@ object JsonLd {
     * @param context the context to apply
     * @return [[Json]] representation of the graph or error message
     */
+  @tailrec
   def toJson(graph: Graph, context: Json = Json.obj()): Either[String, Json] = {
     val jenaCleanup: JenaWriterCleanup = new JenaWriterCleanup(context)
     val justContextObj = {

@@ -1,0 +1,6 @@
+{
+  "@id": "http://example.com/id",
+  "@type": ["Resolver", "CrossProject"],
+  "resourceTypes": ["nxv:Schema"],
+  "priority": 50
+}

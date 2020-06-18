@@ -1,0 +1,18 @@
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "_constrainedBy": "http://nexus.example.com/testSchema"
+          }
+        },
+        {
+          "term": {
+            "_deprecated": true
+          }
+        }
+      ]
+    }
+  }
+}

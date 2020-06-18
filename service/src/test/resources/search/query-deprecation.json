@@ -1,0 +1,13 @@
+{
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "term": {
+            "_deprecated": true
+          }
+        }
+      ]
+    }
+  }
+}

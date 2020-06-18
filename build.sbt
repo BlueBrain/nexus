@@ -17,12 +17,14 @@ val javaSpecificationVersion = "11"
 val scalacScapegoatVersion   = "1.4.4"
 val scalaCompilerVersion     = "2.13.2"
 
+val adminVersion                    = "1.3.0"
 val akkaHttpVersion                 = "10.1.12"
 val akkaHttpCirceVersion            = "1.32.0"
 val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaVersion                     = "2.6.6"
+val alpakkaVersion                  = "2.0.1"
 val asmVersion                      = "7.3.1"
 val byteBuddyAgentVersion           = "1.10.10"
 val blazegraphVersion               = "2.1.5"
@@ -35,11 +37,13 @@ val distageVersion                  = "0.10.12"
 val doobieVersion                   = "0.9.0"
 val elasticSearchVersion            = "7.5.1"
 val fs2Version                      = "2.3.0"
+val guavaVersion                    = "29.0-jre"
 val http4sVersion                   = "0.21.4"
 val iamVersion                      = "1.3.0"
 val jacksonVersion                  = "2.10.2"
 val jacksonBindVersion              = "2.10.2"
 val jenaVersion                     = "3.15.0"
+val jsonldjavaVersion               = "0.13.0"
 val kamonVersion                    = "2.1.0"
 val kanelaAgentVersion              = "1.0.5"
 val kindProjectorVersion            = "0.11.0"
@@ -54,12 +58,15 @@ val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
+val storageVersion                  = "1.3.0"
 val topBraidVersion                 = "1.3.2"
 
+lazy val adminClient              = "ch.epfl.bluebrain.nexus"          %% "admin-client"                        % adminVersion
 lazy val akkaActor                = "com.typesafe.akka"                %% "akka-actor"                          % akkaVersion
 lazy val akkaCluster              = "com.typesafe.akka"                %% "akka-cluster"                        % akkaVersion
 lazy val akkaClusterSharding      = "com.typesafe.akka"                %% "akka-cluster-sharding"               % akkaVersion
 lazy val akkaHttp                 = "com.typesafe.akka"                %% "akka-http"                           % akkaHttpVersion
+lazy val akkaHttpXml              = "com.typesafe.akka"                %% "akka-http-xml"                       % akkaHttpVersion
 lazy val akkaHttpCors             = "ch.megard"                        %% "akka-http-cors"                      % akkaCorsVersion
 lazy val akkaHttpCirce            = "de.heikoseeberger"                %% "akka-http-circe"                     % akkaHttpCirceVersion
 lazy val akkaHttpTestKit          = "com.typesafe.akka"                %% "akka-http-testkit"                   % akkaHttpVersion
@@ -71,6 +78,7 @@ lazy val akkaPersistenceQuery     = "com.typesafe.akka"                %% "akka-
 lazy val akkaSlf4j                = "com.typesafe.akka"                %% "akka-slf4j"                          % akkaVersion
 lazy val akkaTestKit              = "com.typesafe.akka"                %% "akka-testkit"                        % akkaVersion
 lazy val alleycatsCore            = "org.typelevel"                    %% "alleycats-core"                      % catsVersion
+lazy val alpakkaS3                = "com.lightbend.akka"               %% "akka-stream-alpakka-s3"              % alpakkaVersion
 lazy val asm                      = "org.ow2.asm"                       % "asm"                                 % asmVersion
 lazy val blazegraph               = "com.blazegraph"                    % "blazegraph-jar"                      % blazegraphVersion
 lazy val byteBuddyAgent           = "net.bytebuddy"                     % "byte-buddy-agent"                    % byteBuddyAgentVersion
@@ -97,11 +105,13 @@ lazy val fs2                      = "co.fs2"                           %% "fs2-c
 lazy val http4sCirce              = "org.http4s"                       %% "http4s-circe"                        % http4sVersion
 lazy val http4sClient             = "org.http4s"                       %% "http4s-blaze-client"                 % http4sVersion
 lazy val http4sDsl                = "org.http4s"                       %% "http4s-dsl"                          % http4sVersion
+lazy val guava                    = "com.google.guava"                  % "guava"                               % guavaVersion
 lazy val iamClient                = "ch.epfl.bluebrain.nexus"          %% "iam-client"                          % iamVersion
 lazy val jacksonAnnotations       = "com.fasterxml.jackson.core"        % "jackson-annotations"                 % jacksonVersion
 lazy val jacksonCore              = "com.fasterxml.jackson.core"        % "jackson-core"                        % jacksonVersion
 lazy val jacksonDatabind          = "com.fasterxml.jackson.core"        % "jackson-databind"                    % jacksonBindVersion
 lazy val jenaArq                  = "org.apache.jena"                   % "jena-arq"                            % jenaVersion
+lazy val jsonldjava               = "com.github.jsonld-java"            % "jsonld-java"                         % jsonldjavaVersion
 lazy val kanelaAgent              = "io.kamon"                          % "kanela-agent"                        % kanelaAgentVersion
 lazy val kindProjector            = "org.typelevel"                    %% "kind-projector"                      % kindProjectorVersion
 lazy val kryo                     = "io.altoo"                         %% "akka-kryo-serialization"             % kryoVersion
@@ -117,6 +127,7 @@ lazy val pureconfig               = "com.github.pureconfig"            %% "purec
 lazy val scalaLogging             = "com.typesafe.scala-logging"       %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"                    %% "scalatest"                           % scalaTestVersion
 lazy val scalaReflect             = "org.scala-lang"                    % "scala-reflect"                       % scalaCompilerVersion
+lazy val storageClient            = "ch.epfl.bluebrain.nexus"          %% "storage-client"                      % storageVersion
 lazy val topBraidShacl            = "org.topbraid"                      % "shacl"                               % topBraidVersion
 
 lazy val docs = project
@@ -234,6 +245,7 @@ lazy val rdf      = project
     libraryDependencies ++= Seq(
       akkaHttp,
       akkaHttpCirce,
+      akkaHttpXml,
       alleycatsCore,
       catsCore,
       jenaArq,
@@ -264,6 +276,7 @@ lazy val service = project
   .settings(kamonSettings)
   .settings(
     libraryDependencies       ++= Seq(
+      adminClient,
       akkaClusterSharding,
       akkaHttp,
       akkaHttpCirce,
@@ -273,16 +286,20 @@ lazy val service = project
       akkaPersistenceQuery,
       akkaSlf4j,
       alleycatsCore,
+      alpakkaS3,
       catsCore,
       catsEffectRetry,
       catsEffect,
+      guava,
       jenaArq,
+      jsonldjava,
       kryo,
       logback,
       magnolia,
       monixEval,
       nimbusJoseJwt,
       parboiled2,
+      storageClient,
       topBraidShacl,
       akkaHttpTestKit         % Test,
       akkaPersistenceInMem    % Test,

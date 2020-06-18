@@ -1,0 +1,16 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/storage.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id" : "nxv:diskStorageDefault",
+  "@type" : [
+    "Storage",
+    "DiskStorage"
+  ],
+  "default" : true,
+  "maxFileSize" : 10737418240,
+  "readPermission" : "resources/read",
+  "volume" : "/tmp",
+  "writePermission" : "files/write"
+}

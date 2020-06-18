@@ -1,0 +1,24 @@
+{
+  "@id": "{id}",
+  "@type": ["Resolver", "CrossProject"],
+  "resourceTypes": ["nxv:Schema"],
+  "projects": [
+    "account1/project1",
+    "account1/project2"
+  ],
+  "identities": [
+    {
+      "@id": "http://localhost:8080/v1/realms/ldap2/groups/bbp-ou-neuroinformatics",
+      "@type": "Group",
+      "realm": "ldap2",
+      "group": "bbp-ou-neuroinformatics"
+    },
+    {
+      "@id": "http://localhost:8080/v1/realms/ldap/users/dmontero",
+      "@type": "User",
+      "realm": "ldap",
+      "subject": "dmontero"
+    }
+  ],
+  "priority": 50
+}

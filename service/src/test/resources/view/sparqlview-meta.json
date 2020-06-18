@@ -1,0 +1,12 @@
+{
+  "@id" : "http://example.com/id",
+  "@type" : [
+    "View",
+    "SparqlView"
+  ],
+  "includeDeprecated" : true,
+  "includeMetadata" : true,
+  "_deprecated" : false,
+  "_rev" : 1,
+  "_uuid" : "247d223b-1d38-4c6e-8fed-f9a8c2ccb4a1"
+}

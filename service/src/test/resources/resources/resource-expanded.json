@@ -1,0 +1,33 @@
+{
+  "@id" : "https://bluebrain.github.io/nexus/vocabulary/me",
+  "@type" : "http://schema.org/Person",
+  "http://example.com/sibling" : {
+    "@id" : "http://nexus.example.com/other",
+    "@type" : "http://schema.org/Other",
+    "http://schema.org/birthDate" : "2000-04-12T20:00Z",
+    "http://schema.org/birthHour" : 9,
+    "http://schema.org/birthYear" : 1999,
+    "http://schema.org/height" : 9.223
+  },
+  "http://example.com/stringProperty" : "Some property",
+  "http://schema.org/birthDate" : "1999-04-09T20:00Z",
+  "http://schema.org/deprecated" : false,
+  "http://schema.org/name" : "John Doe",
+  "https://bluebrain.github.io/nexus/vocabulary/constrainedBy" : {
+    "@id" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+  },
+  "https://bluebrain.github.io/nexus/vocabulary/createdAt" : "1970-01-01T01:00:00Z",
+  "https://bluebrain.github.io/nexus/vocabulary/createdBy" : {
+    "@id" : "http://localhost:8080/v1/realms/realm/users/dmontero"
+  },
+  "https://bluebrain.github.io/nexus/vocabulary/deprecated" : false,
+  "https://bluebrain.github.io/nexus/vocabulary/project" : {
+    "@id" : "http://localhost:8080/v1/projects/{org}/{proj}"
+  },
+  "https://bluebrain.github.io/nexus/vocabulary/rev" : 1,
+  "https://bluebrain.github.io/nexus/vocabulary/self" : "http://127.0.0.1:8080/v1/resources/{org}/{proj}/_/nxv:me",
+  "https://bluebrain.github.io/nexus/vocabulary/updatedAt" : "1970-01-01T01:00:00Z",
+  "https://bluebrain.github.io/nexus/vocabulary/updatedBy" : {
+    "@id" : "http://localhost:8080/v1/realms/realm/users/dmontero"
+  }
+}

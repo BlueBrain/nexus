@@ -1,0 +1,41 @@
+{
+  "@context": [
+    {
+      "DiskStorage": "nxv:DiskStorage",
+      "S3Storage": "nxv:S3Storage",
+      "Storage": "nxv:Storage",
+      "accessKey": "nxv:accessKey",
+      "bucket": "nxv:bucket",
+      "default": "nxv:default",
+      "endpoint": "nxv:endpoint",
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+      "region": "nxv:region",
+      "secretKey": "nxv:secretKey",
+      "volume": "nxv:volume",
+      "readPermission": "nxv:readPermission",
+      "writePermission": "nxv:writePermission",
+      "_algorithm": "nxv:algorithm"
+    },
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "nxv:{uuid}",
+  "@type": [
+    "Storage",
+    "S3Storage"
+  ],
+  "bucket": "bucket",
+  "default": true,
+  "endpoint": "endpoint",
+  "region": "region",
+  "readPermission": "my/read",
+  "writePermission": "my/write",
+  "_self": "http://127.0.0.1:8080/v1/storages/{org}/{project}/nxv:{uuid}",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storage.json",
+  "_project": "http://localhost:8080/v1/projects/{org}/{project}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "1970-01-01T01:00:00Z",
+  "_createdBy": "http://localhost:8080/v1/realms/realm/users/dmontero",
+  "_updatedAt": "1970-01-01T01:00:00Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/realm/users/dmontero"
+}

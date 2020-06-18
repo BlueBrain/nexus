@@ -1,0 +1,20 @@
+{
+  "@id" : "http://example.com/id",
+  "@type" : [
+    "View",
+    "AggregateSparqlView"
+  ],
+  "views" : [
+    {
+      "project" : "account1/project1",
+      "viewId" : "http://example.com/id2"
+    },
+    {
+      "project" : "account1/project2",
+      "viewId" : "http://example.com/id3"
+    }
+  ],
+  "_deprecated" : false,
+  "_rev" : 1,
+  "_uuid" : "3aa14a1a-81e7-4147-8306-136d8270bb01"
+}
