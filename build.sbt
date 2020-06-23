@@ -13,9 +13,8 @@ scalafmt: {
 }
  */
 
-val javaSpecificationVersion = "11"
-val scalacScapegoatVersion   = "1.4.4"
-val scalaCompilerVersion     = "2.13.2"
+val scalacScapegoatVersion = "1.4.4"
+val scalaCompilerVersion   = "2.13.2"
 
 val adminVersion                    = "1.3.0"
 val akkaHttpVersion                 = "10.1.12"
@@ -25,6 +24,7 @@ val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaVersion                     = "2.6.6"
 val alpakkaVersion                  = "2.0.1"
+val apacheCompressVersion           = "1.20"
 val asmVersion                      = "7.3.1"
 val byteBuddyAgentVersion           = "1.10.10"
 val blazegraphVersion               = "2.1.5"
@@ -76,9 +76,12 @@ lazy val akkaPersistenceInMem     = "com.github.dnvriend"              %% "akka-
 lazy val akkaPersistenceLauncher  = "com.typesafe.akka"                %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
 lazy val akkaPersistenceQuery     = "com.typesafe.akka"                %% "akka-persistence-query"              % akkaVersion
 lazy val akkaSlf4j                = "com.typesafe.akka"                %% "akka-slf4j"                          % akkaVersion
+lazy val akkaStream               = "com.typesafe.akka"                %% "akka-stream"                         % akkaVersion
 lazy val akkaTestKit              = "com.typesafe.akka"                %% "akka-testkit"                        % akkaVersion
 lazy val alleycatsCore            = "org.typelevel"                    %% "alleycats-core"                      % catsVersion
+lazy val alpakkaFiles             = "com.lightbend.akka"               %% "akka-stream-alpakka-file"            % alpakkaVersion
 lazy val alpakkaS3                = "com.lightbend.akka"               %% "akka-stream-alpakka-s3"              % alpakkaVersion
+lazy val apacheCompress           = "org.apache.commons"                % "commons-compress"                    % apacheCompressVersion
 lazy val asm                      = "org.ow2.asm"                       % "asm"                                 % asmVersion
 lazy val blazegraph               = "com.blazegraph"                    % "blazegraph-jar"                      % blazegraphVersion
 lazy val byteBuddyAgent           = "net.bytebuddy"                     % "byte-buddy-agent"                    % byteBuddyAgentVersion
@@ -129,6 +132,11 @@ lazy val scalaTest                = "org.scalatest"                    %% "scala
 lazy val scalaReflect             = "org.scala-lang"                    % "scala-reflect"                       % scalaCompilerVersion
 lazy val storageClient            = "ch.epfl.bluebrain.nexus"          %% "storage-client"                      % storageVersion
 lazy val topBraidShacl            = "org.topbraid"                      % "shacl"                               % topBraidVersion
+
+val javaSpecificationVersion = SettingKey[String](
+  "java-specification-version",
+  "The java specification version to be used for source and target compatibility."
+)
 
 lazy val docs = project
   .in(file("docs"))
@@ -263,6 +271,47 @@ lazy val rdf      = project
     Test / fork          := true
   )
 
+lazy val storage = project
+  .in(file("storage"))
+  .dependsOn(rdf)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
+  .settings(shared, compilation, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .settings(
+    name                     := "storage",
+    moduleName               := "storage",
+    coverageFailOnMinimum    := true,
+    Docker / packageName     := "storage",
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
+      apacheCompress,
+      akkaHttp,
+      akkaStream,
+      akkaSlf4j,
+      alpakkaFiles,
+      catsCore,
+      catsEffect,
+      circeCore,
+      circeGenericExtras,
+      monixEval,
+      pureconfig,
+      scalaLogging,
+      akkaHttpTestKit % Test,
+      akkaTestKit     % Test,
+      mockito         % Test,
+      scalaTest       % Test
+    ),
+    cleanFiles              ++= Seq(
+      baseDirectory.value / "permissions-fixer" / "target" / "**",
+      baseDirectory.value / "nexus-storage.jar"
+    ),
+    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    Test / parallelExecution := false
+//    , TODO: Fix this
+//      mappings in Universal := {
+//      (mappings in Universal).value :+ cargo.value
+//    }
+  )
+
 lazy val service = project
   .in(file("service"))
   .dependsOn(sourcing, rdf)
@@ -332,7 +381,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, rdf, service)
+  .aggregate(docs, cli, sourcing, rdf, storage, service)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -362,33 +411,55 @@ lazy val kamonSettings = Seq(
   )
 )
 
-lazy val compilation = Seq(
-  scalaVersion                     := scalaCompilerVersion,
-  scalacOptions                    ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
-  javacOptions                    ++= Seq(
-    "-source",
-    javaSpecificationVersion,
-    "-target",
-    javaSpecificationVersion,
-    "-Xlint"
-  ),
-  scalacOptions in (Compile, doc) ++= Seq("-no-link-warnings"),
-  javacOptions in (Compile, doc)   := Seq("-source", javaSpecificationVersion),
-  autoAPIMappings                  := true,
-  apiMappings                      += {
-    val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
-    ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
-  },
-  // fail the build initialization if the JDK currently used is not ${javaSpecificationVersion} or higher
-  initialize                       := {
-    // runs the previous initialization
-    initialize.value
-    // runs the java compatibility check
-    val current  = VersionNumber(sys.props("java.specification.version"))
-    val required = VersionNumber(javaSpecificationVersion)
-    assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
+lazy val storageAssemblySettings = Seq(
+  test in assembly                  := {},
+  assemblyOutputPath in assembly    := baseDirectory.value / "nexus-storage.jar",
+  assemblyMergeStrategy in assembly := {
+    case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
+    case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
+    case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
+    case "META-INF/versions/9/module-info.class"                         => MergeStrategy.discard
+    case x                                                               =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
   }
 )
+
+lazy val compilation = {
+  import java.util.Properties
+  import sbt.Keys._
+  import sbt._
+  import scala.sys.process._
+
+  Seq(
+    scalaVersion                     := scalaCompilerVersion,
+    scalacOptions                    ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    javaSpecificationVersion         := "11",
+    javacOptions                    ++= Seq(
+      "-source",
+      javaSpecificationVersion.value,
+      "-target",
+      javaSpecificationVersion.value,
+      "-Xlint"
+    ),
+    scalacOptions in (Compile, doc) ++= Seq("-no-link-warnings"),
+    javacOptions in (Compile, doc)   := Seq("-source", javaSpecificationVersion.value),
+    autoAPIMappings                  := true,
+    apiMappings                      += {
+      val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
+      ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
+    },
+    // fail the build initialization if the JDK currently used is not ${javaSpecificationVersion} or higher
+    initialize                       := {
+      // runs the previous initialization
+      initialize.value
+      // runs the java compatibility check
+      val current  = VersionNumber(sys.props("java.specification.version"))
+      val required = VersionNumber(javaSpecificationVersion.value)
+      assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
+    }
+  )
+}
 
 lazy val coverage = Seq(
   coverageMinimum       := 80,
@@ -450,6 +521,22 @@ lazy val servicePackaging = {
       DockerVersion(19, 3, 5, Some("ce"))
     ) // forces the version because gh-actions version is 3.0.x which is not recognized to support multistage
   )
+}
+
+lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+
+cargo := {
+  import scala.sys.process._
+
+  val log = streams.value.log
+  val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
+  if ((cmd !) == 0) {
+    log.success("Cargo build successful.")
+    (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
+  } else {
+    log.error("Cargo build failed.")
+    throw new RuntimeException
+  }
 }
 
 inThisBuild(
