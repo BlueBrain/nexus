@@ -47,29 +47,29 @@ class InfluxProjection[F[_]: ContextShift](
     val compiledStream = eventStream.value.flatMap { stream =>
       stream
         .map {
-          case Right((ev, org, proj)) =>
+          case Right((ev, off, org, proj)) =>
             Right(
               ic.projects
                 .get((org, proj))
                 .flatMap(pc =>
                   pc.types.collectFirst {
-                    case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, org, proj)
+                    case tc if ev.resourceTypes.exists(_.toString == tc.tpe) => (pc, tc, ev, off, org, proj)
                   }
                 )
             )
-          case Left(err)              => Left(err)
+          case Left(err)                   => Left(err)
         }
-        .through(printEventProgress(console))
+        .through(printEventProgress(console, ic.errorFile))
         .evalMap {
-          case (pc, tc, ev, org, proj) =>
+          case (pc, tc, ev, off, org, proj) =>
             val query = tc.query
               .replace("{resource_id}", ev.resourceId.renderString)
               .replace("{resource_type}", tc.tpe)
               .replace("{resource_project}", s"${org.show}/${proj.show}")
               .replace("{event_rev}", ev.rev.toString)
-            spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res))
+            spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(tc, res)).map(_.leftMap(off -> _))
         }
-        .through(printProjectionProgress(console))
+        .through(printProjectionProgress(console, ic.errorFile))
         .attempt
         .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse("").take(30))).map(_ => ()))
         .compile

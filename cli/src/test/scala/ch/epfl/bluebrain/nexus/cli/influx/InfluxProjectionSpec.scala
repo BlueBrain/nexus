@@ -9,9 +9,10 @@ import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.modules.influx.InfluxProjection
 import ch.epfl.bluebrain.nexus.cli.sse.Offset
 import fs2.io
+import org.scalatest.concurrent.Eventually
 
 //noinspection SqlNoDataSourceInspection
-class InfluxProjectionSpec extends AbstractInfluxSpec {
+class InfluxProjectionSpec extends AbstractInfluxSpec with Eventually {
 
   "A InfluxProjection" should {
     val brainParcelationExpected = jsonContentOf("/templates/influxdb-results-brain-parcelation.json")
@@ -32,7 +33,7 @@ class InfluxProjectionSpec extends AbstractInfluxSpec {
         _      <- proj.run
         exists <- io.file.exists[IO](blocker, cfg.influx.offsetFile)
         _       = exists shouldEqual true
-        _       = println(s"Offset file content '${Files.readString(cfg.influx.offsetFile)}'")
+        _       = eventually(Files.readString(cfg.influx.offsetFile).nonEmpty shouldEqual true)
         offset <- Offset.load(cfg.influx.offsetFile)
         _       = offset.nonEmpty shouldEqual true
       } yield ()

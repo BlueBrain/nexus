@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.cli.clients
 
+import java.time.Instant
+import java.util.UUID
+
 import cats.data.EitherT
 import cats.data.EitherT.{fromEither, right}
 import cats.effect.Concurrent
@@ -44,6 +47,8 @@ trait EventStreamClient[F[_]] {
 
 object EventStreamClient {
 
+  private val epochOffset = Offset(new UUID(Instant.EPOCH.toEpochMilli, 0))
+
   final def apply[F[_]: Concurrent](
       client: Client[F],
       projectClient: ProjectClient[F],
@@ -58,9 +63,9 @@ object EventStreamClient {
   )(implicit F: Concurrent[F])
       extends EventStreamClient[F] {
 
-    private val retry            = env.httpClient.retry
-    private lazy val offsetError =
-      SerializationError("The expected offset was not found or had the wrong format", "Offset")
+    private val retry                                   = env.httpClient.retry
+    private lazy val offsetError: (Offset, ClientError) =
+      (epochOffset, SerializationError("The expected offset was not found or had the wrong format", "Offset"))
 
     private def decodeEvent(str: String): Either[ClientError, Event] =
       decode[Event](str).leftMap(err => SerializationError(err.getMessage, "NexusAPIEvent", Some(str)))
@@ -84,12 +89,12 @@ object EventStreamClient {
             .evalMap {
               case (id, data) =>
                 val resultT = for {
-                  off        <- fromEither[F](Offset(id.value).toRight[ClientError](offsetError))
-                  _          <- right[ClientError](lastEventIdCache.update(_ => Some(off)))
-                  event      <- fromEither[F](decodeEvent(data))
-                  labels     <- EitherT(projectClient.labels(event.organization, event.project))
+                  off        <- fromEither[F](Offset(id.value).toRight(offsetError))
+                  _          <- right[(Offset, ClientError)](lastEventIdCache.update(_ => Some(off)))
+                  event      <- fromEither[F](decodeEvent(data)).leftMap(off -> _)
+                  labels     <- EitherT(projectClient.labels(event.organization, event.project)).leftMap(off -> _)
                   (org, proj) = labels
-                } yield (event, org, proj)
+                } yield (event, off, org, proj)
                 resultT.value
             }
         }

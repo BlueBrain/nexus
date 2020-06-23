@@ -9,7 +9,6 @@ import _root_.io.circe.{Json, JsonObject}
 import cats.data.EitherT
 import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
-import cats.kernel.Eq
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError.Unexpected
 import ch.epfl.bluebrain.nexus.cli.CliError.JsonTransformationError
 import ch.epfl.bluebrain.nexus.cli.ProjectionPipes._
@@ -20,7 +19,7 @@ import ch.epfl.bluebrain.nexus.cli.config.literature.LiteratureConfig
 import ch.epfl.bluebrain.nexus.cli.config.{AppConfig, PrintConfig}
 import ch.epfl.bluebrain.nexus.cli.sse.{Event, EventStream, Offset, ProjectLabel}
 import ch.epfl.bluebrain.nexus.cli.utils.Resources
-import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, CliErrOr, CliError, Console}
+import ch.epfl.bluebrain.nexus.cli.{logRetryErrors, CliErrOffsetOr, CliErrOr, CliError, Console}
 import fs2.Stream
 import org.http4s.Uri
 import retry.CatsEffect._
@@ -38,14 +37,12 @@ class LiteratureProjection[F[_]: ContextShift](
 )(implicit blocker: Blocker, F: ConcurrentEffect[F], T: Timer[F])
     extends Resources {
 
-  private type ComputedVectors = List[Either[CliError, (Event, ProjectLabel, String, String, Embedding, String)]]
+  private type ComputedVectors =
+    List[Either[(Offset, CliError), (Event, Offset, ProjectLabel, String, String, Embedding, String)]]
   private val abstractKey = "abstract"
   private val bodyKey     = "articleBody"
 
-  private val lc: LiteratureConfig                          = cfg.literature
-  private val equalIgnoreRawJson: Eq[(Event, ProjectLabel)] = Eq.instance {
-    case ((ev1, proj1), (ev2, proj2)) => ev1.resourceId == ev2.resourceId && ev1.rev == ev2.rev && proj1 == proj2
-  }
+  private val lc: LiteratureConfig = cfg.literature
 
   implicit private val printCfg: PrintConfig       = lc.print
   implicit private val c: Console[F]               = console
@@ -96,46 +93,53 @@ class LiteratureProjection[F[_]: ContextShift](
     val compiledStream         = eventStream.value.flatMap { stream =>
       stream
         .map {
-          case Right((ev, org, proj)) =>
+          case Right((ev, off, org, proj)) =>
             val existsType = lc.projects.get((org, proj)).exists(pc => ev.resourceTypes.exists(pc.types.contains))
-            Right(Option.when(existsType)((ev, org, proj)))
-          case Left(err)              => Left(err)
+            Right(Option.when(existsType)((ev, off, org, proj)))
+          case Left(err)                   => Left(err)
         }
-        .through(printEventProgress(console))
+        .through(printEventProgress(console, lc.errorFile))
         .flatMap {
-          case (ev, _, proj) =>
+          case (ev, off, _, proj) =>
             (for {
               abstractSection <- extractSectionSentences(abstractKey, ev.raw)
               bodySection     <- extractSectionSentences(bodyKey, ev.raw)
             } yield (abstractSection ++ bodySection).flatMap {
-              case (section, sentences) => sentences.map(text => (ev, proj, section, text))
+              case (section, sentences) => sentences.map(text => (ev, off, proj, section, text))
             }) match {
               case Some(sentences) => Stream(sentences.toSeq.map(Right.apply): _*)
-              case None => Stream(Left((ev, proj, textExtractionErr(ev.resourceId))))
+              case None => Stream(Left((ev, off, proj, textExtractionErr(ev.resourceId))))
             }
         }
         .evalMap[F, ComputedVectors] {
-          case Right((ev, proj, section, text)) =>
+          case Right((ev, off, proj, section, text)) =>
             lc.blueBrainSearch.modelTypes.map {
               case ModelType(modelName, _) =>
-                bbs.embedding(modelName, text).map(_.map(emb => (ev, proj, section, text, emb, modelName)))
+                bbs
+                  .embedding(modelName, text)
+                  .map(_.map(emb => (ev, off, proj, section, text, emb, modelName)))
+                  .map(_.leftMap(off -> _))
             }.sequence
-          case Left((ev, proj, err))            =>
+          case Left((ev, off, proj, err))            =>
             console
-              .printlnErr(s"Computing embedding for paper '${ev.resourceId}' on project '${proj.show}' failed")
-              .as(List(Left(err)))
+              .printlnErr(
+                s"Computing embedding for paper '${ev.resourceId}' with offset '$off' on project '${proj.show}' failed"
+              )
+              .as(List(Left(off -> err)))
         }
         .flatMap(list => Stream(list: _*))
-        .through(printProjectionProgress(console, sentenceEmbeddingsProcessLine))
-        .groupAdjacentBy { case (ev, proj, _, _, _, _) => (ev, proj) }(equalIgnoreRawJson)
-        .evalMap {
-          case ((ev, proj), chunks) =>
-            val sentences = chunks.map {
-              case (_, _, section, text, Embedding(vector), modelName) => (section, text, vector, modelName)
-            }.toList
-            writeJsonPaper(ev, proj, sentences)
+        .through(printProjectionProgress(console, lc.errorFile, sentenceEmbeddingsProcessLine))
+        .groupAdjacentBy { case (ev, off, proj, _, _, _, _) => (ev, off, proj) } {
+          case ((_, off1, _), (_, off2, _)) => off1 == off2
         }
-        .through(printProjectionProgress(console, paperProcessLine))
+        .evalMap {
+          case ((ev, off, proj), chunks) =>
+            val sentences = chunks.map {
+              case (_, _, _, section, text, Embedding(vector), modelName) => (section, text, vector, modelName)
+            }.toList
+            writeJsonPaper(ev, off, proj, sentences)
+        }
+        .through(printProjectionProgress(console, lc.errorFile, paperProcessLine))
         .attempt
         .map(_.leftMap(err => Unexpected(Option(err.getMessage).getOrElse(""))).map(_ => ()))
         .compile
@@ -176,11 +180,12 @@ class LiteratureProjection[F[_]: ContextShift](
 
   private def writeJsonPaper(
       ev: Event,
+      off: Offset,
       proj: ProjectLabel,
       sentences: Seq[(String, String, Seq[Double], String)]
-  ): F[CliErrOr[Unit]] = {
+  ): F[CliErrOffsetOr[Unit]] = {
     ev.raw.hcursor.get[JsonObject]("_source") match {
-      case Left(_)          => F.pure(Left(sourceExtractionErr(ev.resourceId)))
+      case Left(_)          => F.pure(Left(off -> sourceExtractionErr(ev.resourceId)))
       case Right(sourceObj) =>
         val jsonByModel = sentences.foldLeft(Map.empty[String, Seq[Json]]) {
           case (acc, (section, text, vector, modelName)) =>
@@ -198,9 +203,11 @@ class LiteratureProjection[F[_]: ContextShift](
             case (_, (modelName, jsonSeq)) =>
               val document = sourceObj.add("sentences", Json.arr(jsonSeq: _*)).asJson
               val id       = paperId(ev, proj)
-              EitherT(es.index(paperIndex(modelName), id, document).map[CliErrOr[Unit]](identity)).semiflatMap { _ =>
-                console.println(s"Indexed paper with id '$id' for model '$modelName'")
-              }
+              EitherT(es.index(paperIndex(modelName), id, document).map[CliErrOr[Unit]](identity))
+                .semiflatMap { _ =>
+                  console.println(s"Indexed paper with id '$id' for model '$modelName'")
+                }
+                .leftMap(off -> _)
           }
           .value
     }
