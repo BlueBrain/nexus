@@ -15,8 +15,11 @@ class CliSpec extends AbstractCliSpec {
         code        <- cli.command(assemble("config show"))
         replacements = Map(
                          quote("{postgres-offset-file}")   -> cfg.postgres.offsetFile.toString,
+                         quote("{postgres-error-file}")    -> cfg.postgres.errorFile.toString,
                          quote("{influx-offset-file}")     -> cfg.influx.offsetFile.toString,
-                         quote("{literature-offset-file}") -> cfg.literature.offsetFile.toString
+                         quote("{influx-error-file}")      -> cfg.influx.errorFile.toString,
+                         quote("{literature-offset-file}") -> cfg.literature.offsetFile.toString,
+                         quote("{literature-error-file}")  -> cfg.literature.errorFile.toString
                        )
         expected     = contentOf("cli/config-show.txt", replacements)
         lines       <- console.stdQueue.dequeue1

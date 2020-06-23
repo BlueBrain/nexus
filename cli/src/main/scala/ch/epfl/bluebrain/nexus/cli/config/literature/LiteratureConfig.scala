@@ -15,7 +15,8 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Literature extraction configuration
   *
-  * @param offsetFile         the location where to store the literature of the projection
+ * @param offsetFile         the location where to store the literature of the projection
+  * @param errorFile          the location where to store the errors of the projection
   * @param offsetSaveInterval the how frequent to save the current offset to a file
   * @param blueBrainSearch    the Blue Brain Search configuration, used for calculating vector embeddings
   * @param elasticSearch      the ElasticSearch configuration, used to project data
@@ -24,6 +25,7 @@ import scala.concurrent.duration.FiniteDuration
   */
 final case class LiteratureConfig(
     offsetFile: Path,
+    errorFile: Path,
     offsetSaveInterval: FiniteDuration,
     blueBrainSearch: BlueBrainSearchConfig,
     elasticSearch: ElasticSearchLiteratureConfig,

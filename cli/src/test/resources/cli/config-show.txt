@@ -16,6 +16,7 @@ influx {
     database=influxdb
     db-creation-command="CREATE DATABASE \"influxdb\" WITH DURATION 1000d REPLICATION 1 SHARD DURATION 1h NAME \"influxdb\""
     endpoint="http://localhost:8086"
+    error-file="{influx-error-file}"
     offset-file="{influx-offset-file}"
     offset-save-interval="1s"
     print {
@@ -66,6 +67,7 @@ literature {
             }
         ]
     }
+    error-file="{literature-error-file}"
     offset-file="{literature-offset-file}"
     offset-save-interval="1m"
     print {
@@ -75,6 +77,7 @@ literature {
 }
 postgres {
     database=postgres
+    error-file="{postgres-error-file}"
     host="127.0.0.1"
     offset-file="{postgres-offset-file}"
     offset-save-interval="1s"

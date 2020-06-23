@@ -2,15 +2,17 @@ package ch.epfl.bluebrain.nexus
 
 import cats.Applicative
 import ch.epfl.bluebrain.nexus.cli.CliError.ClientError
-import ch.epfl.bluebrain.nexus.cli.sse.{Event, OrgLabel, ProjectLabel}
+import ch.epfl.bluebrain.nexus.cli.sse.{Event, Offset, OrgLabel, ProjectLabel}
 import retry.RetryDetails
 import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 
 package object cli {
 
-  type ClientErrOr[A] = Either[ClientError, A]
-  type CliErrOr[A]    = Either[CliError, A]
-  type LabeledEvent   = (Event, OrgLabel, ProjectLabel)
+  type ClientErrOr[A]       = Either[ClientError, A]
+  type CliErrOr[A]          = Either[CliError, A]
+  type ClientErrOffsetOr[A] = Either[(Offset, ClientError), A]
+  type CliErrOffsetOr[A]    = Either[(Offset, CliError), A]
+  type LabeledEvent         = (Event, Offset, OrgLabel, ProjectLabel)
 
   def logRetryErrors[F[_], A](
       action: String

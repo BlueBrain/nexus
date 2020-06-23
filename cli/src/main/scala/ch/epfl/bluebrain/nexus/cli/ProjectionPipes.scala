@@ -1,9 +1,15 @@
 package ch.epfl.bluebrain.nexus.cli
 
-import cats.Monad
+import java.nio.charset.StandardCharsets.UTF_8
+import java.nio.file.{Files, Path, StandardOpenOption}
+
+import cats.effect.Sync
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.config.PrintConfig
+import ch.epfl.bluebrain.nexus.cli.sse.Offset
 import fs2.Pipe
+
+import scala.jdk.CollectionConverters._
 
 object ProjectionPipes {
 
@@ -14,15 +20,20 @@ object ProjectionPipes {
     * @return it returns the successful events, ignoring the failures and the skipped
     */
   def printEventProgress[F[_], A, E <: CliError](
-      console: Console[F]
-  )(implicit F: Monad[F], cfg: PrintConfig): Pipe[F, Either[E, Option[A]], A] =
-    _.evalMapAccumulate[F, (Long, Long, Long), Either[E, Option[A]]]((0L, 0L, 0L)) {
-      case ((success, skip, errors), v @ Right(Some(_))) =>
+      console: Console[F],
+      errorFile: Path
+  )(implicit F: Sync[F], cfg: PrintConfig): Pipe[F, Either[(Offset, E), Option[A]], A] =
+    _.evalMapAccumulate[F, (Long, Long, Long), Either[(Offset, E), Option[A]]]((0L, 0L, 0L)) {
+      case ((success, skip, errors), v @ Right(Some(_)))   =>
         F.pure(((success + 1, skip, errors), v))
-      case ((success, skip, errors), v @ Right(None))    =>
+      case ((success, skip, errors), v @ Right(None))      =>
         F.pure(((success, skip + 1, errors), v))
-      case ((success, skip, errors), v @ Left(err))      =>
-        console.printlnErr(err.asString).as(((success, skip, errors + 1), v))
+      case ((success, skip, errors), v @ Left((off, err))) =>
+        console.printlnErr(s"Error on offset '$off' ${err.asString}").as(((success, skip, errors + 1), v)) >>
+          F.delay {
+            val openOptions = if (Files.exists(errorFile)) StandardOpenOption.APPEND else StandardOpenOption.CREATE
+            Files.write(errorFile, List(off.asString, err.asString).asJava, UTF_8, openOptions)
+          } >> F.pure((((success, skip, errors + 1), v)))
     }.evalMap {
         case ((success, skip, errors), v)
             if cfg.progressInterval
@@ -42,14 +53,19 @@ object ProjectionPipes {
     */
   def printProjectionProgress[F[_], A, E <: CliError](
       console: Console[F],
+      errorFile: Path,
       line: (Long, Long) => String = (success, errors) =>
         s"Processed ${success + errors} events (success: $success, errors: $errors)"
-  )(implicit F: Monad[F], cfg: PrintConfig): Pipe[F, Either[E, A], A]         =
-    _.evalMapAccumulate[F, (Long, Long), Either[E, A]]((0L, 0L)) {
-      case ((success, errors), v @ Right(_))  =>
+  )(implicit F: Sync[F], cfg: PrintConfig): Pipe[F, Either[(Offset, E), A], A]         =
+    _.evalMapAccumulate[F, (Long, Long), Either[(Offset, E), A]]((0L, 0L)) {
+      case ((success, errors), v @ Right(_))         =>
         F.pure(((success + 1, errors), v))
-      case ((success, errors), v @ Left(err)) =>
-        console.printlnErr(err.asString).as(((success, errors + 1), v))
+      case ((success, errors), v @ Left((off, err))) =>
+        console.printlnErr(s"Error on offset '$off' ${err.asString}").as(((success, errors + 1), v)) >>
+          F.delay {
+            val openOptions = if (Files.exists(errorFile)) StandardOpenOption.APPEND else StandardOpenOption.CREATE
+            Files.write(errorFile, List(off.asString, err.asString).asJava, UTF_8, openOptions)
+          } >> F.pure(((success, errors + 1), v))
     }.evalMap {
         case ((successes, errors), v)
             if cfg.progressInterval
