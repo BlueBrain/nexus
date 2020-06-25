@@ -58,7 +58,6 @@ val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
-val storageVersion                  = "1.3.0"
 val topBraidVersion                 = "1.3.2"
 
 lazy val adminClient              = "ch.epfl.bluebrain.nexus"          %% "admin-client"                        % adminVersion
@@ -130,7 +129,6 @@ lazy val pureconfig               = "com.github.pureconfig"            %% "purec
 lazy val scalaLogging             = "com.typesafe.scala-logging"       %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"                    %% "scalatest"                           % scalaTestVersion
 lazy val scalaReflect             = "org.scala-lang"                    % "scala-reflect"                       % scalaCompilerVersion
-lazy val storageClient            = "ch.epfl.bluebrain.nexus"          %% "storage-client"                      % storageVersion
 lazy val topBraidShacl            = "org.topbraid"                      % "shacl"                               % topBraidVersion
 
 val javaSpecificationVersion = SettingKey[String](
@@ -348,7 +346,6 @@ lazy val service = project
       monixEval,
       nimbusJoseJwt,
       parboiled2,
-      storageClient,
       topBraidShacl,
       akkaHttpTestKit         % Test,
       akkaPersistenceInMem    % Test,
