@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.service.config
 
+import java.nio.file.{Path, Paths}
+
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
@@ -32,6 +35,14 @@ class Settings(config: Config) extends Extension {
   @nowarn("cat=unused")
   implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
     ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s"), _.toString)
+
+  @nowarn("cat=unused")
+  implicit private val pathConverter: ConfigConvert[Path] =
+    ConfigConvert.viaString[Path](catchReadError(s => Paths.get(s)), _.toString)
+
+  @nowarn("cat=unused")
+  implicit private val authTokenConverter: ConfigConvert[AccessToken] =
+    ConfigConvert.viaString[AccessToken](catchReadError(s => AccessToken(s)), _.value)
 
   val serviceConfig: ServiceConfig =
     ConfigSource.fromConfig(config).at("app").loadOrThrow[ServiceConfig]

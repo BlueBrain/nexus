@@ -16,9 +16,10 @@ import ch.epfl.bluebrain.nexus.commons.search.{Pagination, QueryResults, Sort, S
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues}
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.types.Identity._
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
@@ -102,7 +103,7 @@ class SchemaRoutesSpec
 
   private val manageResolver = Set(Permission.unsafe("resources/read"), Permission.unsafe("schemas/write"))
   // format: off
-  private val routes = Routes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], schemas, mock[Files[Task]], mock[Archives[Task]], tagsRes, mock[ProjectViewCoordinator[Task]])
+  private val routes = KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], schemas, mock[Files[Task]], mock[Archives[Task]], tagsRes, mock[ProjectViewCoordinator[Task]])
   // format: on
 
   //noinspection NameBooleanParameters

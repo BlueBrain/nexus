@@ -4,8 +4,8 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.kg.IdStats
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.statisticsCtxUri
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+
 import scala.annotation.nowarn
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -149,11 +149,11 @@ object Statistics {
 
   implicit val viewStatisticsEncoder: Encoder[ViewStatistics]               =
     deriveConfiguredEncoder[ViewStatistics]
-      .mapJson(_ deepMerge Json.obj("@type" -> nxv.ViewStatistics.prefix.asJson))
+      .mapJson(_ deepMerge Json.obj("@type" -> "ViewStatistics".asJson))
 
   implicit val compositeStatisticsEncoder: Encoder[CompositeViewStatistics] =
     deriveConfiguredEncoder[CompositeViewStatistics]
-      .mapJson(_ deepMerge Json.obj("@type" -> nxv.CompositeViewStatistics.prefix.asJson))
+      .mapJson(_ deepMerge Json.obj("@type" -> "CompositeViewStatistics".asJson))
 
   implicit val statisticsEncoder: Encoder[Statistics]                       =
     Encoder.instance {

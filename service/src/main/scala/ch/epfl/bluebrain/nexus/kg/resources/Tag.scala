@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.kg.resources
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{GraphDecoder, NonEmptyString}
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.{Encoder, Json}
 
 /**
@@ -36,7 +36,7 @@ object Tag {
   // format: on
 
   implicit final val tagEncoder: Encoder[Tag] = Encoder.instance {
-    case Tag(rev, tag) => Json.obj(nxv.tag.prefix -> Json.fromString(tag), "rev" -> Json.fromLong(rev))
+    case Tag(rev, tag) => Json.obj("tag" -> Json.fromString(tag), "rev" -> Json.fromLong(rev))
   }
 
   implicit final val tagGraphDecoder: GraphDecoder[Tag] = GraphDecoder.instance { c =>

@@ -4,15 +4,14 @@ import akka.actor.ActorSystem
 import cats.effect.{Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types._
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Caller}
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError.InternalError
 import ch.epfl.bluebrain.nexus.kg.async.{ProjectAttributesCoordinator, ProjectViewCoordinator}
 import ch.epfl.bluebrain.nexus.kg.cache.Caches
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.indexing.ViewEncoder._
@@ -21,10 +20,13 @@ import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.kg.resolve.ResolverEncoder._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
 import io.circe.Json
 import com.typesafe.scalalogging.Logger
 import retry.CatsEffect._
@@ -37,14 +39,14 @@ class ProjectInitializer[F[_]: Timer](
     resolvers: Resolvers[F],
     viewCoordinator: ProjectViewCoordinator[F],
     fileAttributesCoordinator: ProjectAttributesCoordinator[F]
-)(implicit F: Effect[F], cache: Caches[F], config: AppConfig, as: ActorSystem) {
+)(implicit F: Effect[F], cache: Caches[F], config: ServiceConfig, as: ActorSystem) {
 
   private val log         = Logger[this.type]
   private val revK        = nxv.rev.prefix
   private val deprecatedK = nxv.deprecated.prefix
   private val algorithmK  = nxv.algorithm.prefix
 
-  implicit private val policy: RetryPolicy[F]                                            = config.keyValueStore.indexing.retry.retryPolicy[F]
+  implicit private val policy: RetryPolicy[F]                                            = config.kg.keyValueStore.indexing.retry.retryPolicy[F]
   implicit private val logErrors: (Either[Rejection, Resource], RetryDetails) => F[Unit] =
     (err, details) => F.pure(log.warn(s"Retrying on resource creation with retry details '$details' and error: '$err'"))
 
@@ -66,6 +68,7 @@ class ProjectInitializer[F[_]: Timer](
     */
   def apply(project: Project, subject: Subject): F[Unit] = {
     implicit val caller: Caller = Caller(subject, Set(subject))
+    implicit val s: Subject     = subject
     implicit val p: Project     = project
     for {
       _ <- cache.project.replace(project)
@@ -126,7 +129,8 @@ class ProjectInitializer[F[_]: Timer](
   }
 
   private def createDiskStorage(implicit project: Project, s: Subject): F[Either[Rejection, Resource]] = {
-    val storage: Storage = DiskStorage.default(project.ref)
+    implicit val storageConfig: StorageConfig = config.kg.storage
+    val storage: Storage                      = DiskStorage.default(project.ref)
     asJson(DiskStorage.default(project.ref)).flatMap { json =>
       storages.create(Id(project.ref, storage.id), json).value.retryingM(wasSuccessful)
     }

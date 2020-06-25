@@ -20,6 +20,28 @@ sealed trait Identity extends Product with Serializable {
 
 object Identity {
 
+  private val allowedInput = "([^/]*)"
+
+  /**
+    * Attempt to create a [[Identity]] from its id representation
+    *
+   * @param id the id
+    * @return Some(identity) when the id maps to a known identity pattern, None otherwise
+    */
+  def apply(id: AbsoluteIri): Option[Identity] = {
+    val regexUser      = s".+/v1/realms/$allowedInput/users/$allowedInput".r
+    val regexGroup     = s".+/v1/realms/$allowedInput/groups/$allowedInput".r
+    val regexAuth      = s".+/v1/realms/$allowedInput/authenticated".r
+    val regexAnonymous = ".+/v1/anonymous".r
+    id.asString match {
+      case regexUser(realm, subject) => Some(User(subject, realm))
+      case regexGroup(realm, group)  => Some(Group(group, realm))
+      case regexAuth(realm)          => Some(Authenticated(realm))
+      case regexAnonymous()          => Some(Anonymous)
+      case _                         => None
+    }
+  }
+
   /**
     * Base enumeration type for subject classes.
     */

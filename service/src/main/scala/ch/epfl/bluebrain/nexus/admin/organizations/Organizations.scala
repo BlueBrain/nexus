@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
-import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
@@ -209,7 +208,7 @@ object Organizations {
   def apply[F[_]: ConcurrentEffect: Timer](
       index: OrganizationCache[F],
       aclsApi: Acls[F],
-      realms: Realms[F]
+      saCaller: Caller
   )(implicit serviceConfig: ServiceConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
     implicit val retryPolicy: RetryPolicy[F] = serviceConfig.admin.aggregate.retry.retryPolicy[F]
     val aggF: F[Agg[F]]                      =
@@ -222,10 +221,7 @@ object Organizations {
         serviceConfig.admin.aggregate.akkaAggregateConfig,
         serviceConfig.cluster.shards
       )
-    for {
-      saCaller <- serviceConfig.admin.serviceAccount.credentials.map(realms.caller).getOrElse(Caller.anonymous.pure[F])
-      agg      <- aggF
-    } yield new Organizations(agg, index, aclsApi, saCaller)
+    aggF.map(agg => new Organizations(agg, index, aclsApi, saCaller))
   }
 
   def indexer[F[_]: Timer](

@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.kg.Error._
 import ch.epfl.bluebrain.nexus.kg.KgError.{OrganizationNotFound, ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.config.{Schemas, Settings}
 import org.mockito.{IdiomaticMockito, Mockito}
@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.{OrganizationRef, ProjectInitializer}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
-import ch.epfl.bluebrain.nexus.kg.routes.Routes
+import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes
 import ch.epfl.bluebrain.nexus.kg.{Error, KgError, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
@@ -167,7 +167,7 @@ class ProjectDirectivesSpec
 
       def route(label: String): Route = {
         import monix.execution.Scheduler.Implicits.global
-        Routes.wrap(
+        KgRoutes.wrap(
           (get & org(label)) { o =>
             complete(StatusCodes.OK -> o)
           }
@@ -216,7 +216,7 @@ class ProjectDirectivesSpec
 
       def route: Route = {
         import monix.execution.Scheduler.Implicits.global
-        Routes.wrap(
+        KgRoutes.wrap(
           (get & project) { project =>
             complete(StatusCodes.OK -> project)
           }
@@ -224,7 +224,7 @@ class ProjectDirectivesSpec
       }
 
       def notDeprecatedRoute(implicit proj: Project): Route =
-        Routes.wrap(
+        KgRoutes.wrap(
           (get & projectNotDeprecated) {
             complete(StatusCodes.OK)
           }

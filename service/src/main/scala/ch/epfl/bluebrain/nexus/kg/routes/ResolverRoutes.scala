@@ -5,13 +5,13 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.data.EitherT
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError.InvalidOutputFormat
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
@@ -22,22 +22,32 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
 import kamon.Kamon
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Task])(implicit
-    acls: AccessControlLists,
+class ResolverRoutes private[routes] (
+    resolvers: Resolvers[Task],
+    tags: Tags[Task],
+    acls: Acls[Task],
+    realms: Realms[Task]
+)(implicit
     caller: Caller,
     project: Project,
     viewCache: ViewCache[Task],
     indexers: Clients[Task],
-    config: AppConfig
-) {
+    config: ServiceConfig
+) extends AuthDirectives(acls, realms) {
 
   import indexers._
+  private val projectPath               = project.organizationLabel / project.label
+  implicit private val subject: Subject = caller.subject
 
   /**
     * Routes for resolvers. Those routes should get triggered after the following segments have been consumed:
@@ -52,7 +62,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(resolvers.create(source).value.runWithStatus(Created))
             }
@@ -63,7 +73,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
       (get & paginated & searchParams(fixedSchema = resolverSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         extractUri { implicit uri =>
           operationName(s"/${config.http.prefix}/resolvers/{org}/{project}") {
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(resolvers.list(_, params, page))
               complete(listed.runWithStatus(OK))
             }
@@ -93,7 +103,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
       operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/_/{resourceId}") {
         outputFormat(strict = false, Compacted) {
           case format: NonBinaryOutputFormat =>
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               concat(
                 (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                   completeWithFormat(resolvers.resolve(id, rev).value.runWithStatus(OK))(format)
@@ -127,7 +137,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
       operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/{resourceId}") {
         outputFormat(strict = false, Compacted) {
           case format: NonBinaryOutputFormat =>
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               concat(
                 (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                   completeWithFormat(resolvers.resolve(resolverId, resourceId, rev).value.runWithStatus(OK))(format)
@@ -160,7 +170,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
       // Create or update a resolver (depending on rev query parameter)
       (put & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               parameter("rev".as[Long].?) {
                 case None      =>
@@ -177,7 +187,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
       // Deprecate resolver
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             complete(resolvers.deprecate(Id(project.ref, id), rev).value.runWithStatus(OK))
           }
         }
@@ -187,7 +197,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(resolvers.fetch(Id(project.ref, id), rev).value.runWithStatus(OK))(format)
@@ -207,7 +217,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
       // Fetch resolver source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/source") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(resolvers.fetchSource(Id(project.ref, id), rev).value.runWithStatus(OK))
@@ -227,9 +237,9 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/incoming") {
           fromPaginated.apply { implicit page =>
             extractUri { implicit uri =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 val listed = for {
-                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                   _        <- resolvers.fetchSource(Id(project.ref, id))
                   incoming <- EitherT.right[Rejection](resolvers.listIncoming(id, view, page))
                 } yield incoming
@@ -245,9 +255,9 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
           operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/outgoing") {
             fromPaginated.apply { implicit page =>
               extractUri { implicit uri =>
-                hasPermission(read).apply {
+                authorizeFor(projectPath, read)(caller) {
                   val listed = for {
-                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                     _        <- resolvers.fetchSource(Id(project.ref, id))
                     outgoing <- EitherT.right[Rejection](resolvers.listOutgoing(id, view, page, links))
                   } yield outgoing
@@ -257,7 +267,7 @@ class ResolverRoutes private[routes] (resolvers: Resolvers[Task], tags: Tags[Tas
             }
           }
       },
-      new TagRoutes("resolvers", tags, resolverRef, write).routes(id),
+      new TagRoutes("resolvers", tags, acls, realms, resolverRef, write).routes(id),
       routesResourceResolution(id)
     )
 }

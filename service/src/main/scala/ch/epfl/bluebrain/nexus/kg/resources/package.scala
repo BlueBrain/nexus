@@ -11,11 +11,8 @@ import ch.epfl.bluebrain.nexus.commons.http.{HttpClient, UnexpectedUnsuccessfulH
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination, QueryResults}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Caller
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError.InternalError
 import ch.epfl.bluebrain.nexus.kg.archives.Archive
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
@@ -27,6 +24,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.shacl.ValidationReport
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import io.circe.Json
 
 package object resources {
@@ -121,8 +119,6 @@ package object resources {
     */
   type RejOrProject = Either[Rejection, Project]
 
-  implicit def toSubject(implicit caller: Caller): Subject = caller.subject
-
   private val sortErr = ".*No mapping found for \\[\\w*\\] in order to sort.*"
 
   private[resources] def listResources[F[_]](
@@ -131,7 +127,7 @@ package object resources {
       pagination: Pagination
   )(implicit
       F: Effect[F],
-      config: AppConfig,
+      config: ServiceConfig,
       tc: HttpClient[F, JsonResults],
       elasticSearch: ElasticSearchClient[F]
   ): F[JsonResults] =
@@ -150,7 +146,7 @@ package object resources {
       id: AbsoluteIri,
       view: Option[SparqlView],
       pagination: FromPagination
-  )(implicit F: Effect[F], config: AppConfig, client: BlazegraphClient[F]): F[LinkResults] =
+  )(implicit F: Effect[F], config: ServiceConfig, client: BlazegraphClient[F]): F[LinkResults] =
     view.map(_.incoming(id, pagination)).getOrElse(F.pure[LinkResults](UnscoredQueryResults(0L, List.empty)))
 
   private[resources] def outgoing[F[_]](
@@ -158,7 +154,7 @@ package object resources {
       view: Option[SparqlView],
       pagination: FromPagination,
       includeExternalLinks: Boolean
-  )(implicit F: Effect[F], config: AppConfig, client: BlazegraphClient[F]): F[LinkResults] = {
+  )(implicit F: Effect[F], config: ServiceConfig, client: BlazegraphClient[F]): F[LinkResults] = {
     view
       .map(_.outgoing(id, pagination, includeExternalLinks))
       .getOrElse(F.pure[LinkResults](UnscoredQueryResults(0L, List.empty)))

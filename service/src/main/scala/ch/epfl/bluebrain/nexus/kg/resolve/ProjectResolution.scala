@@ -5,11 +5,15 @@ import cats.instances.list._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.traverse._
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.iriResolution
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.iriResolution
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 
@@ -20,7 +24,7 @@ import monix.eval.Task
   * @param resolverCache    the resolver cache
   * @param projectCache     the project cache
   * @param staticResolution the static resolutions
-  * @param aclCache         the acl cache
+  * @param acls         the acl surface API
   * @tparam F the monadic effect type
   */
 class ProjectResolution[F[_]](
@@ -28,10 +32,12 @@ class ProjectResolution[F[_]](
     resolverCache: ResolverCache[F],
     projectCache: ProjectCache[F],
     staticResolution: Resolution[F],
-    aclCache: AclsCache[F]
+    acls: Acls[F],
+    saCaller: Caller
 )(implicit F: Monad[F]) {
 
-  private val logger = Logger[this.type]
+  private val logger   = Logger[this.type]
+  val anyProject: Path = "*" / "*"
 
   /**
     * Looks up the collection of defined resolvers for the argument project
@@ -62,7 +68,11 @@ class ProjectResolution[F[_]](
       case r: InProjectResolver    => Some(F.pure(InProjectResolution[F](r.ref, repo)))
       case r: CrossProjectResolver =>
         val refs = r.projectsBy[ProjectRef]
-        Some(aclCache.list.map(MultiProjectResolution(repo, refs, r.resourceTypes, r.identities, projectCache, _)))
+        Some(
+          acls
+            .list(anyProject, ancestors = true, self = false)(saCaller)
+            .map(MultiProjectResolution(repo, refs, r.resourceTypes, r.identities, projectCache, _))
+        )
       case other                   =>
         logger.error(s"A corrupted resolver was found in the cache '$other'")
         None
@@ -92,15 +102,16 @@ object ProjectResolution {
     * @param repo          the resources repository
     * @param resolverCache the resolver cache
     * @param projectCache  the project cache
-    * @param aclCache      the acl cache
+    * @param acls          the acls surface API
     * @return a new [[ProjectResolution]] for the effect type [[Task]]
     */
   def task(
       repo: Repo[Task],
       resolverCache: ResolverCache[Task],
       projectCache: ProjectCache[Task],
-      aclCache: AclsCache[Task]
+      acls: Acls[Task],
+      saCaller: Caller
   ): ProjectResolution[Task] =
-    new ProjectResolution(repo, resolverCache, projectCache, StaticResolution[Task](iriResolution), aclCache)
+    new ProjectResolution(repo, resolverCache, projectCache, StaticResolution[Task](iriResolution), acls, saCaller)
 
 }

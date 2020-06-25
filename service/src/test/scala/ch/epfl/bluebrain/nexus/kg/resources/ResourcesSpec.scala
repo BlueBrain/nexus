@@ -17,11 +17,11 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.SparqlView
@@ -77,7 +77,7 @@ class ResourcesSpec
   aclsCache.list shouldReturn IO.pure(AccessControlLists.empty)
 
   implicit private val resolution      =
-    new ProjectResolution[IO](repo, resolverCache, projectCache, StaticResolution(AppConfig.iriResolution), aclsCache)
+    new ProjectResolution[IO](repo, resolverCache, projectCache, StaticResolution(KgConfig.iriResolution), aclsCache)
   implicit private val materializer    = new Materializer(resolution, projectCache)
   private val resources: Resources[IO] = Resources[IO]
 

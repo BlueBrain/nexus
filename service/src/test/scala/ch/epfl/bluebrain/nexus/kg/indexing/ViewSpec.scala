@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProjectEventStream, ProjectEventStream}
@@ -55,7 +55,7 @@ class ViewSpec
     with IOValues {
 
   implicit private val clock: Clock                     = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  implicit private val appConfig: AppConfig             = Settings(system).appConfig
+  implicit private val appConfig: KgConfig              = Settings(system).appConfig
   implicit private val iamClientConfig: IamClientConfig = IamClientConfig(genIri, genIri, "prefix")
   implicit private val client: BlazegraphClient[IO]     = mock[BlazegraphClient[IO]]
 

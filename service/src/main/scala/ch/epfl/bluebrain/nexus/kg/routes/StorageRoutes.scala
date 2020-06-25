@@ -6,40 +6,49 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.data.EitherT
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError.InvalidOutputFormat
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
-import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
+import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
 import kamon.Kamon
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])(implicit
+class StorageRoutes private[routes] (
+    storages: Storages[Task],
+    tags: Tags[Task],
+    acls: Acls[Task],
+    realms: Realms[Task]
+)(implicit
     system: ActorSystem,
-    acls: AccessControlLists,
     caller: Caller,
     project: Project,
     viewCache: ViewCache[Task],
     indexers: Clients[Task],
-    config: AppConfig
-) {
-
+    config: ServiceConfig
+) extends AuthDirectives(acls, realms) {
   import indexers._
+  private val projectPath               = project.organizationLabel / project.label
+  implicit private val subject: Subject = caller.subject
 
   /**
     * Routes for storages. Those routes should get triggered after the following segments have been consumed:
@@ -54,7 +63,7 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/storages/{org}/{project}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(storages.create(source).value.runWithStatus(Created))
             }
@@ -65,7 +74,7 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
       (get & paginated & searchParams(fixedSchema = storageSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         operationName(s"/${config.http.prefix}/storages/{org}/{project}") {
           extractUri { implicit uri =>
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(storages.list(_, params, page))
               complete(listed.runWithStatus(OK))
             }
@@ -91,7 +100,7 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
       // Create or update a storage (depending on rev query parameter)
       (put & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               parameter("rev".as[Long].?) {
                 case None      =>
@@ -108,7 +117,7 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
       // Deprecate storage
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             complete(storages.deprecate(Id(project.ref, id), rev).value.runWithStatus(OK))
           }
         }
@@ -118,7 +127,7 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(storages.fetch(Id(project.ref, id), rev).value.runWithStatus(OK))(format)
@@ -138,7 +147,7 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
       // Fetch storage source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}/source") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(storages.fetchSource(Id(project.ref, id), rev).value.runWithStatus(OK))
@@ -158,9 +167,9 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}/incoming") {
           fromPaginated.apply { implicit page =>
             extractUri { implicit uri =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 val listed = for {
-                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                   _        <- storages.fetchSource(Id(project.ref, id))
                   incoming <- EitherT.right[Rejection](storages.listIncoming(id, view, page))
                 } yield incoming
@@ -176,9 +185,9 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
           operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}/outgoing") {
             fromPaginated.apply { implicit page =>
               extractUri { implicit uri =>
-                hasPermission(read).apply {
+                authorizeFor(projectPath, read)(caller) {
                   val listed = for {
-                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                     _        <- storages.fetchSource(Id(project.ref, id))
                     outgoing <- EitherT.right[Rejection](storages.listOutgoing(id, view, page, links))
                   } yield outgoing
@@ -188,6 +197,6 @@ class StorageRoutes private[routes] (storages: Storages[Task], tags: Tags[Task])
             }
           }
       },
-      new TagRoutes("storages", tags, storageRef, write).routes(id)
+      new TagRoutes("storages", tags, acls, realms, storageRef, write).routes(id)
     )
 }

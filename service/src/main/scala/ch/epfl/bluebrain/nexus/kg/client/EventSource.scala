@@ -11,8 +11,8 @@ import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.stream.Materializer
 import akka.stream.alpakka.sse.scaladsl.{EventSource => SSESource}
 import akka.stream.scaladsl.Source
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import com.typesafe.scalalogging.Logger
 import io.circe.Decoder
@@ -31,7 +31,7 @@ trait EventSource[A] {
     * @param cred   the optional credentials
     */
   def apply(iri: AbsoluteIri, offset: Option[String] = None)(implicit
-      cred: Option[AuthToken]
+      cred: Option[AccessToken]
   ): Source[(Offset, A), NotUsed]
 
 }
@@ -51,10 +51,10 @@ object EventSource {
       private val logger = Logger[this.type]
       private val http   = Http()
 
-      private def addCredentials(request: HttpRequest)(implicit cred: Option[AuthToken]): HttpRequest =
+      private def addCredentials(request: HttpRequest)(implicit cred: Option[AccessToken]): HttpRequest =
         cred.map(token => request.addCredentials(OAuth2BearerToken(token.value))).getOrElse(request)
 
-      private def send(request: HttpRequest)(implicit cred: Option[AuthToken]): Future[HttpResponse] =
+      private def send(request: HttpRequest)(implicit cred: Option[AccessToken]): Future[HttpResponse] =
         http.singleRequest(addCredentials(request)).map { resp =>
           if (!resp.status.isSuccess())
             logger.warn(s"HTTP response when performing SSE request: status = '${resp.status}'")
@@ -65,7 +65,7 @@ object EventSource {
         Try(TimeBasedUUID(UUID.fromString(id))).orElse(Try(Sequence(id.toLong))).getOrElse(NoOffset)
 
       override def apply(iri: AbsoluteIri, offset: Option[String])(implicit
-          cred: Option[AuthToken]
+          cred: Option[AccessToken]
       ): Source[(Offset, A), NotUsed] =
         SSESource(iri.asAkka, send, offset, config.sseRetryDelay).flatMapConcat { sse =>
           val offset = sse.id.map(toOffset).getOrElse(NoOffset)

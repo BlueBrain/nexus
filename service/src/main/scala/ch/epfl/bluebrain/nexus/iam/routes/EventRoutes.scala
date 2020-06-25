@@ -16,15 +16,15 @@ import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.iam.acls.AclEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.acls.{AclEvent, Acls}
-import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.iam.io.TaggingAdapter._
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.realms.{RealmEvent, Realms}
 import ch.epfl.bluebrain.nexus.iam.routes.EventRoutes._
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.iam.{acls => aclsp, permissions => permissionsp, realms => realmsp}
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
@@ -48,12 +48,10 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
     as: ActorSystem,
     hc: HttpConfig,
     pc: PersistenceConfig
-) {
+) extends AuthDirectives(acls, realms) {
 
   private val pq: EventsByTagQuery = PersistenceQuery(as).readJournalFor[EventsByTagQuery](pc.queryJournalPlugin)
   private val printer: Printer     = Printer.noSpaces.copy(dropNullValues = true)
-
-  implicit private val implAcls: Acls[Task] = acls
 
   def routes: Route =
     // format: off
@@ -74,8 +72,8 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
   ): Route =
     (pathPrefix(pm) & pathEndOrSingleSlash) {
       operationName(opName) {
-        authenticateOAuth2Async("*", authenticator(realms)).withAnonymousUser(Caller.anonymous) { implicit caller =>
-          authorizeFor(permission).apply {
+        extractCaller { caller =>
+          authorizeFor(permission = permission)(caller) {
             lastEventId { offset => complete(source(tag, offset, toSse)) }
           }
         }

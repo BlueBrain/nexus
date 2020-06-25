@@ -14,7 +14,6 @@ import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.persistence.query._
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.admin.config.Permissions._
-import ch.epfl.bluebrain.nexus.admin.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter._
@@ -24,9 +23,9 @@ import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
 import monix.eval.Task
@@ -63,7 +62,7 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
   ): Route =
     (get & pathPrefix(pm) & pathEndOrSingleSlash) {
       extractCaller { caller =>
-        authorizeOn(Path./, permission)(caller) {
+        authorizeFor(permission = permission)(caller) {
           lastEventId { offset => complete(source(tag, offset, toSse)) }
         }
       }

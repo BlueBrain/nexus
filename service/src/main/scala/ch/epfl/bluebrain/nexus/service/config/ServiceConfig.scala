@@ -3,10 +3,12 @@ package ch.epfl.bluebrain.nexus.service.config
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.config.AdminConfig
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.config.IamConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{ClusterConfig, Description, HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 
 import scala.concurrent.duration.FiniteDuration
@@ -16,8 +18,11 @@ final case class ServiceConfig(
     cluster: ClusterConfig,
     persistence: PersistenceConfig,
     http: HttpConfig,
+    pagination: PaginationConfig,
+    kg: KgConfig,
     admin: AdminConfig,
-    iam: IamConfig
+    iam: IamConfig,
+    serviceAccount: ServiceAccountConfig
 )
 
 object ServiceConfig {
@@ -85,6 +90,19 @@ object ServiceConfig {
     */
   final case class PersistenceConfig(journalPlugin: String, snapshotStorePlugin: String, queryJournalPlugin: String)
 
+  /**
+    * Pagination configuration
+    *
+   * @param defaultSize  the default number of results per page
+    * @param sizeLimit    the maximum number of results per page
+    * @param fromLimit    the maximum value of `from` parameter
+    */
+  final case class PaginationConfig(defaultSize: Int, sizeLimit: Int, fromLimit: Int)
+
+  final case class ServiceAccountConfig(token: Option[String]) {
+    def credentials: Option[AccessToken] = token.map(AccessToken)
+  }
+
   val orderedKeys: OrderedKeys = OrderedKeys(
     List(
       "@context",
@@ -94,21 +112,35 @@ object ServiceConfig {
       "message",
       "details",
       nxv.reason.prefix,
-      nxv.total.prefix,
-      nxv.maxScore.prefix,
-      nxv.results.prefix,
-      nxv.score.prefix,
       nxv.description.name,
       nxv.`@base`.name,
       nxv.`@vocab`.name,
       nxv.apiMappings.name,
       nxv.prefix.name,
       nxv.namespace.name,
+      nxv.total.prefix,
+      nxv.maxScore.prefix,
+      nxv.results.prefix,
+      nxv.score.prefix,
+      nxv.resourceId.prefix,
+      nxv.organization.prefix,
+      "sourceId",
+      "projectionId",
+      "totalEvents",
+      "processedEvents",
+      "evaluatedEvents",
+      "remainingEvents",
+      "discardedEvents",
+      "failedEvents",
+      "sources",
+      "projections",
+      "rebuildStrategy",
+      nxv.project.prefix,
       "",
       nxv.label.prefix,
       nxv.organizationUuid.prefix,
       nxv.organizationLabel.prefix,
-      nxv.path.prefix,
+      "_path",
       nxv.grantTypes.prefix,
       nxv.issuer.prefix,
       nxv.keys.prefix,
@@ -117,17 +149,31 @@ object ServiceConfig {
       nxv.userInfoEndpoint.prefix,
       nxv.revocationEndpoint.prefix,
       nxv.endSessionEndpoint.prefix,
+      "readPermission",
+      "writePermission",
+      nxv.algorithm.prefix,
       nxv.self.prefix,
       nxv.constrainedBy.prefix,
       nxv.project.prefix,
+      nxv.projectUuid.prefix,
+      nxv.organizationUuid.prefix,
       nxv.rev.prefix,
       nxv.deprecated.prefix,
       nxv.createdAt.prefix,
       nxv.createdBy.prefix,
       nxv.updatedAt.prefix,
       nxv.updatedBy.prefix,
+      nxv.incoming.prefix,
+      nxv.outgoing.prefix,
       nxv.instant.prefix,
-      nxv.subject.prefix
+      nxv.expiresInSeconds.prefix,
+      nxv.eventSubject.prefix
     )
   )
+
+  implicit def toPagination(implicit cfg: ServiceConfig): PaginationConfig   = cfg.pagination
+  implicit def toHttp(implicit cfg: ServiceConfig): HttpConfig               = cfg.http
+  implicit def toCluster(implicit cfg: ServiceConfig): ClusterConfig         = cfg.cluster
+  implicit def toPersistence(implicit cfg: ServiceConfig): PersistenceConfig = cfg.persistence
+
 }

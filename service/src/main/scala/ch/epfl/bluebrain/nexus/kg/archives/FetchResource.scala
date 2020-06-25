@@ -10,9 +10,9 @@ import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource, ResourceDescription}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileAttributes
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Files, Id, Resources}
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.kg.routes.ResourceEncoder.json
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.orderedKeys
 import io.circe.{Json, Printer}
 
 trait FetchResource[F[_], A] {
@@ -53,7 +54,7 @@ object FetchResource {
       implicit private val outputFormat: JsonLDOutputFormat = Compacted
 
       private def toByteString(json: Json): ByteString =
-        ByteString(printer.printToByteBuffer(json.sortKeys(AppConfig.orderedKeys)))
+        ByteString(printer.printToByteBuffer(json.sortKeys(orderedKeys)))
 
       private def generatePath(optPath: Option[Path], defaultPath: => String): F[Path] =
         optPath match {

@@ -8,11 +8,10 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient.BulkOp
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.ElasticSearchView
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.ProgressFlowElem
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -45,16 +44,16 @@ object ElasticSearchIndexer {
       projections: Projections[F, String],
       F: Effect[F],
       clients: Clients[F],
-      config: AppConfig
+      config: ServiceConfig
   ): StreamSupervisor[F, ProjectionProgress] = {
 
     implicit val ec: ExecutionContext          = as.dispatcher
     implicit val p: Project                    = project
-    implicit val indexing: IndexingConfig      = config.elasticSearch.indexing
+    implicit val indexing: IndexingConfig      = config.kg.elasticSearch.indexing
     implicit val metadataOpts: MetadataOptions = MetadataOptions(linksAsIri = true, expandedLinks = true)
-    implicit val tm: Timeout                   = Timeout(config.elasticSearch.askTimeout)
+    implicit val tm: Timeout                   = Timeout(config.kg.elasticSearch.askTimeout)
 
-    val client: ElasticSearchClient[F] = clients.elasticSearch.withRetryPolicy(config.elasticSearch.indexing.retry)
+    val client: ElasticSearchClient[F] = clients.elasticSearch.withRetryPolicy(config.kg.elasticSearch.indexing.retry)
 
     def deleteOrIndex(res: ResourceV): Option[BulkOp] =
       if (res.deprecated && !view.filter.includeDeprecated) Some(delete(res))

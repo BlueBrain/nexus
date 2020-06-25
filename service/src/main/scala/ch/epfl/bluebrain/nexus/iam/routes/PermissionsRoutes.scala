@@ -3,14 +3,15 @@ package ch.epfl.bluebrain.nexus.iam.routes
 import akka.http.javadsl.server.Rejections._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives.authenticator
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.routes.PermissionsRoutes.PatchPermissions
 import ch.epfl.bluebrain.nexus.iam.routes.PermissionsRoutes.PatchPermissions.{Append, Replace, Subtract}
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.iam.types.ResourceF._
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.{Decoder, DecodingFailure}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -23,12 +24,14 @@ import monix.execution.Scheduler.Implicits.global
   * @param permissions the permissions api
   * @param realms      the realms api
   */
-class PermissionsRoutes(permissions: Permissions[Task], realms: Realms[Task])(implicit http: HttpConfig) {
+class PermissionsRoutes(permissions: Permissions[Task], acls: Acls[Task], realms: Realms[Task])(implicit
+    http: HttpConfig
+) extends AuthDirectives(acls, realms) {
 
   def routes: Route =
     (pathPrefix("permissions") & pathEndOrSingleSlash) {
       operationName(s"/${http.prefix}/permissions") {
-        authenticateOAuth2Async("*", authenticator(realms)).withAnonymousUser(Caller.anonymous) { implicit caller =>
+        extractCaller { implicit caller =>
           concat(
             get {
               parameter("rev".as[Long].?) {

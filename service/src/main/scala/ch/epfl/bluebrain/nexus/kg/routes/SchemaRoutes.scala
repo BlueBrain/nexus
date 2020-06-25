@@ -5,13 +5,13 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.data.EitherT
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.KgError.InvalidOutputFormat
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
@@ -22,22 +22,28 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.routes.SchemaRoutes._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
 import kamon.Kamon
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(implicit
-    acls: AccessControlLists,
+class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task], acls: Acls[Task], realms: Realms[Task])(
+    implicit
     caller: Caller,
     project: Project,
     viewCache: ViewCache[Task],
     indexers: Clients[Task],
-    config: AppConfig
-) {
+    config: ServiceConfig
+) extends AuthDirectives(acls, realms) {
 
   import indexers._
+  private val projectPath               = project.organizationLabel / project.label
+  implicit private val subject: Subject = caller.subject
 
   /**
     * Routes for schemas. Those routes should get triggered after the following segments have been consumed:
@@ -52,7 +58,7 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/schemas/{org}/{project}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(schemas.create(source).value.runWithStatus(Created))
             }
@@ -63,7 +69,7 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
       (get & paginated & searchParams(fixedSchema = shaclSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         operationName(s"/${config.http.prefix}/schemas/{org}/{project}") {
           extractUri { implicit uri =>
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(schemas.list(_, params, page))
               complete(listed.runWithStatus(OK))
             }
@@ -89,7 +95,7 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
       // Create or update a schema (depending on rev query parameter)
       (put & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/schemas/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               parameter("rev".as[Long].?) {
                 case None      =>
@@ -106,7 +112,7 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
       // Deprecate schema
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/schemas/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             complete(schemas.deprecate(Id(project.ref, id), rev).value.runWithStatus(OK))
           }
         }
@@ -116,7 +122,7 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
         operationName(s"/${config.http.prefix}/schemas/{org}/{project}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(schemas.fetch(Id(project.ref, id), rev).value.runWithStatus(OK))(format)
@@ -136,7 +142,7 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
       // Fetch schema source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/schemas/{org}/{project}/{id}/source") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(schemas.fetchSource(Id(project.ref, id), rev).value.runWithStatus(OK))
@@ -156,9 +162,9 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
         operationName(s"/${config.http.prefix}/schemas/{org}/{project}/{id}/incoming") {
           fromPaginated.apply { implicit page =>
             extractUri { implicit uri =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 val listed = for {
-                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                   _        <- schemas.fetchSource(Id(project.ref, id))
                   incoming <- EitherT.right[Rejection](schemas.listIncoming(id, view, page))
                 } yield incoming
@@ -174,9 +180,9 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
           operationName(s"/${config.http.prefix}/schemas/{org}/{project}/{id}/outgoing") {
             fromPaginated.apply { implicit page =>
               extractUri { implicit uri =>
-                hasPermission(read).apply {
+                authorizeFor(projectPath, read)(caller) {
                   val listed = for {
-                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                     _        <- schemas.fetchSource(Id(project.ref, id))
                     outgoing <- EitherT.right[Rejection](schemas.listOutgoing(id, view, page, links))
                   } yield outgoing
@@ -186,7 +192,7 @@ class SchemaRoutes private[routes] (schemas: Schemas[Task], tags: Tags[Task])(im
             }
           }
       },
-      new TagRoutes("schemas", tags, shaclRef, write).routes(id)
+      new TagRoutes("schemas", tags, acls, realms, shaclRef, write).routes(id)
     )
 }
 

@@ -100,7 +100,7 @@ class ResolverRoutesSpec
 
   private val manageResolver = Set(Permission.unsafe("resources/read"), Permission.unsafe("resolvers/write"))
   // format: off
-  private val routes = Routes(resources, resolvers, mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, mock[ProjectViewCoordinator[Task]])
+  private val routes = KgRoutes(resources, resolvers, mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, mock[ProjectViewCoordinator[Task]])
   // format: on
 
   //noinspection NameBooleanParameters

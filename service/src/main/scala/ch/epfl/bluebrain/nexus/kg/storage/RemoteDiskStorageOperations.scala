@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import cats.Applicative
 import cats.effect.Effect
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.kg.resources.ResId
 import ch.epfl.bluebrain.nexus.kg.resources.file.File._
@@ -14,6 +15,10 @@ import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFi
 
 object RemoteDiskStorageOperations {
 
+  // TODO: Remove when migrating ADMIN client
+  implicit private def oldTokenConversion(implicit token: Option[AccessToken]): Option[AuthToken] =
+    token.map(t => AuthToken(t.value))
+
   implicit private def toDigest(digest: StorageDigest): Digest = Digest(digest.algorithm, digest.value)
 
   /**
@@ -23,7 +28,7 @@ object RemoteDiskStorageOperations {
     * @param client  the remote storage client
     */
   final class Verify[F[_]: Applicative](storage: RemoteDiskStorage, client: StorageClient[F]) extends VerifyStorage[F] {
-    implicit val cred = storage.credentials.map(AuthToken)
+    implicit val cred = storage.credentials.map(AccessToken)
 
     override def apply: F[Either[String, Unit]] =
       client.exists(storage.folder).map {
@@ -39,7 +44,7 @@ object RemoteDiskStorageOperations {
     * @param client  the remote storage client
     */
   final class Fetch[F[_]](storage: RemoteDiskStorage, client: StorageClient[F]) extends FetchFile[F, AkkaSource] {
-    implicit val cred = storage.credentials.map(AuthToken)
+    implicit val cred = storage.credentials.map(AccessToken)
 
     override def apply(fileMeta: FileAttributes): F[AkkaSource] =
       client.getFile(storage.folder, fileMeta.path)
@@ -53,7 +58,7 @@ object RemoteDiskStorageOperations {
     * @param client  the remote storage client
     */
   final class Save[F[_]: Effect](storage: RemoteDiskStorage, client: StorageClient[F]) extends SaveFile[F, AkkaSource] {
-    implicit val cred = storage.credentials.map(AuthToken)
+    implicit val cred = storage.credentials.map(AccessToken)
 
     override def apply(id: ResId, fileDesc: FileDescription, source: AkkaSource): F[FileAttributes] = {
       val relativePath = Uri.Path(mangle(storage.ref, fileDesc.uuid, fileDesc.filename))
@@ -72,7 +77,7 @@ object RemoteDiskStorageOperations {
     * @param client  the remote storage client
     */
   final class Link[F[_]: Effect](storage: RemoteDiskStorage, client: StorageClient[F]) extends LinkFile[F] {
-    implicit val cred = storage.credentials.map(AuthToken)
+    implicit val cred = storage.credentials.map(AccessToken)
 
     override def apply(id: ResId, fileDesc: FileDescription, path: Uri.Path): F[FileAttributes] = {
       val destRelativePath = Uri.Path(mangle(storage.ref, fileDesc.uuid, fileDesc.filename))
@@ -92,7 +97,7 @@ object RemoteDiskStorageOperations {
     */
   final class FetchAttributes[F[_]](storage: RemoteDiskStorage, client: StorageClient[F])
       extends FetchFileAttributes[F] {
-    implicit val cred = storage.credentials.map(AuthToken)
+    implicit val cred = storage.credentials.map(AccessToken)
 
     override def apply(relativePath: Uri.Path): F[StorageFileAttributes] =
       client.getAttributes(storage.folder, relativePath)

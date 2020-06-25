@@ -9,15 +9,16 @@ import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.AdminClient
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.PersistenceConfig
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Projection, Source => CompositeViewSource}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{CompositeView, SingleView}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.{OrganizationRef, ProjectInitializer, ResourceV}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PersistenceConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.PairMsg
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.OffsetsProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, ProjectionProgress}
@@ -77,7 +78,7 @@ package object indexing {
   def kamonViewMetricsFlow(
       view: View,
       project: Project
-  )(implicit config: AppConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] =
+  )(implicit config: ServiceConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] =
     view match {
       case cv: CompositeView => compositeViewKamonFlow(cv, project)
       case sv: SingleView    => singleViewKamonFlow(sv, project)
@@ -87,7 +88,7 @@ package object indexing {
   private def singleViewKamonFlow(
       view: SingleView,
       project: Project
-  )(implicit config: AppConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] = {
+  )(implicit config: ServiceConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] = {
 
     val processedEventsGauge             = Kamon
       .gauge("kg_indexer_gauge_processed_events")
@@ -264,10 +265,13 @@ package object indexing {
   )(implicit
       projectCache: ProjectCache[F],
       adminClient: AdminClient[F],
-      cred: Option[AuthToken],
+      cred: Option[AccessToken],
       initializer: ProjectInitializer[F],
       F: Effect[F]
   ): F[Project] = {
+
+    // TODO: Remove when migrating ADMIN client
+    implicit val oldToken: Option[AuthToken] = cred.map(t => AuthToken(t.value))
 
     def initializeOrError(projectOpt: Option[Project]): F[Project] =
       projectOpt match {

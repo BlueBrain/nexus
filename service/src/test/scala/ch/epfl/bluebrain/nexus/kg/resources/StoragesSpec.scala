@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.client.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache, StorageCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.{iriResolution, toAggregateConfig, toIamClient}
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.{iriResolution, toAggregateConfig, toIamClient}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.config.Settings

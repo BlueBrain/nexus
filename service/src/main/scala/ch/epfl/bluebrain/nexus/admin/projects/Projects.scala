@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
-import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
@@ -284,7 +283,7 @@ object Projects {
       index: ProjectCache[F],
       organizations: Organizations[F],
       aclsApi: Acls[F],
-      realms: Realms[F]
+      saCaller: Caller
   )(implicit serviceConfig: ServiceConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
     implicit val retryPolicy: RetryPolicy[F] = serviceConfig.admin.aggregate.retry.retryPolicy[F]
 
@@ -298,11 +297,7 @@ object Projects {
         serviceConfig.admin.aggregate.akkaAggregateConfig,
         serviceConfig.cluster.shards
       )
-
-    for {
-      saCaller <- serviceConfig.admin.serviceAccount.credentials.map(realms.caller).getOrElse(Caller.anonymous.pure[F])
-      agg      <- aggF
-    } yield new Projects(agg, index, organizations, aclsApi, saCaller)
+    aggF.map(agg => new Projects(agg, index, organizations, aclsApi, saCaller))
   }
 
   def indexer[F[_]: Timer](

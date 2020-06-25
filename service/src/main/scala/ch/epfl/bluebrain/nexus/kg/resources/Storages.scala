@@ -10,13 +10,12 @@ import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
@@ -34,14 +33,18 @@ import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
 class Storages[F[_]](repo: Repo[F])(implicit
     F: Effect[F],
     materializer: Materializer[F],
-    config: AppConfig,
+    config: ServiceConfig,
     cache: StorageCache[F]
 ) {
+
+  implicit private val kgConfig: KgConfig = config.kg
 
   /**
     * Creates a new storage attempting to extract the id from the source. If a primary node of the resulting graph
@@ -161,7 +164,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
       .toRight(notFound(id.ref, tag = Some(tag), schema = Some(storageRef)))
 
   private def removeSecretsAndAlgorithm(json: Json): Json =
-    json.removeKeys(nxv.credentials.prefix, nxv.accessKey.prefix, nxv.secretKey.prefix, nxv.algorithm.prefix)
+    json.removeKeys("credentials", "accessKey", "secretKey", nxv.algorithm.prefix)
 
   /**
     * Fetches the latest revision of a storage.
@@ -304,7 +307,7 @@ object Storages {
     * @return a new [[Storages]] for the provided F type
     */
   final def apply[F[_]: Effect: Materializer](implicit
-      config: AppConfig,
+      config: ServiceConfig,
       repo: Repo[F],
       cache: StorageCache[F]
   ): Storages[F] =

@@ -7,9 +7,8 @@ import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
@@ -25,6 +24,7 @@ import ch.epfl.bluebrain.nexus.rdf.Node.blank
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.JsonLd.IdRetrievalError
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import io.circe.Json
 import io.circe.syntax._
 
@@ -35,7 +35,7 @@ class Resources[F[_]](implicit
     F: Effect[F],
     val repo: Repo[F],
     materializer: Materializer[F],
-    config: AppConfig
+    config: ServiceConfig
 ) {
 
   private val emptyJson = Json.obj()
@@ -368,7 +368,7 @@ object Resources {
     * @tparam F the monadic effect type
     * @return a new [[Resources]] for the provided F type
     */
-  final def apply[F[_]: Repo: Effect: Materializer](implicit config: AppConfig): Resources[F] =
+  final def apply[F[_]: Repo: Effect: Materializer](implicit config: ServiceConfig): Resources[F] =
     new Resources[F]()
 
   final private[resources] case class SchemaContext(

@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Caller}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.GlobalEventRoutesSpec.TestableEventRoutes
 import io.circe.Encoder
@@ -41,7 +41,7 @@ object GlobalEventRoutesSpec {
 
   class TestableEventRoutes(events: List[Event], acls: AccessControlLists, caller: Caller)(implicit
       as: ActorSystem,
-      config: AppConfig
+      config: KgConfig
   ) extends GlobalEventRoutes(acls, caller) {
 
     private val envelopes = events.zipWithIndex.map {

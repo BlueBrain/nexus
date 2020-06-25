@@ -7,15 +7,12 @@ import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Caller
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError
 import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.kg.resolve.ResolverEncoder._
@@ -30,17 +27,17 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
 class Resolvers[F[_]](repo: Repo[F])(implicit
     F: Effect[F],
     materializer: Materializer[F],
-    config: AppConfig,
+    config: ServiceConfig,
     projectCache: ProjectCache[F],
     resolverCache: ResolverCache[F]
 ) {
-
-  implicit private val iamClientConfig: IamClientConfig = config.iam.iamClient
 
   /**
     * Creates a new resolver attempting to extract the id from the source. If a primary node of the resulting graph
@@ -86,7 +83,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
       _         <- validateShacl(typedGraph)
       resolver  <- resolverValidation(id, typedGraph, 1L, types)
       json      <- jsonForRepo(resolver)
-      updated   <- repo.update(id, resolverRef, rev, types, json)
+      updated   <- repo.update(id, resolverRef, rev, types, json)(caller.subject)
       _         <- EitherT.right(resolverCache.put(resolver))
 
     } yield updated
@@ -296,7 +293,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
       _        <- validateShacl(typedGraph)
       resolver <- resolverValidation(id, typedGraph, 1L, types)
       json     <- jsonForRepo(resolver)
-      created  <- repo.create(id, OrganizationRef(project.organizationUuid), resolverRef, types, json)
+      created  <- repo.create(id, OrganizationRef(project.organizationUuid), resolverRef, types, json)(caller.subject)
       _        <- EitherT.right(resolverCache.put(resolver))
 
     } yield created
@@ -361,7 +358,7 @@ object Resolvers {
     * @return a new [[Resolvers]] for the provided F type
     */
   final def apply[F[_]: Effect: ProjectCache: Materializer](implicit
-      config: AppConfig,
+      config: ServiceConfig,
       repo: Repo[F],
       cache: ResolverCache[F]
   ): Resolvers[F] =

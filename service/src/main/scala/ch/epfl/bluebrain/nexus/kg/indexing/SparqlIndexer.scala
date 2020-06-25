@@ -7,11 +7,10 @@ import cats.effect.{Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.SparqlView
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.ProgressFlowElem
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -41,17 +40,17 @@ object SparqlIndexer {
       projections: Projections[F, String],
       F: Effect[F],
       clients: Clients[F],
-      config: AppConfig
+      config: ServiceConfig
   ): StreamSupervisor[F, ProjectionProgress] = {
 
     implicit val ec: ExecutionContext          = as.dispatcher
     implicit val p: Project                    = project
-    implicit val indexing: IndexingConfig      = config.sparql.indexing
+    implicit val indexing: IndexingConfig      = config.kg.sparql.indexing
     implicit val metadataOpts: MetadataOptions = MetadataOptions(linksAsIri = true, expandedLinks = true)
-    implicit val tm: Timeout                   = Timeout(config.sparql.askTimeout)
+    implicit val tm: Timeout                   = Timeout(config.kg.sparql.askTimeout)
 
     val client: BlazegraphClient[F] =
-      clients.sparql.copy(namespace = view.index).withRetryPolicy(config.sparql.indexing.retry)
+      clients.sparql.copy(namespace = view.index).withRetryPolicy(config.kg.sparql.indexing.retry)
 
     def buildInsertOrDeleteQuery(res: ResourceV): SparqlWriteQuery =
       if (res.deprecated && !view.filter.includeDeprecated) view.buildDeleteQuery(res)

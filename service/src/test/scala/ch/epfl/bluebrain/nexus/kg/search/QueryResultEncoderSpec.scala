@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResult.{ScoredQueryResult, Un
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.{ScoredQueryResults, UnscoredQueryResults}
 import ch.epfl.bluebrain.nexus.commons.test.{Randomness, Resources}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
@@ -22,7 +22,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class QueryResultEncoderSpec extends AnyWordSpecLike with Matchers with Resources with Randomness {
 
-  implicit val orderedKeys = AppConfig.orderedKeys
+  implicit val orderedKeys = KgConfig.orderedKeys
   val org                  = genString()
   val proj                 = genString()
   val schema               = genString()

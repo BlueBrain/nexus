@@ -5,7 +5,6 @@ import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.ProjectNotFound._
@@ -20,10 +19,11 @@ import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.JsonLd.IdRetrievalError
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import io.circe.Json
 
 class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache: ProjectCache[F])(implicit
-    config: AppConfig
+    config: ServiceConfig
 ) {
 
   private def flattenCtx(rrefs: List[Ref], contextValue: Json)(implicit

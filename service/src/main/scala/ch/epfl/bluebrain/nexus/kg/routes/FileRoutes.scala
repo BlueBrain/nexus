@@ -8,13 +8,13 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.data.EitherT
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError.{InvalidOutputFormat, UnacceptedResponseContentType}
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
@@ -26,6 +26,10 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import com.google.common.base.Charsets
 import com.google.common.io.BaseEncoding
 import io.circe.Json
@@ -36,16 +40,24 @@ import monix.execution.Scheduler.Implicits.global
 
 import scala.concurrent.Future
 
-class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task], tags: Tags[Task])(implicit
+class FileRoutes private[routes] (
+    files: Files[Task],
+    resources: Resources[Task],
+    tags: Tags[Task],
+    acls: Acls[Task],
+    realms: Realms[Task]
+)(implicit
     system: ActorSystem,
-    acls: AccessControlLists,
     caller: Caller,
     project: Project,
     viewCache: ViewCache[Task],
     storageCache: StorageCache[Task],
     indexers: Clients[Task],
-    config: AppConfig
-) {
+    config: ServiceConfig
+) extends AuthDirectives(acls, realms) {
+
+  private val projectPath               = project.organizationLabel / project.label
+  implicit private val subject: Subject = caller.subject
 
   import indexers._
 
@@ -66,7 +78,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
             case (metadata, byteSource) =>
               operationName(s"/${config.http.prefix}/files/{org}/{project}") {
                 Kamon.currentSpan().tag("file.operation", "upload").tag("resource.operation", "create")
-                hasPermission(storage.writePermission).apply {
+                authorizeFor(projectPath, storage.writePermission)(caller) {
                   val description = FileDescription(metadata.fileName, metadata.contentType)
                   val created     = files.create(storage, description, byteSource)
                   complete(created.value.runWithStatus(Created))
@@ -77,7 +89,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
           entity(as[Json]) { source =>
             operationName(s"/${config.http.prefix}/files/{org}/{project}") {
               Kamon.currentSpan().tag("file.operation", "link").tag("resource.operation", "create")
-              hasPermission(storage.writePermission).apply {
+              authorizeFor(projectPath, storage.writePermission)(caller) {
                 val created = files.createLink(storage, source)
                 complete(created.value.runWithStatus(Created))
               }
@@ -89,7 +101,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
       (get & paginated & searchParams(fixedSchema = fileSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         extractUri { implicit uri =>
           operationName(s"/${config.http.prefix}/files/{org}/{project}") {
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(files.list(_, params, page))
               complete(listed.runWithStatus(OK))
             }
@@ -116,7 +128,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
       (put & pathEndOrSingleSlash & storage) { storage =>
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
           val resId = Id(project.ref, id)
-          (hasPermission(storage.writePermission) & projectNotDeprecated) {
+          (authorizeFor(projectPath, storage.writePermission) & projectNotDeprecated) {
             // Uploading a file from the client
             concat(
               (withSizeLimit(storage.maxFileSize) & fileUpload("file")) {
@@ -150,7 +162,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
       // Updating file attributes manually
       (patch & pathEndOrSingleSlash & storage & parameter("rev".as[Long])) { (storage, rev) =>
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
-          (hasPermission(storage.writePermission) & projectNotDeprecated) {
+          (authorizeFor(projectPath, storage.writePermission) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(files.updateFileAttr(Id(project.ref, id), storage, rev, source).value.runWithStatus(OK))
             }
@@ -160,7 +172,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
       // Deprecate file
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             complete(files.deprecate(Id(project.ref, id), rev).value.runWithStatus(OK))
           }
         }
@@ -174,7 +186,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
       // Fetch file source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/source") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(resources.fetchSource(Id(project.ref, id), rev, fileRef).value.runWithStatus(OK))
@@ -196,9 +208,9 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
             extractUri {
               implicit uri =>
                 operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/incoming") {
-                  hasPermission(read).apply {
+                  authorizeFor(projectPath, read)(caller) {
                     val listed = for {
-                      view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                      view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                       _        <- resources.fetchSource(Id(project.ref, id), fileRef)
                       incoming <- EitherT.right[Rejection](files.listIncoming(id, view, page))
                     } yield incoming
@@ -216,9 +228,9 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
               extractUri {
                 implicit uri =>
                   operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/outgoing") {
-                    hasPermission(read).apply {
+                    authorizeFor(projectPath, read)(caller) {
                       val listed = for {
-                        view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                        view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                         _        <- resources.fetchSource(Id(project.ref, id), fileRef)
                         outgoing <- EitherT.right[Rejection](files.listOutgoing(id, view, page, links))
                       } yield outgoing
@@ -228,13 +240,13 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
               }
           }
       },
-      new TagRoutes("files", tags, fileRef, write).routes(id)
+      new TagRoutes("files", tags, acls, realms, fileRef, write).routes(id)
     )
 
   private def getResource(id: AbsoluteIri)(implicit format: NonBinaryOutputFormat) =
     operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
       Kamon.currentSpan().tag("file.operation", "read")
-      hasPermission(read).apply {
+      authorizeFor(projectPath, read)(caller) {
         concat(
           (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
             completeWithFormat(resources.fetch(Id(project.ref, id), rev, fileRef).value.runWithStatus(OK))
@@ -275,7 +287,7 @@ class FileRoutes private[routes] (files: Files[Task], resources: Resources[Task]
   private def completeFile(f: Future[Either[Rejection, (Storage, FileAttributes, AkkaSource)]]): Route =
     onSuccess(f) {
       case Right((storage, info, source)) =>
-        hasPermission(storage.readPermission).apply {
+        authorizeFor(projectPath, storage.readPermission)(caller) {
           val encodedFilename = attachmentString(info.filename)
           (respondWithHeaders(
             RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")

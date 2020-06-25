@@ -5,12 +5,12 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.data.EitherT
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.KgError.InvalidOutputFormat
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
@@ -21,22 +21,33 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.routes.ResourceRoutes._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
 import kamon.Kamon
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Task], schema: Ref)(implicit
-    acls: AccessControlLists,
+class ResourceRoutes private[routes] (
+    resources: Resources[Task],
+    tags: Tags[Task],
+    acls: Acls[Task],
+    realms: Realms[Task],
+    schema: Ref
+)(implicit
     caller: Caller,
     project: Project,
     viewCache: ViewCache[Task],
     indexers: Clients[Task],
-    config: AppConfig
-) {
+    config: ServiceConfig
+) extends AuthDirectives(acls, realms) {
 
   import indexers._
+  private val projectPath               = project.organizationLabel / project.label
+  implicit private val subject: Subject = caller.subject
 
   /**
     * Routes for resources. Those routes should get triggered after the following segments have been consumed:
@@ -48,7 +59,7 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(resources.create(schema, source).value.runWithStatus(Created))
             }
@@ -59,7 +70,7 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
       (get & paginated & searchParams(fixedSchema = schema.iri) & pathEndOrSingleSlash) { (page, params) =>
         extractUri { implicit uri =>
           operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}") {
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(resources.list(_, params, page))
               complete(listed.runWithStatus(OK))
             }
@@ -80,9 +91,9 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
   def routes(id: AbsoluteIri): Route =
     concat(
       // Create or update a resource (depending on rev query parameter)
-      (put & projectNotDeprecated & pathEndOrSingleSlash & hasPermission(write)) {
+      (put & projectNotDeprecated & pathEndOrSingleSlash & authorizeFor(projectPath, write)) {
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               parameter("rev".as[Long].?) {
                 case None      =>
@@ -99,7 +110,7 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
       // Deprecate resource
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             complete(resources.deprecate(Id(project.ref, id), rev, schema).value.runWithStatus(OK))
           }
         }
@@ -109,7 +120,7 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(resources.fetch(Id(project.ref, id), rev, schema).value.runWithStatus(OK))(
@@ -133,7 +144,7 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
       // Fetch resource source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}/source") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(resources.fetchSource(Id(project.ref, id), rev, schema).value.runWithStatus(OK))
@@ -153,9 +164,9 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}/incoming") {
           fromPaginated.apply { implicit page =>
             extractUri { implicit uri =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 val listed = for {
-                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                   _        <- resources.fetchSource(Id(project.ref, id), schema)
                   incoming <- EitherT.right[Rejection](resources.listIncoming(id, view, page))
                 } yield incoming
@@ -169,21 +180,22 @@ class ResourceRoutes private[routes] (resources: Resources[Task], tags: Tags[Tas
       (get & pathPrefix("outgoing") & parameter("includeExternalLinks".as[Boolean] ? true) & pathEndOrSingleSlash) {
         links =>
           operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}/outgoing") {
-            fromPaginated.apply { implicit page =>
-              extractUri { implicit uri =>
-                hasPermission(read).apply {
-                  val listed = for {
-                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
-                    _        <- resources.fetchSource(Id(project.ref, id), schema)
-                    outgoing <- EitherT.right[Rejection](resources.listOutgoing(id, view, page, links))
-                  } yield outgoing
-                  complete(listed.value.runWithStatus(OK))
+            fromPaginated.apply {
+              implicit page =>
+                extractUri { implicit uri =>
+                  authorizeFor(projectPath, read)(caller) {
+                    val listed = for {
+                      view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
+                      _        <- resources.fetchSource(Id(project.ref, id), schema)
+                      outgoing <- EitherT.right[Rejection](resources.listOutgoing(id, view, page, links))
+                    } yield outgoing
+                    complete(listed.value.runWithStatus(OK))
+                  }
                 }
-              }
             }
           }
       },
-      new TagRoutes("resources", tags, schema, write).routes(id)
+      new TagRoutes("resources", tags, acls, realms, schema, write).routes(id)
     )
 }
 

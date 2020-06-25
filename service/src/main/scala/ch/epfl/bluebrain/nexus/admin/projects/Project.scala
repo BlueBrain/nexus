@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.admin.projects
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import io.circe.{Encoder, Json}
 
 /**
@@ -30,6 +31,11 @@ final case class Project(
     * @return full label for the project (including organization).
     */
   def fullLabel: String = s"$organizationLabel/$label"
+
+  /**
+    * @return the project path
+    */
+  def path: Path = organizationLabel / label
 }
 
 object Project {

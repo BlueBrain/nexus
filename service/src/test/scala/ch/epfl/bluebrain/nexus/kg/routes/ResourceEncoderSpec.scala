@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources.{Id, ResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
@@ -26,7 +26,7 @@ class ResourceEncoderSpec
     with AnyWordSpecLike
     with Matchers
     with TestHelper {
-  implicit private val appConfig: AppConfig = Settings(system).appConfig
+  implicit private val appConfig: KgConfig  = Settings(system).appConfig
   implicit private val icc: IamClientConfig = appConfig.iam.iamClient
 
   implicit private val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault)

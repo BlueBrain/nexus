@@ -106,7 +106,7 @@ class ArchiveRoutesSpec
 
   private val manageArchive = Set(Permission.unsafe("resources/read"), Permission.unsafe("archives/write"))
   // format: off
-  private val routes = Routes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], archives, tagsRes, mock[ProjectViewCoordinator[Task]])
+  private val routes = KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], archives, tagsRes, mock[ProjectViewCoordinator[Task]])
   // format: on
 
   //noinspection NameBooleanParameters

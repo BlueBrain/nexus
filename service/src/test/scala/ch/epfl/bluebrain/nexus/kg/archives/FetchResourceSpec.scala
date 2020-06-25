@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
@@ -110,7 +110,7 @@ class FetchResourceSpec
       resources.fetchSource(idRes) shouldReturn EitherT.rightT[Task, Rejection](json)
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
-      val response                               = printer.print(json.sortKeys(AppConfig.orderedKeys))
+      val response                               = printer.print(json.sortKeys(KgConfig.orderedKeys))
       rPath shouldEqual somePath.asString
       bytes.toInt shouldEqual response.size
       consume(source) shouldEqual response
@@ -128,7 +128,7 @@ class FetchResourceSpec
       resources.fetch(Id(description.project.ref, id), 1L) shouldReturn EitherT.rightT[Task, Rejection](resourceV)
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
-      val response                               = printer.print(finalJson.addContext(resourceCtxUri).sortKeys(AppConfig.orderedKeys))
+      val response                               = printer.print(finalJson.addContext(resourceCtxUri).sortKeys(KgConfig.orderedKeys))
       rPath shouldEqual Iri.Path.rootless(s"${project.show}/${urlEncode(id.asString)}.json").rightValue.pctEncoded
       bytes.toInt shouldEqual response.size
       consume(source) shouldEqual response

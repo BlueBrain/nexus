@@ -7,12 +7,10 @@ import akka.util.Timeout
 import cats.effect.{Async, ContextShift, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists}
-import ch.epfl.bluebrain.nexus.kg.KgError
-import ch.epfl.bluebrain.nexus.kg.{IdOffset, IdStats}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.Msg._
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, Caches, ProjectCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ProjectCache}
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.CompositeViewStatistics
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.CrossProjectEventStream
@@ -21,7 +19,9 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{CompositeViewOffset, OrganizationRef, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
+import ch.epfl.bluebrain.nexus.kg.{IdOffset, IdStats, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
@@ -39,14 +39,13 @@ import scala.util.control.NonFatal
   * @tparam F the effect type
   */
 @SuppressWarnings(Array("ListSize"))
-class ProjectViewCoordinator[F[_]](cache: Caches[F], ref: ActorRef)(implicit
-    config: AppConfig,
-    aclsCache: AclsCache[F],
+class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Caller, ref: ActorRef)(implicit
+    config: ServiceConfig,
     F: Async[F],
     ec: ExecutionContext
 ) {
 
-  implicit private val timeout: Timeout               = config.aggregate.askTimeout
+  implicit private val timeout: Timeout               = config.kg.aggregate.askTimeout
   implicit private val contextShift: ContextShift[IO] = IO.contextShift(ec)
   implicit private val log: Logger                    = Logger[this.type]
   implicit private val projectCache: ProjectCache[F]  = cache.project
@@ -172,7 +171,10 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], ref: ActorRef)(implicit
   def start(project: Project): F[Unit] =
     cache.view.getBy[IndexedView](project.ref).flatMap {
       case views if containsCrossProject(views) =>
-        aclsCache.list.flatMap(resolveProjects(_)).map(projAcls => ref ! Start(project.uuid, project, views, projAcls))
+        acls
+          .list(anyProject, ancestors = true, self = false)(saCaller)
+          .flatMap(resolveProjects(_))
+          .map(projAcls => ref ! Start(project.uuid, project, views, projAcls))
       case views                                => F.pure(ref ! Start(project.uuid, project, views, Map.empty[Project, AccessControlList]))
     }
 
@@ -305,15 +307,15 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], ref: ActorRef)(implicit
 }
 
 object ProjectViewCoordinator {
-  def apply(resources: Resources[Task], cache: Caches[Task])(implicit
-      config: AppConfig,
-      aclsCache: AclsCache[Task],
+  def apply(resources: Resources[Task], cache: Caches[Task], acls: Acls[Task], saCaller: Caller)(implicit
+      config: ServiceConfig,
       as: ActorSystem,
       clients: Clients[Task],
       P: Projections[Task, String]
   ): ProjectViewCoordinator[Task] = {
     implicit val projectCache: ProjectCache[Task] = cache.project
-    val coordinatorRef                            = ProjectViewCoordinatorActor.start(resources, cache.view, None, config.cluster.shards)
-    new ProjectViewCoordinator[Task](cache, coordinatorRef)
+    val coordinatorRef                            =
+      ProjectViewCoordinatorActor.start(resources, cache.view, acls, saCaller, None, config.cluster.shards)
+    new ProjectViewCoordinator[Task](cache, acls, saCaller, coordinatorRef)
   }
 }

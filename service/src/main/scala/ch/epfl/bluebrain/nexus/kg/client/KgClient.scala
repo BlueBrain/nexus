@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError.{Forbidden, Unauthorized}
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.kg.client.KgClientError._
 import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
@@ -50,7 +50,7 @@ class KgClient[F[_]] private[client] (
     * @return Some(resource) if found and None otherwise, wrapped in an effect type ''F[_]''
     */
   def resource(project: Project, id: AbsoluteIri)(implicit
-      credentials: Option[AuthToken]
+      credentials: Option[AccessToken]
   ): F[Option[ResourceV]] = {
     val endpoint = config.resourcesIri + (project.organizationLabel / project.label / "_" / id.asString)
     resourceClientFromRef(project.ref)(requestFrom(endpoint, Query("format" -> "expanded")))
@@ -64,7 +64,7 @@ class KgClient[F[_]] private[client] (
     * @return Some(resource) if found and None otherwise, wrapped in an effect type ''F[_]''
     */
   def resource(project: Project, id: AbsoluteIri, tag: String)(implicit
-      credentials: Option[AuthToken]
+      credentials: Option[AccessToken]
   ): F[Option[ResourceV]] = {
     val endpoint = config.resourcesIri + (project.organizationLabel / project.label / "_" / id.asString)
     resourceClientFromRef(project.ref)(requestFrom(endpoint, Query("format" -> "expanded", "tag" -> tag)))
@@ -78,7 +78,7 @@ class KgClient[F[_]] private[client] (
     * @return a source of [[EventEnvelope]]
     */
   def events(project: ProjectLabel, offset: Offset)(implicit
-      credentials: Option[AuthToken]
+      credentials: Option[AccessToken]
   ): Source[EventEnvelope, NotUsed] =
     source(config.resourcesIri + (project.organization / project.value / "events"), toString(offset)).map {
       case (off, event) => EventEnvelope(off, event.id.value.asString, event.rev, event, event.rev)
@@ -91,7 +91,7 @@ class KgClient[F[_]] private[client] (
       case _                    => None
     }
 
-  private def requestFrom(iri: AbsoluteIri, query: Query)(implicit credentials: Option[AuthToken]) = {
+  private def requestFrom(iri: AbsoluteIri, query: Query)(implicit credentials: Option[AccessToken]) = {
     val request = Get(iri.asAkka.withQuery(query)).addHeader(accept)
     credentials.map(token => request.addCredentials(OAuth2BearerToken(token.value))).getOrElse(request)
   }

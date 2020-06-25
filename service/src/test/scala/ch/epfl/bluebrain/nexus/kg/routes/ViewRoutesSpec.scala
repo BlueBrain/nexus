@@ -121,7 +121,7 @@ class ViewRoutesSpec
   private val manageResolver =
     Set(Permission.unsafe("views/query"), Permission.unsafe("resources/read"), Permission.unsafe("views/write"))
   // format: off
-  private val routes = Routes(resources, mock[Resolvers[Task]], views, mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, coordinator)
+  private val routes = KgRoutes(resources, mock[Resolvers[Task]], views, mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, coordinator)
   // format: on
 
   //noinspection NameBooleanParameters

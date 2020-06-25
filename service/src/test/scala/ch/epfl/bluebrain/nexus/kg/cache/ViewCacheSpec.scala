@@ -5,9 +5,9 @@ import akka.serialization.Serialization
 import akka.testkit._
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.ProjectEventStream
@@ -36,7 +36,7 @@ class ViewCacheSpec
 
   private def genJson: Json = Json.obj("key" -> Json.fromString(genString()))
 
-  implicit private val appConfig: AppConfig = Settings(system).appConfig
+  implicit private val appConfig: KgConfig = Settings(system).appConfig
 
   val ref1 = ProjectRef(genUUID)
   val ref2 = ProjectRef(genUUID)

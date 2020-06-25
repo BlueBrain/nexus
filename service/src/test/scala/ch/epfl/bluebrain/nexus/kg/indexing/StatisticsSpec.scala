@@ -4,7 +4,7 @@ import java.util.regex.Pattern.quote
 
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.{CompositeViewStatistics, ViewStatistics}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
@@ -36,7 +36,7 @@ class StatisticsSpec
     "be encoded" in {
       forAll(List(single -> singleJson, composite -> compositeJson)) {
         case (model, json) =>
-          printer.print(model.asJson.sortKeys(AppConfig.orderedKeys)) shouldEqual printer.print(json)
+          printer.print(model.asJson.sortKeys(KgConfig.orderedKeys)) shouldEqual printer.print(json)
       }
     }
   }

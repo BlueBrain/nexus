@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.kg.search
 
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.routes.SearchParams
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.ElasticSearchView._
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary._
 
 object QueryBuilder {
 

@@ -21,9 +21,9 @@ object IamRoutes {
     implicit val pc: PersistenceConfig = cfg.persistence
 
     val eventsRoutes = new EventRoutes(acls, realms).routes
-    val idsRoutes    = new IdentitiesRoutes(realms).routes
-    val permsRoutes  = new PermissionsRoutes(perms, realms).routes
-    val realmsRoutes = new RealmsRoutes(realms).routes
+    val idsRoutes    = new IdentitiesRoutes(acls, realms).routes
+    val permsRoutes  = new PermissionsRoutes(perms, acls, realms).routes
+    val realmsRoutes = new RealmsRoutes(acls, realms).routes
     val aclsRoutes   = new AclsRoutes(acls, realms).routes
 
     pathPrefix(cfg.http.prefix) {

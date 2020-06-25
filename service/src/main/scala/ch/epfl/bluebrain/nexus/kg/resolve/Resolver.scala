@@ -3,16 +3,16 @@ package ch.epfl.bluebrain.nexus.kg.resolve
 import cats.Monad
 import cats.data.EitherT
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.iam.client.types.{Identity, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg._
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 
 import scala.reflect.ClassTag
 
@@ -81,16 +81,16 @@ object Resolver {
 
     def inProject: Either[Rejection, Resolver] =
       for {
-        priority <- c.down(nxv.priority).as[Int].onError(res.id.ref, nxv.priority.prefix)
+        priority <- c.down(nxv.priority).as[Int].onError(res.id.ref, "priority")
       } yield InProjectResolver(id.parent, id.value, res.rev, res.deprecated, priority)
 
     def crossProject: Either[Rejection, CrossProjectResolver] =
       // format: off
       for {
         ids       <- identities(res.id, c.downSet(nxv.identities).cursors.getOrElse(Set.empty))
-        prio      <- c.down(nxv.priority).as[Int].onError(res.id.ref, nxv.priority.prefix)
-        projects  <- c.down(nxv.projects).as[List[ProjectIdentifier]].onError(res.id.ref, nxv.projects.prefix)
-        types     <- c.downSet(nxv.resourceTypes).as[Set[AbsoluteIri]].onError(res.id.ref, nxv.resourceTypes.prefix)
+        prio      <- c.down(nxv.priority).as[Int].onError(res.id.ref, "priority")
+        projects  <- c.down(nxv.projects).as[List[ProjectIdentifier]].onError(res.id.ref, "projects")
+        types     <- c.downSet(nxv.resourceTypes).as[Set[AbsoluteIri]].onError(res.id.ref, "resourceTypes")
       } yield CrossProjectResolver(types, projects, ids, id.parent, id.value, res.rev, res.deprecated, prio)
     // format: on
 

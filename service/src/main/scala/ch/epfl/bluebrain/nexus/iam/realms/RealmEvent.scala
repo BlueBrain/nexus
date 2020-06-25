@@ -139,7 +139,7 @@ object RealmEvent {
         case "id"                    => nxv.label.prefix
         case "rev"                   => nxv.rev.prefix
         case "instant"               => nxv.instant.prefix
-        case "subject"               => nxv.subject.prefix
+        case "subject"               => nxv.eventSubject.prefix
         case "issuer"                => nxv.issuer.prefix
         case "keys"                  => nxv.keys.prefix
         case "grantTypes"            => nxv.grantTypes.prefix

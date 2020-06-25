@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.kg.storage
 
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Node._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, GraphEncoder}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 
 /**
   * Encoders for [[Storage]]

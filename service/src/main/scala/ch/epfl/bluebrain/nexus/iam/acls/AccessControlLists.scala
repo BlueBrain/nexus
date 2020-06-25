@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.iam.acls
 
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
-import ch.epfl.bluebrain.nexus.iam.types.Identity
+import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectLabel
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
@@ -73,6 +75,50 @@ final case class AccessControlLists(value: Map[Path, Resource]) {
         else acc + (p -> acl.map(_ => AccessControlList(filteredAcl)))
 
     })
+
+  /**
+    * Checks if on the list of ACLs there are some which contains any of the provided ''identities'', ''perm'' in
+    * the root path, the organization path or the project path.
+    *
+   * @param identities the list of identities to filter from the ''acls''
+    * @param label      the organization and project label information to be used to generate the paths to filter
+    * @param perm       the permission to filter
+    * @return true if the conditions are met, false otherwise
+    */
+  def exists(identities: Set[Identity], label: ProjectLabel, perm: Permission): Boolean =
+    filter(identities).value.exists {
+      case (path, v) =>
+        (path == / || path == Segment(label.organization, /) || path == label.organization / label.value) &&
+          v.value.permissions.contains(perm)
+    }
+
+  /**
+    * Checks if on the list of ACLs there are some which contains any of the provided ''identities'', ''perm'' in
+    * the root path or the organization path.
+    *
+   * @param identities the list of identities to filter from the ''acls''
+    * @param label      the organization label information to be used to generate the paths to filter
+    * @param perm       the permission to filter
+    * @return true if the conditions are met, false otherwise
+    */
+  def exists(identities: Set[Identity], label: String, perm: Permission): Boolean =
+    filter(identities).value.exists {
+      case (path, v) => (path == / || path == Segment(label, /)) && v.value.permissions.contains(perm)
+    }
+
+  /**
+    * Checks if on the list of ACLs there are some which contain any of the provided ''identities'', ''perm'' in
+    * the root path.
+    *
+   * @param identities the list of identities to filter from the ''acls''
+    * @param perm       the permission to filter
+    * @return true if the conditions are met, false otherwise
+    */
+  def existsOnRoot(identities: Set[Identity], perm: Permission): Boolean =
+    filter(identities).value.exists {
+      case (path, v) =>
+        path == / && v.value.permissions.contains(perm)
+    }
 }
 
 object AccessControlLists {

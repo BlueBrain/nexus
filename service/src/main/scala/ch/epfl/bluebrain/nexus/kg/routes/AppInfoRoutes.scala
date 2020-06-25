@@ -8,11 +8,10 @@ import ch.epfl.bluebrain.nexus.admin.client.types.{ServiceDescription => AdminSe
 import ch.epfl.bluebrain.nexus.commons.es.client.{ServiceDescription => EsServiceDescription}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{ServiceDescription => BlazegraphServiceDescription}
-import ch.epfl.bluebrain.nexus.iam.client.types.{ServiceDescription => IamServiceDescription}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.Description
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.routes.AppInfoRoutes._
 import ch.epfl.bluebrain.nexus.kg.routes.Status._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.Description
 import ch.epfl.bluebrain.nexus.service.routes.CassandraHealth
 import ch.epfl.bluebrain.nexus.storage.client.types.{ServiceDescription => StorageServiceDescription}
 import io.circe.generic.auto._
@@ -54,7 +53,6 @@ class AppInfoRoutes(serviceDescription: ServiceDescription, status: StatusGroup)
               Task.pure(ServiceDescription("nexus", extractGlobalMinor(serviceDescription.version))),
               clients.admin.serviceDescription.map(identity).logError("admin"),
               clients.defaultRemoteStorage.serviceDescription.map(identity).logError("remoteStorage"),
-              clients.iam.serviceDescription.map(identity).logError("iam"),
               clients.sparql.serviceDescription.map(identity).logError("blazegraph"),
               clients.elasticSearch.serviceDescription.map(identity).logError("elasticsearch")
             )
@@ -76,7 +74,6 @@ object AppInfoRoutes {
   private val logger = Logger[this.type]
 
   private def identity(value: AdminServiceDescription)      = ServiceDescription(value.name, value.version)
-  private def identity(value: IamServiceDescription)        = ServiceDescription(value.name, value.version)
   private def identity(value: StorageServiceDescription)    = ServiceDescription(value.name, value.version)
   private def identity(value: EsServiceDescription)         = ServiceDescription("elasticsearch", value.version)
   private def identity(value: BlazegraphServiceDescription) = ServiceDescription(value.name, value.version)

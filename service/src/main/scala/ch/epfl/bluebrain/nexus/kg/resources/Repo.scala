@@ -8,7 +8,7 @@ import cats.data.{EitherT, OptionT}
 import cats.effect.{Effect, Timer}
 import cats.syntax.functor._
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resources
 import ch.epfl.bluebrain.nexus.kg.resources.Command._

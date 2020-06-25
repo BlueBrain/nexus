@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.resourceCtxUri
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
@@ -83,7 +83,7 @@ trait RoutesFixtures extends TestHelper with Resources {
 
   def tag(rev: Long, tag: String) = Json.obj("tag" -> Json.fromString(tag), "rev" -> Json.fromLong(rev))
 
-  def response(schema: Ref, deprecated: Boolean = false)(implicit config: AppConfig): Json =
+  def response(schema: Ref, deprecated: Boolean = false)(implicit config: KgConfig): Json =
     Json
       .obj(
         "@id"            -> Json.fromString(s"nxv:$genUuid"),
@@ -100,7 +100,7 @@ trait RoutesFixtures extends TestHelper with Resources {
       )
       .addContext(resourceCtxUri)
 
-  def listingResponse()(implicit config: AppConfig): Json =
+  def listingResponse()(implicit config: KgConfig): Json =
     Json.obj(
       "@context" -> Json.arr(
         Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json"),

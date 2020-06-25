@@ -6,8 +6,8 @@ import akka.testkit._
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import monix.eval.Task
@@ -29,7 +29,7 @@ class ResolverCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
 
-  implicit private val appConfig: AppConfig = Settings(system).appConfig
+  implicit private val appConfig: KgConfig = Settings(system).appConfig
 
   val ref1 = ProjectRef(genUUID)
   val ref2 = ProjectRef(genUUID)

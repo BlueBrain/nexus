@@ -12,11 +12,11 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamClientError}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.kg.config.Settings
 import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
-import ch.epfl.bluebrain.nexus.kg.routes.Routes
+import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
@@ -101,7 +101,7 @@ class AuthDirectivesSpec
         )
       )
       implicit val caller: Caller           = Caller(Anonymous, Set(Anonymous))
-      val route                             = Routes.wrap(hasPermission(read).apply(complete("")))
+      val route                             = KgRoutes.wrap(hasPermission(read).apply(complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.OK
       }
@@ -111,7 +111,7 @@ class AuthDirectivesSpec
       "there are no permissions" in {
         implicit val acls: AccessControlLists = AccessControlLists()
         implicit val caller: Caller           = Caller(Anonymous, Set(Anonymous))
-        val route                             = Routes.wrap(hasPermission(write).apply(complete("")))
+        val route                             = KgRoutes.wrap(hasPermission(write).apply(complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.Forbidden
         }
@@ -121,7 +121,7 @@ class AuthDirectivesSpec
         iamClient.acls(any[Iri.Path], true, true)(any[Option[AuthToken]]) shouldReturn Task.raiseError(
           IamClientError.UnknownError(StatusCodes.InternalServerError, "")
         )
-        val route                             = Routes.wrap(extractCallerAcls.apply(_ => complete("")))
+        val route                             = KgRoutes.wrap(extractCallerAcls.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.InternalServerError
         }
@@ -131,7 +131,7 @@ class AuthDirectivesSpec
         iamClient.acls(any[Iri.Path], true, true)(any[Option[AuthToken]]) shouldReturn Task.raiseError(
           IamClientError.Unauthorized("")
         )
-        val route                             = Routes.wrap(extractCallerAcls.apply(_ => complete("")))
+        val route                             = KgRoutes.wrap(extractCallerAcls.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.Unauthorized
         }
@@ -141,7 +141,7 @@ class AuthDirectivesSpec
         iamClient.acls(any[Iri.Path], true, true)(any[Option[AuthToken]]) shouldReturn Task.raiseError(
           IamClientError.Forbidden("")
         )
-        val route                             = Routes.wrap(extractCallerAcls.apply(_ => complete("")))
+        val route                             = KgRoutes.wrap(extractCallerAcls.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.Forbidden
         }
@@ -152,7 +152,7 @@ class AuthDirectivesSpec
         iamClient.identities(any[Option[AuthToken]]) shouldReturn Task.raiseError(
           IamClientError.UnknownError(StatusCodes.InternalServerError, "")
         )
-        val route                             = Routes.wrap(extractCaller.apply(_ => complete("")))
+        val route                             = KgRoutes.wrap(extractCaller.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.InternalServerError
         }
@@ -160,7 +160,7 @@ class AuthDirectivesSpec
       "the client returns Unauthorized for caller" in {
         implicit val token: Option[AuthToken] = None
         iamClient.identities(any[Option[AuthToken]]) shouldReturn Task.raiseError(IamClientError.Unauthorized(""))
-        val route                             = Routes.wrap(extractCaller.apply(_ => complete("")))
+        val route                             = KgRoutes.wrap(extractCaller.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.Unauthorized
         }
@@ -168,7 +168,7 @@ class AuthDirectivesSpec
       "the client returns Forbidden for caller" in {
         implicit val token: Option[AuthToken] = None
         iamClient.identities(any[Option[AuthToken]]) shouldReturn Task.raiseError(IamClientError.Forbidden(""))
-        val route                             = Routes.wrap(extractCaller.apply(_ => complete("")))
+        val route                             = KgRoutes.wrap(extractCaller.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.Forbidden
         }

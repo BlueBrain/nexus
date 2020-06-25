@@ -8,21 +8,25 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.AdminClient
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError.{OrganizationNotFound, ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resources.{OrganizationRef, ProjectInitializer}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import monix.eval.Task
 import monix.execution.Scheduler
 
 import scala.util.{Success, Try}
 
 object ProjectDirectives {
+
+  // TODO: Remove when migrating ADMIN client
+  implicit private val fakeToken: Option[AuthToken] = None
+
   val defaultPrefixMapping: Map[String, AbsoluteIri] = Map(
     "resource"        -> Schemas.unconstrainedSchemaUri,
     "schema"          -> Schemas.shaclSchemaUri,
@@ -31,10 +35,10 @@ object ProjectDirectives {
     "file"            -> Schemas.fileSchemaUri,
     "storage"         -> Schemas.storageSchemaUri,
     "nxv"             -> nxv.base,
-    "documents"       -> nxv.defaultElasticSearchIndex,
-    "graph"           -> nxv.defaultSparqlIndex,
-    "defaultResolver" -> nxv.defaultResolver,
-    "defaultStorage"  -> nxv.defaultStorage
+    "documents"       -> nxv.defaultElasticSearchIndex.value,
+    "graph"           -> nxv.defaultSparqlIndex.value,
+    "defaultResolver" -> nxv.defaultResolver.value,
+    "defaultStorage"  -> nxv.defaultStorage.value
   )
 
   /**
@@ -43,7 +47,6 @@ object ProjectDirectives {
   def project(implicit
       projectCache: ProjectCache[Task],
       client: AdminClient[Task],
-      cred: Option[AuthToken],
       s: Scheduler,
       initializer: ProjectInitializer[Task],
       subject: Subject
@@ -103,7 +106,7 @@ object ProjectDirectives {
     */
   def org(
       label: String
-  )(implicit client: AdminClient[Task], cred: Option[AuthToken], s: Scheduler): Directive1[Organization] = {
+  )(implicit client: AdminClient[Task], s: Scheduler): Directive1[Organization] = {
     def orgByLabel: Directive1[Organization]            =
       onSuccess(client.fetchOrganization(label).runToFuture)
         .flatMap {
