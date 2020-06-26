@@ -13,6 +13,12 @@ sealed abstract class StorageClientError(val message: String) extends Exception 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object StorageClientError {
 
+  final case class Unauthorized(entityAsString: String)
+      extends StorageClientError("The request did not complete successfully due to an invalid authentication method.")
+
+  final case class Forbidden(entityAsString: String)
+      extends StorageClientError("The request did not complete successfully due to lack of access to the resource.")
+
   final case class UnmarshallingError[A: ClassTag](reason: String)
       extends StorageClientError(
         s"Unable to parse or decode the response from Storage to a '${implicitly[ClassTag[A]]}' due to '$reason'."

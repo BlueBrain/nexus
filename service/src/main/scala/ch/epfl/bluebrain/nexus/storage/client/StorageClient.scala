@@ -17,9 +17,8 @@ import cats.effect.implicits._
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
+import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.iam.client.IamClientError.{Forbidden, Unauthorized}
-import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError._
 import ch.epfl.bluebrain.nexus.storage.client.config.StorageClientConfig
