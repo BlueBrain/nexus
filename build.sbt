@@ -272,12 +272,14 @@ lazy val rdf      = project
 lazy val storage = project
   .in(file("storage"))
   .dependsOn(rdf)
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
   .settings(
     name                     := "storage",
     moduleName               := "storage",
     coverageFailOnMinimum    := true,
+    buildInfoKeys            := Seq[BuildInfoKey](version),
+    buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
     Docker / packageName     := "storage",
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
@@ -314,11 +316,13 @@ lazy val service = project
   .in(file("service"))
   .dependsOn(sourcing, rdf)
   .settings(shared, compilation, coverage, release)
-  .enablePlugins(JmhPlugin)
+  .enablePlugins(JmhPlugin, BuildInfoPlugin)
   .settings(
-    name            := "service",
-    moduleName      := "service",
-    coverageMinimum := 20d
+    name             := "service",
+    moduleName       := "service",
+    coverageMinimum  := 20d,
+    buildInfoKeys    := Seq[BuildInfoKey](version),
+    buildInfoPackage := "ch.epfl.bluebrain.nexus.service.config"
   )
   .settings(kamonSettings)
   .settings(
