@@ -37,8 +37,7 @@ object ServiceConfig {
     /**
       * @return the version of the service
       */
-    //    val version: String = BuildInfo.version
-    val version: String = "SNAPSHOT"
+    val version: String = BuildInfo.version
 
     /**
       * @return the full name of the service (name + version)

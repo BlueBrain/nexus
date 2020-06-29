@@ -58,7 +58,6 @@ val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.12.3"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
-val storageVersion                  = "1.3.0"
 val topBraidVersion                 = "1.3.2"
 
 lazy val adminClient              = "ch.epfl.bluebrain.nexus"          %% "admin-client"                        % adminVersion
@@ -130,7 +129,6 @@ lazy val pureconfig               = "com.github.pureconfig"            %% "purec
 lazy val scalaLogging             = "com.typesafe.scala-logging"       %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"                    %% "scalatest"                           % scalaTestVersion
 lazy val scalaReflect             = "org.scala-lang"                    % "scala-reflect"                       % scalaCompilerVersion
-lazy val storageClient            = "ch.epfl.bluebrain.nexus"          %% "storage-client"                      % storageVersion
 lazy val topBraidShacl            = "org.topbraid"                      % "shacl"                               % topBraidVersion
 
 val javaSpecificationVersion = SettingKey[String](
@@ -274,12 +272,14 @@ lazy val rdf      = project
 lazy val storage = project
   .in(file("storage"))
   .dependsOn(rdf)
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
   .settings(
     name                     := "storage",
     moduleName               := "storage",
     coverageFailOnMinimum    := true,
+    buildInfoKeys            := Seq[BuildInfoKey](version),
+    buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
     Docker / packageName     := "storage",
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
@@ -316,11 +316,13 @@ lazy val service = project
   .in(file("service"))
   .dependsOn(sourcing, rdf)
   .settings(shared, compilation, coverage, release)
-  .enablePlugins(JmhPlugin)
+  .enablePlugins(JmhPlugin, BuildInfoPlugin)
   .settings(
-    name            := "service",
-    moduleName      := "service",
-    coverageMinimum := 20d
+    name             := "service",
+    moduleName       := "service",
+    coverageMinimum  := 20d,
+    buildInfoKeys    := Seq[BuildInfoKey](version),
+    buildInfoPackage := "ch.epfl.bluebrain.nexus.service.config"
   )
   .settings(kamonSettings)
   .settings(
@@ -348,7 +350,6 @@ lazy val service = project
       monixEval,
       nimbusJoseJwt,
       parboiled2,
-      storageClient,
       topBraidShacl,
       akkaHttpTestKit         % Test,
       akkaPersistenceInMem    % Test,

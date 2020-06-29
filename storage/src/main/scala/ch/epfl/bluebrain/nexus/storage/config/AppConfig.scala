@@ -40,8 +40,7 @@ object AppConfig {
     /**
       * @return the version of the service
       */
-//    val version: String = BuildInfo.version
-    val version: String = "1.0.0-SNAPSHOT"
+    val version: String = BuildInfo.version
 
     /**
       * @return the full name of the service (name + version)
