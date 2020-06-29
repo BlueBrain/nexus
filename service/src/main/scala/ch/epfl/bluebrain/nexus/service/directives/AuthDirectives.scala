@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.IamError.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
+import ch.epfl.bluebrain.nexus.kg.KgError.AuthenticationFailed
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
@@ -48,11 +49,18 @@ abstract class AuthDirectives(acls: Acls[Task], realms: Realms[Task])(implicit h
         .runToFuture
   }
 
+  private def isBearerToken: Directive0 =
+    extractCredentials.flatMap {
+      case Some(OAuth2BearerToken(_)) => pass
+      case Some(_)                    => failWith(AuthenticationFailed)
+      case _                          => pass
+    }
+
   /**
     * Attempts to extract the Credentials from the HTTP call and generate a [[Caller]] from it.
     */
   def extractCaller: Directive1[Caller] =
-    authenticateOAuth2Async("*", authenticator).withAnonymousUser(Caller.anonymous)
+    isBearerToken.tflatMap(_ => authenticateOAuth2Async("*", authenticator).withAnonymousUser(Caller.anonymous))
 
   /**
     * Extracts the current selected resource address.

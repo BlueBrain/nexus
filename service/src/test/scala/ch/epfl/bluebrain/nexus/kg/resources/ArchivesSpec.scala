@@ -10,15 +10,15 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
 import ch.epfl.bluebrain.nexus.kg.archives.{Archive, ArchiveCache}
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache}
+import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
@@ -29,6 +29,8 @@ import ch.epfl.bluebrain.nexus.kg.{urlEncode, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
 import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
@@ -57,7 +59,8 @@ class ArchivesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -70,7 +73,14 @@ class ArchivesSpec
   implicit private val archiveCache  = mock[ArchiveCache[IO]]
 
   private val resolution             =
-    new ProjectResolution(repo, resolverCache, projectCache, StaticResolution[IO](iriResolution), mock[AclsCache[IO]])
+    new ProjectResolution(
+      repo,
+      resolverCache,
+      projectCache,
+      StaticResolution[IO](iriResolution),
+      mock[Acls[IO]],
+      Caller.anonymous
+    )
   implicit private val materializer  = new Materializer[IO](resolution, projectCache)
   private val archives: Archives[IO] = Archives[IO](resources, files)
 
@@ -141,7 +151,7 @@ class ArchivesSpec
       "create an archive" in new Base {
         archiveCache.put(archiveModel) shouldReturn OptionT.some[IO](archiveModel)
         val expected =
-          ResourceF.simpleF(resId, archiveJson, schema = archiveRef, types = Set[AbsoluteIri](nxv.Archive))
+          ResourceF.simpleF(resId, archiveJson, schema = archiveRef, types = Set(nxv.Archive.value))
         val result   = archives.create(archiveJson).value.accepted
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
@@ -163,7 +173,7 @@ class ArchivesSpec
         archiveCache.get(resId) shouldReturn OptionT.some[IO](archiveModel)
         val result       = archives.fetch(resId).value.accepted
         val expected     =
-          resourceV(archiveJson, 1L, Set[AbsoluteIri](nxv.Archive))
+          resourceV(archiveJson, 1L, Set(nxv.Archive.value))
         result.value.ctx shouldEqual expected.value.ctx
         result shouldEqual expected.copy(value = result.value)
         val expectedJson = jsonContentOf(

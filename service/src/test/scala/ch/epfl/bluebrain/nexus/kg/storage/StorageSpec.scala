@@ -8,12 +8,11 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.Id
@@ -21,6 +20,8 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -43,14 +44,14 @@ class StorageSpec
   val readS3                 = Permission.unsafe("s3/read")
   val writeS3                = Permission.unsafe("s3/write")
 
-  private val appConfig = Settings(system).appConfig
+  private val appConfig = Settings(system).serviceConfig
 
-  implicit private val storageConfig = appConfig.storage.copy(
+  implicit private val storageConfig = appConfig.kg.storage.copy(
     disk = DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", readDisk, writeDisk, false, 1000L),
     remoteDisk = RemoteDiskStorageConfig(
       "http://example.com",
       "v1",
-      Some(AuthToken(genString())),
+      Some(AccessToken(genString())),
       "SHA-256",
       read,
       write,
@@ -91,13 +92,13 @@ class StorageSpec
       val s3Minimal        = jsonContentOf("/storage/s3-minimal.json").appendContextOf(storageCtx)
 
       "return a DiskStorage" in {
-        val resource = simpleV(id, diskStorage, types = Set(nxv.Storage, nxv.DiskStorage))
+        val resource = simpleV(id, diskStorage, types = Set(nxv.Storage.value, nxv.DiskStorage.value))
         Storage(resource).rightValue shouldEqual
           DiskStorage(projectRef, iri, 1L, false, false, "SHA-256", Paths.get("/tmp"), readDisk, writeDisk, 1000L)
       }
 
       "return a DiskStorage with custom readPermission and writePermission" in {
-        val resource      = simpleV(id, diskStoragePerms, types = Set(nxv.Storage, nxv.DiskStorage))
+        val resource      = simpleV(id, diskStoragePerms, types = Set(nxv.Storage.value, nxv.DiskStorage.value))
         val expectedRead  = Permission.unsafe("myRead")
         val expectedWrite = Permission.unsafe("myWrite")
         Storage(resource).rightValue shouldEqual
@@ -116,7 +117,8 @@ class StorageSpec
       }
 
       "return a default RemoteDiskStorage" in {
-        val resource = simpleV(id, remoteDiskStorageDefault, types = Set(nxv.Storage, nxv.RemoteDiskStorage))
+        val resource =
+          simpleV(id, remoteDiskStorageDefault, types = Set(nxv.Storage.value, nxv.RemoteDiskStorage.value))
         Storage(resource).rightValue shouldEqual
           RemoteDiskStorage(
             projectRef,
@@ -135,7 +137,7 @@ class StorageSpec
       }
 
       "return a RemoteDiskStorage" in {
-        val resource      = simpleV(id, remoteDiskStorage, types = Set(nxv.Storage, nxv.RemoteDiskStorage))
+        val resource      = simpleV(id, remoteDiskStorage, types = Set(nxv.Storage.value, nxv.RemoteDiskStorage.value))
         val expectedRead  = Permission.unsafe("myRead")
         val expectedWrite = Permission.unsafe("myWrite")
         Storage(resource).rightValue shouldEqual
@@ -156,7 +158,7 @@ class StorageSpec
       }
 
       "return a RemoteDiskStorage encrypted" in {
-        val resource      = simpleV(id, remoteDiskStorage, types = Set(nxv.Storage, nxv.RemoteDiskStorage))
+        val resource      = simpleV(id, remoteDiskStorage, types = Set(nxv.Storage.value, nxv.RemoteDiskStorage.value))
         val expectedRead  = Permission.unsafe("myRead")
         val expectedWrite = Permission.unsafe("myWrite")
         Storage(resource).rightValue.encrypt shouldEqual
@@ -177,7 +179,7 @@ class StorageSpec
       }
 
       "return an S3Storage" in {
-        val resource = simpleV(id, s3Minimal, types = Set(nxv.Storage, nxv.S3Storage))
+        val resource = simpleV(id, s3Minimal, types = Set(nxv.Storage.value, nxv.S3Storage.value))
 
         Storage(resource).rightValue shouldEqual
           S3Storage(
@@ -196,7 +198,7 @@ class StorageSpec
       }
 
       "return an S3Storage with credentials and region" in {
-        val resource      = simpleV(id, s3Storage, types = Set(nxv.Storage, nxv.S3Storage))
+        val resource      = simpleV(id, s3Storage, types = Set(nxv.Storage.value, nxv.S3Storage.value))
         val settings      = S3Settings(Some(S3Credentials("access", "secret")), Some("endpoint"), Some("region"))
         val expectedRead  = Permission.unsafe("my/read")
         val expectedWrite = Permission.unsafe("my/write")
@@ -205,7 +207,7 @@ class StorageSpec
       }
 
       "return an S3Storage with encrypted credentials" in {
-        val resource      = simpleV(id, s3Storage, types = Set(nxv.Storage, nxv.S3Storage))
+        val resource      = simpleV(id, s3Storage, types = Set(nxv.Storage.value, nxv.S3Storage.value))
         val settings      = S3Settings(
           Some(S3Credentials("MrAw2AGFs3T/+2M6nxOsuQ==", "Qa76lYhMOK9GPyTrxK26Jg==")),
           Some("endpoint"),
@@ -218,27 +220,28 @@ class StorageSpec
       }
 
       "fail on DiskStorage when types are wrong" in {
-        val resource = simpleV(id, diskStorage, types = Set(nxv.Storage))
+        val resource = simpleV(id, diskStorage, types = Set(nxv.Storage.value))
         Storage(resource).leftValue shouldBe a[InvalidResourceFormat]
       }
 
       "fail on RemoteDiskStorage when types are wrong" in {
-        val resource = simpleV(id, remoteDiskStorage, types = Set(nxv.Storage))
+        val resource = simpleV(id, remoteDiskStorage, types = Set(nxv.Storage.value))
         Storage(resource).leftValue shouldBe a[InvalidResourceFormat]
       }
 
       "fail on S3Storage when types are wrong" in {
-        val resource = simpleV(id, s3Storage, types = Set(nxv.S3Storage))
+        val resource = simpleV(id, s3Storage, types = Set(nxv.S3Storage.value))
         Storage(resource).leftValue shouldBe a[InvalidResourceFormat]
       }
 
       "fail on DiskStorage when required parameters are not present" in {
-        val resource = simpleV(id, diskStorage.removeKeys("volume"), types = Set(nxv.Storage, nxv.DiskStorage))
+        val resource =
+          simpleV(id, diskStorage.removeKeys("volume"), types = Set(nxv.Storage.value, nxv.DiskStorage.value))
         Storage(resource).leftValue shouldBe a[InvalidResourceFormat]
       }
 
       "fail on S3Storage when required parameters are not present" in {
-        val resource = simpleV(id, s3Storage.removeKeys("default"), types = Set(nxv.Storage, nxv.S3Storage))
+        val resource = simpleV(id, s3Storage.removeKeys("default"), types = Set(nxv.Storage.value, nxv.S3Storage.value))
         Storage(resource).leftValue shouldBe a[InvalidResourceFormat]
       }
     }

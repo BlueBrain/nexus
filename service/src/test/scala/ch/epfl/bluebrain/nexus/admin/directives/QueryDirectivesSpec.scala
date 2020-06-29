@@ -7,11 +7,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.{complete, get}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
-import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
@@ -41,34 +39,6 @@ class QueryDirectivesSpec
     Routes.wrap(inner)
 
   "Query directives" should {
-    "handle pagination" in {
-      def paginated(from: Int, size: Int) =
-        Routes.wrap(
-          (get & QueryDirectives.paginated(AdminConfig.PaginationConfig(50, 100))) { pagination =>
-            pagination shouldEqual FromPagination(from, size)
-            complete(StatusCodes.Accepted)
-          }
-        )
-
-      Get("/") ~> routes(paginated(0, 50)) ~> check {
-        status shouldEqual StatusCodes.Accepted
-      }
-      Get("/?size=42") ~> routes(paginated(0, 42)) ~> check {
-        status shouldEqual StatusCodes.Accepted
-      }
-      Get("/?from=1") ~> routes(paginated(1, 50)) ~> check {
-        status shouldEqual StatusCodes.Accepted
-      }
-      Get("/?from=1&size=42") ~> routes(paginated(1, 42)) ~> check {
-        status shouldEqual StatusCodes.Accepted
-      }
-      Get("/?from=1&size=-42") ~> routes(paginated(1, 0)) ~> check {
-        status shouldEqual StatusCodes.Accepted
-      }
-      Get("/?from=1&size=500") ~> routes(paginated(1, 100)) ~> check {
-        status shouldEqual StatusCodes.Accepted
-      }
-    }
 
     "handle query params" in {
       val createdBy     = genIri

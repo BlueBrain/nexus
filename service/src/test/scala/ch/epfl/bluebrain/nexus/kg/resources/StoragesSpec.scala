@@ -10,15 +10,14 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types.Permission
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache, StorageCache}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig.{iriResolution, toAggregateConfig, toIamClient}
+import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache, StorageCache}
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.iriResolution
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, Resolver, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
@@ -30,6 +29,8 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import javax.crypto.SecretKey
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
@@ -59,8 +60,9 @@ class StoragesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).appConfig
-  implicit private val secretKey: SecretKey  = appConfig.storage.derivedKey
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
+  implicit private val secretKey: SecretKey  = appConfig.kg.storage.derivedKey
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -71,7 +73,14 @@ class StoragesSpec
   private val projectCache           = mock[ProjectCache[IO]]
 
   private val resolution             =
-    new ProjectResolution(repo, resolverCache, projectCache, StaticResolution[IO](iriResolution), mock[AclsCache[IO]])
+    new ProjectResolution(
+      repo,
+      resolverCache,
+      projectCache,
+      StaticResolution[IO](iriResolution),
+      mock[Acls[IO]],
+      Caller.anonymous
+    )
   implicit private val materializer  = new Materializer[IO](resolution, projectCache)
   private val storages: Storages[IO] = Storages[IO]
   private val readPerms              = Permission.unsafe("resources/read")
@@ -118,14 +127,14 @@ class StoragesSpec
         else throw new RuntimeException
     }
 
-    val typesDisk               = Set[AbsoluteIri](nxv.Storage, nxv.DiskStorage)
+    val typesDisk               = Set(nxv.Storage.value, nxv.DiskStorage.value)
     val s3Storage               = updateId(jsonContentOf("/storage/s3.json"))
     // format: off
     val s3StorageModel = S3Storage(projectRef, id, 1L, deprecated = false, default = true, "SHA-256", "bucket", S3Settings(Some(S3Credentials("access", "secret")), Some("endpoint"), Some("region")), Permission.unsafe("my/read"), Permission.unsafe("my/write"), 10737418240L)
     val s3StorageModelEncrypted = S3Storage(projectRef, id, 1L, deprecated = false, default = true, "SHA-256", "bucket", S3Settings(Some(S3Credentials("ByjwlDNy8D1Gm1o0EFCXwA==", "SjMIILT+A5BTUH4LP8sJBg==")), Some("endpoint"), Some("region")), Permission.unsafe("my/read"), Permission.unsafe("my/write"), 10737418240L)
     // format: on
-    val typesS3                 = Set[AbsoluteIri](nxv.Storage, nxv.S3Storage)
-    val typesRemote             = Set[AbsoluteIri](nxv.Storage, nxv.RemoteDiskStorage)
+    val typesS3                 = Set(nxv.Storage.value, nxv.S3Storage.value)
+    val typesRemote             = Set(nxv.Storage.value, nxv.RemoteDiskStorage.value)
 
     def resourceV(json: Json, rev: Long = 1L, types: Set[AbsoluteIri]): ResourceV = {
       val ctx   = Json.obj("@context" -> (storageCtx.contextValue deepMerge resourceCtx.contextValue))
@@ -228,12 +237,12 @@ class StoragesSpec
         "_algorithm"      -> Json.fromString("SHA-256"),
         "writePermission" -> Json.fromString("files/write"),
         "readPermission"  -> Json.fromString("resources/read"),
-        "maxFileSize"     -> Json.fromLong(appConfig.storage.disk.maxFileSize)
+        "maxFileSize"     -> Json.fromLong(appConfig.kg.storage.disk.maxFileSize)
       )
 
       val s3AddedJson = Json.obj(
         "_algorithm"  -> Json.fromString("SHA-256"),
-        "maxFileSize" -> Json.fromLong(appConfig.storage.amazon.maxFileSize)
+        "maxFileSize" -> Json.fromLong(appConfig.kg.storage.amazon.maxFileSize)
       )
 
       "return a storage" in new Base {

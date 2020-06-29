@@ -18,9 +18,9 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError
+import ch.epfl.bluebrain.nexus.iam.types.Identity.User
 import ch.epfl.bluebrain.nexus.kg.client.KgClientError.NotFound
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
@@ -75,7 +75,7 @@ class KgClientSpec
     val json          = jsonContentOf("/serialization/resource.json")
     private val graph = json.toGraph(id).rightValue
 
-    val model                             = ResourceF(
+    val model                               = ResourceF(
       Id(project.ref, url"http://example.com/prefix/myId"),
       1L,
       Set(url"https://example.com/vocab/A", url"https://example.com/vocab/B"),
@@ -89,7 +89,7 @@ class KgClientSpec
       Schemas.unconstrainedRef,
       ResourceF.Value(Json.obj(), Json.obj(), graph)
     )
-    implicit val token: Option[AuthToken] = None
+    implicit val token: Option[AccessToken] = None
 
     val resourceEndpoint =
       s"http://example.com/v1/resources/${project.organizationLabel}/${project.label}/_/$resourceId"

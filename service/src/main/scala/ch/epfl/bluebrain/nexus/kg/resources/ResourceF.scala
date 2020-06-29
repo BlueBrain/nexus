@@ -114,7 +114,7 @@ final case class ResourceF[A](
 
     val fileTriples = file.map(triplesFor).getOrElse(Set.empty)
     val projectUri  =
-      config.kg.admin.publicIri + config.kg.admin.prefix / "projects" / project.organizationLabel / project.label
+      config.http.prefixIri + "projects" / project.organizationLabel / project.label
     val self        = AccessId(id.value, schema.iri, expanded = options.expandedLinks)
     fileTriples ++ Set[Triple](
       (node, nxv.rev, rev),

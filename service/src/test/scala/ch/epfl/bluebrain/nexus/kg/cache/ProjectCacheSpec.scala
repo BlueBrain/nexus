@@ -6,10 +6,9 @@ import akka.testkit._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
 import ch.epfl.bluebrain.nexus.kg.resources.OrganizationRef
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.concurrent.ScalaFutures
@@ -27,7 +26,8 @@ class ProjectCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
 
-  implicit private val appConfig = Settings(system).appConfig
+  implicit private val appConfig        = Settings(system).serviceConfig
+  implicit private val keyValueStoreCfg = appConfig.kg.keyValueStore.keyValueStoreConfig
 
   private val org1      = genUUID
   private val org1Label = genString()

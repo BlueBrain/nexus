@@ -7,17 +7,27 @@ import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.EventRoutesSpec.TestableEventRoutes
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import io.circe.Encoder
+import monix.eval.Task
 
 class EventRoutesSpec extends EventsSpecBase {
 
-  val eventRoutes = new TestableEventRoutes(events, acls, caller)
+  private val aclsApi = mock[Acls[Task]]
+  private val realms  = mock[Realms[Task]]
+
+  val eventRoutes = new TestableEventRoutes(events, aclsApi, realms, caller)
 
   "EventRoutes" should {
+    val read = Permission.unsafe("resources/read")
+    aclsApi.hasPermission("org" / "project", read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(/ + "org", read)(caller) shouldReturn Task.pure(true)
 
     "return all events for a project" in {
       Get("/") ~> eventRoutes.routes(project) ~> check {
@@ -56,10 +66,10 @@ class EventRoutesSpec extends EventsSpecBase {
 
 object EventRoutesSpec {
 
-  class TestableEventRoutes(events: List[Event], acls: AccessControlLists, caller: Caller)(implicit
+  class TestableEventRoutes(events: List[Event], acls: Acls[Task], realms: Realms[Task], caller: Caller)(implicit
       as: ActorSystem,
-      config: KgConfig
-  ) extends EventRoutes(acls, caller) {
+      config: ServiceConfig
+  ) extends EventRoutes(acls, realms, caller) {
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>

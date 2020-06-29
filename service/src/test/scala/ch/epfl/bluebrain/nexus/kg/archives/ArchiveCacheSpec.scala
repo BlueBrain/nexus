@@ -6,12 +6,12 @@ import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource, ResourceDescription}
-import ch.epfl.bluebrain.nexus.kg.config.Settings
 import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -28,10 +28,13 @@ class ArchiveCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.second, 50.milliseconds)
 
-  private val appConfig                 = Settings(system).appConfig
+  private val appConfig                 = Settings(system).serviceConfig
   implicit private val config           =
-    appConfig.copy(archives = appConfig.archives.copy(cacheInvalidateAfter = 500.millis, maxResources = 100))
+    appConfig.copy(kg =
+      appConfig.kg.copy(archives = appConfig.kg.archives.copy(cacheInvalidateAfter = 500.millis, maxResources = 100))
+    )
   implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
+  implicit private val archivesCfg      = config.kg.archives
 
   private val cache: ArchiveCache[IO] = ArchiveCache[IO].unsafeToFuture().futureValue
   implicit private val clock          = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
@@ -71,8 +74,8 @@ class ArchiveCacheSpec
         cache.get(resId).value.ioValue shouldEqual None
       }
       val diff    = System.currentTimeMillis() - time
-      diff should be > config.archives.cacheInvalidateAfter.toMillis
-      diff should be < config.archives.cacheInvalidateAfter.toMillis + 300
+      diff should be > config.kg.archives.cacheInvalidateAfter.toMillis
+      diff should be < config.kg.archives.cacheInvalidateAfter.toMillis + 300
     }
   }
 }

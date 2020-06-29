@@ -6,11 +6,10 @@ import java.time.Clock
 import akka.testkit._
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
-import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectRef}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.concurrent.ScalaFutures
@@ -30,8 +29,9 @@ class StorageCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
 
-  implicit private val clock: Clock        = Clock.systemUTC
-  implicit private val appConfig: KgConfig = Settings(system).appConfig
+  implicit private val clock: Clock             = Clock.systemUTC
+  implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
+  implicit private val keyValueStoreCfg         = appConfig.kg.keyValueStore.keyValueStoreConfig
 
   val ref1 = ProjectRef(genUUID)
   val ref2 = ProjectRef(genUUID)

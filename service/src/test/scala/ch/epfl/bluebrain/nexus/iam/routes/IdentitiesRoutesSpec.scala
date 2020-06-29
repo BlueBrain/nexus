@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.iam.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.auth.{AccessToken, TokenRejection}
 import ch.epfl.bluebrain.nexus.iam.realms._
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
@@ -44,13 +45,14 @@ class IdentitiesRoutesSpec
   implicit private val http = config.http
 
   private val realms: Realms[Task] = mock[Realms[Task]]
+  private val acls: Acls[Task]     = mock[Acls[Task]]
 
   before {
-    Mockito.reset(realms)
+    Mockito.reset(realms, acls)
   }
 
   "The IdentitiesRoutes" should {
-    val routes = Routes.wrap(new IdentitiesRoutes(realms).routes)
+    val routes = Routes.wrap(new IdentitiesRoutes(acls, realms).routes)
     "return forbidden" in {
       val err = InvalidAccessToken(TokenRejection.InvalidAccessToken)
       realms.caller(any[AccessToken]) shouldReturn Task.raiseError(err)

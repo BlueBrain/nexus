@@ -17,35 +17,34 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues}
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.storage.AkkaSource
-import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.Graph
+import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
-import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
 import org.mockito.matchers.MacroBasedMatchers
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 
@@ -67,17 +66,12 @@ class ArchiveRoutesSpec
     with CirceEq
     with Eventually {
 
-  // required to be able to spin up the routes (CassandraClusterHealth depends on a cassandra session)
-  override def testConfig: Config =
-    ConfigFactory.load("test-no-inmemory.conf").withFallback(ConfigFactory.load()).resolve()
-
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig = Settings(system).appConfig
+  implicit private val appConfig = Settings(system).serviceConfig
   implicit private val clock     = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
   implicit private val adminClient   = mock[AdminClient[Task]]
-  implicit private val iamClient     = mock[IamClient[Task]]
   implicit private val projectCache  = mock[ProjectCache[Task]]
   implicit private val viewCache     = mock[ViewCache[Task]]
   implicit private val resolverCache = mock[ResolverCache[Task]]
@@ -86,6 +80,8 @@ class ArchiveRoutesSpec
   implicit private val archives      = mock[Archives[Task]]
   implicit private val resources     = mock[Resources[Task]]
   implicit private val tagsRes       = mock[Tags[Task]]
+  implicit private val aclsApi       = mock[Acls[Task]]
+  private val realms                 = mock[Realms[Task]]
 
   implicit private val cacheAgg =
     Caches(projectCache, viewCache, resolverCache, storageCache, archiveCache)
@@ -104,9 +100,11 @@ class ArchiveRoutesSpec
     Mockito.reset(archives)
   }
 
-  private val manageArchive = Set(Permission.unsafe("resources/read"), Permission.unsafe("archives/write"))
+  private val archivesWrite = Permission.unsafe("archives/write")
+
+  private val manageArchive = Set(Permission.unsafe("resources/read"), archivesWrite)
   // format: off
-  private val routes = KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], archives, tagsRes, mock[ProjectViewCoordinator[Task]])
+  private val routes = new KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], archives, tagsRes, aclsApi, realms, mock[ProjectViewCoordinator[Task]]).routes
   // format: on
 
   //noinspection NameBooleanParameters
@@ -115,10 +113,9 @@ class ArchiveRoutesSpec
     projectCache.get(label) shouldReturn Task.pure(Some(projectMeta))
     projectCache.getLabel(projectRef) shouldReturn Task.pure(Some(label))
     projectCache.get(projectRef) shouldReturn Task.pure(Some(projectMeta))
-
-    iamClient.identities shouldReturn Task.pure(Caller(user, Set(Anonymous)))
+    realms.caller(token.value) shouldReturn Task(caller)
     implicit val acls = AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> perms)))
-    iamClient.acls(any[Path], any[Boolean], any[Boolean])(any[Option[AuthToken]]) shouldReturn Task.pure(acls)
+    aclsApi.list(label.organization / label.value, ancestors = true, self = true)(caller) shouldReturn Task.pure(acls)
 
     val metadataRanges = Seq(Accept(`application/json`.mediaType), Accept(`application/ld+json`))
 
@@ -140,6 +137,7 @@ class ArchiveRoutesSpec
 
     "create an archive without @id" in new Context {
       archives.create(json) shouldReturn EitherT.rightT[Task, Rejection](resource)
+      aclsApi.hasPermission(organization / project, archivesWrite)(caller) shouldReturn Task.pure(true)
 
       forAll(metadataRanges) { accept =>
         Post(s"/v1/archives/$organization/$project", json) ~> addCredentials(oauthToken) ~> accept ~> routes ~> check {
@@ -157,6 +155,7 @@ class ArchiveRoutesSpec
     }
 
     "create an archive with @id" in new Context {
+      aclsApi.hasPermission(organization / project, archivesWrite)(caller) shouldReturn Task.pure(true)
       archives.create(id, json) shouldReturn EitherT.rightT[Task, Rejection](resource)
 
       forAll(metadataRanges) { accept =>
@@ -178,6 +177,9 @@ class ArchiveRoutesSpec
 
     "fetch an archive with ignoreNotFound = false (default)" in new Context {
       val content = genString()
+
+      aclsApi.list(anyProject, ancestors = true, self = true)(caller) shouldReturn Task.pure(acls)
+
       archives.fetchArchive(id, ignoreNotFound = false) shouldReturn
         EitherT.rightT[Task, Rejection](Source.single(ByteString(content)): AkkaSource)
 
@@ -196,6 +198,7 @@ class ArchiveRoutesSpec
 
     "fetch an archive with ignoreNotFound = true" in new Context {
       val content = genString()
+      aclsApi.list(anyProject, ancestors = true, self = true)(caller) shouldReturn Task.pure(acls)
       archives.fetchArchive(id, ignoreNotFound = true) shouldReturn
         EitherT.rightT[Task, Rejection](Source.single(ByteString(content)): AkkaSource)
 

@@ -10,14 +10,11 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues}
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.KgError.{InternalError, RemoteFileNotFound}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.{Digest, FileDescription, StoredSummary}
@@ -25,7 +22,8 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.{Fetch, FetchAttributes, Link, Save}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.{DiskStorage, FetchFile, FetchFileAttributes, LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.rdf.Iri
-import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
@@ -58,7 +56,9 @@ class FilesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val storageConfig         = appConfig.kg.storage
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -88,7 +88,7 @@ class FilesSpec
     // format: on
 
     val value             = Json.obj()
-    val types             = Set[AbsoluteIri](nxv.File)
+    val types             = Set(nxv.File.value)
     val desc              = FileDescription("name", `text/plain(UTF-8)`)
     val source            = "some text"
     val location          = Uri("file:///tmp/other")
@@ -213,7 +213,7 @@ class FilesSpec
           mediaType: String,
           location: String,
           bytes: Long,
-          tpe: String = nxv.UpdateFileAttributes.prefix
+          tpe: String = "UpdateFileAttributes"
       ): Json =
         Json.obj(
           "@type"     -> tpe.asJson,

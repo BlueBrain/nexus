@@ -365,6 +365,7 @@ lazy val service = project
       jacksonAnnotations      % Test,
       jacksonCore             % Test,
       jacksonDatabind         % Test,
+      jsonldjava % Test,
       log4jCore               % Test,
       log4jApi                % Test,
       mockito                 % Test,

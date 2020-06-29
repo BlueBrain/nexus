@@ -24,17 +24,16 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlFailure.SparqlClientE
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues}
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.Error.classNameOf
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.{CompositeViewStatistics, ViewStatistics}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{Filter, _}
 import ch.epfl.bluebrain.nexus.kg.indexing.{IdentifiedProgress, View}
@@ -44,12 +43,13 @@ import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, Error, KgError, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import com.datastax.oss.driver.api.core.uuid.Uuids
-import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.parser.parse
@@ -84,17 +84,12 @@ class ViewRoutesSpec
     with CirceEq
     with Eventually {
 
-  // required to be able to spin up the routes (CassandraClusterHealth depends on a cassandra session)
-  override def testConfig: Config =
-    ConfigFactory.load("test-no-inmemory.conf").withFallback(ConfigFactory.load()).resolve()
-
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig = Settings(system).appConfig
+  implicit private val appConfig = Settings(system).serviceConfig
   implicit private val clock     = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
   implicit private val adminClient   = mock[AdminClient[Task]]
-  implicit private val iamClient     = mock[IamClient[Task]]
   implicit private val projectCache  = mock[ProjectCache[Task]]
   implicit private val viewCache     = mock[ViewCache[Task]]
   implicit private val resolverCache = mock[ResolverCache[Task]]
@@ -103,6 +98,8 @@ class ViewRoutesSpec
   implicit private val views         = mock[Views[Task]]
   implicit private val tagsRes       = mock[Tags[Task]]
   implicit private val initializer   = mock[ProjectInitializer[Task]]
+  implicit private val aclsApi       = mock[Acls[Task]]
+  private val realms                 = mock[Realms[Task]]
 
   implicit private val cacheAgg =
     Caches(projectCache, viewCache, resolverCache, storageCache, mock[ArchiveCache[Task]])
@@ -117,11 +114,12 @@ class ViewRoutesSpec
   implicit private val clients       = Clients()
   private val coordinator            = mock[ProjectViewCoordinator[Task]]
   private val sortList               = SortList(List(Sort(nxv.createdAt.prefix), Sort("@id")))
-
-  private val manageResolver =
-    Set(Permission.unsafe("views/query"), Permission.unsafe("resources/read"), Permission.unsafe("views/write"))
+  private val viewsWrite             = Permission.unsafe("views/write")
+  private val viewsQuery             = Permission.unsafe("views/query")
+  private val manageResolver         =
+    Set(viewsQuery, Permission.unsafe("resources/read"), viewsWrite)
   // format: off
-  private val routes = KgRoutes(resources, mock[Resolvers[Task]], views, mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, coordinator)
+  private val routes = new KgRoutes(resources, mock[Resolvers[Task]], views, mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, aclsApi, realms, coordinator).routes
   // format: on
 
   //noinspection NameBooleanParameters
@@ -131,15 +129,16 @@ class ViewRoutesSpec
     projectCache.getLabel(projectRef) shouldReturn Task.pure(Some(label))
     projectCache.get(projectRef) shouldReturn Task.pure(Some(projectMeta))
 
-    iamClient.identities shouldReturn Task.pure(Caller(user, Set(Anonymous)))
+    realms.caller(token.value) shouldReturn Task(caller)
     implicit val acls = AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> perms)))
-    iamClient.acls(any[Path], any[Boolean], any[Boolean])(any[Option[AuthToken]]) shouldReturn Task.pure(acls)
+    aclsApi.list(anyProject, ancestors = true, self = true)(caller) shouldReturn Task.pure(acls)
+    aclsApi.list(label.organization / label.value, ancestors = true, self = true)(caller) shouldReturn Task.pure(acls)
 
     val view  = jsonContentOf("/view/elasticview.json")
       .removeKeys("_uuid")
       .deepMerge(Json.obj("@id" -> Json.fromString(id.value.show)))
 
-    val types = Set[AbsoluteIri](nxv.View, nxv.ElasticSearchView)
+    val types = Set[AbsoluteIri](nxv.View.value, nxv.ElasticSearchView.value)
 
     def viewResponse(): Json =
       response(viewRef) deepMerge Json.obj(
@@ -186,6 +185,10 @@ class ViewRoutesSpec
         s"/v1/resources/$organization/$project/_/$urlEncodedId$queryParam"
       )
     }
+    aclsApi.hasPermission(organization / project, viewsWrite)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, viewsQuery)(caller) shouldReturn Task.pure(true)
+
   }
 
   "The view routes" should {

@@ -21,7 +21,7 @@ trait QueryDirectives {
     * @param qs the preconfigured query settings
     */
   def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
-    (parameter("from".as[Int]) & parameter("size".as[Int] ? qs.defaultSize)).tmap {
+    (parameter("from".as[Int] ? 0) & parameter("size".as[Int] ? qs.defaultSize)).tmap {
       case (from, size) => FromPagination(from.max(0).min(qs.fromLimit), size.max(1).min(qs.sizeLimit))
     }
 

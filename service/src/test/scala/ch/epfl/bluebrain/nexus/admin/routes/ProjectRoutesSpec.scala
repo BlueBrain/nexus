@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error._
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.Permissions
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
@@ -29,7 +28,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
@@ -70,7 +69,7 @@ class ProjectRoutesSpec
     Routes.wrap(
       new ProjectRoutes(projects, orgCache, projCache, aclsApi, realmsApi)(
         httpConfig,
-        PaginationConfig(50, 100),
+        PaginationConfig(50, 50, 100),
         global
       ).routes
     )
@@ -195,6 +194,11 @@ class ProjectRoutesSpec
           )
         )
       )
+    aclsApi.hasPermission(/ + "org", create)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission("org" / "label", create)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission("org" / "label", write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission("org" / "label", read)(caller) shouldReturn Task.pure(true)
+
   }
 
   "Project routes" should {
@@ -204,7 +208,7 @@ class ProjectRoutesSpec
 
       Put("/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
+        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
     }
 
@@ -213,7 +217,7 @@ class ProjectRoutesSpec
 
       Put("/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
+        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
     }
 
@@ -239,7 +243,7 @@ class ProjectRoutesSpec
 
       Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
+        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
     }
 
@@ -273,7 +277,7 @@ class ProjectRoutesSpec
 
       Delete("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
+        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
     }
 
@@ -300,7 +304,7 @@ class ProjectRoutesSpec
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
+          responseAs[Json] shouldEqual jsonContentOf("/projects/resource.json", replacements)
         }
       }
     }
@@ -318,7 +322,7 @@ class ProjectRoutesSpec
 
       Get("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
+        responseAs[Json] shouldEqual jsonContentOf("/projects/resource.json", replacements)
       }
     }
 
@@ -341,7 +345,7 @@ class ProjectRoutesSpec
       forAll(List("/projects", "/projects/")) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
+          responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
         }
       }
     }
@@ -360,12 +364,14 @@ class ProjectRoutesSpec
       forAll(List("/projects/org?deprecated=true&rev=1", "/projects/org/?deprecated=true&rev=1")) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
+          responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
         }
       }
     }
 
     "reject unauthorized requests" in new Context {
+      aclsApi.hasPermission("org" / "label", read)(Caller.anonymous) shouldReturn Task.pure(false)
+
       aclsApi.list("org" / "label", ancestors = true, self = true)(Caller.anonymous) shouldReturn
         Task.pure(AccessControlLists.empty)
       Get("/projects/org/label") ~> routes ~> check {

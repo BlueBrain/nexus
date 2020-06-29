@@ -9,9 +9,8 @@ import ch.epfl.bluebrain.nexus.admin.client.types._
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, OrganizationRef}
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionProgress, Projections, StreamSupervisor}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -35,8 +34,9 @@ class ProjectAttributesCoordinatorSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(15.second, 150.milliseconds)
 
-  implicit private val appConfig = Settings(system).appConfig
-  private val projectCache       = ProjectCache[Task]
+  implicit private val appConfig        = Settings(system).serviceConfig
+  implicit private val keyValueStoreCfg = appConfig.kg.keyValueStore.keyValueStoreConfig
+  private val projectCache              = ProjectCache[Task]
 
   "A ProjectAttributesCoordinator" should {
     val creator = genIri

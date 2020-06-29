@@ -13,15 +13,15 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlRe
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues}
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.kg.async.anyProject
+import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.SparqlView
@@ -35,6 +35,8 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.xsd
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.mockito.Mockito.when
@@ -64,20 +66,27 @@ class ResourcesSpec
 
   implicit private val client: BlazegraphClient[IO] = mock[BlazegraphClient[IO]]
 
-  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
 
-  implicit private val repo = Repo[IO].ioValue
-  private val projectCache  = mock[ProjectCache[IO]]
-  private val resolverCache = mock[ResolverCache[IO]]
-  private val aclsCache     = mock[AclsCache[IO]]
+  implicit private val repo            = Repo[IO].ioValue
+  private val projectCache             = mock[ProjectCache[IO]]
+  private val resolverCache            = mock[ResolverCache[IO]]
+  private val acls                     = mock[Acls[IO]]
   resolverCache.get(any[ProjectRef]) shouldReturn IO.pure(List.empty[Resolver])
-  aclsCache.list shouldReturn IO.pure(AccessControlLists.empty)
-
+  acls.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn IO(AccessControlLists.empty)
   implicit private val resolution      =
-    new ProjectResolution[IO](repo, resolverCache, projectCache, StaticResolution(KgConfig.iriResolution), aclsCache)
+    new ProjectResolution[IO](
+      repo,
+      resolverCache,
+      projectCache,
+      StaticResolution(KgConfig.iriResolution),
+      acls,
+      Caller.anonymous
+    )
   implicit private val materializer    = new Materializer(resolution, projectCache)
   private val resources: Resources[IO] = Resources[IO]
 
@@ -303,7 +312,7 @@ class ResourcesSpec
         "_rev"           -> Binding("literal", "1", datatype = Some(xsd.long.asString)),
         "_self"          -> Binding("uri", self.asString),
         "_project"       -> Binding("uri", projectUri.asString),
-        "types"          -> Binding("literal", s"${nxv.Resolver.asString} ${nxv.Schema.asString}"),
+        "types"          -> Binding("literal", s"${nxv.Resolver.value.asString} ${nxv.Schema.value.asString}"),
         "_constrainedBy" -> Binding("uri", unconstrainedSchemaUri.asString),
         "_createdBy"     -> Binding("uri", author.asString),
         "_updatedBy"     -> Binding("uri", author.asString),
@@ -319,7 +328,7 @@ class ResourcesSpec
 
       val expected: Set[UnscoredQueryResult[SparqlLink]] = Set(
         // format: off
-        UnscoredQueryResult(SparqlResourceLink(id1, projectUri, self, 1L, Set(nxv.Resolver, nxv.Schema), deprecated = false, clock.instant(), clock.instant(), author, author, unconstrainedRef, paths)),
+        UnscoredQueryResult(SparqlResourceLink(id1, projectUri, self, 1L, Set(nxv.Resolver.value, nxv.Schema.value), deprecated = false, clock.instant(), clock.instant(), author, author, unconstrainedRef, paths)),
         UnscoredQueryResult(SparqlExternalLink(id2, paths))
         // format: on
       )

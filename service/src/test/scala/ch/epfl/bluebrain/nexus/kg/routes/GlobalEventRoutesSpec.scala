@@ -7,15 +7,23 @@ import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Caller}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.GlobalEventRoutesSpec.TestableEventRoutes
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import io.circe.Encoder
+import monix.eval.Task
 
 class GlobalEventRoutesSpec extends EventsSpecBase {
 
-  val routes = new TestableEventRoutes(events, acls, caller).routes
+  private val aclsApi = mock[Acls[Task]]
+  private val realms  = mock[Realms[Task]]
+
+  val routes = new TestableEventRoutes(events, aclsApi, realms, caller).routes
+  aclsApi.hasPermission(Path./, read)(caller) shouldReturn Task.pure(true)
 
   "GlobalEventRoutes" should {
 
@@ -39,10 +47,10 @@ class GlobalEventRoutesSpec extends EventsSpecBase {
 
 object GlobalEventRoutesSpec {
 
-  class TestableEventRoutes(events: List[Event], acls: AccessControlLists, caller: Caller)(implicit
+  class TestableEventRoutes(events: List[Event], acls: Acls[Task], realms: Realms[Task], caller: Caller)(implicit
       as: ActorSystem,
-      config: KgConfig
-  ) extends GlobalEventRoutes(acls, caller) {
+      config: ServiceConfig
+  ) extends GlobalEventRoutes(acls, realms, caller) {
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>

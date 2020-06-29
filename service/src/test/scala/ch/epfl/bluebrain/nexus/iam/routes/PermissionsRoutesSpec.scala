@@ -5,6 +5,7 @@ import java.util.regex.Pattern.quote
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.permissions._
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
@@ -48,9 +49,10 @@ class PermissionsRoutesSpec
 
   private val perms: Permissions[Task] = mock[Permissions[Task]]
   private val realms: Realms[Task]     = mock[Realms[Task]]
+  private val acls: Acls[Task]         = mock[Acls[Task]]
 
   before {
-    Mockito.reset(perms, realms)
+    Mockito.reset(perms, acls, realms)
     realms.caller(any[AccessToken]) shouldReturn Task.pure(Caller.anonymous)
   }
 
@@ -76,7 +78,7 @@ class PermissionsRoutesSpec
     jsonContentOf("/permissions/missing-rev.json")
 
   "A PermissionsRoute" should {
-    val routes = Routes.wrap(new PermissionsRoutes(perms, realms).routes)
+    val routes = Routes.wrap(new PermissionsRoutes(perms, acls, realms).routes)
     "return the default minimum permissions" in {
       perms.fetch(any[Caller]) shouldReturn Task.pure(resource(0L, config.iam.permissions.minimum))
       Get("/permissions") ~> routes ~> check {

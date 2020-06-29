@@ -5,14 +5,13 @@ import akka.serialization.Serialization
 import akka.testkit._
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.config.{KgConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.ProjectEventStream
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import io.circe.Json
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -36,10 +35,10 @@ class ViewCacheSpec
 
   private def genJson: Json = Json.obj("key" -> Json.fromString(genString()))
 
-  implicit private val appConfig: KgConfig = Settings(system).appConfig
-
-  val ref1 = ProjectRef(genUUID)
-  val ref2 = ProjectRef(genUUID)
+  implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
+  implicit private val keyValueStoreCfg         = appConfig.kg.keyValueStore.keyValueStoreConfig
+  val ref1                                      = ProjectRef(genUUID)
+  val ref2                                      = ProjectRef(genUUID)
 
   val esView        = ElasticSearchView(Json.obj(), Filter(), false, true, ref1, genIri, genUUID, 1L, false)
   val aggRefsView   = AggregateElasticSearchView(

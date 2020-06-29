@@ -8,13 +8,13 @@
   ],
   "identities": [
     {
-      "@id": "http://localhost:8080/v1/realms/ldap2/groups/bbp-ou-neuroinformatics",
+      "@id": "http://127.0.0.1:8080/v1/realms/ldap2/groups/bbp-ou-neuroinformatics",
       "@type": "Group",
       "realm": "ldap2",
       "group": "bbp-ou-neuroinformatics"
     },
     {
-      "@id": "http://localhost:8080/v1/realms/ldap/users/dmontero",
+      "@id": "http://127.0.0.1:8080/v1/realms/ldap/users/dmontero",
       "@type": "User",
       "realm": "ldap",
       "subject": "dmontero"

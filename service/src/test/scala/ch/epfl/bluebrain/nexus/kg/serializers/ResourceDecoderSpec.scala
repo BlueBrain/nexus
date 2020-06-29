@@ -4,7 +4,7 @@ import java.time.Instant
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
+import ch.epfl.bluebrain.nexus.iam.types.Identity.User
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef

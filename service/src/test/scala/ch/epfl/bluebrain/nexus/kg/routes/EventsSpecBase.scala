@@ -8,9 +8,9 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
-import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.User
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.Event._
 import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference.S3StorageReference
@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import org.mockito.IdiomaticMockito
@@ -52,8 +53,10 @@ class EventsSpecBase
 
   val instant = Instant.EPOCH
   val subject = User("uuid", "myrealm")
-  val acls    = AccessControlLists(
-    Path./ -> ResourceAccessControlList(
+  val read    = Permission.unsafe("events/read")
+
+  val acls   = AccessControlLists(
+    Path./ -> ResourceF[AccessControlList](
       base + UUID.randomUUID().toString,
       2L,
       Set(base + "AccessControlList"),
@@ -61,10 +64,10 @@ class EventsSpecBase
       subject,
       instant,
       subject,
-      AccessControlList(subject -> Set(Permission.unsafe("resources/read"), Permission.unsafe("events/read")))
+      AccessControlList(subject -> Set(Permission.unsafe("resources/read"), read))
     )
   )
-  val caller  = Caller(subject, Set(subject))
+  val caller = Caller(subject, Set(subject))
 
   val projectUuid = UUID.fromString("7f8039a0-3141-11e9-b210-d663bd873d93")
   val orgUuid     = UUID.fromString("17a62c6a-4dc4-4eaa-b418-42d0634695a1")
@@ -72,7 +75,8 @@ class EventsSpecBase
   val schemaRef   = Latest(base + "schema")
   val types       = Set(base + "type")
 
-  implicit val appConfig = Settings(system).appConfig
+  implicit val appConfig  = Settings(system).serviceConfig
+  implicit val storageCfg = appConfig.kg.storage
 
   implicit val project = Project(
     base + "org" + "project",

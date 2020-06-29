@@ -9,15 +9,15 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache}
+import ch.epfl.bluebrain.nexus.kg.async.anyProject
+import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
@@ -29,6 +29,8 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalactic.Equality
@@ -59,7 +61,8 @@ class ResolversSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -68,9 +71,16 @@ class ResolversSpec
   implicit private val repo            = Repo[IO].ioValue
   implicit private val projectCache    = mock[ProjectCache[IO]]
   implicit private val resolverCache   = mock[ResolverCache[IO]]
-  implicit private val aclsCache       = mock[AclsCache[IO]]
+  implicit private val acls            = mock[Acls[IO]]
   private val resolution               =
-    new ProjectResolution(repo, resolverCache, projectCache, StaticResolution[IO](iriResolution), aclsCache)
+    new ProjectResolution(
+      repo,
+      resolverCache,
+      projectCache,
+      StaticResolution[IO](iriResolution),
+      acls,
+      Caller.anonymous
+    )
   implicit private val materializer    = new Materializer[IO](resolution, projectCache)
   private val resolvers: Resolvers[IO] = Resolvers[IO]
 
@@ -90,23 +100,25 @@ class ResolversSpec
   projectCache.getLabel(project1.ref) shouldReturn IO.pure(Some(label1))
   projectCache.getLabel(project2.ref) shouldReturn IO.pure(Some(label2))
 
-  aclsCache.list shouldReturn IO(AccessControlLists(/ -> resourceAcls(AccessControlList(user -> Set(read)))))
+  acls.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn
+    IO(AccessControlLists(/ -> resourceAcls(AccessControlList(user -> Set(read)))))
 
   before {
     Mockito.reset(resolverCache)
   }
 
   trait Base {
-    implicit lazy val caller =
+    implicit lazy val caller       =
       Caller(Anonymous, Set(Anonymous, Group("bbp-ou-neuroinformatics", "ldap2"), User("dmontero", "ldap")))
-    val projectRef           = ProjectRef(genUUID)
-    val base                 = Iri.absolute(s"http://example.com/base/").rightValue
-    val id                   = Iri.absolute(s"http://example.com/$genUUID").rightValue
-    val resId                = Id(projectRef, id)
-    val voc                  = Iri.absolute(s"http://example.com/voc/").rightValue
+    implicit lazy val sub: Subject = caller.subject
+    val projectRef                 = ProjectRef(genUUID)
+    val base                       = Iri.absolute(s"http://example.com/base/").rightValue
+    val id                         = Iri.absolute(s"http://example.com/$genUUID").rightValue
+    val resId                      = Id(projectRef, id)
+    val voc                        = Iri.absolute(s"http://example.com/voc/").rightValue
     // format: off
     implicit val project = Project(resId.value, "proj", "org", None, base, voc, Map.empty, projectRef.id, genUUID, 1L, deprecated = false, Instant.EPOCH, caller.subject.id, Instant.EPOCH, caller.subject.id)
-    val crossResolver = CrossProjectResolver(Set(nxv.Schema), List(project1.ref, project2.ref), identities, projectRef, url"http://example.com/id", 1L, false, 20)
+    val crossResolver = CrossProjectResolver(Set(nxv.Schema.value), List(project1.ref, project2.ref), identities, projectRef, url"http://example.com/id", 1L, false, 20)
     // format: on
     resolverCache.get(projectRef) shouldReturn IO(List(InProjectResolver.default(projectRef), crossResolver))
 
@@ -121,11 +133,11 @@ class ResolversSpec
             quote("{uuid1}")    -> project1.uuid.toString,
             quote("{uuid2}")    -> project2.uuid.toString,
             quote("{priority}") -> priority.toString,
-            quote("{base}")     -> "http://localhost:8080"
+            quote("{base}")     -> "http://127.0.0.1:8080"
           )
         )
       )
-    val types                              = Set[AbsoluteIri](nxv.Resolver, nxv.CrossProject)
+    val types                              = Set(nxv.Resolver.value, nxv.CrossProject.value)
 
     def resourceV(json: Json, rev: Long = 1L): ResourceV = {
       val graph = (json deepMerge Json.obj("@id" -> Json.fromString(id.asString)))
@@ -164,11 +176,10 @@ class ResolversSpec
 
       "create a InProject resolver" in new Base {
         resolverCache.put(InProjectResolver(project.ref, id, 1L, false, 10)) shouldReturn IO.pure(())
-        val json   = updateId(jsonContentOf("/resolve/in-project.json"))
-        val result = resolvers.create(json).value.accepted
-        val expected = {
-          ResourceF.simpleF(resId, json, schema = resolverRef, types = Set[AbsoluteIri](nxv.Resolver, nxv.InProject))
-        }
+        val json     = updateId(jsonContentOf("/resolve/in-project.json"))
+        val result   = resolvers.create(json).value.accepted
+        val expected =
+          ResourceF.simpleF(resId, json, schema = resolverRef, types = Set(nxv.Resolver.value, nxv.InProject.value))
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
@@ -300,7 +311,7 @@ class ResolversSpec
         resolverCache.put(crossResolver.copy(id = resId.value, priority = 50)) shouldReturn IO.pure(())
         resolvers.create(resId, resolver).value.accepted shouldBe a[Resource]
         val json       = Json.obj("key" -> Json.fromString("value")) deepMerge defaultCtx
-        repo.create(Id(project1.ref, resourceId), orgRef, shaclRef, Set(nxv.Schema), json).value.accepted
+        repo.create(Id(project1.ref, resourceId), orgRef, shaclRef, Set(nxv.Schema.value), json).value.accepted
         val resource   = repo.get(Id(project1.ref, resourceId), None).value.some
         val graph      = Graph(
           resourceId,

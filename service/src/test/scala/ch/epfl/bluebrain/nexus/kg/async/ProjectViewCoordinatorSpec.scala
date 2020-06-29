@@ -10,14 +10,14 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types._
 import ch.epfl.bluebrain.nexus.commons.cache.OnKeyValueStoreChange
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.{onViewChange, ViewCoordinator}
 import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.{CompositeViewStatistics, ViewStatistics}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProjectEventStream, ProjectEventStream}
@@ -28,6 +28,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{CompositeViewOffset, OrganizationRef}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{OffsetProgress, OffsetsProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionProgress, Projections, StreamSupervisor}
 import com.typesafe.scalalogging.Logger
@@ -57,10 +58,13 @@ class ProjectViewCoordinatorSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(15.second, 150.milliseconds)
 
-  implicit private val appConfig    = Settings(system).appConfig
-  implicit private val log: Logger  = Logger[this.type]
-  implicit private val projectCache = ProjectCache[Task]
-  private val viewCache             = ViewCache[Task]
+  private val acls: Acls[Task] = mock[Acls[Task]]
+
+  implicit private val appConfig        = Settings(system).serviceConfig
+  implicit private val keyValueStoreCfg = appConfig.kg.keyValueStore.keyValueStoreConfig
+  implicit private val log: Logger      = Logger[this.type]
+  implicit private val projectCache     = ProjectCache[Task]
+  private val viewCache                 = ViewCache[Task]
 
   "A ProjectViewCoordinator" should {
     val creator = genIri
@@ -93,7 +97,6 @@ class ProjectViewCoordinatorSpec
     val coordinator3Updated  = mock[StreamSupervisor[Task, ProjectionProgress]]
     val coordinator4         = mock[StreamSupervisor[Task, ProjectionProgress]]
     implicit val projections = mock[Projections[Task, String]]
-    implicit val aclsCache   = mock[AclsCache[Task]]
     val offset1              = OffsetProgress(Sequence(1L), 2L, 3L, 4L)
     val offset2              = OffsetProgress(Sequence(2L), 3L, 4L, 5L)
     val offset3              = OffsetProgress(Sequence(3L), 4L, 5L, 6L)
@@ -157,7 +160,7 @@ class ProjectViewCoordinatorSpec
         }
 
         override def onChange(ref: ProjectRef): OnKeyValueStoreChange[AbsoluteIri, View] =
-          onViewChange(ref, self)
+          onViewChange(acls, Caller.anonymous, ref, self)
 
       }
     )
@@ -172,6 +175,8 @@ class ProjectViewCoordinatorSpec
           mock[StorageCache[Task]],
           mock[ArchiveCache[Task]]
         ),
+        acls,
+        Caller.anonymous,
         coordinatorRef
       )
 
@@ -206,7 +211,7 @@ class ProjectViewCoordinatorSpec
       eventually(counterStart.get shouldEqual currentStart.get)
 
       currentStart.incrementAndGet()
-      aclsCache.list shouldReturn
+      acls.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn
         Task(AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> Set(read)))))
       viewCache.put(view4).runToFuture.futureValue
       eventually(counterStart.get shouldEqual currentStart.get)
