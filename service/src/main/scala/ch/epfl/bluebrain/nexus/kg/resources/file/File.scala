@@ -8,15 +8,15 @@ import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.Uri.Path.{Empty, Segment, SingleSlash}
 import akka.http.scaladsl.model.{ContentType, Uri}
-import ch.epfl.bluebrain.nexus.iam.client.types.Permission
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{InvalidJsonLD, InvalidResourceFormat}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Rejection, ResId}
 import ch.epfl.bluebrain.nexus.rdf.{Cursor, DecodingError, GraphDecoder, NonEmptyString}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.Json
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
 
@@ -65,7 +65,7 @@ object File {
         c            = graph.cursor
         filename    <- c.down(nxv.filename).as[Option[NonEmptyString]].map(_.map(_.asString)).onError(id.ref, nxv.filename.prefix)
         mediaType   <- c.down(nxv.mediaType).as[Option[ContentType]].onError(id.ref, nxv.mediaType.prefix)
-        path        <- c.down(nxv.path).as[Path].onError(id.ref, nxv.path.prefix)
+        path        <- c.down(nxv.path).as[Path].onError(id.ref, "path")
       } yield LinkDescription(path, filename, mediaType)
       // format: on
     }
@@ -149,7 +149,7 @@ object File {
         _         <- cursor.expectType(nxv.UpdateFileAttributes.value).onError(resId.ref, "@type")
         mediaType <- cursor.down(nxv.mediaType).as[ContentType].onError(resId.ref, "mediaType")
         bytes     <- cursor.down(nxv.bytes).as[Long].onError(resId.ref, nxv.bytes.prefix)
-        location  <- cursor.down(nxv.location).as[Uri].onError(resId.ref, nxv.location.prefix)
+        location  <- cursor.down(nxv.location).as[Uri].onError(resId.ref, "location")
         digestC    = cursor.down(nxv.digest)
         algorithm <- decodeAlgorithm(digestC).onError(resId.ref, "algorithm")
         value     <- digestC.down(nxv.value).as[NonEmptyString].map(_.asString).onError(resId.ref, "value")

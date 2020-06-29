@@ -15,34 +15,36 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.commons.search.Sort.OrderType._
-import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination, SearchAfterPagination, Sort, SortList}
+import ch.epfl.bluebrain.nexus.commons.search._
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.errorCtxUri
-import ch.epfl.bluebrain.nexus.kg.config.{Schemas, Settings}
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
-import ch.epfl.bluebrain.nexus.kg.routes.{OutputFormat, SearchParams}
+import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes.{exceptionHandler, rejectionHandler}
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
-import ch.epfl.bluebrain.nexus.kg.routes.Routes.{exceptionHandler, rejectionHandler}
+import ch.epfl.bluebrain.nexus.kg.routes.{OutputFormat, SearchParams}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
-import org.mockito.{IdiomaticMockito, Mockito}
 import org.mockito.Mockito._
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
@@ -56,8 +58,7 @@ class QueryDirectivesSpec
     with BeforeAndAfter {
 
   implicit private val storageCache: StorageCache[Task] = mock[StorageCache[Task]]
-  private val appConfig                                 = Settings(system).appConfig
-
+  implicit private val appConfig: ServiceConfig         = Settings(system).serviceConfig
   before {
     Mockito.reset(storageCache)
   }
@@ -65,7 +66,7 @@ class QueryDirectivesSpec
   "A query directive" when {
 
     implicit val config        = PaginationConfig(10, 50, 10000)
-    implicit val storageConfig = appConfig.storage.copy(
+    implicit val storageConfig = appConfig.kg.storage.copy(
       disk = DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", read, write, false, 1024L),
       remoteDisk = RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
       amazon = S3StorageConfig("MD5", read, write, true, 1024L),

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.kg.indexing
 
 import cats.Functor
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import io.circe.{Encoder, Json}
 import io.circe.syntax._
@@ -29,8 +28,8 @@ object IdentifiedProgress {
   implicit def encoderProgressIdentifiedValue[A: Encoder]: Encoder[IdentifiedProgress[A]] =
     Encoder.instance {
       case IdentifiedProgress(sourceId, projectionId, value) =>
-        optionalIdJson(nxv.sourceId.prefix, sourceId) deepMerge optionalIdJson(
-          nxv.projectionId.prefix,
+        optionalIdJson("sourceId", sourceId) deepMerge optionalIdJson(
+          "projectionId",
           projectionId
         ) deepMerge value.asJson
     }

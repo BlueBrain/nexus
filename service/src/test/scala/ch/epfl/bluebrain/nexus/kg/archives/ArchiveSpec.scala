@@ -8,13 +8,11 @@ import cats.effect.IO
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness}
 import ch.epfl.bluebrain.nexus.commons.test.io.IOEitherValues
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource}
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{InvalidResourceFormat, ProjectRefNotFound}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.Id
@@ -22,6 +20,8 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectLabel
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import org.mockito.{IdiomaticMockito, Mockito}
@@ -44,10 +44,14 @@ class ArchiveSpec
     with BeforeAndAfter {
 
   implicit private val cache            = mock[ProjectCache[IO]]
-  private val appConfig                 = Settings(system).appConfig
-  implicit private val config           = appConfig.archives.copy(cacheInvalidateAfter = 1.second, maxResources = 3)
+  private val appConfig                 = Settings(system).serviceConfig
+  implicit private val config           =
+    appConfig.copy(kg =
+      appConfig.kg.copy(archives = appConfig.kg.archives.copy(cacheInvalidateAfter = 1.second, maxResources = 3))
+    )
   implicit private val clock            = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
   implicit private val subject: Subject = Anonymous
+  implicit private val archivesCfg      = config.kg.archives
 
   private def addField[A: Encoder](tuple: (String, Option[A])): Json =
     tuple match {
@@ -80,7 +84,15 @@ class ArchiveSpec
         path: Option[String] = None,
         project: Option[String] = None
     ): Json =
-      jsonFromInitial(Json.obj("@type" -> nxv.Resource.asString.asJson), id, rev, tag, originalSource, path, project)
+      jsonFromInitial(
+        Json.obj("@type" -> nxv.Resource.value.asString.asJson),
+        id,
+        rev,
+        tag,
+        originalSource,
+        path,
+        project
+      )
 
     def jsonFile(
         id: Option[AbsoluteIri] = None,
@@ -89,7 +101,7 @@ class ArchiveSpec
         path: Option[String] = None,
         project: Option[String] = None
     ): Json =
-      jsonFromInitial(Json.obj("@type" -> nxv.File.asString.asJson), id, rev, tag, None, path, project)
+      jsonFromInitial(Json.obj("@type" -> nxv.File.value.asString.asJson), id, rev, tag, None, path, project)
 
     private def jsonFromInitial(
         json: Json,
@@ -111,7 +123,7 @@ class ArchiveSpec
           .obj(
             "@id"       -> id.value.toString().asJson,
             "resources" -> Json.arr(jsons: _*),
-            "@type"     -> nxv.Archive.prefix.asJson
+            "@type"     -> "Archive".asJson
           )
           .appendContextOf(archiveCtx)
       json.toGraph(id.value).rightValue
@@ -203,7 +215,7 @@ class ArchiveSpec
       Archive[IO](id.value, graph(resources: _*)).value.rejected[InvalidResourceFormat] shouldEqual
         InvalidResourceFormat(
           id.ref,
-          s"Too many resources. Maximum resources allowed: '${config.maxResources}'. Found: '4'"
+          s"Too many resources. Maximum resources allowed: '${config.kg.archives.maxResources}'. Found: '4'"
         )
     }
 

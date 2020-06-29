@@ -3,12 +3,9 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import java.time.{Clock, Instant}
 
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
+import ch.epfl.bluebrain.nexus.iam.types.Identity
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.{nxv, PrefixMapping}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference._
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileAttributes
@@ -20,6 +17,8 @@ import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri, Node}
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.{nxv, Metadata}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import io.circe.{Decoder, DecodingFailure, Json}
 
 /**
@@ -74,13 +73,13 @@ final case class ResourceF[A](
     */
   def metadata(
       options: MetadataOptions = MetadataOptions()
-  )(implicit config: AppConfig, project: Project): Set[Triple] = {
+  )(implicit config: ServiceConfig, project: Project): Set[Triple] = {
 
     def showLocation(storageRef: StorageReference): Boolean =
       storageRef match {
-        case _: DiskStorageReference       => config.storage.disk.showLocation
-        case _: RemoteDiskStorageReference => config.storage.remoteDisk.showLocation
-        case _: S3StorageReference         => config.storage.amazon.showLocation
+        case _: DiskStorageReference       => config.kg.storage.disk.showLocation
+        case _: RemoteDiskStorageReference => config.kg.storage.remoteDisk.showLocation
+        case _: S3StorageReference         => config.kg.storage.amazon.showLocation
       }
 
     def outAndInWhenNeeded(self: AbsoluteIri): Set[Triple] = {
@@ -115,7 +114,7 @@ final case class ResourceF[A](
 
     val fileTriples = file.map(triplesFor).getOrElse(Set.empty)
     val projectUri  =
-      config.admin.publicIri + config.admin.prefix / "projects" / project.organizationLabel / project.label
+      config.http.prefixIri + "projects" / project.organizationLabel / project.label
     val self        = AccessId(id.value, schema.iri, expanded = options.expandedLinks)
     fileTriples ++ Set[Triple](
       (node, nxv.rev, rev),
@@ -170,7 +169,7 @@ object ResourceF {
     }
   // format: on
 
-  val metaPredicates: Set[PrefixMapping] = Set[PrefixMapping](
+  val metaPredicates: Set[Metadata] = Set[Metadata](
     nxv.rev,
     nxv.deprecated,
     nxv.createdAt,

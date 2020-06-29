@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.admin.directives
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.Unmarshaller
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PaginationConfig
 
 /**
   * Collection of query specific directives.
@@ -21,8 +21,8 @@ trait QueryDirectives {
     * @param qs the preconfigured query settings
     */
   def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
-    (parameter("from".as[Int] ? qs.default.from) & parameter("size".as[Int] ? qs.default.size)).tmap {
-      case (from, size) => FromPagination(from.max(0), size.max(0).min(qs.maxSize))
+    (parameter("from".as[Int] ? 0) & parameter("size".as[Int] ? qs.defaultSize)).tmap {
+      case (from, size) => FromPagination(from.max(0).min(qs.fromLimit), size.max(1).min(qs.sizeLimit))
     }
 
   /**

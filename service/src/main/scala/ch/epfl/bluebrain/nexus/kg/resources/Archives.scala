@@ -6,15 +6,15 @@ import akka.actor.ActorSystem
 import cats.data.EitherT
 import cats.effect.Effect
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Caller}
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveEncoder._
 import ch.epfl.bluebrain.nexus.kg.archives.{Archive, ArchiveCache}
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
@@ -25,6 +25,8 @@ import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
 class Archives[F[_]](implicit
@@ -33,7 +35,7 @@ class Archives[F[_]](implicit
     files: Files[F],
     system: ActorSystem,
     materializer: Materializer[F],
-    config: AppConfig,
+    config: ServiceConfig,
     projectCache: ProjectCache[F],
     clock: Clock,
     F: Effect[F]
@@ -66,8 +68,9 @@ class Archives[F[_]](implicit
       project: Project,
       subject: Subject
   ): RejOrResource[F] = {
-    val typedGraph = graph.append(rdf.tpe, nxv.Archive)
-    val types      = typedGraph.rootTypes
+    implicit val archivesCfg: KgConfig.ArchivesConfig = config.kg.archives
+    val typedGraph                                    = graph.append(rdf.tpe, nxv.Archive)
+    val types                                         = typedGraph.rootTypes
     for {
       _       <- validateShacl(typedGraph)
       archive <- Archive(id.value, typedGraph)
@@ -114,7 +117,7 @@ class Archives[F[_]](implicit
         val resource = ResourceF(
           resId,
           1L,
-          Set(nxv.Archive),
+          Set(nxv.Archive.value),
           false,
           Map.empty,
           None,
@@ -131,7 +134,7 @@ class Archives[F[_]](implicit
 
   private def expireMetadata(id: ResId, created: Instant): Triple = {
     val delta   = Duration.between(created, clock.instant())
-    val expires = Math.max(config.archives.cacheInvalidateAfter.toSeconds - delta.getSeconds, 0)
+    val expires = Math.max(config.kg.archives.cacheInvalidateAfter.toSeconds - delta.getSeconds, 0)
     (id.value, nxv.expiresInSeconds, expires): Triple
   }
 }
@@ -140,7 +143,7 @@ object Archives {
   final def apply[F[_]: Effect: ArchiveCache: ProjectCache: Materializer](
       resources: Resources[F],
       files: Files[F]
-  )(implicit system: ActorSystem, config: AppConfig, clock: Clock): Archives[F] = {
+  )(implicit system: ActorSystem, config: ServiceConfig, clock: Clock): Archives[F] = {
     implicit val r = resources
     implicit val f = files
     new Archives

@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route}
 import cats.Functor
 import cats.data.{EitherT, OptionT}
 import cats.instances.future._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.{Ref, Rejection, ResourceV}

@@ -10,9 +10,8 @@ import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import cats.effect.Effect
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.iam.client.types.Permission
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.iam.types.Permission
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference._
@@ -24,14 +23,11 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage.{FetchFile, FetchFileAttribute
 import ch.epfl.bluebrain.nexus.rdf.GraphDecoder
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.storage.client.config.StorageClientConfig
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
-import software.amazon.awssdk.auth.credentials.{
-  AnonymousCredentialsProvider,
-  AwsBasicCredentials,
-  StaticCredentialsProvider
-}
+import software.amazon.awssdk.auth.credentials._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
@@ -184,7 +180,7 @@ object Storage {
     def default(ref: ProjectRef)(implicit config: StorageConfig): DiskStorage =
       DiskStorage(
         ref,
-        nxv.defaultStorage,
+        nxv.defaultStorage.value,
         1L,
         deprecated = false,
         default = true,

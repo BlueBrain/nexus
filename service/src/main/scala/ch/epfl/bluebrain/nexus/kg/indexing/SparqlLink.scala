@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.kg.indexing
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlResults.Binding
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.resources.Ref
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -119,7 +119,7 @@ object SparqlLink {
 
   implicit val linkEncoder: Encoder[SparqlLink] = Encoder.encodeJson.contramap {
     case SparqlExternalLink(id, paths, types)                                                  =>
-      Json.obj("@id" -> id.asString.asJson, "@type" -> types.asJson, nxv.paths.prefix -> paths.asJson)
+      Json.obj("@id" -> id.asString.asJson, "@type" -> types.asJson, "paths" -> paths.asJson)
     case SparqlResourceLink(id, project, self, rev, types, dep, c, u, cBy, uBy, schema, paths) =>
       Json.obj(
         "@id"                    -> id.asString.asJson,
@@ -133,7 +133,7 @@ object SparqlLink {
         nxv.createdBy.prefix     -> cBy.asString.asJson,
         nxv.updatedBy.prefix     -> uBy.asString.asJson,
         nxv.constrainedBy.prefix -> schema.iri.asString.asJson,
-        nxv.paths.prefix         -> paths.asJson
+        "paths"                  -> paths.asJson
       )
   }
 

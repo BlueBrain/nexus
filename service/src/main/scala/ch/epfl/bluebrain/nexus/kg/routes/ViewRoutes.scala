@@ -14,16 +14,16 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlResults
 import ch.epfl.bluebrain.nexus.commons.test.Resources.jsonContentOf
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.{IdOffset, IdStats}
 import ch.epfl.bluebrain.nexus.kg.KgError.InvalidOutputFormat
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinator
 import ch.epfl.bluebrain.nexus.kg.cache._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
@@ -40,7 +40,11 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.routes.ViewRoutes._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -52,20 +56,22 @@ import monix.execution.Scheduler.Implicits.global
 class ViewRoutes private[routes] (
     views: Views[Task],
     tags: Tags[Task],
+    aclsApi: Acls[Task],
+    realms: Realms[Task],
     coordinator: ProjectViewCoordinator[Task]
 )(implicit
-    acls: AccessControlLists,
     caller: Caller,
     project: Project,
     projectCache: ProjectCache[Task],
     viewCache: ViewCache[Task],
     clients: Clients[Task],
-    config: AppConfig,
+    config: ServiceConfig,
     um: FromEntityUnmarshaller[String]
-) {
+) extends AuthDirectives(aclsApi, realms) {
 
-  private val emptyEsList: Json = jsonContentOf("/elasticsearch/empty-list.json")
-
+  private val emptyEsList: Json         = jsonContentOf("/elasticsearch/empty-list.json")
+  private val projectPath               = project.organizationLabel / project.label
+  implicit private val subject: Subject = caller.subject
   import clients._
 
   /**
@@ -81,7 +87,7 @@ class ViewRoutes private[routes] (
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated & extractCallerAcls(anyProject)) { implicit acls =>
             entity(as[Json]) { source =>
               complete(views.create(source).value.runWithStatus(Created))
             }
@@ -92,7 +98,7 @@ class ViewRoutes private[routes] (
       (get & paginated & searchParams(fixedSchema = viewSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         operationName(s"/${config.http.prefix}/views/{org}/{project}") {
           extractUri { implicit uri =>
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(views.list(_, params, page))
               complete(listed.runWithStatus(OK))
             }
@@ -118,7 +124,7 @@ class ViewRoutes private[routes] (
       // Retrieves view statistics
       (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/statistics") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = OptionT(coordinator.statistics(id)).toRight(notFound(id.ref))
             complete(result.value.runWithStatus(StatusCodes.OK))
           }
@@ -127,7 +133,7 @@ class ViewRoutes private[routes] (
       // Retrieves view offset
       (get & pathPrefix("offset") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/offset") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = OptionT(coordinator.offset(id)).toRight(notFound(id.ref))
             complete(result.value.runWithStatus(StatusCodes.OK))
           }
@@ -136,7 +142,7 @@ class ViewRoutes private[routes] (
       // Delete offset from a view. This triggers view restart with initial progress
       (delete & pathPrefix("offset") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/offset") {
-          hasPermission(write).apply {
+          authorizeFor(projectPath, write)(caller) {
             val result: OptionT[Task, Offset] = for {
               offset <- OptionT(coordinator.offset(id))
               _      <- OptionT(coordinator.restart(id))
@@ -151,10 +157,12 @@ class ViewRoutes private[routes] (
       // Queries a view on the ElasticSearch endpoint
       (post & pathPrefix("_search") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/_search") {
-          (hasPermission(query) & extract(_.request.uri.query())) { params =>
-            entity(as[Json]) { query =>
-              val result = viewCache.getBy[View](project.ref, id).flatMap(runSearch(params, id, query))
-              complete(result.runWithStatus(StatusCodes.OK))
+          (authorizeFor(projectPath, query) & extract(_.request.uri.query())) { params =>
+            extractCallerAcls(anyProject)(caller) { implicit acls =>
+              entity(as[Json]) { query =>
+                val result = viewCache.getBy[View](project.ref, id).flatMap(runSearch(params, id, query))
+                complete(result.runWithStatus(StatusCodes.OK))
+              }
             }
           }
         }
@@ -173,7 +181,7 @@ class ViewRoutes private[routes] (
       // Create or update a view (depending on rev query parameter)
       (put & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated & extractCallerAcls(anyProject)) { implicit acls =>
             entity(as[Json]) { source =>
               parameter("rev".as[Long].?) {
                 case None      =>
@@ -190,7 +198,7 @@ class ViewRoutes private[routes] (
       // Deprecate view
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}") {
-          (hasPermission(write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, write) & projectNotDeprecated) {
             complete(views.deprecate(Id(project.ref, id), rev).value.runWithStatus(OK))
           }
         }
@@ -200,12 +208,12 @@ class ViewRoutes private[routes] (
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(views.fetch(Id(project.ref, id), rev).value.runWithStatus(OK))(format)
                   },
-                  (parameter("tag") & noParameter("rev")) { tag =>
+                  (parameter("tag".as[String]) & noParameter("rev")) { tag =>
                     completeWithFormat(views.fetch(Id(project.ref, id), tag).value.runWithStatus(OK))(format)
                   },
                   (noParameter("tag") & noParameter("rev")) {
@@ -220,7 +228,7 @@ class ViewRoutes private[routes] (
       // Fetch view source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/source") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(views.fetchSource(Id(project.ref, id), rev).value.runWithStatus(OK))
@@ -240,9 +248,9 @@ class ViewRoutes private[routes] (
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/incoming") {
           fromPaginated.apply { implicit page =>
             extractUri { implicit uri =>
-              hasPermission(read).apply {
+              authorizeFor(projectPath, read)(caller) {
                 val listed = for {
-                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                  view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                   _        <- views.fetchSource(Id(project.ref, id))
                   incoming <- EitherT.right[Rejection](views.listIncoming(id, view, page))
                 } yield incoming
@@ -258,9 +266,9 @@ class ViewRoutes private[routes] (
           operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/outgoing") {
             fromPaginated.apply { implicit page =>
               extractUri { implicit uri =>
-                hasPermission(read).apply {
+                authorizeFor(projectPath, read)(caller) {
                   val listed = for {
-                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex)
+                    view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
                     _        <- views.fetchSource(Id(project.ref, id))
                     outgoing <- EitherT.right[Rejection](views.listOutgoing(id, view, page, links))
                   } yield outgoing
@@ -270,7 +278,7 @@ class ViewRoutes private[routes] (
             }
           }
       },
-      new TagRoutes("views", tags, viewRef, write).routes(id),
+      new TagRoutes("views", tags, aclsApi, realms, viewRef, write).routes(id),
       pathPrefix("projections") {
         concat(
           // Consume the projection id segment as underscore if present
@@ -294,7 +302,7 @@ class ViewRoutes private[routes] (
       // Queries the ElasticSearch endpoint of every projection on an aggregated search
       (post & pathPrefix("_search") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/projections/_/_search") {
-          (hasPermission(query) & extract(_.request.uri.query())) { params =>
+          (authorizeFor(projectPath, query)(caller) & extract(_.request.uri.query())) { params =>
             entity(as[Json]) { query =>
               val result =
                 viewCache.getBy[CompositeView](project.ref, id).flatMap(runProjectionsSearch(params, id, query))
@@ -312,7 +320,7 @@ class ViewRoutes private[routes] (
       // Retrieves statistics from all projections
       (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/projections/_/statistics") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = coordinator.projectionStats(id).map(toEitherQueryResults(id))
             complete(result.runWithStatus(StatusCodes.OK))
           }
@@ -321,7 +329,7 @@ class ViewRoutes private[routes] (
       // Retrieves offset from all projections
       (get & pathPrefix("offset") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/projections/_/offset") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = coordinator.projectionOffsets(id).map(toEitherQueryResults(id))
             complete(result.runWithStatus(StatusCodes.OK))
           }
@@ -330,7 +338,7 @@ class ViewRoutes private[routes] (
       // Delete offset from all projections. This triggers view restart with initial progress all projections
       (delete & pathPrefix("offset") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/projections/_/offset") {
-          hasPermission(write).apply {
+          authorizeFor(projectPath, write)(caller) {
             val result       = for {
               set <- OptionT(coordinator.projectionOffsets(id))
               _   <- OptionT(coordinator.restartProjections(id))
@@ -347,11 +355,13 @@ class ViewRoutes private[routes] (
       // Queries a projection view on the ElasticSearch endpoint
       (post & pathPrefix("_search") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/projections/{projectionId}/_search") {
-          (hasPermission(query) & extract(_.request.uri.query())) { params =>
-            entity(as[Json]) { query =>
-              val result =
-                viewCache.getProjectionBy[View](project.ref, id, projectionId).flatMap(runSearch(params, id, query))
-              complete(result.runWithStatus(StatusCodes.OK))
+          (authorizeFor(projectPath, query) & extract(_.request.uri.query())) { params =>
+            extractCallerAcls(anyProject)(caller) { implicit acls =>
+              entity(as[Json]) { query =>
+                val result =
+                  viewCache.getProjectionBy[View](project.ref, id, projectionId).flatMap(runSearch(params, id, query))
+                complete(result.runWithStatus(StatusCodes.OK))
+              }
             }
           }
         }
@@ -365,7 +375,7 @@ class ViewRoutes private[routes] (
       // Retrieves statistics for a projection
       (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/projections/{projectionId}/statistics") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = OptionT(coordinator.projectionStats(id, projectionId)).toRight(notFound(id.ref))
             complete(result.value.runWithStatus(StatusCodes.OK))
           }
@@ -374,7 +384,7 @@ class ViewRoutes private[routes] (
       // Retrieves offset for a projection
       (get & pathPrefix("offset") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/projections/{projectionId}/offset") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = OptionT(coordinator.projectionOffset(id, projectionId)).toRight(notFound(id.ref))
             complete(result.value.runWithStatus(StatusCodes.OK))
           }
@@ -401,7 +411,7 @@ class ViewRoutes private[routes] (
       // Retrieves statistics from all sources
       (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/sources/_/statistics") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = coordinator.sourceStats(id).map(toEitherQueryResults(id))
             complete(result.runWithStatus(StatusCodes.OK))
           }
@@ -410,7 +420,7 @@ class ViewRoutes private[routes] (
       // Retrieves offset from all sources
       (get & pathPrefix("offset") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/sources/_/offset") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = coordinator.sourceOffsets(id).map(toEitherQueryResults(id))
             complete(result.runWithStatus(StatusCodes.OK))
           }
@@ -423,7 +433,7 @@ class ViewRoutes private[routes] (
       // Retrieves statistics for a source
       (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/sources/{sourceId}/statistics") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = OptionT(coordinator.sourceStat(id, sourceId)).toRight(notFound(id.ref))
             complete(result.value.runWithStatus(StatusCodes.OK))
           }
@@ -432,7 +442,7 @@ class ViewRoutes private[routes] (
       // Retrieves offset for a source
       (get & pathPrefix("offset") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/views/{org}/{project}/{id}/sources/{sourceId}/offset") {
-          hasPermission(read).apply {
+          authorizeFor(projectPath, read)(caller) {
             val result = OptionT(coordinator.sourceOffset(id, sourceId)).toRight(notFound(id.ref))
             complete(result.value.runWithStatus(StatusCodes.OK))
           }
@@ -442,18 +452,22 @@ class ViewRoutes private[routes] (
 
   private def sparqlRoutes(operation: String, id: AbsoluteIri, view: => Task[Option[View]]): Route =
     (pathPrefix("sparql") & pathEndOrSingleSlash) {
-      hasPermission(query).apply {
+      authorizeFor(projectPath, query)(caller) {
         concat(
           post {
             operationName(s"$operation/post") {
-              entity(as[String]) { query =>
-                complete(view.flatMap(runSearch(id, query)).runWithStatus(StatusCodes.OK))
+              extractCallerAcls(anyProject)(caller) { implicit acls =>
+                entity(as[String]) { query =>
+                  complete(view.flatMap(runSearch(id, query)).runWithStatus(StatusCodes.OK))
+                }
               }
             }
           },
           (get & parameter("query")) { q =>
-            operationName(s"$operation/get") {
-              complete(view.flatMap(runSearch(id, q)).runWithStatus(StatusCodes.OK))
+            extractCallerAcls(anyProject)(caller) { implicit acls =>
+              operationName(s"$operation/get") {
+                complete(view.flatMap(runSearch(id, q)).runWithStatus(StatusCodes.OK))
+              }
             }
           }
         )
@@ -463,7 +477,9 @@ class ViewRoutes private[routes] (
   private def sparqlQuery(view: SparqlView, query: String): Task[SparqlResults] =
     clients.sparql.copy(namespace = view.index).queryRaw(query)
 
-  private def runSearch(id: AbsoluteIri, query: String): Option[View] => Task[Either[Rejection, SparqlResults]] = {
+  private def runSearch(id: AbsoluteIri, query: String)(implicit
+      acls: AccessControlLists
+  ): Option[View] => Task[Either[Rejection, SparqlResults]] = {
     case Some(v: SparqlView)            => sparqlQuery(v, query).map(Right.apply)
     case Some(agg: AggregateSparqlView) =>
       val resultListF = agg.queryableViews[Task, SparqlView].flatMap { views =>
@@ -490,7 +506,7 @@ class ViewRoutes private[routes] (
       params: Uri.Query,
       id: AbsoluteIri,
       query: Json
-  ): Option[View] => Task[Either[Rejection, Json]] = {
+  )(implicit acls: AccessControlLists): Option[View] => Task[Either[Rejection, Json]] = {
     case Some(v: ElasticSearchView)            =>
       clients.elasticSearch.searchRaw(query, Set(v.index), params).map(Right.apply)
     case Some(agg: AggregateElasticSearchView) =>
@@ -523,22 +539,22 @@ object ViewRoutes {
       .instance[Offset] {
         case Sequence(value)            =>
           Json.obj(
-            "@type" -> nxv.SequenceBasedOffset.prefix.asJson,
+            "@type" -> "SequenceBasedOffset".asJson,
             "value" -> value.asJson
           )
         case t: TimeBasedUUID           =>
           Json.obj(
-            "@type"   -> nxv.TimeBasedOffset.prefix.asJson,
+            "@type"   -> "TimeBasedOffset".asJson,
             "value"   -> t.value.toString.asJson,
             "instant" -> t.asInstant.asJson
           )
         case CompositeViewOffset(value) =>
           Json.obj(
-            "@type"  -> nxv.CompositeViewOffset.prefix.asJson,
+            "@type"  -> "CompositeViewOffset".asJson,
             "values" -> value.asJson.removeNestedKeys("@context")
           )
         case NoOffset                   =>
-          Json.obj("@type" -> nxv.NoOffset.prefix.asJson)
+          Json.obj("@type" -> "NoOffset".asJson)
         case _                          =>
           Json.obj()
       }

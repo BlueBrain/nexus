@@ -15,14 +15,13 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChange._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
 import ch.epfl.bluebrain.nexus.commons.cache.OnKeyValueStoreChange
-import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlList
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, Acls}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.IdStats
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.Msg._
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor._
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ViewCache}
+import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ViewCache}
 import ch.epfl.bluebrain.nexus.kg.client.{KgClient, KgClientConfig}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.ViewStatistics
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProjectEventStream, RemoteProjectEventStream}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Source => CompositeSource}
@@ -33,6 +32,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, ProjectIdentifier, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{NoProgress, SingleProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -53,14 +53,14 @@ import scala.reflect.ClassTag
   */
 //noinspection ActorMutableStateInspection
 abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(implicit
-    val config: AppConfig,
+    val config: ServiceConfig,
     as: ActorSystem,
     projections: Projections[Task, String]
 ) extends Actor
     with Stash
     with ActorLogging {
 
-  implicit private val tm: Timeout = Timeout(config.defaultAskTimeout)
+  implicit private val tm: Timeout = Timeout(config.kg.defaultAskTimeout)
   private val children             = mutable.Map.empty[IndexedView, ViewCoordinator]
   protected val projectsStream     = mutable.Map.empty[ProjectIdentifier, ViewCoordinator]
 
@@ -181,7 +181,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
   }
 
   private def projectStreamFlow(initial: ProjectionProgress) = {
-    implicit val indexing: IndexingConfig = config.elasticSearch.indexing
+    implicit val indexing: IndexingConfig = config.kg.elasticSearch.indexing
     ProgressFlowElem[Task, Any]
       .collectCast[Event]
       .groupedWithin(indexing.batch, indexing.batchTimeout)
@@ -432,21 +432,23 @@ object ProjectViewCoordinatorActor {
     *
     * @param resources        the resources operations
     * @param viewCache        the view Cache
+    * @param acls        the acls surface API
     * @param shardingSettings the sharding settings
     * @param shards           the number of shards to use
     */
   final def start(
       resources: Resources[Task],
       viewCache: ViewCache[Task],
+      acls: Acls[Task],
+      saCaller: Caller,
       shardingSettings: Option[ClusterShardingSettings],
       shards: Int
   )(implicit
       clients: Clients[Task],
-      config: AppConfig,
+      config: ServiceConfig,
       as: ActorSystem,
       projections: Projections[Task, String],
-      projectCache: ProjectCache[Task],
-      aclsCache: AclsCache[Task]
+      projectCache: ProjectCache[Task]
   ): ActorRef = {
 
     val props = Props(
@@ -517,7 +519,8 @@ object ProjectViewCoordinatorActor {
           }
         }
 
-        override def onChange(ref: ProjectRef): OnKeyValueStoreChange[AbsoluteIri, View] = onViewChange(ref, self)
+        override def onChange(ref: ProjectRef): OnKeyValueStoreChange[AbsoluteIri, View] =
+          onViewChange(acls, saCaller, ref, self)
 
       }
     )
@@ -533,8 +536,7 @@ object ProjectViewCoordinatorActor {
     ClusterSharding(as).start("project-view-coordinator", props, settings, entityExtractor, shardExtractor(shards))
   }
 
-  private[async] def onViewChange(ref: ProjectRef, actorRef: ActorRef)(implicit
-      aclsCache: AclsCache[Task],
+  private[async] def onViewChange(acls: Acls[Task], saCaller: Caller, ref: ProjectRef, actorRef: ActorRef)(implicit
       projectCache: ProjectCache[Task]
   ): OnKeyValueStoreChange[AbsoluteIri, View] =
     new OnKeyValueStoreChange[AbsoluteIri, View] {
@@ -561,7 +563,7 @@ object ProjectViewCoordinatorActor {
         if (toWriteNow.nonEmpty) actorRef ! ViewsAddedOrModified(ref.id, restart = false, toWriteNow)
         if (toCheckAcls.nonEmpty) {
           val task = for {
-            acls         <- aclsCache.list
+            acls         <- acls.list(anyProject, ancestors = true, self = false)(saCaller)
             projectsAcls <- resolveProjects(acls)
           } yield actorRef ! AclChanges(ref.id, projectsAcls, toCheckAcls)
           task.runToFuture

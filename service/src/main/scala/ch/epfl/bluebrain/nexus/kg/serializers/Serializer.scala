@@ -5,9 +5,6 @@ import akka.http.scaladsl.model.Uri
 import akka.serialization.SerializerWithStringManifest
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.commons.serialization.AkkaCoproductSerializer
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.resources.Event.{Created, FileCreated}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef._
@@ -16,8 +13,11 @@ import ch.epfl.bluebrain.nexus.kg.resources.file.File._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
+
 import scala.annotation.nowarn
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
@@ -70,7 +70,7 @@ object Serializer {
       Id(projRef, id)
     }
 
-  implicit def eventEncoder(implicit iamClientConfig: IamClientConfig): Encoder[Event] = {
+  implicit def eventEncoder(implicit http: ServiceConfig.HttpConfig): Encoder[Event] = {
     val enc = deriveConfiguredEncoder[Event]
     Encoder.instance { ev =>
       val json = enc(ev).removeKeys("id") deepMerge ev.id.asJson
@@ -95,7 +95,7 @@ object Serializer {
 
   class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
-    implicit private val appConfig: AppConfig = Settings(system).appConfig
+    implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
 
     private val serializer = new AkkaCoproductSerializer[Event :+: CNil](1050)
 

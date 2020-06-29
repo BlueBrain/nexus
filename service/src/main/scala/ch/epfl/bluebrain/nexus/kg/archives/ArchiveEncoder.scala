@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.kg.archives
 
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.{nxv, _}
 import ch.epfl.bluebrain.nexus.rdf.Node._
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, GraphEncoder}
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.{nxv, nxva}
 
 /**
   * Encoders for [[Archive]]

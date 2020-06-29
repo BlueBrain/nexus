@@ -11,10 +11,9 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.serialization.{SerializationExtension, SerializerWithStringManifest}
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.Event._
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference.{RemoteDiskStorageReference, S3StorageReference}
 import ch.epfl.bluebrain.nexus.kg.resources.file.File._
@@ -24,6 +23,7 @@ import ch.epfl.bluebrain.nexus.kg.serializers.Serializer.EventSerializer
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageFileDigest}
@@ -46,12 +46,12 @@ class EventSerializerSpec
     with Resources
     with TestHelper {
 
-  private val appConfig = Settings(system).appConfig
+  implicit private val appConfig = Settings(system).serviceConfig
 
   final private val UTF8: Charset    = Charset.forName("UTF-8")
   final private val serialization    = SerializationExtension(system)
   implicit private val storageConfig =
-    appConfig.storage.copy(
+    appConfig.kg.storage.copy(
       DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", read, write, false, 1024L),
       RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
       S3StorageConfig("MD5", read, write, true, 1024L),

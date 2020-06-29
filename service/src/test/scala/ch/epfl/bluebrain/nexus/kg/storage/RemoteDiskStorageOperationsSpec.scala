@@ -5,7 +5,9 @@ import akka.http.scaladsl.model.Uri
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.commons.test.io.IOEitherValues
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.{Digest, FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.kg.resources.Id
@@ -31,10 +33,14 @@ class RemoteDiskStorageOperationsSpec
 
   private val endpoint = "http://nexus.example.com/v1"
 
+  // TODO: Remove when migrating ADMIN client
+  implicit private def oldTokenConversion(implicit token: Option[AccessToken]): Option[AuthToken] =
+    token.map(t => AuthToken(t.value))
+
   sealed trait Ctx {
-    val cred                              = genString()
-    implicit val token: Option[AuthToken] = Some(AuthToken(cred))
-    val path                              = Uri.Path(s"${genString()}/${genString()}")
+    val cred                                = genString()
+    implicit val token: Option[AccessToken] = Some(AccessToken(cred))
+    val path                                = Uri.Path(s"${genString()}/${genString()}")
     // format: off
     val storage = RemoteDiskStorage(ProjectRef(genUUID), genIri, 1L, false, false, "SHA-256", endpoint, Some(cred), genString(), Permission.unsafe(genString()), Permission.unsafe(genString()), 1024L)
     val attributes = FileAttributes(s"$endpoint/${storage.folder}/$path", path, s"${genString()}.json", `application/json`, 12L, Digest("SHA-256", genString()))

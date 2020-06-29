@@ -5,8 +5,9 @@ import java.time.Instant
 import cats.{Id => CId}
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, Group}
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, Caller, Identity, Permission}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}

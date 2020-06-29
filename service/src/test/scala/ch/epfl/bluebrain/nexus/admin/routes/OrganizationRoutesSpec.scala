@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error.classNameOf
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.Permissions
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs._
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
@@ -26,8 +25,9 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
@@ -67,7 +67,7 @@ class OrganizationRoutesSpec
     Routes.wrap(
       new OrganizationRoutes(organizations, organizationCache, aclsApi, realmsApi)(
         httpConfig,
-        PaginationConfig(50, 100),
+        PaginationConfig(50, 50, 100),
         global
       ).routes
     )
@@ -132,6 +132,9 @@ class OrganizationRoutesSpec
           )
         )
       )
+    aclsApi.hasPermission(/ + organization.label, create)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(/ + organization.label, write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(/ + organization.label, read)(caller) shouldReturn Task.pure(true)
   }
 
   "Organizations routes" should {
@@ -252,6 +255,7 @@ class OrganizationRoutesSpec
     }
 
     "reject unauthorized requests" in new Context {
+      aclsApi.hasPermission(/ + organization.label, read)(Caller.anonymous) shouldReturn Task.pure(false)
       aclsApi.list(Path("/org").rightValue, ancestors = true, self = true)(Caller.anonymous) shouldReturn
         Task.pure(AccessControlLists.empty)
       Get("/orgs/org") ~> routes ~> check {
@@ -276,9 +280,8 @@ class OrganizationRoutesSpec
         val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").rightValue
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
       }
-      organizations.list(SearchParams.empty, FromPagination(0, 50))(acls) shouldReturn Task(
-        UnscoredQueryResults(3, orgs)
-      )
+      organizations.list(SearchParams.empty, FromPagination(0, 50))(acls) shouldReturn
+        Task(UnscoredQueryResults(3, orgs))
 
       forAll(List("/orgs", "/orgs/")) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {

@@ -5,10 +5,8 @@ import java.time.{Clock, Instant, ZoneId}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources.{Id, ResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
@@ -16,6 +14,7 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.{Compacted, Expanded}
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
 import ch.epfl.bluebrain.nexus.rdf._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import io.circe.Json
 import io.circe.parser.parse
 import org.scalatest.matchers.should.Matchers
@@ -26,8 +25,7 @@ class ResourceEncoderSpec
     with AnyWordSpecLike
     with Matchers
     with TestHelper {
-  implicit private val appConfig: AppConfig = Settings(system).appConfig
-  implicit private val icc: IamClientConfig = appConfig.iam.iamClient
+  implicit private val appConfig = Settings(system).serviceConfig
 
   implicit private val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault)
 
@@ -69,15 +67,15 @@ class ResourceEncoderSpec
           |  "@id" : "http://example.com/foobar",
           |  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
           |  "_createdAt" : "1970-01-01T01:00:00Z",
-          |  "_createdBy" : "http://localhost:8080/v1/anonymous",
+          |  "_createdBy" : "http://127.0.0.1:8080/v1/anonymous",
           |  "_deprecated" : false,
-          |  "_project" : "http://localhost:8080/v1/projects/org/proj",
+          |  "_project" : "http://127.0.0.1:8080/v1/projects/org/proj",
           |  "_rev" : 1,
           |  "_self" : "http://127.0.0.1:8080/v1/resources/org/proj/_/foobar",
           |  "_incoming" : "http://127.0.0.1:8080/v1/resources/org/proj/_/foobar/incoming",
           |  "_outgoing" : "http://127.0.0.1:8080/v1/resources/org/proj/_/foobar/outgoing",
           |  "_updatedAt" : "1970-01-01T01:00:00Z",
-          |  "_updatedBy" : "http://localhost:8080/v1/anonymous",
+          |  "_updatedBy" : "http://127.0.0.1:8080/v1/anonymous",
           |  "@context" : "https://bluebrain.github.io/nexus/contexts/resource.json"
           |}
         """.stripMargin

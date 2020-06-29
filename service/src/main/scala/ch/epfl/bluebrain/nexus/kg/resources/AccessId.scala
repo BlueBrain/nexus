@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.kg.resources
 
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.commons.test.Randomness._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
+import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.urlEncode
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
-import ch.epfl.bluebrain.nexus.commons.test.Randomness._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 
 object AccessId {
 

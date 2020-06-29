@@ -13,26 +13,27 @@ import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.kg.Error._
 import ch.epfl.bluebrain.nexus.kg.KgError.{OrganizationNotFound, ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.kg.config.{Schemas, Settings}
+import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
-import ch.epfl.bluebrain.nexus.kg.resources.{OrganizationRef, ProjectInitializer}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
-import ch.epfl.bluebrain.nexus.kg.routes.Routes
+import ch.epfl.bluebrain.nexus.kg.resources.{OrganizationRef, ProjectInitializer}
+import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes
 import ch.epfl.bluebrain.nexus.kg.{Error, KgError, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import io.circe.Decoder
 import io.circe.generic.auto._
 import monix.eval.Task
@@ -47,14 +48,14 @@ class ProjectDirectivesSpec
     with ScalatestRouteTest
     with TestHelper {
 
-  private val appConfig                 = Settings(system).appConfig
-  implicit private val http: HttpConfig = appConfig.http
+  implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
+  implicit private val http: HttpConfig         = appConfig.http
 
   implicit private val projectCache: ProjectCache[Task]      = mock[ProjectCache[Task]]
   implicit private val client: AdminClient[Task]             = mock[AdminClient[Task]]
   implicit private val initializer: ProjectInitializer[Task] = mock[ProjectInitializer[Task]]
-  implicit private val cred: Option[AuthToken]               = None
-
+  // TODO: Remove when migrating ADMIN client
+  implicit private val fakeToken: Option[AuthToken]          = None
   before {
     Mockito.reset(projectCache, client, initializer)
   }
@@ -120,15 +121,15 @@ class ProjectDirectivesSpec
     val apiMappings = Map[String, AbsoluteIri](
       "nxv"           -> nxv.base,
       "resource"      -> Schemas.unconstrainedSchemaUri,
-      "elasticsearch" -> nxv.defaultElasticSearchIndex,
-      "graph"         -> nxv.defaultSparqlIndex
+      "elasticsearch" -> nxv.defaultElasticSearchIndex.value,
+      "graph"         -> nxv.defaultSparqlIndex.value
     )
     val projectMeta = Project(
       id,
       "project",
       "organization",
       None,
-      nxv.projects,
+      nxv.projects.value,
       genIri,
       apiMappings,
       genUUID,
@@ -154,10 +155,10 @@ class ProjectDirectivesSpec
       "file"            -> Schemas.fileSchemaUri,
       "storage"         -> Schemas.storageSchemaUri,
       "nxv"             -> nxv.base,
-      "documents"       -> nxv.defaultElasticSearchIndex,
-      "graph"           -> nxv.defaultSparqlIndex,
-      "defaultResolver" -> nxv.defaultResolver,
-      "defaultStorage"  -> nxv.defaultStorage
+      "documents"       -> nxv.defaultElasticSearchIndex.value,
+      "graph"           -> nxv.defaultSparqlIndex.value,
+      "defaultResolver" -> nxv.defaultResolver.value,
+      "defaultStorage"  -> nxv.defaultStorage.value
     )
 
     val projectMetaResp =
@@ -167,7 +168,7 @@ class ProjectDirectivesSpec
 
       def route(label: String): Route = {
         import monix.execution.Scheduler.Implicits.global
-        Routes.wrap(
+        KgRoutes.wrap(
           (get & org(label)) { o =>
             complete(StatusCodes.OK -> o)
           }
@@ -216,7 +217,7 @@ class ProjectDirectivesSpec
 
       def route: Route = {
         import monix.execution.Scheduler.Implicits.global
-        Routes.wrap(
+        KgRoutes.wrap(
           (get & project) { project =>
             complete(StatusCodes.OK -> project)
           }
@@ -224,7 +225,7 @@ class ProjectDirectivesSpec
       }
 
       def notDeprecatedRoute(implicit proj: Project): Route =
-        Routes.wrap(
+        KgRoutes.wrap(
           (get & projectNotDeprecated) {
             complete(StatusCodes.OK)
           }

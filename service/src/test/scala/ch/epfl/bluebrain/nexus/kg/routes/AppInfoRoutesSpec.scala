@@ -11,12 +11,10 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.{
   BlazegraphClient,
   ServiceDescription => BlazegraphServiceDescription
 }
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.{ServiceDescription => IamServiceDescription}
-import ch.epfl.bluebrain.nexus.kg.config.Settings
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.routes.AppInfoRoutes.{ServiceDescription, StatusGroup}
 import ch.epfl.bluebrain.nexus.kg.routes.Status._
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.routes.CassandraHealth
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.storage.client.types.{ServiceDescription => StorageServiceDescription}
@@ -38,12 +36,11 @@ class AppInfoRoutesSpec
     with BeforeAndAfter
     with ScalatestRouteTest {
 
-  implicit private val appConfig     = Settings(system).appConfig
+  implicit private val appConfig     = Settings(system).serviceConfig
   implicit private val ec            = system.dispatcher
   implicit private val utClient      = untyped[Task]
   implicit private val qrClient      = withUnmarshaller[Task, QueryResults[Json]]
   implicit private val jsonClient    = withUnmarshaller[Task, Json]
-  implicit private val iam           = mock[IamClient[Task]]
   implicit private val admin         = mock[AdminClient[Task]]
   implicit private val elasticSearch = mock[ElasticSearchClient[Task]]
   implicit private val sparql        = mock[BlazegraphClient[Task]]
@@ -53,7 +50,7 @@ class AppInfoRoutesSpec
   private val routes                 = AppInfoRoutes(appConfig.description, statusGroup).routes
 
   before {
-    Mockito.reset(statusGroup.cluster, iam, admin, elasticSearch, sparql, storage, statusGroup.cassandra)
+    Mockito.reset(statusGroup.cluster, admin, elasticSearch, sparql, storage, statusGroup.cassandra)
   }
 
   "An AppInfoRoutes" should {
@@ -92,12 +89,10 @@ class AppInfoRoutesSpec
     }
 
     "return the version when everything is up" in {
-      val iamServiceDesc        = IamServiceDescription("iam", "1.1.0")
       val adminServiceDesc      = AdminServiceDescription("admin", "1.1.1")
       val storageServiceDesc    = StorageServiceDescription("storage", "1.1.2")
       val esServiceDesc         = EsServiceDescription("elasticsearch", "1.1.3")
       val blazegraphServiceDesc = BlazegraphServiceDescription("blazegraph", "1.1.4")
-      iam.serviceDescription shouldReturn Task(iamServiceDesc)
       admin.serviceDescription shouldReturn Task(adminServiceDesc)
       storage.serviceDescription shouldReturn Task(storageServiceDesc)
       elasticSearch.serviceDescription shouldReturn Task(esServiceDesc)
@@ -109,7 +104,6 @@ class AppInfoRoutesSpec
           appConfig.description.name -> appConfig.description.version.asJson,
           adminServiceDesc.name      -> adminServiceDesc.version.asJson,
           storageServiceDesc.name    -> storageServiceDesc.version.asJson,
-          iamServiceDesc.name        -> iamServiceDesc.version.asJson,
           blazegraphServiceDesc.name -> blazegraphServiceDesc.version.asJson,
           esServiceDesc.name         -> esServiceDesc.version.asJson
         )
@@ -117,10 +111,8 @@ class AppInfoRoutesSpec
     }
 
     "return the version when everything some services are unreachable" in {
-      val iamServiceDesc   = IamServiceDescription("iam", "1.1.0")
       val adminServiceDesc = AdminServiceDescription("admin", "1.1.1")
       val esServiceDesc    = EsServiceDescription("elasticsearch", "1.1.3")
-      iam.serviceDescription shouldReturn Task(iamServiceDesc)
       admin.serviceDescription shouldReturn Task(adminServiceDesc)
       storage.serviceDescription shouldReturn Task.raiseError(new RuntimeException())
       elasticSearch.serviceDescription shouldReturn Task(esServiceDesc)
@@ -132,7 +124,6 @@ class AppInfoRoutesSpec
           appConfig.description.name -> appConfig.description.version.asJson,
           adminServiceDesc.name      -> adminServiceDesc.version.asJson,
           "remoteStorage"            -> "unknown".asJson,
-          iamServiceDesc.name        -> iamServiceDesc.version.asJson,
           "blazegraph"               -> "unknown".asJson,
           esServiceDesc.name         -> esServiceDesc.version.asJson
         )

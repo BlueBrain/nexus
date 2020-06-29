@@ -5,6 +5,7 @@ import java.util.regex.Pattern.quote
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.realms._
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
@@ -47,9 +48,10 @@ class RealmsRoutesSpec
   implicit private val http = config.http
 
   private val realms: Realms[Task] = mock[Realms[Task]]
+  private val acls: Acls[Task]     = mock[Acls[Task]]
 
   before {
-    Mockito.reset(realms)
+    Mockito.reset(acls, realms)
     realms.caller(any[AccessToken]) shouldReturn Task.pure(Caller.anonymous)
   }
 
@@ -108,7 +110,7 @@ class RealmsRoutesSpec
     )
 
   "A RealmsRoute" should {
-    val routes       = Routes.wrap(new RealmsRoutes(realms).routes)
+    val routes       = Routes.wrap(new RealmsRoutes(acls, realms).routes)
     val label        = Label.unsafe("therealm")
     val name         = "The Realm"
     val openIdConfig = Url("http://localhost:8080/realm").rightValue

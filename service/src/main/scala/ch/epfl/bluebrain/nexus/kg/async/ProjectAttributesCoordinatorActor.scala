@@ -9,14 +9,14 @@ import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.async.ProjectAttributesCoordinatorActor.Msg._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.indexing.cassandraSource
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.FileDigestAlreadyExists
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, Files, Rejection, Resource}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttributes
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.ProgressFlowElem
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -30,7 +30,7 @@ import retry.syntax.all._
   * Coordinator backed by akka actor which runs the attributes stream inside the provided project
   */
 //noinspection ActorMutableStateInspection
-abstract private class ProjectAttributesCoordinatorActor(implicit val config: AppConfig)
+abstract private class ProjectAttributesCoordinatorActor(implicit val config: ServiceConfig)
     extends Actor
     with ActorLogging {
 
@@ -98,7 +98,7 @@ object ProjectAttributesCoordinatorActor {
       shardingSettings: Option[ClusterShardingSettings],
       shards: Int
   )(implicit
-      config: AppConfig,
+      config: ServiceConfig,
       fetchDigest: FetchAttributes[Task],
       as: ActorSystem,
       projections: Projections[Task, String]
@@ -110,9 +110,9 @@ object ProjectAttributesCoordinatorActor {
           restartOffset: Boolean
       ): StreamSupervisor[Task, ProjectionProgress] = {
 
-        implicit val indexing: IndexingConfig                                             = config.storage.indexing
-        implicit val policy: RetryPolicy[Task]                                            = config.storage.fileAttrRetry.retryPolicy[Task]
-        implicit val tm: Timeout                                                          = Timeout(config.storage.askTimeout)
+        implicit val indexing: IndexingConfig                                             = config.kg.storage.indexing
+        implicit val policy: RetryPolicy[Task]                                            = config.kg.storage.fileAttrRetry.retryPolicy[Task]
+        implicit val tm: Timeout                                                          = Timeout(config.kg.storage.askTimeout)
         implicit val logErrors: (Either[Rejection, Resource], RetryDetails) => Task[Unit] =
           (err, d) =>
             Task.pure(log.warning("Retrying on resource creation with retry details '{}' and error: '{}'", err, d))

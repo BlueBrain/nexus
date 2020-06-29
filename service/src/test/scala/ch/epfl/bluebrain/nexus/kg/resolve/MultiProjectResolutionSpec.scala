@@ -10,19 +10,19 @@ import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Group, User}
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
+import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.simpleF
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import org.mockito.Mockito._
 import org.mockito.{IdiomaticMockito, Mockito}
@@ -49,8 +49,9 @@ class MultiProjectResolutionSpec
   private def genProjectLabel = ProjectLabel(genString(), genString())
   private def genJson: Json   = Json.obj("key" -> Json.fromString(genString()))
 
-  implicit private val appConfig    = Settings(system).appConfig
-  implicit private val clock: Clock = Clock.systemUTC
+  implicit private val appConfig        = Settings(system).serviceConfig
+  implicit private val keyValueStoreCfg = appConfig.kg.keyValueStore.keyValueStoreConfig
+  implicit private val clock: Clock     = Clock.systemUTC
 
   private val repo        = mock[Repo[IO]]
   private val managePerms = Set(Permission.unsafe("resources/read"), Permission.unsafe("resources/write"))

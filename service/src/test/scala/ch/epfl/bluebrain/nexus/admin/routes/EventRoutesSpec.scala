@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
@@ -29,8 +29,8 @@ import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import monix.eval.Task
+import org.mockito.IdiomaticMockito
 import org.mockito.matchers.MacroBasedMatchers
-import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -62,8 +62,14 @@ class EventRoutesSpec
   private val aclsApi       = mock[Acls[Task]]
   private val realmsApi     = mock[Realms[Task]]
 
+  val orgRead   = Permission.unsafe("organizations/read")
+  val projRead  = Permission.unsafe("projects/read")
+  val eventRead = Permission.unsafe("events/read")
+  aclsApi.hasPermission(Path./, orgRead)(Caller.anonymous) shouldReturn Task.pure(true)
+  aclsApi.hasPermission(Path./, projRead)(Caller.anonymous) shouldReturn Task.pure(true)
+  aclsApi.hasPermission(Path./, eventRead)(Caller.anonymous) shouldReturn Task.pure(true)
+
   before {
-    Mockito.reset(aclsApi, realmsApi)
     aclsApi.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task.pure(
       AccessControlLists(
         Path./ -> IamResourceF(
@@ -78,7 +84,6 @@ class EventRoutesSpec
         )
       )
     )
-//    client.hasPermission(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.pure(true)
   }
 
   val instant = Instant.EPOCH
@@ -218,9 +223,12 @@ class EventRoutesSpec
     }
 
     "return Forbidden when requesting the log with no permissions" in {
-      Mockito.reset(aclsApi)
-      aclsApi.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task(AccessControlLists.empty)
-      val routes    = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
+      val aclsApi2  = mock[Acls[Task]]
+      aclsApi2.hasPermission(Path./, eventRead)(Caller.anonymous) shouldReturn Task.pure(false)
+      aclsApi2.hasPermission(Path./, orgRead)(Caller.anonymous) shouldReturn Task.pure(false)
+      aclsApi2.hasPermission(Path./, projRead)(Caller.anonymous) shouldReturn Task.pure(false)
+      aclsApi2.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task(AccessControlLists.empty)
+      val routes    = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi2, realmsApi).routes
       val endpoints = List(
         "/events",
         "/events/",

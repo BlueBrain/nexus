@@ -11,15 +11,14 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
-import ch.epfl.bluebrain.nexus.iam.client.IamClientError
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Caller}
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ViewCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.RemoteProjectEventStream
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
@@ -41,6 +40,8 @@ import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -49,13 +50,13 @@ class Views[F[_]](repo: Repo[F])(implicit
     F: Effect[F],
     as: ActorSystem,
     materializer: Materializer[F],
-    config: AppConfig,
+    config: ServiceConfig,
     projectCache: ProjectCache[F],
     viewCache: ViewCache[F],
     clients: Clients[F]
 ) {
 
-  implicit private val iamClientConfig: IamClientConfig = config.iam.iamClient
+  implicit private val kgConfig: KgConfig = config.kg
 
   private def rejectWhenFound: Option[Resource] => Either[Rejection, Unit] = {
     case None           => Right(())
@@ -126,7 +127,7 @@ class Views[F[_]](repo: Repo[F])(implicit
       _         <- validateShacl(typedGraph)
       view      <- viewValidation(id, typedGraph, 1L, types)
       json      <- jsonForRepo(view.encrypt)
-      updated   <- repo.update(id, viewRef, rev, types, json)
+      updated   <- repo.update(id, viewRef, rev, types, json)(caller.subject)
       _         <- EitherT.right(viewCache.put(view))
     } yield updated
 
@@ -294,7 +295,7 @@ class Views[F[_]](repo: Repo[F])(implicit
       _       <- validateShacl(typedGraph)
       view    <- viewValidation(id, typedGraph, 1L, types)
       json    <- jsonForRepo(view.encrypt)
-      created <- repo.create(id, OrganizationRef(project.organizationUuid), viewRef, types, json)
+      created <- repo.create(id, OrganizationRef(project.organizationUuid), viewRef, types, json)(caller.subject)
       _       <- EitherT.right(viewCache.put(view))
     } yield created
   }
@@ -335,8 +336,8 @@ class Views[F[_]](repo: Repo[F])(implicit
             val ref = source.id.ref
             source.fetchProject[F].map(_.toRight[Rejection](ProjectRefNotFound(source.project))).recoverWith {
               // format: off
-                case err: IamClientError =>
-                  F.pure(Left(InvalidResourceFormat(ref, s"Wrong 'endpoint' and/or 'token' fields. Reason: ${err.message}"): Rejection))
+//                case err: IamClientError =>
+//                  F.pure(Left(InvalidResourceFormat(ref, s"Wrong 'endpoint' and/or 'token' fields. Reason: ${err.message}"): Rejection))
                 case err: AdminClientError =>
                   F.pure(Left(InvalidResourceFormat(ref, s"Wrong 'endpoint' and/or 'token' fields. Reason: ${err.message}"): Rejection))
                 case _ =>
@@ -363,27 +364,27 @@ class Views[F[_]](repo: Repo[F])(implicit
 
   private def transformSave(source: Json, uuidField: String = uuid())(implicit project: Project): Json = {
     val transformed          = source.addContext(viewCtxUri) deepMerge Json.obj(nxv.uuid.prefix -> Json.fromString(uuidField))
-    val withMapping          = toText(transformed, nxv.mapping.prefix)
+    val withMapping          = toText(transformed, "mapping")
     val projectionsTransform = withMapping.hcursor
-      .get[Vector[Json]](nxv.projections.prefix)
+      .get[Vector[Json]]("projections")
       .map { projections =>
         val pTransformed = projections.map { projection =>
-          val flattened = toText(projection, nxv.mapping.prefix, nxv.context.prefix)
+          val flattened = toText(projection, "mapping", "context")
           val withId    = addIfMissing(flattened, "@id", generateId(project.base))
           addIfMissing(withId, nxv.uuid.prefix, UUID.randomUUID().toString)
         }
-        withMapping deepMerge Json.obj(nxv.projections.prefix -> pTransformed.asJson)
+        withMapping deepMerge Json.obj("projections" -> pTransformed.asJson)
       }
       .getOrElse(withMapping)
 
     projectionsTransform.hcursor
-      .get[Vector[Json]](nxv.sources.prefix)
+      .get[Vector[Json]]("sources")
       .map { sources =>
         val sourceTransformed = sources.map { source =>
           val withId = addIfMissing(source, "@id", generateId(project.base))
           addIfMissing(withId, nxv.uuid.prefix, UUID.randomUUID().toString)
         }
-        projectionsTransform deepMerge Json.obj(nxv.sources.prefix -> sourceTransformed.asJson)
+        projectionsTransform deepMerge Json.obj("sources" -> sourceTransformed.asJson)
       }
       .getOrElse(projectionsTransform)
 
@@ -424,7 +425,7 @@ object Views {
     * @return a new [[Views]] for the provided F type
     */
   final def apply[F[_]: Effect: ProjectCache: ViewCache: Clients: Materializer](implicit
-      config: AppConfig,
+      config: ServiceConfig,
       as: ActorSystem,
       repo: Repo[F]
   ): Views[F] =
@@ -434,20 +435,20 @@ object Views {
     * Converts the inline json values
     */
   def transformFetch(json: Json): Json = {
-    val withMapping = fromText(json, nxv.mapping.prefix)
+    val withMapping = fromText(json, "mapping")
     withMapping.hcursor
-      .get[Vector[Json]](nxv.projections.prefix)
+      .get[Vector[Json]]("projections")
       .map { projections =>
         val transformed = projections.map { projection =>
-          fromText(projection, nxv.mapping.prefix, nxv.context.prefix)
+          fromText(projection, "mapping", "context")
         }
-        withMapping deepMerge Json.obj(nxv.projections.prefix -> transformed.asJson)
+        withMapping deepMerge Json.obj("projections" -> transformed.asJson)
       }
       .getOrElse(withMapping)
   }
 
   private def transformFetchSource(json: Json): Json =
-    transformFetch(json).removeNestedKeys(nxv.uuid.prefix, nxv.token.prefix)
+    transformFetch(json).removeNestedKeys(nxv.uuid.prefix, "token")
 
   private def fromText(json: Json, fields: String*) =
     fields.foldLeft(json) { (acc, field) =>

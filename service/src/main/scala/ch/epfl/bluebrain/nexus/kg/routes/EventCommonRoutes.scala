@@ -12,8 +12,8 @@ import akka.persistence.query._
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.resources.Event
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
 
@@ -23,7 +23,11 @@ import scala.util.{Failure, Success, Try}
 /**
   * Defines commons methods for event routes.
   */
-abstract private[routes] class EventCommonRoutes(implicit as: ActorSystem, config: AppConfig) {
+private[routes] trait EventCommonRoutes {
+
+  implicit def as: ActorSystem
+
+  implicit def config: ServiceConfig
 
   private val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
 
@@ -61,7 +65,7 @@ abstract private[routes] class EventCommonRoutes(implicit as: ActorSystem, confi
       }
 
   private def aToSse[A: Encoder](a: A, offset: Offset): ServerSentEvent = {
-    val json = a.asJson.sortKeys(AppConfig.orderedKeys)
+    val json = a.asJson.sortKeys(ServiceConfig.orderedKeys)
     ServerSentEvent(
       data = json.printWith(printer),
       eventType = json.hcursor.get[String]("@type").toOption,

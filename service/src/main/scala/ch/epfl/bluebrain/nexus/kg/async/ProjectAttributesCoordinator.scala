@@ -6,11 +6,11 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.kg.async.ProjectAttributesCoordinatorActor.Msg._
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Files, OrganizationRef}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttributes
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections
 import monix.eval.Task
 
@@ -56,7 +56,7 @@ class ProjectAttributesCoordinator[F[_]](projectCache: ProjectCache[F], ref: Act
 
 object ProjectAttributesCoordinator {
   def apply(files: Files[Task], projectCache: ProjectCache[Task])(implicit
-      config: AppConfig,
+      config: ServiceConfig,
       fetchAttributes: FetchAttributes[Task],
       as: ActorSystem,
       P: Projections[Task, String]

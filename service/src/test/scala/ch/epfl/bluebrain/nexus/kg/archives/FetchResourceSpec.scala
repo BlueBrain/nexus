@@ -12,10 +12,10 @@ import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import io.circe.{Json, Printer}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -110,7 +111,7 @@ class FetchResourceSpec
       resources.fetchSource(idRes) shouldReturn EitherT.rightT[Task, Rejection](json)
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
-      val response                               = printer.print(json.sortKeys(AppConfig.orderedKeys))
+      val response                               = printer.print(json.sortKeys(ServiceConfig.orderedKeys))
       rPath shouldEqual somePath.asString
       bytes.toInt shouldEqual response.size
       consume(source) shouldEqual response
@@ -128,7 +129,7 @@ class FetchResourceSpec
       resources.fetch(Id(description.project.ref, id), 1L) shouldReturn EitherT.rightT[Task, Rejection](resourceV)
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
-      val response                               = printer.print(finalJson.addContext(resourceCtxUri).sortKeys(AppConfig.orderedKeys))
+      val response                               = printer.print(finalJson.addContext(resourceCtxUri).sortKeys(ServiceConfig.orderedKeys))
       rPath shouldEqual Iri.Path.rootless(s"${project.show}/${urlEncode(id.asString)}.json").rightValue.pctEncoded
       bytes.toInt shouldEqual response.size
       consume(source) shouldEqual response

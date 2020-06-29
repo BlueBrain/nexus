@@ -4,17 +4,20 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.tagCtxUri
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import kamon.Kamon
@@ -22,12 +25,21 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-class TagRoutes private[routes] (resourceType: String, tags: Tags[Task], schema: Ref, write: Permission)(implicit
-    acls: AccessControlLists,
+class TagRoutes private[routes] (
+    resourceType: String,
+    tags: Tags[Task],
+    acls: Acls[Task],
+    realms: Realms[Task],
+    schema: Ref,
+    write: Permission
+)(implicit
     caller: Caller,
     project: Project,
-    config: AppConfig
-) {
+    config: ServiceConfig
+) extends AuthDirectives(acls, realms) {
+
+  private val projectPath               = project.organizationLabel / project.label
+  implicit private val subject: Subject = caller.subject
 
   /**
     * Routes for tags when the id is specified.
@@ -44,7 +56,7 @@ class TagRoutes private[routes] (resourceType: String, tags: Tags[Task], schema:
         // Create tag
         (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
           operationName(opName) {
-            (hasPermission(write) & projectNotDeprecated) {
+            (authorizeFor(projectPath, write) & projectNotDeprecated) {
               entity(as[Json]) { source =>
                 Kamon.currentSpan().tag("resource.operation", "create")
                 complete(tags.create(Id(project.ref, id), rev, source, schema).value.runWithStatus(Created))
@@ -55,7 +67,7 @@ class TagRoutes private[routes] (resourceType: String, tags: Tags[Task], schema:
         // Fetch a tag
         (get & projectNotDeprecated & pathEndOrSingleSlash) {
           operationName(opName) {
-            hasPermission(read).apply {
+            authorizeFor(projectPath, read)(caller) {
               parameter("rev".as[Long].?) {
                 case Some(rev) => complete(tags.fetch(Id(project.ref, id), rev, schema).value.runWithStatus(OK))
                 case _         => complete(tags.fetch(Id(project.ref, id), schema).value.runWithStatus(OK))
@@ -67,7 +79,7 @@ class TagRoutes private[routes] (resourceType: String, tags: Tags[Task], schema:
     }
 
   implicit private def tagsEncoder: Encoder[TagSet] =
-    Encoder.instance(tags => Json.obj(nxv.tags.prefix -> Json.arr(tags.map(_.asJson).toSeq: _*)).addContext(tagCtxUri))
+    Encoder.instance(tags => Json.obj("tags" -> Json.arr(tags.map(_.asJson).toSeq: _*)).addContext(tagCtxUri))
 
   private def opName: String                        =
     resourceType match {

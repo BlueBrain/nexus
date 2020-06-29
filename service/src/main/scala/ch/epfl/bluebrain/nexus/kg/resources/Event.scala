@@ -3,12 +3,10 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas.fileSchemaUri
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.file.File._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
@@ -17,6 +15,9 @@ import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFi
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+
 import scala.annotation.nowarn
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
@@ -324,7 +325,8 @@ object Event {
         case (value, project) => Id(project, value)
       }
 
-    implicit private def subjectIdEncoder(implicit ic: IamClientConfig): Encoder[Subject] =
+    @nowarn("cat=unused")
+    implicit private def subjectIdEncoder(implicit http: HttpConfig): Encoder[Subject] =
       Encoder.encodeJson.contramap(_.id.asJson)
 
     implicit private def subjectIdDecoder: Decoder[Subject] =
@@ -340,7 +342,7 @@ object Event {
           )
       }
 
-    implicit def eventsEventEncoder(implicit ic: IamClientConfig): Encoder[Event] = {
+    implicit def eventsEventEncoder(implicit http: HttpConfig): Encoder[Event] = {
       val enc = deriveConfiguredEncoder[Event]
       Encoder.encodeJson.contramap[Event] { ev =>
         enc(ev).addContext(resourceCtxUri).removeKeys("_resourceId", nxv.projectUuid.prefix) deepMerge ev.id.asJson

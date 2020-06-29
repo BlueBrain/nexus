@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.iam.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives.authenticator
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Caller.JsonLd._
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -17,15 +17,14 @@ import monix.execution.Scheduler.Implicits.global
   *
   * @param realms the realms api
   */
-class IdentitiesRoutes(realms: Realms[Task])(implicit http: HttpConfig) {
+class IdentitiesRoutes(acls: Acls[Task], realms: Realms[Task])(implicit http: HttpConfig)
+    extends AuthDirectives(acls, realms) {
 
   def routes: Route = {
     (pathPrefix("identities") & pathEndOrSingleSlash) {
       operationName(s"/${http.prefix}/identities") {
-        authenticateOAuth2Async("*", authenticator(realms)).withAnonymousUser(Caller.anonymous) { implicit caller =>
-          get {
-            complete(caller)
-          }
+        (extractCaller & get) { caller =>
+          complete(caller)
         }
       }
     }

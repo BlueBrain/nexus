@@ -17,11 +17,12 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.commons.test.Resources._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ViewCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{query, read, AggregateView, CompositeView, ViewRef}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection._
@@ -39,6 +40,8 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Cursor, Graph, GraphDecoder, NonEmptyString}
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import org.apache.jena.query.QueryFactory
@@ -246,7 +249,7 @@ object View {
     /**
       * The progress id for this view
       */
-    def progressId(implicit config: AppConfig): String
+    def progressId(implicit config: ServiceConfig): String
   }
 
   /**
@@ -295,24 +298,24 @@ object View {
     /**
       * The index value for this view
       */
-    def index(implicit config: AppConfig): String
+    def index(implicit config: ServiceConfig): String
 
     /**
       * Attempts to create an index.
       */
-    def createIndex[F[_]: Effect](implicit config: AppConfig, clients: Clients[F]): F[Unit]
+    def createIndex[F[_]: Effect](implicit config: ServiceConfig, clients: Clients[F]): F[Unit]
 
     /**
       * Attempts to delete an index.
       */
-    def deleteIndex[F[_]](implicit config: AppConfig, clients: Clients[F]): F[Boolean]
+    def deleteIndex[F[_]](implicit config: ServiceConfig, clients: Clients[F]): F[Boolean]
 
     /**
       * Attempts to delete the resource on the view index.
       *
       * @param resId the resource id to be deleted from the current index
       */
-    def deleteResource[F[_]: Monad](resId: ResId)(implicit clients: Clients[F], config: AppConfig): F[Unit]
+    def deleteResource[F[_]: Monad](resId: ResId)(implicit clients: Clients[F], config: ServiceConfig): F[Unit]
 
   }
 
@@ -380,9 +383,9 @@ object View {
           // TODO: There should be some validation against the admin endpoint that this project actually exists.
           // This will also validate that the token is correct and has the right permissions
           projectLabel  <- c.down(nxv.project).as[ProjectLabel].onError(id.ref, "project")
-          endpoint      <- c.down(nxv.endpoint).as[AbsoluteIri].onError(id.ref, nxv.endpoint.prefix)
-          token         <- c.down(nxv.token).as[Option[String]].onError(id.ref, nxv.token.prefix)
-        } yield RemoteProjectEventStream(id, filter, projectLabel, endpoint, token.map(AuthToken.apply))
+          endpoint      <- c.down(nxv.endpoint).as[AbsoluteIri].onError(id.ref, "endpoint")
+          token         <- c.down(nxv.token).as[Option[String]].onError(id.ref, "token")
+        } yield RemoteProjectEventStream(id, filter, projectLabel, endpoint, token.map(AccessToken.apply))
       // format: on
 
       def sources(cursors: Set[Cursor]): Either[Rejection, Set[Source]] =
@@ -413,7 +416,7 @@ object View {
         sources       <- sources(sCursors)
         rebuildCursor  = c.down(nxv.rebuildStrategy)
         rebuildTpe    <- rebuildCursor.down(rdf.tpe).as[Option[AbsoluteIri]].onError(res.id.ref, "@type")
-        _             <- if(rebuildTpe.contains(nxv.Interval.value) || rebuildTpe.isEmpty)  Right(()) else Left(InvalidResourceFormat(res.id.ref, s"${nxv.rebuildStrategy.prefix} @type with value '$rebuildTpe' is not supported."))
+        _             <- if(rebuildTpe.contains(nxv.Interval.value) || rebuildTpe.isEmpty)  Right(()) else Left(InvalidResourceFormat(res.id.ref, s"rebuildStrategy @type with value '$rebuildTpe' is not supported."))
         interval      <- rebuildCursor.down(nxv.value).as[Option[FiniteDuration]].onError(res.id.ref, "value")
         _             <- validateRebuild(interval)
       } yield CompositeView (sources, projections, interval.map(Interval), res.id.parent, res.id.value, uuid, res.rev, res.deprecated)
@@ -457,11 +460,11 @@ object View {
     private[indexing] val ctx: Json = jsonContentOf("/elasticsearch/default-context.json")
     private val settings: Json      = jsonContentOf("/elasticsearch/settings.json")
 
-    def index(implicit config: AppConfig): String = s"${config.elasticSearch.indexPrefix}_$name"
+    def index(implicit config: ServiceConfig): String = s"${config.kg.elasticSearch.indexPrefix}_$name"
 
-    def progressId(implicit config: AppConfig): String = s"elasticSearch-indexer-$index"
+    def progressId(implicit config: ServiceConfig): String = s"elasticSearch-indexer-$index"
 
-    def createIndex[F[_]](implicit F: Effect[F], config: AppConfig, clients: Clients[F]): F[Unit] =
+    def createIndex[F[_]](implicit F: Effect[F], config: ServiceConfig, clients: Clients[F]): F[Unit] =
       clients.elasticSearch
         .createIndex(index, settings)
         .flatMap(_ => clients.elasticSearch.updateMapping(index, mapping))
@@ -470,11 +473,13 @@ object View {
           case false => F.raiseError(KgError.InternalError("View mapping validation could not be performed"))
         }
 
-    def deleteIndex[F[_]](implicit config: AppConfig, clients: Clients[F]): F[Boolean] =
+    def deleteIndex[F[_]](implicit config: ServiceConfig, clients: Clients[F]): F[Boolean] =
       clients.elasticSearch.deleteIndex(index)
 
-    def deleteResource[F[_]](resId: ResId)(implicit F: Monad[F], clients: Clients[F], config: AppConfig): F[Unit] = {
-      val client = clients.elasticSearch.withRetryPolicy(config.elasticSearch.indexing.retry)
+    def deleteResource[F[_]](
+        resId: ResId
+    )(implicit F: Monad[F], clients: Clients[F], config: ServiceConfig): F[Unit] = {
+      val client = clients.elasticSearch.withRetryPolicy(config.kg.elasticSearch.indexing.retry)
       client.delete(index, resId.value.asString) >> F.unit
     }
 
@@ -487,7 +492,7 @@ object View {
       */
     def toDocument(
         res: ResourceV
-    )(implicit metadataOpts: MetadataOptions, logger: Logger, config: AppConfig, project: Project): Option[Json] = {
+    )(implicit metadataOpts: MetadataOptions, logger: Logger, config: ServiceConfig, project: Project): Option[Json] = {
       val id           = res.id.value
       val keysToRemove = if (includeMetadata) Seq.empty[String] else metaKeys
 
@@ -606,7 +611,7 @@ object View {
     )(implicit
         client: BlazegraphClient[F],
         F: Functor[F],
-        config: AppConfig
+        config: ServiceConfig
     ): F[LinkResults] =
       client.copy(namespace = index).queryRaw(replace(incomingQuery, id, pagination)).map(toSparqlLinks)
 
@@ -621,7 +626,7 @@ object View {
     def outgoing[F[_]](id: AbsoluteIri, pagination: FromPagination, includeExternalLinks: Boolean)(implicit
         client: BlazegraphClient[F],
         F: Functor[F],
-        config: AppConfig
+        config: ServiceConfig
     ): F[LinkResults] =
       if (includeExternalLinks)
         client.copy(namespace = index).queryRaw(replace(outgoingWithExternalQuery, id, pagination)).map(toSparqlLinks)
@@ -640,18 +645,18 @@ object View {
       UnscoredQueryResults(count, results.map(UnscoredQueryResult(_)))
     }
 
-    def index(implicit config: AppConfig): String = s"${config.sparql.indexPrefix}_$name"
+    def index(implicit config: ServiceConfig): String = s"${config.kg.sparql.indexPrefix}_$name"
 
-    def progressId(implicit config: AppConfig): String = s"sparql-indexer-$index"
+    def progressId(implicit config: ServiceConfig): String = s"sparql-indexer-$index"
 
-    def createIndex[F[_]](implicit F: Effect[F], config: AppConfig, clients: Clients[F]): F[Unit] =
+    def createIndex[F[_]](implicit F: Effect[F], config: ServiceConfig, clients: Clients[F]): F[Unit] =
       clients.sparql.copy(namespace = index).createNamespace(properties) >> F.unit
 
-    def deleteIndex[F[_]](implicit config: AppConfig, clients: Clients[F]): F[Boolean] =
+    def deleteIndex[F[_]](implicit config: ServiceConfig, clients: Clients[F]): F[Boolean] =
       clients.sparql.copy(namespace = index).deleteNamespace
 
-    def deleteResource[F[_]: Monad](resId: ResId)(implicit clients: Clients[F], config: AppConfig): F[Unit] = {
-      val client = clients.sparql.copy(namespace = index).withRetryPolicy(config.elasticSearch.indexing.retry)
+    def deleteResource[F[_]: Monad](resId: ResId)(implicit clients: Clients[F], config: ServiceConfig): F[Unit] = {
+      val client = clients.sparql.copy(namespace = index).withRetryPolicy(config.kg.elasticSearch.indexing.retry)
       client.drop(resId.toGraphUri)
     }
   }
@@ -717,7 +722,7 @@ object View {
       deprecated: Boolean
   ) extends IndexedView {
 
-    override def progressId(implicit config: AppConfig): String =
+    override def progressId(implicit config: ServiceConfig): String =
       defaultSparqlView.progressId
 
     def defaultSparqlView: SparqlView =
@@ -784,13 +789,16 @@ object View {
           filter: Filter,
           project: ProjectLabel,
           endpoint: AbsoluteIri,
-          token: Option[AuthToken]
+          token: Option[AccessToken]
       ) extends Source {
 
         private lazy val clientCfg = AdminClientConfig(endpoint, endpoint, "")
 
+        // TODO: Remove when migrating ADMIN client
+        implicit private val oldToken: Option[AuthToken] = token.map(t => AuthToken(t.value))
+
         def fetchProject[F[_]: Effect](implicit as: ActorSystem): F[Option[Project]] =
-          AdminClient[F](clientCfg).fetchProject(project.organization, project.value)(token)
+          AdminClient[F](clientCfg).fetchProject(project.organization, project.value)
       }
     }
 
@@ -801,7 +809,7 @@ object View {
       def view: SingleView
       def indexResourceGraph[F[_]: Monad](res: ResourceV, graph: Graph)(implicit
           clients: Clients[F],
-          config: AppConfig,
+          config: ServiceConfig,
           metadataOpts: MetadataOptions,
           logger: Logger,
           project: Project
@@ -835,14 +843,14 @@ object View {
         )(implicit
             F: Monad[F],
             clients: Clients[F],
-            config: AppConfig,
+            config: ServiceConfig,
             metadataOpts: MetadataOptions,
             logger: Logger,
             project: Project
         ): F[Option[Unit]] = {
           val contextObj = Json.obj("@context" -> context)
           val finalCtx   = if (view.includeMetadata) view.ctx.appendContextOf(contextObj) else contextObj
-          val client     = clients.elasticSearch.withRetryPolicy(config.elasticSearch.indexing.retry)
+          val client     = clients.elasticSearch.withRetryPolicy(config.kg.elasticSearch.indexing.retry)
           val finalGraph = if (view.includeMetadata) graph ++ res.metadata(metadataOpts) else graph
           finalGraph.withRoot(res.id.value).toJson(finalCtx) match {
             case Left(err)    =>
@@ -889,12 +897,12 @@ object View {
         )(implicit
             F: Monad[F],
             clients: Clients[F],
-            config: AppConfig,
+            config: ServiceConfig,
             metadataOpts: MetadataOptions,
             logger: Logger,
             project: Project
         ): F[Option[Unit]] = {
-          val client = clients.sparql.copy(namespace = view.index).withRetryPolicy(config.sparql.indexing.retry)
+          val client = clients.sparql.copy(namespace = view.index).withRetryPolicy(config.kg.sparql.indexing.retry)
           client.replace(res.id.toGraphUri, graph) >> F.pure(Some(()))
         }
       }

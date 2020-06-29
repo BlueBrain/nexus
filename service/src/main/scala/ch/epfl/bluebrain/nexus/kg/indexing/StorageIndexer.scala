@@ -8,12 +8,13 @@ import akka.util.Timeout
 import cats.effect.{Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.AdminClient
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, StorageCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections._
 import com.typesafe.scalalogging.Logger
@@ -31,14 +32,15 @@ object StorageIndexer {
       as: ActorSystem,
       projectInitializer: ProjectInitializer[F],
       adminClient: AdminClient[F],
-      config: AppConfig
+      config: ServiceConfig
   ): StreamSupervisor[F, Unit] = {
 
-    implicit val authToken                = config.iam.serviceAccountToken
-    implicit val indexing: IndexingConfig = config.keyValueStore.indexing
-    implicit val ec: ExecutionContext     = as.dispatcher
-    implicit val tm: Timeout              = Timeout(config.keyValueStore.askTimeout)
-    val name                              = "storage-indexer"
+    implicit val authToken: Option[AccessToken] = config.serviceAccount.credentials
+    implicit val indexing: IndexingConfig       = config.kg.keyValueStore.indexing
+    implicit val ec: ExecutionContext           = as.dispatcher
+    implicit val tm: Timeout                    = Timeout(config.kg.keyValueStore.askTimeout)
+    implicit val storageConfig: StorageConfig   = config.kg.storage
+    val name                                    = "storage-indexer"
 
     def toStorage(event: Event): F[Option[(Storage, Instant)]] =
       fetchProject(event.organization, event.id.parent, event.subject).flatMap { implicit project =>

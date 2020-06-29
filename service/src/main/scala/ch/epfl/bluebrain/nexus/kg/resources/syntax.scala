@@ -8,10 +8,9 @@ import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import cats.Monad
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.types._
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
 import ch.epfl.bluebrain.nexus.kg.storage.Crypto
@@ -22,6 +21,8 @@ import ch.epfl.bluebrain.nexus.rdf.Node.{IriNode, Literal}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, Encoder}
@@ -95,7 +96,7 @@ object syntax {
   implicit val decMediaType: Decoder[ContentType] =
     Decoder.decodeString.emap(ContentType.parse(_).left.map(_.mkString("\n")))
 
-  implicit final class ResourceSyntax(resource: ResourceF[_]) {
+  implicit final class ResourceSyntax(resource: KgResourceF[_]) {
     def isSchema: Boolean = resource.types.contains(nxv.Schema.value)
   }
 
@@ -117,85 +118,10 @@ object syntax {
       *
       * @return a new [[Graph]] without the metadata triples
       */
-    def removeMetadata: Graph = ResourceF.removeMetadata(graph)
+    def removeMetadata: Graph = KgResourceF.removeMetadata(graph)
 
     def rootTypes: Set[AbsoluteIri] =
       graph.cursor.downSet(rdf.tpe).as[Set[Node]].map(_.collect { case IriNode(v) => v }).getOrElse(Set.empty)
-  }
-
-  implicit final class AclsSyntax(private val acls: AccessControlLists) extends AnyVal {
-
-    /**
-      * Checks if on the list of ACLs there are some which contains any of the provided ''identities'', ''perm'' in
-      * the root path, the organization path or the project path.
-      *
-      * @param identities the list of identities to filter from the ''acls''
-      * @param label      the organization and project label information to be used to generate the paths to filter
-      * @param perm       the permission to filter
-      * @return true if the conditions are met, false otherwise
-      */
-    def exists(identities: Set[Identity], label: ProjectLabel, perm: Permission): Boolean =
-      acls.filter(identities).value.exists {
-        case (path, v) =>
-          (path == / || path == Segment(label.organization, /) || path == label.organization / label.value) &&
-            v.value.permissions.contains(perm)
-      }
-
-    /**
-      * Checks if on the list of ACLs there are some which contains any of the provided ''identities'', ''perm'' in
-      * the root path or the organization path.
-      *
-      * @param identities the list of identities to filter from the ''acls''
-      * @param label      the organization label information to be used to generate the paths to filter
-      * @param perm       the permission to filter
-      * @return true if the conditions are met, false otherwise
-      */
-    def exists(identities: Set[Identity], label: String, perm: Permission): Boolean =
-      acls.filter(identities).value.exists {
-        case (path, v) => (path == / || path == Segment(label, /)) && v.value.permissions.contains(perm)
-      }
-
-    /**
-      * Checks if on the list of ACLs there are some which contain any of the provided ''identities'', ''perm'' in
-      * the root path.
-      *
-      * @param identities the list of identities to filter from the ''acls''
-      * @param perm       the permission to filter
-      * @return true if the conditions are met, false otherwise
-      */
-    def existsOnRoot(identities: Set[Identity], perm: Permission): Boolean =
-      acls.filter(identities).value.exists {
-        case (path, v) =>
-          path == / && v.value.permissions.contains(perm)
-      }
-  }
-
-  implicit final class CallerSyntax(private val caller: Caller) extends AnyVal {
-
-    /**
-      * Evaluates if the provided ''project'' has the passed ''permission'' on the ''acls''.
-      *
-      * @param acls         the full list of ACLs
-      * @param projectLabel the project to check for permissions validity
-      * @param permission   the permission to filter
-      */
-    def hasPermission(acls: AccessControlLists, projectLabel: ProjectLabel, permission: Permission): Boolean =
-      acls.exists(caller.identities, projectLabel, permission)
-
-    /**
-      * Filters from the provided ''projects'' the ones where the caller has the passed ''permission'' on the ''acls''.
-      *
-      * @param acls       the full list of ACLs
-      * @param projects   the list of projects to check for permissions validity
-      * @param permission the permission to filter
-      * @return a set of [[ProjectLabel]]
-      */
-    def hasPermission(
-        acls: AccessControlLists,
-        projects: Set[ProjectLabel],
-        permission: Permission
-    ): Set[ProjectLabel] =
-      projects.filter(hasPermission(acls, _, permission))
   }
 
   implicit class AbsoluteIriSyntax(private val iri: AbsoluteIri) extends AnyVal {

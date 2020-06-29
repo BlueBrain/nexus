@@ -7,12 +7,9 @@ import akka.http.scaladsl.model.Uri
 import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues}
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference.DiskStorageReference
@@ -20,6 +17,8 @@ import ch.epfl.bluebrain.nexus.kg.resources.file.File._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.{LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.{BeforeAndAfter, OptionValues}
@@ -44,7 +43,8 @@ class RepoSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig: AppConfig  = Settings(system).appConfig
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -279,24 +279,24 @@ class RepoSpec
       "return a specific revision of the resource" in new Context {
         repo.create(id, organizationRef, schema.ref, Set.empty, value).value.accepted shouldBe a[Resource]
         private val json = randomJson()
-        repo.update(id, schema.ref, 1L, Set(nxv.Resource), json).value.accepted shouldBe a[Resource]
+        repo.update(id, schema.ref, 1L, Set(nxv.Resource.value), json).value.accepted shouldBe a[Resource]
         repo.get(id, 1L, None).value.some shouldEqual
           ResourceF.simpleF(id, value, 1L, schema = schema.ref)
         repo.get(id, 2L, None).value.some shouldEqual
-          ResourceF.simpleF(id, json, 2L, schema = schema.ref, types = Set(nxv.Resource))
+          ResourceF.simpleF(id, json, 2L, schema = schema.ref, types = Set(nxv.Resource.value))
         repo.get(id, 2L, None).value.some shouldEqual repo.get(id, None).value.some
       }
 
       "return a specific tag of the resource" in new Context {
         repo.create(id, organizationRef, schema.ref, Set.empty, value).value.accepted shouldBe a[Resource]
         private val json = randomJson()
-        repo.update(id, schema.ref, 1L, Set(nxv.Resource), json).value.accepted shouldBe a[Resource]
+        repo.update(id, schema.ref, 1L, Set(nxv.Resource.value), json).value.accepted shouldBe a[Resource]
         repo.tag(id, schema.ref, 2L, 1L, "name").value.accepted shouldBe a[Resource]
         repo.tag(id, schema.ref, 3L, 2L, "other").value.accepted shouldBe a[Resource]
 
         repo.get(id, "name", None).value.some shouldEqual ResourceF.simpleF(id, value, 1L, schema = schema.ref)
         repo.get(id, "other", None).value.some shouldEqual
-          ResourceF.simpleF(id, json, 2L, schema = schema.ref, types = Set(nxv.Resource))
+          ResourceF.simpleF(id, json, 2L, schema = schema.ref, types = Set(nxv.Resource.value))
       }
     }
 

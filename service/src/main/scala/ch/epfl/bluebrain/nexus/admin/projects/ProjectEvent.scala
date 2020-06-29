@@ -127,7 +127,7 @@ object ProjectEvent {
           case nxv.organizationLabel.name => nxv.organizationLabel.prefix
           case nxv.rev.name               => nxv.rev.prefix
           case nxv.instant.name           => nxv.instant.prefix
-          case nxv.subject.name           => nxv.subject.prefix
+          case nxv.eventSubject.name      => nxv.eventSubject.prefix
           case other                      => other
         })
       implicit val subjectIdEncoder: Encoder[Subject]                   = Encoder.encodeJson.contramap(_.id.asJson)

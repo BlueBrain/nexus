@@ -17,15 +17,14 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache, ViewCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated}
+import ch.epfl.bluebrain.nexus.kg.async.anyProject
+import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache, ViewCache}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, Filter}
 import ch.epfl.bluebrain.nexus.kg.indexing.ViewEncoder._
@@ -40,6 +39,8 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import io.circe.Json
 import io.circe.parser.parse
@@ -73,7 +74,8 @@ class ViewsSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -82,18 +84,24 @@ class ViewsSpec
   implicit private val viewCache             = mock[ViewCache[IO]]
   implicit private val sparqlClient          = mock[BlazegraphClient[IO]]
   implicit private val adminClient           = mock[AdminClient[IO]]
-  implicit private val iamClient             = mock[IamClient[IO]]
   implicit private val storageClient         = mock[StorageClient[IO]]
   implicit private val rsearchClient         = mock[HttpClient[IO, QueryResults[Json]]]
   implicit private val taskJson              = mock[HttpClient[Task, Json]]
   implicit private val untyped               = HttpClient.untyped[Task]
   implicit private val esClient              = mock[ElasticSearchClient[IO]]
-  private val aclsCache                      = mock[AclsCache[IO]]
+  private val aclsApi                        = mock[Acls[IO]]
   implicit private val resolverCache         = mock[ResolverCache[IO]]
   implicit private val clients               = Clients()
 
   private val resolution            =
-    new ProjectResolution(repo, resolverCache, projectCache, StaticResolution[IO](iriResolution), mock[AclsCache[IO]])
+    new ProjectResolution(
+      repo,
+      resolverCache,
+      projectCache,
+      StaticResolution[IO](KgConfig.iriResolution),
+      aclsApi,
+      Caller.anonymous
+    )
   implicit private val materializer = new Materializer[IO](resolution, projectCache)
 
   resolverCache.get(any[ProjectRef]) shouldReturn IO.pure(List.empty[Resolver])
@@ -122,6 +130,7 @@ class ViewsSpec
     )
 
     implicit val caller  = Caller(Anonymous, Set(Anonymous, Authenticated("realm")))
+    implicit val s       = caller.subject
     val projectRef       = ProjectRef(genUUID)
     val base             = Iri.absolute(s"http://example.com/base/").rightValue
     val id               = Iri.absolute(s"http://example.com/$genUUID").rightValue
@@ -159,7 +168,7 @@ class ViewsSpec
         Map(quote("{uuid}") -> uuid, quote("{includeMetadata}") -> includeMeta.toString)
       ) deepMerge Json
         .obj("@id" -> Json.fromString(id.show))
-    val types                                                    = Set[AbsoluteIri](nxv.View, nxv.ElasticSearchView)
+    val types                                                    = Set(nxv.View.value, nxv.ElasticSearchView.value)
 
     def resourceV(json: Json, rev: Long = 1L): ResourceV = {
       val graph = (json deepMerge Json.obj("@id" -> Json.fromString(id.asString)))
@@ -182,7 +191,7 @@ class ViewsSpec
     val esViewModel = ElasticSearchView(mapping, Filter(Set(nxv.Schema.value, nxv.Resource.value), Set(nxv.withSuffix("MyType").value, nxv.withSuffix("MyType2").value), Some("one")), includeMetadata = false, sourceAsText = true, project.ref, id, UUID.randomUUID(), 1L, deprecated = false)
     // format: on
     esClient.updateMapping(any[String], eqTo(mapping), any[Throwable => Boolean]) shouldReturn IO(true)
-    aclsCache.list shouldReturn IO.pure(acls)
+    aclsApi.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn IO(acls)
     esClient.createIndex(any[String], any[Json], any[Throwable => Boolean]) shouldReturn IO(true)
 
   }
@@ -203,7 +212,7 @@ class ViewsSpec
         viewCache.put(any[View]) shouldReturn IO(())
         val valid =
           List(jsonContentOf("/view/aggelasticviewrefs.json"), jsonContentOf("/view/aggelasticview.json"))
-        val tpes  = Set[AbsoluteIri](nxv.View, nxv.AggregateElasticSearchView)
+        val tpes  = Set[AbsoluteIri](nxv.View.value, nxv.AggregateElasticSearchView.value)
         forAll(valid) { j =>
           new Base {
             val json     = viewFrom(j)
@@ -216,7 +225,7 @@ class ViewsSpec
 
       "create default Elasticsearch view using payloads' uuid" in new EsView {
         val view: View = ElasticSearchView.default(projectRef)
-        val defaultId  = Id(projectRef, nxv.defaultElasticSearchIndex)
+        val defaultId  = Id(projectRef, nxv.defaultElasticSearchIndex.value)
         val json       = view.asGraph
           .toJson(viewCtx.appendContextOf(resourceCtx))
           .rightValue
@@ -225,7 +234,7 @@ class ViewsSpec
         val mapping    = json.hcursor.get[String]("mapping").flatMap(parse).rightValue
 
         esClient.updateMapping(any[String], eqTo(mapping), any[Throwable => Boolean]) shouldReturn IO(true)
-        aclsCache.list shouldReturn IO.pure(acls)
+        aclsApi.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn IO(acls)
         esClient.createIndex(any[String], any[Json], any[Throwable => Boolean]) shouldReturn IO(true)
 
         viewCache.put(view) shouldReturn IO(())

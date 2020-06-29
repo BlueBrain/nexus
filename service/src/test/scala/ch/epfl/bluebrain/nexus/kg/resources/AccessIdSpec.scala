@@ -6,12 +6,12 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.kg.urlEncode
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.kg.config.Contexts
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -25,8 +25,8 @@ class AccessIdSpec extends AnyWordSpecLike with Matchers with Inspectors with Te
       "nxs"           -> base,
       "nxc"           -> Contexts.base,
       "resource"      -> unconstrainedSchemaUri,
-      "elasticsearch" -> nxv.defaultElasticSearchIndex,
-      "sparql"        -> nxv.defaultSparqlIndex
+      "elasticsearch" -> nxv.defaultElasticSearchIndex.value,
+      "sparql"        -> nxv.defaultSparqlIndex.value
     )
     val mappings                                       = Map("test-schema" -> url"http://schemas.nexus.example.com/test/v0.1.0/") ++ defaultPrefixMapping
     val uuid                                           = UUID.fromString("20fdc0fc-841a-11e8-adc0-fa7ae01bbebc")

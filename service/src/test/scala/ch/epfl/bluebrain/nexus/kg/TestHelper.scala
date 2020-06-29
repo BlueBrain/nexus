@@ -7,8 +7,9 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, Identity, Permission, ResourceAccessControlList}
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlList
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.kg.config.Schemas.unconstrainedSchemaUri
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources.{Ref, ResId, ResourceF}
@@ -31,8 +32,8 @@ trait TestHelper extends EitherValues with Randomness {
   def produce(string: String, chunkSize: Int = 100): AkkaSource =
     Source(string.grouped(chunkSize).map(ByteString(_)).toList)
 
-  def resourceAcls(acl: AccessControlList): ResourceAccessControlList =
-    ResourceAccessControlList(
+  def resourceAcls(acl: AccessControlList): IamResourceF[AccessControlList] =
+    IamResourceF(
       url"http://example.com/id",
       1L,
       Set.empty,

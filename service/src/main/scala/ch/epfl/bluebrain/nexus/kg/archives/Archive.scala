@@ -7,12 +7,11 @@ import cats.data.{EitherT, OptionT}
 import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types.{Identity, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig.ArchivesConfig
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.{nxv, nxva}
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.ArchivesConfig
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectLabel
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
@@ -22,6 +21,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path.{Segment, Slash}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.{Cursor, Graph, GraphDecoder}
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.{nxv, nxva}
 
 import scala.annotation.tailrec
 
@@ -102,14 +102,14 @@ object Archive {
       val result = for {
         id             <- c.down(nxv.resourceId).as[AbsoluteIri].onError(mainId.ref, "resourceId")
         tpe            <- c.down(rdf.tpe).as[AbsoluteIri].onError(id.ref, "@type")
-        rev            <- c.down(nxva.rev).as[Option[Long]].onError(id.ref, nxva.rev.prefix)
-        tag            <- c.down(nxva.tag).as[Option[String]].onError(id.ref, nxva.tag.prefix)
-        projectLabel   <- c.down(nxva.project).as[Option[ProjectLabel]].onError(id.ref, nxva.project.prefix)
+        rev            <- c.down(nxva.rev).as[Option[Long]].onError(id.ref, "rev")
+        tag            <- c.down(nxva.tag).as[Option[String]].onError(id.ref, "tag")
+        projectLabel   <- c.down(nxva.project).as[Option[ProjectLabel]].onError(id.ref, "project")
         originalSource <- c.down(nxv.originalSource)
                             .as[Option[Boolean]]
                             .map(_.getOrElse(true))
-                            .onError(id.ref, nxv.originalSource.prefix)
-        path           <- c.down(nxv.path).as[Option[Path]].onError(id.ref, nxv.path.prefix)
+                            .onError(id.ref, "originalSource")
+        path           <- c.down(nxv.path).as[Option[Path]].onError(id.ref, "path")
       } yield (id, tpe, rev, tag, projectLabel, originalSource, path)
 
       EitherT.fromEither[F](result).flatMap {

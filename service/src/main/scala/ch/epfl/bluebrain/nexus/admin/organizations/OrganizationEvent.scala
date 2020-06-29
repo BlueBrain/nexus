@@ -106,12 +106,12 @@ object OrganizationEvent {
     implicit private val config: Configuration = Configuration.default
       .withDiscriminator("@type")
       .copy(transformMemberNames = {
-        case nxv.`@id`.name   => nxv.uuid.prefix
-        case nxv.label.name   => nxv.label.prefix
-        case nxv.rev.name     => nxv.rev.prefix
-        case nxv.instant.name => nxv.instant.prefix
-        case nxv.subject.name => nxv.subject.prefix
-        case other            => other
+        case nxv.`@id`.name        => nxv.uuid.prefix
+        case nxv.label.name        => nxv.label.prefix
+        case nxv.rev.name          => nxv.rev.prefix
+        case nxv.instant.name      => nxv.instant.prefix
+        case nxv.eventSubject.name => nxv.eventSubject.prefix
+        case other                 => other
       })
 
     @nowarn("cat=unused")

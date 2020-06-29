@@ -3,10 +3,9 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import ch.epfl.bluebrain.nexus.admin.config.AdminConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
-import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
+import ch.epfl.bluebrain.nexus.admin.directives.QueryDirectives
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.routes.OrganizationRoutes._
@@ -15,7 +14,8 @@ import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import io.circe.Decoder
@@ -35,14 +35,14 @@ class OrganizationRoutes(
 ) extends AuthDirectives(acls, realms)
     with QueryDirectives {
 
-  implicit val oc   = cache
-  def routes: Route =
-    (pathPrefix("orgs") & extractCaller) { caller =>
+  implicit val oc: OrganizationCache[Task] = cache
+  def routes: Route                        =
+    (pathPrefix("orgs") & extractCaller) { implicit caller =>
       implicit val subject: Subject = caller.subject
       concat(
         // fetch
         (get & org & pathEndOrSingleSlash & parameter("rev".as[Long].?)) { (orgLabel, optRev) =>
-          authorizeOn(pathOf(orgLabel), orgs.read)(caller) {
+          authorizeFor(pathOf(orgLabel), orgs.read)(caller) {
             traceOne {
               complete(organizations.fetch(orgLabel, optRev).runNotFound)
             }
@@ -53,11 +53,11 @@ class OrganizationRoutes(
           traceOne {
             concat(
               // deprecate
-              (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
+              (delete & parameter("rev".as[Long]) & authorizeFor(pathOf(orgLabel), orgs.write)) { rev =>
                 complete(organizations.deprecate(orgLabel, rev).runToFuture)
               },
               // update
-              (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)(caller)) { rev =>
+              (put & parameter("rev".as[Long]) & authorizeFor(pathOf(orgLabel), orgs.write)) { rev =>
                 entity(as[OrganizationDescription]) { org =>
                   complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
                 } ~
@@ -69,7 +69,7 @@ class OrganizationRoutes(
         // create
         (pathPrefix(Segment) & pathEndOrSingleSlash) { orgLabel =>
           traceOne {
-            (put & authorizeOn(pathOf(orgLabel), orgs.create)(caller)) {
+            (put & authorizeFor(pathOf(orgLabel), orgs.create)) {
               entity(as[OrganizationDescription]) { org =>
                 complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
               } ~
@@ -78,7 +78,7 @@ class OrganizationRoutes(
           }
         },
         // listing
-        (get & pathEndOrSingleSlash & paginated & searchParamsOrgs & extractCallerAcls(anyOrg)(caller)) {
+        (get & pathEndOrSingleSlash & paginated & searchParamsOrgs & extractCallerAcls(anyOrg)) {
           (pagination, params, acls) =>
             traceCol {
               complete(organizations.list(params, pagination)(acls).runToFuture)

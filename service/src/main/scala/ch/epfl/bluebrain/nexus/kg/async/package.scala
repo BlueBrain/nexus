@@ -4,11 +4,15 @@ import cats.Monad
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
 import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import com.typesafe.scalalogging.Logger
 
 package object async {
+
+  val anyProject: Path = "*" / "*"
 
   /**
     * Resolve the projects from each path inside the ACLs

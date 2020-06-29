@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.kg.resources
 
 import cats.data.EitherT
 import cats.effect.Effect
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
 import ch.epfl.bluebrain.nexus.rdf.implicits._

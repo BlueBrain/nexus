@@ -7,19 +7,21 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues, Randomness}
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.{AclsCache, ProjectCache, ResolverCache}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
+import ch.epfl.bluebrain.nexus.kg.async.anyProject
+import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.kg.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, Resolver, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import org.mockito.ArgumentMatchers.any
 import org.mockito.IdiomaticMockito
@@ -47,7 +49,8 @@ class SchemasSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(7.seconds, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val appConfig             = Settings(system).serviceConfig
+  implicit private val aggregateCfg          = appConfig.kg.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -55,12 +58,19 @@ class SchemasSpec
   implicit private val repo = Repo[IO].ioValue
   private val projectCache  = mock[ProjectCache[IO]]
   private val resolverCache = mock[ResolverCache[IO]]
-  private val aclsCache     = mock[AclsCache[IO]]
+  private val acls          = mock[Acls[IO]]
   resolverCache.get(any[ProjectRef]) shouldReturn IO.pure(List.empty[Resolver])
-  aclsCache.list shouldReturn IO.pure(AccessControlLists.empty)
+  acls.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn IO(AccessControlLists.empty)
 
   implicit private val resolution   =
-    new ProjectResolution[IO](repo, resolverCache, projectCache, StaticResolution(AppConfig.iriResolution), aclsCache)
+    new ProjectResolution[IO](
+      repo,
+      resolverCache,
+      projectCache,
+      StaticResolution(KgConfig.iriResolution),
+      acls,
+      Caller.anonymous
+    )
   implicit private val materializer = new Materializer(resolution, projectCache)
   private val schemas: Schemas[IO]  = Schemas[IO]
 
@@ -102,7 +112,7 @@ class SchemasSpec
           Id(projectRef, resource.id.value),
           schema,
           schema = shaclRef,
-          types = Set(nxv.Schema)
+          types = Set(nxv.Schema.value)
         )
       }
 
@@ -112,7 +122,7 @@ class SchemasSpec
           Id(projectRef, resource.id.value),
           schema,
           schema = shaclRef,
-          types = Set(nxv.Schema)
+          types = Set(nxv.Schema.value)
         )
       }
 
@@ -131,7 +141,7 @@ class SchemasSpec
         )
 
         schemas.update(resId, 1L, update).value.accepted shouldEqual
-          ResourceF.simpleF(resId, update, 2L, schema = shaclRef, types = Set(nxv.Schema, nxv.Resolver))
+          ResourceF.simpleF(resId, update, 2L, schema = shaclRef, types = Set(nxv.Schema.value, nxv.Resolver.value))
       }
 
       "update a schema with circular dependency" in new Base {
@@ -165,7 +175,7 @@ class SchemasSpec
       "deprecate a schema" in new Base {
         schemas.create(resId, schema).value.accepted shouldBe a[Resource]
         schemas.deprecate(resId, 1L).value.accepted shouldEqual
-          ResourceF.simpleF(resId, schema, 2L, schema = shaclRef, types = Set(nxv.Schema), deprecated = true)
+          ResourceF.simpleF(resId, schema, 2L, schema = shaclRef, types = Set(nxv.Schema.value), deprecated = true)
       }
 
       "prevent deprecating a schema that's already deprecated" in new Base {

@@ -6,12 +6,11 @@ import java.util.regex.Pattern.quote
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.test.Resources
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.types.Caller
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.resourceCtxUri
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.ProjectEventStream
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{CompositeView, ElasticSearchView, Filter, SparqlView}
@@ -20,14 +19,17 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, Pro
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 import io.circe.syntax._
 
 trait RoutesFixtures extends TestHelper with Resources {
 
-  val user                              = User("dmontero", "realm")
-  implicit val caller: Caller           = Caller(user, Set(Anonymous))
-  implicit val token: Option[AuthToken] = Some(AuthToken("valid"))
+  val user                                = User("dmontero", "realm")
+  implicit val caller: Caller             = Caller(user, Set(Anonymous))
+  implicit val subject: Subject           = caller.subject
+  implicit val token: Option[AccessToken] = Some(AccessToken("valid"))
 
   val oauthToken = OAuth2BearerToken("valid")
 
@@ -39,10 +41,10 @@ trait RoutesFixtures extends TestHelper with Resources {
     "file"            -> fileSchemaUri,
     "storage"         -> storageSchemaUri,
     "nxv"             -> nxv.base,
-    "documents"       -> nxv.defaultElasticSearchIndex,
-    "graph"           -> nxv.defaultSparqlIndex,
-    "defaultResolver" -> nxv.defaultResolver,
-    "defaultStorage"  -> nxv.defaultStorage
+    "documents"       -> nxv.defaultElasticSearchIndex.value,
+    "graph"           -> nxv.defaultSparqlIndex.value,
+    "defaultResolver" -> nxv.defaultResolver.value,
+    "defaultStorage"  -> nxv.defaultStorage.value
   )
 
   val mappings: Map[String, AbsoluteIri] =
@@ -83,24 +85,24 @@ trait RoutesFixtures extends TestHelper with Resources {
 
   def tag(rev: Long, tag: String) = Json.obj("tag" -> Json.fromString(tag), "rev" -> Json.fromLong(rev))
 
-  def response(schema: Ref, deprecated: Boolean = false)(implicit config: AppConfig): Json =
+  def response(schema: Ref, deprecated: Boolean = false)(implicit config: ServiceConfig): Json =
     Json
       .obj(
         "@id"            -> Json.fromString(s"nxv:$genUuid"),
         "_constrainedBy" -> schema.iri.asJson,
         "_createdAt"     -> Json.fromString(Instant.EPOCH.toString),
         "_createdBy"     -> Json
-          .fromString(s"${config.iam.basePublicIri.asUri}/realms/${user.realm}/users/${user.subject}"),
+          .fromString(s"${config.http.prefixIri.asUri}/realms/${user.realm}/users/${user.subject}"),
         "_deprecated"    -> Json.fromBoolean(deprecated),
         "_rev"           -> Json.fromLong(1L),
         "_project"       -> Json
-          .fromString(s"${config.admin.publicIri.asUri}/${config.admin.prefix}/projects/$organization/$project"),
+          .fromString(s"${config.http.prefixIri.asUri}/projects/$organization/$project"),
         "_updatedAt"     -> Json.fromString(Instant.EPOCH.toString),
-        "_updatedBy"     -> Json.fromString(s"${config.iam.basePublicIri.asUri}/realms/${user.realm}/users/${user.subject}")
+        "_updatedBy"     -> Json.fromString(s"${config.http.prefixIri.asUri}/realms/${user.realm}/users/${user.subject}")
       )
       .addContext(resourceCtxUri)
 
-  def listingResponse()(implicit config: AppConfig): Json =
+  def listingResponse()(implicit config: ServiceConfig): Json =
     Json.obj(
       "@context" -> Json.arr(
         Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json"),

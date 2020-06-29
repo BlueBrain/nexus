@@ -5,20 +5,19 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route}
 import ch.epfl.bluebrain.nexus.iam.acls._
 import ch.epfl.bluebrain.nexus.iam.directives.AclDirectives._
-import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.routes.AclsRoutes.PatchAcl.{AppendAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.iam.routes.AclsRoutes._
-import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.{Decoder, DecodingFailure}
 import kamon.instrumentation.akka.http.TracingDirectives._
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
-class AclsRoutes(acls: Acls[Task], realms: Realms[Task])(implicit hc: HttpConfig) {
+class AclsRoutes(acls: Acls[Task], realms: Realms[Task])(implicit hc: HttpConfig) extends AuthDirectives(acls, realms) {
 
   private val any = "*"
 
@@ -32,7 +31,7 @@ class AclsRoutes(acls: Acls[Task], realms: Realms[Task])(implicit hc: HttpConfig
     pathPrefix("acls") {
       extractResourcePath { path =>
         operationName(s"/${hc.prefix}/acls" + path.segments.map(_ => "/{}").mkString("")) { // /v1/acls/{}/{}
-          authenticateOAuth2Async("*", authenticator(realms)).withAnonymousUser(Caller.anonymous) { implicit caller =>
+          extractCaller { implicit caller =>
             concat(
               parameter("rev" ? 0L) { rev =>
                 val status = if (rev == 0L) Created else OK

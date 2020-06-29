@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.kg.indexing
 
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.iam.types.Identity
+import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Projection, Source}
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
@@ -13,6 +11,8 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Node._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, GraphEncoder, Node}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 
 /**
   * Encoders for [[View]]
@@ -29,19 +29,19 @@ object ViewEncoder {
       (view.id, nxv.sourceAsText, view.sourceAsText)
     ) ++ filterTriples(view.id, view.filter)
 
-  implicit def viewGraphEncoder(implicit config: IamClientConfig): GraphEncoder[View] =
+  implicit def viewGraphEncoder(implicit http: HttpConfig): GraphEncoder[View] =
     GraphEncoder.instance {
       case view: ElasticSearchView                                                         =>
-        Graph(view.id, triples(view) ++ view.mainTriples(nxv.ElasticSearchView))
+        Graph(view.id, triples(view) ++ view.mainTriples(nxv.ElasticSearchView.value))
 
       case view: SparqlView                                                                =>
-        Graph(view.id, triples(view) ++ view.mainTriples(nxv.SparqlView))
+        Graph(view.id, triples(view) ++ view.mainTriples(nxv.SparqlView.value))
 
       case view: AggregateElasticSearchView                                                =>
-        Graph(view.id, view.mainTriples(nxv.AggregateElasticSearchView) ++ view.triplesForView(view.value))
+        Graph(view.id, view.mainTriples(nxv.AggregateElasticSearchView.value) ++ view.triplesForView(view.value))
 
       case view: AggregateSparqlView                                                       =>
-        Graph(view.id, view.mainTriples(nxv.AggregateSparqlView) ++ view.triplesForView(view.value))
+        Graph(view.id, view.mainTriples(nxv.AggregateSparqlView.value) ++ view.triplesForView(view.value))
 
       case composite @ CompositeView(sources, projections, rebuildStrategy, _, _, _, _, _) =>
         val sourcesTriples     = sources.foldLeft(Set.empty[Triple]) { (acc, source) =>
@@ -91,7 +91,10 @@ object ViewEncoder {
         }
         Graph(
           composite.id,
-          composite.mainTriples(nxv.CompositeView, nxv.Beta) ++ sourcesTriples ++ projectionsTriples ++ rebuildTriples
+          composite.mainTriples(
+            nxv.CompositeView.value,
+            nxv.Beta.value
+          ) ++ sourcesTriples ++ projectionsTriples ++ rebuildTriples
         )
     }
 
@@ -107,13 +110,13 @@ object ViewEncoder {
   private def metadataTriple(s: IriOrBNode, includeMetadata: Boolean): Triple =
     (s, nxv.includeMetadata, includeMetadata)
 
-  def identitiesTriples(s: IriOrBNode, identities: Set[Identity])(implicit config: IamClientConfig): Set[Triple] =
+  def identitiesTriples(s: IriOrBNode, identities: Set[Identity])(implicit http: HttpConfig): Set[Triple] =
     identities.foldLeft(Set.empty[Triple]) { (acc, identity) =>
       val (identityId, triples) = identityTriples(identity)
       acc + ((s, nxv.identities, identityId)) ++ triples
     }
 
-  private def identityTriples(identity: Identity)(implicit config: IamClientConfig): (IriNode, Set[Triple]) = {
+  private def identityTriples(identity: Identity)(implicit http: HttpConfig): (IriNode, Set[Triple]) = {
     val ss = IriNode(identity.id)
     identity match {
       case User(sub, realm)     => ss -> Set((ss, rdf.tpe, nxv.User), (ss, nxv.realm, realm), (ss, nxv.subject, sub))

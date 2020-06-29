@@ -6,12 +6,12 @@ import akka.http.scaladsl.model.{ContentTypes, Uri}
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.commons.test._
 import ch.epfl.bluebrain.nexus.commons.test.io.IOEitherValues
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileDescription
 import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.{KgError, TestHelper}
+import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import org.mockito.IdiomaticMockito
 import org.scalatest.{BeforeAndAfter, OptionValues}
@@ -31,9 +31,9 @@ class DiskStorageOperationsSpec
     with TestHelper
     with OptionValues {
 
-  private val appConfig = Settings(system).appConfig
+  implicit private val appConfig = Settings(system).serviceConfig
 
-  implicit private val sc: StorageConfig = appConfig.storage.copy(
+  implicit private val sc: StorageConfig = appConfig.kg.storage.copy(
     DiskStorageConfig(Paths.get("/tmp"), "SHA-256", read, write, false, 1024L),
     RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
     S3StorageConfig("MD5", read, write, true, 1024L),

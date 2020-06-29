@@ -7,11 +7,9 @@ import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.kg.config.AppConfig
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
@@ -23,9 +21,11 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
-class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Materializer[F], config: AppConfig) {
+class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Materializer[F], config: ServiceConfig) {
 
   /**
     * Creates a new schema attempting to extract the id from the source. If a primary node of the resulting graph
@@ -215,6 +215,6 @@ object Schemas {
     * @tparam F the monadic effect type
     * @return a new [[Schemas]] for the provided F type
     */
-  final def apply[F[_]: Effect: Materializer](implicit config: AppConfig, repo: Repo[F]): Schemas[F] =
+  final def apply[F[_]: Effect: Materializer](implicit config: ServiceConfig, repo: Repo[F]): Schemas[F] =
     new Schemas[F](repo)
 }

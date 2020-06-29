@@ -16,26 +16,25 @@ import ch.epfl.bluebrain.nexus.commons.search.{Pagination, QueryResults, Sort, S
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues}
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
-import ch.epfl.bluebrain.nexus.kg.config.Settings
-import ch.epfl.bluebrain.nexus.kg.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.urlEncode
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
-import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
@@ -65,17 +64,12 @@ class ResolverRoutesSpec
     with CirceEq
     with Eventually {
 
-  // required to be able to spin up the routes (CassandraClusterHealth depends on a cassandra session)
-  override def testConfig: Config =
-    ConfigFactory.load("test-no-inmemory.conf").withFallback(ConfigFactory.load()).resolve()
-
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig = Settings(system).appConfig
+  implicit private val appConfig = Settings(system).serviceConfig
   implicit private val clock     = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
   implicit private val adminClient   = mock[AdminClient[Task]]
-  implicit private val iamClient     = mock[IamClient[Task]]
   implicit private val projectCache  = mock[ProjectCache[Task]]
   implicit private val viewCache     = mock[ViewCache[Task]]
   implicit private val resolverCache = mock[ResolverCache[Task]]
@@ -84,6 +78,8 @@ class ResolverRoutesSpec
   implicit private val resources     = mock[Resources[Task]]
   implicit private val tagsRes       = mock[Tags[Task]]
   implicit private val initializer   = mock[ProjectInitializer[Task]]
+  implicit private val aclsApi       = mock[Acls[Task]]
+  private val realms                 = mock[Realms[Task]]
 
   implicit private val cacheAgg =
     Caches(projectCache, viewCache, resolverCache, storageCache, mock[ArchiveCache[Task]])
@@ -97,10 +93,10 @@ class ResolverRoutesSpec
   implicit private val storageClient = mock[StorageClient[Task]]
   implicit private val clients       = Clients()
   private val sortList               = SortList(List(Sort(nxv.createdAt.prefix), Sort("@id")))
-
-  private val manageResolver = Set(Permission.unsafe("resources/read"), Permission.unsafe("resolvers/write"))
+  private val resolverWrite          = Permission.unsafe("resolvers/write")
+  private val manageResolver         = Set(Permission.unsafe("resources/read"), resolverWrite)
   // format: off
-  private val routes = Routes(resources, resolvers, mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, mock[ProjectViewCoordinator[Task]])
+  private val routes = new KgRoutes(resources, resolvers, mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, aclsApi, realms, mock[ProjectViewCoordinator[Task]]).routes
   // format: on
 
   //noinspection NameBooleanParameters
@@ -110,14 +106,14 @@ class ResolverRoutesSpec
     projectCache.getLabel(projectRef) shouldReturn Task.pure(Some(label))
     projectCache.get(projectRef) shouldReturn Task.pure(Some(projectMeta))
 
-    iamClient.identities shouldReturn Task.pure(Caller(user, Set(Anonymous)))
-    val acls = AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> perms)))
-    iamClient.acls(any[Path], any[Boolean], any[Boolean])(any[Option[AuthToken]]) shouldReturn Task.pure(acls)
+    realms.caller(token.value) shouldReturn Task(caller)
+    implicit val acls = AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> perms)))
+    aclsApi.list(label.organization / label.value, ancestors = true, self = true)(caller) shouldReturn Task.pure(acls)
 
     val resolver = jsonContentOf("/resolve/cross-project.json") deepMerge Json
       .obj("@id" -> Json.fromString(id.value.show))
       .addContext(resolverCtxUri)
-    val types    = Set[AbsoluteIri](nxv.Resolver, nxv.CrossProject)
+    val types    = Set(nxv.Resolver.value, nxv.CrossProject.value)
 
     def resolverResponse(): Json =
       response(resolverRef) deepMerge Json.obj(
@@ -155,6 +151,8 @@ class ResolverRoutesSpec
         s"/v1/resources/$organization/$project/_/$urlEncodedId$queryParam"
       )
     }
+    aclsApi.hasPermission(organization / project, resolverWrite)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, read)(caller) shouldReturn Task.pure(true)
   }
 
   "The resolver routes" should {

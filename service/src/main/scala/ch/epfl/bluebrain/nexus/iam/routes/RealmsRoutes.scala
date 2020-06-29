@@ -3,17 +3,17 @@ package ch.epfl.bluebrain.nexus.iam.routes
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.iam.directives.AuthDirectives.authenticator
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.directives.RealmDirectives._
 import ch.epfl.bluebrain.nexus.iam.realms.{Realms, Resource, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.iam.routes.RealmsRoutes._
-import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.ResourceF.resourceMetaEncoder
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts.{iamCtxUri, resourceCtxUri, searchCtxUri}
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
@@ -27,7 +27,8 @@ import monix.execution.Scheduler.Implicits.global
   *
   * @param realms the realms api
   */
-class RealmsRoutes(realms: Realms[Task])(implicit http: HttpConfig) {
+class RealmsRoutes(acls: Acls[Task], realms: Realms[Task])(implicit http: HttpConfig)
+    extends AuthDirectives(acls, realms) {
 
   implicit private val resourceEncoder: Encoder[Resource] =
     Encoder.encodeJson.contramap { r =>
@@ -59,12 +60,12 @@ class RealmsRoutes(realms: Realms[Task])(implicit http: HttpConfig) {
       concat(
         (get & searchParams & pathEndOrSingleSlash) { params =>
           operationName(s"/${http.prefix}/realms") {
-            caller { implicit c => complete(realms.list(params).runToFuture) }
+            extractCaller { implicit c => complete(realms.list(params).runToFuture) }
           }
         },
         (label & pathEndOrSingleSlash) { id =>
           operationName(s"/${http.prefix}/realms/{}") {
-            caller {
+            extractCaller {
               implicit c =>
                 concat(
                   put {
@@ -98,9 +99,6 @@ class RealmsRoutes(realms: Realms[Task])(implicit http: HttpConfig) {
         }
       )
     }
-
-  private def caller: Directive1[Caller] =
-    authenticateOAuth2Async("*", authenticator(realms)).withAnonymousUser(Caller.anonymous)
 }
 
 object RealmsRoutes {
