@@ -35,6 +35,25 @@ jobs:
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
+  review-permission-fixer:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+      - name: Compile and test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest

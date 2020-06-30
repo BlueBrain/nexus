@@ -59,3 +59,7 @@ Thumbs.db
 bigdata.jnl
 blazegraph.jnl
 rules.log
+
+# Rust
+**/*.rs.bk
+Cargo.lock
