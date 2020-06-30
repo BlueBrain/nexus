@@ -48,7 +48,6 @@ jobs:
           components: rustfmt, clippy
       - name: Run cargo check
         uses: actions-rs/cargo@v1
-        working-directory: ./storage/permissions-fixer
         with:
           command: check  --manifest-path=./storage/permissions-fixer/Cargo.toml
       - name: Compile and test
