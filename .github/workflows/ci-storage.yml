@@ -50,12 +50,11 @@ jobs:
         uses: actions-rs/cargo@v1
         working-directory: ./storage/permissions-fixer
         with:
-          command: check
+          command: check  --manifest-path=./storage/permissions-fixer/Cargo.toml
       - name: Compile and test
         uses: actions-rs/cargo@v1
-        working-directory: ./storage/permissions-fixer
         with:
-          command: test
+          command: test  --manifest-path=./storage/permissions-fixer/Cargo.toml
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
