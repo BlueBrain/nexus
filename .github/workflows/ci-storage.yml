@@ -48,10 +48,12 @@ jobs:
           components: rustfmt, clippy
       - name: Run cargo check
         uses: actions-rs/cargo@v1
+        working-directory: ./storage/permissions-fixer
         with:
           command: check
       - name: Compile and test
         uses: actions-rs/cargo@v1
+        working-directory: ./storage/permissions-fixer
         with:
           command: test
   publish:
