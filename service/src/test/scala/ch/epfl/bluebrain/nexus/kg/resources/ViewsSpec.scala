@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.AdminClient
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure.ElasticServerError
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient

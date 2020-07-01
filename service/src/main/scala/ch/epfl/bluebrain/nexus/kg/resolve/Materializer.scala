@@ -3,9 +3,10 @@ package ch.epfl.bluebrain.nexus.kg.resolve
 import cats.data.EitherT
 import cats.effect.Effect
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.ProjectNotFound._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{IllegalContextValue, IncorrectId, InvalidJsonLD}
@@ -27,7 +28,7 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
 ) {
 
   private def flattenCtx(rrefs: List[Ref], contextValue: Json)(implicit
-      project: Project
+      project: ProjectResource
   ): EitherT[F, Rejection, Json] = {
     type JsonRefs = (Json, List[Ref])
     def inner(refs: List[Ref], contextValue: Json): EitherT[F, Rejection, JsonRefs] =
@@ -60,8 +61,8 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
     }
   }
 
-  private def resolveOrNotFound(ref: Ref)(implicit project: Project): RejOrResource[F] =
-    EitherT.fromOptionF(resolution(project.ref).resolve(ref), notFound(ref))
+  private def resolveOrNotFound(ref: Ref)(implicit project: ProjectResource): RejOrResource[F] =
+    EitherT.fromOptionF(resolution(ProjectRef(project.uuid)).resolve(ref), notFound(ref))
 
   /**
     * Resolves the context URIs using the [[ProjectResolution]] and once resolved, it replaces the URIs for the actual payload.
@@ -71,10 +72,12 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
     * @param project the project where the payload belongs to
     * @return Left(rejection) when failed and Right(value) when passed, wrapped in the effect type ''F''
     */
-  def apply(source: Json, id: AbsoluteIri)(implicit project: Project): EitherT[F, Rejection, Value] =
+  def apply(source: Json, id: AbsoluteIri)(implicit project: ProjectResource): EitherT[F, Rejection, Value] =
     apply(source, id, checkId = true)
 
-  def apply(source: Json, id: AbsoluteIri, checkId: Boolean)(implicit project: Project): EitherT[F, Rejection, Value] =
+  def apply(source: Json, id: AbsoluteIri, checkId: Boolean)(implicit
+      project: ProjectResource
+  ): EitherT[F, Rejection, Value] =
     flattenCtx(List(id.ref), source.contextValue)
       .flatMap { ctx =>
         val resolved       = source.replaceContext(Json.obj("@context" -> ctx))
@@ -90,7 +93,7 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
     * @param project the project where the payload belongs to
     * @return Left(rejection) when failed and Right(value) when passed, wrapped in the effect type ''F''
     */
-  def apply(source: Json)(implicit project: Project): EitherT[F, Rejection, (AbsoluteIri, Value)]                    =
+  def apply(source: Json)(implicit project: ProjectResource): EitherT[F, Rejection, (AbsoluteIri, Value)]            =
     flattenCtx(Nil, source.contextValue)
       .flatMap { ctx =>
         val resolved     = source.replaceContext(Json.obj("@context" -> ctx))
@@ -134,7 +137,7 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
   def apply(ref: Ref, resolver: Resolver, includeMetadata: Boolean): RejOrResourceV[F] =
     for {
       resource <- EitherT.fromOptionF(resolution(resolver).resolve(ref), notFound(ref))
-      project  <- EitherT.fromOptionF(projectCache.get(resource.id.parent), projectNotFound(resource.id.parent))
+      project  <- EitherT.fromOptionF(projectCache.getBy(resource.id.parent), projectNotFound(resource.id.parent))
       resolved <- if (includeMetadata) withMeta(resource)(project) else withoutMeta(resource)(project)
     } yield resolved
 
@@ -145,20 +148,20 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
     * @param includeMetadata flag to decide whether or not the metadata should be included in the resuling graph
     * @return Left(rejection) when failed and Right(value) when passed, wrapped in the effect type ''F''
     */
-  def apply(ref: Ref, includeMetadata: Boolean)(implicit currentProject: Project): RejOrResourceV[F] =
+  def apply(ref: Ref, includeMetadata: Boolean)(implicit currentProject: ProjectResource): RejOrResourceV[F] =
     // format: off
     for {
-      resource  <- EitherT.fromOptionF(resolution(currentProject.ref).resolve(ref), notFound(ref))
-      project   <- if (resource.id.parent == currentProject.ref) EitherT.rightT[F, Rejection](currentProject)
-      else EitherT.fromOptionF(projectCache.get(resource.id.parent), projectNotFound(resource.id.parent))
+      resource  <- EitherT.fromOptionF(resolution(ProjectRef(currentProject.uuid)).resolve(ref), notFound(ref))
+      project   <- if (resource.id.parent.id == currentProject.uuid) EitherT.rightT[F, Rejection](currentProject)
+      else EitherT.fromOptionF(projectCache.getBy(resource.id.parent), projectNotFound(resource.id.parent))
       resolved  <- if (includeMetadata) withMeta(resource)(project) else withoutMeta(resource)(project)
     } yield resolved
   // format: on
 
-  def apply(ref: Ref)(implicit currentProject: Project): RejOrResourceV[F] =
+  def apply(ref: Ref)(implicit currentProject: ProjectResource): RejOrResourceV[F] =
     apply(ref, includeMetadata = false)
 
-  private def withoutMeta(resource: Resource)(implicit project: Project): RejOrResourceV[F] =
+  private def withoutMeta(resource: Resource)(implicit project: ProjectResource): RejOrResourceV[F] =
     apply(resource.value, resource.id.value, checkId = false)(project)
       .map(value => resource.map(_ => value.copy(graph = value.graph.removeMetadata)))
 
@@ -169,10 +172,10 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
     *
     * @param resource the resource to materialize
     */
-  def apply(resource: Resource)(implicit project: Project): RejOrResourceV[F] =
+  def apply(resource: Resource)(implicit project: ProjectResource): RejOrResourceV[F] =
     apply(resource, checkId = true)
 
-  private def apply(resource: Resource, checkId: Boolean)(implicit project: Project): RejOrResourceV[F] =
+  private def apply(resource: Resource, checkId: Boolean)(implicit project: ProjectResource): RejOrResourceV[F] =
     apply(resource.value, resource.id.value, checkId).map {
       case Value(json, flattened, graph) => resource.map(_ => Value(json, flattened, graph.removeMetadata))
     }
@@ -185,7 +188,7 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
     * @param resource the resource to materialize
     */
   def withMeta(resource: Resource, metadataOptions: MetadataOptions = MetadataOptions())(implicit
-      project: Project
+      project: ProjectResource
   ): RejOrResourceV[F] =
     apply(resource, checkId = false).map { resourceV =>
       val graph = resourceV.value.graph ++ resourceV.metadata(metadataOptions)
@@ -199,7 +202,7 @@ class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache:
     * @param resId the resource id for which imports are looked up
     * @param graph the resource graph for which imports are looked up
     */
-  def imports(resId: ResId, graph: Graph)(implicit project: Project): EitherT[F, Rejection, Set[ResourceV]] = {
+  def imports(resId: ResId, graph: Graph)(implicit project: ProjectResource): EitherT[F, Rejection, Set[ResourceV]] = {
 
     val currentRef                                         = resId.value.ref
     def importsValues(id: AbsoluteIri, g: Graph): Set[Ref] =

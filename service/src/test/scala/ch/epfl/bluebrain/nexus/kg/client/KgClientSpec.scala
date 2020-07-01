@@ -13,7 +13,7 @@ import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.commons.test.Resources

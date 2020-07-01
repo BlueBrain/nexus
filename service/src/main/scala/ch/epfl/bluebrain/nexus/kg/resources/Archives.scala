@@ -5,23 +5,25 @@ import java.time.{Clock, Duration, Instant}
 import akka.actor.ActorSystem
 import cats.data.EitherT
 import cats.effect.Effect
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveEncoder._
-import ch.epfl.bluebrain.nexus.kg.archives.{Archive, ArchiveCache}
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
+import ch.epfl.bluebrain.nexus.kg.archives.{Archive, ArchiveSource, FetchResource}
+import ch.epfl.bluebrain.nexus.kg.cache.Caches
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
-import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Graph
+import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
@@ -29,17 +31,14 @@ import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
-class Archives[F[_]](implicit
-    cache: ArchiveCache[F],
-    resources: Resources[F],
-    files: Files[F],
-    system: ActorSystem,
+class Archives[F[_]](resources: Resources[F], files: Files[F], cache: Caches[F])(implicit
+    as: ActorSystem,
     materializer: Materializer[F],
     config: ServiceConfig,
-    projectCache: ProjectCache[F],
     clock: Clock,
     F: Effect[F]
 ) {
+  implicit private val pc: ProjectCache[F] = cache.project
 
   /**
     * Creates an archive.
@@ -47,9 +46,9 @@ class Archives[F[_]](implicit
     * @param source the source representation in JSON-LD
     * @return either a rejection or the resource representation in the F context
     */
-  def create(source: Json)(implicit project: Project, subject: Subject): RejOrResource[F] =
+  def create(source: Json)(implicit project: ProjectResource, subject: Subject): RejOrResource[F] =
     materializer(source.addContext(archiveCtxUri)).flatMap {
-      case (id, Value(_, _, graph)) => create(Id(project.ref, id), graph, source)
+      case (id, Value(_, _, graph)) => create(Id(ProjectRef(project.uuid), id), graph, source)
     }
 
   /**
@@ -59,13 +58,13 @@ class Archives[F[_]](implicit
     * @param source the source representation in JSON-LD
     * @return either a rejection or the resource representation in the F context
     */
-  def create(id: ResId, source: Json)(implicit project: Project, subject: Subject): RejOrResource[F] =
+  def create(id: ResId, source: Json)(implicit project: ProjectResource, subject: Subject): RejOrResource[F] =
     materializer(source.addContext(archiveCtxUri), id.value).flatMap {
       case Value(_, _, graph) => create(id, graph, source)
     }
 
   private def create(id: ResId, graph: Graph, source: Json)(implicit
-      project: Project,
+      project: ProjectResource,
       subject: Subject
   ): RejOrResource[F] = {
     implicit val archivesCfg: KgConfig.ArchivesConfig = config.kg.archives
@@ -74,7 +73,7 @@ class Archives[F[_]](implicit
     for {
       _       <- validateShacl(typedGraph)
       archive <- Archive(id.value, typedGraph)
-      _       <- cache.put(archive).toRight(ResourceAlreadyExists(id.ref): Rejection)
+      _       <- cache.archive.put(archive).toRight(ResourceAlreadyExists(id.ref): Rejection)
     } yield
     // format: off
       ResourceF(id, 1L, types, false, Map.empty, None, archive.created, archive.created, archive.createdBy, archive.createdBy, archiveRef, source)
@@ -85,7 +84,7 @@ class Archives[F[_]](implicit
     toEitherT(archiveRef, ShaclEngine(data.asJena, archiveSchemaModel, validateShapes = false, reportDetails = true))
 
   private def fetchArchive(id: ResId): RejOrArchive[F] =
-    cache.get(id).toRight(notFound(id.ref, schema = Some(archiveRef)))
+    cache.archive.get(id).toRight(notFound(id.ref, schema = Some(archiveRef)))
 
   /**
     * Fetches the archive.
@@ -98,8 +97,12 @@ class Archives[F[_]](implicit
       ignoreNotFound: Boolean
   )(implicit acls: AccessControlLists, caller: Caller): RejOrAkkaSource[F] =
     fetchArchive(id: ResId).flatMap { archive =>
-      if (ignoreNotFound) EitherT.right(archive.toTarIgnoreNotFound[F])
-      else archive.toTar[F].toRight(ArchiveElementNotFound: Rejection)
+      implicit val fc: FetchResource[F, ArchiveSource] =
+        FetchResource.akkaSource[F](resources, files, acls, caller, as, F, clock)
+      if (ignoreNotFound)
+        EitherT.right(archive.toTarIgnoreNotFound[F])
+      else
+        archive.toTar[F].toRight(ArchiveElementNotFound: Rejection)
     }
 
   /**
@@ -108,7 +111,7 @@ class Archives[F[_]](implicit
     * @param id the id of the collection source
     * @return either a rejection or the resourceV in the F context
     */
-  def fetch(id: ResId)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetchArchive(id).map {
       case a @ Archive(resId, created, createdBy, _) =>
         val source   = Json.obj().addContext(archiveCtxUri).addContext(resourceCtxUri)
@@ -140,12 +143,10 @@ class Archives[F[_]](implicit
 }
 
 object Archives {
-  final def apply[F[_]: Effect: ArchiveCache: ProjectCache: Materializer](
+  final def apply[F[_]: Effect: Materializer](
       resources: Resources[F],
-      files: Files[F]
-  )(implicit system: ActorSystem, config: ServiceConfig, clock: Clock): Archives[F] = {
-    implicit val r = resources
-    implicit val f = files
-    new Archives
-  }
+      files: Files[F],
+      cache: Caches[F]
+  )(implicit system: ActorSystem, config: ServiceConfig, clock: Clock): Archives[F] =
+    new Archives(resources, files, cache)
 }

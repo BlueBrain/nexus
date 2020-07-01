@@ -6,7 +6,7 @@ import java.util.regex.Pattern.quote
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.test
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}

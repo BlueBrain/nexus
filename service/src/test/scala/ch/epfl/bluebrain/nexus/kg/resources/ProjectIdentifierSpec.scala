@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import java.time.Instant
 
 import cats.{Id => CId}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group}

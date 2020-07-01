@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.kg.config
 
-import ch.epfl.bluebrain.nexus.commons.test.Resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.Json
+import ch.epfl.bluebrain.nexus.util.Resources.jsonContentOf
 
 object Contexts {
 

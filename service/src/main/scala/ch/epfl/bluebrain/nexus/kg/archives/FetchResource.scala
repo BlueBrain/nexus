@@ -8,13 +8,13 @@ import akka.util.ByteString
 import cats.data.OptionT
 import cats.effect.Effect
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource, ResourceDescription}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileAttributes
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Files, Id, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.JsonLDOutputFormat
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.Compacted
@@ -46,9 +46,9 @@ object FetchResource {
 
       private def hasPermission(
           perm: Permission,
-          project: Project
+          project: ProjectResource
       )(implicit acls: AccessControlLists, caller: Caller): Boolean =
-        acls.exists(caller.identities, project.projectLabel, perm)
+        acls.exists(caller.identities, ProjectLabel(project.value.organizationLabel, project.value.label), perm)
 
       private val printer: Printer                          = Printer.spaces2.copy(dropNullValues = true)
       implicit private val outputFormat: JsonLDOutputFormat = Compacted
@@ -66,14 +66,14 @@ object FetchResource {
           case Some(path) => F.pure(path)
         }
 
-      private def generatePath(optPath: Option[Path], id: AbsoluteIri, project: Project): F[Path] =
-        generatePath(optPath, s"${project.show}/${urlEncode(id.asUri)}.json")
+      private def generatePath(optPath: Option[Path], id: AbsoluteIri, project: ProjectResource): F[Path] =
+        generatePath(optPath, s"${project.value.show}/${urlEncode(id.asUri)}.json")
 
-      private def generatePath(optPath: Option[Path], attributes: FileAttributes, project: Project): F[Path] =
-        generatePath(optPath, s"${project.show}/${attributes.filename}")
+      private def generatePath(optPath: Option[Path], attributes: FileAttributes, project: ProjectResource): F[Path] =
+        generatePath(optPath, s"${project.value.show}/${attributes.filename}")
 
       private def fetchResource(r: Resource): OptionT[F, ArchiveSource] = {
-        val id = Id(r.project.ref, r.id)
+        val id = Id(ProjectRef(r.project.uuid), r.id)
         if (hasPermission(read, r.project)) {
           OptionT(generatePath(r.path, r.id, r.project).map(Option.apply)).flatMap { path =>
             val jsonOptionF = (r.rev, r.tag, r.originalSource) match {
@@ -95,7 +95,7 @@ object FetchResource {
       }
 
       private def fetchFile(r: File): OptionT[F, ArchiveSource] = {
-        val resId          = Id(r.project.ref, r.id)
+        val resId          = Id(ProjectRef(r.project.uuid), r.id)
         val fileSourceOptT = (r.rev, r.tag) match {
           case (Some(rev), _) => files.fetch(resId, rev).toOption
           case (_, Some(tag)) => files.fetch(resId, tag).toOption

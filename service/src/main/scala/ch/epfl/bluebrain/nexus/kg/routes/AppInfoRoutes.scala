@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.{ServiceDescription => AdminServiceDescription}
 import ch.epfl.bluebrain.nexus.commons.es.client.{ServiceDescription => EsServiceDescription}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{ServiceDescription => BlazegraphServiceDescription}
@@ -51,7 +50,6 @@ class AppInfoRoutes(serviceDescription: ServiceDescription, status: StatusGroup)
             List(
               Task.pure(serviceDescription),
               Task.pure(ServiceDescription("nexus", extractGlobalMinor(serviceDescription.version))),
-              clients.admin.serviceDescription.map(identity).logError("admin"),
               clients.defaultRemoteStorage.serviceDescription.map(identity).logError("remoteStorage"),
               clients.sparql.serviceDescription.map(identity).logError("blazegraph"),
               clients.elasticSearch.serviceDescription.map(identity).logError("elasticsearch")
@@ -73,7 +71,6 @@ object AppInfoRoutes {
 
   private val logger = Logger[this.type]
 
-  private def identity(value: AdminServiceDescription)      = ServiceDescription(value.name, value.version)
   private def identity(value: StorageServiceDescription)    = ServiceDescription(value.name, value.version)
   private def identity(value: EsServiceDescription)         = ServiceDescription("elasticsearch", value.version)
   private def identity(value: BlazegraphServiceDescription) = ServiceDescription(value.name, value.version)

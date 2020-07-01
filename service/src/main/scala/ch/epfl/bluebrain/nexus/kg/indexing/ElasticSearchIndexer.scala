@@ -1,18 +1,20 @@
 package ch.epfl.bluebrain.nexus.kg.indexing
 
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.effect.{Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient.BulkOp
 import ch.epfl.bluebrain.nexus.kg.indexing.View.ElasticSearchView
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.ProgressFlowElem
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections._
 import com.typesafe.scalalogging.Logger
@@ -36,7 +38,7 @@ object ElasticSearchIndexer {
   final def start[F[_]: Timer](
       view: ElasticSearchView,
       resources: Resources[F],
-      project: Project,
+      project: ProjectResource,
       restartOffset: Boolean
   )(implicit
       as: ActorSystem,
@@ -48,7 +50,7 @@ object ElasticSearchIndexer {
   ): StreamSupervisor[F, ProjectionProgress] = {
 
     implicit val ec: ExecutionContext          = as.dispatcher
-    implicit val p: Project                    = project
+    implicit val p: ProjectResource            = project
     implicit val indexing: IndexingConfig      = config.kg.elasticSearch.indexing
     implicit val metadataOpts: MetadataOptions = MetadataOptions(linksAsIri = true, expandedLinks = true)
     implicit val tm: Timeout                   = Timeout(config.kg.elasticSearch.askTimeout)
@@ -83,7 +85,10 @@ object ElasticSearchIndexer {
         .mergeEmit()
         .toPersistedProgress(view.progressId, initial)
 
-      cassandraSource(s"project=${view.ref.id}", view.progressId, initial.minProgress.offset)
+      PersistenceQuery(as)
+        .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+        .eventsByTag(s"project=${view.ref.id}", initial.minProgress.offset)
+        .map[PairMsg[Any]](e => Right(Message(e, view.progressId)))
         .via(flow)
         .via(kamonViewMetricsFlow(view, project))
     }

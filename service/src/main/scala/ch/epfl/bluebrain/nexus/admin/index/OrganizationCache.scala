@@ -11,7 +11,8 @@ import ch.epfl.bluebrain.nexus.admin.index.Cache._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationResource}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
-import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStore.Subscription
+import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreConfig, OnKeyValueStoreChange}
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
@@ -24,8 +25,10 @@ import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
   * @param store the underlying Distributed Data LWWMap store.
   * @tparam F the effect type ''F[_]''
   */
-class OrganizationCache[F[_]: Monad](store: KeyValueStore[F, UUID, OrganizationResource])(implicit http: HttpConfig)
-    extends Cache[F, Organization](store) {
+class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource])(implicit
+    F: Monad[F],
+    http: HttpConfig
+) extends Cache[F, Organization](store) {
 
   implicit private val ordering: Ordering[OrganizationResource] = Ordering.by { org: OrganizationResource =>
     org.value.label
@@ -64,6 +67,26 @@ class OrganizationCache[F[_]: Monad](store: KeyValueStore[F, UUID, OrganizationR
     */
   def getBy(label: String): F[Option[OrganizationResource]] =
     store.findValue(_.value.label == label)
+
+  /**
+    * Subscribe to organization cache events and call certain functions
+    *
+   * @param onAdded      function to be called when an event has been added to the cache
+    * @param onUpdated    function to be called when an event has been updated from the cache
+    * @param onDeprecated function to be called when an event has been deleted from the cache
+    */
+  def subscribe(
+      onAdded: OrganizationResource => F[Unit] = _ => F.unit,
+      onUpdated: OrganizationResource => F[Unit] = _ => F.unit,
+      onDeprecated: OrganizationResource => F[Unit] = _ => F.unit
+  ): F[Subscription] =
+    store.subscribe {
+      OnKeyValueStoreChange(
+        onCreate = (_, org) => onAdded(org),
+        onUpdate = (_, org) => if (org.deprecated) onDeprecated(org) else onUpdated(org),
+        onRemove = (_, _) => F.unit
+      )
+    }
 }
 object OrganizationCache {
 

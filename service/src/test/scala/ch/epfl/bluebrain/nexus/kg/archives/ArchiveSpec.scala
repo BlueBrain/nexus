@@ -5,7 +5,7 @@ import java.time.{Clock, Instant, ZoneId}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness}
 import ch.epfl.bluebrain.nexus.commons.test.io.IOEitherValues
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}

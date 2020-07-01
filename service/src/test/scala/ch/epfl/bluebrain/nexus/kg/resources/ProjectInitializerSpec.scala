@@ -5,7 +5,7 @@ import java.time.{Clock, Instant}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.data.EitherT
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, Resources => TestResources}
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.Caller

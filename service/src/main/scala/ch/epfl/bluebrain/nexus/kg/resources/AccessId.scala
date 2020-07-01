@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.kg.resources
 
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.commons.test.Randomness._
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.urlEncode
@@ -9,9 +8,11 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 
+import scala.util.Random
+
 object AccessId {
 
-  private val randBase: AbsoluteIri = url"http://notused.com/${genString()}"
+  private val randBase: AbsoluteIri = url"http://notused.com/${Random.nextString(20)}"
 
   /**
     * Build an access id (the Uri from where to fetch the resource from the API)
@@ -24,24 +25,24 @@ object AccessId {
     * @param expanded   flag to decide whether or not we return the expanded version of the id
     */
   def apply(resourceId: AbsoluteIri, schemaId: AbsoluteIri, expanded: Boolean = false)(implicit
-      project: Project,
+      project: ProjectResource,
       http: HttpConfig
   ): AbsoluteIri = {
 
     def prefix(resource: String): AbsoluteIri =
-      url"${http.publicUri}" + http.prefix + resource + project.organizationLabel + project.label
+      url"${http.publicUri}" + http.prefix + resource + project.value.organizationLabel + project.value.label
 
     def removeBase(iri: AbsoluteIri): Option[String] =
-      if (iri.asString.startsWith(project.base.asString) && iri != project.base)
-        Some(iri.asString.stripPrefix(project.base.asString))
+      if (iri.asString.startsWith(project.value.base.asString) && iri != project.value.base)
+        Some(iri.asString.stripPrefix(project.value.base.asString))
       else
         None
 
     def inner(iri: AbsoluteIri): String = {
-      lazy val aliases = project.apiMappings.collectFirst {
+      lazy val aliases = project.value.apiMappings.collectFirst {
         case (p, `iri`) => p
       }
-      lazy val curies  = project.apiMappings.collectFirst {
+      lazy val curies  = project.value.apiMappings.collectFirst {
         case (p, ns) if iri.asString.startsWith(ns.asString) =>
           s"$p:${urlEncode(iri.asString.stripPrefix(ns.asString))}"
       }
@@ -50,7 +51,10 @@ object AccessId {
     }
 
     if (expanded)
-      apply(resourceId, schemaId, false)(project.copy(apiMappings = defaultPrefixMapping, base = randBase), http)
+      apply(resourceId, schemaId, false)(
+        project.copy(value = project.value.copy(apiMappings = defaultPrefixMapping, base = randBase)),
+        http
+      )
     else {
       val resolvedResourceId = inner(resourceId)
       schemaId match {

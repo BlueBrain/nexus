@@ -7,20 +7,19 @@ import akka.http.scaladsl.model.{ContentType, Uri}
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import cats.Monad
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.types._
-import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.storage.Crypto
 import ch.epfl.bluebrain.nexus.rdf.CursorOp.{Down, Up}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.Node.{IriNode, Literal}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
@@ -103,11 +102,17 @@ object syntax {
   implicit final def toNode(instant: Instant): Node =
     Literal(instant.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), xsd.dateTime)
 
-  implicit final class ResourceUriSyntax(private val res: Resource)(implicit project: Project, http: HttpConfig) {
+  implicit final class ResourceUriSyntax(private val res: Resource)(implicit
+      project: ProjectResource,
+      http: HttpConfig
+  ) {
     def accessId: AbsoluteIri = AccessId(res.id.value, res.schema.iri)
   }
 
-  implicit final class ResourceVUriSyntax(private val res: ResourceV)(implicit project: Project, http: HttpConfig) {
+  implicit final class ResourceVUriSyntax(private val res: ResourceV)(implicit
+      project: ProjectResource,
+      http: HttpConfig
+  ) {
     def accessId: AbsoluteIri = AccessId(res.id.value, res.schema.iri)
   }
 
@@ -126,19 +131,6 @@ object syntax {
 
   implicit class AbsoluteIriSyntax(private val iri: AbsoluteIri) extends AnyVal {
     def ref: Ref = Ref(iri)
-  }
-
-  implicit class ProjectSyntax(private val project: Project) extends AnyVal {
-
-    /**
-      * @return the [[ProjectLabel]] consisting of both the organization segment and the project segment
-      */
-    def projectLabel: ProjectLabel = ProjectLabel(project.organizationLabel, project.label)
-
-    /**
-      * @return the project reference
-      */
-    def ref: ProjectRef = ProjectRef(project.uuid)
   }
 
   implicit class CryptoSyntax(private val value: String) extends AnyVal {
@@ -164,17 +156,21 @@ object syntax {
     /**
       * Retrieves the available projects from the ''path''
       */
-    def resolveProjects[F[_]](implicit projectCache: ProjectCache[F], log: Logger, F: Monad[F]): F[List[Project]] =
+    def resolveProjects[F[_]](implicit
+        projectCache: ProjectCache[F],
+        log: Logger,
+        F: Monad[F]
+    ): F[List[ProjectResource]] =
       path match {
         case `/`                                                  =>
-          projectCache.list()
+          projectCache.listUnsafe()
         case Segment(orgLabel, `/`)                               =>
-          projectCache.list(orgLabel)
+          projectCache.listUnsafe(orgLabel)
         case Segment(projectLabel, Slash(Segment(orgLabel, `/`))) =>
-          projectCache.get(ProjectLabel(orgLabel, projectLabel)).map(_.map(List(_)).getOrElse(List.empty[Project]))
+          projectCache.getBy(orgLabel, projectLabel).map(_.map(List(_)).getOrElse(List.empty[ProjectResource]))
         case path                                                 =>
           F.pure(log.warn(s"Attempting to convert path '$path' to a project failed")) >>
-            F.pure(List.empty[Project])
+            F.pure(List.empty[ProjectResource])
       }
   }
 }

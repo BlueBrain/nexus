@@ -2,22 +2,30 @@ package ch.epfl.bluebrain.nexus.kg.resources
 
 import java.time.Instant
 
+import akka.actor.ActorSystem
+import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.{NoOffset, PersistenceQuery}
+import akka.stream.scaladsl.Source
+import akka.util.Timeout
 import cats.data.EitherT
-import cats.effect.Effect
+import cats.effect.{Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.kg.KgError
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
+import ch.epfl.bluebrain.nexus.kg.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
@@ -27,21 +35,25 @@ import ch.epfl.bluebrain.nexus.kg.routes.SearchParams
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.Verify
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
+import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
-import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
+import com.typesafe.scalalogging.Logger
 import io.circe.Json
 
-class Storages[F[_]](repo: Repo[F])(implicit
+import scala.concurrent.ExecutionContext
+
+class Storages[F[_]](repo: Repo[F], private val index: StorageCache[F])(implicit
     F: Effect[F],
     materializer: Materializer[F],
-    config: ServiceConfig,
-    cache: StorageCache[F]
+    config: ServiceConfig
 ) {
 
   implicit private val kgConfig: KgConfig = config.kg
@@ -57,9 +69,9 @@ class Storages[F[_]](repo: Repo[F])(implicit
     * @param source     the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(source: Json)(implicit subject: Subject, verify: Verify[F], project: Project): RejOrResource[F] =
+  def create(source: Json)(implicit subject: Subject, verify: Verify[F], project: ProjectResource): RejOrResource[F] =
     materializer(source.addContext(storageCtxUri)).flatMap {
-      case (id, Value(_, _, graph)) => create(Id(project.ref, id), graph)
+      case (id, Value(_, _, graph)) => create(Id(ProjectRef(project.uuid), id), graph)
     }
 
   /**
@@ -72,7 +84,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
   def create(
       id: ResId,
       source: Json
-  )(implicit subject: Subject, verify: Verify[F], project: Project): RejOrResource[F] =
+  )(implicit subject: Subject, verify: Verify[F], project: ProjectResource): RejOrResource[F] =
     materializer(source.addContext(storageCtxUri), id.value).flatMap {
       case Value(_, _, graph) => create(id, graph)
     }
@@ -89,7 +101,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
       id: ResId,
       rev: Long,
       source: Json
-  )(implicit subject: Subject, verify: Verify[F], project: Project): RejOrResource[F] =
+  )(implicit subject: Subject, verify: Verify[F], project: ProjectResource): RejOrResource[F] =
     for {
       matValue  <- materializer(source.addContext(storageCtxUri), id.value)
       typedGraph = addStorageType(matValue.graph)
@@ -98,7 +110,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
       storage   <- storageValidation(id, typedGraph, 1L, types)
       json      <- jsonForRepo(storage.encrypt)
       updated   <- repo.update(id, storageRef, rev, types, json)
-      _         <- EitherT.right(cache.put(storage)(updated.updated))
+      _         <- EitherT.right(index.put(storage)(updated.updated))
     } yield updated
 
   /**
@@ -117,7 +129,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
     * @param id the id of the resolver
     * @return Some(storage) in the F context when found and None in the F context when not found
     */
-  def fetchStorage(id: ResId)(implicit project: Project, config: StorageConfig): EitherT[F, Rejection, TimedStorage] = {
+  def fetchStorage(id: ResId)(implicit project: ProjectResource): EitherT[F, Rejection, TimedStorage] = {
     val repoOrNotFound = repo.get(id, Some(storageRef)).toRight(notFound(id.ref, schema = Some(storageRef)))
     repoOrNotFound.flatMap(fetch(_, dropKeys = false)).subflatMap(r => Storage(r).map(_.decrypt -> r.updated))
   }
@@ -172,7 +184,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
     * @param id the id of the storage
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo
       .get(id, Some(storageRef))
       .toRight(notFound(id.ref, schema = Some(storageRef)))
@@ -185,7 +197,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
     * @param rev the revision of the storage
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, rev: Long)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, rev: Long)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo
       .get(id, rev, Some(storageRef))
       .toRight(notFound(id.ref, Some(rev), schema = Some(storageRef)))
@@ -198,7 +210,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
     * @param tag the tag of the storage
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, tag: String)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, tag: String)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo
       .get(id, tag, Some(storageRef))
       .toRight(notFound(id.ref, tag = Some(tag), schema = Some(storageRef)))
@@ -248,7 +260,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
   )(implicit sparql: BlazegraphClient[F]): F[LinkResults] =
     view.outgoing(id, pagination, includeExternalLinks)
 
-  private def fetch(resource: Resource, dropKeys: Boolean)(implicit project: Project): RejOrResourceV[F] =
+  private def fetch(resource: Resource, dropKeys: Boolean)(implicit project: ProjectResource): RejOrResourceV[F] =
     materializer.withMeta(resource).map { resourceV =>
       val graph      = resourceV.value.graph
       val filter     = Set[IriNode](nxv.accessKey, nxv.secretKey, nxv.credentials)
@@ -260,7 +272,7 @@ class Storages[F[_]](repo: Repo[F])(implicit
   private def create(
       id: ResId,
       graph: Graph
-  )(implicit subject: Subject, project: Project, verify: Verify[F]): RejOrResource[F] = {
+  )(implicit subject: Subject, project: ProjectResource, verify: Verify[F]): RejOrResource[F] = {
     val typedGraph = addStorageType(graph)
     val types      = typedGraph.rootTypes
 
@@ -268,8 +280,8 @@ class Storages[F[_]](repo: Repo[F])(implicit
       _       <- validateShacl(typedGraph)
       storage <- storageValidation(id, typedGraph, 1L, types)
       json    <- jsonForRepo(storage.encrypt)
-      created <- repo.create(id, OrganizationRef(project.organizationUuid), storageRef, types, json)
-      _       <- EitherT.right(cache.put(storage)(created.updated))
+      created <- repo.create(id, OrganizationRef(project.value.organizationUuid), storageRef, types, json)
+      _       <- EitherT.right(index.put(storage)(created.updated))
     } yield created
   }
 
@@ -301,15 +313,52 @@ object Storages {
 
   type TimedStorage = (Storage, Instant)
 
-  /**
-    * @param config the implicitly available application configuration
-    * @tparam F the monadic effect type
-    * @return a new [[Storages]] for the provided F type
-    */
-  final def apply[F[_]: Effect: Materializer](implicit
-      config: ServiceConfig,
-      repo: Repo[F],
-      cache: StorageCache[F]
-  ): Storages[F] =
-    new Storages[F](repo)
+  final def apply[F[_]: Effect: Materializer](repo: Repo[F], index: StorageCache[F])(implicit
+      config: ServiceConfig
+  ): Storages[F] = new Storages[F](repo, index)
+
+  def indexer[F[_]: Timer](
+      storages: Storages[F]
+  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
+    implicit val ec: ExecutionContext = as.dispatcher
+    implicit val tm: Timeout          = Timeout(config.kg.keyValueStore.askTimeout)
+    implicit val log: Logger          = Logger[Views.type]
+
+    def toStorage(event: Event): F[Option[(Storage, Instant)]] =
+      projectCache
+        .get(event.organization.id, event.id.parent.id)
+        .flatMap[ProjectResource] {
+          case Some(project) => F.pure(project)
+          case _             => F.raiseError(KgError.NotFound(Some(event.id.parent.show)): KgError)
+        }
+        .flatMap { implicit project =>
+          storages.fetchStorage(event.id).value.map {
+            case Left(err)      =>
+              log.error(s"Error on event '${event.id.show} (rev = ${event.rev})', cause: '${err.msg}'")
+              None
+            case Right(storage) => Some(storage)
+          }
+        }
+
+    val projectionId                    = "storage-indexer"
+    val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
+      .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+      .eventsByTag(TaggingAdapter.ResolverTag, NoOffset)
+      .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
+
+    val flow = ProgressFlowElem[F, Any]
+      .collectCast[Event]
+      .groupedWithin(config.kg.keyValueStore.indexing.batch, config.kg.keyValueStore.indexing.batchTimeout)
+      .distinct()
+      .mergeEmit()
+      .mapAsync(toStorage)
+      .collectSome[(Storage, Instant)]
+      .runAsync { case (storage, instant) => storages.index.put(storage)(instant) }()
+      .flow
+      .map(_ => ())
+
+    F.delay[StreamSupervisor[F, Unit]](
+      StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)
+    ) >> F.unit
+  }
 }

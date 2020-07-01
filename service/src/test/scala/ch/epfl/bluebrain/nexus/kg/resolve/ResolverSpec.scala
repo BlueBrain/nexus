@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.{Id => CId}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group, User}

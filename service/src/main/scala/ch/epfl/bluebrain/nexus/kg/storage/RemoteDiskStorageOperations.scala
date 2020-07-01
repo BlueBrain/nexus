@@ -5,7 +5,6 @@ import cats.Applicative
 import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.kg.resources.ResId
 import ch.epfl.bluebrain.nexus.kg.resources.file.File._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage._
@@ -14,10 +13,6 @@ import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => St
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
 
 object RemoteDiskStorageOperations {
-
-  // TODO: Remove when migrating ADMIN client
-  implicit private def oldTokenConversion(implicit token: Option[AccessToken]): Option[AuthToken] =
-    token.map(t => AuthToken(t.value))
 
   implicit private def toDigest(digest: StorageDigest): Digest = Digest(digest.algorithm, digest.value)
 

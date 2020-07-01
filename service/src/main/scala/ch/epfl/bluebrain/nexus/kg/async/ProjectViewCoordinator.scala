@@ -2,15 +2,19 @@ package ch.epfl.bluebrain.nexus.kg.async
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.{ask, AskTimeoutException}
-import akka.persistence.query.Offset
+import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.{NoOffset, Offset, PersistenceQuery}
+import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.effect.{Async, ContextShift, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
+import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, AclEvent, Acls}
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.Msg._
-import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ProjectCache}
+import ch.epfl.bluebrain.nexus.kg.cache.Caches
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.iam.io.TaggingAdapter
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.CompositeViewStatistics
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.CrossProjectEventStream
@@ -22,10 +26,13 @@ import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.kg.{IdOffset, IdStats, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.Projections
+import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projections, StreamSupervisor}
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
+import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinator.log
 
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
@@ -47,7 +54,6 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
 
   implicit private val timeout: Timeout               = config.kg.aggregate.askTimeout
   implicit private val contextShift: ContextShift[IO] = IO.contextShift(ec)
-  implicit private val log: Logger                    = Logger[this.type]
   implicit private val projectCache: ProjectCache[F]  = cache.project
 
   /**
@@ -55,7 +61,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param viewId the view unique identifier on a project
     */
-  def statistics(viewId: AbsoluteIri)(implicit project: Project): F[Option[Statistics]] =
+  def statistics(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Statistics]] =
     fetchAllStatistics(viewId).map(_.filter(_.projectionId.isEmpty).foldLeft[Option[Statistics]](None) {
       case (None, c) if c.sourceId.isEmpty                                => Some(c.value)
       case (None, c)                                                      => Some(CompositeViewStatistics(c))
@@ -70,7 +76,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param projectionId the projection unique identifier on the target view
     */
   def projectionStats(viewId: AbsoluteIri, projectionId: AbsoluteIri)(implicit
-      project: Project
+      project: ProjectResource
   ): F[Option[Statistics]] =
     fetchAllStatistics(viewId).map(_.filter(_.projectionId.contains(projectionId)).foldLeft[Option[Statistics]](None) {
       case (None, c)                               => Some(CompositeViewStatistics(c))
@@ -83,7 +89,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param viewId the view unique identifier on a project
     */
-  def projectionStats(viewId: AbsoluteIri)(implicit project: Project): F[Option[Set[IdStats]]] =
+  def projectionStats(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Set[IdStats]]] =
     fetchAllStatistics(viewId).map(_.filter(_.projectionId.nonEmpty)).map(emptyToNone)
 
   /**
@@ -92,7 +98,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param viewId   the view unique identifier on a project
     * @param sourceId the source unique identifier on the target view
     */
-  def sourceStat(viewId: AbsoluteIri, sourceId: AbsoluteIri)(implicit project: Project): F[Option[Statistics]] =
+  def sourceStat(viewId: AbsoluteIri, sourceId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Statistics]] =
     fetchAllStatistics(viewId).map(_.collectFirst {
       case id if id.sourceId.contains(sourceId) && id.projectionId.isEmpty => id.value
     })
@@ -102,7 +108,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param viewId the view unique identifier on a project
     */
-  def sourceStats(viewId: AbsoluteIri)(implicit project: Project): F[Option[Set[IdStats]]] =
+  def sourceStats(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Set[IdStats]]] =
     fetchAllStatistics(viewId).map(_.filter(id => id.sourceId.nonEmpty && id.projectionId.isEmpty)).map(emptyToNone)
 
   /**
@@ -110,7 +116,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param viewId the view unique identifier on a project
     */
-  def offset(viewId: AbsoluteIri)(implicit project: Project): F[Option[Offset]] =
+  def offset(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Offset]] =
     fetchAllOffsets(viewId).map(_.filter(_.projectionId.isEmpty).foldLeft[Option[Offset]](None) {
       case (None, c) if c.sourceId.isEmpty                               => Some(c.value)
       case (None, c)                                                     => Some(CompositeViewOffset(Set(c)))
@@ -125,7 +131,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param projectionId the projection unique identifier on the target view
     */
   def projectionOffset(viewId: AbsoluteIri, projectionId: AbsoluteIri)(implicit
-      project: Project
+      project: ProjectResource
   ): F[Option[Offset]] =
     fetchAllOffsets(viewId).map(_.filter(_.projectionId.contains(projectionId)).foldLeft[Option[Offset]](None) {
       case (None, c)                              => Some(CompositeViewOffset(Set(c)))
@@ -138,7 +144,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param viewId the view unique identifier on a project
     */
-  def projectionOffsets(viewId: AbsoluteIri)(implicit project: Project): F[Option[Set[IdOffset]]] =
+  def projectionOffsets(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Set[IdOffset]]] =
     fetchAllOffsets(viewId).map(_.filter(_.projectionId.nonEmpty)).map(emptyToNone)
 
   /**
@@ -147,7 +153,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param viewId   the view unique identifier on a project
     * @param sourceId the source unique identifier on the target view
     */
-  def sourceOffset(viewId: AbsoluteIri, sourceId: AbsoluteIri)(implicit project: Project): F[Option[Offset]] =
+  def sourceOffset(viewId: AbsoluteIri, sourceId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Offset]] =
     fetchAllOffsets(viewId).map(_.collectFirst {
       case id if id.sourceId.contains(sourceId) && id.projectionId.isEmpty => id.value
     })
@@ -157,7 +163,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param viewId the view unique identifier on a project
     */
-  def sourceOffsets(viewId: AbsoluteIri)(implicit project: Project): F[Option[Set[IdOffset]]] =
+  def sourceOffsets(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Set[IdOffset]]] =
     fetchAllOffsets(viewId).map(_.filter(id => id.sourceId.nonEmpty && id.projectionId.isEmpty)).map(emptyToNone)
 
   /**
@@ -168,14 +174,14 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param project the project for which the view coordinator is triggered
     */
-  def start(project: Project): F[Unit] =
-    cache.view.getBy[IndexedView](project.ref).flatMap {
+  def start(project: ProjectResource): F[Unit] =
+    cache.view.getBy[IndexedView](ProjectRef(project.uuid)).flatMap {
       case views if containsCrossProject(views) =>
         acls
           .list(anyProject, ancestors = true, self = false)(saCaller)
           .flatMap(resolveProjects(_))
           .map(projAcls => ref ! Start(project.uuid, project, views, projAcls))
-      case views                                => F.pure(ref ! Start(project.uuid, project, views, Map.empty[Project, AccessControlList]))
+      case views                                => F.pure(ref ! Start(project.uuid, project, views, Map.empty[ProjectResource, AccessControlList]))
     }
 
   private def containsCrossProject(views: Set[IndexedView]): Boolean =
@@ -191,7 +197,7 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param orgRef the organization unique identifier
     */
   def stop(orgRef: OrganizationRef): F[Unit] =
-    cache.project.list(orgRef).flatMap(projects => projects.map(project => stop(project.ref)).sequence) >> F.unit
+    cache.project.listUnsafe(orgRef.id).flatMap(_.map(projRes => stop(ProjectRef(projRes.uuid))).sequence) >> F.unit
 
   /**
     * Stops the coordinator children view actors and indices that belong to the provided organization.
@@ -206,9 +212,9 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     *
     * @param viewId the view unique identifier on a project
     */
-  def restart(viewId: AbsoluteIri)(implicit project: Project): F[Option[Unit]] = {
+  def restart(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Unit]] = {
     val msgF = IO.fromFuture(IO(ref ? RestartView(project.uuid, viewId))).to[F]
-    parseOpt[Ack](msgF).recoverWith(logAndRaiseError(project.show, "restart")).map(_.map(_ => ()))
+    parseOpt[Ack](msgF).recoverWith(logAndRaiseError(project.value.show, "restart")).map(_.map(_ => ()))
   }
 
   /**
@@ -217,9 +223,9 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param viewId the view unique identifier on a project
     * @return Some(())) if view exists, None otherwise wrapped in [[F]]
     */
-  def restartProjections(viewId: AbsoluteIri)(implicit project: Project): F[Option[Unit]] = {
+  def restartProjections(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Option[Unit]] = {
     val msgF = IO.fromFuture(IO(ref ? RestartProjection(project.uuid, viewId))).to[F]
-    parseOpt[Ack](msgF).recoverWith(logAndRaiseError(project.show, "restart")).map(_.map(_ => ()))
+    parseOpt[Ack](msgF).recoverWith(logAndRaiseError(project.value.show, "restart")).map(_.map(_ => ()))
   }
 
   /**
@@ -229,22 +235,12 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param projectionId the view projection unique identifier on a project
     * @return Some(())) if projection view exists, None otherwise wrapped in [[F]]
     */
-  def restartProjection(viewId: AbsoluteIri, projectionId: AbsoluteIri)(implicit project: Project): F[Option[Unit]] = {
+  def restartProjection(viewId: AbsoluteIri, projectionId: AbsoluteIri)(implicit
+      project: ProjectResource
+  ): F[Option[Unit]] = {
     val msgF = IO.fromFuture(IO(ref ? RestartProjection(project.uuid, viewId, projectionId = Some(projectionId)))).to[F]
-    parseOpt[Ack](msgF).recoverWith(logAndRaiseError(project.show, "restart")).map(_.map(_ => ()))
+    parseOpt[Ack](msgF).recoverWith(logAndRaiseError(project.value.show, "restart")).map(_.map(_ => ()))
   }
-
-  /**
-    * Notifies the underlying coordinator actor about a change occurring to the Project
-    * whenever this change is relevant to the coordinator
-    *
-    * @param newProject the new incoming project
-    * @param project    the previous state of the project
-    */
-  def change(newProject: Project, project: Project): F[Unit] =
-    if (newProject.label != project.label || newProject.organizationLabel != project.organizationLabel)
-      F.delay(ref ! ProjectChanges(newProject.uuid, newProject))
-    else F.unit
 
   /**
     * Notifies the underlying coordinator actor about an ACL change on the passed ''project''
@@ -252,41 +248,41 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
     * @param acls    the current ACLs
     * @param project the project affected by the ACLs change
     */
-  def changeAcls(acls: AccessControlLists, project: Project): F[Unit] =
+  def changeAcls(acls: AccessControlLists, project: ProjectResource): F[Unit] =
     for {
-      views        <- cache.view.getBy[CompositeView](project.ref)
+      views        <- cache.view.getBy[CompositeView](ProjectRef(project.uuid))
       projectsAcls <- resolveProjects(acls)
     } yield ref ! AclChanges(project.uuid, projectsAcls, views)
 
-  private def parseOpt[A](msgF: F[Any])(implicit A: ClassTag[A], project: Project): F[Option[A]] =
+  private def parseOpt[A](msgF: F[Any])(implicit A: ClassTag[A], project: ProjectResource): F[Option[A]] =
     msgF.flatMap[Option[A]] {
       case Some(A(value)) => F.pure(Some(value))
       case None           => F.pure(None)
       case other          =>
         val msg =
-          s"Received unexpected reply from the project view coordinator actor: '$other' for project '${project.show}'."
+          s"Received unexpected reply from the project view coordinator actor: '$other' for project '${project.value.show}'."
         F.raiseError(KgError.InternalError(msg))
     }
 
-  private def parseSet[A](msgF: F[Any])(implicit SetA: ClassTag[Set[A]], project: Project): F[Set[A]] =
+  private def parseSet[A](msgF: F[Any])(implicit SetA: ClassTag[Set[A]], project: ProjectResource): F[Set[A]] =
     msgF.flatMap[Set[A]] {
       case SetA(value) => F.pure(value)
       case other       =>
         val msg =
-          s"Received unexpected reply from the project view coordinator actor: '$other' for project '${project.show}'."
+          s"Received unexpected reply from the project view coordinator actor: '$other' for project '${project.value.show}'."
         F.raiseError(KgError.InternalError(msg))
     }
 
-  private def fetchAllStatistics(viewId: AbsoluteIri)(implicit project: Project): F[Set[IdStats]] = {
+  private def fetchAllStatistics(viewId: AbsoluteIri)(implicit project: ProjectResource): F[Set[IdStats]] = {
     val msgF = IO.fromFuture(IO(ref ? FetchStatistics(project.uuid, viewId))).to[F]
-    parseSet[IdStats](msgF).recoverWith(logAndRaiseError(project.show, "statistics"))
+    parseSet[IdStats](msgF).recoverWith(logAndRaiseError(project.value.show, "statistics"))
   }
 
   private def fetchAllOffsets(
       viewId: AbsoluteIri
-  )(implicit project: Project): F[Set[IdOffset]] = {
+  )(implicit project: ProjectResource): F[Set[IdOffset]] = {
     val msgF = IO.fromFuture(IO(ref ? FetchOffset(project.uuid, viewId))).to[F]
-    parseSet[IdOffset](msgF).recoverWith(logAndRaiseError(project.show, "progress"))
+    parseSet[IdOffset](msgF).recoverWith(logAndRaiseError(project.value.show, "progress"))
   }
 
   private def emptyToNone[A](set: Set[A]): Option[Set[A]] =
@@ -307,15 +303,54 @@ class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Ca
 }
 
 object ProjectViewCoordinator {
+
+  implicit val log: Logger = Logger[ProjectViewCoordinator.type]
+
   def apply(resources: Resources[Task], cache: Caches[Task], acls: Acls[Task], saCaller: Caller)(implicit
       config: ServiceConfig,
       as: ActorSystem,
       clients: Clients[Task],
       P: Projections[Task, String]
-  ): ProjectViewCoordinator[Task] = {
+  ): Task[ProjectViewCoordinator[Task]] = {
     implicit val projectCache: ProjectCache[Task] = cache.project
-    val coordinatorRef                            =
-      ProjectViewCoordinatorActor.start(resources, cache.view, acls, saCaller, None, config.cluster.shards)
-    new ProjectViewCoordinator[Task](cache, acls, saCaller, coordinatorRef)
+
+    val ref         = ProjectViewCoordinatorActor.start(resources, cache.view, acls, saCaller, None, config.cluster.shards)
+    val coordinator = new ProjectViewCoordinator[Task](cache, acls, saCaller, ref)
+    startAclsStream(coordinator, acls, saCaller) >>
+      cache.project.subscribe(onDeprecated = project => coordinator.stop(ProjectRef(project.uuid))) >>
+      cache.org.subscribe(onDeprecated = org => coordinator.stop(OrganizationRef(org.uuid))) >>
+      Task.pure(coordinator)
   }
+
+  private def startAclsStream(coordinator: ProjectViewCoordinator[Task], acls: Acls[Task], saCaller: Caller)(implicit
+      config: ServiceConfig,
+      as: ActorSystem,
+      projectCache: ProjectCache[Task]
+  ): Task[StreamSupervisor[Task, Unit]] = {
+    implicit val aggc: AggregateConfig = config.admin.aggregate
+    implicit val timeout: Timeout      = aggc.askTimeout
+
+    def handle(event: AclEvent): Task[Unit] =
+      Task.pure(log.debug(s"Handling ACL event: '$event'")) >>
+        (for {
+          acls     <- acls.list(anyProject, ancestors = true, self = false)(saCaller)
+          projects <- acls.value.keySet.toList.traverse(_.resolveProjects).map(_.flatten.distinct)
+          _        <- projects.traverse(coordinator.changeAcls(acls, _))
+        } yield ())
+    val projectionId: String                = "acl-view-change"
+
+    val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
+      .readJournalFor[EventsByTagQuery](aggc.queryJournalPlugin)
+      .eventsByTag(TaggingAdapter.aclEventTag, NoOffset)
+      .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
+
+    val flow = ProgressFlowElem[Task, Any]
+      .collectCast[AclEvent]
+      .mapAsync(handle)
+      .flow
+      .map(_ => ())
+
+    Task.delay(StreamSupervisor.startSingleton[Task, Unit](Task.delay(source.via(flow)), projectionId))
+  }
+
 }

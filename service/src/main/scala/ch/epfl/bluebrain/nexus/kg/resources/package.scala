@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.BadRequest
 import cats.data.EitherT
 import cats.effect.Effect
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.commons.http.{HttpClient, UnexpectedUnsuccessfulHttpResponse}
@@ -115,9 +115,9 @@ package object resources {
   type RejOrLinkResults = Either[Rejection, LinkResults]
 
   /**
-    * Rejection or project [[Project]]
+    * Rejection or project [[ProjectResource]]
     */
-  type RejOrProject = Either[Rejection, Project]
+  type RejOrProject = Either[Rejection, ProjectResource]
 
   private val sortErr = ".*No mapping found for \\[\\w*\\] in order to sort.*"
 

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.kg.routes
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidJsonLD
 import ch.epfl.bluebrain.nexus.kg.resources.{Rejection, Resource, ResourceV}
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.Compacted
@@ -32,7 +32,10 @@ object RejectionEncoder {
         ResourceEncoder.json(value).leftMap(err => InvalidJsonLD(err))
     }
 
-  implicit final def rejectionEncoder(implicit config: ServiceConfig, project: Project): RejectionEncoder[Resource] =
+  implicit final def rejectionEncoder(implicit
+      config: ServiceConfig,
+      project: ProjectResource
+  ): RejectionEncoder[Resource] =
     new RejectionEncoder[Resource] {
       override def apply(value: Resource): Either[Rejection, Json] =
         ResourceEncoder.json(value).leftMap(err => InvalidJsonLD(err))

@@ -4,8 +4,8 @@ import cats.Monad
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 
@@ -49,9 +49,11 @@ class MultiProjectResolution[F[_]](
     }
 
   private def hasPermission(projectRef: ProjectRef): F[Boolean] =
-    projectCache.getLabel(projectRef).map {
-      case None        => false
-      case Some(label) => acls.exists(identities, label, read)
+    projectCache.getBy(projectRef).map {
+      case None          =>
+        false
+      case Some(projRes) =>
+        acls.exists(identities, ProjectLabel(projRes.value.organizationLabel, projRes.value.label), read)
     }
 }
 

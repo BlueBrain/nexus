@@ -92,7 +92,7 @@ class PathDirectivesSpec
         val orgUuid  = UUID.randomUUID()
         val projUuid = UUID.randomUUID()
         projCache.get(orgUuid, projUuid) shouldReturn
-          Task(Some(resource(projUuid, Project("myProj", orgUuid, "myOrg", None, Map.empty, genIri, genIri))))
+          Task(Some(resource(projUuid, Project("myProj", projUuid, orgUuid, "myOrg", None, Map.empty, genIri, genIri))))
         Get(s"/$orgUuid/$projUuid") ~> routes ~> check {
           responseAs[String] shouldEqual "myOrg myProj"
           projCache.get(orgUuid, projUuid) wasCalled once

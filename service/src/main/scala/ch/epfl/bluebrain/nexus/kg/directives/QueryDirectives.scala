@@ -7,11 +7,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.ParameterDirectives.ParamDefAux
 import akka.http.scaladsl.server.{Directive0, Directive1, MalformedQueryParamRejection}
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination, Sort, SortList}
 import ch.epfl.bluebrain.nexus.kg.KgError.{InternalError, InvalidOutputFormat, NotFound}
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.routes.{JsonLDOutputFormat, OutputFormat, SearchParams}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
@@ -39,11 +39,11 @@ object QueryDirectives {
   /**
     * @return the extracted storage from the request query parameters or default from the storage cache.
     */
-  def storage(implicit cache: StorageCache[Task], project: Project): Directive1[Storage] =
+  def storage(implicit cache: StorageCache[Task], project: ProjectResource): Directive1[Storage] =
     parameter("storage".as[AbsoluteIri].?)
       .map {
-        case Some(storageId) => cache.get(project.ref, storageId)
-        case None            => cache.getDefault(project.ref)
+        case Some(storageId) => cache.get(ProjectRef(project.uuid), storageId)
+        case None            => cache.getDefault(ProjectRef(project.uuid))
       }
       .flatMap { result =>
         onComplete(result.runToFuture).flatMap {
@@ -149,7 +149,7 @@ object QueryDirectives {
   /**
     * @return the extracted search parameters from the request query parameters.
     */
-  def searchParams(fixedSchema: AbsoluteIri)(implicit project: Project): Directive1[SearchParams] =
+  def searchParams(fixedSchema: AbsoluteIri)(implicit project: ProjectResource): Directive1[SearchParams] =
     parameter("schema".as[AbsoluteIri] ? fixedSchema).flatMap {
       case `fixedSchema` =>
         searchParams.map(_.copy(schema = Some(fixedSchema)))
@@ -162,7 +162,7 @@ object QueryDirectives {
   /**
     * @return the extracted search parameters from the request query parameters.
     */
-  def searchParams(implicit project: Project): Directive1[SearchParams] =
+  def searchParams(implicit project: ProjectResource): Directive1[SearchParams] =
     (parameter("deprecated".as[Boolean].?) &
       parameter("rev".as[Long].?) &
       parameter("schema".as[AbsoluteIri].?) &

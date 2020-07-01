@@ -5,7 +5,7 @@ import cats.data.EitherT
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg._
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
@@ -49,7 +49,7 @@ sealed trait Resolver extends Product with Serializable {
   /**
     * Converts the ProjectRefs into ProjectLabels when found on the cache
     */
-  def labeled[F[_]: Monad](implicit projectCache: ProjectCache[F]): EitherT[F, Rejection, Resolver] =
+  def labeled[F[_]](implicit projectCache: ProjectCache[F], F: Monad[F]): EitherT[F, Rejection, Resolver] =
     this match {
       case r: CrossProjectResolver => r.projects.traverse(_.toLabel[F]).map(labels => r.copy(projects = labels))
       case r                       => EitherT.rightT(r)
@@ -58,7 +58,7 @@ sealed trait Resolver extends Product with Serializable {
   /**
     * Converts the ProjectLabels into ProjectRefs when found on the cache
     */
-  def referenced[F[_]: Monad](implicit projectCache: ProjectCache[F]): EitherT[F, Rejection, Resolver] =
+  def referenced[F[_]](implicit projectCache: ProjectCache[F], F: Monad[F]): EitherT[F, Rejection, Resolver] =
     this match {
       case r: CrossProjectResolver => r.projects.traverse(_.toRef[F]).map(refs => r.copy(projects = refs))
       case r                       => EitherT.rightT(r)

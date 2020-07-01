@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.commons.search.Sort.OrderType._
 import ch.epfl.bluebrain.nexus.commons.search._

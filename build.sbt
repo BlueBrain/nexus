@@ -16,7 +16,6 @@ scalafmt: {
 val scalacScapegoatVersion = "1.4.4"
 val scalaCompilerVersion   = "2.13.2"
 
-val adminVersion                    = "1.3.0"
 val akkaHttpVersion                 = "10.1.12"
 val akkaHttpCirceVersion            = "1.32.0"
 val akkaCorsVersion                 = "1.0.0"
@@ -60,7 +59,6 @@ val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.1.2"
 val topBraidVersion                 = "1.3.2"
 
-lazy val adminClient              = "ch.epfl.bluebrain.nexus"          %% "admin-client"                        % adminVersion
 lazy val akkaActor                = "com.typesafe.akka"                %% "akka-actor"                          % akkaVersion
 lazy val akkaCluster              = "com.typesafe.akka"                %% "akka-cluster"                        % akkaVersion
 lazy val akkaClusterSharding      = "com.typesafe.akka"                %% "akka-cluster-sharding"               % akkaVersion
@@ -79,6 +77,7 @@ lazy val akkaStream               = "com.typesafe.akka"                %% "akka-
 lazy val akkaTestKit              = "com.typesafe.akka"                %% "akka-testkit"                        % akkaVersion
 lazy val alleycatsCore            = "org.typelevel"                    %% "alleycats-core"                      % catsVersion
 lazy val alpakkaFiles             = "com.lightbend.akka"               %% "akka-stream-alpakka-file"            % alpakkaVersion
+lazy val alpakkaSse             = "com.lightbend.akka"               %% "akka-stream-alpakka-sse"            % alpakkaVersion
 lazy val alpakkaS3                = "com.lightbend.akka"               %% "akka-stream-alpakka-s3"              % alpakkaVersion
 lazy val apacheCompress           = "org.apache.commons"                % "commons-compress"                    % apacheCompressVersion
 lazy val asm                      = "org.ow2.asm"                       % "asm"                                 % asmVersion
@@ -113,7 +112,6 @@ lazy val jacksonAnnotations       = "com.fasterxml.jackson.core"        % "jacks
 lazy val jacksonCore              = "com.fasterxml.jackson.core"        % "jackson-core"                        % jacksonVersion
 lazy val jacksonDatabind          = "com.fasterxml.jackson.core"        % "jackson-databind"                    % jacksonBindVersion
 lazy val jenaArq                  = "org.apache.jena"                   % "jena-arq"                            % jenaVersion
-lazy val jsonldjava               = "com.github.jsonld-java"            % "jsonld-java"                         % jsonldjavaVersion
 lazy val kanelaAgent              = "io.kamon"                          % "kanela-agent"                        % kanelaAgentVersion
 lazy val kindProjector            = "org.typelevel"                    %% "kind-projector"                      % kindProjectorVersion
 lazy val kryo                     = "io.altoo"                         %% "akka-kryo-serialization"             % kryoVersion
@@ -327,7 +325,6 @@ lazy val service = project
   .settings(kamonSettings)
   .settings(
     libraryDependencies       ++= Seq(
-      adminClient,
       akkaClusterSharding,
       akkaHttp,
       akkaHttpCirce,
@@ -338,12 +335,12 @@ lazy val service = project
       akkaSlf4j,
       alleycatsCore,
       alpakkaS3,
+      alpakkaSse,
       catsCore,
       catsEffectRetry,
       catsEffect,
       guava,
       jenaArq,
-      jsonldjava,
       kryo,
       logback,
       magnolia,
@@ -365,7 +362,6 @@ lazy val service = project
       jacksonAnnotations      % Test,
       jacksonCore             % Test,
       jacksonDatabind         % Test,
-      jsonldjava % Test,
       log4jCore               % Test,
       log4jApi                % Test,
       mockito                 % Test,

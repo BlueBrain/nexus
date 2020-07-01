@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.kg.archives
 import java.time.{Clock, Instant, ZoneId}
 
 import cats.effect.{IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous

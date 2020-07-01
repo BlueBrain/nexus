@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import cats.data.EitherT
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}

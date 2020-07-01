@@ -12,21 +12,20 @@ import akka.persistence.query.{EventEnvelope, Offset, Sequence, TimeBasedUUID}
 import akka.stream.scaladsl.Source
 import cats.effect.{ContextShift, Effect, IO, LiftIO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.client.IamClientError.{Forbidden, Unauthorized}
+import ch.epfl.bluebrain.nexus.kg.KgError.AuthenticationFailed
 import ch.epfl.bluebrain.nexus.kg.client.KgClientError._
 import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, ResourceF, ResourceV}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, DecodingFailure, ParsingFailure}
 
@@ -49,11 +48,11 @@ class KgClient[F[_]] private[client] (
     *
     * @return Some(resource) if found and None otherwise, wrapped in an effect type ''F[_]''
     */
-  def resource(project: Project, id: AbsoluteIri)(implicit
+  def resource(project: ProjectResource, id: AbsoluteIri)(implicit
       credentials: Option[AccessToken]
   ): F[Option[ResourceV]] = {
-    val endpoint = config.resourcesIri + (project.organizationLabel / project.label / "_" / id.asString)
-    resourceClientFromRef(project.ref)(requestFrom(endpoint, Query("format" -> "expanded")))
+    val endpoint = config.resourcesIri + (project.value.organizationLabel / project.value.label / "_" / id.asString)
+    resourceClientFromRef(ProjectRef(project.uuid))(requestFrom(endpoint, Query("format" -> "expanded")))
       .map[Option[ResourceV]](Some(_))
       .recoverWith { case NotFound(_) => F.pure(None) }
   }
@@ -63,11 +62,11 @@ class KgClient[F[_]] private[client] (
     *
     * @return Some(resource) if found and None otherwise, wrapped in an effect type ''F[_]''
     */
-  def resource(project: Project, id: AbsoluteIri, tag: String)(implicit
+  def resource(project: ProjectResource, id: AbsoluteIri, tag: String)(implicit
       credentials: Option[AccessToken]
   ): F[Option[ResourceV]] = {
-    val endpoint = config.resourcesIri + (project.organizationLabel / project.label / "_" / id.asString)
-    resourceClientFromRef(project.ref)(requestFrom(endpoint, Query("format" -> "expanded", "tag" -> tag)))
+    val endpoint = config.resourcesIri + (project.value.organizationLabel / project.value.label / "_" / id.asString)
+    resourceClientFromRef(ProjectRef(project.uuid))(requestFrom(endpoint, Query("format" -> "expanded", "tag" -> tag)))
       .map[Option[ResourceV]](Some(_))
       .recoverWith { case NotFound(_) => F.pure(None) }
   }
@@ -127,12 +126,17 @@ object KgClient {
               }
             case StatusCodes.Unauthorized   =>
               cl.toString(resp.entity).flatMap { entityAsString =>
-                F.raiseError[A](Unauthorized(entityAsString))
+                logger.error(
+                  s"Received Unauthorized when accessing '${req.method.name()} ${req.uri.toString()}'. Details: $entityAsString"
+                )
+                F.raiseError[A](AuthenticationFailed)
               }
             case StatusCodes.Forbidden      =>
-              logger.error(s"Received Forbidden when accessing '${req.method.name()} ${req.uri.toString()}'.")
               cl.toString(resp.entity).flatMap { entityAsString =>
-                F.raiseError[A](Forbidden(entityAsString))
+                logger.error(
+                  s"Received Forbidden when accessing '${req.method.name()} ${req.uri.toString()}'. Details: $entityAsString"
+                )
+                F.raiseError[A](AuthenticationFailed)
               }
             case other if other.isSuccess() =>
               val value = L.liftIO(IO.fromFuture(IO(um(resp.entity))))

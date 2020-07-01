@@ -35,7 +35,6 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
-import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
@@ -63,10 +62,6 @@ class StorageRoutesSpec
     with Inspectors
     with CirceEq
     with Eventually {
-
-  // required to be able to spin up the routes (CassandraClusterHealth depends on a cassandra session)
-  override def testConfig: Config =
-    ConfigFactory.load("test-no-inmemory.conf").withFallback(ConfigFactory.load()).resolve()
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 

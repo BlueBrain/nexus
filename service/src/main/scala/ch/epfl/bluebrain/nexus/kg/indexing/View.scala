@@ -4,31 +4,27 @@ import java.time.Instant
 import java.util.regex.Pattern.quote
 import java.util.{Properties, UUID}
 
-import akka.actor.ActorSystem
 import cats.data.EitherT
 import cats.effect.{Effect, Timer}
 import cats.implicits._
 import cats.{Functor, Monad}
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
-import ch.epfl.bluebrain.nexus.admin.client.config.AdminClientConfig
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.commons.test.Resources._
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ViewCache}
+import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
-import ch.epfl.bluebrain.nexus.kg.indexing.View.{query, read, AggregateView, CompositeView, ViewRef}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Interval, Projection, Source}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.SparqlView._
+import ch.epfl.bluebrain.nexus.kg.indexing.View.{apply => _, _}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.metaKeys
@@ -40,8 +36,9 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Cursor, Graph, GraphDecoder, NonEmptyString}
-import ch.epfl.bluebrain.nexus.service.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary._
+import ch.epfl.bluebrain.nexus.util.Resources.{contentOf, jsonContentOf}
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import org.apache.jena.query.QueryFactory
@@ -208,7 +205,7 @@ object View {
     def toResource[F[_]: Functor](
         resources: Resources[F],
         event: Event
-    )(implicit project: Project, metadataOpts: MetadataOptions): F[Option[ResourceV]] =
+    )(implicit project: ProjectResource, metadataOpts: MetadataOptions): F[Option[ResourceV]] =
       filter.resourceTag
         .filter(_.trim.nonEmpty)
         .map(resources.fetch(event.id, _, metadataOpts, None))
@@ -282,9 +279,15 @@ object View {
     ): F[Set[T]] =
       value.toList.foldM(Set.empty[T]) {
         case (acc, ViewRef(ref: ProjectRef, id)) =>
-          (viewCache.getBy[T](ref, id) -> projectCache.getLabel(ref)).mapN {
-            case (Some(view), Some(label)) if !view.deprecated && caller.hasPermission(acls, label, query) => acc + view
-            case _                                                                                         => acc
+          (viewCache.getBy[T](ref, id) -> projectCache.getBy(ref)).mapN {
+            case (Some(view), Some(projRes))
+                if !view.deprecated && caller.hasPermission(
+                  acls,
+                  ProjectLabel(projRes.value.organizationLabel, projRes.value.label),
+                  query
+                ) =>
+              acc + view
+            case _ => acc
           }
         case (acc, _)                            => F.pure(acc)
       }
@@ -492,7 +495,12 @@ object View {
       */
     def toDocument(
         res: ResourceV
-    )(implicit metadataOpts: MetadataOptions, logger: Logger, config: ServiceConfig, project: Project): Option[Json] = {
+    )(implicit
+        metadataOpts: MetadataOptions,
+        logger: Logger,
+        config: ServiceConfig,
+        project: ProjectResource
+    ): Option[Json] = {
       val id           = res.id.value
       val keysToRemove = if (includeMetadata) Seq.empty[String] else metaKeys
 
@@ -792,13 +800,8 @@ object View {
           token: Option[AccessToken]
       ) extends Source {
 
-        private lazy val clientCfg = AdminClientConfig(endpoint, endpoint, "")
-
-        // TODO: Remove when migrating ADMIN client
-        implicit private val oldToken: Option[AuthToken] = token.map(t => AuthToken(t.value))
-
-        def fetchProject[F[_]: Effect](implicit as: ActorSystem): F[Option[Project]] =
-          AdminClient[F](clientCfg).fetchProject(project.organization, project.value)
+        def fetchProject[F[_]: Effect](implicit projectCache: ProjectCache[F]): F[Option[ProjectResource]] =
+          projectCache.getBy(project.organization, project.value)
       }
     }
 
@@ -812,7 +815,7 @@ object View {
           config: ServiceConfig,
           metadataOpts: MetadataOptions,
           logger: Logger,
-          project: Project
+          project: ProjectResource
       ): F[Option[Unit]]
 
       /**
@@ -846,7 +849,7 @@ object View {
             config: ServiceConfig,
             metadataOpts: MetadataOptions,
             logger: Logger,
-            project: Project
+            project: ProjectResource
         ): F[Option[Unit]] = {
           val contextObj = Json.obj("@context" -> context)
           val finalCtx   = if (view.includeMetadata) view.ctx.appendContextOf(contextObj) else contextObj
@@ -900,7 +903,7 @@ object View {
             config: ServiceConfig,
             metadataOpts: MetadataOptions,
             logger: Logger,
-            project: Project
+            project: ProjectResource
         ): F[Option[Unit]] = {
           val client = clients.sparql.copy(namespace = view.index).withRetryPolicy(config.kg.sparql.indexing.retry)
           client.replace(res.id.toGraphUri, graph) >> F.pure(Some(()))

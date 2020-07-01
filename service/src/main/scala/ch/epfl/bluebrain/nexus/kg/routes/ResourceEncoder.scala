@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.kg.routes
 
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.{resourceCtx, resourceCtxUri}
 import ch.epfl.bluebrain.nexus.kg.resources.{Resource, ResourceV}
 import ch.epfl.bluebrain.nexus.kg.resources.Views._
@@ -13,7 +13,7 @@ import io.circe.Json
 
 object ResourceEncoder {
 
-  def json(r: Resource)(implicit config: ServiceConfig, project: Project): Either[String, Json] =
+  def json(r: Resource)(implicit config: ServiceConfig, project: ProjectResource): Either[String, Json] =
     Graph(r.id.value, r.metadata()).toJson(resourceCtx).map(_.replaceContext(resourceCtxUri))
 
   def json(res: ResourceV)(implicit output: JsonLDOutputFormat): Either[String, Json] =

@@ -11,9 +11,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult
 import cats.effect.Effect
 import cats.effect.concurrent.Deferred
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
-import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ResolverCache, StorageCache, ViewCache, ProjectCache => KgProjectCache}
+import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ResolverCache, StorageCache, ViewCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.routes.AdminRoutes
@@ -24,6 +23,7 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.config.IamConfig
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.{Groups, Realms}
 import ch.epfl.bluebrain.nexus.iam.routes.IamRoutes
@@ -32,10 +32,10 @@ import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async.{ProjectAttributesCoordinator, ProjectViewCoordinator}
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
-import ch.epfl.bluebrain.nexus.kg.indexing.Indexing
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution}
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.{Clients, KgRoutes}
+import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttributes
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
@@ -132,7 +132,9 @@ object Main {
 
   def bootstrapKg(
       acls: Acls[Task],
-      saCaller: Caller
+      saCaller: Caller,
+      orgCache: OrganizationCache[Task],
+      projectCache: ProjectCache[Task]
   )(implicit
       system: ActorSystem,
       cfg: ServiceConfig
@@ -154,22 +156,19 @@ object Main {
     implicit val kgConfig: KgConfig   = cfg.kg
     implicit val scheduler: Scheduler = Scheduler.global
 
-    implicit val repo: Repo[Task]                   = Repo[Task].runSyncUnsafe()(Scheduler.global, pm)
-    implicit val cache: Caches[Task]                =
+    val repo: Repo[Task]                          = Repo[Task].runSyncUnsafe()(Scheduler.global, pm)
+    implicit val cache: Caches[Task]              =
       Caches(
-        KgProjectCache[Task],
+        orgCache,
+        projectCache,
         ViewCache[Task],
         ResolverCache[Task],
         StorageCache[Task],
         ArchiveCache[Task].runSyncUnsafe()(Scheduler.global, pm)
       )
-    implicit val storageCache: StorageCache[Task]   = cache.storage
-    implicit val projectCache: KgProjectCache[Task] = cache.project
-    implicit val archiveCache: ArchiveCache[Task]   = cache.archiveCache
-    implicit val viewCache: ViewCache[Task]         = cache.view
-    implicit val resolverCache: ResolverCache[Task] = cache.resolver
-    implicit val projectResolution                  = ProjectResolution.task(repo, cache.resolver, cache.project, acls, saCaller)
-    implicit val materializer: Materializer[Task]   = new Materializer[Task](projectResolution, cache.project)
+    implicit val pc: ProjectCache[Task]           = cache.project
+    implicit val projectResolution                = ProjectResolution.task(repo, cache.resolver, cache.project, acls, saCaller)
+    implicit val materializer: Materializer[Task] = new Materializer[Task](projectResolution, cache.project)
 
     implicit val utClient            = untyped[Task]
     implicit val jsonClient          = withUnmarshaller[Task, Json]
@@ -190,21 +189,20 @@ object Main {
     implicit val clients: Clients[Task] = {
       val sparql                 = defaultSparqlClient
       implicit val elasticSearch = defaultElasticSearchClient
-      implicit val adminClient   = AdminClient[Task](kgConfig.admin)
       implicit val sparqlClient  = sparql
       implicit val storageConfig = StorageClientConfig(url"${kgConfig.storage.remoteDisk.defaultEndpoint}")
       implicit val storageClient = StorageClient[Task]
       Clients()
     }
 
-    val resources: Resources[Task] = Resources[Task]
-    val storages: Storages[Task]   = Storages[Task]
-    val files: Files[Task]         = Files[Task]
-    val archives: Archives[Task]   = Archives[Task](resources, files)
-    val views: Views[Task]         = Views[Task]
-    val resolvers: Resolvers[Task] = Resolvers[Task]
-    val schemas: Schemas[Task]     = Schemas[Task]
-    val tags: Tags[Task]           = Tags[Task]
+    val resources: Resources[Task] = Resources[Task](repo)
+    val storages: Storages[Task]   = Storages[Task](repo, cache.storage)
+    val files: Files[Task]         = Files[Task](repo, cache.storage)
+    val archives: Archives[Task]   = Archives[Task](resources, files, cache)
+    val views: Views[Task]         = Views[Task](repo, cache.view)
+    val resolvers: Resolvers[Task] = Resolvers[Task](repo, cache.resolver)
+    val schemas: Schemas[Task]     = Schemas[Task](repo)
+    val tags: Tags[Task]           = Tags[Task](repo)
 
     (resources, storages, files, archives, views, resolvers, schemas, tags, clients, cache)
   }
@@ -225,28 +223,28 @@ object Main {
       as: ActorSystem,
       cfg: ServiceConfig,
       clients: Clients[Task]
-  ): (ProjectViewCoordinator[Task], ProjectInitializer[Task]) = {
-    implicit val ac                = cfg.iam.acls
-    implicit val rc                = cfg.iam.realms
-    implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
-    implicit val pm: CanBlock      = CanBlock.permit
-    implicit val c: Caches[Task]   = cache
+  ): ProjectViewCoordinator[Task] = {
+    implicit val ac: IamConfig.AclsConfig   = cfg.iam.acls
+    implicit val rc: IamConfig.RealmsConfig = cfg.iam.realms
+    implicit val eff: Effect[Task]          = Task.catsEffect(Scheduler.global)
+    implicit val c: Caches[Task]            = cache
+    implicit val pc: ProjectCache[Task]     = cache.project
 
-    Acls.indexer[Task](acls).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
-    Realms.indexer[Task](realms).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
-    Organizations.indexer[Task](orgs).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
-    Projects.indexer[Task](projects).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
-    implicit val projections: Projections[Task, String]       =
-      Projections[Task, String].runSyncUnsafe(10.seconds)(Scheduler.global, pm)
-    implicit val projectCache: KgProjectCache[Task]           = cache.project
-    val projectViewCoordinator                                = ProjectViewCoordinator(resources, cache, acls, saCaller)
-    val projectAttrCoordinator                                = ProjectAttributesCoordinator(files, projectCache)
-    implicit val projectInitializer: ProjectInitializer[Task] =
-      new ProjectInitializer[Task](storages, views, resolvers, projectViewCoordinator, projectAttrCoordinator)
-
-    implicit val adminClient = clients.admin
-    Indexing.start(storages, views, resolvers, acls, saCaller, projectViewCoordinator, projectAttrCoordinator)
-    (projectViewCoordinator, projectInitializer)
+    val pvcF = for {
+      _           <- Acls.indexer[Task](acls)
+      _           <- Realms.indexer[Task](realms)
+      _           <- Organizations.indexer[Task](orgs)
+      _           <- Projects.indexer[Task](projects)
+      _           <- Views.indexer[Task](views)
+      _           <- Resolvers.indexer[Task](resolvers)
+      _           <- Storages.indexer[Task](storages)
+      projections <- Projections[Task, String]
+      fa           = FetchAttributes.apply[Task]
+      pvc         <- ProjectViewCoordinator(resources, cache, acls, saCaller)(cfg, as, clients, projections)
+      pac         <- ProjectAttributesCoordinator(files, cache)(cfg, fa, as, projections)
+      _           <- ProjectInitializer.fromCache[Task](storages, views, resolvers, pvc, pac)
+    } yield pvc
+    pvcF.runSyncUnsafe(30.seconds)(Scheduler.global, CanBlock.permit)
   }
 
   @SuppressWarnings(Array("UnusedMethodParameter"))
@@ -271,7 +269,7 @@ object Main {
     val saCaller                                                                                = saCallerF.runSyncUnsafe()(Scheduler.global, pm)
     val (orgs, projects, orgCache, projectCache)                                                = bootstrapAdmin(acls, saCaller)
     val (resources, storages, files, archives, views, resolvers, schemas, tags, clients, cache) =
-      bootstrapKg(acls, saCaller)
+      bootstrapKg(acls, saCaller, orgCache, projectCache)
     implicit val cl                                                                             = clients
     implicit val cc                                                                             = cache
     val logger                                                                                  = Logging(as, getClass)
@@ -279,13 +277,12 @@ object Main {
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
-      val (projectViewCoordinator, projectInitializer) =
+      val projectViewCoordinator =
         bootstrapIndexers(acls, realms, orgs, projects, resources, files, storages, views, resolvers, cache, saCaller)
-      implicit val pi                                  = projectInitializer
-      val iamRoutes                                    = IamRoutes(acls, realms, perms)
-      val adminRoutes                                  = AdminRoutes(orgs, projects, orgCache, projectCache, acls, realms)
-      val infoRoutes                                   = AppInfoRoutes(serviceConfig.description, cluster).routes
-      val kgRoutes                                     = new KgRoutes(
+      val iamRoutes              = IamRoutes(acls, realms, perms)
+      val adminRoutes            = AdminRoutes(orgs, projects, orgCache, projectCache, acls, realms)
+      val infoRoutes             = AppInfoRoutes(serviceConfig.description, cluster).routes
+      val kgRoutes               = new KgRoutes(
         resources,
         resolvers,
         views,

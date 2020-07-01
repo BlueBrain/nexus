@@ -4,7 +4,6 @@ import java.nio.file.Path
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import ch.epfl.bluebrain.nexus.admin.client.config.AdminClientConfig
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.types.Permission
@@ -26,7 +25,6 @@ import scala.concurrent.duration.FiniteDuration
   * Application configuration
   *
   * @param storage           storages configuration
-  * @param admin             admin client configuration
   * @param sparql            Sparql endpoint configuration
   * @param elasticSearch     ElasticSearch endpoint configuration
   * @param composite         Composite view configuration
@@ -37,7 +35,6 @@ import scala.concurrent.duration.FiniteDuration
   */
 final case class KgConfig(
     storage: StorageConfig,
-    admin: AdminClientConfig,
     sparql: SparqlConfig,
     elasticSearch: ElasticSearchConfig,
     composite: CompositeViewConfig,
@@ -248,7 +245,6 @@ object KgConfig {
 
   implicit def toSparql(implicit appConfig: KgConfig): SparqlConfig                           = appConfig.sparql
   implicit def toElasticSearch(implicit appConfig: KgConfig): ElasticSearchConfig             = appConfig.elasticSearch
-  implicit def toAdmin(implicit appConfig: KgConfig): AdminClientConfig                       = appConfig.admin
   implicit def toAggregateConfig(implicit appConfig: KgConfig): AggregateConfig               = appConfig.aggregate
   implicit def toStore(implicit appConfig: KgConfig): StoreConfig                             = appConfig.keyValueStore
   implicit def toKVS(implicit appConfig: KgConfig): KeyValueStoreConfig                       = appConfig.keyValueStore.keyValueStoreConfig

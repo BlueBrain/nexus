@@ -7,7 +7,7 @@ import akka.testkit.TestKit
 import akka.util.Timeout
 import cats.data.OptionT
 import cats.effect.{IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}

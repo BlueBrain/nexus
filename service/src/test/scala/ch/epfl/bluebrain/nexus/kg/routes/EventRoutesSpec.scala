@@ -30,7 +30,7 @@ class EventRoutesSpec extends EventsSpecBase {
     aclsApi.hasPermission(/ + "org", read)(caller) shouldReturn Task.pure(true)
 
     "return all events for a project" in {
-      Get("/") ~> eventRoutes.routes(project) ~> check {
+      Get("/") ~> eventRoutes.projectRoutes(project) ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected)
@@ -38,7 +38,7 @@ class EventRoutesSpec extends EventsSpecBase {
     }
 
     "return all events for a project from the last seen" in {
-      Get("/").addHeader(`Last-Event-ID`(0.toString)) ~> eventRoutes.routes(project) ~> check {
+      Get("/").addHeader(`Last-Event-ID`(0.toString)) ~> eventRoutes.projectRoutes(project) ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected, 1)
@@ -46,7 +46,7 @@ class EventRoutesSpec extends EventsSpecBase {
     }
 
     "return all events for an organization" in {
-      Get("/") ~> eventRoutes.routes(organization) ~> check {
+      Get("/") ~> eventRoutes.projectRoutes(organization) ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected)
@@ -54,7 +54,7 @@ class EventRoutesSpec extends EventsSpecBase {
     }
 
     "return all events for an organization from the last seen" in {
-      Get("/").addHeader(`Last-Event-ID`(0.toString)) ~> eventRoutes.routes(organization) ~> check {
+      Get("/").addHeader(`Last-Event-ID`(0.toString)) ~> eventRoutes.projectRoutes(organization) ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected, 1)

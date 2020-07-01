@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.projects
 
 import java.util.UUID
 
+import cats.Show
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import io.circe.{Encoder, Json}
@@ -39,6 +40,8 @@ final case class Project(
 }
 
 object Project {
+
+  implicit val projectShow: Show[Project] = Show.show(project => s"${project.organizationLabel}/${project.label}")
 
   implicit val projectEncoder: Encoder[Project] = Encoder.encodeJson.contramap { p =>
     Json
