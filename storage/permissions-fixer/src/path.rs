@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::ffi::CString;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::MetadataExt;
@@ -70,7 +71,6 @@ fn visit_all(path: &Path) -> Result<(), Failure> {
         })
         .collect();
     parent_result.and_then(|_| result.map(|_| ()))
-
 }
 
 fn set_owner(path: &Path) -> Result<(), Failure> {
@@ -92,9 +92,9 @@ fn set_custom_owner(path: &Path, uid: u32, gid: u32) -> Result<(), Failure> {
     }
 }
 
-fn set_permissions(path: &Path, mask: u16) -> Result<(), Failure> {
+fn set_permissions(path: &Path, mask: u32) -> Result<(), Failure> {
     let p = CString::new(path.as_os_str().as_bytes()).map_err(|_| PathCannotHaveNull)?;
-    let chmod = unsafe { chmod(p.as_ptr() as *const i8, mask) };
+    let chmod = unsafe { chmod(p.as_ptr() as *const i8, mask.try_into().unwrap()) };
     if chmod == 0 {
         Ok(())
     } else {
@@ -102,7 +102,7 @@ fn set_permissions(path: &Path, mask: u16) -> Result<(), Failure> {
     }
 }
 
-fn fetch_permissions(path: &Path) -> u16 {
+fn fetch_permissions(path: &Path) -> u32 {
     fetch_metadata(path).permissions().mode()
 }
 
@@ -244,11 +244,11 @@ mod tests {
         assert_eq!(metadata.gid(), gid);
     }
 
-    fn check_permissions(path: &Path, mask: u16) {
+    fn check_permissions(path: &Path, mask: u32) {
         assert_eq!(fetch_permissions(path) & 0o777, mask);
     }
 
-    fn random_mask() -> u16 {
+    fn random_mask() -> u32 {
         thread_rng().gen_range(0, 0o1000)
     }
 
