@@ -40,22 +40,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust
+      - name: Compile and test
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
           components: rustfmt, clippy
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path=./storage/permissions-fixer/Cargo.toml
-      - name: Compile and test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --manifest-path=./storage/permissions-fixer/Cargo.toml
+        run: sudo cargo test --manifest-path=./storage/permissions-fixer/Cargo.toml
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
