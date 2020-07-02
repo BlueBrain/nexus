@@ -13,22 +13,20 @@ import akka.testkit.TestKit
 import akka.util.ByteString
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
-import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness, Resources}
-import ch.epfl.bluebrain.nexus.iam.client.IamClientError
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient.AkkaSource
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError._
 import ch.epfl.bluebrain.nexus.storage.client.config.StorageClientConfig
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.Digest
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes, ServiceDescription}
+import ch.epfl.bluebrain.nexus.util.{EitherValues, IOOptionValues, Randomness, Resources}
 import io.circe.Json
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, Inspectors}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -60,7 +58,7 @@ class StorageClientSpec
   implicit private val sourceClient: HttpClient[IO, AkkaSource]           = mock[HttpClient[IO, AkkaSource]]
   implicit private val servDescClient: HttpClient[IO, ServiceDescription] = mock[HttpClient[IO, ServiceDescription]]
   implicit private val notUsed: HttpClient[IO, NotUsed]                   = mock[HttpClient[IO, NotUsed]]
-  implicit private val tokenOpt: Option[AuthToken]                        = Option(AuthToken("token"))
+  implicit private val tokenOpt: Option[AccessToken]                      = Option(AccessToken("token"))
 
   private val client =
     new StorageClient[IO](config, attributesClient, sourceClient, servDescClient, notUsed)
@@ -102,8 +100,6 @@ class StorageClientSpec
   }
 
   private val exs: List[Exception] = List(
-    IamClientError.Unauthorized(""),
-    IamClientError.Forbidden(""),
     StorageClientError.UnmarshallingError[FileAttributes](""),
     StorageClientError.UnmarshallingError[Unit](""),
     StorageClientError.UnmarshallingError[AkkaSource](""),

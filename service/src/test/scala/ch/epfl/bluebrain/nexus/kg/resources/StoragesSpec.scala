@@ -6,22 +6,22 @@ import java.util.regex.Pattern.quote
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.show._
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.Project
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache, StorageCache}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig.iriResolution
+import ch.epfl.bluebrain.nexus.kg.cache.{ResolverCache, StorageCache}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig.iriResolution
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, Resolver, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.Verify
@@ -31,6 +31,14 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{
+  ActorSystemFixture,
+  CirceEq,
+  EitherValues,
+  IOEitherValues,
+  IOOptionValues,
+  Resources => TestResources
+}
 import io.circe.Json
 import javax.crypto.SecretKey
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
@@ -52,7 +60,7 @@ class StoragesSpec
     with Matchers
     with OptionValues
     with EitherValues
-    with test.Resources
+    with TestResources
     with TestHelper
     with Inspectors
     with BeforeAndAfter
@@ -82,7 +90,7 @@ class StoragesSpec
       Caller.anonymous
     )
   implicit private val materializer  = new Materializer[IO](resolution, projectCache)
-  private val storages: Storages[IO] = Storages[IO]
+  private val storages: Storages[IO] = Storages[IO](repo, storageCache)
   private val readPerms              = Permission.unsafe("resources/read")
   private val writePerms             = Permission.unsafe("files/write")
 
@@ -102,7 +110,7 @@ class StoragesSpec
     val resId                           = Id(projectRef, id)
     val voc                             = Iri.absolute(s"http://example.com/voc/").rightValue
     // format: off
-    implicit val project = Project(resId.value, "proj", "org", None, base, voc, Map.empty, projectRef.id, genUUID, 1L, deprecated = false, Instant.EPOCH, subject.id, Instant.EPOCH, subject.id)
+    implicit val project = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project("proj", genUUID, "org", None, Map.empty, base, voc))
     // format: on
     def updateId(json: Json)            =
       json deepMerge Json.obj("@id" -> Json.fromString(id.show))
@@ -144,7 +152,7 @@ class StoragesSpec
         .rightValue
 
       val resourceV =
-        ResourceF.simpleV(resId, Value(json, ctx.contextValue, graph), rev, schema = storageRef, types = types)
+        KgResourceF.simpleV(resId, Value(json, ctx.contextValue, graph), rev, schema = storageRef, types = types)
       resourceV.copy(
         value = resourceV.value.copy(graph = graph ++ resourceV.metadata())
       )
@@ -167,21 +175,21 @@ class StoragesSpec
         storageCache.put(eqTo(diskStorageModel))(any[Instant]) shouldReturn IO.pure(())
         val result   = storages.create(diskStorage).value.accepted
         val expected =
-          ResourceF.simpleF(resId, diskStorage, schema = storageRef, types = typesDisk)
+          KgResourceF.simpleF(resId, diskStorage, schema = storageRef, types = typesDisk)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
       "create a RemoteDiskStorage" in new Base {
         storageCache.put(eqTo(remoteDiskStorageModel))(any[Instant]) shouldReturn IO.pure(())
         val result   = storages.create(resId, remoteDiskStorage).value.accepted
-        val expected = ResourceF.simpleF(resId, remoteDiskStorage, schema = storageRef, types = typesRemote)
+        val expected = KgResourceF.simpleF(resId, remoteDiskStorage, schema = storageRef, types = typesRemote)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
       "create a S3Storage" in new Base {
         storageCache.put(eqTo(s3StorageModel))(any[Instant]) shouldReturn IO.pure(())
         val result   = storages.create(resId, s3Storage).value.accepted
-        val expected = ResourceF.simpleF(resId, s3Storage, schema = storageRef, types = typesS3)
+        val expected = KgResourceF.simpleF(resId, s3Storage, schema = storageRef, types = typesS3)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
@@ -204,7 +212,7 @@ class StoragesSpec
         storageCache.put(eqTo(diskStorageModel.copy(default = true, maxFileSize = 200L)))(any[Instant]) shouldReturn IO
           .pure(())
         val result         = storages.update(resId, 1L, storageUpdated).value.accepted
-        val expected       = ResourceF.simpleF(resId, storageUpdated, 2L, schema = storageRef, types = typesDisk)
+        val expected       = KgResourceF.simpleF(resId, storageUpdated, 2L, schema = storageRef, types = typesDisk)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
@@ -220,7 +228,7 @@ class StoragesSpec
         storages.create(resId, diskStorage).value.accepted shouldBe a[Resource]
         val result   = storages.deprecate(resId, 1L).value.accepted
         val expected =
-          ResourceF.simpleF(resId, diskStorage, 2L, schema = storageRef, types = typesDisk, deprecated = true)
+          KgResourceF.simpleF(resId, diskStorage, 2L, schema = storageRef, types = typesDisk, deprecated = true)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 

@@ -11,31 +11,29 @@ import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults}
-import ch.epfl.bluebrain.nexus.commons.test.io.IOValues
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, Resources}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProjectEventStream, ProjectEventStream}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Interval, Projection, Source}
-import ch.epfl.bluebrain.nexus.kg.indexing.View._
-import ch.epfl.bluebrain.nexus.kg.indexing.View.Filter
+import ch.epfl.bluebrain.nexus.kg.indexing.View.{Filter, _}
 import ch.epfl.bluebrain.nexus.kg.indexing.ViewEncoder._
-import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
 import ch.epfl.bluebrain.nexus.kg.resources.Id
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
+import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
+import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{CirceEq, IOValues, Resources}
 import io.circe.Json
-import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.mockito.Mockito.when
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
+import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 

@@ -5,20 +5,19 @@ import java.util.regex.Pattern.quote
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.show._
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlResults.{Binding, Bindings, Head}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults}
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues}
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.async.anyProject
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
+import ch.epfl.bluebrain.nexus.kg.cache.ResolverCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
@@ -27,6 +26,7 @@ import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, Sparq
 import ch.epfl.bluebrain.nexus.kg.indexing.View.SparqlView
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, Resolver, StaticResolution}
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
@@ -37,12 +37,19 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{
+  ActorSystemFixture,
+  EitherValues,
+  IOEitherValues,
+  IOOptionValues,
+  Resources => TestResources
+}
 import io.circe.Json
-import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.mockito.Mockito.when
-import org.scalatest.{Inspectors, OptionValues}
+import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -58,7 +65,7 @@ class ResourcesSpec
     with Matchers
     with OptionValues
     with EitherValues
-    with test.Resources
+    with TestResources
     with TestHelper
     with Inspectors {
 
@@ -88,7 +95,7 @@ class ResourcesSpec
       Caller.anonymous
     )
   implicit private val materializer    = new Materializer(resolution, projectCache)
-  private val resources: Resources[IO] = Resources[IO]
+  private val resources: Resources[IO] = Resources[IO](repo)
 
   trait Base {
     implicit val subject: Subject = Anonymous
@@ -97,28 +104,17 @@ class ResourcesSpec
     val id                        = Iri.absolute(s"http://example.com/$genUUID").rightValue
     val resId                     = Id(projectRef, id)
     val voc                       = Iri.absolute(s"http://example.com/voc/").rightValue
-    implicit val project          = Project(
-      resId.value,
-      "proj",
-      "org",
-      None,
-      base,
-      voc,
-      Map.empty,
-      projectRef.id,
-      genUUID,
-      1L,
-      deprecated = false,
-      Instant.EPOCH,
-      subject.id,
-      Instant.EPOCH,
-      subject.id
-    )
+    // format: off
+    implicit val project = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project("proj", genUUID, "org", None, Map.empty, base, voc))
+    // format: on
     val schemaRef                 = Ref(unconstrainedSchemaUri)
 
     val defaultCtx = Json.obj(
       "@context" -> Json
-        .obj("@base" -> Json.fromString(project.base.asString), "@vocab" -> Json.fromString(project.vocab.asString))
+        .obj(
+          "@base"  -> Json.fromString(project.value.base.asString),
+          "@vocab" -> Json.fromString(project.value.vocab.asString)
+        )
     )
 
     def resourceV(json: Json, rev: Long = 1L): ResourceV = {
@@ -126,7 +122,7 @@ class ResourcesSpec
       val graph           = (json deepMerge Json.obj("@context" -> defaultCtxValue, "@id" -> Json.fromString(id.asString)))
         .toGraph(resId.value)
         .rightValue
-      val resourceV       = ResourceF.simpleV(resId, Value(json, defaultCtxValue, graph), rev, schema = schemaRef)
+      val resourceV       = KgResourceF.simpleV(resId, Value(json, defaultCtxValue, graph), rev, schema = schemaRef)
       resourceV.copy(
         value = resourceV.value.copy(graph = Graph(resId.value, graph.triples ++ resourceV.metadata()))
       )
@@ -147,15 +143,15 @@ class ResourcesSpec
             "@id"      -> Json.fromString(genId.show)
           )
         resources.create(schemaRef, json).value.accepted shouldEqual
-          ResourceF.simpleF(genRes, json, schema = schemaRef)
+          KgResourceF.simpleF(genRes, json, schema = schemaRef)
       }
 
       "create a new resource validated against empty schema (resource schema) with a payload containing an empty @id" in new Base {
-        val genRes   = Id(projectRef, project.base)
+        val genRes   = Id(projectRef, project.value.base)
         val json     = Json.obj("@id" -> Json.fromString(""))
         val expected = json deepMerge defaultCtx
         resources.create(schemaRef, json).value.accepted shouldEqual
-          ResourceF.simpleF(genRes, expected, schema = schemaRef)
+          KgResourceF.simpleF(genRes, expected, schema = schemaRef)
       }
 
       "create a new resource validated against empty schema (resource schema) with a payload only containing @id" in new Base {
@@ -165,19 +161,19 @@ class ResourcesSpec
           Json.obj("@id" -> Json.fromString(genId))
         val expected = json deepMerge defaultCtx
         resources.create(schemaRef, json).value.accepted shouldEqual
-          ResourceF.simpleF(genRes, expected, schema = schemaRef)
+          KgResourceF.simpleF(genRes, expected, schema = schemaRef)
       }
 
       "create a new resource validated against empty schema (resource schema) with a payload only containing @context" in new Base {
         val json     = Json.obj("@context" -> Json.obj("nxv" -> Json.fromString(nxv.base.toString)))
         val resource = resources.create(schemaRef, json).value.accepted
-        resource shouldEqual ResourceF.simpleF(Id(projectRef, resource.id.value), json, schema = schemaRef)
+        resource shouldEqual KgResourceF.simpleF(Id(projectRef, resource.id.value), json, schema = schemaRef)
       }
 
       "create a new resource validated against empty schema (resource schema) with the id passed on the call and the payload only containing @context" in new Base {
         val json     = Json.obj("@context" -> Json.obj("nxv" -> Json.fromString(nxv.base.toString)))
         val resource = resources.create(resId, schemaRef, json).value.accepted
-        resource shouldEqual ResourceF.simpleF(Id(projectRef, resource.id.value), json, schema = schemaRef)
+        resource shouldEqual KgResourceF.simpleF(Id(projectRef, resource.id.value), json, schema = schemaRef)
       }
 
       "create a new resource validated against empty schema (resource schema) with the id passed on the call and the payload only containing @context and @id" in new Base {
@@ -186,7 +182,7 @@ class ResourcesSpec
           "@id"      -> Json.fromString(resId.value.asString)
         )
         val resource = resources.create(resId, schemaRef, json).value.accepted
-        resource shouldEqual ResourceF.simpleF(Id(projectRef, resource.id.value), json, schema = schemaRef)
+        resource shouldEqual KgResourceF.simpleF(Id(projectRef, resource.id.value), json, schema = schemaRef)
       }
 
       "prevent to create a new resource validated against empty schema (resource schema) with the id passed on the call not matching the @id on the payload" in new Base {
@@ -234,7 +230,7 @@ class ResourcesSpec
 
         val expected = jsonUpdated deepMerge defaultCtx
         resources.update(resId, 1L, schemaRef, jsonUpdated).value.accepted shouldEqual
-          ResourceF.simpleF(resId, expected, 2L, schema = schemaRef)
+          KgResourceF.simpleF(resId, expected, 2L, schema = schemaRef)
       }
 
       "prevent to update a resource  that does not exists" in new Base {
@@ -250,7 +246,7 @@ class ResourcesSpec
         val expected = json deepMerge defaultCtx
         resources.create(resId, schemaRef, json).value.accepted shouldBe a[Resource]
         resources.deprecate(resId, 1L, schemaRef).value.accepted shouldEqual
-          ResourceF.simpleF(resId, expected, 2L, schema = schemaRef, deprecated = true)
+          KgResourceF.simpleF(resId, expected, 2L, schema = schemaRef, deprecated = true)
       }
 
       "prevent deprecating a resource when the provided schema does not match the created schema" in new Base {

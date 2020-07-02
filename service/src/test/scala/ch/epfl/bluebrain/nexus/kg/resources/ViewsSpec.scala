@@ -7,21 +7,19 @@ import java.util.regex.Pattern.quote
 import akka.http.scaladsl.model.StatusCodes
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure.ElasticServerError
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated}
 import ch.epfl.bluebrain.nexus.kg.async.anyProject
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache, ViewCache}
+import ch.epfl.bluebrain.nexus.kg.cache.{ResolverCache, ViewCache}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
@@ -32,12 +30,21 @@ import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, Reso
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.kg.{KgError, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.util.{
+  ActorSystemFixture,
+  CirceEq,
+  EitherValues,
+  IOEitherValues,
+  IOOptionValues,
+  Resources => TestResources
+}
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
@@ -47,9 +54,9 @@ import io.circe.parser.parse
 import monix.eval.Task
 import org.mockito.matchers.MacroBasedMatchers
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -66,7 +73,7 @@ class ViewsSpec
     with Matchers
     with OptionValues
     with EitherValues
-    with test.Resources
+    with TestResources
     with BeforeAndAfter
     with TestHelper
     with Inspectors
@@ -83,7 +90,6 @@ class ViewsSpec
   implicit private val projectCache          = mock[ProjectCache[IO]]
   implicit private val viewCache             = mock[ViewCache[IO]]
   implicit private val sparqlClient          = mock[BlazegraphClient[IO]]
-  implicit private val adminClient           = mock[AdminClient[IO]]
   implicit private val storageClient         = mock[StorageClient[IO]]
   implicit private val rsearchClient         = mock[HttpClient[IO, QueryResults[Json]]]
   implicit private val taskJson              = mock[HttpClient[Task, Json]]
@@ -106,15 +112,15 @@ class ViewsSpec
 
   resolverCache.get(any[ProjectRef]) shouldReturn IO.pure(List.empty[Resolver])
   // format: off
-  val project1 = Project(genIri, genString(), genString(), None, genIri, genIri, Map.empty, UUID.fromString("64b202b4-1060-42b5-9b4f-8d6a9d0d9113"), genUUID, 1L, deprecated = false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
-  val project2 = Project(genIri, genString(), genString(), None, genIri, genIri, Map.empty, UUID.fromString("d23d9578-255b-4e46-9e65-5c254bc9ad0a"), genUUID, 1L, deprecated = false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
+  val project1 = ResourceF(genIri, UUID.fromString("64b202b4-1060-42b5-9b4f-8d6a9d0d9113"), 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project(genString(), genUUID, genString(), None, Map.empty, genIri, genIri))
+  val project2 = ResourceF(genIri, UUID.fromString("d23d9578-255b-4e46-9e65-5c254bc9ad0a"), 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous,Project(genString(), genUUID, genString(), None, Map.empty, genIri, genIri))
   // format: on
-  projectCache.get(ProjectLabel("account1", "project1")) shouldReturn IO.pure(Some(project1))
-  projectCache.get(ProjectLabel("account1", "project2")) shouldReturn IO.pure(Some(project2))
+  projectCache.getBy(ProjectLabel("account1", "project1")) shouldReturn IO.pure(Some(project1))
+  projectCache.getBy(ProjectLabel("account1", "project2")) shouldReturn IO.pure(Some(project2))
   val label1   = ProjectLabel("account1", "project1")
   val label2   = ProjectLabel("account1", "project2")
 
-  private val views: Views[IO] = Views[IO]
+  private val views: Views[IO] = Views[IO](repo, viewCache)
 
   before {
     Mockito.reset(resolverCache, viewCache)
@@ -122,12 +128,10 @@ class ViewsSpec
 
   trait Base {
 
-    viewCache.get(project1.ref) shouldReturn IO.pure(
-      Set[View](ElasticSearchView.default(project1.ref).copy(id = url"http://example.com/id2"))
-    )
-    viewCache.get(project2.ref) shouldReturn IO.pure(
-      Set[View](ElasticSearchView.default(project2.ref).copy(id = url"http://example.com/id3"))
-    )
+    viewCache.get(ProjectRef(project1.uuid)) shouldReturn
+      IO.pure(Set[View](ElasticSearchView.default(ProjectRef(project1.uuid)).copy(id = url"http://example.com/id2")))
+    viewCache.get(ProjectRef(project2.uuid)) shouldReturn
+      IO.pure(Set[View](ElasticSearchView.default(ProjectRef(project2.uuid)).copy(id = url"http://example.com/id3")))
 
     implicit val caller  = Caller(Anonymous, Set(Anonymous, Authenticated("realm")))
     implicit val s       = caller.subject
@@ -137,7 +141,7 @@ class ViewsSpec
     val resId            = Id(projectRef, id)
     val voc              = Iri.absolute(s"http://example.com/voc/").rightValue
     // format: off
-    implicit val project = Project(resId.value, genString(), genString(), None, base, voc, Map.empty, projectRef.id, genUUID, 1L, deprecated = false, Instant.EPOCH, caller.subject.id, Instant.EPOCH, caller.subject.id)
+    implicit val project = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, caller.subject, Instant.EPOCH, caller.subject, Project(genString(), genUUID, genString(), None, Map.empty, base, voc))
     // format: on
     resolverCache.get(projectRef) shouldReturn IO(List.empty[Resolver])
 
@@ -177,7 +181,7 @@ class ViewsSpec
         .rightValue
 
       val resourceV =
-        ResourceF.simpleV(resId, Value(json, viewCtx.contextValue, graph), rev, schema = viewRef, types = types)
+        KgResourceF.simpleV(resId, Value(json, viewCtx.contextValue, graph), rev, schema = viewRef, types = types)
       resourceV.copy(
         value = resourceV.value.copy(graph = Graph(resId.value, graph.triples ++ resourceV.metadata()))
       )
@@ -188,7 +192,7 @@ class ViewsSpec
   trait EsViewMocked extends EsView {
     val mapping     = esView.hcursor.get[String]("mapping").flatMap(parse).rightValue
     // format: off
-    val esViewModel = ElasticSearchView(mapping, Filter(Set(nxv.Schema.value, nxv.Resource.value), Set(nxv.withSuffix("MyType").value, nxv.withSuffix("MyType2").value), Some("one")), includeMetadata = false, sourceAsText = true, project.ref, id, UUID.randomUUID(), 1L, deprecated = false)
+    val esViewModel = ElasticSearchView(mapping, Filter(Set(nxv.Schema.value, nxv.Resource.value), Set(nxv.withSuffix("MyType").value, nxv.withSuffix("MyType2").value), Some("one")), includeMetadata = false, sourceAsText = true, ProjectRef(project.uuid), id, UUID.randomUUID(), 1L, deprecated = false)
     // format: on
     esClient.updateMapping(any[String], eqTo(mapping), any[Throwable => Boolean]) shouldReturn IO(true)
     aclsApi.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn IO(acls)
@@ -217,7 +221,7 @@ class ViewsSpec
           new Base {
             val json     = viewFrom(j)
             val result   = views.create(json).value.accepted
-            val expected = ResourceF.simpleF(resId, json, schema = viewRef, types = tpes)
+            val expected = KgResourceF.simpleF(resId, json, schema = viewRef, types = tpes)
             result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
           }
         }
@@ -240,7 +244,7 @@ class ViewsSpec
         viewCache.put(view) shouldReturn IO(())
 
         views.create(defaultId, json, extractUuid = true).value.accepted shouldEqual
-          ResourceF.simpleF(defaultId, json, schema = viewRef, types = types)
+          KgResourceF.simpleF(defaultId, json, schema = viewRef, types = types)
       }
 
       "prevent creating a ElasticSearchView when ElasticSearch client throws" in new EsView {
@@ -269,9 +273,12 @@ class ViewsSpec
         val label1      = ProjectLabel("account2", "project1")
         val label2      = ProjectLabel("account2", "project2")
         val ref2        = ProjectRef(genUUID)
-        val project2Mod = project1.copy(label = label2.value, organizationLabel = label2.organization, uuid = ref2.id)
-        projectCache.get(label1) shouldReturn IO(None)
-        projectCache.get(label2) shouldReturn IO(Some(project2Mod))
+        val project2Mod = project1.copy(
+          uuid = ref2.id,
+          value = project1.value.copy(label = label2.value, organizationLabel = label2.organization)
+        )
+        projectCache.getBy(label1) shouldReturn IO(None)
+        projectCache.getBy(label2) shouldReturn IO(Some(project2Mod))
         val json        = viewFrom(jsonContentOf("/view/aggelasticview-2.json"))
         views.create(json).value.rejected[ProjectRefNotFound] shouldEqual ProjectRefNotFound(label1)
       }
@@ -281,10 +288,16 @@ class ViewsSpec
         val label2      = ProjectLabel("account2", "project2")
         val ref1        = ProjectRef(genUUID)
         val ref2        = ProjectRef(genUUID)
-        val project1Mod = project1.copy(label = label1.value, organizationLabel = label1.organization, uuid = ref1.id)
-        val project2Mod = project1.copy(label = label2.value, organizationLabel = label2.organization, uuid = ref2.id)
-        projectCache.get(label1) shouldReturn IO(Some(project1Mod))
-        projectCache.get(label2) shouldReturn IO(Some(project2Mod))
+        val project1Mod = project1.copy(
+          uuid = ref1.id,
+          value = project1.value.copy(label = label1.value, organizationLabel = label1.organization)
+        )
+        val project2Mod = project1.copy(
+          uuid = ref2.id,
+          value = project1.value.copy(label = label2.value, organizationLabel = label2.organization)
+        )
+        projectCache.getBy(label1) shouldReturn IO(Some(project1Mod))
+        projectCache.getBy(label2) shouldReturn IO(Some(project2Mod))
 
         viewCache.get(ref1) shouldReturn IO(Set.empty[View])
         viewCache.get(ref2) shouldReturn IO(Set.empty[View])
@@ -308,7 +321,7 @@ class ViewsSpec
         Mockito.reset(viewCache)
         viewCache.put(argThat(matchesIgnoreId(esViewModel.copy(includeMetadata = true)), "")) shouldReturn IO(())
         val result      = views.update(resId, 1L, viewUpdated).value.accepted
-        val expected    = ResourceF.simpleF(resId, viewUpdated, 2L, schema = viewRef, types = types)
+        val expected    = KgResourceF.simpleF(resId, viewUpdated, 2L, schema = viewRef, types = types)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
@@ -324,7 +337,7 @@ class ViewsSpec
         viewCache.put(argThat(matchesIgnoreId(esViewModel), "")) shouldReturn IO(())
         views.create(resId, esView).value.accepted shouldBe a[Resource]
         val result   = views.deprecate(resId, 1L).value.accepted
-        val expected = ResourceF.simpleF(resId, esView, 2L, schema = viewRef, types = types, deprecated = true)
+        val expected = KgResourceF.simpleF(resId, esView, 2L, schema = viewRef, types = types, deprecated = true)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 

@@ -46,7 +46,7 @@ class EventRoutesSpec extends EventsSpecBase {
     }
 
     "return all events for an organization" in {
-      Get("/") ~> eventRoutes.projectRoutes(organization) ~> check {
+      Get("/") ~> eventRoutes.organizationRoutes(organization) ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected)
@@ -54,7 +54,7 @@ class EventRoutesSpec extends EventsSpecBase {
     }
 
     "return all events for an organization from the last seen" in {
-      Get("/").addHeader(`Last-Event-ID`(0.toString)) ~> eventRoutes.projectRoutes(organization) ~> check {
+      Get("/").addHeader(`Last-Event-ID`(0.toString)) ~> eventRoutes.organizationRoutes(organization) ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected, 1)

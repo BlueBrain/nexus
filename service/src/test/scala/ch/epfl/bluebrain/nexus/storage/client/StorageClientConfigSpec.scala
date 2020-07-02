@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.storage.client
 
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.rdf.Iri.Urn
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.storage.client.config.StorageClientConfig
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

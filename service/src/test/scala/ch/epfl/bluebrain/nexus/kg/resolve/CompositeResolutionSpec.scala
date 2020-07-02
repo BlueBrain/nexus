@@ -6,10 +6,10 @@ import java.util.regex.Pattern.quote
 
 import cats.instances.try_._
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.kg.resources.Ref
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.util.Resources
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{OptionValues, TryValues}

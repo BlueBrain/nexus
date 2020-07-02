@@ -17,7 +17,7 @@ package object async {
   /**
     * Resolve the projects from each path inside the ACLs
     *
-    * @param acls the ACLs (map of ''Path'' to ''ResourceAccessControlList'')
+    * @param acls the ACLs (map of ''Path'' to ''AccessControlList'')
     * @tparam F effect type
     * @return a map where the key is the [[ProjectResource]] and the value is the [[AccessControlList]] applied for that project
     */

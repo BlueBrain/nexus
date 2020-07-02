@@ -4,14 +4,14 @@ import java.time.{Clock, Instant, ZoneId}
 
 import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.projects.Project
-import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
-import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource, ResourceDescription}
 import ch.epfl.bluebrain.nexus.kg.resources.Id
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, IOOptionValues}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -39,18 +39,18 @@ class ArchiveCacheSpec
   private val cache: ArchiveCache[IO] = ArchiveCache[IO].unsafeToFuture().futureValue
   implicit private val clock          = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
   private val instant                 = clock.instant()
+  private val subject: Subject        = Anonymous
+  private val epoch                   = Instant.EPOCH
 
   def randomProject() = {
-    val instant = Instant.EPOCH
-    // format: off
-    Project(genIri, genString(), genString(), None, genIri, genIri, Map.empty, genUUID, genUUID, 1L, false, instant, genIri, instant, genIri)
-    // format: on
+    val project = Project(genString(), genUUID, genString(), None, Map.empty, genIri, genIri)
+    ResourceF(genIri, genUUID, 1L, false, Set.empty, epoch, subject, epoch, subject, project)
   }
 
   "An archive cache" should {
 
     "write and read an Archive" in {
-      val resId     = Id(randomProject().ref, genIri)
+      val resId     = Id(ProjectRef(randomProject().uuid), genIri)
       val resource1 = Resource(genIri, randomProject(), None, None, originalSource = true, None)
       val file1     = File(genIri, randomProject(), None, None, None)
       val archive   = Archive(resId, instant, Anonymous, Set(resource1, file1))
@@ -59,12 +59,12 @@ class ArchiveCacheSpec
     }
 
     "read a non existing resource" in {
-      val resId = Id(randomProject().ref, genIri)
+      val resId = Id(ProjectRef(randomProject().uuid), genIri)
       cache.get(resId).value.ioValue shouldEqual None
     }
 
     "read after timeout" in {
-      val resId   = Id(randomProject().ref, genIri)
+      val resId   = Id(ProjectRef(randomProject().uuid), genIri)
       val set     = Set[ResourceDescription](Resource(genIri, randomProject(), None, None, originalSource = true, None))
       val archive = Archive(resId, instant, Anonymous, set)
       val _       = cache.put(archive).value.some

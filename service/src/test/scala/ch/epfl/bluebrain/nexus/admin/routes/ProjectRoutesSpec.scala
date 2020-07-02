@@ -150,7 +150,7 @@ class ProjectRoutesSpec
         caller.subject,
         instant,
         caller.subject,
-        Project("label", projId, orgId, "org", desc, mappings, base, voc)
+        Project("label", orgId, "org", desc, mappings, base, voc)
       )
     val meta         = resource.discard
     val replacements = Map(

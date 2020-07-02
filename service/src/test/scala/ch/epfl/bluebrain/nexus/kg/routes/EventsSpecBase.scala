@@ -6,29 +6,32 @@ import java.util.UUID
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
+import ch.epfl.bluebrain.nexus.admin.organizations.Organization
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.{ResourceF => AdminResourceF}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.User
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF}
+import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.resources.Event._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference.S3StorageReference
 import ch.epfl.bluebrain.nexus.kg.resources.file.File._
 import ch.epfl.bluebrain.nexus.kg.resources.{Id, OrganizationRef}
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import org.mockito.IdiomaticMockito
 import org.mockito.matchers.MacroBasedMatchers
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 
@@ -43,6 +46,7 @@ class EventsSpecBase
     with OptionValues
     with EitherValues
     with Inspectors
+    with TestHelper
     with IdiomaticMockito {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 100.milliseconds)
@@ -51,9 +55,9 @@ class EventsSpecBase
 
   val base = url"http://example.com/base"
 
-  val instant = Instant.EPOCH
-  val subject = User("uuid", "myrealm")
-  val read    = Permission.unsafe("events/read")
+  val instant       = Instant.EPOCH
+  val subject       = User("uuid", "myrealm")
+  override val read = Permission.unsafe("events/read")
 
   val acls   = AccessControlLists(
     Path./ -> ResourceF[AccessControlList](
@@ -77,39 +81,11 @@ class EventsSpecBase
 
   implicit val appConfig  = Settings(system).serviceConfig
   implicit val storageCfg = appConfig.kg.storage
-
-  implicit val project = Project(
-    base + "org" + "project",
-    "project",
-    "org",
-    None,
-    base,
-    base + "vocab",
-    Map(),
-    UUID.randomUUID(),
-    orgUuid,
-    1L,
-    deprecated = false,
-    instant,
-    base + "subject",
-    instant,
-    base + "subject"
-  )
-
-  val orgRef = OrganizationRef(project.organizationUuid)
-
-  val organization = Organization(
-    base + "org",
-    "org",
-    None,
-    orgUuid,
-    1L,
-    deprecated = false,
-    instant,
-    base + "subject",
-    instant,
-    base + "subject"
-  )
+  val orgRef              = OrganizationRef(orgUuid)
+  // format: off
+  implicit val project = AdminResourceF(base + "org" + "project", genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project("project", orgUuid, "org", None, Map.empty, base, base + "vocab"))
+  val organization = AdminResourceF(base + "org", orgUuid, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Organization("org", None))
+  // format: on
 
   val projectRef = ProjectRef(projectUuid)
 

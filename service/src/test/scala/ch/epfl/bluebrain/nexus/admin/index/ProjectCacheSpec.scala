@@ -70,7 +70,6 @@ class ProjectCacheSpec
     Project(
       genString(),
       UUID.randomUUID(),
-      UUID.randomUUID(),
       organization.label,
       Some(genString()),
       mappings,
@@ -125,7 +124,6 @@ class ProjectCacheSpec
           Project(
             label,
             UUID.randomUUID(),
-            UUID.randomUUID(),
             projectsOrganization.label,
             Some(genString()),
             mappings,
@@ -144,7 +142,6 @@ class ProjectCacheSpec
         val project =
           Project(
             label,
-            UUID.randomUUID(),
             UUID.randomUUID(),
             projectsOrganization2.label,
             Some(genString()),

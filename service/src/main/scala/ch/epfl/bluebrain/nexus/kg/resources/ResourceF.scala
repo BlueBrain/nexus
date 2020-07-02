@@ -132,7 +132,7 @@ final case class ResourceF[A](
   /**
     * The triples for the type of this resource.
     */
-  private lazy val typeTriples: Set[Triple] = types.map(tpe => (node, rdf.tpe, tpe): Triple)
+  lazy val typeTriples: Set[Triple] = types.map(tpe => (node, rdf.tpe, tpe): Triple)
 
 }
 

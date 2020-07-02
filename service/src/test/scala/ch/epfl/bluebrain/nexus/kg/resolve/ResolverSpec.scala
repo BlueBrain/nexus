@@ -6,12 +6,12 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.{Id => CId}
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.Project
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues, Resources}
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resolve.ResolverEncoder._
@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources}
 import io.circe.Json
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues, TryValues}
@@ -67,8 +68,8 @@ class ResolverSpec
     val identities       = List[Identity](Group("bbp-ou-neuroinformatics", "ldap2"), User("dmontero", "ldap"))
 
     // format: off
-    val project1 = Project(genIri, label1.value, label1.organization, None, genIri, genIri, Map.empty, projectRef1.id, genUUID, 1L, false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
-    val project2 = Project(genIri, label2.value, label2.organization, None, genIri, genIri, Map.empty, projectRef2.id, genUUID, 1L, false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
+    val project1 = ResourceF(genIri, projectRef1.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project(label1.value, genUUID, label1.organization, None, Map.empty, Iri.absolute("http://example.com/base/").rightValue, genIri))
+    val project2 = ResourceF(genIri, projectRef2.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project(label2.value, genUUID, label2.organization, None, Map.empty, Iri.absolute("http://example.com/base/").rightValue, genIri))
     // format: on
 
     "constructing" should {
@@ -174,8 +175,8 @@ class ResolverSpec
     "converting" should {
 
       "generate a CrossProjectResolver" in {
-        projectCache.get(label1) shouldReturn Some(project1)
-        projectCache.get(label2) shouldReturn Some(project2)
+        projectCache.getBy(label1) shouldReturn Some(project1)
+        projectCache.getBy(label2) shouldReturn Some(project2)
         val resource = simpleV(id, crossProject, types = Set(nxv.Resolver.value, nxv.CrossProject.value))
         val exposed  = Resolver(resource).rightValue.asInstanceOf[CrossProjectResolver]
         val stored   = exposed.referenced[CId].value.rightValue.asInstanceOf[CrossProjectResolver]
@@ -190,10 +191,12 @@ class ResolverSpec
       }
 
       "generate a CrossProjectLabelResolver" in {
-        projectCache.getLabel(projectRef1) shouldReturn Some(project1.projectLabel)
-        projectCache.getLabel(projectRef2) shouldReturn Some(project2.projectLabel)
-        projectCache.get(label1) shouldReturn Some(project1)
-        projectCache.get(label2) shouldReturn Some(project2)
+        projectCache.get(projectRef1.id) shouldReturn Some(project1)
+        projectCache.get(projectRef2.id) shouldReturn Some(project2)
+        projectCache.getBy(projectRef1) shouldReturn Some(project1)
+        projectCache.getBy(projectRef2) shouldReturn Some(project2)
+        projectCache.getBy(label1) shouldReturn Some(project1)
+        projectCache.getBy(label2) shouldReturn Some(project2)
 
         val resource = simpleV(id, crossProject, types = Set(nxv.Resolver.value, nxv.CrossProject.value))
         val exposed  = Resolver(resource).rightValue.asInstanceOf[CrossProjectResolver]

@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.kg.resources
 
 import ch.epfl.bluebrain.nexus.kg.resources.Ref._
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Urn}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

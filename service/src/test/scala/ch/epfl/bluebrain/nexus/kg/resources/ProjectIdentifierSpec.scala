@@ -3,24 +3,23 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import java.time.Instant
 
 import cats.{Id => CId}
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.Project
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef, _}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{InvalidIdentity, ProjectLabelNotFound, ProjectRefNotFound}
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.Json
 import io.circe.syntax._
 import org.mockito.IdiomaticMockito
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
-import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier._
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
+import org.scalatest.{Inspectors, OptionValues}
 
 class ProjectIdentifierSpec
     extends AnyWordSpecLike
@@ -39,7 +38,7 @@ class ProjectIdentifierSpec
   private val label: ProjectIdentifier                 = ProjectLabel(orgLabel, projectLabel)
 
   // format: off
-  private val project = Project(genIri, projectLabel, orgLabel, None, genIri, genIri, Map.empty, uuid, genUUID, 1L, false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
+  private val project = ResourceF(genIri, uuid, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project(projectLabel, genUUID, orgLabel, None, Map.empty, genIri, genIri))
   // format: on
 
   "A ProjectIdentifier" should {
@@ -58,11 +57,11 @@ class ProjectIdentifierSpec
     }
 
     "be converted to reference" in {
-      projectCache.get(label) shouldReturn Some(project)
+      projectCache.getBy(label) shouldReturn Some(project)
       forAll(Set(ref, label)) { identifier =>
         identifier.toRef.value.rightValue shouldEqual ref
       }
-      projectCache.get(label) wasCalled once
+      projectCache.getBy(label) wasCalled once
     }
 
     "be converted to reference checking for specific permissions" in {
@@ -80,31 +79,32 @@ class ProjectIdentifierSpec
     }
 
     "be converted to label" in {
-      projectCache.getLabel(ref.asInstanceOf[ProjectRef]) shouldReturn Some(project.projectLabel)
+      projectCache.getBy(ref.asInstanceOf[ProjectRef]) shouldReturn Some(project)
       forAll(Set(ref, label)) { identifier =>
         identifier.toLabel.value.rightValue shouldEqual label
       }
-      projectCache.getLabel(ref.asInstanceOf[ProjectRef]) wasCalled once
+      projectCache.getBy(ref.asInstanceOf[ProjectRef]) wasCalled once
     }
 
     "return not found converting to label when reference does not exist" in {
       val uuid2                         = genUUID
       val identifier: ProjectIdentifier = ProjectRef(uuid2)
-      projectCache.getLabel(identifier.asInstanceOf[ProjectRef]) shouldReturn None
+      projectCache.getBy(identifier.asInstanceOf[ProjectRef]) shouldReturn None
       identifier.toLabel.value.leftValue shouldEqual ProjectLabelNotFound(ProjectRef(uuid2))
     }
 
     "return not found converting to label when label does not exist" in {
       val projectString2                = genString()
       val identifier: ProjectIdentifier = ProjectLabel(orgLabel, projectString2)
-      projectCache.get(identifier) shouldReturn None
+      projectCache.getBy(identifier) shouldReturn None
       identifier.toRef.value.leftValue shouldEqual ProjectRefNotFound(identifier.asInstanceOf[ProjectLabel])
     }
 
     "find from a set of projects" in {
-      val projects                           = List.fill(3)(project.copy(label = genString(), uuid = genUUID)).toSet + project
-      val identifierRef: ProjectIdentifier   = project.ref
-      val identifierLabel: ProjectIdentifier = project.projectLabel
+      val projects                           =
+        List.fill(3)(project.copy(uuid = genUUID, value = project.value.copy(label = genString()))).toSet + project
+      val identifierRef: ProjectIdentifier   = ProjectRef(project.uuid)
+      val identifierLabel: ProjectIdentifier = ProjectLabel(project.value.organizationLabel, project.value.label)
       identifierRef.findIn(projects).value shouldEqual project
       identifierLabel.findIn(projects).value shouldEqual project
     }

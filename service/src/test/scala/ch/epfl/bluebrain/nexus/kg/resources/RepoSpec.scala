@@ -5,8 +5,6 @@ import java.time.{Clock, Instant, ZoneId}
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.Uri
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues}
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
@@ -19,11 +17,12 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage.{LinkFile, SaveFile}
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, EitherValues, IOEitherValues, IOOptionValues}
 import io.circe.Json
 import org.mockito.{IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, OptionValues}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._

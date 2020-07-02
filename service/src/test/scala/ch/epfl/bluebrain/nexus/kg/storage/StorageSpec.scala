@@ -7,22 +7,22 @@ import java.util.regex.Pattern.quote
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, Resources}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
+import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.util.{CirceEq, Resources}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}

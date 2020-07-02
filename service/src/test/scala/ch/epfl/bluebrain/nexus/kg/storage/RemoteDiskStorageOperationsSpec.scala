@@ -3,19 +3,17 @@ package ch.epfl.bluebrain.nexus.kg.storage
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.Uri
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.commons.test.io.IOEitherValues
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, Resources}
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.resources.file.File.{Digest, FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.file.File.{Digest, FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.RemoteDiskStorage
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
+import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, IOEitherValues, Resources}
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
@@ -32,10 +30,6 @@ class RemoteDiskStorageOperationsSpec
     with TestHelper {
 
   private val endpoint = "http://nexus.example.com/v1"
-
-  // TODO: Remove when migrating ADMIN client
-  implicit private def oldTokenConversion(implicit token: Option[AccessToken]): Option[AuthToken] =
-    token.map(t => AuthToken(t.value))
 
   sealed trait Ctx {
     val cred                                = genString()

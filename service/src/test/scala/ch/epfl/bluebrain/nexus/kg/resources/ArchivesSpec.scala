@@ -6,36 +6,43 @@ import java.util.regex.Pattern.quote
 import cats.data.OptionT
 import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.show._
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.projects.Project
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
 import ch.epfl.bluebrain.nexus.kg.archives.{Archive, ArchiveCache}
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ResolverCache, StorageCache, ViewCache}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, StaticResolution}
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{
+  ActorSystemFixture,
+  CirceEq,
+  EitherValues,
+  IOEitherValues,
+  IOOptionValues,
+  Resources => TestResources
+}
 import io.circe.Json
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -51,7 +58,7 @@ class ArchivesSpec
     with Matchers
     with OptionValues
     with EitherValues
-    with test.Resources
+    with TestResources
     with TestHelper
     with Inspectors
     with BeforeAndAfter
@@ -81,8 +88,16 @@ class ArchivesSpec
       mock[Acls[IO]],
       Caller.anonymous
     )
+  private val cache                  = Caches(
+    mock[OrganizationCache[IO]],
+    projectCache,
+    mock[ViewCache[IO]],
+    resolverCache,
+    mock[StorageCache[IO]],
+    archiveCache
+  )
   implicit private val materializer  = new Materializer[IO](resolution, projectCache)
-  private val archives: Archives[IO] = Archives[IO](resources, files)
+  private val archives: Archives[IO] = Archives[IO](resources, files, cache)
 
   before {
     Mockito.reset(archiveCache)
@@ -96,16 +111,24 @@ class ArchivesSpec
     val resId                     = Id(projectRef, id)
     val voc                       = Iri.absolute(s"http://example.com/voc/").rightValue
     // format: off
-    implicit val project = Project(resId.value, "proj", "org", None, base, voc, Map.empty, projectRef.id, genUUID, 1L, deprecated = false, Instant.EPOCH, subject.id, Instant.EPOCH, subject.id)
-    val project2 = Project(resId.value, "myproject", "myorg", None, base, voc, Map.empty, projectRef.id, genUUID, 1L, deprecated = false, Instant.EPOCH, subject.id, Instant.EPOCH, subject.id)
+    implicit val project = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project("proj", genUUID, "org", None, Map.empty, base, voc))
+    val project2 = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject,Project("myproject", genUUID, "myorg", None, Map.empty, base, voc))
     // format: on
     def updateId(json: Json)      =
       json deepMerge Json.obj("@id" -> Json.fromString(id.show))
 
-    resolverCache.get(project.ref) shouldReturn IO(List(InProjectResolver(project.ref, genIri, 1L, false, 1)))
-    resolverCache.get(project2.ref) shouldReturn IO(List(InProjectResolver(project.ref, genIri, 1L, false, 1)))
-    projectCache.get(project.projectLabel) shouldReturn IO(Some(project))
-    projectCache.get(project2.projectLabel) shouldReturn IO(Some(project2))
+    resolverCache.get(ProjectRef(project.uuid)) shouldReturn IO(
+      List(InProjectResolver(ProjectRef(project.uuid), genIri, 1L, false, 1))
+    )
+    resolverCache.get(ProjectRef(project2.uuid)) shouldReturn IO(
+      List(InProjectResolver(ProjectRef(project.uuid), genIri, 1L, false, 1))
+    )
+    projectCache.getBy(ProjectLabel(project.value.organizationLabel, project.value.label)) shouldReturn IO(
+      Some(project)
+    )
+    projectCache.getBy(ProjectLabel(project2.value.organizationLabel, project2.value.label)) shouldReturn IO(
+      Some(project2)
+    )
 
     val archiveJson  = updateId(jsonContentOf("/archive/archive.json"))
     val archiveModel = Archive(
@@ -132,7 +155,7 @@ class ArchivesSpec
         .rightValue
 
       val resourceV =
-        ResourceF.simpleV(resId, Value(json, ctx.contextValue, graph), rev, schema = archiveRef, types = types)
+        KgResourceF.simpleV(resId, Value(json, ctx.contextValue, graph), rev, schema = archiveRef, types = types)
       resourceV.copy(
         value = resourceV.value.copy(graph = Graph(resId.value, graph.triples ++ resourceV.metadata()))
       )
@@ -151,7 +174,7 @@ class ArchivesSpec
       "create an archive" in new Base {
         archiveCache.put(archiveModel) shouldReturn OptionT.some[IO](archiveModel)
         val expected =
-          ResourceF.simpleF(resId, archiveJson, schema = archiveRef, types = Set(nxv.Archive.value))
+          KgResourceF.simpleF(resId, archiveJson, schema = archiveRef, types = Set(nxv.Archive.value))
         val result   = archives.create(archiveJson).value.accepted
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }

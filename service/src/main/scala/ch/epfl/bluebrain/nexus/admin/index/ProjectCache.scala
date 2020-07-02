@@ -108,8 +108,10 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     */
   def getBy(identifier: ProjectIdentifier): F[Option[ProjectResource]] =
     identifier match {
-      case ProjectIdentifier.ProjectLabel(org, proj) => getBy(org, proj)
-      case ProjectIdentifier.ProjectRef(id)          => store.values.map(_.find(_.uuid == id))
+      case ProjectIdentifier.ProjectLabel(org, proj) =>
+        store.values.map(_.find(project => project.value.organizationLabel == org && project.value.label == proj))
+      case ProjectIdentifier.ProjectRef(id)          =>
+        store.values.map(_.find(_.uuid == id))
     }
 
   /**

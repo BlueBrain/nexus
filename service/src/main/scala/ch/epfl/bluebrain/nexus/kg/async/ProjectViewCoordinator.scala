@@ -313,8 +313,20 @@ object ProjectViewCoordinator {
       P: Projections[Task, String]
   ): Task[ProjectViewCoordinator[Task]] = {
     implicit val projectCache: ProjectCache[Task] = cache.project
+    val ref                                       = ProjectViewCoordinatorActor.start(resources, cache.view, acls, saCaller, None, config.cluster.shards)
+    apply(cache, acls, saCaller, ref)
+  }
 
-    val ref         = ProjectViewCoordinatorActor.start(resources, cache.view, acls, saCaller, None, config.cluster.shards)
+  private[async] def apply(
+      cache: Caches[Task],
+      acls: Acls[Task],
+      saCaller: Caller,
+      ref: ActorRef
+  )(implicit
+      config: ServiceConfig,
+      as: ActorSystem,
+      projectCache: ProjectCache[Task]
+  ): Task[ProjectViewCoordinator[Task]] = {
     val coordinator = new ProjectViewCoordinator[Task](cache, acls, saCaller, ref)
     startAclsStream(coordinator, acls, saCaller) >>
       cache.project.subscribe(onDeprecated = project => coordinator.stop(ProjectRef(project.uuid))) >>

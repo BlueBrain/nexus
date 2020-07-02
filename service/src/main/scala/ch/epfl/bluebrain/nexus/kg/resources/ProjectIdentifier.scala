@@ -117,12 +117,11 @@ object ProjectIdentifier {
     * @param id the underlying stable identifier for a project
     */
   final case class ProjectRef(id: UUID) extends ProjectIdentifier {
-    private lazy val notFound: Rejection = ProjectLabelNotFound(this)
 
     def toLabel[F[_]: Applicative](implicit cache: ProjectCache[F]): EitherT[F, Rejection, ProjectLabel] =
       OptionT(cache.getBy(this))
         .map(projRes => ProjectLabel(projRes.value.organizationLabel, projRes.value.label))
-        .toRight(notFound)
+        .toRight(ProjectLabelNotFound(this))
 
     def toRef[F[_]: Applicative](implicit cache: ProjectCache[F]): EitherT[F, Rejection, ProjectRef] =
       EitherT.rightT(this)

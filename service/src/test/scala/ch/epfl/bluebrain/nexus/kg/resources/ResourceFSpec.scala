@@ -6,13 +6,13 @@ import java.time.{Clock, Instant, ZoneId, ZoneOffset}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.admin.projects.Project
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
-import ch.epfl.bluebrain.nexus.iam.types.Identity
-import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Node.{IriNode, Literal}
@@ -20,9 +20,10 @@ import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Iri, Node}
 import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.Json
 import org.scalatest.matchers.should.Matchers
-import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import org.scalatest.wordspec.AnyWordSpecLike
 
 //noinspection NameBooleanParameters
@@ -40,44 +41,30 @@ class ResourceFSpec
   "A ResourceF" should {
     implicit val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
 
-    val identity: Identity = User("dmontero", "someRealm")
-    val userIri            = Iri.absolute(s"${appConfig.http.prefixIri.asUri}/realms/someRealm/users/dmontero").rightValue
-    val anonIri            = Iri.absolute(s"${appConfig.http.prefixIri.asUri}/anonymous").rightValue
+    val subject: Subject = User("dmontero", "someRealm")
+    val userIri          = Iri.absolute(s"${appConfig.http.prefixIri.asUri}/realms/someRealm/users/dmontero").rightValue
+    val anonIri          = Iri.absolute(s"${appConfig.http.prefixIri.asUri}/anonymous").rightValue
 
-    val projectRef                    = ProjectRef(genUUID)
-    val id                            = Iri.absolute(s"http://example.com/${projectRef.id}").rightValue
-    val resId                         = Id(projectRef, id)
-    val json                          = Json.obj("key" -> Json.fromString("value"))
-    val schema                        = Ref(shaclSchemaUri)
-    val apiMappings                   = Map[String, AbsoluteIri](
+    val projectRef           = ProjectRef(genUUID)
+    val id                   = Iri.absolute(s"http://example.com/${projectRef.id}").rightValue
+    val resId                = Id(projectRef, id)
+    val json                 = Json.obj("key" -> Json.fromString("value"))
+    val schema               = Ref(shaclSchemaUri)
+    val apiMappings          = Map[String, AbsoluteIri](
       "nxv"           -> nxv.base,
       "ex"            -> url"http://example.com/",
       "resource"      -> unconstrainedSchemaUri,
       "elasticsearch" -> nxv.defaultElasticSearchIndex.value,
       "graph"         -> nxv.defaultSparqlIndex.value
     )
-    implicit val projectMeta: Project = Project(
-      id,
-      "core",
-      "bbp",
-      None,
-      nxv.projects.value,
-      genIri,
-      apiMappings,
-      projectRef.id,
-      genUUID,
-      1L,
-      false,
-      Instant.EPOCH,
-      userIri,
-      Instant.EPOCH,
-      anonIri
-    )
+    // format: off
+    implicit val projectMeta = ResourceF(id, genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, Anonymous, Project("core", genUUID, "bbp", None, apiMappings, nxv.projects.value, genIri))
+    // format: on
 
     "compute the metadata graph for a resource" in {
-      val resource = ResourceF
+      val resource = KgResourceF
         .simpleF(resId, json, 2L, schema = schema, types = Set(nxv.Schema.value))
-        .copy(createdBy = identity, updatedBy = Anonymous)
+        .copy(createdBy = subject, updatedBy = Anonymous)
       resource.metadata() should contain allElementsOf Set[Triple](
         (IriNode(id), nxv.rev, 2L),
         (IriNode(id), nxv.deprecated, false),
@@ -92,9 +79,9 @@ class ResourceFSpec
     }
 
     "compute the metadata graph for a resource when self, createdAt and updatedAt are iri" in {
-      val resource = ResourceF
+      val resource = KgResourceF
         .simpleF(resId, json, 2L, schema = schema, types = Set(nxv.Schema.value))
-        .copy(createdBy = identity, updatedBy = Anonymous)
+        .copy(createdBy = subject, updatedBy = Anonymous)
       resource.metadata(MetadataOptions(true, false)) should contain allElementsOf Set[Triple](
         (IriNode(id), nxv.rev, 2L),
         (IriNode(id), nxv.deprecated, false),

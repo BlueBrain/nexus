@@ -10,18 +10,20 @@ import akka.testkit.TestKit
 import cats.data.EitherT
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
-import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
-import ch.epfl.bluebrain.nexus.kg.resources.{Files, Id, Rejection, ResourceF, Resources}
+import ch.epfl.bluebrain.nexus.kg.resources.{Files, Id, Rejection, Resources}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.Fetch
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
@@ -31,6 +33,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.{Json, Printer}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -64,6 +67,8 @@ class FetchResourceSpec
   private val acls                                = AccessControlLists(/ -> resourceAcls(AccessControlList(myUser -> Set(read, readCustom))))
   private val printer: Printer                    = Printer.spaces2.copy(dropNullValues = true)
   implicit private val clock                      = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
+  private val subject: Subject                    = Anonymous
+  private val epoch                               = Instant.EPOCH
 
   private def fetchResource(implicit
       caller: Caller = caller,
@@ -71,11 +76,9 @@ class FetchResourceSpec
   ): FetchResource[Task, ArchiveSource] =
     FetchResource.akkaSource[Task]
 
-  private def randomProject() = {
-    val instant = Instant.EPOCH
-    // format: off
-    Project(genIri, genString(), genString(), None, genIri, genIri, Map.empty, genUUID, genUUID, 1L, false, instant, genIri, instant, genIri)
-    // format: on
+  def randomProject() = {
+    val project = Project(genString(), genUUID, genString(), None, Map.empty, genIri, genIri)
+    ResourceF(genIri, genUUID, 1L, false, Set.empty, epoch, subject, epoch, subject, project)
   }
 
   abstract private class Ctx {
@@ -89,14 +92,25 @@ class FetchResourceSpec
         )
       )
     val id               = genIri
-    val idRes            = Id(project.ref, id)
+    val idRes            = Id(ProjectRef(project.uuid), id)
   }
 
   abstract private class FileCtx extends Ctx {
     val attr             =
       FileAttributes("file:///tmp/file.ext", Uri.Path("some/path"), genString(), `text/plain(UTF-8)`, 10L, Digest.empty)
     val storage: Storage =
-      DiskStorage(project.ref, genIri, 1L, false, true, genString(), Paths.get("some"), readCustom, write, 10L)
+      DiskStorage(
+        ProjectRef(project.uuid),
+        genIri,
+        1L,
+        false,
+        true,
+        genString(),
+        Paths.get("some"),
+        readCustom,
+        write,
+        10L
+      )
   }
 
   before {
@@ -124,13 +138,15 @@ class FetchResourceSpec
       // format: off
       val resourceValue = Value(jsonWithCtx, ctx.contextValue, jsonWithCtx.deepMerge(finalJson).toGraph(id).rightValue)
       // format: on
-      val resourceV     = ResourceF.simpleV(idRes, resourceValue)
+      val resourceV     = KgResourceF.simpleV(idRes, resourceValue)
 
-      resources.fetch(Id(description.project.ref, id), 1L) shouldReturn EitherT.rightT[Task, Rejection](resourceV)
+      resources.fetch(Id(ProjectRef(description.project.uuid), id), 1L) shouldReturn EitherT.rightT[Task, Rejection](
+        resourceV
+      )
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
       val response                               = printer.print(finalJson.addContext(resourceCtxUri).sortKeys(ServiceConfig.orderedKeys))
-      rPath shouldEqual Iri.Path.rootless(s"${project.show}/${urlEncode(id.asString)}.json").rightValue.pctEncoded
+      rPath shouldEqual Iri.Path.rootless(s"${project.value.show}/${urlEncode(id.asString)}.json").rightValue.pctEncoded
       bytes.toInt shouldEqual response.size
       consume(source) shouldEqual response
     }
@@ -158,7 +174,7 @@ class FetchResourceSpec
         EitherT.rightT[Task, Rejection]((storage, attr, produce(content)))
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
-      rPath shouldEqual s"${project.show}/${attr.filename}"
+      rPath shouldEqual s"${project.value.show}/${attr.filename}"
       bytes shouldEqual attr.bytes
       consume(source) shouldEqual content
     }

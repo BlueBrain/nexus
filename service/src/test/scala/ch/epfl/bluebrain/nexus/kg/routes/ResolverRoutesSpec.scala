@@ -7,43 +7,41 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.data.EitherT
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.search.{Pagination, QueryResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
+import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
-import ch.epfl.bluebrain.nexus.kg.urlEncode
+import ch.epfl.bluebrain.nexus.kg.{urlEncode, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
+import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
 import org.mockito.IdiomaticMockito
 import org.mockito.matchers.MacroBasedMatchers
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 
@@ -55,7 +53,7 @@ class ResolverRoutesSpec
     with OptionValues
     with BeforeAndAfter
     with ScalatestRouteTest
-    with test.Resources
+    with TestResources
     with ScalaFutures
     with IdiomaticMockito
     with MacroBasedMatchers
@@ -69,7 +67,6 @@ class ResolverRoutesSpec
   implicit private val appConfig = Settings(system).serviceConfig
   implicit private val clock     = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
-  implicit private val adminClient   = mock[AdminClient[Task]]
   implicit private val projectCache  = mock[ProjectCache[Task]]
   implicit private val viewCache     = mock[ViewCache[Task]]
   implicit private val resolverCache = mock[ResolverCache[Task]]
@@ -77,12 +74,18 @@ class ResolverRoutesSpec
   implicit private val resolvers     = mock[Resolvers[Task]]
   implicit private val resources     = mock[Resources[Task]]
   implicit private val tagsRes       = mock[Tags[Task]]
-  implicit private val initializer   = mock[ProjectInitializer[Task]]
   implicit private val aclsApi       = mock[Acls[Task]]
   private val realms                 = mock[Realms[Task]]
 
   implicit private val cacheAgg =
-    Caches(projectCache, viewCache, resolverCache, storageCache, mock[ArchiveCache[Task]])
+    Caches(
+      mock[OrganizationCache[Task]],
+      projectCache,
+      viewCache,
+      resolverCache,
+      storageCache,
+      mock[ArchiveCache[Task]]
+    )
 
   implicit private val ec            = system.dispatcher
   implicit private val utClient      = untyped[Task]
@@ -102,9 +105,9 @@ class ResolverRoutesSpec
   //noinspection NameBooleanParameters
   abstract class Context(perms: Set[Permission] = manageResolver) extends RoutesFixtures {
 
-    projectCache.get(label) shouldReturn Task.pure(Some(projectMeta))
-    projectCache.getLabel(projectRef) shouldReturn Task.pure(Some(label))
-    projectCache.get(projectRef) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.getBy(label) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.getBy(projectRef) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.get(projectRef.id) shouldReturn Task.pure(Some(projectMeta))
 
     realms.caller(token.value) shouldReturn Task(caller)
     implicit val acls = AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> perms)))

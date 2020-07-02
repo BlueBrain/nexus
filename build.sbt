@@ -112,6 +112,7 @@ lazy val jacksonAnnotations       = "com.fasterxml.jackson.core"        % "jacks
 lazy val jacksonCore              = "com.fasterxml.jackson.core"        % "jackson-core"                        % jacksonVersion
 lazy val jacksonDatabind          = "com.fasterxml.jackson.core"        % "jackson-databind"                    % jacksonBindVersion
 lazy val jenaArq                  = "org.apache.jena"                   % "jena-arq"                            % jenaVersion
+lazy val jsonldjava               = "com.github.jsonld-java"            % "jsonld-java"                         % jsonldjavaVersion
 lazy val kanelaAgent              = "io.kamon"                          % "kanela-agent"                        % kanelaAgentVersion
 lazy val kindProjector            = "org.typelevel"                    %% "kind-projector"                      % kindProjectorVersion
 lazy val kryo                     = "io.altoo"                         %% "akka-kryo-serialization"             % kryoVersion
@@ -341,6 +342,7 @@ lazy val service = project
       catsEffect,
       guava,
       jenaArq,
+      jsonldjava,
       kryo,
       logback,
       magnolia,
@@ -362,6 +364,7 @@ lazy val service = project
       jacksonAnnotations      % Test,
       jacksonCore             % Test,
       jacksonDatabind         % Test,
+      jsonldjava              % Test,
       log4jCore               % Test,
       log4jApi                % Test,
       mockito                 % Test,

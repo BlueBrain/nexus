@@ -5,13 +5,15 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.Props
 import akka.testkit.DefaultTimeout
-import ch.epfl.bluebrain.nexus.admin.client.types._
-import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectResource}
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, OrganizationRef}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionProgress, Projections, StreamSupervisor}
+import ch.epfl.bluebrain.nexus.util.ActorSystemFixture
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
@@ -39,12 +41,10 @@ class ProjectAttributesCoordinatorSpec
   private val projectCache              = ProjectCache[Task]
 
   "A ProjectAttributesCoordinator" should {
-    val creator = genIri
-
     val orgUuid  = genUUID
     // format: off
-    val project = Project(genIri, "some-project", "some-org", None, genIri, genIri, Map.empty, genUUID, orgUuid, 1L, deprecated = false, Instant.EPOCH, creator, Instant.EPOCH, creator)
-    val project2 = Project(genIri, "some-project2", "some-org", None, genIri, genIri, Map.empty, genUUID, orgUuid, 1L, deprecated = false, Instant.EPOCH, creator, Instant.EPOCH, creator)
+    val project = ResourceF(genIri, genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project("some-project", orgUuid, "some-org", None, Map.empty, genIri, genIri))
+    val project2 = ResourceF(genIri, genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous,Project("some-project2", orgUuid, "some-org", None, Map.empty, genIri, genIri))
     // format: on
 
     val counterStart = new AtomicInteger(0)
@@ -56,7 +56,7 @@ class ProjectAttributesCoordinatorSpec
     val coordinatorProps = Props(
       new ProjectAttributesCoordinatorActor {
         override def startCoordinator(
-            proj: Project,
+            proj: ProjectResource,
             restartOffset: Boolean
         ): StreamSupervisor[Task, ProjectionProgress] = {
           counterStart.incrementAndGet()
@@ -73,8 +73,8 @@ class ProjectAttributesCoordinatorSpec
     projections.progress(any[String]) shouldReturn Task.pure(ProjectionProgress.NoProgress)
 
     "start attributes computation on initialize projects" in {
-      projectCache.replace(project).runToFuture.futureValue
-      projectCache.replace(project2).runToFuture.futureValue
+      projectCache.replace(project.uuid, project).runToFuture.futureValue
+      projectCache.replace(project2.uuid, project2).runToFuture.futureValue
 
       coordinator.start(project).runToFuture.futureValue
       eventually(counterStart.get shouldEqual 1)

@@ -5,23 +5,23 @@ import java.time.{Clock, Instant, ZoneId}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.Project
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness}
-import ch.epfl.bluebrain.nexus.commons.test.io.IOEitherValues
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource}
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{InvalidResourceFormat, ProjectRefNotFound}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.Id
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectLabel
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{EitherValues, IOEitherValues, Randomness}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import org.mockito.{IdiomaticMockito, Mockito}
@@ -52,6 +52,7 @@ class ArchiveSpec
   implicit private val clock            = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
   implicit private val subject: Subject = Anonymous
   implicit private val archivesCfg      = config.kg.archives
+  private val epoch                     = Instant.EPOCH
 
   private def addField[A: Encoder](tuple: (String, Option[A])): Json =
     tuple match {
@@ -65,17 +66,15 @@ class ArchiveSpec
 
   abstract private class Ctx {
     def randomProject() = {
-      val instant = Instant.EPOCH
-      // format: off
-      Project(genIri, genString(), genString(), None, genIri, genIri, Map.empty, genUUID, genUUID, 1L, false, instant, genIri, instant, genIri)
-      // format: on
+      val project = Project(genString(), genUUID, genString(), None, Map.empty, genIri, genIri)
+      ResourceF(genIri, genUUID, 1L, false, Set.empty, epoch, subject, epoch, subject, project)
     }
 
     // format: off
     implicit val project = randomProject()
     // format: on
 
-    val id  = Id(project.ref, genIri)
+    val id  = Id(ProjectRef(project.uuid), genIri)
     def jsonResource(
         id: Option[AbsoluteIri] = None,
         rev: Option[Long] = None,
@@ -162,7 +161,7 @@ class ArchiveSpec
       val id1           = genIri
       val org1          = genString()
       val project1      = genString()
-      cache.get(ProjectLabel(org1, project1)) shouldReturn IO(Some(project1Data))
+      cache.getBy(ProjectLabel(org1, project1)) shouldReturn IO(Some(project1Data))
       val resource1Json = jsonResource(id = Some(id1), project = Some(s"$org1/$project1"))
       val resource1     = Resource(id1, project1Data, None, None, true, None)
 
@@ -170,7 +169,7 @@ class ArchiveSpec
       val id2       = genIri
       val org2      = genString()
       val project2  = genString()
-      cache.get(ProjectLabel(org2, project2)) shouldReturn IO(Some(project2Data))
+      cache.getBy(ProjectLabel(org2, project2)) shouldReturn IO(Some(project2Data))
       val file2Json = jsonFile(id = Some(id2), tag = Some(tag2), project = Some(s"$org2/$project2"))
       val file2     = File(id2, project2Data, None, Some(tag2), None)
       Archive[IO](id.value, graph(resource1Json, file2Json)).value.accepted shouldEqual
@@ -188,7 +187,7 @@ class ArchiveSpec
       val id1           = genIri
       val org1          = genString()
       val project1      = genString()
-      cache.get(ProjectLabel(org1, project1)) shouldReturn IO(None)
+      cache.getBy(ProjectLabel(org1, project1)) shouldReturn IO(None)
       val resource1Json = jsonResource(id = Some(id1), project = Some(s"$org1/$project1"))
 
       Archive[IO](id.value, graph(resource1Json)).value.rejected[ProjectRefNotFound] shouldEqual
