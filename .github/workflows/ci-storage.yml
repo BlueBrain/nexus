@@ -43,7 +43,7 @@ jobs:
       - name: Build image
         run: docker build ./storage/permissions-fixer --tag=nexus/fixer
       - name: Compile and run tests
-        run: docker run -it nexus/fixer
+        run: docker run nexus/fixer
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
