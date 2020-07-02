@@ -214,7 +214,7 @@ object CompositeIndexer {
     val init = view.defaultSparqlView.createIndex >> view.projections.toList.traverse(_.view.createIndex) >> F.unit
 
     val sourceResolvedProjectsF = (init >> initialProgressF).flatMap { initial =>
-      val sourcesF: F[List[Option[(CompositeSource, ProjectResource)]]] = view.sources.toList.traverse {
+      val sourcesF: F[Vector[Option[(CompositeSource, ProjectResource)]]] = view.sources.toVector.traverse {
         case s: CompositeSource.ProjectEventStream       => F.pure(Some(s -> project))
         case s: CompositeSource.CrossProjectEventStream  => projectCache.getBy(s.project).map(_.map(s -> _))
         case s: CompositeSource.RemoteProjectEventStream => s.fetchProject[F].map(_.map(s -> _))

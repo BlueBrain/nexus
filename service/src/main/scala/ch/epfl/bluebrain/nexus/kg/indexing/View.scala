@@ -800,7 +800,7 @@ object View {
           token: Option[AccessToken]
       ) extends Source {
 
-        def fetchProject[F[_]: Effect](implicit projectCache: ProjectCache[F]): F[Option[ProjectResource]] =
+        def fetchProject[F[_]](implicit projectCache: ProjectCache[F]): F[Option[ProjectResource]] =
           projectCache.getBy(project.organization, project.value)
       }
     }

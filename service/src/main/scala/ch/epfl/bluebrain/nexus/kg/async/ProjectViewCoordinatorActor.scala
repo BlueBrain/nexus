@@ -438,6 +438,7 @@ object ProjectViewCoordinatorActor {
     * @param shardingSettings the sharding settings
     * @param shards           the number of shards to use
     */
+  @SuppressWarnings(Array("MaxParameters"))
   final def start(
       resources: Resources[Task],
       viewCache: ViewCache[Task],
