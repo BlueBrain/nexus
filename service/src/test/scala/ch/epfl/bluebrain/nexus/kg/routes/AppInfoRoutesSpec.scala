@@ -2,8 +2,6 @@ package ch.epfl.bluebrain.nexus.kg.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
-import ch.epfl.bluebrain.nexus.admin.client.types.{ServiceDescription => AdminServiceDescription}
 import ch.epfl.bluebrain.nexus.commons.es.client.{ElasticSearchClient, ServiceDescription => EsServiceDescription}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.{untyped, withUnmarshaller}
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults
@@ -41,7 +39,6 @@ class AppInfoRoutesSpec
   implicit private val utClient      = untyped[Task]
   implicit private val qrClient      = withUnmarshaller[Task, QueryResults[Json]]
   implicit private val jsonClient    = withUnmarshaller[Task, Json]
-  implicit private val admin         = mock[AdminClient[Task]]
   implicit private val elasticSearch = mock[ElasticSearchClient[Task]]
   implicit private val sparql        = mock[BlazegraphClient[Task]]
   implicit private val storage       = mock[StorageClient[Task]]
@@ -50,7 +47,7 @@ class AppInfoRoutesSpec
   private val routes                 = AppInfoRoutes(appConfig.description, statusGroup).routes
 
   before {
-    Mockito.reset(statusGroup.cluster, admin, elasticSearch, sparql, storage, statusGroup.cassandra)
+    Mockito.reset(statusGroup.cluster, elasticSearch, sparql, storage, statusGroup.cassandra)
   }
 
   "An AppInfoRoutes" should {
@@ -89,11 +86,9 @@ class AppInfoRoutesSpec
     }
 
     "return the version when everything is up" in {
-      val adminServiceDesc      = AdminServiceDescription("admin", "1.1.1")
       val storageServiceDesc    = StorageServiceDescription("storage", "1.1.2")
       val esServiceDesc         = EsServiceDescription("elasticsearch", "1.1.3")
       val blazegraphServiceDesc = BlazegraphServiceDescription("blazegraph", "1.1.4")
-      admin.serviceDescription shouldReturn Task(adminServiceDesc)
       storage.serviceDescription shouldReturn Task(storageServiceDesc)
       elasticSearch.serviceDescription shouldReturn Task(esServiceDesc)
       sparql.serviceDescription shouldReturn Task(blazegraphServiceDesc)
@@ -102,7 +97,6 @@ class AppInfoRoutesSpec
         responseAs[Json] shouldEqual Json.obj(
           "nexus"                    -> appConfig.description.version.asJson,
           appConfig.description.name -> appConfig.description.version.asJson,
-          adminServiceDesc.name      -> adminServiceDesc.version.asJson,
           storageServiceDesc.name    -> storageServiceDesc.version.asJson,
           blazegraphServiceDesc.name -> blazegraphServiceDesc.version.asJson,
           esServiceDesc.name         -> esServiceDesc.version.asJson
@@ -111,9 +105,7 @@ class AppInfoRoutesSpec
     }
 
     "return the version when everything some services are unreachable" in {
-      val adminServiceDesc = AdminServiceDescription("admin", "1.1.1")
-      val esServiceDesc    = EsServiceDescription("elasticsearch", "1.1.3")
-      admin.serviceDescription shouldReturn Task(adminServiceDesc)
+      val esServiceDesc = EsServiceDescription("elasticsearch", "1.1.3")
       storage.serviceDescription shouldReturn Task.raiseError(new RuntimeException())
       elasticSearch.serviceDescription shouldReturn Task(esServiceDesc)
       sparql.serviceDescription shouldReturn Task.raiseError(new RuntimeException())
@@ -122,7 +114,6 @@ class AppInfoRoutesSpec
         responseAs[Json] shouldEqual Json.obj(
           "nexus"                    -> appConfig.description.version.asJson,
           appConfig.description.name -> appConfig.description.version.asJson,
-          adminServiceDesc.name      -> adminServiceDesc.version.asJson,
           "remoteStorage"            -> "unknown".asJson,
           "blazegraph"               -> "unknown".asJson,
           esServiceDesc.name         -> esServiceDesc.version.asJson

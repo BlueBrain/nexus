@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpEntity, MediaTypes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Caller
@@ -16,11 +16,10 @@ import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives.outputFormat
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.Tar
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
@@ -29,13 +28,13 @@ import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
 class ArchiveRoutes private[routes] (archives: Archives[Task], acls: Acls[Task], realms: Realms[Task])(implicit
-    project: Project,
+    project: ProjectResource,
     caller: Caller,
     config: ServiceConfig
 ) extends AuthDirectives(acls, realms) {
 
   private val responseType              = MediaTypes.`application/x-tar`
-  private val projectPath               = project.organizationLabel / project.label
+  private val projectPath               = project.value.path
   implicit private val subject: Subject = caller.subject
 
   /**
@@ -70,7 +69,7 @@ class ArchiveRoutes private[routes] (archives: Archives[Task], acls: Acls[Task],
     * {prefix}/archives/{org}/{project}/{id}. E.g.: v1/archives/myorg/myproject/myArchive
     */
   def routes(id: AbsoluteIri): Route = {
-    val resId = Id(project.ref, id)
+    val resId = Id(ProjectRef(project.uuid), id)
     concat(
       // Create archive
       (put & pathEndOrSingleSlash) {

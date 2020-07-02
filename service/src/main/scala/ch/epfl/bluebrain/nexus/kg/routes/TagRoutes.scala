@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.kg.routes
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
@@ -11,10 +11,9 @@ import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.tagCtxUri
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
@@ -34,11 +33,11 @@ class TagRoutes private[routes] (
     write: Permission
 )(implicit
     caller: Caller,
-    project: Project,
+    project: ProjectResource,
     config: ServiceConfig
 ) extends AuthDirectives(acls, realms) {
 
-  private val projectPath               = project.organizationLabel / project.label
+  private val projectPath               = project.value.path
   implicit private val subject: Subject = caller.subject
 
   /**
@@ -59,7 +58,9 @@ class TagRoutes private[routes] (
             (authorizeFor(projectPath, write) & projectNotDeprecated) {
               entity(as[Json]) { source =>
                 Kamon.currentSpan().tag("resource.operation", "create")
-                complete(tags.create(Id(project.ref, id), rev, source, schema).value.runWithStatus(Created))
+                complete(
+                  tags.create(Id(ProjectRef(project.uuid), id), rev, source, schema).value.runWithStatus(Created)
+                )
               }
             }
           }
@@ -69,8 +70,9 @@ class TagRoutes private[routes] (
           operationName(opName) {
             authorizeFor(projectPath, read)(caller) {
               parameter("rev".as[Long].?) {
-                case Some(rev) => complete(tags.fetch(Id(project.ref, id), rev, schema).value.runWithStatus(OK))
-                case _         => complete(tags.fetch(Id(project.ref, id), schema).value.runWithStatus(OK))
+                case Some(rev) =>
+                  complete(tags.fetch(Id(ProjectRef(project.uuid), id), rev, schema).value.runWithStatus(OK))
+                case _         => complete(tags.fetch(Id(ProjectRef(project.uuid), id), schema).value.runWithStatus(OK))
               }
             }
           }

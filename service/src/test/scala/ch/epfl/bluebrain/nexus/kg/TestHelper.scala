@@ -6,7 +6,6 @@ import java.util.UUID
 import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness}
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlList
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission, ResourceF => IamResourceF}
@@ -16,6 +15,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.{Ref, ResId, ResourceF}
 import ch.epfl.bluebrain.nexus.kg.storage.AkkaSource
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.util.{EitherValues, Randomness}
 import io.circe.Json
 
 trait TestHelper extends EitherValues with Randomness {

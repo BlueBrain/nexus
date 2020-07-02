@@ -10,7 +10,6 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.serialization.{SerializationExtension, SerializerWithStringManifest}
-import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
@@ -27,6 +26,7 @@ import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageFileDigest}
+import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import io.circe.Json
 import io.circe.parser._
 import org.scalatest.{Inspectors, OptionValues}

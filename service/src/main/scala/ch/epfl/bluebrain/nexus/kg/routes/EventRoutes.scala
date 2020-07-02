@@ -4,7 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationResource
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
@@ -24,21 +25,21 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task], caller: Caller)(implic
 
   private val read: Permission = Permission.unsafe("resources/read")
 
-  def routes(project: Project): Route = {
+  def projectRoutes(project: ProjectResource): Route = {
 
     lastEventId { offset =>
       operationName(s"/${config.http.prefix}/resources/{org}/{project}/events") {
-        authorizeFor(project.organizationLabel / project.label, read)(caller) {
+        authorizeFor(project.value.path, read)(caller) {
           complete(source(s"project=${project.uuid}", offset))
         }
       }
     }
   }
 
-  def routes(org: Organization): Route =
+  def organizationRoutes(org: OrganizationResource): Route =
     lastEventId { offset =>
       operationName(s"/${config.http.prefix}/resources/{org}/events") {
-        authorizeFor(/ + org.label, read)(caller) {
+        authorizeFor(/ + org.value.label, read)(caller) {
           complete(source(s"org=${org.uuid}", offset))
         }
       }

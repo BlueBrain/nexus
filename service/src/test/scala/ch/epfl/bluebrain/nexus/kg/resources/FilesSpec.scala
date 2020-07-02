@@ -6,16 +6,15 @@ import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
 import akka.http.scaladsl.model.Uri
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues}
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.KgError.{InternalError, RemoteFileNotFound}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.{Digest, FileDescription, StoredSummary}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
@@ -27,6 +26,13 @@ import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
+import ch.epfl.bluebrain.nexus.util.{
+  ActorSystemFixture,
+  EitherValues,
+  IOEitherValues,
+  IOOptionValues,
+  Resources => TestResources
+}
 import io.circe.Json
 import io.circe.syntax._
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
@@ -50,7 +56,7 @@ class FilesSpec
     with OptionValues
     with EitherValues
     with BeforeAndAfter
-    with test.Resources
+    with TestResources
     with TestHelper
     with Inspectors {
 
@@ -70,7 +76,7 @@ class FilesSpec
   private val linkFile: LinkFile[IO]                       = mock[LinkFile[IO]]
   implicit private val storageCache: StorageCache[IO]      = mock[StorageCache[IO]]
 
-  private val files: Files[IO] = Files[IO]
+  private val files: Files[IO] = Files[IO](repo, storageCache)
 
   before {
     Mockito.reset(storageCache, saveFile, fetchFile, linkFile, fetchFileAttributes)
@@ -84,7 +90,7 @@ class FilesSpec
     val resId                     = Id(projectRef, id)
     val voc                       = Iri.absolute(s"http://example.com/voc/").rightValue
     // format: off
-    implicit val project = Project(resId.value, "proj", "org", None, base, voc, Map.empty, projectRef.id, genUUID, 1L, deprecated = false, Instant.EPOCH, subject.id, Instant.EPOCH, subject.id)
+    implicit val project = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project("proj", genUUID, "org", None, Map.empty, base, voc))
     // format: on
 
     val value             = Json.obj()
@@ -127,7 +133,7 @@ class FilesSpec
       "create a new File" in new Base {
         saveFile(resId, desc, source) shouldReturn IO.pure(attributes)
         files.create(resId, storage, desc, source).value.accepted shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resId, value, schema = fileRef, types = types)
             .copy(file = Some(storage.reference -> attributes))
       }
@@ -135,7 +141,7 @@ class FilesSpec
       "create a new File without id" in new Base {
         saveFile(any[ResId], desc, source) shouldReturn IO.pure(attributes)
         val resp     = files.create(storage, desc, source).value.accepted
-        val expected = ResourceF
+        val expected = KgResourceF
           .simpleF(resp.id, value, schema = fileRef, types = types)
           .copy(file = Some(storage.reference -> attributes))
         resp shouldEqual expected
@@ -167,7 +173,7 @@ class FilesSpec
 
         files.create(resId, storage, desc, source).value.accepted shouldBe a[Resource]
         files.updateFileAttrEmpty(resId).value.accepted shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resId, value, 2L, schema = fileRef, types = types)
             .copy(file = Some(storage.reference -> attributes))
       }
@@ -233,7 +239,7 @@ class FilesSpec
           attributes.bytes
         )
         files.updateFileAttr(resId, storage, 1L, json).value.accepted shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resId, value, 2L, schema = fileRef, types = types)
             .copy(file = Some(storage.reference -> attributes))
       }
@@ -273,7 +279,7 @@ class FilesSpec
 
         files.create(resId, storage, desc, source).value.accepted shouldBe a[Resource]
         files.update(resId, storage, 1L, desc, updatedSource).value.accepted shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resId, value, 2L, schema = fileRef, types = types)
             .copy(file = Some(storage.reference -> attributesUpdated))
       }
@@ -300,7 +306,7 @@ class FilesSpec
       "create a new link" in new Base {
         linkFile(eqTo(resId), eqTo(desc), eqTo(path)) shouldReturn IO.pure(attributes)
         files.createLink(resId, storage, fileLink).value.accepted shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resId, value, schema = fileRef, types = types)
             .copy(file = Some(storage.reference -> attributes))
       }
@@ -310,7 +316,7 @@ class FilesSpec
         val resp = files.createLink(storage, fileLink).value.accepted
 
         resp shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resp.id, value, schema = fileRef, types = types)
             .copy(file = Some(storage.reference -> attributes))
       }
@@ -333,7 +339,7 @@ class FilesSpec
 
         files.createLink(resId, storage, fileLink).value.accepted shouldBe a[Resource]
         files.updateLink(resId, storage, 1L, fileLink2).value.accepted shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resId, value, 2L, schema = fileRef, types = types)
             .copy(file = Some(storage.reference -> attributesUpdated))
       }
@@ -356,7 +362,7 @@ class FilesSpec
         saveFile(resId, desc, source) shouldReturn IO.pure(attributes)
         files.create(resId, storage, desc, source).value.accepted shouldBe a[Resource]
         files.deprecate(resId, 1L).value.accepted shouldEqual
-          ResourceF
+          KgResourceF
             .simpleF(resId, value, 2L, schema = fileRef, types = types, deprecated = true)
             .copy(file = Some(storage.reference -> attributes))
       }

@@ -8,10 +8,13 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props, Stash}
 import akka.cluster.sharding.ShardRegion.{ExtractEntityId, ExtractShardId}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings, ShardRegion}
 import akka.pattern.pipe
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChange._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
 import ch.epfl.bluebrain.nexus.commons.cache.OnKeyValueStoreChange
@@ -20,14 +23,14 @@ import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.IdStats
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.Msg._
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor._
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ViewCache}
+import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
 import ch.epfl.bluebrain.nexus.kg.client.{KgClient, KgClientConfig}
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.ViewStatistics
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProjectEventStream, RemoteProjectEventStream}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Source => CompositeSource}
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
 import ch.epfl.bluebrain.nexus.kg.indexing._
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, ProjectIdentifier, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
@@ -66,9 +69,9 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
 
   def receive: Receive = {
     case Start(_, project, views, projectsAcls) =>
-      log.debug("Started coordinator for project '{}' with initial views '{}'", project.show, views)
+      log.debug("Started coordinator for project '{}' with initial views '{}'", project.value.show, views)
       context.become(initialized(project))
-      viewCache.subscribe(project.ref, onChange(project.ref))
+      viewCache.subscribe(ProjectRef(project.uuid), onChange(ProjectRef(project.uuid)))
       val accessibleViews = views.foldLeft(Set.empty[IndexedView]) {
         case (acc, v: CompositeView) =>
           val accessibleSources = v.sources -- inaccessibleSources(v, projectsAcls)
@@ -131,7 +134,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
 
   private def inaccessibleSources(
       view: CompositeView,
-      projectsAcls: Map[Project, AccessControlList]
+      projectsAcls: Map[ProjectResource, AccessControlList]
   ): Set[CompositeView.Source] =
     view.sourcesBy[CrossProjectEventStream].foldLeft(Set.empty[CompositeView.Source]) { (inaccessible, current) =>
       val acl       = current.project.findIn(projectsAcls.keySet).map(projectsAcls(_)).getOrElse(AccessControlList.empty)
@@ -142,21 +145,29 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
   private def startCrossProjectStreamFromDB(projectRef: ProjectRef): Unit = {
     val progressId                                   = projectStreamId()
     val sourceF: Task[Source[ProjectionProgress, _]] = projections.progress(progressId).map { initial =>
-      val source = cassandraSource(s"project=${projectRef.id}", progressId, initial.minProgress.offset)
-      source.via(projectStreamFlow(initial))
+      PersistenceQuery(as)
+        .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+        .eventsByTag(s"project=${projectRef.id}", initial.minProgress.offset)
+        .map[PairMsg[Any]](e => Right(Message(e, progressId)))
+        .via(projectStreamFlow(initial))
     }
     val coordinator                                  = ViewCoordinator(StreamSupervisor.start(sourceF, progressId, context.actorOf))
     projectsStream += projectRef -> coordinator
   }
 
-  private def startProjectStreamFromDB(project: Project): Unit = {
+  private def startProjectStreamFromDB(project: ProjectResource): Unit = {
     val progressId                                   = projectStreamId()
     val sourceF: Task[Source[ProjectionProgress, _]] = projections.progress(progressId).map { initial =>
-      val source = cassandraSource(s"project=${project.ref.id}", progressId, initial.minProgress.offset)
-      source.via(projectStreamFlow(initial)).via(kamonProjectMetricsFlow(project.projectLabel))
+      PersistenceQuery(as)
+        .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+        .eventsByTag(s"project=${project.uuid}", initial.minProgress.offset)
+        .map[PairMsg[Any]](e => Right(Message(e, progressId)))
+        .via(projectStreamFlow(initial))
+        .via(kamonProjectMetricsFlow(ProjectLabel(project.value.organizationLabel, project.value.label)))
+
     }
     val coordinator                                  = ViewCoordinator(StreamSupervisor.start(sourceF, progressId, context.actorOf))
-    projectsStream += project.ref -> coordinator
+    projectsStream += ProjectRef(project.uuid) -> coordinator
   }
 
   private def startProjectStreamSource(source: CompositeSource): Unit =
@@ -203,7 +214,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
     */
   def startCoordinator(
       view: IndexedView,
-      project: Project,
+      project: ProjectResource,
       restart: Boolean,
       prevRestart: Option[Instant] = None
   ): ViewCoordinator
@@ -219,7 +230,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
     */
   def startCoordinator(
       view: CompositeView,
-      project: Project,
+      project: ProjectResource,
       restartProgress: Set[String],
       prevRestart: Option[Instant]
   ): ViewCoordinator
@@ -230,23 +241,23 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
     * @param view    the view linked to the indexer actor
     * @param project the project of the current coordinator
     */
-  def deleteViewIndices(view: IndexedView, project: Project): Task[Unit]
+  def deleteViewIndices(view: IndexedView, project: ProjectResource): Task[Unit]
 
   /**
     * Triggered when a change to key value store occurs.
     *
     * @param ref the project unique identifier
     */
-  def onChange(ref: ProjectRef): OnKeyValueStoreChange[AbsoluteIri, View]
+  def onChange(ref: ProjectRef): OnKeyValueStoreChange[Task, AbsoluteIri, View]
 
-  def initialized(project: Project): Receive = {
+  def initialized(project: ProjectResource): Receive = {
 
     // format: off
     def logStop(view: View, reason: String): Unit =
-      log.info("View '{}' is going to be stopped at revision '{}' for project '{}'. Reason: '{}'.", view.id, view.rev, project.show, reason)
+      log.info("View '{}' is going to be stopped at revision '{}' for project '{}'. Reason: '{}'.", view.id, view.rev, project.value.show, reason)
 
     def logStart(view: View, extra: String): Unit =
-      log.info("View '{}' is going to be started at revision '{}' for project '{}'. {}.", view.id, view.rev, project.show, extra)
+      log.info("View '{}' is going to be started at revision '{}' for project '{}'. {}.", view.id, view.rev, project.value.show, extra)
     // format: on
 
     def stopView(
@@ -318,14 +329,6 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
           case (v, coordinator) =>
             logStop(v, "removed from the cache")
             stopView(v, coordinator)
-        }
-
-      case ProjectChanges(_, newProject)                                   =>
-        context.become(initialized(newProject))
-        children.foreach {
-          case (view, coord) =>
-            logStop(view, "project changed")
-            stopView(view, coord).map(_ => self ! ViewsAddedOrModified(project.uuid, restart = true, Set(view)))
         }
 
       case RestartView(uuid, viewId)                                       =>
@@ -403,7 +406,7 @@ object ProjectViewCoordinatorActor {
   object Msg {
 
     // format: off
-    final case class Start(uuid: UUID, project: Project, views: Set[IndexedView], projectsAcls: Map[Project, AccessControlList])                                  extends Msg
+    final case class Start(uuid: UUID, project: ProjectResource, views: Set[IndexedView], projectsAcls: Map[ProjectResource, AccessControlList])                                  extends Msg
     final case class Stop(uuid: UUID)                                                                                                                             extends Msg
     final case class ViewsAddedOrModified(uuid: UUID, restart: Boolean, views: Set[IndexedView], ignoreRev: Boolean = false, prevRestart: Option[Instant] = None) extends Msg
     final case class RestartView(uuid: UUID, viewId: AbsoluteIri)                                                                                                 extends Msg
@@ -411,10 +414,9 @@ object ProjectViewCoordinatorActor {
     final case class UpdateRestart(uuid: UUID, viewId: AbsoluteIri, prevRestart: Option[Instant])                                                                 extends Msg
     final case class Ack(uuid: UUID)                                                                                                                              extends Msg
     final case class ViewsRemoved(uuid: UUID, views: Set[AbsoluteIri])                                                                                            extends Msg
-    final case class ProjectChanges(uuid: UUID, project: Project)                                                                                                 extends Msg
     final case class FetchOffset(uuid: UUID, viewId: AbsoluteIri)                                                                                                 extends Msg
     final case class FetchStatistics(uuid: UUID, viewId: AbsoluteIri)                                                                                             extends Msg
-    final case class AclChanges(uuid: UUID, projectsAcls: Map[Project, AccessControlList], views: Set[CompositeView])                                             extends Msg
+    final case class AclChanges(uuid: UUID, projectsAcls: Map[ProjectResource, AccessControlList], views: Set[CompositeView])                                             extends Msg
     // format: on
   }
 
@@ -436,6 +438,7 @@ object ProjectViewCoordinatorActor {
     * @param shardingSettings the sharding settings
     * @param shards           the number of shards to use
     */
+  @SuppressWarnings(Array("MaxParameters"))
   final def start(
       resources: Resources[Task],
       viewCache: ViewCache[Task],
@@ -479,7 +482,7 @@ object ProjectViewCoordinatorActor {
         implicit private val actorInitializer: (Props, String) => ActorRef = context.actorOf
         override def startCoordinator(
             view: IndexedView,
-            project: Project,
+            project: ProjectResource,
             restart: Boolean,
             prevRestart: Option[Instant]
         ): ViewCoordinator                                                 =
@@ -496,7 +499,7 @@ object ProjectViewCoordinatorActor {
 
         override def startCoordinator(
             view: CompositeView,
-            project: Project,
+            project: ProjectResource,
             restartProgress: Set[String],
             prevRestart: Option[Instant]
         ): ViewCoordinator = {
@@ -505,9 +508,9 @@ object ProjectViewCoordinatorActor {
           ViewCoordinator(coordinator, Some(Instant.now()), scheduleRestart(view, restartTime).runToFuture)
         }
 
-        override def deleteViewIndices(view: IndexedView, project: Project): Task[Unit] = {
+        override def deleteViewIndices(view: IndexedView, project: ProjectResource): Task[Unit] = {
           def delete(v: SingleView): Task[Unit] = {
-            log.info("Index '{}' is removed from project '{}'", v.index, project.show)
+            log.info("Index '{}' is removed from project '{}'", v.index, project.value.show)
             v.deleteIndex >> Task.unit
           }
 
@@ -519,7 +522,7 @@ object ProjectViewCoordinatorActor {
           }
         }
 
-        override def onChange(ref: ProjectRef): OnKeyValueStoreChange[AbsoluteIri, View] =
+        override def onChange(ref: ProjectRef): OnKeyValueStoreChange[Task, AbsoluteIri, View] =
           onViewChange(acls, saCaller, ref, self)
 
       }
@@ -538,8 +541,8 @@ object ProjectViewCoordinatorActor {
 
   private[async] def onViewChange(acls: Acls[Task], saCaller: Caller, ref: ProjectRef, actorRef: ActorRef)(implicit
       projectCache: ProjectCache[Task]
-  ): OnKeyValueStoreChange[AbsoluteIri, View] =
-    new OnKeyValueStoreChange[AbsoluteIri, View] {
+  ): OnKeyValueStoreChange[Task, AbsoluteIri, View] =
+    new OnKeyValueStoreChange[Task, AbsoluteIri, View] {
 
       private val `Composite`          = TypeCase[CompositeView]
       private val `Indexed`            = TypeCase[IndexedView]
@@ -548,7 +551,7 @@ object ProjectViewCoordinatorActor {
       private def containsCrossSources(view: CompositeView): Boolean =
         view.sourcesBy[CrossProjectEventStream].nonEmpty
 
-      override def apply(onChange: KeyValueStoreChanges[AbsoluteIri, View]): Unit = {
+      override def apply(onChange: KeyValueStoreChanges[AbsoluteIri, View]): Task[Unit] = {
         val (toWriteNow, toCheckAcls, toRemove) =
           onChange.values.foldLeft((Set.empty[IndexedView], Set.empty[CompositeView], Set.empty[IndexedView])) {
             case ((write, checkAcl, removed), ValueAdded(_, `Composite`(view))) if containsCrossSources(view)    =>
@@ -560,15 +563,17 @@ object ProjectViewCoordinatorActor {
             case ((write, checkAcl, removed), ValueRemoved(_, `Indexed`(view)))                                  => (write, checkAcl, removed + view)
             case ((write, checkAcl, removed), _)                                                                 => (write, checkAcl, removed)
           }
-        if (toWriteNow.nonEmpty) actorRef ! ViewsAddedOrModified(ref.id, restart = false, toWriteNow)
-        if (toCheckAcls.nonEmpty) {
-          val task = for {
-            acls         <- acls.list(anyProject, ancestors = true, self = false)(saCaller)
-            projectsAcls <- resolveProjects(acls)
-          } yield actorRef ! AclChanges(ref.id, projectsAcls, toCheckAcls)
-          task.runToFuture
+        Task.delay {
+          if (toWriteNow.nonEmpty) actorRef ! ViewsAddedOrModified(ref.id, restart = false, toWriteNow)
+          if (toCheckAcls.nonEmpty) {
+            val task = for {
+              acls         <- acls.list(anyProject, ancestors = true, self = false)(saCaller)
+              projectsAcls <- resolveProjects(acls)
+            } yield actorRef ! AclChanges(ref.id, projectsAcls, toCheckAcls)
+            task.runToFuture
+          }
+          if (toRemove.nonEmpty) actorRef ! ViewsRemoved(ref.id, toRemove.map(_.id))
         }
-        if (toRemove.nonEmpty) actorRef ! ViewsRemoved(ref.id, toRemove.map(_.id))
       }
     }
 }

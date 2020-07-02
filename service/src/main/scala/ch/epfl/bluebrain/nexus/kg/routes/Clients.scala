@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.kg.routes
 
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
@@ -15,7 +14,6 @@ import monix.eval.Task
   *
   * @param sparql               the sparql indexer client
   * @param elasticSearch        the ElasticSearch indexer client
-  * @param admin                the implicitly available admin client
   * @param defaultRemoteStorage the implicitly available storage client
   * @param http                 the implicitly available [[UntypedHttpClient]]
   * @param uclJson              the implicitly available [[HttpClient]] with a JSON unmarshaller
@@ -24,7 +22,6 @@ import monix.eval.Task
 final case class Clients[F[_]]()(implicit
     val sparql: BlazegraphClient[F],
     val elasticSearch: ElasticSearchClient[F],
-    val admin: AdminClient[F],
     val defaultRemoteStorage: StorageClient[F],
     val rsSearch: HttpClient[F, QueryResults[Json]],
     val http: UntypedHttpClient[Task],

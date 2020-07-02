@@ -13,7 +13,7 @@ abstract class Cache[F[_]: Monad, K, V](private[cache] val store: KeyValueStore[
     *
     * @param value the method that gets triggered when a change to key value store occurs
     */
-  def subscribe(value: OnKeyValueStoreChange[K, V]): F[KeyValueStore.Subscription] = store.subscribe(value)
+  def subscribe(value: OnKeyValueStoreChange[F, K, V]): F[KeyValueStore.Subscription] = store.subscribe(value)
 
   /**
     * Removes a subscription from the cache

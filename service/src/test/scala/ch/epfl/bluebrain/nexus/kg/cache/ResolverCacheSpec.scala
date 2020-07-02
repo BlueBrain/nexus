@@ -3,13 +3,13 @@ package ch.epfl.bluebrain.nexus.kg.cache
 import akka.actor.ExtendedActorSystem
 import akka.serialization.Serialization
 import akka.testkit._
-import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.util.ActorSystemFixture
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.concurrent.ScalaFutures

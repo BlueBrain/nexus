@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.kg.config
 
-import ch.epfl.bluebrain.nexus.commons.test.Resources._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.util.Resources.jsonContentOf
 import io.circe.Json
 import org.apache.jena.rdf.model.Model
 

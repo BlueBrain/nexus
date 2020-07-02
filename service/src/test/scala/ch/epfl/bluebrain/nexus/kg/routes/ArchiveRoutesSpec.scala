@@ -9,14 +9,12 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.data.EitherT
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
@@ -36,6 +34,7 @@ import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
+import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
@@ -55,7 +54,7 @@ class ArchiveRoutesSpec
     with EitherValues
     with OptionValues
     with ScalatestRouteTest
-    with test.Resources
+    with TestResources
     with ScalaFutures
     with IdiomaticMockito
     with ArgumentMatchersSugar
@@ -71,7 +70,6 @@ class ArchiveRoutesSpec
   implicit private val appConfig = Settings(system).serviceConfig
   implicit private val clock     = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
-  implicit private val adminClient   = mock[AdminClient[Task]]
   implicit private val projectCache  = mock[ProjectCache[Task]]
   implicit private val viewCache     = mock[ViewCache[Task]]
   implicit private val resolverCache = mock[ResolverCache[Task]]
@@ -84,7 +82,7 @@ class ArchiveRoutesSpec
   private val realms                 = mock[Realms[Task]]
 
   implicit private val cacheAgg =
-    Caches(projectCache, viewCache, resolverCache, storageCache, archiveCache)
+    Caches(mock[OrganizationCache[Task]], projectCache, viewCache, resolverCache, storageCache, archiveCache)
 
   implicit private val ec            = system.dispatcher
   implicit private val utClient      = untyped[Task]
@@ -92,7 +90,6 @@ class ArchiveRoutesSpec
   implicit private val jsonClient    = withUnmarshaller[Task, Json]
   implicit private val sparql        = mock[BlazegraphClient[Task]]
   implicit private val elasticSearch = mock[ElasticSearchClient[Task]]
-  implicit private val initializer   = mock[ProjectInitializer[Task]]
   implicit private val storageClient = mock[StorageClient[Task]]
   implicit private val clients       = Clients()
 
@@ -110,9 +107,9 @@ class ArchiveRoutesSpec
   //noinspection NameBooleanParameters
   abstract class Context(perms: Set[Permission] = manageArchive) extends RoutesFixtures {
 
-    projectCache.get(label) shouldReturn Task.pure(Some(projectMeta))
-    projectCache.getLabel(projectRef) shouldReturn Task.pure(Some(label))
-    projectCache.get(projectRef) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.getBy(label) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.getBy(projectRef) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.get(projectRef.id) shouldReturn Task.pure(Some(projectMeta))
     realms.caller(token.value) shouldReturn Task(caller)
     implicit val acls = AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> perms)))
     aclsApi.list(label.organization / label.value, ancestors = true, self = true)(caller) shouldReturn Task.pure(acls)

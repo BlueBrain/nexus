@@ -3,31 +3,39 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import java.time.{Clock, Instant, ZoneId}
 
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues, Randomness}
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.async.anyProject
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
+import ch.epfl.bluebrain.nexus.kg.cache.ResolverCache
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, Resolver, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{
+  ActorSystemFixture,
+  EitherValues,
+  IOEitherValues,
+  IOOptionValues,
+  Randomness,
+  Resources => TestResources
+}
 import io.circe.Json
 import org.mockito.ArgumentMatchers.any
 import org.mockito.IdiomaticMockito
-import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -43,7 +51,7 @@ class SchemasSpec
     with OptionValues
     with EitherValues
     with Randomness
-    with test.Resources
+    with TestResources
     with TestHelper
     with Inspectors {
 
@@ -72,7 +80,7 @@ class SchemasSpec
       Caller.anonymous
     )
   implicit private val materializer = new Materializer(resolution, projectCache)
-  private val schemas: Schemas[IO]  = Schemas[IO]
+  private val schemas: Schemas[IO]  = Schemas[IO](repo)
 
   trait Base {
     implicit val subject: Subject = Anonymous
@@ -81,23 +89,9 @@ class SchemasSpec
     val id                        = Iri.absolute(s"http://example.com/$genUUID").rightValue
     lazy val resId                = Id(projectRef, id)
     val voc                       = Iri.absolute(s"http://example.com/voc/").rightValue
-    implicit lazy val project     = Project(
-      resId.value,
-      "proj",
-      "org",
-      None,
-      base,
-      voc,
-      Map.empty,
-      projectRef.id,
-      genUUID,
-      1L,
-      deprecated = false,
-      Instant.EPOCH,
-      subject.id,
-      Instant.EPOCH,
-      subject.id
-    )
+    // format: off
+    implicit lazy val project = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project("proj", genUUID, "org", None, Map.empty, base, voc))
+    // format: on
     val schema                    = resolverSchema deepMerge Json.obj("@id" -> Json.fromString(id.asString))
 
   }
@@ -108,7 +102,7 @@ class SchemasSpec
 
       "create a new schema" in new Base {
         val resource = schemas.create(schema).value.accepted
-        resource shouldEqual ResourceF.simpleF(
+        resource shouldEqual KgResourceF.simpleF(
           Id(projectRef, resource.id.value),
           schema,
           schema = shaclRef,
@@ -118,7 +112,7 @@ class SchemasSpec
 
       "create a new schema with the id passed on the call" in new Base {
         val resource = schemas.create(resId, schema).value.accepted
-        resource shouldEqual ResourceF.simpleF(
+        resource shouldEqual KgResourceF.simpleF(
           Id(projectRef, resource.id.value),
           schema,
           schema = shaclRef,
@@ -141,11 +135,11 @@ class SchemasSpec
         )
 
         schemas.update(resId, 1L, update).value.accepted shouldEqual
-          ResourceF.simpleF(resId, update, 2L, schema = shaclRef, types = Set(nxv.Schema.value, nxv.Resolver.value))
+          KgResourceF.simpleF(resId, update, 2L, schema = shaclRef, types = Set(nxv.Schema.value, nxv.Resolver.value))
       }
 
       "update a schema with circular dependency" in new Base {
-        projectCache.get(projectRef) shouldReturn IO(Some(project))
+        projectCache.get(projectRef.id) shouldReturn IO(Some(project))
         resolverCache.get(projectRef) shouldReturn IO.pure(List(InProjectResolver.default(projectRef)))
 
         val viewSchemaId     = resId.copy(value = genIri)
@@ -175,7 +169,7 @@ class SchemasSpec
       "deprecate a schema" in new Base {
         schemas.create(resId, schema).value.accepted shouldBe a[Resource]
         schemas.deprecate(resId, 1L).value.accepted shouldEqual
-          ResourceF.simpleF(resId, schema, 2L, schema = shaclRef, types = Set(nxv.Schema.value), deprecated = true)
+          KgResourceF.simpleF(resId, schema, 2L, schema = shaclRef, types = Set(nxv.Schema.value), deprecated = true)
       }
 
       "prevent deprecating a schema that's already deprecated" in new Base {

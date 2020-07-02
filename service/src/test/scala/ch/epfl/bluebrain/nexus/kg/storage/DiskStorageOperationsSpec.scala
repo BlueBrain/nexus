@@ -4,19 +4,18 @@ import java.nio.file.Paths
 
 import akka.http.scaladsl.model.{ContentTypes, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.commons.test._
-import ch.epfl.bluebrain.nexus.commons.test.io.IOEitherValues
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
-import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileDescription
 import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileDescription
 import ch.epfl.bluebrain.nexus.kg.{KgError, TestHelper}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, IOEitherValues, Resources}
 import org.mockito.IdiomaticMockito
-import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, OptionValues}
 
 import scala.concurrent.duration._
 

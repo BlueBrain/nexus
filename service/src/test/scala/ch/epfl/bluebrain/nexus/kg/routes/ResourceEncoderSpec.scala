@@ -4,11 +4,13 @@ import java.time.{Clock, Instant, ZoneId}
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
-import ch.epfl.bluebrain.nexus.kg.resources.{Id, ResourceF}
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
+import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.{Compacted, Expanded}
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
@@ -37,28 +39,23 @@ class ResourceEncoderSpec
   private val projectId  = Id(projectRef, iri)
   private val resId      = Id(projectRef, base + "foobar")
 
-  implicit private val project: Project = Project(
+  implicit private val project = ResourceF(
     projectId.value,
-    "proj",
-    "org",
-    None,
-    base,
-    voc,
-    Map.empty,
     projectRef.id,
-    genUUID,
     1L,
     deprecated = false,
-    Instant.now(clock),
-    subject.id,
-    Instant.now(clock),
-    subject.id
+    Set.empty,
+    Instant.EPOCH,
+    subject,
+    Instant.EPOCH,
+    subject,
+    Project("proj", genUUID, "org", None, Map.empty, base, voc)
   )
 
   "ResourceEncoder" should {
     val json     = Json.obj("@id" -> Json.fromString("foobar"), "foo" -> Json.fromString("bar"))
     val context  = Json.obj("@base" -> Json.fromString(base.asString), "@vocab" -> Json.fromString(voc.asString))
-    val resource = ResourceF.simpleF(resId, json)
+    val resource = KgResourceF.simpleF(resId, json)
 
     "encode resource metadata" in {
       val expected =

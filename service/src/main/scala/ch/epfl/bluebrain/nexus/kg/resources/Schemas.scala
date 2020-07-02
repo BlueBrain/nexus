@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.kg.resources
 
 import cats.data.EitherT
 import cats.effect.Effect
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
@@ -38,9 +39,10 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
     * @param source     the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(source: Json)(implicit subject: Subject, project: Project): RejOrResource[F] =
+  def create(source: Json)(implicit subject: Subject, project: ProjectResource): RejOrResource[F] =
     materializer(source.addContext(shaclCtxUri)).flatMap {
-      case (id, Value(_, _, graph)) => create(Id(project.ref, id), source.addContext(shaclCtxUri), graph.removeMetadata)
+      case (id, Value(_, _, graph)) =>
+        create(Id(ProjectRef(project.uuid), id), source.addContext(shaclCtxUri), graph.removeMetadata)
     }
 
   /**
@@ -50,7 +52,7 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
     * @param source the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(id: ResId, source: Json)(implicit subject: Subject, project: Project): RejOrResource[F] =
+  def create(id: ResId, source: Json)(implicit subject: Subject, project: ProjectResource): RejOrResource[F] =
     materializer(source.addContext(shaclCtxUri), id.value).flatMap {
       case Value(_, _, graph) => create(id, source.addContext(shaclCtxUri), graph.removeMetadata)
     }
@@ -63,7 +65,10 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
     * @param source    the new source representation in json-ld format
     * @return either a rejection or the updated resource in the F context
     */
-  def update(id: ResId, rev: Long, source: Json)(implicit subject: Subject, project: Project): RejOrResource[F] =
+  def update(id: ResId, rev: Long, source: Json)(implicit
+      subject: Subject,
+      project: ProjectResource
+  ): RejOrResource[F] =
     for {
       matValue  <- materializer(source.addContext(shaclCtxUri), id.value)
       typedGraph = addSchemaType(matValue.graph.removeMetadata)
@@ -117,7 +122,7 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
     * @param id the id of the storage
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, Some(shaclRef)).toRight(notFound(id.ref)).flatMap(materializer.withMeta(_))
 
   /**
@@ -127,7 +132,7 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
     * @param rev the revision of the storage
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, rev: Long)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, rev: Long)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, rev, Some(shaclRef)).toRight(notFound(id.ref, Some(rev))).flatMap(materializer.withMeta(_))
 
   /**
@@ -137,7 +142,7 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
     * @param tag the tag of the storage
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, tag: String)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, tag: String)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, tag, Some(shaclRef)).toRight(notFound(id.ref, tag = Some(tag))).flatMap(materializer.withMeta(_))
 
   /**
@@ -186,21 +191,21 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
 
   private def create(id: ResId, source: Json, graph: Graph)(implicit
       subject: Subject,
-      project: Project
+      project: ProjectResource
   ): RejOrResource[F] = {
     val typedGraph = addSchemaType(graph)
     val types      = typedGraph.cursor.downSet(rdf.tpe).as[Set[AbsoluteIri]].getOrElse(Set.empty)
 
     for {
       _        <- validateShacl(id, typedGraph)
-      resource <- repo.create(id, OrganizationRef(project.organizationUuid), shaclRef, types, source)
+      resource <- repo.create(id, OrganizationRef(project.value.organizationUuid), shaclRef, types, source)
     } yield resource
   }
 
   private def addSchemaType(graph: Graph): Graph =
     graph.append(rdf.tpe, nxv.Schema)
 
-  private def validateShacl(resId: ResId, data: Graph)(implicit project: Project): EitherT[F, Rejection, Unit] =
+  private def validateShacl(resId: ResId, data: Graph)(implicit project: ProjectResource): EitherT[F, Rejection, Unit] =
     materializer.imports(resId, data).flatMap { resolved =>
       val resolvedSets = resolved.foldLeft(data.triples)(_ ++ _.value.graph.triples)
       val resolvedData = Graph(data.root, resolvedSets).asJena
@@ -210,11 +215,6 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
 
 object Schemas {
 
-  /**
-    * @param config the implicitly available application configuration
-    * @tparam F the monadic effect type
-    * @return a new [[Schemas]] for the provided F type
-    */
-  final def apply[F[_]: Effect: Materializer](implicit config: ServiceConfig, repo: Repo[F]): Schemas[F] =
+  final def apply[F[_]: Effect: Materializer](repo: Repo[F])(implicit config: ServiceConfig): Schemas[F] =
     new Schemas[F](repo)
 }

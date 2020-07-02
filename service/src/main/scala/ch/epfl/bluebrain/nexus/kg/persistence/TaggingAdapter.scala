@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.kg.persistence.TaggingAdapter.EventTag
 import ch.epfl.bluebrain.nexus.kg.resources.Event.{Created, Deprecated, Updated}
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, Id, OrganizationRef}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
-
 import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 
 /**
   * A tagging event adapter that adds tags to discriminate between event hierarchies.
@@ -30,6 +30,21 @@ class TaggingAdapter extends WriteEventAdapter {
 }
 
 object TaggingAdapter {
+
+  /**
+    * Tag applied to views.
+    */
+  final val ViewTag: String = s"type=${nxv.View.value.show}"
+
+  /**
+    * Tag applied to resolvers.
+    */
+  final val ResolverTag: String = s"type=${nxv.Resolver.value.show}"
+
+  /**
+    * Tag applied to storages.
+    */
+  final val StorageTag: String = s"type=${nxv.Storage.value.show}"
 
   /**
     * The tag applied to all the events.

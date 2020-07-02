@@ -12,11 +12,12 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectResource}
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.commons.search.Sort.OrderType._
 import ch.epfl.bluebrain.nexus.commons.search._
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.errorCtxUri
@@ -24,6 +25,7 @@ import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes.{exceptionHandler, rejectionHandler}
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
@@ -37,6 +39,7 @@ import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
@@ -86,10 +89,18 @@ class QueryDirectivesSpec
         }
       }
 
-    // format: off
-    def genProject() =
-      Project(genIri, "project", "organization", None, url"${nxv.projects.value.asString}/", url"${genIri}/", Map("nxv" -> nxv.base), genUUID, genUUID, 1L, false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
-    // format: on
+    def genProject() = {
+      val project = Project(
+        "project",
+        genUUID,
+        "organization",
+        None,
+        Map("nxv" -> nxv.base),
+        url"${nxv.projects.value.asString}/",
+        url"${genIri}/"
+      )
+      ResourceF(genIri, genUUID, 1L, false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, project)
+    }
 
     def routePagination(): Route =
       (get & paginated) { page =>
@@ -101,7 +112,7 @@ class QueryDirectivesSpec
         complete(StatusCodes.OK -> output.toString)
       }
 
-    def routeStorage(implicit project: Project): Route =
+    def routeStorage(implicit project: ProjectResource): Route =
       handleExceptions(exceptionHandler) {
         handleRejections(rejectionHandler) {
           (get & storage) { st =>
@@ -110,7 +121,7 @@ class QueryDirectivesSpec
         }
       }
 
-    def routeSearchParams(implicit project: Project): Route =
+    def routeSearchParams(implicit project: ProjectResource): Route =
       handleExceptions(exceptionHandler) {
         handleRejections(rejectionHandler) {
           (get & searchParams) { params =>
@@ -219,8 +230,9 @@ class QueryDirectivesSpec
 
       "return the storage when specified as a query parameter" in {
         implicit val project = genProject()
-        val storage: Storage = DiskStorage.default(project.ref)
-        when(storageCache.get(project.ref, nxv.withSuffix("mystorage").value)).thenReturn(Task(Some(storage)))
+        val storage: Storage = DiskStorage.default(ProjectRef(project.uuid))
+        when(storageCache.get(ProjectRef(project.uuid), nxv.withSuffix("mystorage").value))
+          .thenReturn(Task(Some(storage)))
         Get("/some?storage=nxv:mystorage") ~> routeStorage ~> check {
           responseAs[Json] shouldEqual storage.asGraph.toJson().rightValue
         }
@@ -228,8 +240,8 @@ class QueryDirectivesSpec
 
       "return the default storage" in {
         implicit val project = genProject()
-        val storage: Storage = DiskStorage.default(project.ref)
-        when(storageCache.getDefault(project.ref)).thenReturn(Task(Some(storage)))
+        val storage: Storage = DiskStorage.default(ProjectRef(project.uuid))
+        when(storageCache.getDefault(ProjectRef(project.uuid))).thenReturn(Task(Some(storage)))
         Get("/some") ~> routeStorage ~> check {
           responseAs[Json] shouldEqual storage.asGraph.toJson().rightValue
         }
@@ -237,7 +249,7 @@ class QueryDirectivesSpec
 
       "return no storage when does not exists on the cache" in {
         implicit val project = genProject()
-        when(storageCache.getDefault(project.ref)).thenReturn(Task(None))
+        when(storageCache.getDefault(ProjectRef(project.uuid))).thenReturn(Task(None))
         Get("/some") ~> routeStorage ~> check {
           status shouldEqual StatusCodes.NotFound
         }
@@ -272,11 +284,11 @@ class QueryDirectivesSpec
             rev = Some(2),
             schema = Some(schema),
             createdBy = Some(nxv.withSuffix("user").value),
-            updatedBy = Some(project.base + "batman"),
-            types = List(project.vocab + "A", project.vocab + "B"),
+            updatedBy = Some(project.value.base + "batman"),
+            types = List(project.value.vocab + "A", project.value.vocab + "B"),
             q = Some("some text")
           )
-          val expected2 = expected.copy(types = List(project.vocab + "B", project.vocab + "A"))
+          val expected2 = expected.copy(types = List(project.value.vocab + "B", project.value.vocab + "A"))
 
           responseAs[SearchParams] should (be(expected) or be(expected2))
         }

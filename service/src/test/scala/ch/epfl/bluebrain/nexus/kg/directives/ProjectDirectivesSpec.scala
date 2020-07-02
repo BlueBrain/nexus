@@ -8,32 +8,32 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
-import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
-import ch.epfl.bluebrain.nexus.iam.client.IamClientError
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.iam.types.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
+import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationResource}
+import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectResource}
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.iam.types.Identity
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.kg.Error._
 import ch.epfl.bluebrain.nexus.kg.KgError.{OrganizationNotFound, ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import org.mockito.{IdiomaticMockito, Mockito}
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{BeforeAndAfter, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
+import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectivesSpec.MappingValue
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.resources.OrganizationRef
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
-import ch.epfl.bluebrain.nexus.kg.resources.{OrganizationRef, ProjectInitializer}
 import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes
-import ch.epfl.bluebrain.nexus.kg.{Error, KgError, TestHelper}
-import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.kg.{Error, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.Decoder
 import io.circe.generic.auto._
 import monix.eval.Task
@@ -45,77 +45,87 @@ class ProjectDirectivesSpec
     with EitherValues
     with IdiomaticMockito
     with BeforeAndAfter
+    with OptionValues
     with ScalatestRouteTest
     with TestHelper {
 
   implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
   implicit private val http: HttpConfig         = appConfig.http
 
-  implicit private val projectCache: ProjectCache[Task]      = mock[ProjectCache[Task]]
-  implicit private val client: AdminClient[Task]             = mock[AdminClient[Task]]
-  implicit private val initializer: ProjectInitializer[Task] = mock[ProjectInitializer[Task]]
-  // TODO: Remove when migrating ADMIN client
-  implicit private val fakeToken: Option[AuthToken]          = None
+  implicit private val projectCache: ProjectCache[Task]  = mock[ProjectCache[Task]]
+  implicit private val orgCache: OrganizationCache[Task] = mock[OrganizationCache[Task]]
   before {
-    Mockito.reset(projectCache, client, initializer)
+    Mockito.reset(projectCache, orgCache)
   }
 
   private val id = genIri
 
-  implicit private val orgDecoder: Decoder[Organization] =
+  implicit private val orgDecoder: Decoder[OrganizationResource] =
     Decoder.instance { hc =>
       for {
+        id          <- hc.get[AbsoluteIri]("@id")
         description <- hc.getOrElse[Option[String]]("description")(None)
-        label       <- hc.get[String]("label")
-        uuid        <- hc.get[String]("uuid").map(UUID.fromString)
-        rev         <- hc.get[Long]("rev")
-        deprecated  <- hc.get[Boolean]("deprecated")
-        createdBy   <- hc.get[AbsoluteIri]("createdBy")
-        createdAt   <- hc.get[Instant]("createdAt")
-        updatedBy   <- hc.get[AbsoluteIri]("updatedBy")
-        updatedAt   <- hc.get[Instant]("updatedAt")
-      } yield Organization(id, label, description, uuid, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
-    }
-
-  implicit private val projectDecoder: Decoder[Project] =
-    Decoder.instance { hc =>
-      for {
-        organization     <- hc.get[String]("organizationLabel")
-        description      <- hc.getOrElse[Option[String]]("description")(None)
-        base             <- hc.get[AbsoluteIri]("base")
-        vocab            <- hc.get[AbsoluteIri]("vocab")
-        apiMap           <- hc.get[Map[String, AbsoluteIri]]("apiMappings")
-        label            <- hc.get[String]("label")
-        uuid             <- hc.get[String]("uuid").map(UUID.fromString)
-        organizationUuid <- hc.get[String]("organizationUuid").map(UUID.fromString)
-        rev              <- hc.get[Long]("rev")
-        deprecated       <- hc.get[Boolean]("deprecated")
-        createdBy        <- hc.get[AbsoluteIri]("createdBy")
-        createdAt        <- hc.get[Instant]("createdAt")
-        updatedBy        <- hc.get[AbsoluteIri]("updatedBy")
-        updatedAt        <- hc.get[Instant]("updatedAt")
-      } yield Project(
+        label       <- hc.get[String]("_label")
+        uuid        <- hc.get[String]("_uuid").map(UUID.fromString)
+        rev         <- hc.get[Long]("_rev")
+        deprecated  <- hc.get[Boolean]("_deprecated")
+        createdBy   <- hc.get[AbsoluteIri]("_createdBy")
+        createdAt   <- hc.get[Instant]("_createdAt")
+        updatedBy   <- hc.get[AbsoluteIri]("_updatedBy")
+        updatedAt   <- hc.get[Instant]("_updatedAt")
+        cBySubject   = Identity(createdBy).value.asInstanceOf[Subject]
+        uBySubject   = Identity(updatedBy).value.asInstanceOf[Subject]
+      } yield ResourceF(
         id,
-        label,
-        organization,
-        description,
-        base,
-        vocab,
-        apiMap,
         uuid,
-        organizationUuid,
         rev,
         deprecated,
+        Set.empty,
         createdAt,
-        createdBy,
+        cBySubject,
         updatedAt,
-        updatedBy
+        uBySubject,
+        Organization(label, description)
       )
     }
 
-  "A Project directives" when {
+  implicit private val projectDecoder: Decoder[ProjectResource] =
+    Decoder.instance { hc =>
+      for {
+        id               <- hc.get[AbsoluteIri]("@id")
+        organization     <- hc.get[String]("_organizationLabel")
+        description      <- hc.getOrElse[Option[String]]("_description")(None)
+        base             <- hc.get[AbsoluteIri]("base")
+        vocab            <- hc.get[AbsoluteIri]("vocab")
+        apiMap           <- hc.get[List[MappingValue]]("apiMappings")
+        label            <- hc.get[String]("_label")
+        uuid             <- hc.get[String]("_uuid").map(UUID.fromString)
+        organizationUuid <- hc.get[String]("_organizationUuid").map(UUID.fromString)
+        rev              <- hc.get[Long]("_rev")
+        deprecated       <- hc.get[Boolean]("_deprecated")
+        createdBy        <- hc.get[AbsoluteIri]("_createdBy")
+        createdAt        <- hc.get[Instant]("_createdAt")
+        updatedBy        <- hc.get[AbsoluteIri]("_updatedBy")
+        updatedAt        <- hc.get[Instant]("_updatedAt")
+        cBySubject        = Identity(createdBy).value.asInstanceOf[Subject]
+        uBySubject        = Identity(updatedBy).value.asInstanceOf[Subject]
+        apiMapping        = apiMap.map(v => v.prefix -> v.namespace).toMap
+      } yield ResourceF(
+        id,
+        uuid,
+        rev,
+        deprecated,
+        Set.empty,
+        createdAt,
+        cBySubject,
+        updatedAt,
+        uBySubject,
+        Project(label, organizationUuid, organization, description, apiMapping, base, vocab)
+      )
 
-    val creator = Iri.absolute("http://example.com/subject").rightValue
+    }
+
+  "A Project directives" when {
 
     val label       = ProjectLabel("organization", "project")
     val apiMappings = Map[String, AbsoluteIri](
@@ -124,28 +134,11 @@ class ProjectDirectivesSpec
       "elasticsearch" -> nxv.defaultElasticSearchIndex.value,
       "graph"         -> nxv.defaultSparqlIndex.value
     )
-    val projectMeta = Project(
-      id,
-      "project",
-      "organization",
-      None,
-      nxv.projects.value,
-      genIri,
-      apiMappings,
-      genUUID,
-      genUUID,
-      1L,
-      false,
-      Instant.EPOCH,
-      creator,
-      Instant.EPOCH,
-      creator
-    )
 
-    implicit val subject: Subject = User("subject", "realm")
-
-    val orgMeta =
-      Organization(id, "organization", None, genUUID, 1L, false, Instant.EPOCH, creator, Instant.EPOCH, creator)
+    // format: off
+    val projectMeta = ResourceF(id, genUUID, 1, false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project("project", genUUID, "organization", None, apiMappings, nxv.projects.value, genIri))
+    val orgMeta     = ResourceF(id, genUUID, 1, false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Organization("organization", None))
+    // format: on
 
     val apiMappingsFinal = Map[String, AbsoluteIri](
       "resource"        -> Schemas.unconstrainedSchemaUri,
@@ -162,7 +155,7 @@ class ProjectDirectivesSpec
     )
 
     val projectMetaResp =
-      projectMeta.copy(apiMappings = projectMeta.apiMappings ++ apiMappingsFinal)
+      projectMeta.copy(value = projectMeta.value.copy(apiMappings = projectMeta.value.apiMappings ++ apiMappingsFinal))
 
     "dealing with organizations" should {
 
@@ -175,36 +168,36 @@ class ProjectDirectivesSpec
         )
       }
 
-      "fetch the organization by label from admin client" in {
+      "fetch the organization by label" in {
 
-        client.fetchOrganization("organization") shouldReturn Task.pure(Option(orgMeta))
+        orgCache.getBy("organization") shouldReturn Task.pure(Option(orgMeta))
 
         Get("/") ~> route("organization") ~> check {
-          responseAs[Organization] shouldEqual orgMeta
+          responseAs[OrganizationResource] shouldEqual orgMeta
         }
       }
 
-      "fetch the organization by UUID from admin client" in {
+      "fetch the organization by UUID" in {
 
-        client.fetchOrganization(orgMeta.uuid) shouldReturn Task.pure(Option(orgMeta))
+        orgCache.get(orgMeta.uuid) shouldReturn Task.pure(Option(orgMeta))
 
         Get("/") ~> route(orgMeta.uuid.toString) ~> check {
-          responseAs[Organization] shouldEqual orgMeta
+          responseAs[OrganizationResource] shouldEqual orgMeta
         }
       }
 
-      "fetch the organization by label when not found from UUID on admin client" in {
+      "fetch the organization by label when not found from UUID" in {
 
-        client.fetchOrganization(orgMeta.uuid) shouldReturn Task.pure(None)
-        client.fetchOrganization(orgMeta.uuid.toString) shouldReturn Task.pure(Option(orgMeta))
+        orgCache.get(orgMeta.uuid) shouldReturn Task.pure(None)
+        orgCache.getBy(orgMeta.uuid.toString) shouldReturn Task.pure(Option(orgMeta))
 
         Get("/") ~> route(orgMeta.uuid.toString) ~> check {
-          responseAs[Organization] shouldEqual orgMeta
+          responseAs[OrganizationResource] shouldEqual orgMeta
         }
       }
 
-      "reject organization when not found on the admin client" in {
-        client.fetchOrganization("organization") shouldReturn Task.pure(None)
+      "reject organization when not found" in {
+        orgCache.getBy("organization") shouldReturn Task.pure(None)
 
         Get("/") ~> route("organization") ~> check {
           status shouldEqual StatusCodes.NotFound
@@ -224,108 +217,42 @@ class ProjectDirectivesSpec
         )
       }
 
-      def notDeprecatedRoute(implicit proj: Project): Route =
+      def notDeprecatedRoute(implicit proj: ProjectResource): Route =
         KgRoutes.wrap(
           (get & projectNotDeprecated) {
             complete(StatusCodes.OK)
           }
         )
 
-      val orgRef     = OrganizationRef(projectMeta.organizationUuid)
+      val orgRef     = OrganizationRef(projectMeta.value.organizationUuid)
       val projectRef = ProjectRef(projectMeta.uuid)
 
-      "fetch the project by label from the cache" in {
+      "fetch the project by label" in {
 
-        projectCache.get(label) shouldReturn Task.pure(Option(projectMeta))
-
-        Get("/organization/project") ~> route ~> check {
-          responseAs[Project] shouldEqual projectMetaResp
-        }
-      }
-
-      "fetch the project by UUID from the cache" in {
-
-        projectCache.get(orgRef, projectRef) shouldReturn Task.pure(Option(projectMeta))
-        projectCache.get(ProjectLabel(orgRef.show, projectRef.show)) shouldReturn Task.pure(None)
-
-        Get(s"/${orgRef.show}/${projectRef.show}") ~> route ~> check {
-          responseAs[Project] shouldEqual projectMetaResp
-          projectCache.get(orgRef, projectRef) wasCalled once
-        }
-      }
-
-      "fetch the project by label from admin client when not present on the cache" in {
-        projectCache.get(label) shouldReturn Task.pure(None)
-        client.fetchProject("organization", "project") shouldReturn Task.pure(Option(projectMeta))
-        initializer(projectMeta, subject) shouldReturn Task.unit
+        projectCache.getBy(label) shouldReturn Task.pure(Option(projectMeta))
 
         Get("/organization/project") ~> route ~> check {
-          responseAs[Project] shouldEqual projectMetaResp
+          responseAs[ProjectResource] shouldEqual projectMetaResp
         }
       }
 
-      "fetch the project by UUID from admin client when not present on the cache" in {
-        projectCache.get(orgRef, projectRef) shouldReturn Task.pure(None)
-        projectCache.get(ProjectLabel(orgRef.show, projectRef.show)) shouldReturn Task.pure(None)
-        client.fetchProject(orgRef.id, projectRef.id) shouldReturn Task.pure(Option(projectMeta))
-        initializer(projectMeta, subject) shouldReturn Task.unit
+      "fetch the project by UUID" in {
+
+        projectCache.get(projectMeta.value.organizationUuid, projectMeta.uuid) shouldReturn Task.pure(
+          Option(projectMeta)
+        )
 
         Get(s"/${orgRef.show}/${projectRef.show}") ~> route ~> check {
-          responseAs[Project] shouldEqual projectMetaResp
+          responseAs[ProjectResource] shouldEqual projectMetaResp
         }
       }
 
-      "fetch the project by label when UUID not found from admin client nor from the cache" in {
-        projectCache.get(orgRef, projectRef) shouldReturn Task.pure(None)
-        client.fetchProject(orgRef.id, projectRef.id) shouldReturn Task.pure(None)
-        projectCache.get(ProjectLabel(orgRef.show, projectRef.show)) shouldReturn Task.pure(Option(projectMeta))
-        initializer(projectMeta, subject) shouldReturn Task.unit
-
-        Get(s"/${orgRef.show}/${projectRef.show}") ~> route ~> check {
-          responseAs[Project] shouldEqual projectMetaResp
-        }
-      }
-
-      "fetch the project by label from admin client when cache throws an error" in {
-        projectCache.get(label) shouldReturn Task.raiseError(new RuntimeException)
-        client.fetchProject("organization", "project") shouldReturn Task.pure(Option(projectMeta))
-        initializer(projectMeta, subject) shouldReturn Task.unit
-
-        Get("/organization/project") ~> route ~> check {
-          responseAs[Project] shouldEqual projectMetaResp
-        }
-      }
-
-      "reject project by label when not found neither in the cache nor calling the admin client" in {
-        projectCache.get(label) shouldReturn Task.pure(None)
-        client.fetchProject("organization", "project") shouldReturn Task.pure(None)
+      "reject project when not found" in {
+        projectCache.getBy(label) shouldReturn Task.pure(None)
 
         Get("/organization/project") ~> route ~> check {
           status shouldEqual StatusCodes.NotFound
           responseAs[Error].tpe shouldEqual classNameOf[ProjectNotFound]
-        }
-      }
-
-      "reject when admin client signals forbidden" in {
-        val label = ProjectLabel("organization", "project")
-        projectCache.get(label) shouldReturn Task.pure(None)
-        client.fetchProject("organization", "project") shouldReturn Task.raiseError(IamClientError.Forbidden(""))
-
-        Get("/organization/project") ~> route ~> check {
-          status shouldEqual StatusCodes.Forbidden
-          responseAs[Error].tpe shouldEqual "AuthorizationFailed"
-        }
-      }
-
-      "reject when admin client signals another error" in {
-        val label = ProjectLabel("organization", "project")
-        projectCache.get(label) shouldReturn Task.pure(None)
-        client.fetchProject("organization", "project") shouldReturn
-          Task.raiseError(IamClientError.UnknownError(StatusCodes.InternalServerError, ""))
-
-        Get("/organization/project") ~> route ~> check {
-          status shouldEqual StatusCodes.InternalServerError
-          responseAs[Error].tpe shouldEqual classNameOf[KgError.InternalError]
         }
       }
 
@@ -343,4 +270,8 @@ class ProjectDirectivesSpec
       }
     }
   }
+}
+
+object ProjectDirectivesSpec {
+  final case class MappingValue(prefix: String, namespace: AbsoluteIri)
 }

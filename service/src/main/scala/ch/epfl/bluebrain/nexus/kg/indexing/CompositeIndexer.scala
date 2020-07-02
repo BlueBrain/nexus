@@ -2,15 +2,16 @@ package ch.epfl.bluebrain.nexus.kg.indexing
 
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.persistence.query.{EventEnvelope, Offset}
+import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.{EventEnvelope, Offset, PersistenceQuery}
 import akka.stream.SourceShape
 import akka.stream.scaladsl._
 import akka.util.Timeout
 import cats.effect.{Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlWriteQuery
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.client.{KgClient, KgClientConfig}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.RemoteProjectEventStream
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{CompositeView, Filter, SparqlView}
@@ -42,7 +43,7 @@ object CompositeIndexer {
   final def start[F[_]: Timer: Clients: Effect](
       view: CompositeView,
       resources: Resources[F],
-      project: Project,
+      project: ProjectResource,
       restartProgress: Set[String]
   )(implicit
       as: ActorSystem,
@@ -77,7 +78,7 @@ object CompositeIndexer {
   final def start[F[_]: Timer: Clients](
       view: CompositeView,
       resources: Resources[F],
-      project: Project,
+      project: ProjectResource,
       restartOffset: Boolean
   )(implicit
       as: ActorSystem,
@@ -100,7 +101,7 @@ object CompositeIndexer {
   private def start[F[_]: Timer](
       view: CompositeView,
       resources: Resources[F],
-      project: Project,
+      project: ProjectResource,
       initialProgressF: F[ProjectionProgress]
   )(implicit
       clients: Clients[F],
@@ -124,7 +125,7 @@ object CompositeIndexer {
 
     def fetchRemoteResource(
         event: Event
-    )(source: RemoteProjectEventStream, filter: Filter)(implicit project: Project): F[Option[ResourceV]] = {
+    )(source: RemoteProjectEventStream, filter: Filter)(implicit project: ProjectResource): F[Option[ResourceV]] = {
       val clientCfg = KgClientConfig(source.endpoint)
       val client    = KgClient(clientCfg)
       filter.resourceTag.filter(_.trim.nonEmpty) match {
@@ -140,7 +141,7 @@ object CompositeIndexer {
     }
 
     def sourceGraph(source: CompositeSource, initial: ProjectionProgress)(implicit
-        proj: Project
+        proj: ProjectResource
     ): Source[PairMsg[Unit], _] = {
       Source.fromGraph(GraphDSL.create() { implicit b =>
         // format: off
@@ -153,7 +154,11 @@ object CompositeIndexer {
 
         val streamSource: Source[PairMsg[Any], _] = source match {
           case s: RemoteProjectEventStream => fetchRemoteEvents(s, sourceMinProgress).map[PairMsg[Any]](e => Right(Message(e, sourceProgressId)))
-          case _ => cassandraSource(s"project=${proj.uuid}", sourceProgressId, sourceMinProgress)
+          case _ =>
+            PersistenceQuery(as)
+              .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+              .eventsByTag(s"project=${proj.uuid}", sourceMinProgress)
+              .map[PairMsg[Any]](e => Right(Message(e, sourceProgressId)))
         }
         val mainFlow = ProgressFlowElem[F, Any]
           .collectCast[Event]
@@ -209,9 +214,9 @@ object CompositeIndexer {
     val init = view.defaultSparqlView.createIndex >> view.projections.toList.traverse(_.view.createIndex) >> F.unit
 
     val sourceResolvedProjectsF = (init >> initialProgressF).flatMap { initial =>
-      val sourcesF: F[List[Option[(CompositeSource, Project)]]] = view.sources.toList.traverse {
+      val sourcesF: F[Vector[Option[(CompositeSource, ProjectResource)]]] = view.sources.toVector.traverse {
         case s: CompositeSource.ProjectEventStream       => F.pure(Some(s -> project))
-        case s: CompositeSource.CrossProjectEventStream  => projectCache.get(s.project).map(_.map(s -> _))
+        case s: CompositeSource.CrossProjectEventStream  => projectCache.getBy(s.project).map(_.map(s -> _))
         case s: CompositeSource.RemoteProjectEventStream => s.fetchProject[F].map(_.map(s -> _))
       }
       sourcesF.map(list => (initial, list.collect { case Some((source, project)) => source -> project }))

@@ -124,7 +124,7 @@ trait KeyValueStore[F[_], K, V] {
     *
     * @param value the method that gets triggered when a change to key value store occurs
     */
-  def subscribe(value: OnKeyValueStoreChange[K, V]): F[Subscription]
+  def subscribe(value: OnKeyValueStoreChange[F, K, V]): F[Subscription]
 
   /**
     * Removes a subscription from the cache
@@ -195,7 +195,7 @@ object KeyValueStore {
     private val mapKey                  = LWWMapKey[K, V](id)
     private val consistencyTimeoutError = ReadWriteConsistencyTimeout(consistencyTimeout)
     private val distributeWriteError    = DistributedDataError("Failed to distribute write")
-    override def subscribe(value: OnKeyValueStoreChange[K, V]): F[Subscription] = {
+    override def subscribe(value: OnKeyValueStoreChange[F, K, V]): F[Subscription] = {
       val subscriberActor = KeyValueStoreSubscriber(mapKey, value)
       replicator ! Subscribe(mapKey, subscriberActor)
       F.pure(Subscription(subscriberActor))

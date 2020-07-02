@@ -7,29 +7,26 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.data.EitherT
-import ch.epfl.bluebrain.nexus.admin.client.AdminClient
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination, QueryResults, Sort, SortList}
+import ch.epfl.bluebrain.nexus.commons.search._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.{CirceEq, EitherValues}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
+import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
@@ -37,15 +34,16 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
+import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
 import io.circe.Json
 import io.circe.generic.auto._
 import monix.eval.Task
 import org.mockito.IdiomaticMockito
 import org.mockito.matchers.MacroBasedMatchers
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 
@@ -57,7 +55,7 @@ class ResourceRoutesSpec
     with OptionValues
     with BeforeAndAfter
     with ScalatestRouteTest
-    with test.Resources
+    with TestResources
     with ScalaFutures
     with IdiomaticMockito
     with MacroBasedMatchers
@@ -71,19 +69,24 @@ class ResourceRoutesSpec
   implicit private val appConfig = Settings(system).serviceConfig
   implicit private val clock     = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
-  implicit private val adminClient   = mock[AdminClient[Task]]
   implicit private val projectCache  = mock[ProjectCache[Task]]
   implicit private val viewCache     = mock[ViewCache[Task]]
   implicit private val resolverCache = mock[ResolverCache[Task]]
   implicit private val storageCache  = mock[StorageCache[Task]]
   implicit private val resources     = mock[Resources[Task]]
   implicit private val tagsRes       = mock[Tags[Task]]
-  implicit private val initializer   = mock[ProjectInitializer[Task]]
   implicit private val aclsApi       = mock[Acls[Task]]
   private val realms                 = mock[Realms[Task]]
 
   implicit private val cacheAgg =
-    Caches(projectCache, viewCache, resolverCache, storageCache, mock[ArchiveCache[Task]])
+    Caches(
+      mock[OrganizationCache[Task]],
+      projectCache,
+      viewCache,
+      resolverCache,
+      storageCache,
+      mock[ArchiveCache[Task]]
+    )
 
   implicit private val ec            = system.dispatcher
   implicit private val utClient      = untyped[Task]
@@ -104,12 +107,10 @@ class ResourceRoutesSpec
   //noinspection NameBooleanParameters
   abstract class Context(perms: Set[Permission] = manageResources) extends RoutesFixtures {
 
-    projectCache.get(label) shouldReturn Task.pure(Some(projectMeta))
-    projectCache.get(OrganizationRef(projectMeta.organizationUuid), ProjectRef(projectMeta.uuid)) shouldReturn
-      Task(Some(projectMeta))
-    projectCache.get(ProjectLabel(projectMeta.organizationUuid.toString, projectMeta.uuid.toString)) shouldReturn
-      Task(None)
-    projectCache.get(projectRef) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.getBy(label) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.getBy(projectRef) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.get(projectRef.id) shouldReturn Task.pure(Some(projectMeta))
+    projectCache.get(projectMeta.value.organizationUuid, projectRef.id) shouldReturn Task.pure(Some(projectMeta))
 
     realms.caller(token.value) shouldReturn Task(caller)
     implicit val acls = AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> perms)))
@@ -249,7 +250,7 @@ class ResourceRoutesSpec
           .removeNestedKeys("@context")
 
       val endpoints = List(
-        s"/v1/resources/${projectMeta.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId",
+        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId",
         s"/v1/resources/$organization/$project/resource/$urlEncodedId",
         s"/v1/resources/$organization/$project/_/$urlEncodedId"
       )
@@ -266,7 +267,7 @@ class ResourceRoutesSpec
       resources.fetchSource(id, unconstrainedRef) shouldReturn EitherT.rightT[Task, Rejection](source)
 
       val endpoints = List(
-        s"/v1/resources/${projectMeta.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId/source",
+        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId/source",
         s"/v1/resources/$organization/$project/resource/$urlEncodedId/source",
         s"/v1/resources/$organization/$project/_/$urlEncodedId/source"
       )
@@ -287,7 +288,7 @@ class ResourceRoutesSpec
           .removeNestedKeys("@context")
 
       val endpoints = List(
-        s"/v1/resources/${projectMeta.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId?rev=1",
+        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId?rev=1",
         s"/v1/resources/$organization/$project/resource/$urlEncodedId?rev=1",
         s"/v1/resources/$organization/$project/_/$urlEncodedId?rev=1"
       )
@@ -304,7 +305,7 @@ class ResourceRoutesSpec
       resources.fetchSource(id, 1L, unconstrainedRef) shouldReturn EitherT.rightT[Task, Rejection](source)
 
       val endpoints = List(
-        s"/v1/resources/${projectMeta.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId/source?rev=1",
+        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId/source?rev=1",
         s"/v1/resources/$organization/$project/resource/$urlEncodedId/source?rev=1",
         s"/v1/resources/$organization/$project/_/$urlEncodedId/source?rev=1"
       )
@@ -325,7 +326,7 @@ class ResourceRoutesSpec
           .removeNestedKeys("@context")
 
       val endpoints = List(
-        s"/v1/resources/${projectMeta.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId?tag=some",
+        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId?tag=some",
         s"/v1/resources/$organization/$project/resource/$urlEncodedId?tag=some",
         s"/v1/resources/$organization/$project/_/$urlEncodedId?tag=some"
       )
@@ -342,7 +343,7 @@ class ResourceRoutesSpec
       resources.fetchSource(id, "some", unconstrainedRef) shouldReturn EitherT.rightT[Task, Rejection](source)
 
       val endpoints = List(
-        s"/v1/resources/${projectMeta.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId/source?tag=some",
+        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId/source?tag=some",
         s"/v1/resources/$organization/$project/resource/$urlEncodedId/source?tag=some",
         s"/v1/resources/$organization/$project/_/$urlEncodedId/source?tag=some"
       )

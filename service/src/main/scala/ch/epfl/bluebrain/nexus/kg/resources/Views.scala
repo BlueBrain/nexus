@@ -3,26 +3,31 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import java.util.UUID
 
 import akka.actor.ActorSystem
+import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.{NoOffset, PersistenceQuery}
+import akka.stream.scaladsl.Source
+import akka.util.Timeout
 import cats.data.{EitherT, OptionT}
-import cats.effect.Effect
+import cats.effect.{Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.AdminClientError
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ViewCache}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.RemoteProjectEventStream
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
 import ch.epfl.bluebrain.nexus.kg.indexing.ViewEncoder._
+import ch.epfl.bluebrain.nexus.kg.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
@@ -33,26 +38,29 @@ import ch.epfl.bluebrain.nexus.kg.resources.Views._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients._
 import ch.epfl.bluebrain.nexus.kg.routes.{Clients, SearchParams}
-import ch.epfl.bluebrain.nexus.kg.uuid
+import ch.epfl.bluebrain.nexus.kg.{uuid, KgError}
+import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
+import com.typesafe.scalalogging.Logger
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
-class Views[F[_]](repo: Repo[F])(implicit
+import scala.concurrent.ExecutionContext
+
+class Views[F[_]](repo: Repo[F], private val index: ViewCache[F])(implicit
     F: Effect[F],
-    as: ActorSystem,
     materializer: Materializer[F],
     config: ServiceConfig,
     projectCache: ProjectCache[F],
-    viewCache: ViewCache[F],
     clients: Clients[F]
 ) {
 
@@ -74,14 +82,16 @@ class Views[F[_]](repo: Repo[F])(implicit
     * @param source     the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(source: Json)(implicit acls: AccessControlLists, caller: Caller, project: Project): RejOrResource[F] =
+  def create(
+      source: Json
+  )(implicit acls: AccessControlLists, caller: Caller, project: ProjectResource): RejOrResource[F] =
     for {
 
       materialized <- materializer(transformSave(source))
       (id, value)   = materialized
-      resId         = Id(project.ref, id)
+      resId         = Id(ProjectRef(project.uuid), id)
       _            <- EitherT(repo.get(resId, 1L, Some(viewRef)).value.map(rejectWhenFound))
-      created      <- create(Id(project.ref, id), value.graph)
+      created      <- create(Id(ProjectRef(project.uuid), id), value.graph)
     } yield created
 
   /**
@@ -96,7 +106,7 @@ class Views[F[_]](repo: Repo[F])(implicit
       id: ResId,
       source: Json,
       extractUuid: Boolean = false
-  )(implicit acls: AccessControlLists, caller: Caller, project: Project): RejOrResource[F] = {
+  )(implicit acls: AccessControlLists, caller: Caller, project: ProjectResource): RejOrResource[F] = {
     val sourceUuid = if (extractUuid) extractUuidFrom(source) else uuid()
     for {
       _                 <- EitherT(repo.get(id, 1L, Some(viewRef)).value.map(rejectWhenFound))
@@ -118,7 +128,7 @@ class Views[F[_]](repo: Repo[F])(implicit
       id: ResId,
       rev: Long,
       source: Json
-  )(implicit acls: AccessControlLists, caller: Caller, project: Project): RejOrResource[F] =
+  )(implicit acls: AccessControlLists, caller: Caller, project: ProjectResource): RejOrResource[F] =
     for {
       curr      <- repo.get(id, Some(viewRef)).toRight(notFound(id.ref, schema = Some(viewRef)))
       matValue  <- materializer(transformSave(source, extractUuidFrom(curr.value)), id.value)
@@ -128,7 +138,7 @@ class Views[F[_]](repo: Repo[F])(implicit
       view      <- viewValidation(id, typedGraph, 1L, types)
       json      <- jsonForRepo(view.encrypt)
       updated   <- repo.update(id, viewRef, rev, types, json)(caller.subject)
-      _         <- EitherT.right(viewCache.put(view))
+      _         <- EitherT.right(index.put(view))
     } yield updated
 
   /**
@@ -148,7 +158,7 @@ class Views[F[_]](repo: Repo[F])(implicit
     * @param rev the revision of the view
     * @return Some(view) in the F context when found and None in the F context when not found
     */
-  def fetchView(id: ResId, rev: Long)(implicit project: Project): EitherT[F, Rejection, View] =
+  def fetchView(id: ResId, rev: Long)(implicit project: ProjectResource): EitherT[F, Rejection, View] =
     for {
       resource  <- repo.get(id, rev, Some(viewRef)).toRight(notFound(id.ref, rev = Some(rev), schema = Some(viewRef)))
       resourceV <- materializer.withMeta(resource)
@@ -161,7 +171,7 @@ class Views[F[_]](repo: Repo[F])(implicit
     * @param id the id of the view
     * @return Some(view) in the F context when found and None in the F context when not found
     */
-  def fetchView(id: ResId)(implicit project: Project): EitherT[F, Rejection, View] =
+  def fetchView(id: ResId)(implicit project: ProjectResource): EitherT[F, Rejection, View] =
     for {
       resource  <- repo.get(id, Some(viewRef)).toRight(notFound(id.ref, schema = Some(viewRef)))
       resourceV <- materializer.withMeta(resource)
@@ -211,7 +221,7 @@ class Views[F[_]](repo: Repo[F])(implicit
     * @param id the id of the view
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, Some(viewRef)).toRight(notFound(id.ref, schema = Some(viewRef))).flatMap(fetch)
 
   /**
@@ -221,7 +231,7 @@ class Views[F[_]](repo: Repo[F])(implicit
     * @param rev the revision of the view
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, rev: Long)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, rev: Long)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, rev, Some(viewRef)).toRight(notFound(id.ref, Some(rev), schema = Some(viewRef))).flatMap(fetch)
 
   /**
@@ -231,7 +241,7 @@ class Views[F[_]](repo: Repo[F])(implicit
     * @param tag the tag of the view
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, tag: String)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, tag: String)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, tag, Some(viewRef)).toRight(notFound(id.ref, tag = Some(tag), schema = Some(viewRef))).flatMap(fetch)
 
   /**
@@ -275,7 +285,7 @@ class Views[F[_]](repo: Repo[F])(implicit
   ): F[LinkResults] =
     view.outgoing(id, pagination, includeExternalLinks)
 
-  private def fetch(resource: Resource)(implicit project: Project): RejOrResourceV[F] =
+  private def fetch(resource: Resource)(implicit project: ProjectResource): RejOrResourceV[F] =
     materializer
       .withMeta(resource)
       .map { resourceV =>
@@ -287,7 +297,7 @@ class Views[F[_]](repo: Repo[F])(implicit
   private def create(
       id: ResId,
       graph: Graph
-  )(implicit acls: AccessControlLists, project: Project, caller: Caller): RejOrResource[F] = {
+  )(implicit acls: AccessControlLists, project: ProjectResource, caller: Caller): RejOrResource[F] = {
     val typedGraph = addViewType(id.value, graph)
     val types      = typedGraph.rootTypes
 
@@ -295,8 +305,8 @@ class Views[F[_]](repo: Repo[F])(implicit
       _       <- validateShacl(typedGraph)
       view    <- viewValidation(id, typedGraph, 1L, types)
       json    <- jsonForRepo(view.encrypt)
-      created <- repo.create(id, OrganizationRef(project.organizationUuid), viewRef, types, json)(caller.subject)
-      _       <- EitherT.right(viewCache.put(view))
+      created <- repo.create(id, OrganizationRef(project.value.organizationUuid), viewRef, types, json)(caller.subject)
+      _       <- EitherT.right(index.put(view))
     } yield created
   }
 
@@ -322,7 +332,7 @@ class Views[F[_]](repo: Repo[F])(implicit
               val viewRefs         = v.value.collect { case ViewRef(projectRef: ProjectRef, viewId) => projectRef -> viewId }
               val eitherFoundViews = viewRefs.toList.traverse {
                 case (projectRef, viewId) =>
-                  OptionT(viewCache.get(projectRef).map(_.find(_.id == viewId))).toRight(notFound(viewId.ref))
+                  OptionT(index.get(projectRef).map(_.find(_.id == viewId))).toRight(notFound(viewId.ref))
               }
               eitherFoundViews.map(_ => v)
             case v                => EitherT.rightT(v)
@@ -335,14 +345,8 @@ class Views[F[_]](repo: Repo[F])(implicit
           val fetchProjectsF = v.sourcesBy[RemoteProjectEventStream].toList.traverse { source =>
             val ref = source.id.ref
             source.fetchProject[F].map(_.toRight[Rejection](ProjectRefNotFound(source.project))).recoverWith {
-              // format: off
-//                case err: IamClientError =>
-//                  F.pure(Left(InvalidResourceFormat(ref, s"Wrong 'endpoint' and/or 'token' fields. Reason: ${err.message}"): Rejection))
-                case err: AdminClientError =>
-                  F.pure(Left(InvalidResourceFormat(ref, s"Wrong 'endpoint' and/or 'token' fields. Reason: ${err.message}"): Rejection))
-                case _ =>
-                  F.pure(Left(InvalidResourceFormat(ref, "Unable to validate the remote project reference"): Rejection))
-                // format: on
+              case _ =>
+                F.pure(Left(InvalidResourceFormat(ref, "Unable to validate the remote project reference"): Rejection))
             }
           }
           EitherT(fetchProjectsF.map(_.sequence)).map(_ => v)
@@ -362,7 +366,7 @@ class Views[F[_]](repo: Repo[F])(implicit
     EitherT.fromEither[F](errOrJson)
   }
 
-  private def transformSave(source: Json, uuidField: String = uuid())(implicit project: Project): Json = {
+  private def transformSave(source: Json, uuidField: String = uuid())(implicit project: ProjectResource): Json = {
     val transformed          = source.addContext(viewCtxUri) deepMerge Json.obj(nxv.uuid.prefix -> Json.fromString(uuidField))
     val withMapping          = toText(transformed, "mapping")
     val projectionsTransform = withMapping.hcursor
@@ -370,7 +374,7 @@ class Views[F[_]](repo: Repo[F])(implicit
       .map { projections =>
         val pTransformed = projections.map { projection =>
           val flattened = toText(projection, "mapping", "context")
-          val withId    = addIfMissing(flattened, "@id", generateId(project.base))
+          val withId    = addIfMissing(flattened, "@id", generateId(project.value.base))
           addIfMissing(withId, nxv.uuid.prefix, UUID.randomUUID().toString)
         }
         withMapping deepMerge Json.obj("projections" -> pTransformed.asJson)
@@ -381,7 +385,7 @@ class Views[F[_]](repo: Repo[F])(implicit
       .get[Vector[Json]]("sources")
       .map { sources =>
         val sourceTransformed = sources.map { source =>
-          val withId = addIfMissing(source, "@id", generateId(project.base))
+          val withId = addIfMissing(source, "@id", generateId(project.value.base))
           addIfMissing(withId, nxv.uuid.prefix, UUID.randomUUID().toString)
         }
         projectionsTransform deepMerge Json.obj("sources" -> sourceTransformed.asJson)
@@ -406,7 +410,7 @@ class Views[F[_]](repo: Repo[F])(implicit
 
   private def outputResource(
       originalResource: ResourceV
-  )(implicit project: Project): EitherT[F, Rejection, ResourceV] = {
+  )(implicit project: ProjectResource): EitherT[F, Rejection, ResourceV] = {
 
     def toGraph(v: View): EitherT[F, Rejection, ResourceF[Value]] = {
       val graph  = v.asGraph
@@ -419,17 +423,54 @@ class Views[F[_]](repo: Repo[F])(implicit
 
 object Views {
 
-  /**
-    * @param config the implicitly available application configuration
-    * @tparam F the monadic effect type
-    * @return a new [[Views]] for the provided F type
-    */
-  final def apply[F[_]: Effect: ProjectCache: ViewCache: Clients: Materializer](implicit
-      config: ServiceConfig,
-      as: ActorSystem,
-      repo: Repo[F]
-  ): Views[F] =
-    new Views[F](repo)
+  final def apply[F[_]: Effect: ProjectCache: Clients: Materializer](repo: Repo[F], index: ViewCache[F])(implicit
+      config: ServiceConfig
+  ): Views[F] = new Views[F](repo, index)
+
+  def indexer[F[_]: Timer](
+      views: Views[F]
+  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
+    implicit val ec: ExecutionContext = as.dispatcher
+    implicit val tm: Timeout          = Timeout(config.kg.keyValueStore.askTimeout)
+    implicit val log: Logger          = Logger[Views.type]
+
+    def toView(event: Event): F[Option[View]] =
+      projectCache
+        .get(event.organization.id, event.id.parent.id)
+        .flatMap[ProjectResource] {
+          case Some(project) => F.pure(project)
+          case _             => F.raiseError(KgError.NotFound(Some(event.id.parent.show)): KgError)
+        }
+        .flatMap { implicit project =>
+          views.fetchView(event.id).value.map {
+            case Left(err)   =>
+              log.error(s"Error on event '${event.id.show} (rev = ${event.rev})', cause: '${err.msg}'")
+              None
+            case Right(view) => Some(view)
+          }
+        }
+
+    val projectionId                    = "view-indexer"
+    val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
+      .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+      .eventsByTag(TaggingAdapter.ViewTag, NoOffset)
+      .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
+
+    val flow = ProgressFlowElem[F, Any]
+      .collectCast[Event]
+      .groupedWithin(config.kg.keyValueStore.indexing.batch, config.kg.keyValueStore.indexing.batchTimeout)
+      .distinct()
+      .mergeEmit()
+      .mapAsync(toView)
+      .collectSome[View]
+      .runAsync(views.index.put)()
+      .flow
+      .map(_ => ())
+
+    F.delay[StreamSupervisor[F, Unit]](
+      StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)
+    ) >> F.unit
+  }
 
   /**
     * Converts the inline json values

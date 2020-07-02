@@ -98,7 +98,7 @@ class ViewCache[F[_]: Effect: Timer] private (projectToCache: ConcurrentHashMap[
     * @param ref   the project unique reference
     * @param value the method that gets triggered when a change to key value store occurs
     */
-  def subscribe(ref: ProjectRef, value: OnKeyValueStoreChange[AbsoluteIri, View]): F[KeyValueStore.Subscription] =
+  def subscribe(ref: ProjectRef, value: OnKeyValueStoreChange[F, AbsoluteIri, View]): F[KeyValueStore.Subscription] =
     getOrCreate(ref).subscribe(value)
 
   private def getOrCreate(ref: ProjectRef): ViewProjectCache[F] =

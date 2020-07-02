@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.PathMatcher.{Matched, Unmatched}
 import akka.http.scaladsl.server.PathMatchers.Segment
 import akka.http.scaladsl.server.directives.PathDirectives.pathPrefix
 import akka.http.scaladsl.server.{Directive0, PathMatcher, PathMatcher1}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.{Curie, Iri}
 
@@ -38,7 +38,7 @@ object PathDirectives {
     * @param project the project with its prefixMappings used to expand the alias or curie into an [[AbsoluteIri]]
     */
   @SuppressWarnings(Array("MethodNames"))
-  def IdSegmentOrUnderscore(implicit project: Project): PathMatcher1[IdOrUnderscore] =
+  def IdSegmentOrUnderscore(implicit project: ProjectResource): PathMatcher1[IdOrUnderscore] =
     Segment flatMap {
       case "_"   => Some(Underscore)
       case other => toIri(other).map(SchemaId)
@@ -55,14 +55,14 @@ object PathDirectives {
     * @param project the project with its prefixMappings used to expand the alias or curie into an [[AbsoluteIri]]
     */
   @SuppressWarnings(Array("MethodNames"))
-  def IdSegment(implicit project: Project): PathMatcher1[AbsoluteIri] =
+  def IdSegment(implicit project: ProjectResource): PathMatcher1[AbsoluteIri] =
     Segment flatMap { s =>
-      toIri(s) orElse Iri.absolute(project.base.asString + s).toOption
+      toIri(s) orElse Iri.absolute(project.value.base.asString + s).toOption
     }
 
-  def toIri(s: String)(implicit project: Project): Option[AbsoluteIri] =
-    project.apiMappings.get(s) orElse
-      Curie(s).flatMap(_.toIriUnsafePrefix(project.apiMappings)).toOption orElse
+  def toIri(s: String)(implicit project: ProjectResource): Option[AbsoluteIri] =
+    project.value.apiMappings.get(s) orElse
+      Curie(s).flatMap(_.toIriUnsafePrefix(project.value.apiMappings)).toOption orElse
       Iri.url(s).toOption
 
   /**
@@ -72,7 +72,7 @@ object PathDirectives {
     * @param iri     the iri to match against the segment
     * @param project the project with its prefixMappings used to expand the alias or curie into an [[AbsoluteIri]]
     */
-  def isIdSegment(iri: AbsoluteIri)(implicit project: Project): Directive0 = {
+  def isIdSegment(iri: AbsoluteIri)(implicit project: ProjectResource): Directive0 = {
     val matcher = new PathMatcher[Unit] {
       def apply(path: Path) =
         path match {

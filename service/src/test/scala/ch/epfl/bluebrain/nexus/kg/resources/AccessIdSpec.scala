@@ -3,7 +3,9 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.urlEncode
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.Contexts
@@ -30,23 +32,9 @@ class AccessIdSpec extends AnyWordSpecLike with Matchers with Inspectors with Te
     )
     val mappings                                       = Map("test-schema" -> url"http://schemas.nexus.example.com/test/v0.1.0/") ++ defaultPrefixMapping
     val uuid                                           = UUID.fromString("20fdc0fc-841a-11e8-adc0-fa7ae01bbebc")
-    implicit val project                               = Project(
-      genIri,
-      "core",
-      "bbp",
-      None,
-      url"http://unused.com/",
-      genIri,
-      mappings,
-      uuid,
-      genUUID,
-      0L,
-      false,
-      Instant.EPOCH,
-      genIri,
-      Instant.EPOCH,
-      genIri
-    )
+    // format: off
+    implicit val projectMeta = ResourceF(genIri, uuid, 0L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project("core", genUUID, "bbp", None, mappings, url"http://unused.com/", genIri))
+    // format: on
 
     "generate short access id" in {
       val list = List(

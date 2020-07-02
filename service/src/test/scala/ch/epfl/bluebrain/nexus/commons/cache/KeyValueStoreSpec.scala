@@ -40,8 +40,8 @@ class KeyValueStoreSpec
 
     val changes: SetBuffer[KeyValueStoreChanges[String, RevisionedValue[String]]] = SetBuffer.empty
 
-    val onChange: OnKeyValueStoreChange[String, RevisionedValue[String]] =
-      (value: KeyValueStoreChanges[String, RevisionedValue[String]]) => changes += value
+    val onChange: OnKeyValueStoreChange[IO, String, RevisionedValue[String]] =
+      (value: KeyValueStoreChanges[String, RevisionedValue[String]]) => IO.pure(changes += value)
 
     implicit val config: KeyValueStoreConfig =
       KeyValueStoreConfig(4.seconds, 3.seconds, RetryStrategyConfig("never", 0.millis, 0.millis, 0, 0.millis))

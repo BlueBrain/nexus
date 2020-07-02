@@ -5,25 +5,24 @@ import java.util.regex.Pattern.quote
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.commons.test
-import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, CirceEq, EitherValues}
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.async.anyProject
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.kg.cache.ResolverCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
+import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF._
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
+import ch.epfl.bluebrain.nexus.kg.resources.{ResourceF => KgResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
@@ -31,12 +30,20 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{
+  ActorSystemFixture,
+  CirceEq,
+  EitherValues,
+  IOEitherValues,
+  IOOptionValues,
+  Resources => TestResources
+}
 import io.circe.Json
 import org.mockito.{IdiomaticMockito, Mockito}
 import org.scalactic.Equality
-import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 
 import scala.annotation.nowarn
 import scala.concurrent.ExecutionContext
@@ -53,7 +60,7 @@ class ResolversSpec
     with Matchers
     with OptionValues
     with EitherValues
-    with test.Resources
+    with TestResources
     with TestHelper
     with Inspectors
     with BeforeAndAfter
@@ -82,23 +89,23 @@ class ResolversSpec
       Caller.anonymous
     )
   implicit private val materializer    = new Materializer[IO](resolution, projectCache)
-  private val resolvers: Resolvers[IO] = Resolvers[IO]
+  private val resolvers: Resolvers[IO] = Resolvers[IO](repo, resolverCache)
 
   private val user: Identity = User("dmontero", "ldap")
   private val identities     = Set(Group("bbp-ou-neuroinformatics", "ldap2"), user)
-
+  val label1                 = ProjectLabel("account1", "project1")
+  val label2                 = ProjectLabel("account1", "project2")
   // format: off
-  val project1 = Project(genIri, genString(), genString(), None, genIri, genIri, Map.empty, genUUID, genUUID, 1L, deprecated = false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
-  val project2 = Project(genIri, genString(), genString(), None, genIri, genIri, Map.empty, genUUID, genUUID, 1L, deprecated = false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
+  val project1 = ResourceF(genIri, genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project(label1.value, genUUID, label1.organization, None, Map.empty, genIri, genIri))
+  val project2 = ResourceF(genIri, genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous,Project(label2.value, genUUID, label2.organization, None, Map.empty, genIri, genIri))
   // format: on
-  val label1   = ProjectLabel("account1", "project1")
-  val label2   = ProjectLabel("account1", "project2")
-  projectCache.get(project1.ref) shouldReturn IO.pure(Some(project1))
-  projectCache.get(project2.ref) shouldReturn IO.pure(Some(project2))
-  projectCache.get(ProjectLabel("account1", "project1")) shouldReturn IO.pure(Some(project1))
-  projectCache.get(ProjectLabel("account1", "project2")) shouldReturn IO.pure(Some(project2))
-  projectCache.getLabel(project1.ref) shouldReturn IO.pure(Some(label1))
-  projectCache.getLabel(project2.ref) shouldReturn IO.pure(Some(label2))
+
+  projectCache.get(project1.uuid) shouldReturn IO.pure(Some(project1))
+  projectCache.get(project2.uuid) shouldReturn IO.pure(Some(project2))
+  projectCache.getBy(ProjectRef(project1.uuid)) shouldReturn IO.pure(Some(project1))
+  projectCache.getBy(ProjectRef(project2.uuid)) shouldReturn IO.pure(Some(project2))
+  projectCache.getBy(label1) shouldReturn IO.pure(Some(project1))
+  projectCache.getBy(label2) shouldReturn IO.pure(Some(project2))
 
   acls.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn
     IO(AccessControlLists(/ -> resourceAcls(AccessControlList(user -> Set(read)))))
@@ -117,8 +124,8 @@ class ResolversSpec
     val resId                      = Id(projectRef, id)
     val voc                        = Iri.absolute(s"http://example.com/voc/").rightValue
     // format: off
-    implicit val project = Project(resId.value, "proj", "org", None, base, voc, Map.empty, projectRef.id, genUUID, 1L, deprecated = false, Instant.EPOCH, caller.subject.id, Instant.EPOCH, caller.subject.id)
-    val crossResolver = CrossProjectResolver(Set(nxv.Schema.value), List(project1.ref, project2.ref), identities, projectRef, url"http://example.com/id", 1L, false, 20)
+    implicit val project = ResourceF(resId.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, caller.subject, Instant.EPOCH, caller.subject, Project("proj", genUUID, "org", None, Map.empty, base, voc))
+    val crossResolver = CrossProjectResolver(Set(nxv.Schema.value), List(ProjectRef(project1.uuid), ProjectRef(project2.uuid)), identities, projectRef, url"http://example.com/id", 1L, false, 20)
     // format: on
     resolverCache.get(projectRef) shouldReturn IO(List(InProjectResolver.default(projectRef), crossResolver))
 
@@ -146,7 +153,13 @@ class ResolversSpec
         .rightValue
 
       val resourceV =
-        ResourceF.simpleV(resId, Value(json, resolverCtx.contextValue, graph), rev, schema = resolverRef, types = types)
+        KgResourceF.simpleV(
+          resId,
+          Value(json, resolverCtx.contextValue, graph),
+          rev,
+          schema = resolverRef,
+          types = types
+        )
       resourceV.copy(
         value = resourceV.value.copy(graph = Graph(resId.value, graph.triples ++ resourceV.metadata()))
       )
@@ -175,18 +188,18 @@ class ResolversSpec
       }
 
       "create a InProject resolver" in new Base {
-        resolverCache.put(InProjectResolver(project.ref, id, 1L, false, 10)) shouldReturn IO.pure(())
+        resolverCache.put(InProjectResolver(ProjectRef(project.uuid), id, 1L, false, 10)) shouldReturn IO.pure(())
         val json     = updateId(jsonContentOf("/resolve/in-project.json"))
         val result   = resolvers.create(json).value.accepted
         val expected =
-          ResourceF.simpleF(resId, json, schema = resolverRef, types = Set(nxv.Resolver.value, nxv.InProject.value))
+          KgResourceF.simpleF(resId, json, schema = resolverRef, types = Set(nxv.Resolver.value, nxv.InProject.value))
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
       "create a CrossProject resolver" in new Base {
         resolverCache.put(crossResolver.copy(id = resId.value, priority = 50)) shouldReturn IO.pure(())
         val result   = resolvers.create(resId, resolver).value.accepted
-        val expected = ResourceF.simpleF(resId, resolver, schema = resolverRef, types = types)
+        val expected = KgResourceF.simpleF(resId, resolver, schema = resolverRef, types = types)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
@@ -196,8 +209,8 @@ class ResolversSpec
         val json   = resolver.removeKeys("projects") deepMerge Json.obj(
           "projects" -> Json.arr(Json.fromString("account2/project1"), Json.fromString("account2/project2"))
         )
-        projectCache.get(label1) shouldReturn IO(None)
-        projectCache.get(label2) shouldReturn IO(None)
+        projectCache.getBy(label1) shouldReturn IO(None)
+        projectCache.getBy(label2) shouldReturn IO(None)
         resolvers.create(resId, json).value.rejected[ProjectRefNotFound] shouldEqual ProjectRefNotFound(label1)
       }
 
@@ -221,7 +234,7 @@ class ResolversSpec
         resolvers.create(resId, resolver).value.accepted shouldBe a[Resource]
         resolverCache.put(crossResolver.copy(id = resId.value, priority = 34)) shouldReturn IO.pure(())
         val result          = resolvers.update(resId, 1L, resolverUpdated).value.accepted
-        val expected        = ResourceF.simpleF(resId, resolverUpdated, 2L, schema = resolverRef, types = types)
+        val expected        = KgResourceF.simpleF(resId, resolverUpdated, 2L, schema = resolverRef, types = types)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
@@ -236,7 +249,7 @@ class ResolversSpec
         resolverCache.put(crossResolver.copy(id = resId.value, priority = 50)) shouldReturn IO.pure(())
         resolvers.create(resId, resolver).value.accepted shouldBe a[Resource]
         val result   = resolvers.deprecate(resId, 1L).value.accepted
-        val expected = ResourceF.simpleF(resId, resolver, 2L, schema = resolverRef, types = types, deprecated = true)
+        val expected = KgResourceF.simpleF(resId, resolver, 2L, schema = resolverRef, types = types, deprecated = true)
         result.copy(value = Json.obj()) shouldEqual expected.copy(value = Json.obj())
       }
 
@@ -302,20 +315,24 @@ class ResolversSpec
       "return resolved resource" in new Base {
         val defaultCtx = Json.obj(
           "@context" -> Json.obj(
-            "@base"  -> Json.fromString(project1.base.asString),
-            "@vocab" -> Json.fromString(project1.vocab.asString)
+            "@base"  -> Json.fromString(project1.value.base.asString),
+            "@vocab" -> Json.fromString(project1.value.vocab.asString)
           )
         )
         val resourceId = genIri
-        val orgRef     = OrganizationRef(project1.organizationUuid)
+        val orgRef     = OrganizationRef(project1.value.organizationUuid)
         resolverCache.put(crossResolver.copy(id = resId.value, priority = 50)) shouldReturn IO.pure(())
         resolvers.create(resId, resolver).value.accepted shouldBe a[Resource]
         val json       = Json.obj("key" -> Json.fromString("value")) deepMerge defaultCtx
-        repo.create(Id(project1.ref, resourceId), orgRef, shaclRef, Set(nxv.Schema.value), json).value.accepted
-        val resource   = repo.get(Id(project1.ref, resourceId), None).value.some
+        repo
+          .create(Id(ProjectRef(project1.uuid), resourceId), orgRef, shaclRef, Set(nxv.Schema.value), json)
+          .value
+          .accepted
+        val resource   = repo.get(Id(ProjectRef(project1.uuid), resourceId), None).value.some
         val graph      = Graph(
           resourceId,
-          resource.metadata()(appConfig, project1) + ((resourceId, url"${project1.vocab.asString}key", "value"): Triple)
+          resource
+            .metadata()(appConfig, project1) + ((resourceId, url"${project1.value.vocab.asString}key", "value"): Triple)
         )
         val ctx        = defaultCtx.contextValue deepMerge resourceCtx.contextValue
         val expected   = resource.map(json => Value(json, ctx, graph))

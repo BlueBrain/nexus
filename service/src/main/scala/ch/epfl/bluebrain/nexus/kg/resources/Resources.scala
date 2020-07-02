@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.kg.resources
 
 import cats.data.EitherT
 import cats.effect.Effect
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.kg._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
@@ -31,12 +32,7 @@ import io.circe.syntax._
 /**
   * Resource operations.
   */
-class Resources[F[_]](implicit
-    F: Effect[F],
-    val repo: Repo[F],
-    materializer: Materializer[F],
-    config: ServiceConfig
-) {
+class Resources[F[_]](val repo: Repo[F])(implicit F: Effect[F], materializer: Materializer[F], config: ServiceConfig) {
 
   private val emptyJson = Json.obj()
 
@@ -52,10 +48,11 @@ class Resources[F[_]](implicit
     * @param source     the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(schema: Ref, source: Json)(implicit subject: Subject, project: Project): RejOrResource[F] = {
+  def create(schema: Ref, source: Json)(implicit subject: Subject, project: ProjectResource): RejOrResource[F] = {
     val sourceWithCtx = addContextIfEmpty(source)
     materializer(sourceWithCtx).flatMap {
-      case (id, Value(_, _, graph)) => create(Id(project.ref, id), schema, sourceWithCtx, graph.removeMetadata)
+      case (id, Value(_, _, graph)) =>
+        create(Id(ProjectRef(project.uuid), id), schema, sourceWithCtx, graph.removeMetadata)
     }
   }
 
@@ -67,7 +64,10 @@ class Resources[F[_]](implicit
     * @param source the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(id: ResId, schema: Ref, source: Json)(implicit subject: Subject, project: Project): RejOrResource[F] = {
+  def create(id: ResId, schema: Ref, source: Json)(implicit
+      subject: Subject,
+      project: ProjectResource
+  ): RejOrResource[F] = {
     val sourceWithCtx = addContextIfEmpty(source)
     materializer(sourceWithCtx, id.value).flatMap {
       case Value(_, _, graph) => create(id, schema, sourceWithCtx, graph.removeMetadata)
@@ -76,10 +76,10 @@ class Resources[F[_]](implicit
 
   private def create(id: ResId, schema: Ref, source: Json, graph: Graph)(implicit
       subject: Subject,
-      project: Project
+      project: ProjectResource
   ): RejOrResource[F] =
     validate(schema, graph).flatMap { _ =>
-      repo.create(id, OrganizationRef(project.organizationUuid), schema, graph.rootTypes, source)
+      repo.create(id, OrganizationRef(project.value.organizationUuid), schema, graph.rootTypes, source)
     }
 
   /**
@@ -93,7 +93,7 @@ class Resources[F[_]](implicit
     */
   def update(id: ResId, rev: Long, schema: Ref, source: Json)(implicit
       subject: Subject,
-      project: Project
+      project: ProjectResource
   ): RejOrResource[F] = {
     val sourceWithCtx = addContextIfEmpty(source)
     for {
@@ -172,7 +172,7 @@ class Resources[F[_]](implicit
     * @param schema the schema reference that constrains the resource
     * @return Right(resource) in the F context when found and Left(NotFound) in the F context when not found
     */
-  def fetch(id: ResId, schema: Ref)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, schema: Ref)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetch(id, MetadataOptions(), Some(schema))
 
   /**
@@ -183,7 +183,7 @@ class Resources[F[_]](implicit
     * @param schema the schema reference that constrains the resource
     * @return Right(resource) in the F context when found and Left(NotFound) in the F context when not found
     */
-  def fetch(id: ResId, rev: Long, schema: Ref)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, rev: Long, schema: Ref)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo
       .get(id, rev, Some(schema))
       .toRight(notFound(id.ref, rev = Some(rev), schema = Some(schema)))
@@ -197,7 +197,7 @@ class Resources[F[_]](implicit
     * @param schema the schema reference that constrains the resource
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, tag: String, schema: Ref)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, tag: String, schema: Ref)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetch(id, tag, MetadataOptions(), Some(schema))
 
   /**
@@ -206,7 +206,7 @@ class Resources[F[_]](implicit
     * @param id     the id of the resource
     * @return Right(resource) in the F context when found and Left(NotFound) in the F context when not found
     */
-  def fetch(id: ResId)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetch(id, MetadataOptions(), None)
 
   /**
@@ -216,7 +216,7 @@ class Resources[F[_]](implicit
     * @param rev    the revision of the resource
     * @return Right(resource) in the F context when found and Left(NotFound) in the F context when not found
     */
-  def fetch(id: ResId, rev: Long)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, rev: Long)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo
       .get(id, rev, None)
       .toRight(notFound(id.ref, rev = Some(rev)))
@@ -229,7 +229,7 @@ class Resources[F[_]](implicit
     * @param tag    the tag of the resource
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def fetch(id: ResId, tag: String)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, tag: String)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetch(id, tag, MetadataOptions(), None)
 
   /**
@@ -248,7 +248,7 @@ class Resources[F[_]](implicit
     * @return Right(resource) in the F context when found and Left(NotFound) in the F context when not found
     */
   def fetch(id: ResId, metadataOptions: MetadataOptions, schemaOpt: Option[Ref])(implicit
-      project: Project
+      project: ProjectResource
   ): RejOrResourceV[F] =
     repo
       .get(id, schemaOpt)
@@ -263,7 +263,7 @@ class Resources[F[_]](implicit
     * @return Right(resource) in the F context when found and Left(NotFound) in the F context when not found
     */
   def fetch(id: ResId, tag: String, metadataOptions: MetadataOptions, schemaOpt: Option[Ref])(implicit
-      project: Project
+      project: ProjectResource
   ): RejOrResourceV[F] =
     repo
       .get(id, tag, schemaOpt)
@@ -325,7 +325,7 @@ class Resources[F[_]](implicit
   )(implicit sparql: BlazegraphClient[F]): F[LinkResults] =
     view.outgoing(id, pagination, includeExternalLinks)
 
-  private def validate(schema: Ref, data: Graph)(implicit project: Project): EitherT[F, Rejection, Unit] = {
+  private def validate(schema: Ref, data: Graph)(implicit project: ProjectResource): EitherT[F, Rejection, Unit] = {
 
     def partition(set: Set[ResourceV]): (Set[ResourceV], Set[ResourceV]) =
       set.partition(_.isSchema)
@@ -351,11 +351,12 @@ class Resources[F[_]](implicit
     }
   }
 
-  private def addContextIfEmpty(source: Json)(implicit project: Project): Json =
+  private def addContextIfEmpty(source: Json)(implicit project: ProjectResource): Json =
     source.contextValue match {
       case `emptyJson` =>
         source deepMerge Json.obj(
-          "@context" -> Json.obj("@base" -> project.base.asString.asJson, "@vocab" -> project.vocab.asString.asJson)
+          "@context" -> Json
+            .obj("@base" -> project.value.base.asString.asJson, "@vocab" -> project.value.vocab.asString.asJson)
         )
       case _           => source
     }
@@ -363,13 +364,8 @@ class Resources[F[_]](implicit
 
 object Resources {
 
-  /**
-    * @param config the implicitly available application configuration
-    * @tparam F the monadic effect type
-    * @return a new [[Resources]] for the provided F type
-    */
-  final def apply[F[_]: Repo: Effect: Materializer](implicit config: ServiceConfig): Resources[F] =
-    new Resources[F]()
+  final def apply[F[_]: Effect: Materializer](repo: Repo[F])(implicit config: ServiceConfig): Resources[F] =
+    new Resources[F](repo)
 
   final private[resources] case class SchemaContext(
       schema: ResourceV,
@@ -377,10 +373,10 @@ object Resources {
       schemaImports: Set[ResourceV]
   )
 
-  def getOrAssignId(json: Json)(implicit project: Project): Either[Rejection, AbsoluteIri] =
+  def getOrAssignId(json: Json)(implicit project: ProjectResource): Either[Rejection, AbsoluteIri] =
     json.id match {
       case Right(id)                              => Right(id)
-      case Left(IdRetrievalError.IdNotFound)      => Right(generateId(project.base))
+      case Left(IdRetrievalError.IdNotFound)      => Right(generateId(project.value.base))
       case Left(IdRetrievalError.InvalidId(id))   => Left(InvalidJsonLD(s"The @id value '$id' is not a valid Iri"))
       case Left(IdRetrievalError.Unexpected(msg)) => Left(InvalidJsonLD(msg))
     }

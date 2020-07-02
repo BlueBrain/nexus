@@ -5,10 +5,10 @@ import java.util.UUID
 import cats.data.{EitherT, OptionT}
 import cats.implicits._
 import cats.{Applicative, Show}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{InvalidIdentity, ProjectLabelNotFound, ProjectRefNotFound}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
@@ -54,7 +54,7 @@ sealed trait ProjectIdentifier extends Product with Serializable {
     * @param projects a set of projects
     * @return Some(project) if found, None otherwise
     */
-  def findIn(projects: Set[Project]): Option[Project]
+  def findIn(projects: Set[ProjectResource]): Option[ProjectResource]
 
 }
 
@@ -72,7 +72,7 @@ object ProjectIdentifier {
       EitherT.rightT(this)
 
     def toRef[F[_]: Applicative](implicit cache: ProjectCache[F]): EitherT[F, Rejection, ProjectRef] =
-      OptionT(cache.get(this)).map(_.ref).toRight(notFound)
+      OptionT(cache.getBy(this)).map(projRes => ProjectRef(projRes.uuid)).toRight(notFound)
 
     def toRef[F[_]: Applicative](
         perm: Permission,
@@ -82,7 +82,8 @@ object ProjectIdentifier {
       else if (!acls.exists(identities, this, perm)) EitherT.leftT(notFound)
       else toRef
 
-    def findIn(projects: Set[Project]): Option[Project] = projects.find(_.projectLabel == this)
+    def findIn(projects: Set[ProjectResource]): Option[ProjectResource] =
+      projects.find(p => p.value.organizationLabel == organization && p.value.label == value)
 
   }
 
@@ -116,10 +117,11 @@ object ProjectIdentifier {
     * @param id the underlying stable identifier for a project
     */
   final case class ProjectRef(id: UUID) extends ProjectIdentifier {
-    private lazy val notFound: Rejection = ProjectLabelNotFound(this)
 
     def toLabel[F[_]: Applicative](implicit cache: ProjectCache[F]): EitherT[F, Rejection, ProjectLabel] =
-      OptionT(cache.getLabel(this)).toRight(notFound)
+      OptionT(cache.getBy(this))
+        .map(projRes => ProjectLabel(projRes.value.organizationLabel, projRes.value.label))
+        .toRight(ProjectLabelNotFound(this))
 
     def toRef[F[_]: Applicative](implicit cache: ProjectCache[F]): EitherT[F, Rejection, ProjectRef] =
       EitherT.rightT(this)
@@ -130,7 +132,7 @@ object ProjectIdentifier {
     )(implicit acls: AccessControlLists, caller: Caller, cache: ProjectCache[F]): EitherT[F, Rejection, ProjectRef] =
       toRef
 
-    def findIn(projects: Set[Project]): Option[Project] = projects.find(_.uuid == id)
+    def findIn(projects: Set[ProjectResource]): Option[ProjectResource] = projects.find(_.uuid == id)
   }
 
   object ProjectRef {

@@ -6,13 +6,13 @@ import cats.Monad
 import cats.data.{EitherT, OptionT}
 import cats.effect.Effect
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.config.KgConfig.ArchivesConfig
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectLabel
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Id, Rejection, ResId}
@@ -59,7 +59,7 @@ object Archive {
     */
   final case class File(
       id: AbsoluteIri,
-      project: Project,
+      project: ProjectResource,
       rev: Option[Long],
       tag: Option[String],
       path: Option[Path]
@@ -77,14 +77,14 @@ object Archive {
     */
   final case class Resource(
       id: AbsoluteIri,
-      project: Project,
+      project: ProjectResource,
       rev: Option[Long],
       tag: Option[String],
       originalSource: Boolean,
       path: Option[Path]
   ) extends ResourceDescription
 
-  private type ProjectResolver[F[_]] = Option[ProjectLabel] => EitherT[F, Rejection, Project]
+  private type ProjectResolver[F[_]] = Option[ProjectLabel] => EitherT[F, Rejection, ProjectResource]
 
   implicit final val pathDecoder: GraphDecoder[Path] =
     GraphDecoder.graphDecodeString.emap { str =>
@@ -142,7 +142,7 @@ object Archive {
     */
   final def apply[F[_]](id: AbsoluteIri, graph: Graph)(implicit
       cache: ProjectCache[F],
-      project: Project,
+      project: ProjectResource,
       F: Monad[F],
       config: ArchivesConfig,
       subject: Subject,
@@ -150,8 +150,10 @@ object Archive {
   ): EitherT[F, Rejection, Archive] = {
 
     implicit val projectResolver: ProjectResolver[F] = {
-      case Some(label: ProjectLabel) => OptionT(cache.get(label)).toRight[Rejection](ProjectRefNotFound(label))
-      case None                      => EitherT.rightT[F, Rejection](project)
+      case Some(label: ProjectLabel) =>
+        OptionT(cache.getBy(label)).toRight[Rejection](ProjectRefNotFound(label))
+      case None                      =>
+        EitherT.rightT[F, Rejection](project)
     }
 
     def duplicatedPathCheck(resources: Set[ResourceDescription]): EitherT[F, Rejection, Unit] = {
@@ -192,6 +194,6 @@ object Archive {
       resources <- resourceDescriptions[F](id, graph.cursor.downSet(nxv.resources))
       _         <- maxResourcesCheck(resources)
       _         <- duplicatedPathCheck(resources)
-    } yield Archive(Id(project.ref, id), clock.instant, subject, resources)
+    } yield Archive(Id(ProjectRef(project.uuid), id), clock.instant, subject, resources)
   }
 }

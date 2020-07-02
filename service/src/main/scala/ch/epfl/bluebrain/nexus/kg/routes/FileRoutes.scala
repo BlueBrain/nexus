@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.kg.routes
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.model.headers.{Accept, RawHeader}
-import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import cats.data.EitherT
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Caller
@@ -19,14 +19,13 @@ import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.resources.file.File._
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
@@ -49,14 +48,14 @@ class FileRoutes private[routes] (
 )(implicit
     system: ActorSystem,
     caller: Caller,
-    project: Project,
+    project: ProjectResource,
     viewCache: ViewCache[Task],
     storageCache: StorageCache[Task],
     indexers: Clients[Task],
     config: ServiceConfig
 ) extends AuthDirectives(acls, realms) {
 
-  private val projectPath               = project.organizationLabel / project.label
+  private val projectPath               = project.value.path
   implicit private val subject: Subject = caller.subject
 
   import indexers._
@@ -102,7 +101,8 @@ class FileRoutes private[routes] (
         extractUri { implicit uri =>
           operationName(s"/${config.http.prefix}/files/{org}/{project}") {
             authorizeFor(projectPath, read)(caller) {
-              val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(files.list(_, params, page))
+              val listed =
+                viewCache.getDefaultElasticSearch(ProjectRef(project.uuid)).flatMap(files.list(_, params, page))
               complete(listed.runWithStatus(OK))
             }
           }
@@ -127,7 +127,7 @@ class FileRoutes private[routes] (
       // Create or update a file (depending on rev query parameter)
       (put & pathEndOrSingleSlash & storage) { storage =>
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
-          val resId = Id(project.ref, id)
+          val resId = Id(ProjectRef(project.uuid), id)
           (authorizeFor(projectPath, storage.writePermission) & projectNotDeprecated) {
             // Uploading a file from the client
             concat(
@@ -164,7 +164,9 @@ class FileRoutes private[routes] (
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
           (authorizeFor(projectPath, storage.writePermission) & projectNotDeprecated) {
             entity(as[Json]) { source =>
-              complete(files.updateFileAttr(Id(project.ref, id), storage, rev, source).value.runWithStatus(OK))
+              complete(
+                files.updateFileAttr(Id(ProjectRef(project.uuid), id), storage, rev, source).value.runWithStatus(OK)
+              )
             }
           }
         }
@@ -173,7 +175,7 @@ class FileRoutes private[routes] (
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
           (authorizeFor(projectPath, write) & projectNotDeprecated) {
-            complete(files.deprecate(Id(project.ref, id), rev).value.runWithStatus(OK))
+            complete(files.deprecate(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))
           }
         }
       },
@@ -189,13 +191,13 @@ class FileRoutes private[routes] (
           authorizeFor(projectPath, read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
-                complete(resources.fetchSource(Id(project.ref, id), rev, fileRef).value.runWithStatus(OK))
+                complete(resources.fetchSource(Id(ProjectRef(project.uuid), id), rev, fileRef).value.runWithStatus(OK))
               },
               (parameter("tag") & noParameter("rev")) { tag =>
-                complete(resources.fetchSource(Id(project.ref, id), tag, fileRef).value.runWithStatus(OK))
+                complete(resources.fetchSource(Id(ProjectRef(project.uuid), id), tag, fileRef).value.runWithStatus(OK))
               },
               (noParameter("tag") & noParameter("rev")) {
-                complete(resources.fetchSource(Id(project.ref, id), fileRef).value.runWithStatus(OK))
+                complete(resources.fetchSource(Id(ProjectRef(project.uuid), id), fileRef).value.runWithStatus(OK))
               }
             )
           }
@@ -210,8 +212,9 @@ class FileRoutes private[routes] (
                 operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/incoming") {
                   authorizeFor(projectPath, read)(caller) {
                     val listed = for {
-                      view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
-                      _        <- resources.fetchSource(Id(project.ref, id), fileRef)
+                      view     <-
+                        viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
+                      _        <- resources.fetchSource(Id(ProjectRef(project.uuid), id), fileRef)
                       incoming <- EitherT.right[Rejection](files.listIncoming(id, view, page))
                     } yield incoming
                     complete(listed.value.runWithStatus(OK))
@@ -230,8 +233,9 @@ class FileRoutes private[routes] (
                   operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/outgoing") {
                     authorizeFor(projectPath, read)(caller) {
                       val listed = for {
-                        view     <- viewCache.getDefaultSparql(project.ref).toNotFound(nxv.defaultSparqlIndex.value)
-                        _        <- resources.fetchSource(Id(project.ref, id), fileRef)
+                        view     <-
+                          viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
+                        _        <- resources.fetchSource(Id(ProjectRef(project.uuid), id), fileRef)
                         outgoing <- EitherT.right[Rejection](files.listOutgoing(id, view, page, links))
                       } yield outgoing
                       complete(listed.value.runWithStatus(OK))
@@ -249,13 +253,13 @@ class FileRoutes private[routes] (
       authorizeFor(projectPath, read)(caller) {
         concat(
           (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
-            completeWithFormat(resources.fetch(Id(project.ref, id), rev, fileRef).value.runWithStatus(OK))
+            completeWithFormat(resources.fetch(Id(ProjectRef(project.uuid), id), rev, fileRef).value.runWithStatus(OK))
           },
           (parameter("tag") & noParameter("rev")) { tag =>
-            completeWithFormat(resources.fetch(Id(project.ref, id), tag, fileRef).value.runWithStatus(OK))
+            completeWithFormat(resources.fetch(Id(ProjectRef(project.uuid), id), tag, fileRef).value.runWithStatus(OK))
           },
           (noParameter("tag") & noParameter("rev")) {
-            completeWithFormat(resources.fetch(Id(project.ref, id), fileRef).value.runWithStatus(OK))
+            completeWithFormat(resources.fetch(Id(ProjectRef(project.uuid), id), fileRef).value.runWithStatus(OK))
           }
         )
       }
@@ -267,13 +271,13 @@ class FileRoutes private[routes] (
       // permission checks are in completeFile
       concat(
         (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
-          completeFile(files.fetch(Id(project.ref, id), rev).value.runToFuture)
+          completeFile(files.fetch(Id(ProjectRef(project.uuid), id), rev).value.runToFuture)
         },
         (parameter("tag") & noParameter("rev")) { tag =>
-          completeFile(files.fetch(Id(project.ref, id), tag).value.runToFuture)
+          completeFile(files.fetch(Id(ProjectRef(project.uuid), id), tag).value.runToFuture)
         },
         (noParameter("tag") & noParameter("rev")) {
-          completeFile(files.fetch(Id(project.ref, id)).value.runToFuture)
+          completeFile(files.fetch(Id(ProjectRef(project.uuid), id)).value.runToFuture)
         }
       )
     }

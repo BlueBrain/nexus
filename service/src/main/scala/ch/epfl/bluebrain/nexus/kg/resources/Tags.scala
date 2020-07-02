@@ -63,10 +63,6 @@ class Tags[F[_]: Effect](repo: Repo[F]) {
 
 object Tags {
 
-  /**
-    * @tparam F the monadic effect type
-    * @return a new [[Tags]] for the provided F type
-    */
-  final def apply[F[_]: Effect](implicit repo: Repo[F]): Tags[F] =
+  final def apply[F[_]: Effect](repo: Repo[F]): Tags[F] =
     new Tags[F](repo)
 }

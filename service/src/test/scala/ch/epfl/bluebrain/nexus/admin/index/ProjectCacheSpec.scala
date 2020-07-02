@@ -67,7 +67,15 @@ class ProjectCacheSpec
   val base            = url"http://nexus.example.com/base"
   val voc             = url"http://nexus.example.com/voc"
   val project         =
-    Project(genString(), UUID.randomUUID(), organization.label, Some(genString()), mappings, base, voc)
+    Project(
+      genString(),
+      UUID.randomUUID(),
+      organization.label,
+      Some(genString()),
+      mappings,
+      base,
+      voc
+    )
   val projectResource = ResourceF(
     url"http://nexus.example.com/v1/orgs/org",
     UUID.randomUUID(),
@@ -113,7 +121,15 @@ class ProjectCacheSpec
 
       val projectResources = projectLabels.map { label =>
         val project =
-          Project(label, UUID.randomUUID(), projectsOrganization.label, Some(genString()), mappings, base, voc)
+          Project(
+            label,
+            UUID.randomUUID(),
+            projectsOrganization.label,
+            Some(genString()),
+            mappings,
+            base,
+            voc
+          )
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}",
           uuid = UUID.randomUUID(),
@@ -124,7 +140,15 @@ class ProjectCacheSpec
 
       val projectResources2 = projectLabels2.map { label =>
         val project =
-          Project(label, UUID.randomUUID(), projectsOrganization2.label, Some(genString()), mappings, base, voc)
+          Project(
+            label,
+            UUID.randomUUID(),
+            projectsOrganization2.label,
+            Some(genString()),
+            mappings,
+            base,
+            voc
+          )
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}",
           uuid = UUID.randomUUID(),

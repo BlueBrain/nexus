@@ -1,8 +1,15 @@
 package ch.epfl.bluebrain.nexus.kg.resources
 
+import akka.actor.ActorSystem
+import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.{NoOffset, PersistenceQuery}
+import akka.stream.scaladsl.Source
+import akka.util.Timeout
 import cats.data.EitherT
-import cats.effect.Effect
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import cats.effect.{Effect, Timer}
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
@@ -10,13 +17,15 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError
-import ch.epfl.bluebrain.nexus.kg.cache.{ProjectCache, ResolverCache}
+import ch.epfl.bluebrain.nexus.kg.cache.ResolverCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
+import ch.epfl.bluebrain.nexus.kg.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.kg.resolve.ResolverEncoder._
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, Resolver}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
@@ -29,14 +38,18 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
+import com.typesafe.scalalogging.Logger
 import io.circe.Json
 
-class Resolvers[F[_]](repo: Repo[F])(implicit
+import scala.concurrent.ExecutionContext
+
+class Resolvers[F[_]](repo: Repo[F], private val index: ResolverCache[F])(implicit
     F: Effect[F],
     materializer: Materializer[F],
     config: ServiceConfig,
-    projectCache: ProjectCache[F],
-    resolverCache: ResolverCache[F]
+    projectCache: ProjectCache[F]
 ) {
 
   /**
@@ -50,9 +63,9 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param source     the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(source: Json)(implicit caller: Caller, project: Project): RejOrResource[F] =
+  def create(source: Json)(implicit caller: Caller, project: ProjectResource): RejOrResource[F] =
     materializer(source.addContext(resolverCtxUri)).flatMap {
-      case (id, Value(_, _, graph)) => create(Id(project.ref, id), graph)
+      case (id, Value(_, _, graph)) => create(Id(ProjectRef(project.uuid), id), graph)
     }
 
   /**
@@ -62,7 +75,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param source the source representation in json-ld format
     * @return either a rejection or the newly created resource in the F context
     */
-  def create(id: ResId, source: Json)(implicit caller: Caller, project: Project): RejOrResource[F] =
+  def create(id: ResId, source: Json)(implicit caller: Caller, project: ProjectResource): RejOrResource[F] =
     materializer(source.addContext(resolverCtxUri), id.value).flatMap {
       case Value(_, _, graph) => create(id, graph)
     }
@@ -75,7 +88,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param source    the new source representation in json-ld format
     * @return either a rejection or the updated resource in the F context
     */
-  def update(id: ResId, rev: Long, source: Json)(implicit caller: Caller, project: Project): RejOrResource[F] =
+  def update(id: ResId, rev: Long, source: Json)(implicit caller: Caller, project: ProjectResource): RejOrResource[F] =
     for {
       matValue  <- materializer(source.addContext(resolverCtxUri), id.value)
       typedGraph = addResolverType(matValue.graph)
@@ -84,7 +97,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
       resolver  <- resolverValidation(id, typedGraph, 1L, types)
       json      <- jsonForRepo(resolver)
       updated   <- repo.update(id, resolverRef, rev, types, json)(caller.subject)
-      _         <- EitherT.right(resolverCache.put(resolver))
+      _         <- EitherT.right(index.put(resolver))
 
     } yield updated
 
@@ -104,7 +117,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param id the id of the resolver
     * @return Right(resolver) in the F context when found and Left(notFound) in the F context when not found
     */
-  def fetchResolver(id: ResId)(implicit project: Project): EitherT[F, Rejection, Resolver] =
+  def fetchResolver(id: ResId)(implicit project: ProjectResource): EitherT[F, Rejection, Resolver] =
     for {
       resource  <- repo.get(id, Some(resolverRef)).toRight(notFound(id.ref, schema = Some(resolverRef)))
       resourceV <- materializer.withMeta(resource)
@@ -152,7 +165,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param id the id of the resolver
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def fetch(id: ResId)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, Some(resolverRef)).toRight(notFound(id.ref, schema = Some(resolverRef))).flatMap(fetch)
 
   /**
@@ -162,7 +175,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param rev the revision of the resolver
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def fetch(id: ResId, rev: Long)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, rev: Long)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo.get(id, rev, Some(resolverRef)).toRight(notFound(id.ref, Some(rev), schema = Some(resolverRef))).flatMap(fetch)
 
   /**
@@ -172,7 +185,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param tag the tag of the resolver
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def fetch(id: ResId, tag: String)(implicit project: Project): RejOrResourceV[F] =
+  def fetch(id: ResId, tag: String)(implicit project: ProjectResource): RejOrResourceV[F] =
     repo
       .get(id, tag, Some(resolverRef))
       .toRight(notFound(id.ref, tag = Some(tag), schema = Some(resolverRef)))
@@ -185,7 +198,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param rev the revision of the resource
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def resolve(id: AbsoluteIri, rev: Long)(implicit project: Project): RejOrResourceV[F] =
+  def resolve(id: AbsoluteIri, rev: Long)(implicit project: ProjectResource): RejOrResourceV[F] =
     materializer(Ref.Revision(id, rev), includeMetadata = true)
 
   /**
@@ -195,7 +208,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param tag the tag of the resource
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def resolve(id: AbsoluteIri, tag: String)(implicit project: Project): RejOrResourceV[F] =
+  def resolve(id: AbsoluteIri, tag: String)(implicit project: ProjectResource): RejOrResourceV[F] =
     materializer(Ref.Tag(id, tag), includeMetadata = true)
 
   /**
@@ -204,7 +217,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param id  the id of the resource
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def resolve(id: AbsoluteIri)(implicit project: Project): RejOrResourceV[F] =
+  def resolve(id: AbsoluteIri)(implicit project: ProjectResource): RejOrResourceV[F] =
     materializer(id.ref, includeMetadata = true)
 
   /**
@@ -215,7 +228,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param rev        the revision of the resource
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def resolve(id: ResId, resourceId: AbsoluteIri, rev: Long)(implicit project: Project): RejOrResourceV[F] =
+  def resolve(id: ResId, resourceId: AbsoluteIri, rev: Long)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetchResolver(id).flatMap(materializer(Ref.Revision(resourceId, rev), _, includeMetadata = true))
 
   /**
@@ -226,7 +239,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param tag        the tag of the resource
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def resolve(id: ResId, resourceId: AbsoluteIri, tag: String)(implicit project: Project): RejOrResourceV[F] =
+  def resolve(id: ResId, resourceId: AbsoluteIri, tag: String)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetchResolver(id).flatMap(materializer(Ref.Tag(resourceId, tag), _, includeMetadata = true))
 
   /**
@@ -236,7 +249,7 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     * @param resourceId the id of the resource
     * @return Right(resource) in the F context when found and Left(notFound) in the F context when not found
     */
-  def resolve(id: ResId, resourceId: AbsoluteIri)(implicit project: Project): RejOrResourceV[F] =
+  def resolve(id: ResId, resourceId: AbsoluteIri)(implicit project: ProjectResource): RejOrResourceV[F] =
     fetchResolver(id).flatMap(materializer(resourceId.ref, _, includeMetadata = true))
 
   /**
@@ -283,18 +296,19 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
   )(implicit sparql: BlazegraphClient[F]): F[LinkResults] =
     view.outgoing(id, pagination, includeExternalLinks)
 
-  private def fetch(resource: Resource)(implicit project: Project): RejOrResourceV[F] =
+  private def fetch(resource: Resource)(implicit project: ProjectResource): RejOrResourceV[F] =
     materializer.withMeta(resource).flatMap(outputResource)
 
-  private def create(id: ResId, graph: Graph)(implicit caller: Caller, project: Project): RejOrResource[F] = {
+  private def create(id: ResId, graph: Graph)(implicit caller: Caller, project: ProjectResource): RejOrResource[F] = {
     val typedGraph = addResolverType(graph)
     val types      = typedGraph.rootTypes
     for {
       _        <- validateShacl(typedGraph)
       resolver <- resolverValidation(id, typedGraph, 1L, types)
       json     <- jsonForRepo(resolver)
-      created  <- repo.create(id, OrganizationRef(project.organizationUuid), resolverRef, types, json)(caller.subject)
-      _        <- EitherT.right(resolverCache.put(resolver))
+      created  <-
+        repo.create(id, OrganizationRef(project.value.organizationUuid), resolverRef, types, json)(caller.subject)
+      _        <- EitherT.right(index.put(resolver))
 
     } yield created
   }
@@ -333,7 +347,9 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
     }
   }
 
-  private def outputResource(originalResource: ResourceV)(implicit project: Project): EitherT[F, Rejection, ResourceV] =
+  private def outputResource(
+      originalResource: ResourceV
+  )(implicit project: ProjectResource): EitherT[F, Rejection, ResourceV] =
     Resolver(originalResource) match {
       case Right(resolver) =>
         resolver.labeled.flatMap { labeledResolver =>
@@ -344,23 +360,60 @@ class Resolvers[F[_]](repo: Repo[F])(implicit
               resolverCtx.contextValue,
               graph ++ originalResource.metadata()
             )
-          EitherT.rightT(originalResource.copy(value = value))
+          EitherT.rightT[F, Rejection](originalResource.copy(value = value))
         }
-      case _               => EitherT.rightT(originalResource)
+      case _               => EitherT.rightT[F, Rejection](originalResource)
     }
 }
 
 object Resolvers {
 
-  /**
-    * @param config the implicitly available application configuration
-    * @tparam F the monadic effect type
-    * @return a new [[Resolvers]] for the provided F type
-    */
-  final def apply[F[_]: Effect: ProjectCache: Materializer](implicit
-      config: ServiceConfig,
-      repo: Repo[F],
-      cache: ResolverCache[F]
-  ): Resolvers[F] =
-    new Resolvers[F](repo)
+  final def apply[F[_]: Effect: ProjectCache: Materializer](repo: Repo[F], index: ResolverCache[F])(implicit
+      config: ServiceConfig
+  ): Resolvers[F] = new Resolvers[F](repo, index)
+
+  def indexer[F[_]: Timer](
+      resolvers: Resolvers[F]
+  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
+    implicit val ec: ExecutionContext = as.dispatcher
+    implicit val tm: Timeout          = Timeout(config.kg.keyValueStore.askTimeout)
+    implicit val log: Logger          = Logger[Views.type]
+
+    def toResolver(event: Event): F[Option[Resolver]] =
+      projectCache
+        .get(event.organization.id, event.id.parent.id)
+        .flatMap[ProjectResource] {
+          case Some(project) => F.pure(project)
+          case _             => F.raiseError(KgError.NotFound(Some(event.id.parent.show)): KgError)
+        }
+        .flatMap { implicit project =>
+          resolvers.fetchResolver(event.id).value.map {
+            case Left(err)       =>
+              log.error(s"Error on event '${event.id.show} (rev = ${event.rev})', cause: '${err.msg}'")
+              None
+            case Right(resolver) => Some(resolver)
+          }
+        }
+
+    val projectionId                    = "resolver-indexer"
+    val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
+      .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+      .eventsByTag(TaggingAdapter.ResolverTag, NoOffset)
+      .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
+
+    val flow = ProgressFlowElem[F, Any]
+      .collectCast[Event]
+      .groupedWithin(config.kg.keyValueStore.indexing.batch, config.kg.keyValueStore.indexing.batchTimeout)
+      .distinct()
+      .mergeEmit()
+      .mapAsync(toResolver)
+      .collectSome[Resolver]
+      .runAsync(resolvers.index.put)()
+      .flow
+      .map(_ => ())
+
+    F.delay[StreamSupervisor[F, Unit]](
+      StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)
+    ) >> F.unit
+  }
 }

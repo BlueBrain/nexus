@@ -4,8 +4,9 @@ import java.time.Instant
 import java.util.regex.Pattern.quote
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
-import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.admin.organizations.Organization
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject, User}
@@ -14,13 +15,14 @@ import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.ProjectEventStream
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{CompositeView, ElasticSearchView, Filter, SparqlView}
-import ch.epfl.bluebrain.nexus.kg.resources.{Id, OrganizationRef, Ref}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
+import ch.epfl.bluebrain.nexus.kg.resources.{Id, OrganizationRef, Ref}
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.Resources
 import io.circe.Json
 import io.circe.syntax._
 
@@ -59,7 +61,7 @@ trait RoutesFixtures extends TestHelper with Resources {
   val project      = genString(length = 4)
 
   // format: off
-  val organizationMeta = Organization(genIri, organization, Some("description"), genUUID, 1L, false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
+  val organizationMeta = ResourceF(genIri, genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Organization(organization, Some("description")))
   // format: on
 
   val organizationRef     = OrganizationRef(organizationMeta.uuid)
@@ -71,8 +73,7 @@ trait RoutesFixtures extends TestHelper with Resources {
   val label               = ProjectLabel(organization, project)
 
   // format: off
-  val projectMeta = Project(id.value, project, organization, None, url"http://example.com/", nxv.base, mappings, projectRef.id, organizationRef.id, 1L, false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
-
+  val projectMeta = ResourceF(id.value, projectRef.id, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project(project, organizationRef.id, organization, None, mappings, url"http://example.com/", nxv.base))
   val defaultEsView = ElasticSearchView(Json.obj(), Filter(), false, true, projectRef, nxv.defaultElasticSearchIndex.value, genUUID, 1L, false)
   val defaultSparqlView = SparqlView.default(projectRef)
   val sparqlProjection = SparqlProjection("", defaultSparqlView)
@@ -81,7 +82,9 @@ trait RoutesFixtures extends TestHelper with Resources {
   val compositeView = CompositeView(Set(compositeViewSource), Set(sparqlProjection, elasticSearchProjection), None, projectRef, genIri, genUUID, 1L, deprecated = false)
   // format: on
 
-  implicit val finalProject = projectMeta.copy(apiMappings = projectMeta.apiMappings ++ defaultPrefixMapping)
+  implicit val finalProject = projectMeta.copy(value =
+    projectMeta.value.copy(apiMappings = projectMeta.value.apiMappings ++ defaultPrefixMapping)
+  )
 
   def tag(rev: Long, tag: String) = Json.obj("tag" -> Json.fromString(tag), "rev" -> Json.fromLong(rev))
 

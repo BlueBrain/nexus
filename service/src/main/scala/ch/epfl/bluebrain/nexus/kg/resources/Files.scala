@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.kg.resources
 import cats.data.EitherT
 import cats.effect.Effect
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => St
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
 import io.circe.Json
 
-class Files[F[_]](repo: Repo[F])(implicit storageCache: StorageCache[F], config: ServiceConfig, F: Effect[F]) {
+class Files[F[_]](repo: Repo[F], storageCache: StorageCache[F])(implicit config: ServiceConfig, F: Effect[F]) {
 
   /**
     * Creates a file resource.
@@ -45,8 +45,8 @@ class Files[F[_]](repo: Repo[F])(implicit storageCache: StorageCache[F], config:
       storage: Storage,
       fileDesc: FileDescription,
       source: In
-  )(implicit subject: Subject, project: Project, saveStorage: Save[F, In]): RejOrResource[F] =
-    create(Id(project.ref, generateId(project.base)), storage, fileDesc, source)
+  )(implicit subject: Subject, project: ProjectResource, saveStorage: Save[F, In]): RejOrResource[F] =
+    create(Id(ProjectRef(project.uuid), generateId(project.value.base)), storage, fileDesc, source)
 
   /**
     * Creates a file resource.
@@ -60,10 +60,10 @@ class Files[F[_]](repo: Repo[F])(implicit storageCache: StorageCache[F], config:
     */
   def create[In](id: ResId, storage: Storage, fileDesc: FileDescription, source: In)(implicit
       subject: Subject,
-      project: Project,
+      project: ProjectResource,
       saveStorage: Save[F, In]
   ): RejOrResource[F] = {
-    val orgRef = OrganizationRef(project.organizationUuid)
+    val orgRef = OrganizationRef(project.value.organizationUuid)
     for {
       _       <- repo.createFileTest(id, orgRef, storage.reference, fileDesc.process(StoredSummary.empty))
       attr    <- EitherT.right(storage.save.apply(id, fileDesc, source))
@@ -146,8 +146,8 @@ class Files[F[_]](repo: Repo[F])(implicit storageCache: StorageCache[F], config:
   def createLink(
       storage: Storage,
       source: Json
-  )(implicit subject: Subject, project: Project, linkStorage: Link[F]): RejOrResource[F] =
-    createLink(Id(project.ref, generateId(project.base)), storage, source)
+  )(implicit subject: Subject, project: ProjectResource, linkStorage: Link[F]): RejOrResource[F] =
+    createLink(Id(ProjectRef(project.uuid), generateId(project.value.base)), storage, source)
 
   /**
     * Creates a link to an existing file.
@@ -161,8 +161,8 @@ class Files[F[_]](repo: Repo[F])(implicit storageCache: StorageCache[F], config:
       id: ResId,
       storage: Storage,
       source: Json
-  )(implicit subject: Subject, project: Project, linkStorage: Link[F]): RejOrResource[F] = {
-    val orgRef = OrganizationRef(project.organizationUuid)
+  )(implicit subject: Subject, project: ProjectResource, linkStorage: Link[F]): RejOrResource[F] = {
+    val orgRef = OrganizationRef(project.value.organizationUuid)
     // format: off
     for {
       link      <- EitherT.fromEither[F](LinkDescription(id, source))
@@ -302,14 +302,6 @@ class Files[F[_]](repo: Repo[F])(implicit storageCache: StorageCache[F], config:
 
 object Files {
 
-  /**
-    * @param config the implicitly available application configuration
-    * @tparam F the monadic effect type
-    * @return a new [[Files]] for the provided F type
-    */
-  final def apply[F[_]: Effect](implicit
-      config: ServiceConfig,
-      repo: Repo[F],
-      storageCache: StorageCache[F]
-  ): Files[F] = new Files[F](repo)
+  final def apply[F[_]: Effect](repo: Repo[F], index: StorageCache[F])(implicit config: ServiceConfig): Files[F] =
+    new Files[F](repo, index)
 }

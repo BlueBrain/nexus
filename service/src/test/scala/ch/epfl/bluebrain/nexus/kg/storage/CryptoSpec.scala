@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.kg.storage
 
 import java.util.Base64
 
-import ch.epfl.bluebrain.nexus.commons.test.Randomness
+import ch.epfl.bluebrain.nexus.util.Randomness
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

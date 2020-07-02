@@ -2,22 +2,23 @@ package ch.epfl.bluebrain.nexus.kg.async
 
 import java.util.UUID
 
+import akka.NotUsed
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.cluster.sharding.ShardRegion.{ExtractEntityId, ExtractShardId}
 import akka.cluster.sharding.{ClusterSharding, ClusterShardingSettings, ShardRegion}
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.async.ProjectAttributesCoordinatorActor.Msg._
-import ch.epfl.bluebrain.nexus.kg.indexing.cassandraSource
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.FileDigestAlreadyExists
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, Files, Rejection, Resource}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttributes
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.ProgressFlowElem
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections._
 import monix.eval.Task
@@ -37,17 +38,17 @@ abstract private class ProjectAttributesCoordinatorActor(implicit val config: Se
   private var child: Option[StreamSupervisor[Task, ProjectionProgress]] = None
 
   def receive: Receive = {
-    case Start(_, project: Project) =>
-      log.debug("Started attributes coordinator for project '{}'", project.show)
+    case Start(_, project: ProjectResource) =>
+      log.debug("Started attributes coordinator for project '{}'", project.value.show)
       context.become(initialized(project))
       child = Some(startCoordinator(project, restartOffset = false))
-    case other                      =>
+    case other                              =>
       log.debug("Received non Start message '{}', ignore", other)
   }
 
-  def initialized(project: Project): Receive = {
+  def initialized(project: ProjectResource): Receive = {
     case Stop(_)  =>
-      log.info("Attributes process for project '{}' received a stop message.", project.show)
+      log.info("Attributes process for project '{}' received a stop message.", project.value.show)
       child.foreach(_.stop())
       child = None
       context.become(receive)
@@ -57,7 +58,7 @@ abstract private class ProjectAttributesCoordinatorActor(implicit val config: Se
     case other => log.error("Unexpected message received '{}'", other)
   }
 
-  def startCoordinator(project: Project, restartOffset: Boolean): StreamSupervisor[Task, ProjectionProgress]
+  def startCoordinator(project: ProjectResource, restartOffset: Boolean): StreamSupervisor[Task, ProjectionProgress]
 }
 
 object ProjectAttributesCoordinatorActor {
@@ -73,8 +74,8 @@ object ProjectAttributesCoordinatorActor {
   }
   object Msg {
 
-    final case class Start(uuid: UUID, project: Project) extends Msg
-    final case class Stop(uuid: UUID)                    extends Msg
+    final case class Start(uuid: UUID, project: ProjectResource) extends Msg
+    final case class Stop(uuid: UUID)                            extends Msg
   }
 
   private[async] def shardExtractor(shards: Int): ExtractShardId = {
@@ -106,7 +107,7 @@ object ProjectAttributesCoordinatorActor {
 
     val props = Props(new ProjectAttributesCoordinatorActor {
       override def startCoordinator(
-          project: Project,
+          project: ProjectResource,
           restartOffset: Boolean
       ): StreamSupervisor[Task, ProjectionProgress] = {
 
@@ -116,11 +117,11 @@ object ProjectAttributesCoordinatorActor {
         implicit val logErrors: (Either[Rejection, Resource], RetryDetails) => Task[Unit] =
           (err, d) =>
             Task.pure(log.warning("Retrying on resource creation with retry details '{}' and error: '{}'", err, d))
-        val name: String                                                                  = progressName(project.uuid)
+        val projectionId: String                                                          = progressName(project.uuid)
 
         val initFetchProgressF: Task[ProjectionProgress] =
-          if (restartOffset) projections.recordProgress(name, NoProgress) >> Task.delay(NoProgress)
-          else projections.progress(name)
+          if (restartOffset) projections.recordProgress(projectionId, NoProgress) >> Task.delay(NoProgress)
+          else projections.progress(projectionId)
 
         val sourceF: Task[Source[ProjectionProgress, _]] = initFetchProgressF.map {
           initial =>
@@ -143,11 +144,16 @@ object ProjectAttributesCoordinatorActor {
 
               }
               .collectSome[Resource]
-              .toPersistedProgress(name, initial)
+              .toPersistedProgress(projectionId, initial)
 
-            cassandraSource(s"project=${project.uuid}", name, initial.minProgress.offset).via(flow)
+            val source: Source[PairMsg[Any], NotUsed] = PersistenceQuery(as)
+              .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+              .eventsByTag(s"project=${project.uuid}", initial.minProgress.offset)
+              .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
+
+            source.via(flow)
         }
-        StreamSupervisor.start(sourceF, name, context.actorOf)
+        StreamSupervisor.start(sourceF, projectionId, context.actorOf)
       }
     })
     start(props, shardingSettings, shards)

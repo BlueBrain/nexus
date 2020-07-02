@@ -17,7 +17,7 @@ import cats.effect.implicits._
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError._
@@ -51,7 +51,7 @@ class StorageClient[F[_]] private[client] (
     *
     * @param name the storage bucket name
     */
-  def exists(name: String)(implicit cred: Option[AuthToken]): F[Boolean] = {
+  def exists(name: String)(implicit cred: Option[AccessToken]): F[Boolean] = {
     val endpoint = config.buckets + name
     emptyBody(Head(endpoint.asAkka).withCredentials).map(_ => true).recoverWith {
       case _: NotFound => F.pure(false)
@@ -67,7 +67,7 @@ class StorageClient[F[_]] private[client] (
     * @return The file attributes wrapped on the effect type F[] containing the metadata plus the file bytes, digest and location
     */
   def createFile(name: String, relativePath: Uri.Path, source: AkkaSource)(implicit
-      cred: Option[AuthToken]
+      cred: Option[AccessToken]
   ): F[FileAttributes] = {
     val endpoint       = config.files(name) + slashIfNone(relativePath).asIriPath
     val bodyPartEntity = HttpEntity.IndefiniteLength(ContentTypes.`application/octet-stream`, source)
@@ -92,7 +92,7 @@ class StorageClient[F[_]] private[client] (
     * @param relativePath the relative path to the file location
     * @return The source wrapped on the effect type F[]
     */
-  def getFile(name: String, relativePath: Uri.Path)(implicit cred: Option[AuthToken]): F[AkkaSource] = {
+  def getFile(name: String, relativePath: Uri.Path)(implicit cred: Option[AccessToken]): F[AkkaSource] = {
     val endpoint = config.files(name) + slashIfNone(relativePath).asIriPath
     val request  = Get(endpoint.asAkka).withCredentials
     F.pure {
@@ -106,7 +106,7 @@ class StorageClient[F[_]] private[client] (
     * @param name         the storage bucket name
     * @param relativePath the relative path to the file location
     */
-  def getAttributes(name: String, relativePath: Uri.Path)(implicit cred: Option[AuthToken]): F[FileAttributes] = {
+  def getAttributes(name: String, relativePath: Uri.Path)(implicit cred: Option[AccessToken]): F[FileAttributes] = {
     val endpoint = config.attributes(name) + slashIfNone(relativePath).asIriPath
     attributes(Get(endpoint.asAkka).withCredentials)
   }
@@ -120,7 +120,7 @@ class StorageClient[F[_]] private[client] (
     * @return The file attributes wrapped on the effect type F[] containing the metadata plus the file bytes, digest and location
     */
   def moveFile(name: String, sourceRelativePath: Uri.Path, destRelativePath: Uri.Path)(implicit
-      cred: Option[AuthToken]
+      cred: Option[AccessToken]
   ): F[FileAttributes] = {
     val endpoint = (config.files(name) + slashIfNone(destRelativePath).asIriPath).asAkka
     attributes(Put(endpoint, LinkFile(sourceRelativePath)).withCredentials)
@@ -135,7 +135,7 @@ class StorageClient[F[_]] private[client] (
 object StorageClient {
 
   implicit private[client] class RequestCredentialsSyntax(private val req: HttpRequest) extends AnyVal {
-    def withCredentials(implicit cred: Option[AuthToken]): HttpRequest =
+    def withCredentials(implicit cred: Option[AccessToken]): HttpRequest =
       cred.map(token => req.addCredentials(OAuth2BearerToken(token.value))).getOrElse(req)
   }
 

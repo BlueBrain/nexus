@@ -10,14 +10,14 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.http.scaladsl.server.PathMatchers.Segment
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, PredefinedFromEntityUnmarshallers}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure._
 import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.commons.http.{RdfMediaTypes, RejectionHandling}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlFailure.SparqlClientError
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.client.IamClientError
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
@@ -31,6 +31,7 @@ import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes._
@@ -76,7 +77,6 @@ class KgRoutes(
     system: ActorSystem,
     clients: Clients[Task],
     cache: Caches[Task],
-    projectInitializer: ProjectInitializer[Task],
     config: ServiceConfig
 ) extends AuthDirectives(acls, realms) {
   import clients._
@@ -84,31 +84,34 @@ class KgRoutes(
     PredefinedFromEntityUnmarshallers.stringUnmarshaller
       .forContentTypes(RdfMediaTypes.`application/sparql-query`, MediaTypes.`text/plain`)
 
-  implicit private val projectCache: ProjectCache[Task] = cache.project
-  implicit private val viewCache: ViewCache[Task]       = cache.view
+  implicit private val projectCache: ProjectCache[Task]  = cache.project
+  implicit private val orgCache: OrganizationCache[Task] = cache.org
+  implicit private val viewCache: ViewCache[Task]        = cache.view
 
   private val healthStatusGroup = StatusGroup(CassandraHealth(system), new ClusterStatus(Cluster(system)))
   private val appInfoRoutes     = AppInfoRoutes(config.description, healthStatusGroup).routes
 
-  private def list(implicit caller: Caller, project: Project): Route = {
-    val projectPath = Path.Segment(project.label, Path.Slash(Path.Segment(project.organizationLabel, Path./)))
+  private def list(implicit caller: Caller, project: ProjectResource): Route = {
+    val projectPath = project.value.path
     (get & paginated & searchParams(project) & pathEndOrSingleSlash) { (pagination, params) =>
       operationName(s"/${config.http.prefix}/resources/{org}/{project}") {
         (authorizeFor(projectPath, read) & extractUri) { implicit uri =>
-          val listed = viewCache.getDefaultElasticSearch(project.ref).flatMap(resources.list(_, params, pagination))
+          val listed =
+            viewCache.getDefaultElasticSearch(ProjectRef(project.uuid)).flatMap(resources.list(_, params, pagination))
           complete(listed.runWithStatus(OK))
         }
       }
     }
   }
 
-  private def projectEvents(implicit project: Project, caller: Caller): Route =
+  private def projectEvents(implicit project: ProjectResource, caller: Caller): Route =
     (get & pathPrefix("events") & pathEndOrSingleSlash) {
-      new EventRoutes(acls, realms, caller).routes(project)
+      new EventRoutes(acls, realms, caller).projectRoutes(project)
     }
 
-  private def createDefault(implicit caller: Caller, subject: Subject, project: Project): Route = {
-    val projectPath = Path.Segment(project.label, Path.Slash(Path.Segment(project.organizationLabel, Path./)))
+  private def createDefault(implicit caller: Caller, subject: Subject, project: ProjectResource): Route = {
+    val projectPath =
+      Path.Segment(project.value.label, Path.Slash(Path.Segment(project.value.organizationLabel, Path./)))
     (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
       operationName(s"/${config.http.prefix}/resources/{org}/{project}") {
         (authorizeFor(projectPath, ResourceRoutes.write) & projectNotDeprecated) {
@@ -120,7 +123,9 @@ class KgRoutes(
     }
   }
 
-  private def routesSelector(segment: IdOrUnderscore)(implicit subject: Subject, caller: Caller, project: Project) =
+  private def routesSelector(
+      segment: IdOrUnderscore
+  )(implicit subject: Subject, caller: Caller, project: ProjectResource) =
     segment match {
       case Underscore                    => routeSelectorUndescore
       case SchemaId(`archiveSchemaUri`)  => new ArchiveRoutes(archives, acls, realms).routes
@@ -134,10 +139,10 @@ class KgRoutes(
       case _                             => reject()
     }
 
-  private def routeSelectorUndescore(implicit subject: Subject, caller: Caller, project: Project) =
+  private def routeSelectorUndescore(implicit subject: Subject, caller: Caller, project: ProjectResource) =
     pathPrefix(IdSegment) { id =>
       // format: off
-      onSuccess(resources.fetchSchema(Id(project.ref, id)).value.runToFuture) {
+      onSuccess(resources.fetchSchema(Id(ProjectRef(project.uuid), id)).value.runToFuture) {
         case Right(`resolverRef`)         =>  new ResolverRoutes(resolvers, tags, acls, realms).routes(id)
         case Right(`viewRef`)             =>  new ViewRoutes(views, tags, acls, realms, coordinator).routes(id)
         case Right(`shaclRef`)            => new SchemaRoutes(schemas, tags, acls, realms).routes(id)
@@ -164,7 +169,7 @@ class KgRoutes(
             },
             (get & pathPrefix(config.http.prefix / "resources" / Segment / "events") & pathEndOrSingleSlash) { label =>
               org(label).apply { implicit organization =>
-                new EventRoutes(acls, realms, caller).routes(organization)
+                new EventRoutes(acls, realms, caller).organizationRoutes(organization)
               }
             },
             pathPrefix(config.http.prefix / Segment) { resourceSegment =>
@@ -210,14 +215,6 @@ object KgRoutes {
       // suppress errors from withSizeLimit directive
       case EntityStreamSizeException(limit, actual) =>
         complete(FileSizeExceed(limit, actual): KgError)
-      case _: IamClientError.Unauthorized           =>
-        // suppress errors for authentication failures
-        val status = KgError.kgErrorStatusFrom(AuthenticationFailed)
-        val header = `WWW-Authenticate`(HttpChallenges.oAuth2("*"))
-        complete((status, List(header), AuthenticationFailed: KgError))
-      case _: IamClientError.Forbidden              =>
-        // suppress errors for authorization failures
-        complete(AuthorizationFailed: KgError)
       case err: NotFound                            =>
         // suppress errors for not found
         complete(err: KgError)

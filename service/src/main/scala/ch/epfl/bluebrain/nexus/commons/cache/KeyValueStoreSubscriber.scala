@@ -5,17 +5,20 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
 import akka.cluster.ddata.LWWMapKey
 import akka.cluster.ddata.Replicator.Changed
+import cats.Applicative
+import cats.effect.Effect
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChange._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber._
 
-trait OnKeyValueStoreChange[K, V] {
+trait OnKeyValueStoreChange[F[_], K, V] {
 
   /**
     * Method that gets triggered when a change to key value store occurs.
     *
     * @param value the changes made
     */
-  def apply(value: KeyValueStoreChanges[K, V]): Unit
+  def apply(value: KeyValueStoreChanges[K, V]): F[Unit]
 }
 
 object OnKeyValueStoreChange {
@@ -26,7 +29,24 @@ object OnKeyValueStoreChange {
     * @tparam K the key type
     * @tparam V the value type
     */
-  def noEffect[K, V]: OnKeyValueStoreChange[K, V] = _ => ()
+  def noEffect[F[_], K, V](implicit F: Applicative[F]): OnKeyValueStoreChange[F, K, V] =
+    (_: KeyValueStoreChanges[K, V]) => F.unit
+
+  def apply[F[_], K, V](onCreate: (K, V) => F[Unit], onUpdate: (K, V) => F[Unit], onRemove: (K, V) => F[Unit])(implicit
+      F: Applicative[F]
+  ): OnKeyValueStoreChange[F, K, V] =
+    (value: KeyValueStoreChanges[K, V]) =>
+      value.values.toList match {
+        case Nil    => F.unit
+        case values =>
+          values
+            .traverse {
+              case ValueAdded(k, v)    => onCreate(k, v)
+              case ValueModified(k, v) => onUpdate(k, v)
+              case ValueRemoved(k, v)  => onRemove(k, v)
+            }
+            .as(())
+      }
 }
 
 /**
@@ -37,8 +57,9 @@ object OnKeyValueStoreChange {
   * @tparam K the key type
   * @tparam V the value type
   */
-class KeyValueStoreSubscriber[K, V] private (key: LWWMapKey[K, V], onChange: OnKeyValueStoreChange[K, V])
-    extends Actor
+class KeyValueStoreSubscriber[F[_], K, V] private (key: LWWMapKey[K, V], onChange: OnKeyValueStoreChange[F, K, V])(
+    implicit F: Effect[F]
+) extends Actor
     with ActorLogging {
 
   private var previous = Map.empty[K, V]
@@ -47,7 +68,7 @@ class KeyValueStoreSubscriber[K, V] private (key: LWWMapKey[K, V], onChange: OnK
     val added   = (recent -- previous.keySet).map { case (k, v) => ValueAdded(k, v) }.toSet
     val removed = (previous -- recent.keySet).map { case (k, v) => ValueRemoved(k, v) }.toSet
 
-    val modified = (recent -- added.map(_.key)).foldLeft(Set.empty[KeyValueStoreChange]) {
+    val modified = (recent -- added.map(_.key)).foldLeft(Set.empty[KeyValueStoreChange[K, V]]) {
       case (acc, (k, v)) =>
         previous.get(k).filter(_ == v) match {
           case None => acc + ValueModified(k, v)
@@ -61,7 +82,7 @@ class KeyValueStoreSubscriber[K, V] private (key: LWWMapKey[K, V], onChange: OnK
     case c @ Changed(`key`) =>
       val recent  = c.get(key).entries
       val changes = diff(recent)
-      if (changes.values.nonEmpty) onChange(changes)
+      if (changes.values.nonEmpty) F.toIO(onChange(changes)).unsafeRunAsyncAndForget()
       previous = recent
       log.debug("Received a Changed message from the key value store. Values changed: '{}'", changes)
 
@@ -76,7 +97,7 @@ object KeyValueStoreSubscriber {
   /**
     * Enumeration of types related to changes to the key value store.
     */
-  sealed trait KeyValueStoreChange extends Product with Serializable
+  sealed trait KeyValueStoreChange[K, V] extends Product with Serializable
   object KeyValueStoreChange {
 
     /**
@@ -85,7 +106,7 @@ object KeyValueStoreSubscriber {
       * @param key   the key
       * @param value the value
       */
-    final case class ValueAdded[K, V](key: K, value: V) extends KeyValueStoreChange
+    final case class ValueAdded[K, V](key: K, value: V) extends KeyValueStoreChange[K, V]
 
     /**
       * Signals that an already existing element has been updated from the key value store.
@@ -93,7 +114,7 @@ object KeyValueStoreSubscriber {
       * @param key   the key
       * @param value the value
       */
-    final case class ValueModified[K, V](key: K, value: V) extends KeyValueStoreChange
+    final case class ValueModified[K, V](key: K, value: V) extends KeyValueStoreChange[K, V]
 
     /**
       * Signals that an already existing element has been removed from the key value store.
@@ -101,7 +122,7 @@ object KeyValueStoreSubscriber {
       * @param key   the key
       * @param value the value
       */
-    final case class ValueRemoved[K, V](key: K, value: V) extends KeyValueStoreChange
+    final case class ValueRemoved[K, V](key: K, value: V) extends KeyValueStoreChange[K, V]
   }
 
   /**
@@ -109,7 +130,7 @@ object KeyValueStoreSubscriber {
     *
     * @param values the set of changes
     */
-  final case class KeyValueStoreChanges[K, V](values: Set[KeyValueStoreChange])
+  final case class KeyValueStoreChanges[K, V](values: Set[KeyValueStoreChange[K, V]])
 
   /**
     * Constructs the [[KeyValueStoreSubscriber]] actor.
@@ -120,7 +141,7 @@ object KeyValueStoreSubscriber {
     * @tparam V the value type
     * @return an [[ActorRef]] of the [[KeyValueStoreSubscriber]] actor
     */
-  final def apply[K, V](mapKey: LWWMapKey[K, V], onChange: OnKeyValueStoreChange[K, V])(implicit
+  final def apply[F[_]: Effect, K, V](mapKey: LWWMapKey[K, V], onChange: OnKeyValueStoreChange[F, K, V])(implicit
       as: ActorSystem
   ): ActorRef =
     as.actorOf(Props(new KeyValueStoreSubscriber(mapKey, onChange)), UUID.randomUUID().toString)

@@ -7,14 +7,13 @@ import akka.testkit.TestKit
 import akka.util.Timeout
 import cats.data.OptionT
 import cats.effect.{IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
-import ch.epfl.bluebrain.nexus.commons.test.EitherValues
-import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
-import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.simpleF
@@ -23,12 +22,13 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.util.{EitherValues, IOOptionValues}
 import io.circe.Json
 import org.mockito.Mockito._
 import org.mockito.{IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, OptionValues}
 
 import scala.concurrent.duration._
 
@@ -80,9 +80,9 @@ class MultiProjectResolutionSpec
       case (proj, id) =>
         val organizationUuid = genUUID
         // format: off
-        val metadata = Project(genIri, proj.value, proj.organization, None, base, genIri, Map(), id, organizationUuid, 0L, false, Instant.EPOCH, genIri, Instant.EPOCH, genIri)
+        val metadata = ResourceF(genIri, id, 1L, deprecated = false, Set.empty, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous, Project(proj.value, organizationUuid, proj.organization, None, Map.empty, base, genIri))
         // format: on
-        projectCache.replace(metadata).ioValue
+        projectCache.replace(metadata.uuid, metadata).ioValue
     }
   }
 

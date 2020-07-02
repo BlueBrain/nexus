@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.kg.async
 import akka.actor.{ActorRef, ActorSystem}
 import cats.effect.Async
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.kg.async.ProjectAttributesCoordinatorActor.Msg._
-import ch.epfl.bluebrain.nexus.kg.cache.ProjectCache
+import ch.epfl.bluebrain.nexus.kg.cache.Caches
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
-import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Files, OrganizationRef}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttributes
 import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
@@ -30,7 +30,7 @@ class ProjectAttributesCoordinator[F[_]](projectCache: ProjectCache[F], ref: Act
     *
     * @param project the project for which the attributes coordinator is triggered
     */
-  def start(project: Project): F[Unit] = {
+  def start(project: ProjectResource): F[Unit] = {
     ref ! Start(project.uuid, project)
     F.unit
   }
@@ -41,7 +41,7 @@ class ProjectAttributesCoordinator[F[_]](projectCache: ProjectCache[F], ref: Act
     * @param orgRef the organization unique identifier
     */
   def stop(orgRef: OrganizationRef): F[Unit] =
-    projectCache.list(orgRef).flatMap(_.map(project => stop(project.ref)).sequence) >> F.unit
+    projectCache.listUnsafe(orgRef.id).flatMap(_.map(projRes => stop(ProjectRef(projRes.uuid))).sequence) >> F.unit
 
   /**
     * Stops the coordinator children attributes actor for the provided project
@@ -55,13 +55,16 @@ class ProjectAttributesCoordinator[F[_]](projectCache: ProjectCache[F], ref: Act
 }
 
 object ProjectAttributesCoordinator {
-  def apply(files: Files[Task], projectCache: ProjectCache[Task])(implicit
+  def apply(files: Files[Task], cache: Caches[Task])(implicit
       config: ServiceConfig,
       fetchAttributes: FetchAttributes[Task],
       as: ActorSystem,
       P: Projections[Task, String]
-  ): ProjectAttributesCoordinator[Task] = {
-    val coordinatorRef = ProjectAttributesCoordinatorActor.start(files, None, config.cluster.shards)
-    new ProjectAttributesCoordinator[Task](projectCache, coordinatorRef)
+  ): Task[ProjectAttributesCoordinator[Task]] = {
+    val ref         = ProjectAttributesCoordinatorActor.start(files, None, config.cluster.shards)
+    val coordinator = new ProjectAttributesCoordinator[Task](cache.project, ref)
+    cache.project.subscribe(onDeprecated = project => coordinator.stop(ProjectRef(project.uuid))) >>
+      cache.org.subscribe(onDeprecated = org => coordinator.stop(OrganizationRef(org.uuid))) >>
+      Task.pure(coordinator)
   }
 }
