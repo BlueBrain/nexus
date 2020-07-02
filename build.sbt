@@ -267,11 +267,15 @@ lazy val rdf      = project
     ),
     Test / fork          := true
   )
-lazy val cargoTask = {
 
-  lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
-  cargo := {
+lazy val storage = project
+  .in(file("storage"))
+  .dependsOn(rdf)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
+  .settings(shared, compilation, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .settings(cargo := {
     import scala.sys.process._
 
     val log = streams.value.log
@@ -283,15 +287,7 @@ lazy val cargoTask = {
       log.error("Cargo build failed.")
       throw new RuntimeException
     }
-  }
-}
-
-lazy val storage = project
-  .in(file("storage"))
-  .dependsOn(rdf)
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
-  .settings(cargoTask)
+  })
   .settings(
     name                     := "storage",
     moduleName               := "storage",
@@ -323,11 +319,10 @@ lazy val storage = project
       baseDirectory.value / "nexus-storage.jar"
     ),
     Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
-    Test / parallelExecution := false
-//    , TODO: Fix this
-//      mappings in Universal := {
-//      (mappings in Universal).value :+ cargo.value
-//    }
+    Test / parallelExecution := false,
+    mappings in Universal    := {
+      (mappings in Universal).value :+ cargo.value
+    }
   )
 
 lazy val service = project
