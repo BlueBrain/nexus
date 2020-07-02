@@ -40,14 +40,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
+      - name: Build image
+        run: docker build ./storage/permissions-fixer --tag=nexus/fixer
       - name: Compile and run tests
-        run: sudo -E cargo test --manifest-path=./storage/permissions-fixer/Cargo.toml
+        run: docker run -it nexus/fixer
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
