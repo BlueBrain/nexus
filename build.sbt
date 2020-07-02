@@ -268,11 +268,26 @@ lazy val rdf      = project
     Test / fork          := true
   )
 
+lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+
 lazy val storage = project
   .in(file("storage"))
   .dependsOn(rdf)
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .settings(cargo := {
+    import scala.sys.process._
+
+    val log = streams.value.log
+    val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
+    if ((cmd !) == 0) {
+      log.success("Cargo build successful.")
+      (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
+    } else {
+      log.error("Cargo build failed.")
+      throw new RuntimeException
+    }
+  })
   .settings(
     name                     := "storage",
     moduleName               := "storage",
@@ -304,11 +319,10 @@ lazy val storage = project
       baseDirectory.value / "nexus-storage.jar"
     ),
     Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
-    Test / parallelExecution := false
-//    , TODO: Fix this
-//      mappings in Universal := {
-//      (mappings in Universal).value :+ cargo.value
-//    }
+    Test / parallelExecution := false,
+    mappings in Universal    := {
+      (mappings in Universal).value :+ cargo.value
+    }
   )
 
 lazy val service = project
@@ -522,22 +536,6 @@ lazy val servicePackaging = {
       DockerVersion(19, 3, 5, Some("ce"))
     ) // forces the version because gh-actions version is 3.0.x which is not recognized to support multistage
   )
-}
-
-lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
-
-cargo := {
-  import scala.sys.process._
-
-  val log = streams.value.log
-  val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
-  if ((cmd !) == 0) {
-    log.success("Cargo build successful.")
-    (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
-  } else {
-    log.error("Cargo build failed.")
-    throw new RuntimeException
-  }
 }
 
 inThisBuild(

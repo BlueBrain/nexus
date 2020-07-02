@@ -1,0 +1,15 @@
+[package]
+name = "nexus-fixer"
+version = "1.0.0"
+authors = ["Henry Genet <henry.genet@epfl.ch>"]
+edition = "2018"
+build = "build.rs"
+
+[dependencies]
+clap = "2.33.0"
+libc = "0.2.60"
+rand = "0.7"
+walkdir = "2.2.9"
+
+[build-dependencies]
+built = "0.3.1"
