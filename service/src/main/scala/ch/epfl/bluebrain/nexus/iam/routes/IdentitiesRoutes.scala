@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Caller.JsonLd._
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task

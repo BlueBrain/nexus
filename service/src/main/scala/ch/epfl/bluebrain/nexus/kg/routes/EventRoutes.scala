@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
@@ -19,8 +19,8 @@ import monix.execution.Scheduler.Implicits.global
 
 class EventRoutes(acls: Acls[Task], realms: Realms[Task], caller: Caller)(implicit
     override val as: ActorSystem,
-    override val config: ServiceConfig
-) extends AuthDirectives(acls, realms)
+    override val config: AppConfig
+) extends AuthDirectives(acls, realms)(config.http, global)
     with EventCommonRoutes {
 
   private val read: Permission = Permission.unsafe("resources/read")

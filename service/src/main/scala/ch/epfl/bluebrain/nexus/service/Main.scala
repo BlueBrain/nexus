@@ -23,22 +23,20 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.config.IamConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.{Groups, Realms}
 import ch.epfl.bluebrain.nexus.iam.routes.IamRoutes
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async.{ProjectAttributesCoordinator, ProjectViewCoordinator}
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution}
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.{Clients, KgRoutes}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttributes
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
@@ -81,14 +79,14 @@ object Main {
 
   def bootstrapIam()(implicit
       system: ActorSystem,
-      cfg: ServiceConfig
+      cfg: AppConfig
   ): (Permissions[Task], Acls[Task], Realms[Task]) = {
     implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
     import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-    implicit val pc                = cfg.iam.permissions
-    implicit val ac                = cfg.iam.acls
-    implicit val rc                = cfg.iam.realms
-    implicit val gc                = cfg.iam.groups
+    implicit val pc                = cfg.permissions
+    implicit val ac                = cfg.acls
+    implicit val rc                = cfg.realms
+    implicit val gc                = cfg.groups
     implicit val hc                = cfg.http
     implicit val pm                = CanBlock.permit
     implicit val cl                = HttpClient.untyped[Task]
@@ -113,12 +111,13 @@ object Main {
 
   def bootstrapAdmin(acls: Acls[Task], saCaller: Caller)(implicit
       system: ActorSystem,
-      cfg: ServiceConfig
+      cfg: AppConfig
   ): (Organizations[Task], Projects[Task], OrganizationCache[Task], ProjectCache[Task]) = {
     implicit val http: HttpConfig  = cfg.http
     implicit val scheduler         = Scheduler.global
     implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
-    implicit val kvc               = cfg.admin.keyValueStore
+    implicit val kvs               = cfg.keyValueStore
+    implicit val kvc               = kvs.keyValueStoreConfig
     implicit val pm                = CanBlock.permit
 
     val oc       = OrganizationCache[Task]
@@ -137,7 +136,7 @@ object Main {
       projectCache: ProjectCache[Task]
   )(implicit
       system: ActorSystem,
-      cfg: ServiceConfig
+      cfg: AppConfig
   ): (
       Resources[Task],
       Storages[Task],
@@ -153,7 +152,10 @@ object Main {
     implicit val eff: Effect[Task]    = Task.catsEffect(Scheduler.global)
     implicit val pm: CanBlock         = CanBlock.permit
     implicit val clock                = Clock.systemUTC
-    implicit val kgConfig: KgConfig   = cfg.kg
+    implicit val kvs                  = cfg.keyValueStore
+    implicit val kvc                  = kvs.keyValueStoreConfig
+    implicit val agg                  = cfg.aggregate
+    implicit val archivesCfg          = cfg.archives
     implicit val scheduler: Scheduler = Scheduler.global
 
     val repo: Repo[Task]                          = Repo[Task].runSyncUnsafe()(Scheduler.global, pm)
@@ -187,10 +189,12 @@ object Main {
     }
 
     implicit val clients: Clients[Task] = {
+      implicit val spCfg         = cfg.sparql
+      implicit val esCfg         = cfg.elasticSearch
       val sparql                 = defaultSparqlClient
       implicit val elasticSearch = defaultElasticSearchClient
       implicit val sparqlClient  = sparql
-      implicit val storageConfig = StorageClientConfig(url"${kgConfig.storage.remoteDisk.defaultEndpoint}")
+      implicit val storageConfig = StorageClientConfig(url"${cfg.storage.remoteDisk.defaultEndpoint}")
       implicit val storageClient = StorageClient[Task]
       Clients()
     }
@@ -221,14 +225,14 @@ object Main {
       saCaller: Caller
   )(implicit
       as: ActorSystem,
-      cfg: ServiceConfig,
+      cfg: AppConfig,
       clients: Clients[Task]
   ): ProjectViewCoordinator[Task] = {
-    implicit val ac: IamConfig.AclsConfig   = cfg.iam.acls
-    implicit val rc: IamConfig.RealmsConfig = cfg.iam.realms
-    implicit val eff: Effect[Task]          = Task.catsEffect(Scheduler.global)
-    implicit val c: Caches[Task]            = cache
-    implicit val pc: ProjectCache[Task]     = cache.project
+    implicit val ac                     = cfg.acls
+    implicit val rc                     = cfg.realms
+    implicit val eff: Effect[Task]      = Task.catsEffect(Scheduler.global)
+    implicit val c: Caches[Task]        = cache
+    implicit val pc: ProjectCache[Task] = cache.project
 
     val pvcF = for {
       _           <- Acls.indexer[Task](acls)
@@ -249,23 +253,23 @@ object Main {
 
   @SuppressWarnings(Array("UnusedMethodParameter"))
   def main(args: Array[String]): Unit = {
-    val config                 = loadConfig()
+    val config               = loadConfig()
     setupMonitoring(config)
-    implicit val serviceConfig = Settings(config).serviceConfig
-    implicit val as            = ActorSystem(serviceConfig.description.fullName, config)
-    implicit val pm            = CanBlock.permit
-    implicit val ec            = as.dispatcher
-    implicit val hc            = serviceConfig.http
-    val cluster                = Cluster(as)
-    val seeds: List[Address]   = serviceConfig.cluster.seeds.toList
+    implicit val cfg         = Settings(config).appConfig
+    implicit val as          = ActorSystem(cfg.description.fullName, config)
+    implicit val pm          = CanBlock.permit
+    implicit val ec          = as.dispatcher
+    implicit val hc          = cfg.http
+    val cluster              = Cluster(as)
+    val seeds: List[Address] = cfg.cluster.seeds.toList
       .flatMap(_.split(","))
-      .map(addr => AddressFromURIString(s"akka://${serviceConfig.description.fullName}@$addr")) match {
+      .map(addr => AddressFromURIString(s"akka://${cfg.description.fullName}@$addr")) match {
       case Nil      => List(cluster.selfAddress)
       case nonEmpty => nonEmpty
     }
 
     val (perms, acls, realms)                                                                   = bootstrapIam()
-    val saCallerF                                                                               = serviceConfig.serviceAccount.credentials.map(realms.caller).getOrElse(Task.pure(Caller.anonymous))
+    val saCallerF                                                                               = cfg.serviceAccount.credentials.map(realms.caller).getOrElse(Task.pure(Caller.anonymous))
     val saCaller                                                                                = saCallerF.runSyncUnsafe()(Scheduler.global, pm)
     val (orgs, projects, orgCache, projectCache)                                                = bootstrapAdmin(acls, saCaller)
     val (resources, storages, files, archives, views, resolvers, schemas, tags, clients, cache) =
@@ -281,7 +285,7 @@ object Main {
         bootstrapIndexers(acls, realms, orgs, projects, resources, files, storages, views, resolvers, cache, saCaller)
       val iamRoutes              = IamRoutes(acls, realms, perms)
       val adminRoutes            = AdminRoutes(orgs, projects, orgCache, projectCache, acls, realms)
-      val infoRoutes             = AppInfoRoutes(serviceConfig.description, cluster).routes
+      val infoRoutes             = AppInfoRoutes(cfg.description, cluster).routes
       val kgRoutes               = new KgRoutes(
         resources,
         resolvers,
@@ -299,8 +303,8 @@ object Main {
       val httpBinding = {
         Http().bindAndHandle(
           RouteResult.route2HandlerFlow(infoRoutes ~ KgRoutes.wrap(iamRoutes ~ adminRoutes ~ kgRoutes)),
-          serviceConfig.http.interface,
-          serviceConfig.http.port
+          cfg.http.interface,
+          cfg.http.port
         )
       }
       httpBinding onComplete {
@@ -310,8 +314,8 @@ object Main {
           logger.error(
             th,
             "Failed to perform an http binding on {}:{}",
-            serviceConfig.http.interface,
-            serviceConfig.http.port
+            cfg.http.interface,
+            cfg.http.port
           )
           Await.result(as.terminate(), 10.seconds)
       }

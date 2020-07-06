@@ -20,8 +20,6 @@ import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.RemoteProjectEventStream
@@ -45,7 +43,8 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{CompositeViewConfig, HttpConfig}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -59,12 +58,13 @@ import scala.concurrent.ExecutionContext
 class Views[F[_]](repo: Repo[F], private val index: ViewCache[F])(implicit
     F: Effect[F],
     materializer: Materializer[F],
-    config: ServiceConfig,
+    config: AppConfig,
     projectCache: ProjectCache[F],
     clients: Clients[F]
 ) {
 
-  implicit private val kgConfig: KgConfig = config.kg
+  implicit private val compositeCfg: CompositeViewConfig = config.composite
+  implicit private val http: HttpConfig                  = config.http
 
   private def rejectWhenFound: Option[Resource] => Either[Rejection, Unit] = {
     case None           => Right(())
@@ -424,14 +424,14 @@ class Views[F[_]](repo: Repo[F], private val index: ViewCache[F])(implicit
 object Views {
 
   final def apply[F[_]: Effect: ProjectCache: Clients: Materializer](repo: Repo[F], index: ViewCache[F])(implicit
-      config: ServiceConfig
+      config: AppConfig
   ): Views[F] = new Views[F](repo, index)
 
   def indexer[F[_]: Timer](
       views: Views[F]
-  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
+  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
     implicit val ec: ExecutionContext = as.dispatcher
-    implicit val tm: Timeout          = Timeout(config.kg.keyValueStore.askTimeout)
+    implicit val tm: Timeout          = Timeout(config.keyValueStore.askTimeout)
     implicit val log: Logger          = Logger[Views.type]
 
     def toView(event: Event): F[Option[View]] =
@@ -458,7 +458,7 @@ object Views {
 
     val flow = ProgressFlowElem[F, Any]
       .collectCast[Event]
-      .groupedWithin(config.kg.keyValueStore.indexing.batch, config.kg.keyValueStore.indexing.batchTimeout)
+      .groupedWithin(config.keyValueStore.indexing.batch, config.keyValueStore.indexing.batchTimeout)
       .distinct()
       .mergeEmit()
       .mapAsync(toView)

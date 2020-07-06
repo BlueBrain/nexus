@@ -6,8 +6,8 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PersistenceConfig}
 import monix.eval.Task
 
 object IamRoutes {
@@ -16,7 +16,7 @@ object IamRoutes {
       acls: Acls[Task],
       realms: Realms[Task],
       perms: Permissions[Task]
-  )(implicit as: ActorSystem, cfg: ServiceConfig): Route = {
+  )(implicit as: ActorSystem, cfg: AppConfig): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
 

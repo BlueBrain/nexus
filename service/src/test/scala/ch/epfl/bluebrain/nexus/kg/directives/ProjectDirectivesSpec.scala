@@ -30,9 +30,9 @@ import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes
 import ch.epfl.bluebrain.nexus.kg.{Error, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.Decoder
 import io.circe.generic.auto._
@@ -49,8 +49,8 @@ class ProjectDirectivesSpec
     with ScalatestRouteTest
     with TestHelper {
 
-  implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
-  implicit private val http: HttpConfig         = appConfig.http
+  implicit private val appConfig: AppConfig = Settings(system).appConfig
+  implicit private val http: HttpConfig     = appConfig.http
 
   implicit private val projectCache: ProjectCache[Task]  = mock[ProjectCache[Task]]
   implicit private val orgCache: OrganizationCache[Task] = mock[OrganizationCache[Task]]

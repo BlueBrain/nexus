@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.ProjectEven
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.util.ActorSystemFixture
 import io.circe.Json
 import monix.eval.Task
@@ -35,10 +35,10 @@ class ViewCacheSpec
 
   private def genJson: Json = Json.obj("key" -> Json.fromString(genString()))
 
-  implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
-  implicit private val keyValueStoreCfg         = appConfig.kg.keyValueStore.keyValueStoreConfig
-  val ref1                                      = ProjectRef(genUUID)
-  val ref2                                      = ProjectRef(genUUID)
+  implicit private val appConfig: AppConfig = Settings(system).appConfig
+  implicit private val keyValueStoreCfg     = appConfig.keyValueStore.keyValueStoreConfig
+  val ref1                                  = ProjectRef(genUUID)
+  val ref2                                  = ProjectRef(genUUID)
 
   val esView        = ElasticSearchView(Json.obj(), Filter(), false, true, ref1, genIri, genUUID, 1L, false)
   val aggRefsView   = AggregateElasticSearchView(

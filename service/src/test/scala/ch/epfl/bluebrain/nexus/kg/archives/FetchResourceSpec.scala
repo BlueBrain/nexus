@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.{Json, Printer}
 import monix.eval.Task
@@ -125,7 +125,7 @@ class FetchResourceSpec
       resources.fetchSource(idRes) shouldReturn EitherT.rightT[Task, Rejection](json)
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
-      val response                               = printer.print(json.sortKeys(ServiceConfig.orderedKeys))
+      val response                               = printer.print(json.sortKeys(AppConfig.orderedKeys))
       rPath shouldEqual somePath.asString
       bytes.toInt shouldEqual response.size
       consume(source) shouldEqual response
@@ -145,7 +145,7 @@ class FetchResourceSpec
       )
       val fetch                                  = fetchResource()
       val ArchiveSource(bytes, rPath, _, source) = fetch(description).value.runToFuture.futureValue.value
-      val response                               = printer.print(finalJson.addContext(resourceCtxUri).sortKeys(ServiceConfig.orderedKeys))
+      val response                               = printer.print(finalJson.addContext(resourceCtxUri).sortKeys(AppConfig.orderedKeys))
       rPath shouldEqual Iri.Path.rootless(s"${project.value.show}/${urlEncode(id.asString)}.json").rightValue.pctEncoded
       bytes.toInt shouldEqual response.size
       consume(source) shouldEqual response

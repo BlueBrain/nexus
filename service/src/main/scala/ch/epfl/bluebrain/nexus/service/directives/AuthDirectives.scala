@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.kg.KgError.AuthenticationFailed
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError.InternalError
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
@@ -28,7 +28,7 @@ import scala.util.{Failure, Success}
 /**
   * Akka HTTP directives that wrap authentication and authorization calls.
   */
-abstract class AuthDirectives(acls: Acls[Task], realms: Realms[Task])(implicit hc: HttpConfig, s: Scheduler) {
+abstract class AuthDirectives(acls: Acls[Task], realms: Realms[Task])(implicit val hc: HttpConfig, s: Scheduler) {
 
   private val logger = Logger[this.type]
 

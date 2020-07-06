@@ -49,8 +49,9 @@ class MultiProjectResolutionSpec
   private def genProjectLabel = ProjectLabel(genString(), genString())
   private def genJson: Json   = Json.obj("key" -> Json.fromString(genString()))
 
-  implicit private val appConfig        = Settings(system).serviceConfig
-  implicit private val keyValueStoreCfg = appConfig.kg.keyValueStore.keyValueStoreConfig
+  implicit private val appConfig        = Settings(system).appConfig
+  implicit private val keyValueStoreCfg = appConfig.keyValueStore.keyValueStoreConfig
+  implicit private val http             = appConfig.http
   implicit private val clock: Clock     = Clock.systemUTC
 
   private val repo        = mock[Repo[IO]]

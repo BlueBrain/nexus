@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -34,8 +34,8 @@ class TagRoutes private[routes] (
 )(implicit
     caller: Caller,
     project: ProjectResource,
-    config: ServiceConfig
-) extends AuthDirectives(acls, realms) {
+    config: AppConfig
+) extends AuthDirectives(acls, realms)(config.http, global) {
 
   private val projectPath               = project.value.path
   implicit private val subject: Subject = caller.subject

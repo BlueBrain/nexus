@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.kg.KgError.InternalError
 import ch.epfl.bluebrain.nexus.kg.async.{ProjectAttributesCoordinator, ProjectViewCoordinator}
 import ch.epfl.bluebrain.nexus.kg.cache.Caches
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig.StorageConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.kg.indexing.View
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.indexing.ViewEncoder._
@@ -26,8 +26,8 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import io.circe.Json
 import com.typesafe.scalalogging.Logger
 import retry.CatsEffect._
@@ -40,14 +40,15 @@ class ProjectInitializer[F[_]: Timer](
     resolvers: Resolvers[F],
     viewCoordinator: ProjectViewCoordinator[F],
     fileAttributesCoordinator: ProjectAttributesCoordinator[F]
-)(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem) {
+)(implicit F: Effect[F], config: AppConfig, as: ActorSystem) {
 
   private val log         = Logger[this.type]
   private val revK        = nxv.rev.prefix
   private val deprecatedK = nxv.deprecated.prefix
   private val algorithmK  = nxv.algorithm.prefix
 
-  implicit private val policy: RetryPolicy[F]                                            = config.kg.keyValueStore.indexing.retry.retryPolicy[F]
+  implicit private val http: HttpConfig                                                  = config.http
+  implicit private val policy: RetryPolicy[F]                                            = config.keyValueStore.indexing.retry.retryPolicy[F]
   implicit private val logErrors: (Either[Rejection, Resource], RetryDetails) => F[Unit] =
     (err, details) => F.pure(log.warn(s"Retrying on resource creation with retry details '$details' and error: '$err'"))
 
@@ -128,7 +129,7 @@ class ProjectInitializer[F[_]: Timer](
   }
 
   private def createDiskStorage(implicit project: ProjectResource, s: Subject): F[Either[Rejection, Resource]] = {
-    implicit val storageConfig: StorageConfig = config.kg.storage
+    implicit val storageConfig: StorageConfig = config.storage
     val storage: Storage                      = DiskStorage.default(ProjectRef(project.uuid))
     asJson(DiskStorage.default(ProjectRef(project.uuid))).flatMap { json =>
       storages.create(Id(ProjectRef(project.uuid), storage.id), json).value.retryingM(wasSuccessful)
@@ -147,7 +148,7 @@ object ProjectInitializer {
       resolvers: Resolvers[F],
       viewCoordinator: ProjectViewCoordinator[F],
       fileAttributesCoordinator: ProjectAttributesCoordinator[F]
-  )(implicit F: Effect[F], cache: Caches[F], config: ServiceConfig, as: ActorSystem): F[Unit] = {
+  )(implicit F: Effect[F], cache: Caches[F], config: AppConfig, as: ActorSystem): F[Unit] = {
     val initializer = new ProjectInitializer[F](storages, views, resolvers, viewCoordinator, fileAttributesCoordinator)
     cache.project.subscribe(onAdded = initializer.apply).as(())
   }

@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.iam.permissions
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.iam.config.IamConfig.PermissionsConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.PermissionsConfig
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.iam.types.{Permission, ResourceMetadata}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 
 import scala.annotation.nowarn
 

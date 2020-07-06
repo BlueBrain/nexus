@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig.ArchivesConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.ArchivesConfig
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._

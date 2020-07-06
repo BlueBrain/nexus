@@ -45,7 +45,7 @@ class ProjectInitializerSpec
     with CirceEq
     with TestResources {
 
-  implicit private val appConfig                                      = Settings(system).serviceConfig
+  implicit private val appConfig                                      = Settings(system).appConfig
   private val projectCache: ProjectCache[Task]                        = mock[ProjectCache[Task]]
   private val resolvers: Resolvers[Task]                              = mock[Resolvers[Task]]
   private val views: Views[Task]                                      = mock[Views[Task]]

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidJsonLD
 import ch.epfl.bluebrain.nexus.kg.resources.{Rejection, Resource, ResourceV}
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.Compacted
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import io.circe.Json
 
 /**
@@ -33,7 +33,7 @@ object RejectionEncoder {
     }
 
   implicit final def rejectionEncoder(implicit
-      config: ServiceConfig,
+      config: AppConfig,
       project: ProjectResource
   ): RejectionEncoder[Resource] =
     new RejectionEncoder[Resource] {

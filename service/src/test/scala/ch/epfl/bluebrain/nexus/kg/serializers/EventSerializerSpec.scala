@@ -12,7 +12,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.serialization.{SerializationExtension, SerializerWithStringManifest}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.Event._
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference.{RemoteDiskStorageReference, S3StorageReference}
 import ch.epfl.bluebrain.nexus.kg.resources.file.File._
@@ -46,12 +46,12 @@ class EventSerializerSpec
     with Resources
     with TestHelper {
 
-  implicit private val appConfig = Settings(system).serviceConfig
+  implicit private val appConfig = Settings(system).appConfig
 
   final private val UTF8: Charset    = Charset.forName("UTF-8")
   final private val serialization    = SerializationExtension(system)
   implicit private val storageConfig =
-    appConfig.kg.storage.copy(
+    appConfig.storage.copy(
       DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", read, write, false, 1024L),
       RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
       S3StorageConfig("MD5", read, write, true, 1024L),

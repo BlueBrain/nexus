@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.commons.serialization.AkkaCoproductSerializer
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
@@ -18,7 +18,7 @@ import scala.annotation.nowarn
 @nowarn("cat=unused")
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
-  implicit private val httpConfig: HttpConfig = Settings(system).serviceConfig.http
+  implicit private val httpConfig: HttpConfig = Settings(system).appConfig.http
 
   implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")
 

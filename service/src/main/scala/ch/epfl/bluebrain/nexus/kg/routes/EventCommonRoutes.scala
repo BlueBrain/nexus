@@ -13,7 +13,7 @@ import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.Event
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
 
@@ -27,7 +27,7 @@ private[routes] trait EventCommonRoutes {
 
   implicit def as: ActorSystem
 
-  implicit def config: ServiceConfig
+  implicit def config: AppConfig
 
   private val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
 
@@ -65,7 +65,7 @@ private[routes] trait EventCommonRoutes {
       }
 
   private def aToSse[A: Encoder](a: A, offset: Offset): ServerSentEvent = {
-    val json = a.asJson.sortKeys(ServiceConfig.orderedKeys)
+    val json = a.asJson.sortKeys(AppConfig.orderedKeys)
     ServerSentEvent(
       data = json.printWith(printer),
       eventType = json.hcursor.get[String]("@type").toOption,

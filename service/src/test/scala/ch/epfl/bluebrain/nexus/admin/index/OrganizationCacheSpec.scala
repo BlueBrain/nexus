@@ -38,9 +38,9 @@ class OrganizationCacheSpec
   private val instant                   = Instant.now()
   implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
   implicit private val subject          = Caller.anonymous.subject
-  implicit private val config           = Settings(system).serviceConfig
+  implicit private val config           = Settings(system).appConfig
   implicit val http                     = config.http
-  implicit private val keyStoreConfig   = config.admin.keyValueStore
+  implicit private val keyStoreConfig   = config.keyValueStore.keyValueStoreConfig
 
   val index        = OrganizationCache[IO]
   val organization = Organization(genString(), Some(genString()))

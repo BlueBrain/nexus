@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName

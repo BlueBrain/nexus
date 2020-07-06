@@ -43,7 +43,8 @@ import ch.epfl.bluebrain.nexus.kg.routes.ViewRoutes._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
@@ -66,13 +67,15 @@ class ViewRoutes private[routes] (
     projectCache: ProjectCache[Task],
     viewCache: ViewCache[Task],
     clients: Clients[Task],
-    config: ServiceConfig,
+    config: AppConfig,
     um: FromEntityUnmarshaller[String]
-) extends AuthDirectives(aclsApi, realms) {
+) extends AuthDirectives(aclsApi, realms)(config.http, global) {
 
-  private val emptyEsList: Json         = jsonContentOf("/elasticsearch/empty-list.json")
-  private val projectPath               = project.value.path
-  implicit private val subject: Subject = caller.subject
+  private val emptyEsList: Json                     = jsonContentOf("/elasticsearch/empty-list.json")
+  private val projectPath                           = project.value.path
+  implicit private val subject: Subject             = caller.subject
+  implicit private val pagination: PaginationConfig = config.pagination
+
   import clients._
 
   /**

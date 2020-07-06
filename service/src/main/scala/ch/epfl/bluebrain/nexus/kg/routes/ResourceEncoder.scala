@@ -7,13 +7,13 @@ import ch.epfl.bluebrain.nexus.kg.resources.Views._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.{Compacted, Expanded}
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
 object ResourceEncoder {
 
-  def json(r: Resource)(implicit config: ServiceConfig, project: ProjectResource): Either[String, Json] =
+  def json(r: Resource)(implicit config: AppConfig, project: ProjectResource): Either[String, Json] =
     Graph(r.id.value, r.metadata()).toJson(resourceCtx).map(_.replaceContext(resourceCtxUri))
 
   def json(res: ResourceV)(implicit output: JsonLDOutputFormat): Either[String, Json] =

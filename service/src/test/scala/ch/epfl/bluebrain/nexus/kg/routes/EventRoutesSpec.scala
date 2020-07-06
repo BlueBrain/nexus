@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.EventRoutesSpec.TestableEventRoutes
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import io.circe.Encoder
 import monix.eval.Task
@@ -68,7 +68,7 @@ object EventRoutesSpec {
 
   class TestableEventRoutes(events: List[Event], acls: Acls[Task], realms: Realms[Task], caller: Caller)(implicit
       as: ActorSystem,
-      config: ServiceConfig
+      config: AppConfig
   ) extends EventRoutes(acls, realms, caller) {
 
     private val envelopes = events.zipWithIndex.map {

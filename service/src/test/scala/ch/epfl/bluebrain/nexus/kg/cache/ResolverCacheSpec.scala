@@ -5,10 +5,9 @@ import akka.serialization.Serialization
 import akka.testkit._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
-import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.util.ActorSystemFixture
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -29,8 +28,8 @@ class ResolverCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
 
-  implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
-  implicit private val keyValueStoreCfg         = appConfig.kg.keyValueStore.keyValueStoreConfig
+  implicit private val appConfig: AppConfig = Settings(system).appConfig
+  implicit private val keyValueStoreCfg     = appConfig.keyValueStore.keyValueStoreConfig
 
   val ref1 = ProjectRef(genUUID)
   val ref2 = ProjectRef(genUUID)

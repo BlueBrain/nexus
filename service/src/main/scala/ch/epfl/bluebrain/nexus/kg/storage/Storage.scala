@@ -11,7 +11,6 @@ import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
 import ch.epfl.bluebrain.nexus.kg.resources.StorageReference._
@@ -23,6 +22,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage.{FetchFile, FetchFileAttribute
 import ch.epfl.bluebrain.nexus.rdf.GraphDecoder
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.StorageConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.storage.client.config.StorageClientConfig
@@ -230,9 +230,11 @@ object Storage {
       StorageClient[F]
     }
 
-    def encrypt(implicit config: StorageConfig): Storage = copy(credentials = credentials.map(_.encrypt))
+    def encrypt(implicit config: StorageConfig): Storage =
+      copy(credentials = credentials.map(_.encrypt(config.derivedKey)))
 
-    def decrypt(implicit config: StorageConfig): Storage = copy(credentials = credentials.map(_.decrypt))
+    def decrypt(implicit config: StorageConfig): Storage =
+      copy(credentials = credentials.map(_.decrypt(config.derivedKey)))
 
   }
 
@@ -267,12 +269,12 @@ object Storage {
     def reference: StorageReference                      = S3StorageReference(id, rev)
     def encrypt(implicit config: StorageConfig): Storage =
       copy(settings = settings.copy(credentials = settings.credentials.map {
-        case S3Credentials(ak, as) => S3Credentials(ak.encrypt, as.encrypt)
+        case S3Credentials(ak, as) => S3Credentials(ak.encrypt(config.derivedKey), as.encrypt(config.derivedKey))
       }))
 
     def decrypt(implicit config: StorageConfig): Storage =
       copy(settings = settings.copy(credentials = settings.credentials.map {
-        case S3Credentials(ak, as) => S3Credentials(ak.decrypt, as.decrypt)
+        case S3Credentials(ak, as) => S3Credentials(ak.decrypt(config.derivedKey), as.decrypt(config.derivedKey))
       }))
 
   }

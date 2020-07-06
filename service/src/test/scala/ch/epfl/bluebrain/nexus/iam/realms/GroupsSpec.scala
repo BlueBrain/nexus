@@ -33,10 +33,10 @@ class GroupsSpec
     with Randomness
     with IdiomaticMockito {
 
-  val config = Settings(system).serviceConfig
+  val config = Settings(system).appConfig
 
   implicit val timer: Timer[IO] = IO.timer(ExecutionContext.global)
-  implicit val gc: GroupsConfig = config.iam.groups
+  implicit val gc: GroupsConfig = config.groups
 
   def httpClient(response: Json): HttpJsonClient[IO] = {
     val m = mock[HttpJsonClient[IO]]

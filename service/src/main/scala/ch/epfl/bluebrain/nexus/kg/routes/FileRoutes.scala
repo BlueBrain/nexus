@@ -26,7 +26,8 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import com.google.common.base.Charsets
@@ -52,12 +53,12 @@ class FileRoutes private[routes] (
     viewCache: ViewCache[Task],
     storageCache: StorageCache[Task],
     indexers: Clients[Task],
-    config: ServiceConfig
-) extends AuthDirectives(acls, realms) {
+    config: AppConfig
+) extends AuthDirectives(acls, realms)(config.http, global) {
 
-  private val projectPath               = project.value.path
-  implicit private val subject: Subject = caller.subject
-
+  private val projectPath                           = project.value.path
+  implicit private val subject: Subject             = caller.subject
+  implicit private val pagination: PaginationConfig = config.pagination
   import indexers._
 
   /**

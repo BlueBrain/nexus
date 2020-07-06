@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.iam.acls.AclRejection
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsRejection
 import ch.epfl.bluebrain.nexus.iam.realms.RealmRejection
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.orderedKeys
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.orderedKeys
 import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError
 import ch.epfl.bluebrain.nexus.service.exceptions.ServiceError.InternalError
 import ch.epfl.bluebrain.nexus.service.routes.ResourceRejection

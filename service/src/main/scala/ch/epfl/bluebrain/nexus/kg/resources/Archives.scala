@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.kg.archives.ArchiveEncoder._
 import ch.epfl.bluebrain.nexus.kg.archives.{Archive, ArchiveSource, FetchResource}
 import ch.epfl.bluebrain.nexus.kg.cache.Caches
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.Materializer
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
@@ -27,14 +26,15 @@ import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.ArchivesConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
 class Archives[F[_]](resources: Resources[F], files: Files[F], cache: Caches[F])(implicit
     as: ActorSystem,
     materializer: Materializer[F],
-    config: ServiceConfig,
+    config: AppConfig,
     clock: Clock,
     F: Effect[F]
 ) {
@@ -67,9 +67,9 @@ class Archives[F[_]](resources: Resources[F], files: Files[F], cache: Caches[F])
       project: ProjectResource,
       subject: Subject
   ): RejOrResource[F] = {
-    implicit val archivesCfg: KgConfig.ArchivesConfig = config.kg.archives
-    val typedGraph                                    = graph.append(rdf.tpe, nxv.Archive)
-    val types                                         = typedGraph.rootTypes
+    implicit val archivesCfg: ArchivesConfig = config.archives
+    val typedGraph                           = graph.append(rdf.tpe, nxv.Archive)
+    val types                                = typedGraph.rootTypes
     for {
       _       <- validateShacl(typedGraph)
       archive <- Archive(id.value, typedGraph)
@@ -137,7 +137,7 @@ class Archives[F[_]](resources: Resources[F], files: Files[F], cache: Caches[F])
 
   private def expireMetadata(id: ResId, created: Instant): Triple = {
     val delta   = Duration.between(created, clock.instant())
-    val expires = Math.max(config.kg.archives.cacheInvalidateAfter.toSeconds - delta.getSeconds, 0)
+    val expires = Math.max(config.archives.cacheInvalidateAfter.toSeconds - delta.getSeconds, 0)
     (id.value, nxv.expiresInSeconds, expires): Triple
   }
 }
@@ -147,6 +147,6 @@ object Archives {
       resources: Resources[F],
       files: Files[F],
       cache: Caches[F]
-  )(implicit system: ActorSystem, config: ServiceConfig, clock: Clock): Archives[F] =
+  )(implicit system: ActorSystem, config: AppConfig, clock: Clock): Archives[F] =
     new Archives(resources, files, cache)
 }

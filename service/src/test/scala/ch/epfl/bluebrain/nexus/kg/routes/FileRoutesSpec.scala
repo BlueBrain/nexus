@@ -74,8 +74,8 @@ class FileRoutesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig  = Settings(system).serviceConfig
-  implicit private val storageCfg = appConfig.kg.storage
+  implicit private val appConfig  = Settings(system).appConfig
+  implicit private val storageCfg = appConfig.storage
   implicit private val clock      = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
   implicit private val projectCache  = mock[ProjectCache[Task]]

@@ -79,8 +79,8 @@ class EventsSpecBase
   val schemaRef   = Latest(base + "schema")
   val types       = Set(base + "type")
 
-  implicit val appConfig  = Settings(system).serviceConfig
-  implicit val storageCfg = appConfig.kg.storage
+  implicit val appConfig  = Settings(system).appConfig
+  implicit val storageCfg = appConfig.storage
   val orgRef              = OrganizationRef(orgUuid)
   // format: off
   implicit val project = AdminResourceF(base + "org" + "project", genUUID, 1L, deprecated = false, Set.empty, Instant.EPOCH, subject, Instant.EPOCH, subject, Project("project", orgUuid, "org", None, Map.empty, base, base + "vocab"))

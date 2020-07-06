@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
@@ -44,9 +44,9 @@ class StorageSpec
   val readS3                 = Permission.unsafe("s3/read")
   val writeS3                = Permission.unsafe("s3/write")
 
-  private val appConfig = Settings(system).serviceConfig
+  private val appConfig = Settings(system).appConfig
 
-  implicit private val storageConfig = appConfig.kg.storage.copy(
+  implicit private val storageConfig = appConfig.storage.copy(
     disk = DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", readDisk, writeDisk, false, 1000L),
     remoteDisk = RemoteDiskStorageConfig(
       "http://example.com",
@@ -63,6 +63,8 @@ class StorageSpec
     salt = "salt",
     fileAttrRetry = RetryStrategyConfig("linear", 300.millis, 5.minutes, 100, 1.second)
   )
+
+  implicit val secretKey = storageConfig.derivedKey
 
   "A Storage" when {
     val iri        = url"http://example.com/id"

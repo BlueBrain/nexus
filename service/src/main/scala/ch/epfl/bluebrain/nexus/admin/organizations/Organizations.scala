@@ -26,8 +26,8 @@ import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, 
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -48,11 +48,11 @@ class Organizations[F[_]: Timer](
 )(implicit
     F: Effect[F],
     clock: Clock,
-    cfg: ServiceConfig
+    cfg: AppConfig
 ) {
 
   implicit private val httpConfig: HttpConfig      = cfg.http
-  implicit private val retryPolicy: RetryPolicy[F] = cfg.admin.permissions.retry.retryPolicy[F]
+  implicit private val retryPolicy: RetryPolicy[F] = cfg.organizations.retry.retryPolicy[F]
 
   /**
     * Create an organization.
@@ -78,10 +78,10 @@ class Organizations[F[_]: Timer](
     }
     val orgAcl             = acls.value.get(/ + orgLabel).map(_.value.value).getOrElse(Map.empty)
     val rev                = acls.value.get(/ + orgLabel).fold(0L)(_.rev)
-    if (cfg.admin.permissions.ownerPermissions.subsetOf(currentPermissions))
+    if (cfg.permissions.ownerPermissions.subsetOf(currentPermissions))
       F.unit
     else {
-      val replaceAcls = AccessControlList(orgAcl + (subject -> cfg.admin.permissions.ownerPermissions))
+      val replaceAcls = AccessControlList(orgAcl + (subject -> cfg.permissions.ownerPermissions))
       aclsApi.replace(/ + orgLabel, rev, replaceAcls)(saCaller) >> F.unit
     }
 
@@ -209,37 +209,37 @@ object Organizations {
       index: OrganizationCache[F],
       aclsApi: Acls[F],
       saCaller: Caller
-  )(implicit serviceConfig: ServiceConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
-    implicit val retryPolicy: RetryPolicy[F] = serviceConfig.admin.aggregate.retry.retryPolicy[F]
+  )(implicit config: AppConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
+    implicit val retryPolicy: RetryPolicy[F] = config.aggregate.retry.retryPolicy[F]
     val aggF: F[Agg[F]]                      =
       AkkaAggregate.sharded(
         "organizations",
         Initial,
         next,
         evaluate[F],
-        serviceConfig.admin.aggregate.passivationStrategy(),
-        serviceConfig.admin.aggregate.akkaAggregateConfig,
-        serviceConfig.cluster.shards
+        config.aggregate.passivationStrategy(),
+        config.aggregate.akkaAggregateConfig,
+        config.cluster.shards
       )
     aggF.map(agg => new Organizations(agg, index, aclsApi, saCaller))
   }
 
   def indexer[F[_]: Timer](
       organizations: Organizations[F]
-  )(implicit F: Effect[F], serviceConfig: ServiceConfig, as: ActorSystem): F[Unit] = {
-    implicit val ac: AggregateConfig  = serviceConfig.admin.aggregate
+  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
+    implicit val ac: AggregateConfig  = config.aggregate
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 
     val projectionId                    = "orgs-indexer"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
-      .readJournalFor[EventsByTagQuery](serviceConfig.persistence.queryJournalPlugin)
+      .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
       .eventsByTag(TaggingAdapter.OrganizationTag, NoOffset)
       .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
 
     val flow = ProgressFlowElem[F, Any]
       .collectCast[OrganizationEvent]
-      .groupedWithin(serviceConfig.admin.indexing.batch, serviceConfig.admin.indexing.batchTimeout)
+      .groupedWithin(config.indexing.batch, config.indexing.batchTimeout)
       .distinct()
       .mergeEmit()
       .mapAsync(ev => organizations.fetch(ev.id))

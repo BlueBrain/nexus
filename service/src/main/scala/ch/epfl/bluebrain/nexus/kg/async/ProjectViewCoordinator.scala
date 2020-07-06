@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.{CompositeViewOffset, OrganizationRe
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.kg.{IdOffset, IdStats, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, Projections, StreamSupervisor}
@@ -47,12 +47,12 @@ import scala.util.control.NonFatal
   */
 @SuppressWarnings(Array("ListSize"))
 class ProjectViewCoordinator[F[_]](cache: Caches[F], acls: Acls[F], saCaller: Caller, ref: ActorRef)(implicit
-    config: ServiceConfig,
+    config: AppConfig,
     F: Async[F],
     ec: ExecutionContext
 ) {
 
-  implicit private val timeout: Timeout               = config.kg.aggregate.askTimeout
+  implicit private val timeout: Timeout               = config.aggregate.askTimeout
   implicit private val contextShift: ContextShift[IO] = IO.contextShift(ec)
   implicit private val projectCache: ProjectCache[F]  = cache.project
 
@@ -307,7 +307,7 @@ object ProjectViewCoordinator {
   implicit val log: Logger = Logger[ProjectViewCoordinator.type]
 
   def apply(resources: Resources[Task], cache: Caches[Task], acls: Acls[Task], saCaller: Caller)(implicit
-      config: ServiceConfig,
+      config: AppConfig,
       as: ActorSystem,
       clients: Clients[Task],
       P: Projections[Task, String]
@@ -323,7 +323,7 @@ object ProjectViewCoordinator {
       saCaller: Caller,
       ref: ActorRef
   )(implicit
-      config: ServiceConfig,
+      config: AppConfig,
       as: ActorSystem,
       projectCache: ProjectCache[Task]
   ): Task[ProjectViewCoordinator[Task]] = {
@@ -335,11 +335,11 @@ object ProjectViewCoordinator {
   }
 
   private def startAclsStream(coordinator: ProjectViewCoordinator[Task], acls: Acls[Task], saCaller: Caller)(implicit
-      config: ServiceConfig,
+      config: AppConfig,
       as: ActorSystem,
       projectCache: ProjectCache[Task]
   ): Task[StreamSupervisor[Task, Unit]] = {
-    implicit val aggc: AggregateConfig = config.admin.aggregate
+    implicit val aggc: AggregateConfig = config.aggregate
     implicit val timeout: Timeout      = aggc.askTimeout
 
     def handle(event: AclEvent): Task[Unit] =

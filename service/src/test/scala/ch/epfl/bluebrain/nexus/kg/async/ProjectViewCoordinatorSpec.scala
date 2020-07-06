@@ -59,8 +59,9 @@ class ProjectViewCoordinatorSpec
 
   private val acls: Acls[Task] = mock[Acls[Task]]
 
-  implicit private val appConfig        = Settings(system).serviceConfig
-  implicit private val keyValueStoreCfg = appConfig.kg.keyValueStore.keyValueStoreConfig
+  implicit private val appConfig        = Settings(system).appConfig
+  implicit private val keyValueStoreCfg = appConfig.keyValueStore.keyValueStoreConfig
+  implicit private val http             = appConfig.http
   implicit private val projectCache     = ProjectCache[Task]
   private val orgCache                  = OrganizationCache[Task]
   private val viewCache                 = ViewCache[Task]

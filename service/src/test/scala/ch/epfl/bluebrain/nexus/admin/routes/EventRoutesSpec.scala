@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
@@ -56,7 +56,7 @@ class EventRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val config        = Settings(system).serviceConfig
+  private val config        = Settings(system).appConfig
   implicit private val http = config.http
   implicit private val pc   = config.persistence
   private val aclsApi       = mock[Acls[Task]]

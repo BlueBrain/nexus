@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{ElasticSearchView, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.persistence.TaggingAdapter
@@ -41,7 +40,7 @@ import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -53,10 +52,10 @@ import scala.concurrent.ExecutionContext
 class Storages[F[_]](repo: Repo[F], private val index: StorageCache[F])(implicit
     F: Effect[F],
     materializer: Materializer[F],
-    config: ServiceConfig
+    config: AppConfig
 ) {
 
-  implicit private val kgConfig: KgConfig = config.kg
+  implicit private val storageConfig: AppConfig.StorageConfig = config.storage
 
   /**
     * Creates a new storage attempting to extract the id from the source. If a primary node of the resulting graph
@@ -314,14 +313,14 @@ object Storages {
   type TimedStorage = (Storage, Instant)
 
   final def apply[F[_]: Effect: Materializer](repo: Repo[F], index: StorageCache[F])(implicit
-      config: ServiceConfig
+      config: AppConfig
   ): Storages[F] = new Storages[F](repo, index)
 
   def indexer[F[_]: Timer](
       storages: Storages[F]
-  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
+  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
     implicit val ec: ExecutionContext = as.dispatcher
-    implicit val tm: Timeout          = Timeout(config.kg.keyValueStore.askTimeout)
+    implicit val tm: Timeout          = Timeout(config.keyValueStore.askTimeout)
     implicit val log: Logger          = Logger[Views.type]
 
     def toStorage(event: Event): F[Option[(Storage, Instant)]] =
@@ -348,7 +347,7 @@ object Storages {
 
     val flow = ProgressFlowElem[F, Any]
       .collectCast[Event]
-      .groupedWithin(config.kg.keyValueStore.indexing.batch, config.kg.keyValueStore.indexing.batchTimeout)
+      .groupedWithin(config.keyValueStore.indexing.batch, config.keyValueStore.indexing.batchTimeout)
       .distinct()
       .mergeEmit()
       .mapAsync(toStorage)

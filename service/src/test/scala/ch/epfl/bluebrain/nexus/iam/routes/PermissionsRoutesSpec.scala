@@ -44,7 +44,7 @@ class PermissionsRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val config        = Settings(system).serviceConfig
+  private val config        = Settings(system).appConfig
   implicit private val http = config.http
 
   private val perms: Permissions[Task] = mock[Permissions[Task]]
@@ -80,7 +80,7 @@ class PermissionsRoutesSpec
   "A PermissionsRoute" should {
     val routes = Routes.wrap(new PermissionsRoutes(perms, acls, realms).routes)
     "return the default minimum permissions" in {
-      perms.fetch(any[Caller]) shouldReturn Task.pure(resource(0L, config.iam.permissions.minimum))
+      perms.fetch(any[Caller]) shouldReturn Task.pure(resource(0L, config.permissions.minimum))
       Get("/permissions") ~> routes ~> check {
         responseAs[Json].sort shouldEqual response(0L).sort
         status shouldEqual StatusCodes.OK
@@ -142,7 +142,7 @@ class PermissionsRoutesSpec
       }
     }
     "return 200 for correct revision" in {
-      perms.fetchAt(any[Long])(any[Caller]) shouldReturn Task.pure(Some(resource(3L, config.iam.permissions.minimum)))
+      perms.fetchAt(any[Long])(any[Caller]) shouldReturn Task.pure(Some(resource(3L, config.permissions.minimum)))
       Get("/permissions?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].sort shouldEqual response(3L).sort

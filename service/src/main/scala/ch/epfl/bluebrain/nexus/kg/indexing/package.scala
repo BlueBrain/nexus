@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Projection, Sourc
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{CompositeView, SingleView}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectLabel
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceV
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.OffsetsProgress
 import kamon.Kamon
@@ -67,7 +67,7 @@ package object indexing {
   def kamonViewMetricsFlow(
       view: View,
       project: ProjectResource
-  )(implicit config: ServiceConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] =
+  )(implicit config: AppConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] =
     view match {
       case cv: CompositeView => compositeViewKamonFlow(cv, project)
       case sv: SingleView    => singleViewKamonFlow(sv, project)
@@ -77,7 +77,7 @@ package object indexing {
   private def singleViewKamonFlow(
       view: SingleView,
       project: ProjectResource
-  )(implicit config: ServiceConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] = {
+  )(implicit config: AppConfig): Flow[ProjectionProgress, ProjectionProgress, NotUsed] = {
 
     val processedEventsGauge             = Kamon
       .gauge("kg_indexer_gauge_processed_events")

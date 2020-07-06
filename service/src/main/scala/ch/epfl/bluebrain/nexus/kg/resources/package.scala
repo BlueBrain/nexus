@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.shacl.ValidationReport
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import io.circe.Json
 
 package object resources {
@@ -127,7 +127,7 @@ package object resources {
       pagination: Pagination
   )(implicit
       F: Effect[F],
-      config: ServiceConfig,
+      config: AppConfig,
       tc: HttpClient[F, JsonResults],
       elasticSearch: ElasticSearchClient[F]
   ): F[JsonResults] =
@@ -146,7 +146,7 @@ package object resources {
       id: AbsoluteIri,
       view: Option[SparqlView],
       pagination: FromPagination
-  )(implicit F: Effect[F], config: ServiceConfig, client: BlazegraphClient[F]): F[LinkResults] =
+  )(implicit F: Effect[F], config: AppConfig, client: BlazegraphClient[F]): F[LinkResults] =
     view.map(_.incoming(id, pagination)).getOrElse(F.pure[LinkResults](UnscoredQueryResults(0L, List.empty)))
 
   private[resources] def outgoing[F[_]](
@@ -154,7 +154,7 @@ package object resources {
       view: Option[SparqlView],
       pagination: FromPagination,
       includeExternalLinks: Boolean
-  )(implicit F: Effect[F], config: ServiceConfig, client: BlazegraphClient[F]): F[LinkResults] = {
+  )(implicit F: Effect[F], config: AppConfig, client: BlazegraphClient[F]): F[LinkResults] = {
     view
       .map(_.outgoing(id, pagination, includeExternalLinks))
       .getOrElse(F.pure[LinkResults](UnscoredQueryResults(0L, List.empty)))

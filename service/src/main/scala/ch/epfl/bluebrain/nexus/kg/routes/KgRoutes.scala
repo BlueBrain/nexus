@@ -39,8 +39,8 @@ import ch.epfl.bluebrain.nexus.kg.routes.AppInfoRoutes.StatusGroup
 import ch.epfl.bluebrain.nexus.kg.routes.Status._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.routes.CassandraHealth
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError
@@ -77,8 +77,8 @@ class KgRoutes(
     system: ActorSystem,
     clients: Clients[Task],
     cache: Caches[Task],
-    config: ServiceConfig
-) extends AuthDirectives(acls, realms) {
+    config: AppConfig
+) extends AuthDirectives(acls, realms)(config.http, global) {
   import clients._
   implicit val um: FromEntityUnmarshaller[String] =
     PredefinedFromEntityUnmarshallers.stringUnmarshaller
@@ -87,6 +87,7 @@ class KgRoutes(
   implicit private val projectCache: ProjectCache[Task]  = cache.project
   implicit private val orgCache: OrganizationCache[Task] = cache.org
   implicit private val viewCache: ViewCache[Task]        = cache.view
+  implicit private val pagination: PaginationConfig      = config.pagination
 
   private val healthStatusGroup = StatusGroup(CassandraHealth(system), new ClusterStatus(Cluster(system)))
   private val appInfoRoutes     = AppInfoRoutes(config.description, healthStatusGroup).routes

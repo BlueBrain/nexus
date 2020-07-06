@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.admin.projects.Projects
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.routes.EventRoutes
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PaginationConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PaginationConfig, PersistenceConfig}
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
@@ -31,7 +31,7 @@ object AdminRoutes {
       realms: Realms[Task]
   )(implicit
       as: ActorSystem,
-      cfg: ServiceConfig
+      cfg: AppConfig
   ): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
