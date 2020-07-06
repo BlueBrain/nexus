@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.iam.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.iam.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.iam.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.iam.acls.Acls._
-import ch.epfl.bluebrain.nexus.iam.config.IamConfig.{AclsConfig, PermissionsConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{AclsConfig, PermissionsConfig}
 import ch.epfl.bluebrain.nexus.iam.index.{AclsIndex, InMemoryAclsTree}
 import ch.epfl.bluebrain.nexus.iam.io.TaggingAdapter
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.iam.syntax._
 import ch.epfl.bluebrain.nexus.iam.types.IamError.{AccessDenied, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}

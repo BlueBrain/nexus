@@ -4,7 +4,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import io.circe.Decoder.Result
 import io.circe._
 import io.circe.generic.extras.Configuration

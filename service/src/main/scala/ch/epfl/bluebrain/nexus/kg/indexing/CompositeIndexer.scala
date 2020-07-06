@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.kg.indexing.View.{CompositeView, Filter, SparqlVi
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Source => CompositeSource}
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{Eval, PairMsg, ProgressFlowElem, ProgressFlowList}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{NoProgress, OffsetsProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -48,7 +48,7 @@ object CompositeIndexer {
   )(implicit
       as: ActorSystem,
       actorInitializer: (Props, String) => ActorRef,
-      config: ServiceConfig,
+      config: AppConfig,
       projections: Projections[F, String],
       projectCache: ProjectCache[F]
   ): StreamSupervisor[F, ProjectionProgress] = {
@@ -83,7 +83,7 @@ object CompositeIndexer {
   )(implicit
       as: ActorSystem,
       actorInitializer: (Props, String) => ActorRef,
-      config: ServiceConfig,
+      config: AppConfig,
       projections: Projections[F, String],
       projectCache: ProjectCache[F],
       F: Effect[F]
@@ -107,7 +107,7 @@ object CompositeIndexer {
       clients: Clients[F],
       as: ActorSystem,
       actorInitializer: (Props, String) => ActorRef,
-      config: ServiceConfig,
+      config: AppConfig,
       projections: Projections[F, String],
       projectCache: ProjectCache[F],
       F: Effect[F]
@@ -115,9 +115,9 @@ object CompositeIndexer {
     val mainProgressId: String                 = view.progressId
     val FSome: F[Option[Unit]]                 = F.pure(Option(()))
     implicit val ec: ExecutionContext          = as.dispatcher
-    implicit val indexing: IndexingConfig      = config.kg.sparql.indexing
+    implicit val indexing: IndexingConfig      = config.sparql.indexing
     implicit val metadataOpts: MetadataOptions = MetadataOptions(linksAsIri = true, expandedLinks = true)
-    implicit val tm: Timeout                   = Timeout(config.kg.sparql.askTimeout)
+    implicit val tm: Timeout                   = Timeout(config.sparql.askTimeout)
 
     def buildInsertOrDeleteQuery(res: ResourceV, view: SparqlView): SparqlWriteQuery =
       if (res.deprecated && !view.filter.includeDeprecated) view.buildDeleteQuery(res)
@@ -148,8 +148,8 @@ object CompositeIndexer {
         import GraphDSL.Implicits._
         val sourceView        = view.sparqlView(source)
         val sourceProgressId  = source.id.asString
-        val sparqlClient      = clients.sparql.copy(namespace = sourceView.index).withRetryPolicy(config.kg.sparql.indexing.retry)
-        val sparqlClientQuery = sparqlClient.withRetryPolicy(config.kg.sparql.query)
+        val sparqlClient      = clients.sparql.copy(namespace = sourceView.index).withRetryPolicy(config.sparql.indexing.retry)
+        val sparqlClientQuery = sparqlClient.withRetryPolicy(config.sparql.query)
         val sourceMinProgress = initial.minProgressFilter(pId => pId == sourceProgressId || pId.startsWith(source.id.asString)).offset
 
         val streamSource: Source[PairMsg[Any], _] = source match {

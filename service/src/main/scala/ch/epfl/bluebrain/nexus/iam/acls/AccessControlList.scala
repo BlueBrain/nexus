@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.iam.acls
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import io.circe._
 import io.circe.syntax._
 

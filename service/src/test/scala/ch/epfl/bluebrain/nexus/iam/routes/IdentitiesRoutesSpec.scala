@@ -41,7 +41,7 @@ class IdentitiesRoutesSpec
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
-  private val config        = Settings(system).serviceConfig
+  private val config        = Settings(system).appConfig
   implicit private val http = config.http
 
   private val realms: Realms[Task] = mock[Realms[Task]]

@@ -25,14 +25,14 @@ import ch.epfl.bluebrain.nexus.rdf.Node.blank
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.JsonLd.IdRetrievalError
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import io.circe.Json
 import io.circe.syntax._
 
 /**
   * Resource operations.
   */
-class Resources[F[_]](val repo: Repo[F])(implicit F: Effect[F], materializer: Materializer[F], config: ServiceConfig) {
+class Resources[F[_]](val repo: Repo[F])(implicit F: Effect[F], materializer: Materializer[F], config: AppConfig) {
 
   private val emptyJson = Json.obj()
 
@@ -364,7 +364,7 @@ class Resources[F[_]](val repo: Repo[F])(implicit F: Effect[F], materializer: Ma
 
 object Resources {
 
-  final def apply[F[_]: Effect: Materializer](repo: Repo[F])(implicit config: ServiceConfig): Resources[F] =
+  final def apply[F[_]: Effect: Materializer](repo: Repo[F])(implicit config: AppConfig): Resources[F] =
     new Resources[F](repo)
 
   final private[resources] case class SchemaContext(

@@ -24,9 +24,9 @@ class InMemoryAclsTreeSpec
     with EitherValues {
 
   private val clock: Clock    = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  implicit private val config = Settings(system).serviceConfig
+  implicit private val config = Settings(system).appConfig
   implicit private val http   = config.http
-  implicit private val pc     = config.iam.permissions
+  implicit private val pc     = config.permissions
   private val instant         = clock.instant()
 
   "A in memory Acls index" should {

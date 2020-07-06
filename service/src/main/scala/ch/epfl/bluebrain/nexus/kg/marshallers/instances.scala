@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.routes.{RejectionEncoder, ResourceRedirect, TextOutputFormat}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe._
 import io.circe.syntax._

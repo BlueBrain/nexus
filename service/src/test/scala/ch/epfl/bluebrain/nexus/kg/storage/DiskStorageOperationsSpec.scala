@@ -4,7 +4,7 @@ import java.nio.file.Paths
 
 import akka.http.scaladsl.model.{ContentTypes, Uri}
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.resources.Id
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileDescription
@@ -30,9 +30,9 @@ class DiskStorageOperationsSpec
     with TestHelper
     with OptionValues {
 
-  implicit private val appConfig = Settings(system).serviceConfig
+  implicit private val appConfig = Settings(system).appConfig
 
-  implicit private val sc: StorageConfig = appConfig.kg.storage.copy(
+  implicit private val sc: StorageConfig = appConfig.storage.copy(
     DiskStorageConfig(Paths.get("/tmp"), "SHA-256", read, write, false, 1024L),
     RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
     S3StorageConfig("MD5", read, write, true, 1024L),

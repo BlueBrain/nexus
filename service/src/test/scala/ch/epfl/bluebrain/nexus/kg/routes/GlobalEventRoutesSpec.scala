@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.GlobalEventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import io.circe.Encoder
 import monix.eval.Task
 
@@ -49,7 +49,7 @@ object GlobalEventRoutesSpec {
 
   class TestableEventRoutes(events: List[Event], acls: Acls[Task], realms: Realms[Task], caller: Caller)(implicit
       as: ActorSystem,
-      config: ServiceConfig
+      config: AppConfig
   ) extends GlobalEventRoutes(acls, realms, caller) {
 
     private val envelopes = events.zipWithIndex.map {

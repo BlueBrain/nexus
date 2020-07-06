@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, ProjectIdentifier, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{NoProgress, SingleProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -56,14 +56,14 @@ import scala.reflect.ClassTag
   */
 //noinspection ActorMutableStateInspection
 abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(implicit
-    val config: ServiceConfig,
+    val config: AppConfig,
     as: ActorSystem,
     projections: Projections[Task, String]
 ) extends Actor
     with Stash
     with ActorLogging {
 
-  implicit private val tm: Timeout = Timeout(config.kg.defaultAskTimeout)
+  implicit private val tm: Timeout = Timeout(config.defaultAskTimeout)
   private val children             = mutable.Map.empty[IndexedView, ViewCoordinator]
   protected val projectsStream     = mutable.Map.empty[ProjectIdentifier, ViewCoordinator]
 
@@ -192,7 +192,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
   }
 
   private def projectStreamFlow(initial: ProjectionProgress) = {
-    implicit val indexing: IndexingConfig = config.kg.elasticSearch.indexing
+    implicit val indexing: IndexingConfig = config.elasticSearch.indexing
     ProgressFlowElem[Task, Any]
       .collectCast[Event]
       .groupedWithin(indexing.batch, indexing.batchTimeout)
@@ -448,7 +448,7 @@ object ProjectViewCoordinatorActor {
       shards: Int
   )(implicit
       clients: Clients[Task],
-      config: ServiceConfig,
+      config: AppConfig,
       as: ActorSystem,
       projections: Projections[Task, String],
       projectCache: ProjectCache[Task]

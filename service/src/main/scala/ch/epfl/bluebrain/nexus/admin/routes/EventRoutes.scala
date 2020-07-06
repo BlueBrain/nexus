@@ -23,8 +23,8 @@ import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
@@ -91,7 +91,7 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
       }
 
   private def aToSse[A: Encoder](a: A, offset: Offset): ServerSentEvent = {
-    val json = a.asJson.sortKeys(ServiceConfig.orderedKeys)
+    val json = a.asJson.sortKeys(AppConfig.orderedKeys)
     ServerSentEvent(
       data = json.printWith(printer),
       eventType = json.hcursor.get[String]("@type").toOption,

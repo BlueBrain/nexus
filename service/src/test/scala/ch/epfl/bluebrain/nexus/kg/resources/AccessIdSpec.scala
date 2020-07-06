@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.kg.config.Contexts
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers

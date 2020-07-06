@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.iam.acls
 
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers

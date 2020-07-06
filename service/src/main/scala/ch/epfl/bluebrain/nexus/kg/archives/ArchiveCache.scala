@@ -6,8 +6,8 @@ import cats.data.OptionT
 import cats.effect.{Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig.ArchivesConfig
 import ch.epfl.bluebrain.nexus.kg.resources.ResId
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.ArchivesConfig
 import ch.epfl.bluebrain.nexus.sourcing.StateMachine
 import ch.epfl.bluebrain.nexus.sourcing.akka.StopStrategy
 import ch.epfl.bluebrain.nexus.sourcing.akka.statemachine.AkkaStateMachine

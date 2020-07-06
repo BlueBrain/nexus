@@ -36,7 +36,8 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -48,9 +49,11 @@ import scala.concurrent.ExecutionContext
 class Resolvers[F[_]](repo: Repo[F], private val index: ResolverCache[F])(implicit
     F: Effect[F],
     materializer: Materializer[F],
-    config: ServiceConfig,
+    config: AppConfig,
     projectCache: ProjectCache[F]
 ) {
+
+  implicit private val http: HttpConfig = config.http
 
   /**
     * Creates a new resolver attempting to extract the id from the source. If a primary node of the resulting graph
@@ -369,14 +372,14 @@ class Resolvers[F[_]](repo: Repo[F], private val index: ResolverCache[F])(implic
 object Resolvers {
 
   final def apply[F[_]: Effect: ProjectCache: Materializer](repo: Repo[F], index: ResolverCache[F])(implicit
-      config: ServiceConfig
+      config: AppConfig
   ): Resolvers[F] = new Resolvers[F](repo, index)
 
   def indexer[F[_]: Timer](
       resolvers: Resolvers[F]
-  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
+  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
     implicit val ec: ExecutionContext = as.dispatcher
-    implicit val tm: Timeout          = Timeout(config.kg.keyValueStore.askTimeout)
+    implicit val tm: Timeout          = Timeout(config.keyValueStore.askTimeout)
     implicit val log: Logger          = Logger[Views.type]
 
     def toResolver(event: Event): F[Option[Resolver]] =
@@ -403,7 +406,7 @@ object Resolvers {
 
     val flow = ProgressFlowElem[F, Any]
       .collectCast[Event]
-      .groupedWithin(config.kg.keyValueStore.indexing.batch, config.kg.keyValueStore.indexing.batchTimeout)
+      .groupedWithin(config.keyValueStore.indexing.batch, config.keyValueStore.indexing.batchTimeout)
       .distinct()
       .mergeEmit()
       .mapAsync(toResolver)

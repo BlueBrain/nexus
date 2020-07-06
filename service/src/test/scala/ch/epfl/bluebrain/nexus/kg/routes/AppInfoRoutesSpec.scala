@@ -34,7 +34,7 @@ class AppInfoRoutesSpec
     with BeforeAndAfter
     with ScalatestRouteTest {
 
-  implicit private val appConfig     = Settings(system).serviceConfig
+  implicit private val appConfig     = Settings(system).appConfig
   implicit private val ec            = system.dispatcher
   implicit private val utClient      = untyped[Task]
   implicit private val qrClient      = withUnmarshaller[Task, QueryResults[Json]]

@@ -62,9 +62,9 @@ class FilesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).serviceConfig
-  implicit private val storageConfig         = appConfig.kg.storage
-  implicit private val aggregateCfg          = appConfig.kg.aggregate
+  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val storageConfig         = appConfig.storage
+  implicit private val aggregateCfg          = appConfig.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)

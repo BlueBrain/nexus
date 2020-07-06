@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.{ServiceDescription => Blaz
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.routes.AppInfoRoutes._
 import ch.epfl.bluebrain.nexus.kg.routes.Status._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.Description
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.Description
 import ch.epfl.bluebrain.nexus.service.routes.CassandraHealth
 import ch.epfl.bluebrain.nexus.storage.client.types.{ServiceDescription => StorageServiceDescription}
 import io.circe.generic.auto._

@@ -20,11 +20,11 @@ import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.jsonld.JsonLd.IdRetrievalError
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import io.circe.Json
 
 class Materializer[F[_]: Effect](resolution: ProjectResolution[F], projectCache: ProjectCache[F])(implicit
-    config: ServiceConfig
+    config: AppConfig
 ) {
 
   private def flattenCtx(rrefs: List[Ref], contextValue: Json)(implicit

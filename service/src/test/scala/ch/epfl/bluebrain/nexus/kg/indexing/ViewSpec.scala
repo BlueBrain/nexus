@@ -52,8 +52,9 @@ class ViewSpec
     with IOValues {
 
   implicit private val clock: Clock                 = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  implicit private val appConfig                    = Settings(system).serviceConfig
-  implicit val compositeViewCfg                     = appConfig.kg.composite
+  implicit private val appConfig                    = Settings(system).appConfig
+  implicit val http                                 = appConfig.http
+  implicit val compositeViewCfg                     = appConfig.composite
   implicit private val client: BlazegraphClient[IO] = mock[BlazegraphClient[IO]]
 
   "A View" when {

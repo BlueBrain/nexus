@@ -41,9 +41,9 @@ class ProjectCacheSpec
   private val instant                   = Instant.now()
   implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
   implicit private val subject          = Caller.anonymous.subject
-  implicit private val config           = Settings(system).serviceConfig
+  implicit private val config           = Settings(system).appConfig
   implicit private val httpConfig       = config.http
-  implicit private val keyStoreConfig   = config.admin.keyValueStore
+  implicit private val keyStoreConfig   = config.keyValueStore.keyValueStoreConfig
 
   val orgIndex        = OrganizationCache[IO]
   val index           = ProjectCache[IO]

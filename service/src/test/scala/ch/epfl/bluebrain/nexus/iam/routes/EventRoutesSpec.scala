@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, GrantType, Label, Permission}
 import ch.epfl.bluebrain.nexus.iam.{acls => aclp}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{Path, Url}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import io.circe.Json
@@ -53,7 +53,7 @@ class EventRoutesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 100.milliseconds)
 
-  private val config        = Settings(system).serviceConfig
+  private val config        = Settings(system).appConfig
   implicit private val http = config.http
   implicit private val pc   = config.persistence
 

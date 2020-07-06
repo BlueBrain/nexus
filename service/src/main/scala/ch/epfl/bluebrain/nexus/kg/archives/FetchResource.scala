@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.kg.routes.ResourceEncoder.json
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.orderedKeys
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.orderedKeys
 import io.circe.{Json, Printer}
 
 trait FetchResource[F[_], A] {

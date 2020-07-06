@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts.errorCtxUri
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
@@ -35,9 +35,9 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.Json
@@ -61,15 +61,15 @@ class QueryDirectivesSpec
     with BeforeAndAfter {
 
   implicit private val storageCache: StorageCache[Task] = mock[StorageCache[Task]]
-  implicit private val appConfig: ServiceConfig         = Settings(system).serviceConfig
+  implicit private val appConfig: AppConfig             = Settings(system).appConfig
   before {
     Mockito.reset(storageCache)
   }
 
   "A query directive" when {
 
-    implicit val config        = PaginationConfig(10, 50, 10000)
-    implicit val storageConfig = appConfig.kg.storage.copy(
+    implicit val pagination    = PaginationConfig(10, 50, 10000)
+    implicit val storageConfig = appConfig.storage.copy(
       disk = DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", read, write, false, 1024L),
       remoteDisk = RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
       amazon = S3StorageConfig("MD5", read, write, true, 1024L),
@@ -134,7 +134,7 @@ class QueryDirectivesSpec
 
       "return default values when no query parameters found" in {
         Get("/") ~> routePagination() ~> check {
-          responseAs[FromPagination] shouldEqual Pagination(config.defaultSize)
+          responseAs[FromPagination] shouldEqual Pagination(pagination.defaultSize)
         }
       }
 
@@ -152,7 +152,7 @@ class QueryDirectivesSpec
 
       "return maximum size when size is over the maximum" in {
         Get("/some?size=500") ~> routePagination() ~> check {
-          responseAs[FromPagination] shouldEqual Pagination(0, config.sizeLimit)
+          responseAs[FromPagination] shouldEqual Pagination(0, pagination.sizeLimit)
         }
       }
 
@@ -165,7 +165,7 @@ class QueryDirectivesSpec
       "parse search after parameter" in {
         val after = Json.arr(Json.fromString(Instant.now().toString))
         Get(s"/some?after=${URLEncoder.encode(after.noSpaces, "UTF-8")}") ~> routePagination() ~> check {
-          responseAs[SearchAfterPagination] shouldEqual Pagination(after, config.defaultSize)
+          responseAs[SearchAfterPagination] shouldEqual Pagination(after, pagination.defaultSize)
         }
       }
 

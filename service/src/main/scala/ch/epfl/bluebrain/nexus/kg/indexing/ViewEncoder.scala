@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.rdf.Node._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, GraphEncoder, Node}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 
 /**
   * Encoders for [[View]]

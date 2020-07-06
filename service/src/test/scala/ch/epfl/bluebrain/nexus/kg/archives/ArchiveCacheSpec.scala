@@ -28,13 +28,11 @@ class ArchiveCacheSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.second, 50.milliseconds)
 
-  private val appConfig                 = Settings(system).serviceConfig
+  private val appConfig                 = Settings(system).appConfig
   implicit private val config           =
-    appConfig.copy(kg =
-      appConfig.kg.copy(archives = appConfig.kg.archives.copy(cacheInvalidateAfter = 500.millis, maxResources = 100))
-    )
+    appConfig.copy(archives = appConfig.archives.copy(cacheInvalidateAfter = 500.millis, maxResources = 100))
   implicit private val timer: Timer[IO] = IO.timer(system.dispatcher)
-  implicit private val archivesCfg      = config.kg.archives
+  implicit private val archivesCfg      = config.archives
 
   private val cache: ArchiveCache[IO] = ArchiveCache[IO].unsafeToFuture().futureValue
   implicit private val clock          = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
@@ -74,8 +72,8 @@ class ArchiveCacheSpec
         cache.get(resId).value.ioValue shouldEqual None
       }
       val diff    = System.currentTimeMillis() - time
-      diff should be > config.kg.archives.cacheInvalidateAfter.toMillis
-      diff should be < config.kg.archives.cacheInvalidateAfter.toMillis + 300
+      diff should be > config.archives.cacheInvalidateAfter.toMillis
+      diff should be < config.archives.cacheInvalidateAfter.toMillis + 300
     }
   }
 }

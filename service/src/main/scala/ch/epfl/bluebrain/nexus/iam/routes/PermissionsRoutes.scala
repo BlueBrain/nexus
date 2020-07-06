@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.iam.routes.PermissionsRoutes.PatchPermissions
 import ch.epfl.bluebrain.nexus.iam.routes.PermissionsRoutes.PatchPermissions.{Append, Replace, Subtract}
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.iam.types.ResourceF._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.{Decoder, DecodingFailure}

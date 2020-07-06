@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.{Id, OrganizationRef, Ref}
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.Resources
 import io.circe.Json
@@ -88,7 +88,7 @@ trait RoutesFixtures extends TestHelper with Resources {
 
   def tag(rev: Long, tag: String) = Json.obj("tag" -> Json.fromString(tag), "rev" -> Json.fromLong(rev))
 
-  def response(schema: Ref, deprecated: Boolean = false)(implicit config: ServiceConfig): Json =
+  def response(schema: Ref, deprecated: Boolean = false)(implicit config: AppConfig): Json =
     Json
       .obj(
         "@id"            -> Json.fromString(s"nxv:$genUuid"),
@@ -105,7 +105,7 @@ trait RoutesFixtures extends TestHelper with Resources {
       )
       .addContext(resourceCtxUri)
 
-  def listingResponse()(implicit config: ServiceConfig): Json =
+  def listingResponse()(implicit config: AppConfig): Json =
     Json.obj(
       "@context" -> Json.arr(
         Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json"),

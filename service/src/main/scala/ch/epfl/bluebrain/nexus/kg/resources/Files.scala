@@ -24,13 +24,13 @@ import ch.epfl.bluebrain.nexus.kg.routes.SearchParams
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.{Fetch, FetchAttributes, Link, Save}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
 import io.circe.Json
 
-class Files[F[_]](repo: Repo[F], storageCache: StorageCache[F])(implicit config: ServiceConfig, F: Effect[F]) {
+class Files[F[_]](repo: Repo[F], storageCache: StorageCache[F])(implicit config: AppConfig, F: Effect[F]) {
 
   /**
     * Creates a file resource.
@@ -302,6 +302,6 @@ class Files[F[_]](repo: Repo[F], storageCache: StorageCache[F])(implicit config:
 
 object Files {
 
-  final def apply[F[_]: Effect](repo: Repo[F], index: StorageCache[F])(implicit config: ServiceConfig): Files[F] =
+  final def apply[F[_]: Effect](repo: Repo[F], index: StorageCache[F])(implicit config: AppConfig): Files[F] =
     new Files[F](repo, index)
 }

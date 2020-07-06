@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.routes.AclsRoutes.PatchAcl.{AppendAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.iam.routes.AclsRoutes._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.{Decoder, DecodingFailure}

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util.EitherValues
@@ -32,7 +32,7 @@ class QueryDirectivesSpec
 
   private def genIri: AbsoluteIri              = url"http://nexus.example.com/${UUID.randomUUID()}"
   private def encode(url: AbsoluteIri): String = URLEncoder.encode(url.asString, "UTF-8")
-  private val config                           = Settings(system).serviceConfig
+  private val config                           = Settings(system).appConfig
   implicit private val http: HttpConfig        = config.http
 
   private def routes(inner: Route): Route =

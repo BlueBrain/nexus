@@ -27,7 +27,7 @@ class ResourceEncoderSpec
     with AnyWordSpecLike
     with Matchers
     with TestHelper {
-  implicit private val appConfig = Settings(system).serviceConfig
+  implicit private val appConfig = Settings(system).appConfig
 
   implicit private val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault)
 

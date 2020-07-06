@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated, Sub
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
@@ -50,14 +50,13 @@ class OrganizationsSpec
   private val saCaller: Caller          = Caller(User("admin", "realm"), Set(Anonymous, Authenticated("realm")))
   implicit private val permissions      = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
 
-  private val serviceConfig                               = Settings(system).serviceConfig
-  implicit private val config                             = serviceConfig.copy(
+  private val appConfig                                   = Settings(system).appConfig
+  implicit private val config                             = appConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
-    admin =
-      serviceConfig.admin.copy(permissions = serviceConfig.admin.permissions.copy(owner = permissions.map(_.value)))
+    permissions = appConfig.permissions.copy(owner = permissions.map(_.value))
   )
   implicit private val http: HttpConfig                   = config.http
-  implicit private val keyValueStore: KeyValueStoreConfig = config.admin.keyValueStore
+  implicit private val keyValueStore: KeyValueStoreConfig = config.keyValueStore.keyValueStoreConfig
 
   private val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
   private val index             = OrganizationCache[IO]

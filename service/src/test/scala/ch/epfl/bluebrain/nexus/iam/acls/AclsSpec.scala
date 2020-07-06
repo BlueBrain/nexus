@@ -34,10 +34,10 @@ class AclsSpec
 
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 50.milliseconds)
 
-  implicit val config = Settings(system).serviceConfig
+  implicit val config = Settings(system).appConfig
   implicit val http   = config.http
-  implicit val pc     = config.iam.permissions
-  implicit val ac     = config.iam.acls
+  implicit val pc     = config.permissions
+  implicit val ac     = config.acls
 
   implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -47,7 +47,7 @@ class AclsSpec
 
   val (mperms, perms) = {
     val m = mock[Permissions[IO]]
-    m.minimum shouldReturn config.iam.permissions.minimum
+    m.minimum shouldReturn config.permissions.minimum
     m.effectivePermissionsUnsafe shouldReturn IO.pure(permissions)
     (m, IO.pure(m))
   }

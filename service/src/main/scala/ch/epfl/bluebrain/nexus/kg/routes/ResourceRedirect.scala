@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.kg.resources.{AccessId, Resource}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 
 /**
   * Represents a resource uri that needs redirection

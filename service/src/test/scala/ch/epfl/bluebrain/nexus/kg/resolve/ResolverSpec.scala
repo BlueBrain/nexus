@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources}
@@ -45,10 +45,9 @@ class ResolverSpec
     with CirceEq {
 
   implicit private val clock            = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  implicit private val appConfig        = Settings(system).serviceConfig
+  implicit private val appConfig        = Settings(system).appConfig
   implicit private val http: HttpConfig = appConfig.http
-
-  implicit private val projectCache = mock[ProjectCache[CId]]
+  implicit private val projectCache     = mock[ProjectCache[CId]]
 
   before {
     Mockito.reset(projectCache)

@@ -36,8 +36,9 @@ class ProjectAttributesCoordinatorSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(15.second, 150.milliseconds)
 
-  implicit private val appConfig        = Settings(system).serviceConfig
-  implicit private val keyValueStoreCfg = appConfig.kg.keyValueStore.keyValueStoreConfig
+  implicit private val appConfig        = Settings(system).appConfig
+  implicit private val keyValueStoreCfg = appConfig.keyValueStore.keyValueStoreConfig
+  implicit private val http             = appConfig.http
   private val projectCache              = ProjectCache[Task]
 
   "A ProjectAttributesCoordinator" should {

@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.async.anyProject
 import ch.epfl.bluebrain.nexus.kg.cache.ResolverCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
@@ -35,7 +34,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.xsd
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.{
   ActorSystemFixture,
@@ -73,8 +72,8 @@ class ResourcesSpec
 
   implicit private val client: BlazegraphClient[IO] = mock[BlazegraphClient[IO]]
 
-  implicit private val appConfig             = Settings(system).serviceConfig
-  implicit private val aggregateCfg          = appConfig.kg.aggregate
+  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val aggregateCfg          = appConfig.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -90,7 +89,7 @@ class ResourcesSpec
       repo,
       resolverCache,
       projectCache,
-      StaticResolution(KgConfig.iriResolution),
+      StaticResolution(AppConfig.iriResolution),
       acls,
       Caller.anonymous
     )

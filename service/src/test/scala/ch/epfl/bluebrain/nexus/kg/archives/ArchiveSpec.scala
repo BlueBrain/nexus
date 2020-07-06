@@ -44,14 +44,12 @@ class ArchiveSpec
     with BeforeAndAfter {
 
   implicit private val cache            = mock[ProjectCache[IO]]
-  private val appConfig                 = Settings(system).serviceConfig
+  private val appConfig                 = Settings(system).appConfig
   implicit private val config           =
-    appConfig.copy(kg =
-      appConfig.kg.copy(archives = appConfig.kg.archives.copy(cacheInvalidateAfter = 1.second, maxResources = 3))
-    )
+    appConfig.copy(archives = appConfig.archives.copy(cacheInvalidateAfter = 1.second, maxResources = 3))
   implicit private val clock            = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
   implicit private val subject: Subject = Anonymous
-  implicit private val archivesCfg      = config.kg.archives
+  implicit private val archivesCfg      = config.archives
   private val epoch                     = Instant.EPOCH
 
   private def addField[A: Encoder](tuple: (String, Option[A])): Json =
@@ -214,7 +212,7 @@ class ArchiveSpec
       Archive[IO](id.value, graph(resources: _*)).value.rejected[InvalidResourceFormat] shouldEqual
         InvalidResourceFormat(
           id.ref,
-          s"Too many resources. Maximum resources allowed: '${config.kg.archives.maxResources}'. Found: '4'"
+          s"Too many resources. Maximum resources allowed: '${config.archives.maxResources}'. Found: '4'"
         )
     }
 

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.iam.types.ResourceF.resourceMetaEncoder
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.Contexts.{iamCtxUri, resourceCtxUri, searchCtxUri}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._

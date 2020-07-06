@@ -28,8 +28,8 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -55,10 +55,10 @@ class Projects[F[_]: Timer](
 )(implicit
     F: Effect[F],
     clock: Clock,
-    cfg: ServiceConfig
+    cfg: AppConfig
 ) {
 
-  implicit private val retryPolicy: RetryPolicy[F] = cfg.admin.permissions.retry.retryPolicy[F]
+  implicit private val retryPolicy: RetryPolicy[F] = cfg.projects.retry.retryPolicy[F]
   implicit private val http: HttpConfig            = cfg.http
 
   private def invalidIriGeneration(organization: String, label: String, param: String): String =
@@ -107,10 +107,10 @@ class Projects[F[_]: Timer](
     val projectAcl         = acls.value.get(orgLabel / projectLabel).map(_.value.value).getOrElse(Map.empty)
     val rev                = acls.value.get(orgLabel / projectLabel).fold(0L)(_.rev)
 
-    if (cfg.admin.permissions.ownerPermissions.subsetOf(currentPermissions))
+    if (cfg.permissions.ownerPermissions.subsetOf(currentPermissions))
       F.unit
     else {
-      val replaceAcls = AccessControlList(projectAcl + (subject -> cfg.admin.permissions.ownerPermissions))
+      val replaceAcls = AccessControlList(projectAcl + (subject -> cfg.permissions.ownerPermissions))
       aclsApi.replace(orgLabel / projectLabel, rev, replaceAcls)(saCaller) >> F.unit
     }
 
@@ -275,7 +275,7 @@ object Projects {
     * Constructs a [[ch.epfl.bluebrain.nexus.admin.projects.Projects]] operations bundle.
     *
     * @param index           the project and organization label index
-    * @param serviceConfig       the application configuration
+    * @param config       the application configuration
     * @tparam F              a [[cats.effect.ConcurrentEffect]] instance
     * @return the operations bundle in an ''F'' context.
     */
@@ -284,8 +284,8 @@ object Projects {
       organizations: Organizations[F],
       aclsApi: Acls[F],
       saCaller: Caller
-  )(implicit serviceConfig: ServiceConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val retryPolicy: RetryPolicy[F] = serviceConfig.admin.aggregate.retry.retryPolicy[F]
+  )(implicit config: AppConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
+    implicit val retryPolicy: RetryPolicy[F] = config.aggregate.retry.retryPolicy[F]
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -293,17 +293,17 @@ object Projects {
         ProjectState.Initial,
         next,
         Eval.apply[F],
-        serviceConfig.admin.aggregate.passivationStrategy(),
-        serviceConfig.admin.aggregate.akkaAggregateConfig,
-        serviceConfig.cluster.shards
+        config.aggregate.passivationStrategy(),
+        config.aggregate.akkaAggregateConfig,
+        config.cluster.shards
       )
     aggF.map(agg => new Projects(agg, index, organizations, aclsApi, saCaller))
   }
 
   def indexer[F[_]: Timer](
       projects: Projects[F]
-  )(implicit F: Effect[F], config: ServiceConfig, as: ActorSystem): F[Unit] = {
-    implicit val ac: AggregateConfig  = config.admin.aggregate
+  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
+    implicit val ac: AggregateConfig  = config.aggregate
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 
@@ -315,7 +315,7 @@ object Projects {
 
     val flow = ProgressFlowElem[F, Any]
       .collectCast[ProjectEvent]
-      .groupedWithin(config.admin.indexing.batch, config.admin.indexing.batchTimeout)
+      .groupedWithin(config.indexing.batch, config.indexing.batchTimeout)
       .distinct()
       .mergeEmit()
       .mapAsync(ev => projects.fetch(ev.id))

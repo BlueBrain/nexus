@@ -22,11 +22,11 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.Json
 
-class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Materializer[F], config: ServiceConfig) {
+class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Materializer[F], config: AppConfig) {
 
   /**
     * Creates a new schema attempting to extract the id from the source. If a primary node of the resulting graph
@@ -215,6 +215,6 @@ class Schemas[F[_]](repo: Repo[F])(implicit F: Effect[F], materializer: Material
 
 object Schemas {
 
-  final def apply[F[_]: Effect: Materializer](repo: Repo[F])(implicit config: ServiceConfig): Schemas[F] =
+  final def apply[F[_]: Effect: Materializer](repo: Repo[F])(implicit config: AppConfig): Schemas[F] =
     new Schemas[F](repo)
 }

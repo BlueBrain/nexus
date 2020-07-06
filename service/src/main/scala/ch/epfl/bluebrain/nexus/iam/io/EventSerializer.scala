@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.iam.types.GrantType.Camel._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
@@ -28,7 +28,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
 
   private val printer = Printer.noSpaces.copy(dropNullValues = true)
 
-  implicit private[io] val http: HttpConfig = Settings(system).serviceConfig.http
+  implicit private[io] val http: HttpConfig = Settings(system).appConfig.http
 
   implicit private[io] val config: Configuration = Configuration.default.withDiscriminator("@type")
 

@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
 import ch.epfl.bluebrain.nexus.kg.archives.{Archive, ArchiveCache}
 import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ResolverCache, StorageCache, ViewCache}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver.InProjectResolver
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, StaticResolution}
@@ -66,8 +66,8 @@ class ArchivesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).serviceConfig
-  implicit private val aggregateCfg          = appConfig.kg.aggregate
+  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val aggregateCfg          = appConfig.aggregate
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)

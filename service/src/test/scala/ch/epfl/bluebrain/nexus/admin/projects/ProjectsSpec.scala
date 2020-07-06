@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF => IamRe
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
@@ -48,11 +48,10 @@ class ProjectsSpec
   private val instant               = Instant.now
   implicit private val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
-  private val serviceConfig   = Settings(system).serviceConfig
-  implicit private val config = serviceConfig.copy(
+  private val appConfig       = Settings(system).appConfig
+  implicit private val config = appConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
-    admin =
-      serviceConfig.admin.copy(permissions = serviceConfig.admin.permissions.copy(owner = permissions.map(_.value)))
+    permissions = appConfig.permissions.copy(owner = permissions.map(_.value))
   )
 
   private val index   = mock[ProjectCache[IO]]

@@ -36,7 +36,7 @@ class ResourceFSpec
 
   implicit private def toNode(instant: Instant): Node =
     Literal(instant.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT), xsd.dateTime)
-  implicit private val appConfig                      = Settings(system).serviceConfig
+  implicit private val appConfig                      = Settings(system).appConfig
 
   "A ResourceF" should {
     implicit val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())

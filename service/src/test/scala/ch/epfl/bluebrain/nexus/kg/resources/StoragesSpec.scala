@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.cache.{ResolverCache, StorageCache}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
-import ch.epfl.bluebrain.nexus.kg.config.KgConfig.iriResolution
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.iriResolution
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution, Resolver, StaticResolution}
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
@@ -68,9 +68,9 @@ class StoragesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit private val appConfig             = Settings(system).serviceConfig
-  implicit private val aggregateCfg          = appConfig.kg.aggregate
-  implicit private val secretKey: SecretKey  = appConfig.kg.storage.derivedKey
+  implicit private val appConfig             = Settings(system).appConfig
+  implicit private val aggregateCfg          = appConfig.aggregate
+  implicit private val secretKey: SecretKey  = appConfig.storage.derivedKey
   implicit private val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   implicit private val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit private val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
@@ -245,12 +245,12 @@ class StoragesSpec
         "_algorithm"      -> Json.fromString("SHA-256"),
         "writePermission" -> Json.fromString("files/write"),
         "readPermission"  -> Json.fromString("resources/read"),
-        "maxFileSize"     -> Json.fromLong(appConfig.kg.storage.disk.maxFileSize)
+        "maxFileSize"     -> Json.fromLong(appConfig.storage.disk.maxFileSize)
       )
 
       val s3AddedJson = Json.obj(
         "_algorithm"  -> Json.fromString("SHA-256"),
-        "maxFileSize" -> Json.fromLong(appConfig.kg.storage.amazon.maxFileSize)
+        "maxFileSize" -> Json.fromLong(appConfig.storage.amazon.maxFileSize)
       )
 
       "return a storage" in new Base {

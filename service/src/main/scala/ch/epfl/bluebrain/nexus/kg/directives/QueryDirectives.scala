@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.routes.{JsonLDOutputFormat, OutputFormat, SearchParams}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import com.typesafe.scalalogging.Logger
 import io.circe.Json

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 
 /**
   * Collection of query specific directives.

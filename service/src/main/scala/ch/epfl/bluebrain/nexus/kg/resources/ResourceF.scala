@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri, Node}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.{nxv, Metadata}
 import io.circe.{Decoder, DecodingFailure, Json}
 
@@ -73,13 +74,15 @@ final case class ResourceF[A](
     */
   def metadata(
       options: MetadataOptions = MetadataOptions()
-  )(implicit config: ServiceConfig, project: ProjectResource): Set[Triple] = {
+  )(implicit config: AppConfig, project: ProjectResource): Set[Triple] = {
+
+    implicit val http: HttpConfig = config.http
 
     def showLocation(storageRef: StorageReference): Boolean =
       storageRef match {
-        case _: DiskStorageReference       => config.kg.storage.disk.showLocation
-        case _: RemoteDiskStorageReference => config.kg.storage.remoteDisk.showLocation
-        case _: S3StorageReference         => config.kg.storage.amazon.showLocation
+        case _: DiskStorageReference       => config.storage.disk.showLocation
+        case _: RemoteDiskStorageReference => config.storage.remoteDisk.showLocation
+        case _: S3StorageReference         => config.storage.amazon.showLocation
       }
 
     def outAndInWhenNeeded(self: AbsoluteIri): Set[Triple] = {

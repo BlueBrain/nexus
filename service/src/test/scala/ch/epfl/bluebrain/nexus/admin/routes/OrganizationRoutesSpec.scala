@@ -27,9 +27,9 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
@@ -59,8 +59,8 @@ class OrganizationRoutesSpec
   private val organizationCache = mock[OrganizationCache[Task]]
   private val organizations     = mock[Organizations[Task]]
 
-  private val config: ServiceConfig           =
-    Settings(system).serviceConfig.copy(http = HttpConfig("some", 80, "v1", "https://nexus.example.com"))
+  private val config: AppConfig               =
+    Settings(system).appConfig.copy(http = HttpConfig("some", 80, "v1", "https://nexus.example.com"))
   implicit private val httpConfig: HttpConfig = config.http
 
   private val routes =

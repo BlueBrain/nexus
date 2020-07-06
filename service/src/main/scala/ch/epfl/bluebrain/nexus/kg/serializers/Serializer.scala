@@ -13,8 +13,8 @@ import ch.epfl.bluebrain.nexus.kg.resources.file.File._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.{ServiceConfig, Settings}
-import ch.epfl.bluebrain.nexus.service.config.ServiceConfig._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.client.types.FileAttributes.{Digest => StorageDigest}
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
 
@@ -70,7 +70,7 @@ object Serializer {
       Id(projRef, id)
     }
 
-  implicit def eventEncoder(implicit http: ServiceConfig.HttpConfig): Encoder[Event] = {
+  implicit def eventEncoder(implicit http: AppConfig.HttpConfig): Encoder[Event] = {
     val enc = deriveConfiguredEncoder[Event]
     Encoder.instance { ev =>
       val json = enc(ev).removeKeys("id") deepMerge ev.id.asJson
@@ -95,7 +95,8 @@ object Serializer {
 
   class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
-    implicit private val appConfig: ServiceConfig = Settings(system).serviceConfig
+    implicit private val config: AppConfig = Settings(system).appConfig
+    implicit private val http: HttpConfig  = config.http
 
     private val serializer = new AkkaCoproductSerializer[Event :+: CNil](1050)
 
