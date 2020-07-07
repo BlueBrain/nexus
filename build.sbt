@@ -328,8 +328,8 @@ lazy val storage = project
 lazy val service = project
   .in(file("service"))
   .dependsOn(sourcing, rdf)
-  .settings(shared, compilation, coverage, release)
-  .enablePlugins(JmhPlugin, BuildInfoPlugin)
+  .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging)
+  .settings(shared, compilation, coverage, release, servicePackaging)
   .settings(
     name             := "service",
     moduleName       := "service",
