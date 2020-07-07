@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.{
   ActorSystemFixture,
@@ -108,7 +108,7 @@ class ResolversSpec
   projectCache.getBy(label2) shouldReturn IO.pure(Some(project2))
 
   acls.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn
-    IO(AccessControlLists(/ -> resourceAcls(AccessControlList(user -> Set(read)))))
+    IO(AccessControlLists(/ -> resourceAcls(AccessControlList(user -> Set(Permissions.resolvers.read)))))
 
   before {
     Mockito.reset(resolverCache)

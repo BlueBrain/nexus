@@ -9,11 +9,12 @@ import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.EventRoutesSpec.TestableEventRoutes
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.resources
 import io.circe.Encoder
 import monix.eval.Task
 
@@ -25,9 +26,8 @@ class EventRoutesSpec extends EventsSpecBase {
   val eventRoutes = new TestableEventRoutes(events, aclsApi, realms, caller)
 
   "EventRoutes" should {
-    val read = Permission.unsafe("resources/read")
-    aclsApi.hasPermission("org" / "project", read)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission(/ + "org", read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission("org" / "project", resources.read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(/ + "org", resources.read)(caller) shouldReturn Task.pure(true)
 
     "return all events for a project" in {
       Get("/") ~> eventRoutes.projectRoutes(project) ~> check {

@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.orderedKeys
+import ch.epfl.bluebrain.nexus.service.config.Permissions
 import io.circe.{Json, Printer}
 
 trait FetchResource[F[_], A] {
@@ -41,8 +42,6 @@ object FetchResource {
       clock: Clock
   ): FetchResource[F, ArchiveSource] =
     new FetchResource[F, ArchiveSource] {
-
-      private val read: Permission = Permission.unsafe("resources/read")
 
       private def hasPermission(
           perm: Permission,
@@ -74,7 +73,7 @@ object FetchResource {
 
       private def fetchResource(r: Resource): OptionT[F, ArchiveSource] = {
         val id = Id(ProjectRef(r.project.uuid), r.id)
-        if (hasPermission(read, r.project)) {
+        if (hasPermission(Permissions.resources.read, r.project)) {
           OptionT(generatePath(r.path, r.id, r.project).map(Option.apply)).flatMap { path =>
             val jsonOptionF = (r.rev, r.tag, r.originalSource) match {
               case (Some(rev), _, true)  => resources.fetchSource(id, rev).toOption

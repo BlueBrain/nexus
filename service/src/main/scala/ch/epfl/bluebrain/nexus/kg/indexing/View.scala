@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Projection._
@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Cursor, Graph, GraphDecoder, NonEmptyString}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.CompositeViewConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions._
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.util.Resources.{contentOf, jsonContentOf}
 import com.typesafe.scalalogging.Logger
@@ -113,13 +114,13 @@ sealed trait View extends Product with Serializable { self =>
       case v: AggregateView =>
         v.value.toList
           .traverse {
-            case ViewRef(project, id) => project.toRef[F](query, caller.identities).map(ViewRef(_, id))
+            case ViewRef(project, id) => project.toRef[F](views.query, caller.identities).map(ViewRef(_, id))
           }
           .map(v.make)
       case v: CompositeView =>
         val labeledSources: EitherT[F, Rejection, List[Source]] = v.sources.toList.traverse {
           case source: CrossProjectEventStream =>
-            source.project.toRef[F](read, source.identities).map(label => source.copy(project = label))
+            source.project.toRef[F](views.read, source.identities).map(label => source.copy(project = label))
           case source                          => EitherT.rightT(source)
         }
         labeledSources.map(sources => v.copy(sources = sources.toSet))
@@ -158,9 +159,6 @@ sealed trait View extends Product with Serializable { self =>
 
 object View {
 
-  val read: Permission     = Permission.unsafe("resources/read")
-  val query: Permission    = Permission.unsafe("views/query")
-  val write: Permission    = Permission.unsafe("views/write")
   private val idTemplating = "{resource_id}"
 
   /**
@@ -287,7 +285,7 @@ object View {
                 if !view.deprecated && caller.hasPermission(
                   acls,
                   ProjectLabel(projRes.value.organizationLabel, projRes.value.label),
-                  query
+                  views.query
                 ) =>
               acc + view
             case _ => acc

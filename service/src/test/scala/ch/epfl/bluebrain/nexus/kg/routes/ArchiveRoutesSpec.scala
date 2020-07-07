@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.AkkaSource
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
 import io.circe.Json
@@ -97,9 +97,7 @@ class ArchiveRoutesSpec
     Mockito.reset(archives)
   }
 
-  private val archivesWrite = Permission.unsafe("archives/write")
-
-  private val manageArchive = Set(Permission.unsafe("resources/read"), archivesWrite)
+  private val manageArchive = Set(Permissions.archives.read, Permissions.archives.write)
   // format: off
   private val routes = new KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], archives, tagsRes, aclsApi, realms, mock[ProjectViewCoordinator[Task]]).routes
   // format: on
@@ -134,7 +132,7 @@ class ArchiveRoutesSpec
 
     "create an archive without @id" in new Context {
       archives.create(json) shouldReturn EitherT.rightT[Task, Rejection](resource)
-      aclsApi.hasPermission(organization / project, archivesWrite)(caller) shouldReturn Task.pure(true)
+      aclsApi.hasPermission(organization / project, Permissions.archives.write)(caller) shouldReturn Task.pure(true)
 
       forAll(metadataRanges) { accept =>
         Post(s"/v1/archives/$organization/$project", json) ~> addCredentials(oauthToken) ~> accept ~> routes ~> check {
@@ -152,7 +150,7 @@ class ArchiveRoutesSpec
     }
 
     "create an archive with @id" in new Context {
-      aclsApi.hasPermission(organization / project, archivesWrite)(caller) shouldReturn Task.pure(true)
+      aclsApi.hasPermission(organization / project, Permissions.archives.write)(caller) shouldReturn Task.pure(true)
       archives.create(id, json) shouldReturn EitherT.rightT[Task, Rejection](resource)
 
       forAll(metadataRanges) { accept =>

@@ -37,7 +37,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.{Fetch, Link
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
@@ -112,7 +112,7 @@ class FileRoutesSpec
     Mockito.reset(files)
   }
 
-  private val manageResolver = Set(Permission.unsafe("resources/read"), Permission.unsafe("files/write"))
+  private val manageResolver = Set(Permissions.files.read, Permissions.files.write)
   // format: off
   private val routes = new KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], files, mock[Archives[Task]], tagsRes, aclsApi, realms, mock[ProjectViewCoordinator[Task]]).routes
   // format: on
@@ -192,8 +192,8 @@ class FileRoutesSpec
         s"/v1/resources/$organization/$project/_/$urlEncodedId$queryParam"
       )
     }
-    aclsApi.hasPermission(organization / project, write)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission(organization / project, read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.files.write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.files.read)(caller) shouldReturn Task.pure(true)
   }
 
   "The file routes" should {

@@ -6,7 +6,6 @@ import akka.http.scaladsl.server.{MalformedQueryParamRejection, Route}
 import cats.Functor
 import cats.data.{EitherT, OptionT}
 import cats.instances.future._
-import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.NotFound.notFound
 import ch.epfl.bluebrain.nexus.kg.resources.{Ref, Rejection, ResourceV}
@@ -37,8 +36,6 @@ package object routes {
         implicit val format = DOT
         complete(fetched.map { case (status, resource) => status -> resource.value.graph.dot() }.value)
     }
-
-  private[routes] val read: Permission = Permission.unsafe("resources/read")
 
   private[routes] val schemaError =
     MalformedQueryParamRejection("schema", "The provided schema does not match the schema on the Uri")

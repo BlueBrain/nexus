@@ -2,12 +2,13 @@ package ch.epfl.bluebrain.nexus.kg.resolve
 
 import cats.Monad
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
-import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
+import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.service.config.Permissions.resources
 
 /**
   * Common resolution logic for resolvers that look through several projects.
@@ -30,8 +31,6 @@ class MultiProjectResolution[F[_]](
 )(implicit F: Monad[F])
     extends Resolution[F] {
 
-  private val read = Permission.unsafe("resources/read")
-
   override def resolve(ref: Ref): F[Option[Resource]] =
     projects.collectFirstSomeM(pRef => checkPermsAndResolve(ref, pRef))
 
@@ -53,7 +52,7 @@ class MultiProjectResolution[F[_]](
       case None          =>
         false
       case Some(projRes) =>
-        acls.exists(identities, ProjectLabel(projRes.value.organizationLabel, projRes.value.label), read)
+        acls.exists(identities, ProjectLabel(projRes.value.organizationLabel, projRes.value.label), resources.read)
     }
 }
 

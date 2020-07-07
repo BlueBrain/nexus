@@ -21,12 +21,11 @@ import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.realms.{RealmEvent, Realms}
-import ch.epfl.bluebrain.nexus.iam.routes.EventRoutes._
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.iam.{acls => aclsp, permissions => permissionsp, realms => realmsp}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.Permissions.events
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
@@ -56,10 +55,10 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
   def routes: Route =
     // format: off
     concat(
-      routesFor("acls" / "events", s"/${hc.prefix}/acls/events", aclEventTag, aclsp.read, typedEventToSse[AclEvent]),
-      routesFor("permissions" / "events", s"/${hc.prefix}/permissions/events", permissionsEventTag, permissionsp.read, typedEventToSse[PermissionsEvent]),
-      routesFor("realms" / "events", s"/${hc.prefix}/realms/events", realmEventTag, realmsp.read, typedEventToSse[RealmEvent]),
-      routesFor("events", s"/${hc.prefix}/events", eventTag, eventsRead, eventToSse)
+      routesFor("acls" / "events", s"/${hc.prefix}/acls/events", aclEventTag, Permissions.acls.read, typedEventToSse[AclEvent]),
+      routesFor("permissions" / "events", s"/${hc.prefix}/permissions/events", permissionsEventTag, Permissions.permissions.read, typedEventToSse[PermissionsEvent]),
+      routesFor("realms" / "events", s"/${hc.prefix}/realms/events", realmEventTag, Permissions.realms.read, typedEventToSse[RealmEvent]),
+      routesFor("events", s"/${hc.prefix}/events", eventTag, events.read, eventToSse)
     )
   // format: on
 
@@ -128,9 +127,4 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
       case A(a) => Some(aToSse(a, envelope.offset))
       case _    => None
     }
-}
-
-object EventRoutes {
-  // read permissions for the global event log
-  final val eventsRead = Permission.unsafe("events/read")
 }

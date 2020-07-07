@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
@@ -101,7 +101,7 @@ class FileRoutes private[routes] (
       (get & paginated & searchParams(fixedSchema = fileSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         extractUri { implicit uri =>
           operationName(s"/${config.http.prefix}/files/{org}/{project}") {
-            authorizeFor(projectPath, read)(caller) {
+            authorizeFor(projectPath, Permissions.files.read)(caller) {
               val listed =
                 viewCache.getDefaultElasticSearch(ProjectRef(project.uuid)).flatMap(files.list(_, params, page))
               complete(listed.runWithStatus(OK))
@@ -175,7 +175,7 @@ class FileRoutes private[routes] (
       // Deprecate file
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.files.write) & projectNotDeprecated) {
             complete(files.deprecate(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))
           }
         }
@@ -189,7 +189,7 @@ class FileRoutes private[routes] (
       // Fetch file source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/source") {
-          authorizeFor(projectPath, read)(caller) {
+          authorizeFor(projectPath, Permissions.files.read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(resources.fetchSource(Id(ProjectRef(project.uuid), id), rev, fileRef).value.runWithStatus(OK))
@@ -211,7 +211,7 @@ class FileRoutes private[routes] (
             extractUri {
               implicit uri =>
                 operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/incoming") {
-                  authorizeFor(projectPath, read)(caller) {
+                  authorizeFor(projectPath, Permissions.files.read)(caller) {
                     val listed = for {
                       view     <-
                         viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
@@ -232,7 +232,7 @@ class FileRoutes private[routes] (
               extractUri {
                 implicit uri =>
                   operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}/outgoing") {
-                    authorizeFor(projectPath, read)(caller) {
+                    authorizeFor(projectPath, Permissions.files.read)(caller) {
                       val listed = for {
                         view     <-
                           viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
@@ -245,13 +245,13 @@ class FileRoutes private[routes] (
               }
           }
       },
-      new TagRoutes("files", tags, acls, realms, fileRef, write).routes(id)
+      new TagRoutes("files", tags, acls, realms, fileRef, Permissions.files.write).routes(id)
     )
 
   private def getResource(id: AbsoluteIri)(implicit format: NonBinaryOutputFormat) =
     operationName(s"/${config.http.prefix}/files/{org}/{project}/{id}") {
-      Kamon.currentSpan().tag("file.operation", "read")
-      authorizeFor(projectPath, read)(caller) {
+      Kamon.currentSpan().tag("file.operation", "Permissions.files.read")
+      authorizeFor(projectPath, Permissions.files.read)(caller) {
         concat(
           (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
             completeWithFormat(resources.fetch(Id(ProjectRef(project.uuid), id), rev, fileRef).value.runWithStatus(OK))

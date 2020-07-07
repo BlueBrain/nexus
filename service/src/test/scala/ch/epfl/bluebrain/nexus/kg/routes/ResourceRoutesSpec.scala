@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
@@ -98,8 +98,7 @@ class ResourceRoutesSpec
   implicit private val clients       = Clients()
   private val sortList               = SortList(List(Sort(nxv.createdAt.prefix), Sort("@id")))
 
-  private val resourcesWrite: Permission = Permission.unsafe("resources/write")
-  private val manageResources            = Set(Permission.unsafe("resources/read"), resourcesWrite)
+  private val manageResources = Set(Permissions.resources.read, Permissions.resources.write)
   // format: off
   private val routes = new KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, aclsApi, realms, mock[ProjectViewCoordinator[Task]]).routes
   // format: on
@@ -146,8 +145,8 @@ class ResourceRoutesSpec
       ResourceF.simpleV(id, resourceValue, created = user, updated = user, schema = unconstrainedRef)
 
     resources.fetchSchema(id) shouldReturn EitherT.rightT[Task, Rejection](unconstrainedRef)
-    aclsApi.hasPermission(organization / project, resourcesWrite)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission(organization / project, read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.resources.write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.resources.read)(caller) shouldReturn Task.pure(true)
   }
 
   "The resources routes" should {

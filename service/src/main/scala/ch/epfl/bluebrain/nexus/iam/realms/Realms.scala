@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated, Use
 import ch.epfl.bluebrain.nexus.iam.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.{Path, Url}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.realms
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -73,7 +74,7 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
       logo: Option[Url]
   )(implicit caller: Caller): F[MetaOrRejection] = {
     val command = CreateRealm(id, name, openIdConfig, logo, caller.subject)
-    check(write) >> openIdConfigAlreadyExistsOr(id, openIdConfig)(eval(command)) <* updateIndex(id)
+    check(realms.write) >> openIdConfigAlreadyExistsOr(id, openIdConfig)(eval(command)) <* updateIndex(id)
   }
 
   /**
@@ -93,7 +94,7 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
       logo: Option[Url]
   )(implicit caller: Caller): F[MetaOrRejection] = {
     val command = UpdateRealm(id, rev, name, openIdConfig, logo, caller.subject)
-    check(id, write) >> openIdConfigAlreadyExistsOr(id, openIdConfig)(eval(command)) <* updateIndex(id)
+    check(id, realms.write) >> openIdConfigAlreadyExistsOr(id, openIdConfig)(eval(command)) <* updateIndex(id)
   }
 
   private def openIdConfigAlreadyExistsOr(id: Label, openIdConfig: Url)(
@@ -118,7 +119,7 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
     * @param rev the revision of the realm
     */
   def deprecate(id: Label, rev: Long)(implicit caller: Caller): F[MetaOrRejection] =
-    check(id, write) >> eval(DeprecateRealm(id, rev, caller.subject)) <* updateIndex(id)
+    check(id, realms.write) >> eval(DeprecateRealm(id, rev, caller.subject)) <* updateIndex(id)
 
   /**
     * Fetches a realm.
@@ -127,7 +128,7 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
     * @return the realm in a Resource representation, None otherwise
     */
   def fetch(id: Label)(implicit caller: Caller): F[OptResource] =
-    check(id, read) >> fetchUnsafe(id)
+    check(id, realms.read) >> fetchUnsafe(id)
 
   /**
     * Fetches a realm at a specific revision.
@@ -137,14 +138,14 @@ class Realms[F[_]](val agg: Agg[F], acls: F[Acls[F]], index: RealmIndex[F], grou
     * @return the realm in a Resource representation, None otherwise
     */
   def fetch(id: Label, rev: Long)(implicit caller: Caller): F[OptResource] =
-    check(id, read) >> fetchUnsafe(id, Some(rev))
+    check(id, realms.read) >> fetchUnsafe(id, Some(rev))
 
   /**
     * @param params filter parameters of the realms
     * @return the current realms sorted by their creation date.
     */
   def list(params: SearchParams = SearchParams.empty)(implicit caller: Caller): F[List[Resource]] =
-    check(read) >> index.values.map(set => filter(set, params).toList.sortBy(_.createdAt.toEpochMilli))
+    check(realms.read) >> index.values.map(set => filter(set, params).toList.sortBy(_.createdAt.toEpochMilli))
 
   private def filter(resources: Set[Resource], params: SearchParams): Set[Resource] =
     resources.filter {

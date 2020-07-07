@@ -39,7 +39,7 @@ import ch.epfl.bluebrain.nexus.kg.routes.AppInfoRoutes.StatusGroup
 import ch.epfl.bluebrain.nexus.kg.routes.Status._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.service.routes.CassandraHealth
@@ -96,7 +96,7 @@ class KgRoutes(
     val projectPath = project.value.path
     (get & paginated & searchParams(project) & pathEndOrSingleSlash) { (pagination, params) =>
       operationName(s"/${config.http.prefix}/resources/{org}/{project}") {
-        (authorizeFor(projectPath, read) & extractUri) { implicit uri =>
+        (authorizeFor(projectPath, Permissions.resources.read) & extractUri) { implicit uri =>
           val listed =
             viewCache.getDefaultElasticSearch(ProjectRef(project.uuid)).flatMap(resources.list(_, params, pagination))
           complete(listed.runWithStatus(OK))
@@ -115,7 +115,7 @@ class KgRoutes(
       Path.Segment(project.value.label, Path.Slash(Path.Segment(project.value.organizationLabel, Path./)))
     (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
       operationName(s"/${config.http.prefix}/resources/{org}/{project}") {
-        (authorizeFor(projectPath, ResourceRoutes.write) & projectNotDeprecated) {
+        (authorizeFor(projectPath, Permissions.resources.write) & projectNotDeprecated) {
           entity(as[Json]) { source =>
             complete(resources.create(unconstrainedRef, source).value.runWithStatus(Created))
           }

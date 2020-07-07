@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
 import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.Uri.Path.{Empty, Segment, SingleSlash}
 import akka.http.scaladsl.model.{ContentType, Uri}
-import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{InvalidJsonLD, InvalidResourceFormat}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
@@ -37,8 +36,6 @@ object File {
     GraphDecoder.graphDecodeString.emap { str =>
       Try(Uri(str)).toEither.leftMap(_ => s"Unable to parse string '$str' as a valid Uri.")
     }
-
-  val write: Permission = Permission.unsafe("files/write")
 
   /**
     * Holds the metadata information related to a file link.

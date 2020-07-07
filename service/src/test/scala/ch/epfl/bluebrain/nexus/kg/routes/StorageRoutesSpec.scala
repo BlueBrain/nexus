@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.Verify
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
@@ -101,15 +101,13 @@ class StorageRoutesSpec
     Mockito.reset(storages)
   }
 
-  private val storageWrite = Permission.unsafe("storages/write")
-
-  private val manageResolver = Set(Permission.unsafe("resources/read"), storageWrite)
+  private val manageStorage = Set(Permissions.storages.read, Permissions.storages.write)
   // format: off
   private val routes = new KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], storages, mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, aclsApi, realms, mock[ProjectViewCoordinator[Task]]).routes
   // format: on
 
   //noinspection NameBooleanParameters
-  abstract class Context(perms: Set[Permission] = manageResolver) extends RoutesFixtures {
+  abstract class Context(perms: Set[Permission] = manageStorage) extends RoutesFixtures {
 
     projectCache.getBy(label) shouldReturn Task.pure(Some(projectMeta))
     projectCache.getBy(projectRef) shouldReturn Task.pure(Some(projectMeta))
@@ -160,8 +158,8 @@ class StorageRoutesSpec
         s"/v1/resources/$organization/$project/_/$urlEncodedId$queryParam"
       )
     }
-    aclsApi.hasPermission(organization / project, storageWrite)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission(organization / project, read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.storages.write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.storages.read)(caller) shouldReturn Task.pure(true)
 
   }
 

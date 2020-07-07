@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AkkaAggregate
 import retry.RetryPolicy
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{permissions => perms}
 
 /**
   * Permissions API.
@@ -49,14 +50,14 @@ class Permissions[F[_]](
     * @return the current permissions as a resource
     */
   def fetch(implicit caller: Caller): F[Resource] =
-    check(read) >> fetchUnsafe
+    check(perms.read) >> fetchUnsafe
 
   /**
     * @param rev the permissions revision
     * @return the permissions as a resource at the specified revision
     */
   def fetchAt(rev: Long)(implicit caller: Caller): F[OptResource] =
-    check(read) >> agg
+    check(perms.read) >> agg
       .foldLeft[State](persistenceId, Initial) {
         case (state, event) if event.rev <= rev => next(pc)(state, event)
         case (state, _)                         => state
@@ -93,7 +94,7 @@ class Permissions[F[_]](
     * @return the new resource metadata or a description of why the change was rejected
     */
   def replace(permissions: Set[Permission], rev: Long = 0L)(implicit caller: Caller): F[MetaOrRejection] =
-    check(write) >> eval(ReplacePermissions(rev, permissions, caller.subject))
+    check(perms.write) >> eval(ReplacePermissions(rev, permissions, caller.subject))
 
   /**
     * Appends the provided permissions to the current collection of permissions.
@@ -103,7 +104,7 @@ class Permissions[F[_]](
     * @return the new resource metadata or a description of why the change was rejected
     */
   def append(permissions: Set[Permission], rev: Long = 0L)(implicit caller: Caller): F[MetaOrRejection] =
-    check(write) >> eval(AppendPermissions(rev, permissions, caller.subject))
+    check(perms.write) >> eval(AppendPermissions(rev, permissions, caller.subject))
 
   /**
     * Subtracts the provided permissions to the current collection of permissions.
@@ -113,7 +114,7 @@ class Permissions[F[_]](
     * @return the new resource metadata or a description of why the change was rejected
     */
   def subtract(permissions: Set[Permission], rev: Long)(implicit caller: Caller): F[MetaOrRejection] =
-    check(write) >> eval(SubtractPermissions(rev, permissions, caller.subject))
+    check(perms.write) >> eval(SubtractPermissions(rev, permissions, caller.subject))
 
   /**
     * Removes all but the minimum permissions from the collection of permissions.
@@ -122,7 +123,7 @@ class Permissions[F[_]](
     * @return the new resource metadata or a description of why the change was rejected
     */
   def delete(rev: Long)(implicit caller: Caller): F[MetaOrRejection] =
-    check(write) >> eval(DeletePermissions(rev, caller.subject))
+    check(perms.write) >> eval(DeletePermissions(rev, caller.subject))
 
   private def eval(cmd: Command): F[MetaOrRejection] =
     agg

@@ -12,17 +12,17 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.admin.config.Permissions.{events, orgs, projects}
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF => IamResourceF}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{events, orgs, projects}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
@@ -62,12 +62,9 @@ class EventRoutesSpec
   private val aclsApi       = mock[Acls[Task]]
   private val realmsApi     = mock[Realms[Task]]
 
-  val orgRead   = Permission.unsafe("organizations/read")
-  val projRead  = Permission.unsafe("projects/read")
-  val eventRead = Permission.unsafe("events/read")
-  aclsApi.hasPermission(Path./, orgRead)(Caller.anonymous) shouldReturn Task.pure(true)
-  aclsApi.hasPermission(Path./, projRead)(Caller.anonymous) shouldReturn Task.pure(true)
-  aclsApi.hasPermission(Path./, eventRead)(Caller.anonymous) shouldReturn Task.pure(true)
+  aclsApi.hasPermission(Path./, orgs.read)(Caller.anonymous) shouldReturn Task.pure(true)
+  aclsApi.hasPermission(Path./, projects.read)(Caller.anonymous) shouldReturn Task.pure(true)
+  aclsApi.hasPermission(Path./, events.read)(Caller.anonymous) shouldReturn Task.pure(true)
 
   before {
     aclsApi.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task.pure(
@@ -224,9 +221,9 @@ class EventRoutesSpec
 
     "return Forbidden when requesting the log with no permissions" in {
       val aclsApi2  = mock[Acls[Task]]
-      aclsApi2.hasPermission(Path./, eventRead)(Caller.anonymous) shouldReturn Task.pure(false)
-      aclsApi2.hasPermission(Path./, orgRead)(Caller.anonymous) shouldReturn Task.pure(false)
-      aclsApi2.hasPermission(Path./, projRead)(Caller.anonymous) shouldReturn Task.pure(false)
+      aclsApi2.hasPermission(Path./, events.read)(Caller.anonymous) shouldReturn Task.pure(false)
+      aclsApi2.hasPermission(Path./, orgs.read)(Caller.anonymous) shouldReturn Task.pure(false)
+      aclsApi2.hasPermission(Path./, projects.read)(Caller.anonymous) shouldReturn Task.pure(false)
       aclsApi2.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task(AccessControlLists.empty)
       val routes    = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi2, realmsApi).routes
       val endpoints = List(

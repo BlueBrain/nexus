@@ -8,7 +8,7 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlList
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission, ResourceF => IamResourceF}
+import ch.epfl.bluebrain.nexus.iam.types.{Identity, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.kg.config.Schemas.unconstrainedSchemaUri
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources.{Ref, ResId, ResourceF}
@@ -20,9 +20,7 @@ import io.circe.Json
 
 trait TestHelper extends EitherValues with Randomness {
 
-  private val clock     = Clock.systemUTC()
-  val read: Permission  = Permission.unsafe("resources/read")
-  val write: Permission = Permission.unsafe("files/write")
+  private val clock = Clock.systemUTC()
 
   def consume(source: AkkaSource)(implicit mt: Materializer): String = {
     import org.scalatest.concurrent.ScalaFutures._

@@ -8,10 +8,11 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationResource
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.resources
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
@@ -23,13 +24,11 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task], caller: Caller)(implic
 ) extends AuthDirectives(acls, realms)(config.http, global)
     with EventCommonRoutes {
 
-  private val read: Permission = Permission.unsafe("resources/read")
-
   def projectRoutes(project: ProjectResource): Route = {
 
     lastEventId { offset =>
       operationName(s"/${config.http.prefix}/resources/{org}/{project}/events") {
-        authorizeFor(project.value.path, read)(caller) {
+        authorizeFor(project.value.path, resources.read)(caller) {
           complete(source(s"project=${project.uuid}", offset))
         }
       }
@@ -39,7 +38,7 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task], caller: Caller)(implic
   def organizationRoutes(org: OrganizationResource): Route =
     lastEventId { offset =>
       operationName(s"/${config.http.prefix}/resources/{org}/events") {
-        authorizeFor(/ + org.value.label, read)(caller) {
+        authorizeFor(/ + org.value.label, resources.read)(caller) {
           complete(source(s"org=${org.uuid}", offset))
         }
       }

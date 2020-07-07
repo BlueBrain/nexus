@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.kg.KgError.{InvalidOutputFormat, UnacceptedResponseContentType}
-import ch.epfl.bluebrain.nexus.kg.archives.Archive._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives.outputFormat
@@ -20,7 +19,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat.Tar
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -46,7 +45,7 @@ class ArchiveRoutes private[routes] (archives: Archives[Task], acls: Acls[Task],
       // Create an archive when id is not provided in the Uri (POST)
       (post & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/archives/{org}/{project}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.archives.write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               val created = archives.create(source)
               outputFormat(strict = true, Tar) {
@@ -74,7 +73,7 @@ class ArchiveRoutes private[routes] (archives: Archives[Task], acls: Acls[Task],
       // Create archive
       (put & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/archives/{org}/{project}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.archives.write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(archives.create(resId, source).value.runWithStatus(Created))
             }

@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.iam.index
 import java.time.{Clock, Instant, ZoneId}
 
 import cats.Id
-import ch.epfl.bluebrain.nexus.iam.acls.{read => readAcls, _}
+import ch.epfl.bluebrain.nexus.iam.acls._
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.Permissions.acls
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.util.{ActorSystemFixture, EitherValues}
 import org.scalatest.matchers.should.Matchers
@@ -71,7 +72,7 @@ class InMemoryAclsTreeSpec
         user,
         instant,
         user2,
-        AccessControlList(user2 -> Set(read, other), group -> Set(write, readAcls))
+        AccessControlList(user2 -> Set(read, other), group -> Set(write, acls.read))
       )
     val aclOrg2          =
       ResourceF(
@@ -82,7 +83,7 @@ class InMemoryAclsTreeSpec
         user,
         instant,
         user2,
-        AccessControlList(user -> Set(other, readAcls))
+        AccessControlList(user -> Set(other, acls.read))
       )
     val aclProject1_org2 =
       ResourceF(
@@ -115,7 +116,7 @@ class InMemoryAclsTreeSpec
         user,
         instant,
         user2,
-        AccessControlList(user2 -> Set(other, readAcls), group -> Set(read))
+        AccessControlList(user2 -> Set(other, acls.read), group -> Set(read))
       )
 
     val options = List(true -> true, false -> false, true -> false, false -> true)
@@ -174,7 +175,7 @@ class InMemoryAclsTreeSpec
 
       index.get(Path("/org1").rightValue, ancestors = true, self = true)(Set(group)) shouldEqual
         AccessControlLists(
-          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, readAcls)))
+          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, acls.read)))
         )
     }
 
@@ -197,7 +198,7 @@ class InMemoryAclsTreeSpec
 
       index.get("org1" / "proj1", ancestors = true, self = true)(Set(group)) shouldEqual
         AccessControlLists(
-          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, readAcls))),
+          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, acls.read))),
           "org1" / "proj1"         -> aclProject1_org1.map(_ => AccessControlList(group -> Set(read)))
         )
     }
@@ -247,7 +248,7 @@ class InMemoryAclsTreeSpec
     "fetch ACLs on /*" in {
       index.get(Path("/*").rightValue, ancestors = true, self = true)(Set(user2)) shouldEqual
         AccessControlLists(
-          /                        -> aclRoot.map(_ => AccessControlList(user2 -> Set(other, readAcls))),
+          /                        -> aclRoot.map(_ => AccessControlList(user2 -> Set(other, acls.read))),
           Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(user2 -> Set(read, other)))
         )
 
@@ -319,7 +320,7 @@ class InMemoryAclsTreeSpec
       index.get("org1" / "proj2", ancestors = true, self = true)(Set(user, group)) shouldEqual
         AccessControlLists(
           /                        -> aclRoot.map(_ => AccessControlList(group -> Set(read))),
-          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, readAcls))),
+          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, acls.read))),
           "org1" / "proj2"         -> aclProject2_org1
         )
 
@@ -361,7 +362,7 @@ class InMemoryAclsTreeSpec
         AccessControlLists(
           "org1" / "proj1"         -> aclProject1_org1.map(_ => AccessControlList(group -> Set(read))),
           "org2" / "proj1"         -> aclProject1_org2,
-          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, readAcls))),
+          Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(group -> Set(write, acls.read))),
           /                        -> aclRoot.map(_ => AccessControlList(group -> Set(read)))
         )
 
@@ -417,7 +418,7 @@ class InMemoryAclsTreeSpec
 
       index.get("org1" / "*", ancestors = true, self = true)(Set(user2)) shouldEqual
         AccessControlLists(
-          /                        -> aclRoot.map(_ => AccessControlList(user2 -> Set(other, readAcls))),
+          /                        -> aclRoot.map(_ => AccessControlList(user2 -> Set(other, acls.read))),
           Path("/org1").rightValue -> aclOrg.map(_ => AccessControlList(user2 -> Set(read, other)))
         )
 
@@ -428,7 +429,7 @@ class InMemoryAclsTreeSpec
         AccessControlLists(
           "org1" / "proj1"         -> aclProject1_org1.map(_ => AccessControlList(user -> Set(read))),
           "org1" / "proj2"         -> aclProject2_org1.map(_ => AccessControlList(user -> Set(write))),
-          Path("/org2").rightValue -> aclOrg2.map(_ => AccessControlList(user -> Set(other, readAcls)))
+          Path("/org2").rightValue -> aclOrg2.map(_ => AccessControlList(user -> Set(other, acls.read)))
         )
 
       index.get("*" / "*", ancestors = false, self = true)(Set(user)) shouldEqual
@@ -442,7 +443,7 @@ class InMemoryAclsTreeSpec
           "org1" / "proj1"         -> aclProject1_org1.map(_ => AccessControlList(user -> Set(read))),
           "org1" / "proj2"         -> aclProject2_org1.map(_ => AccessControlList(user -> Set(write))),
           "org2" / "proj1"         -> aclProject1_org2,
-          Path("/org2").rightValue -> aclOrg2.map(_ => AccessControlList(user -> Set(other, readAcls)))
+          Path("/org2").rightValue -> aclOrg2.map(_ => AccessControlList(user -> Set(other, acls.read)))
         )
 
       index.get("*" / "*", ancestors = false, self = false)(Set(user)) shouldEqual

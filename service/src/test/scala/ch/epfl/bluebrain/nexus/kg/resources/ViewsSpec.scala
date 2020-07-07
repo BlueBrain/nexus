@@ -45,7 +45,7 @@ import ch.epfl.bluebrain.nexus.util.{
   Resources => TestResources
 }
 import ch.epfl.bluebrain.nexus.rdf.{Graph, Iri}
-import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import io.circe.Json
@@ -145,11 +145,13 @@ class ViewsSpec
     // format: on
     resolverCache.get(projectRef) shouldReturn IO(List.empty[Resolver])
 
-    def viewFrom(json: Json)                         =
+    def viewFrom(json: Json) =
       json.addContext(viewCtxUri) deepMerge Json.obj("@id" -> Json.fromString(id.show))
 
-    implicit val acls                                =
-      AccessControlLists(/ -> resourceAcls(AccessControlList(caller.subject -> Set(View.write, View.query))))
+    implicit val acls        =
+      AccessControlLists(
+        / -> resourceAcls(AccessControlList(caller.subject -> Set(Permissions.views.write, Permissions.views.query)))
+      )
 
     def matchesIgnoreId(that: View): View => Boolean = {
       case view: View.AggregateElasticSearchView => view.copy(uuid = that.uuid) == that

@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import cats.Monad
 import cats.effect.{Effect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.config.Permissions._
+import ch.epfl.bluebrain.nexus.service.config.Permissions._
 import ch.epfl.bluebrain.nexus.admin.index.Cache._
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectResource}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams

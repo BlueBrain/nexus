@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path.Segment
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions
 
 import scala.annotation.tailrec
 
@@ -62,7 +63,7 @@ class InMemoryAclsTree[F[_]] private (
 
     def removeNotOwn(currentAcls: AccessControlLists): AccessControlLists = {
       def containsAclsRead(acl: AccessControlList): Boolean =
-        acl.value.exists { case (ident, perms) => identities.contains(ident) && perms.contains(read) }
+        acl.value.exists { case (ident, perms) => identities.contains(ident) && perms.contains(Permissions.acls.read) }
 
       val (_, result)                                       = currentAcls.sorted.value
         .foldLeft(Set.empty[Path] -> AccessControlLists.empty) {

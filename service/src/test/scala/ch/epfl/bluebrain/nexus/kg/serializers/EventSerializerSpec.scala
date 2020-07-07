@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.kg.serializers.Serializer.EventSerializer
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{files, resources}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.storage.client.types.{FileAttributes => StorageFileAttributes}
@@ -52,9 +53,9 @@ class EventSerializerSpec
   final private val serialization    = SerializationExtension(system)
   implicit private val storageConfig =
     appConfig.storage.copy(
-      DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", read, write, false, 1024L),
-      RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
-      S3StorageConfig("MD5", read, write, true, 1024L),
+      DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", resources.read, files.write, false, 1024L),
+      RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", resources.read, files.write, true, 1024L),
+      S3StorageConfig("MD5", resources.read, files.write, true, 1024L),
       "password",
       "salt",
       RetryStrategyConfig("linear", 300.millis, 5.minutes, 100, 1.second)

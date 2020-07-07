@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.GlobalEventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import io.circe.Encoder
 import monix.eval.Task
 
@@ -23,7 +23,7 @@ class GlobalEventRoutesSpec extends EventsSpecBase {
   private val realms  = mock[Realms[Task]]
 
   val routes = new TestableEventRoutes(events, aclsApi, realms, caller).routes
-  aclsApi.hasPermission(Path./, read)(caller) shouldReturn Task.pure(true)
+  aclsApi.hasPermission(Path./, Permissions.events.read)(caller) shouldReturn Task.pure(true)
 
   "GlobalEventRoutes" should {
 

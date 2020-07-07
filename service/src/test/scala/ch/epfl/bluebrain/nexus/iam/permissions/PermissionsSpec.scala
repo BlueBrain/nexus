@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.permissions
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.util._
 import org.mockito.IdiomaticMockito
@@ -47,8 +48,8 @@ class PermissionsSpec
 
   val (macls, acls) = {
     val m = mock[Acls[IO]]
-    m.hasPermission(Path./, read, ancestors = false)(caller) shouldReturn IO.pure(true)
-    m.hasPermission(Path./, write, ancestors = false)(caller) shouldReturn IO.pure(true)
+    m.hasPermission(Path./, permissions.read, ancestors = false)(caller) shouldReturn IO.pure(true)
+    m.hasPermission(Path./, permissions.write, ancestors = false)(caller) shouldReturn IO.pure(true)
     (m, IO.pure(m))
   }
 
@@ -109,7 +110,10 @@ class PermissionsSpec
       perms.subtract(Set(), 1L).rejected[CannotSubtractEmptyCollection.type]
     }
     "fail to subtract from minimum collection" in {
-      perms.subtract(Set(read), 1L).rejected[CannotSubtractFromMinimumCollection].permissions shouldEqual minimum
+      perms
+        .subtract(Set(permissions.read), 1L)
+        .rejected[CannotSubtractFromMinimumCollection]
+        .permissions shouldEqual minimum
     }
     "subtract a permission" in {
       perms.subtract(Set(perm1), 1L).accepted
@@ -135,7 +139,7 @@ class PermissionsSpec
       perms.replace(Set(), 3L).rejected[CannotReplaceWithEmptyCollection.type]
     }
     "fail to replace with subset of minimum" in {
-      perms.replace(Set(read), 3L).rejected[CannotReplaceWithEmptyCollection.type]
+      perms.replace(Set(permissions.read), 3L).rejected[CannotReplaceWithEmptyCollection.type]
     }
     "replace non minimum" in {
       perms.replace(Set(perm3, perm4), 3L).accepted
@@ -165,22 +169,22 @@ class PermissionsSpec
     // NO PERMISSIONS BEYOND THIS LINE
 
     "fail to fetch when no permissions" in {
-      macls.hasPermission(Path./, read, ancestors = false)(caller) shouldReturn IO.pure(false)
-      macls.hasPermission(Path./, write, ancestors = false)(caller) shouldReturn IO.pure(false)
-      perms.fetch.failed[AccessDenied] shouldEqual AccessDenied(id, read)
-      perms.effectivePermissions.failed[AccessDenied] shouldEqual AccessDenied(id, read)
+      macls.hasPermission(Path./, permissions.read, ancestors = false)(caller) shouldReturn IO.pure(false)
+      macls.hasPermission(Path./, permissions.write, ancestors = false)(caller) shouldReturn IO.pure(false)
+      perms.fetch.failed[AccessDenied] shouldEqual AccessDenied(id, permissions.read)
+      perms.effectivePermissions.failed[AccessDenied] shouldEqual AccessDenied(id, permissions.read)
     }
     "fail to append when no permissions" in {
-      perms.append(Set(perm3)).failed[AccessDenied] shouldEqual AccessDenied(id, write)
+      perms.append(Set(perm3)).failed[AccessDenied] shouldEqual AccessDenied(id, permissions.write)
     }
     "fail to subtract when no permissions" in {
-      perms.subtract(Set(perm3), 1L).failed[AccessDenied] shouldEqual AccessDenied(id, write)
+      perms.subtract(Set(perm3), 1L).failed[AccessDenied] shouldEqual AccessDenied(id, permissions.write)
     }
     "fail to replace when no permissions" in {
-      perms.replace(Set(perm3), 1L).failed[AccessDenied] shouldEqual AccessDenied(id, write)
+      perms.replace(Set(perm3), 1L).failed[AccessDenied] shouldEqual AccessDenied(id, permissions.write)
     }
     "fail to delete when no permissions" in {
-      perms.delete(1L).failed[AccessDenied] shouldEqual AccessDenied(id, write)
+      perms.delete(1L).failed[AccessDenied] shouldEqual AccessDenied(id, permissions.write)
     }
   }
 }

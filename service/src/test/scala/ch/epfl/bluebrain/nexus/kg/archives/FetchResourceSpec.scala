@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.{Json, Printer}
 import monix.eval.Task
@@ -64,7 +64,9 @@ class FetchResourceSpec
   private val myUser                              = User("mySubject", "myRealm")
   private val caller: Caller                      = Caller(myUser, Set(myUser, Anonymous))
   private val readCustom: Permission              = Permission.unsafe("some/read")
-  private val acls                                = AccessControlLists(/ -> resourceAcls(AccessControlList(myUser -> Set(read, readCustom))))
+  private val acls                                = AccessControlLists(
+    / -> resourceAcls(AccessControlList(myUser -> Set(Permissions.resources.read, readCustom)))
+  )
   private val printer: Printer                    = Printer.spaces2.copy(dropNullValues = true)
   implicit private val clock                      = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
   private val subject: Subject                    = Anonymous
@@ -108,7 +110,7 @@ class FetchResourceSpec
         genString(),
         Paths.get("some"),
         readCustom,
-        write,
+        Permissions.resources.read,
         10L
       )
   }
@@ -154,7 +156,11 @@ class FetchResourceSpec
     "return none on resource when caller has no read permissions" in new Ctx {
       val description = Resource(id, project, None, None, originalSource = true, None)
       val acls        =
-        AccessControlLists(Path(s"/${genString()}").rightValue -> resourceAcls(AccessControlList(myUser -> Set(read))))
+        AccessControlLists(
+          Path(s"/${genString()}").rightValue -> resourceAcls(
+            AccessControlList(myUser -> Set(Permissions.resources.read))
+          )
+        )
       resources.fetchSource(idRes) shouldReturn EitherT.rightT[Task, Rejection](json)
       val fetch       = fetchResource(acls = acls)
       fetch(description).value.runToFuture.futureValue shouldEqual None
@@ -181,7 +187,7 @@ class FetchResourceSpec
 
     "return none on file when caller has no read permissions" in new FileCtx {
       val description = File(id, project, None, None, None)
-      val acls        = AccessControlLists(/ -> resourceAcls(AccessControlList(myUser -> Set(read))))
+      val acls        = AccessControlLists(/ -> resourceAcls(AccessControlList(myUser -> Set(Permissions.resources.read))))
       files.fetch[AkkaSource](eqTo(idRes))(any[Fetch[Task, AkkaSource]]) shouldReturn
         EitherT.rightT[Task, Rejection]((storage, attr, produce(genString())))
       val fetch       = fetchResource(acls = acls)

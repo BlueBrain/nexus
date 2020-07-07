@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.iam.types.{Permission, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.acls
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
@@ -28,7 +29,7 @@ class AccessControlListsSpec extends AnyWordSpecLike with Matchers with Resource
     val write: Permission = Permission.unsafe("write")
     val other: Permission = Permission.unsafe("other")
 
-    val readWrite = Set(Permission.unsafe("acls/read"), Permission.unsafe("acls/write"))
+    val readWrite = Set(acls.read, acls.write)
     val manage    = Set(Permission.unsafe("acls/manage"))
 
     val tpes = Set[AbsoluteIri](nxv.AccessControlList.value)

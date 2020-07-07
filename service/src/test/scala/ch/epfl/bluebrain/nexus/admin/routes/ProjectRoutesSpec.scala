@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error._
-import ch.epfl.bluebrain.nexus.admin.config.Permissions
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
@@ -30,7 +29,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.routes.Routes
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
@@ -93,8 +92,6 @@ class ProjectRoutesSpec
     )
 
     val create = Permission.unsafe("projects/create")
-    val read   = Permission.unsafe("projects/read")
-    val write  = Permission.unsafe("projects/write")
     val cred   = OAuth2BearerToken("token")
     val token  = AccessToken(cred.token)
 
@@ -174,7 +171,7 @@ class ProjectRoutesSpec
             subject,
             Instant.now(),
             subject,
-            AccessControlList(subject -> Set(create, write, read))
+            AccessControlList(subject -> Set(create, Permissions.projects.read, Permissions.projects.write))
           )
         )
       )
@@ -190,14 +187,14 @@ class ProjectRoutesSpec
             subject,
             Instant.now(),
             subject,
-            AccessControlList(subject -> Set(create, write, read))
+            AccessControlList(subject -> Set(create, Permissions.projects.read, Permissions.projects.write))
           )
         )
       )
     aclsApi.hasPermission(/ + "org", create)(caller) shouldReturn Task.pure(true)
     aclsApi.hasPermission("org" / "label", create)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission("org" / "label", write)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission("org" / "label", read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission("org" / "label", Permissions.projects.write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission("org" / "label", Permissions.projects.read)(caller) shouldReturn Task.pure(true)
 
   }
 
@@ -370,7 +367,7 @@ class ProjectRoutesSpec
     }
 
     "reject unauthorized requests" in new Context {
-      aclsApi.hasPermission("org" / "label", read)(Caller.anonymous) shouldReturn Task.pure(false)
+      aclsApi.hasPermission("org" / "label", Permissions.projects.read)(Caller.anonymous) shouldReturn Task.pure(false)
 
       aclsApi.list("org" / "label", ancestors = true, self = true)(Caller.anonymous) shouldReturn
         Task.pure(AccessControlLists.empty)

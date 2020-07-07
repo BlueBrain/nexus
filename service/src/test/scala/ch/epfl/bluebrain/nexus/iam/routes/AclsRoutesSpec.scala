@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.marshallers.instances._
 import ch.epfl.bluebrain.nexus.service.routes.Routes
@@ -61,7 +62,7 @@ class AclsRoutesSpec
     val user      = User("uuid", "realm")
     val user2     = User("uuid2", "realm")
     val group     = Group("mygroup", "myrealm")
-    val readWrite = Set(Permission("acls/read").value, Permission("acls/write").value)
+    val readWrite = Set(Permissions.acls.read, Permissions.acls.write)
     val manage    = Set(Permission("acls/manage").value)
 
     val aclJson = jsonContentOf("/acls/acl.json")

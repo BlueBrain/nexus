@@ -43,7 +43,7 @@ import ch.epfl.bluebrain.nexus.kg.{urlEncode, Error, KgError, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
@@ -118,10 +118,8 @@ class ViewRoutesSpec
   implicit private val clients       = Clients()
   private val coordinator            = mock[ProjectViewCoordinator[Task]]
   private val sortList               = SortList(List(Sort(nxv.createdAt.prefix), Sort("@id")))
-  private val viewsWrite             = Permission.unsafe("views/write")
-  private val viewsQuery             = Permission.unsafe("views/query")
   private val manageResolver         =
-    Set(viewsQuery, Permission.unsafe("resources/read"), viewsWrite)
+    Set(Permissions.views.read, Permissions.views.write, Permissions.views.query)
   // format: off
   private val routes = new KgRoutes(resources, mock[Resolvers[Task]], views, mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, aclsApi, realms, coordinator).routes
   // format: on
@@ -189,9 +187,9 @@ class ViewRoutesSpec
         s"/v1/resources/$organization/$project/_/$urlEncodedId$queryParam"
       )
     }
-    aclsApi.hasPermission(organization / project, viewsWrite)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission(organization / project, read)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission(organization / project, viewsQuery)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.views.write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.views.read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.views.query)(caller) shouldReturn Task.pure(true)
 
   }
 

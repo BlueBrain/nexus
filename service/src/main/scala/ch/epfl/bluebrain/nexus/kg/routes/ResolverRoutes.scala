@@ -16,15 +16,14 @@ import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
-import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
 import kamon.Kamon
@@ -63,7 +62,7 @@ class ResolverRoutes private[routes] (
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.resolvers.write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(resolvers.create(source).value.runWithStatus(Created))
             }
@@ -74,7 +73,7 @@ class ResolverRoutes private[routes] (
       (get & paginated & searchParams(fixedSchema = resolverSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         extractUri { implicit uri =>
           operationName(s"/${config.http.prefix}/resolvers/{org}/{project}") {
-            authorizeFor(projectPath, read)(caller) {
+            authorizeFor(projectPath, Permissions.resolvers.read)(caller) {
               val listed =
                 viewCache.getDefaultElasticSearch(ProjectRef(project.uuid)).flatMap(resolvers.list(_, params, page))
               complete(listed.runWithStatus(OK))
@@ -105,7 +104,7 @@ class ResolverRoutes private[routes] (
       operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/_/{resourceId}") {
         outputFormat(strict = false, Compacted) {
           case format: NonBinaryOutputFormat =>
-            authorizeFor(projectPath, read)(caller) {
+            authorizeFor(projectPath, Permissions.resolvers.read)(caller) {
               concat(
                 (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                   completeWithFormat(resolvers.resolve(id, rev).value.runWithStatus(OK))(format)
@@ -139,7 +138,7 @@ class ResolverRoutes private[routes] (
       operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/{resourceId}") {
         outputFormat(strict = false, Compacted) {
           case format: NonBinaryOutputFormat =>
-            authorizeFor(projectPath, read)(caller) {
+            authorizeFor(projectPath, Permissions.resolvers.read)(caller) {
               concat(
                 (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                   completeWithFormat(resolvers.resolve(resolverId, resourceId, rev).value.runWithStatus(OK))(format)
@@ -172,7 +171,7 @@ class ResolverRoutes private[routes] (
       // Create or update a resolver (depending on rev query parameter)
       (put & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.resolvers.write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               parameter("rev".as[Long].?) {
                 case None      =>
@@ -189,7 +188,7 @@ class ResolverRoutes private[routes] (
       // Deprecate resolver
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.resolvers.write) & projectNotDeprecated) {
             complete(resolvers.deprecate(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))
           }
         }
@@ -199,7 +198,7 @@ class ResolverRoutes private[routes] (
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              authorizeFor(projectPath, read)(caller) {
+              authorizeFor(projectPath, Permissions.resolvers.read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(resolvers.fetch(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))(
@@ -225,7 +224,7 @@ class ResolverRoutes private[routes] (
       // Fetch resolver source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/source") {
-          authorizeFor(projectPath, read)(caller) {
+          authorizeFor(projectPath, Permissions.resolvers.read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(resolvers.fetchSource(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))
@@ -245,16 +244,17 @@ class ResolverRoutes private[routes] (
         operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/incoming") {
           fromPaginated.apply {
             implicit page =>
-              extractUri { implicit uri =>
-                authorizeFor(projectPath, read)(caller) {
-                  val listed = for {
-                    view     <-
-                      viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
-                    _        <- resolvers.fetchSource(Id(ProjectRef(project.uuid), id))
-                    incoming <- EitherT.right[Rejection](resolvers.listIncoming(id, view, page))
-                  } yield incoming
-                  complete(listed.value.runWithStatus(OK))
-                }
+              extractUri {
+                implicit uri =>
+                  authorizeFor(projectPath, Permissions.resolvers.read)(caller) {
+                    val listed = for {
+                      view     <-
+                        viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
+                      _        <- resolvers.fetchSource(Id(ProjectRef(project.uuid), id))
+                      incoming <- EitherT.right[Rejection](resolvers.listIncoming(id, view, page))
+                    } yield incoming
+                    complete(listed.value.runWithStatus(OK))
+                  }
               }
           }
         }
@@ -265,21 +265,22 @@ class ResolverRoutes private[routes] (
           operationName(s"/${config.http.prefix}/resolvers/{org}/{project}/{id}/outgoing") {
             fromPaginated.apply {
               implicit page =>
-                extractUri { implicit uri =>
-                  authorizeFor(projectPath, read)(caller) {
-                    val listed = for {
-                      view     <-
-                        viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
-                      _        <- resolvers.fetchSource(Id(ProjectRef(project.uuid), id))
-                      outgoing <- EitherT.right[Rejection](resolvers.listOutgoing(id, view, page, links))
-                    } yield outgoing
-                    complete(listed.value.runWithStatus(OK))
-                  }
+                extractUri {
+                  implicit uri =>
+                    authorizeFor(projectPath, Permissions.resolvers.read)(caller) {
+                      val listed = for {
+                        view     <-
+                          viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
+                        _        <- resolvers.fetchSource(Id(ProjectRef(project.uuid), id))
+                        outgoing <- EitherT.right[Rejection](resolvers.listOutgoing(id, view, page, links))
+                      } yield outgoing
+                      complete(listed.value.runWithStatus(OK))
+                    }
                 }
             }
           }
       },
-      new TagRoutes("resolvers", tags, acls, realms, resolverRef, write).routes(id),
+      new TagRoutes("resolvers", tags, acls, realms, resolverRef, Permissions.resolvers.write).routes(id),
       routesResourceResolution(id)
     )
 }

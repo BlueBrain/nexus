@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
@@ -101,8 +101,7 @@ class SchemaRoutesSpec
     Mockito.reset(schemas)
   }
 
-  private val schemaWrite: Permission = Permission.unsafe("schemas/write")
-  private val manageResolver          = Set(Permission.unsafe("resources/read"), schemaWrite)
+  private val manageResolver = Set(Permissions.schemas.read, Permissions.schemas.write)
   // format: off
   private val routes = new KgRoutes(resources, mock[Resolvers[Task]], mock[Views[Task]], mock[Storages[Task]], schemas, mock[Files[Task]], mock[Archives[Task]], tagsRes, aclsApi, realms, mock[ProjectViewCoordinator[Task]]).routes
   // format: on
@@ -160,8 +159,8 @@ class SchemaRoutesSpec
       )
     }
 
-    aclsApi.hasPermission(organization / project, schemaWrite)(caller) shouldReturn Task.pure(true)
-    aclsApi.hasPermission(organization / project, read)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.schemas.write)(caller) shouldReturn Task.pure(true)
+    aclsApi.hasPermission(organization / project, Permissions.resources.read)(caller) shouldReturn Task.pure(true)
 
   }
 

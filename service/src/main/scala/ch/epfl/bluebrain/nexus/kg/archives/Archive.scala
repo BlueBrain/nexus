@@ -8,10 +8,9 @@ import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
+import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.ResourceDescription
-import ch.epfl.bluebrain.nexus.service.config.AppConfig.ArchivesConfig
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
@@ -21,6 +20,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path.{Segment, Slash}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.{Cursor, Graph, GraphDecoder}
+import ch.epfl.bluebrain.nexus.service.config.AppConfig.ArchivesConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.{nxv, nxva}
 
 import scala.annotation.tailrec
@@ -38,8 +38,6 @@ final case class Archive(resId: ResId, created: Instant, createdBy: Identity, va
 }
 
 object Archive {
-
-  val write: Permission = Permission.unsafe("archives/write")
 
   /**
     * Enumeration of resource descriptions

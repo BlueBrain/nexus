@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated, Gro
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, IamError, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{Path, Url}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.util._
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
@@ -68,8 +68,8 @@ class RealmsSpec
 
   val (macls, acls) = {
     val m = mock[Acls[IO]]
-    m.hasPermission(isA[Path], read, isA[Boolean])(caller) shouldReturn IO.pure(true)
-    m.hasPermission(isA[Path], write, isA[Boolean])(caller) shouldReturn IO.pure(true)
+    m.hasPermission(isA[Path], Permissions.realms.read, isA[Boolean])(caller) shouldReturn IO.pure(true)
+    m.hasPermission(isA[Path], Permissions.realms.write, isA[Boolean])(caller) shouldReturn IO.pure(true)
     (m, IO.pure(m))
   }
 
@@ -403,8 +403,8 @@ class RealmsSpec
 
     // NO PERMISSIONS BEYOND THIS LINE
     "fail to create a realm with no permissions" in {
-      macls.hasPermission(isA[Path], read, isA[Boolean])(caller) shouldReturn IO.pure(false)
-      macls.hasPermission(isA[Path], write, isA[Boolean])(caller) shouldReturn IO.pure(false)
+      macls.hasPermission(isA[Path], Permissions.realms.read, isA[Boolean])(caller) shouldReturn IO.pure(false)
+      macls.hasPermission(isA[Path], Permissions.realms.write, isA[Boolean])(caller) shouldReturn IO.pure(false)
       realms.create(first, firstName, openIdUrl, None).failed[AccessDenied]
     }
 

@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.kg.resolve
 import cats.Monad
 import cats.data.EitherT
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
-import ch.epfl.bluebrain.nexus.kg._
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.iam.types.Identity
+import ch.epfl.bluebrain.nexus.kg._
 import ch.epfl.bluebrain.nexus.kg.resolve.Resolver._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.InvalidResourceFormat
@@ -66,8 +66,6 @@ sealed trait Resolver extends Product with Serializable {
 }
 
 object Resolver {
-
-  val write: Permission = Permission.unsafe("resolvers/write")
 
   /**
     * Attempts to transform the resource into a [[ch.epfl.bluebrain.nexus.kg.resolve.Resolver]].

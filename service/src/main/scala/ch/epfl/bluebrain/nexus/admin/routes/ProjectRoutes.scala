@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import ch.epfl.bluebrain.nexus.admin.config.Permissions.{projects => pp}
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{projects => pp}
 import ch.epfl.bluebrain.nexus.admin.directives.QueryDirectives
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}

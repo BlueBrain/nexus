@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Permissions.storages
 import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.util.ActorSystemFixture
 import monix.eval.Task
@@ -40,7 +41,8 @@ class StorageCacheSpec
   val lastId = url"http://example.com/lastA"
   // initialInstant.minusSeconds(1L + genInt().toLong)
 
-  val tempStorage = DiskStorage(ref1, genIri, 1L, false, true, "alg", Paths.get("/tmp"), read, write, 1024L)
+  val tempStorage =
+    DiskStorage(ref1, genIri, 1L, false, true, "alg", Paths.get("/tmp"), storages.read, storages.write, 1024L)
 
   val lastStorageProj1 = tempStorage.copy(id = lastId)
   val lastStorageProj2 = tempStorage.copy(ref = ref2, id = lastId)

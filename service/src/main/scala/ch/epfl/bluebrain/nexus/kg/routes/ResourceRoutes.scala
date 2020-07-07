@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.KgError.InvalidOutputFormat
 import ch.epfl.bluebrain.nexus.kg.cache._
 import ch.epfl.bluebrain.nexus.kg.directives.PathDirectives._
@@ -18,10 +18,9 @@ import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
-import ch.epfl.bluebrain.nexus.kg.routes.ResourceRoutes._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
@@ -60,7 +59,7 @@ class ResourceRoutes private[routes] (
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.resources.write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(resources.create(schema, source).value.runWithStatus(Created))
             }
@@ -71,7 +70,7 @@ class ResourceRoutes private[routes] (
       (get & paginated & searchParams(fixedSchema = schema.iri) & pathEndOrSingleSlash) { (page, params) =>
         extractUri { implicit uri =>
           operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}") {
-            authorizeFor(projectPath, read)(caller) {
+            authorizeFor(projectPath, Permissions.resources.read)(caller) {
               val listed =
                 viewCache.getDefaultElasticSearch(ProjectRef(project.uuid)).flatMap(resources.list(_, params, page))
               complete(listed.runWithStatus(OK))
@@ -93,9 +92,9 @@ class ResourceRoutes private[routes] (
   def routes(id: AbsoluteIri): Route =
     concat(
       // Create or update a resource (depending on rev query parameter)
-      (put & projectNotDeprecated & pathEndOrSingleSlash & authorizeFor(projectPath, write)) {
+      (put & projectNotDeprecated & pathEndOrSingleSlash & authorizeFor(projectPath, Permissions.resources.write)) {
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.resources.write) & projectNotDeprecated) {
             entity(as[Json]) {
               source =>
                 parameter("rev".as[Long].?) {
@@ -117,7 +116,7 @@ class ResourceRoutes private[routes] (
       // Deprecate resource
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.resources.write) & projectNotDeprecated) {
             complete(resources.deprecate(Id(ProjectRef(project.uuid), id), rev, schema).value.runWithStatus(OK))
           }
         }
@@ -127,7 +126,7 @@ class ResourceRoutes private[routes] (
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              authorizeFor(projectPath, read)(caller) {
+              authorizeFor(projectPath, Permissions.resources.read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(
@@ -157,7 +156,7 @@ class ResourceRoutes private[routes] (
       // Fetch resource source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}/source") {
-          authorizeFor(projectPath, read)(caller) {
+          authorizeFor(projectPath, Permissions.resources.read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(resources.fetchSource(Id(ProjectRef(project.uuid), id), rev, schema).value.runWithStatus(OK))
@@ -177,16 +176,17 @@ class ResourceRoutes private[routes] (
         operationName(s"/${config.http.prefix}/resources/{org}/{project}/{schemaId}/{id}/incoming") {
           fromPaginated.apply {
             implicit page =>
-              extractUri { implicit uri =>
-                authorizeFor(projectPath, read)(caller) {
-                  val listed = for {
-                    view     <-
-                      viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
-                    _        <- resources.fetchSource(Id(ProjectRef(project.uuid), id), schema)
-                    incoming <- EitherT.right[Rejection](resources.listIncoming(id, view, page))
-                  } yield incoming
-                  complete(listed.value.runWithStatus(OK))
-                }
+              extractUri {
+                implicit uri =>
+                  authorizeFor(projectPath, Permissions.resources.read)(caller) {
+                    val listed = for {
+                      view     <-
+                        viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
+                      _        <- resources.fetchSource(Id(ProjectRef(project.uuid), id), schema)
+                      incoming <- EitherT.right[Rejection](resources.listIncoming(id, view, page))
+                    } yield incoming
+                    complete(listed.value.runWithStatus(OK))
+                  }
               }
           }
         }
@@ -199,7 +199,7 @@ class ResourceRoutes private[routes] (
               implicit page =>
                 extractUri {
                   implicit uri =>
-                    authorizeFor(projectPath, read)(caller) {
+                    authorizeFor(projectPath, Permissions.resources.read)(caller) {
                       val listed = for {
                         view     <-
                           viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
@@ -212,11 +212,6 @@ class ResourceRoutes private[routes] (
             }
           }
       },
-      new TagRoutes("resources", tags, acls, realms, schema, write).routes(id)
+      new TagRoutes("resources", tags, acls, realms, schema, Permissions.resources.write).routes(id)
     )
-}
-
-object ResourceRoutes {
-  val write: Permission = Permission.unsafe("resources/write")
-
 }

@@ -21,11 +21,10 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
-import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Permissions}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.Json
 import kamon.Kamon
@@ -64,7 +63,7 @@ class StorageRoutes private[routes] (
       (post & noParameter("rev".as[Long]) & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/storages/{org}/{project}") {
           Kamon.currentSpan().tag("resource.operation", "create")
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.storages.write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               complete(storages.create(source).value.runWithStatus(Created))
             }
@@ -75,7 +74,7 @@ class StorageRoutes private[routes] (
       (get & paginated & searchParams(fixedSchema = storageSchemaUri) & pathEndOrSingleSlash) { (page, params) =>
         operationName(s"/${config.http.prefix}/storages/{org}/{project}") {
           extractUri { implicit uri =>
-            authorizeFor(projectPath, read)(caller) {
+            authorizeFor(projectPath, Permissions.storages.read)(caller) {
               val listed =
                 viewCache.getDefaultElasticSearch(ProjectRef(project.uuid)).flatMap(storages.list(_, params, page))
               complete(listed.runWithStatus(OK))
@@ -102,7 +101,7 @@ class StorageRoutes private[routes] (
       // Create or update a storage (depending on rev query parameter)
       (put & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.storages.write) & projectNotDeprecated) {
             entity(as[Json]) { source =>
               parameter("rev".as[Long].?) {
                 case None      =>
@@ -119,7 +118,7 @@ class StorageRoutes private[routes] (
       // Deprecate storage
       (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}") {
-          (authorizeFor(projectPath, write) & projectNotDeprecated) {
+          (authorizeFor(projectPath, Permissions.storages.write) & projectNotDeprecated) {
             complete(storages.deprecate(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))
           }
         }
@@ -129,7 +128,7 @@ class StorageRoutes private[routes] (
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}") {
           outputFormat(strict = false, Compacted) {
             case format: NonBinaryOutputFormat =>
-              authorizeFor(projectPath, read)(caller) {
+              authorizeFor(projectPath, Permissions.storages.read)(caller) {
                 concat(
                   (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                     completeWithFormat(storages.fetch(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))(
@@ -153,7 +152,7 @@ class StorageRoutes private[routes] (
       // Fetch storage source
       (get & pathPrefix("source") & pathEndOrSingleSlash) {
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}/source") {
-          authorizeFor(projectPath, read)(caller) {
+          authorizeFor(projectPath, Permissions.storages.read)(caller) {
             concat(
               (parameter("rev".as[Long]) & noParameter("tag")) { rev =>
                 complete(storages.fetchSource(Id(ProjectRef(project.uuid), id), rev).value.runWithStatus(OK))
@@ -173,16 +172,17 @@ class StorageRoutes private[routes] (
         operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}/incoming") {
           fromPaginated.apply {
             implicit page =>
-              extractUri { implicit uri =>
-                authorizeFor(projectPath, read)(caller) {
-                  val listed = for {
-                    view     <-
-                      viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
-                    _        <- storages.fetchSource(Id(ProjectRef(project.uuid), id))
-                    incoming <- EitherT.right[Rejection](storages.listIncoming(id, view, page))
-                  } yield incoming
-                  complete(listed.value.runWithStatus(OK))
-                }
+              extractUri {
+                implicit uri =>
+                  authorizeFor(projectPath, Permissions.storages.read)(caller) {
+                    val listed = for {
+                      view     <-
+                        viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
+                      _        <- storages.fetchSource(Id(ProjectRef(project.uuid), id))
+                      incoming <- EitherT.right[Rejection](storages.listIncoming(id, view, page))
+                    } yield incoming
+                    complete(listed.value.runWithStatus(OK))
+                  }
               }
           }
         }
@@ -193,20 +193,21 @@ class StorageRoutes private[routes] (
           operationName(s"/${config.http.prefix}/storages/{org}/{project}/{id}/outgoing") {
             fromPaginated.apply {
               implicit page =>
-                extractUri { implicit uri =>
-                  authorizeFor(projectPath, read)(caller) {
-                    val listed = for {
-                      view     <-
-                        viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
-                      _        <- storages.fetchSource(Id(ProjectRef(project.uuid), id))
-                      outgoing <- EitherT.right[Rejection](storages.listOutgoing(id, view, page, links))
-                    } yield outgoing
-                    complete(listed.value.runWithStatus(OK))
-                  }
+                extractUri {
+                  implicit uri =>
+                    authorizeFor(projectPath, Permissions.storages.read)(caller) {
+                      val listed = for {
+                        view     <-
+                          viewCache.getDefaultSparql(ProjectRef(project.uuid)).toNotFound(nxv.defaultSparqlIndex.value)
+                        _        <- storages.fetchSource(Id(ProjectRef(project.uuid), id))
+                        outgoing <- EitherT.right[Rejection](storages.listOutgoing(id, view, page, links))
+                      } yield outgoing
+                      complete(listed.value.runWithStatus(OK))
+                    }
                 }
             }
           }
       },
-      new TagRoutes("storages", tags, acls, realms, storageRef, write).routes(id)
+      new TagRoutes("storages", tags, acls, realms, storageRef, Permissions.storages.write).routes(id)
     )
 }

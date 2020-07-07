@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.iam.types.IamError.{AccessDenied, UnexpectedIniti
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.acls
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
@@ -46,7 +47,7 @@ class Acls[F[_]](
     * @param acl  the identity to permissions mapping to replace
     */
   def replace(path: Path, rev: Long, acl: AccessControlList)(implicit caller: Caller): F[MetaOrRejection] =
-    check(path, write) >> eval(path, ReplaceAcl(path, acl, rev, caller.subject)) <* updateIndex(path)
+    check(path, acls.write) >> eval(path, ReplaceAcl(path, acl, rev, caller.subject)) <* updateIndex(path)
 
   /**
     * Appends ''acl'' on a ''path''.
@@ -55,7 +56,7 @@ class Acls[F[_]](
     * @param acl  the identity to permissions mapping to append
     */
   def append(path: Path, rev: Long, acl: AccessControlList)(implicit caller: Caller): F[MetaOrRejection] =
-    check(path, write) >> eval(path, AppendAcl(path, acl, rev, caller.subject)) <* updateIndex(path)
+    check(path, acls.write) >> eval(path, AppendAcl(path, acl, rev, caller.subject)) <* updateIndex(path)
 
   /**
     * Subtracts ''acl'' on a ''path''.
@@ -64,7 +65,7 @@ class Acls[F[_]](
     * @param acl  the identity to permissions mapping to subtract
     */
   def subtract(path: Path, rev: Long, acl: AccessControlList)(implicit caller: Caller): F[MetaOrRejection] =
-    check(path, write) >> eval(path, SubtractAcl(path, acl, rev, caller.subject)) <* updateIndex(path)
+    check(path, acls.write) >> eval(path, SubtractAcl(path, acl, rev, caller.subject)) <* updateIndex(path)
 
   /**
     * Delete all ACL on a ''path''.
@@ -72,7 +73,7 @@ class Acls[F[_]](
     * @param path the target path for the ACL
     */
   def delete(path: Path, rev: Long)(implicit caller: Caller): F[MetaOrRejection] =
-    check(path, write) >> eval(path, DeleteAcl(path, rev, caller.subject)) <* updateIndex(path)
+    check(path, acls.write) >> eval(path, DeleteAcl(path, rev, caller.subject)) <* updateIndex(path)
 
   private def eval(path: Path, cmd: AclCommand): F[MetaOrRejection] =
     agg
@@ -93,7 +94,7 @@ class Acls[F[_]](
     */
   def fetch(path: Path, rev: Long, self: Boolean)(implicit caller: Caller): F[ResourceOpt] =
     if (self) fetchUnsafe(path, rev).map(filterSelf)
-    else check(path, read) >> fetchUnsafe(path, rev)
+    else check(path, acls.read) >> fetchUnsafe(path, rev)
 
   /**
     * Fetches the entire ACL for a ''path''.
@@ -104,7 +105,7 @@ class Acls[F[_]](
     */
   def fetch(path: Path, self: Boolean)(implicit caller: Caller): F[ResourceOpt] =
     if (self) fetchUnsafe(path).map(filterSelf)
-    else check(path, read) >> fetchUnsafe(path)
+    else check(path, acls.read) >> fetchUnsafe(path)
 
   /**
     * Fetches the [[AccessControlLists]] of the provided ''path'' with some filtering options.

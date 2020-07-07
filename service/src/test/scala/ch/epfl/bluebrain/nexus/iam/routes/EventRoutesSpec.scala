@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.iam.routes.EventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.iam.testsyntax._
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, GrantType, Label, Permission}
-import ch.epfl.bluebrain.nexus.iam.{acls => aclp}
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{acls => aclp}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{Path, Url}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.service.config.Settings

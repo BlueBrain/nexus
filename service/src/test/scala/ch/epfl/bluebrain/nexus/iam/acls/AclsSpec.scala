@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.util._
 import org.mockito.IdiomaticMockito
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{acls => aclsp}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -107,7 +108,7 @@ class AclsSpec
           .fetch(path, 1L, self = false)(Caller(createdBy, Set(createdBy, Group("admin", genString()))))
           .failed[AccessDenied]
         failed.resource.asString shouldEqual pathIriString(path)
-        failed.permission shouldEqual read
+        failed.permission shouldEqual aclsp.read
       }
 
       "fail to fetch when using self=false without read permissions" in new Context {
@@ -115,7 +116,7 @@ class AclsSpec
           .fetch(path, self = false)(Caller(createdBy, Set(createdBy, Group("admin", genString()))))
           .failed[AccessDenied]
         failed.resource.asString shouldEqual pathIriString(path)
-        failed.permission shouldEqual read
+        failed.permission shouldEqual aclsp.read
       }
     }
 
@@ -126,7 +127,7 @@ class AclsSpec
           .replace(path, 0L, acl)(Caller(createdBy, Set(createdBy, Group("admin", genString()))))
           .failed[AccessDenied]
         failed.resource.asString shouldEqual pathIriString(path)
-        failed.permission shouldEqual write
+        failed.permission shouldEqual aclsp.write
       }
 
       "reject when wrong revision" in new Context {
@@ -223,7 +224,7 @@ class AclsSpec
           .append(path, 1L, aclAppend)(Caller(createdBy, Set(createdBy, Group("admin", genString()))))
           .failed[AccessDenied]
         failed.resource.asString shouldEqual pathIriString(path)
-        failed.permission shouldEqual write
+        failed.permission shouldEqual aclsp.write
       }
 
       "reject when wrong revision" in new AppendCtx {
@@ -300,7 +301,7 @@ class AclsSpec
           .subtract(path, 1L, acl)(Caller(createdBy, Set(createdBy, Group("admin", genString()))))
           .failed[AccessDenied]
         failed.resource.asString shouldEqual pathIriString(path)
-        failed.permission shouldEqual write
+        failed.permission shouldEqual aclsp.write
       }
 
       "reject when wrong revision" in new Context {
@@ -349,7 +350,7 @@ class AclsSpec
           .delete(path, 1L)(Caller(createdBy, Set(createdBy, Group("admin", genString()))))
           .failed[AccessDenied]
         failed.resource.asString shouldEqual pathIriString(path)
-        failed.permission shouldEqual write
+        failed.permission shouldEqual aclsp.write
       }
 
       "reject when wrong revision" in new Context {

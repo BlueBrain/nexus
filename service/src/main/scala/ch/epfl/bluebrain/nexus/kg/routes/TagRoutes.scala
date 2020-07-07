@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.resources
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -68,7 +69,7 @@ class TagRoutes private[routes] (
         // Fetch a tag
         (get & projectNotDeprecated & pathEndOrSingleSlash) {
           operationName(opName) {
-            authorizeFor(projectPath, read)(caller) {
+            authorizeFor(projectPath, resources.read)(caller) {
               parameter("rev".as[Long].?) {
                 case Some(rev) =>
                   complete(tags.fetch(Id(ProjectRef(project.uuid), id), rev, schema).value.runWithStatus(OK))

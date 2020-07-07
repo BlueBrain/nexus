@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.iam.acls
 import ch.epfl.bluebrain.nexus.iam.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.acls
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
@@ -20,7 +21,7 @@ class AccessControlListSpec
   "An Access Control List" should {
     val user: Identity  = User("uuid", "realm")
     val group: Identity = Group("mygroup", "myrealm")
-    val readWrite       = Set(Permission("acls/read").value, Permission("acls/write").value)
+    val readWrite       = Set(acls.read, acls.write)
     val manage          = Set(Permission("acls/manage").value)
 
     implicit val http: HttpConfig = HttpConfig("some", 8080, "v1", "http://nexus.example.com")

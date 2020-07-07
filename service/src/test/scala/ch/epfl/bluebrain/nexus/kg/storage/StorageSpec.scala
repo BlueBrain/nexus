@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{files, resources}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
@@ -53,8 +54,8 @@ class StorageSpec
       "v1",
       Some(AccessToken(genString())),
       "SHA-256",
-      read,
-      write,
+      resources.read,
+      files.write,
       true,
       2000L
     ),
@@ -132,8 +133,8 @@ class StorageSpec
             storageConfig.remoteDisk.endpoint,
             storageConfig.remoteDisk.defaultCredentials.map(_.value),
             "folder",
-            read,
-            write,
+            resources.read,
+            files.write,
             2000L
           )
       }

@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{files, resources}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.{
@@ -91,8 +92,6 @@ class StoragesSpec
     )
   implicit private val materializer  = new Materializer[IO](resolution, projectCache)
   private val storages: Storages[IO] = Storages[IO](repo, storageCache)
-  private val readPerms              = Permission.unsafe("resources/read")
-  private val writePerms             = Permission.unsafe("files/write")
 
   private val passVerify = new VerifyStorage[IO] {
     override def apply: IO[Either[String, Unit]] = IO.pure(Right(()))
@@ -119,10 +118,10 @@ class StoragesSpec
     val diskStorageSource               = updateId(jsonContentOf("/storage/disk-source.json"))
     val remoteStorageSource             = updateId(jsonContentOf("/storage/remote-source.json"))
     // format: off
-    val remoteDiskStorage = updateId(jsonContentOf("/storage/remoteDisk.json", Map(quote("{folder}") -> "folder", quote("{cred}") -> "cred", quote("{read}") -> "resources/read", quote("{write}") -> "files/write")))
-    val diskStorageModel = DiskStorage(projectRef, id, 1L, deprecated = false, default = false, "SHA-256", Paths.get("/tmp"), readPerms, writePerms, 10737418240L)
-    val remoteDiskStorageModel = RemoteDiskStorage(projectRef, id, 1L, deprecated = false, default = false, "SHA-256", "http://example.com/some", Some("cred"), "folder", readPerms, writePerms, 10737418240L)
-    val remoteDiskStorageModelEncrypted = RemoteDiskStorage(projectRef, id, 1L, deprecated = false, default = false, "SHA-256", "http://example.com/some", Some("cred".encrypt), "folder", readPerms, writePerms, 10737418240L)
+    val remoteDiskStorage = updateId(jsonContentOf("/storage/remoteDisk.json", Map(quote("{folder}") -> "folder", quote("{cred}") -> "cred", quote("{read}") -> resources.read.value, quote("{write}") -> files.write.value)))
+    val diskStorageModel = DiskStorage(projectRef, id, 1L, deprecated = false, default = false, "SHA-256", Paths.get("/tmp"), files.read, files.write, 10737418240L)
+    val remoteDiskStorageModel = RemoteDiskStorage(projectRef, id, 1L, deprecated = false, default = false, "SHA-256", "http://example.com/some", Some("cred"), "folder", files.read, files.write, 10737418240L)
+    val remoteDiskStorageModelEncrypted = RemoteDiskStorage(projectRef, id, 1L, deprecated = false, default = false, "SHA-256", "http://example.com/some", Some("cred".encrypt), "folder", files.read, files.write, 10737418240L)
     // format: on
     resolverCache.get(projectRef) shouldReturn IO(List.empty[Resolver])
 
@@ -243,8 +242,8 @@ class StoragesSpec
     "performing read operations" should {
       val diskAddedJson = Json.obj(
         "_algorithm"      -> Json.fromString("SHA-256"),
-        "writePermission" -> Json.fromString("files/write"),
-        "readPermission"  -> Json.fromString("resources/read"),
+        "writePermission" -> Json.fromString(files.write.value),
+        "readPermission"  -> Json.fromString(files.read.value),
         "maxFileSize"     -> Json.fromLong(appConfig.storage.disk.maxFileSize)
       )
 

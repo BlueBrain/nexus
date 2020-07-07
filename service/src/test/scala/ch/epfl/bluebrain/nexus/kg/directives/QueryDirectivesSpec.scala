@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.StorageEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{files, resources}
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.service.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
@@ -70,9 +71,10 @@ class QueryDirectivesSpec
 
     implicit val pagination    = PaginationConfig(10, 50, 10000)
     implicit val storageConfig = appConfig.storage.copy(
-      disk = DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", read, write, false, 1024L),
-      remoteDisk = RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", read, write, true, 1024L),
-      amazon = S3StorageConfig("MD5", read, write, true, 1024L),
+      disk = DiskStorageConfig(Paths.get("/tmp/"), "SHA-256", resources.read, files.write, false, 1024L),
+      remoteDisk =
+        RemoteDiskStorageConfig("http://example.com", "v1", None, "SHA-256", resources.read, files.write, true, 1024L),
+      amazon = S3StorageConfig("MD5", resources.read, files.write, true, 1024L),
       password = "password",
       salt = "salt",
       fileAttrRetry = RetryStrategyConfig("linear", 300.millis, 5.minutes, 100, 1.second)

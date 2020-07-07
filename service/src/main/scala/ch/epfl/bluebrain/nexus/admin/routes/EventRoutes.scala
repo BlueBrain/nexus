@@ -13,7 +13,7 @@ import akka.http.scaladsl.server.{Directive1, PathMatcher0, Route}
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.persistence.query._
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.admin.config.Permissions._
+import ch.epfl.bluebrain.nexus.service.config.Permissions._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter._

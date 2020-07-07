@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.{Event, ProjectIdentifier, Resources
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.service.config.AppConfig
+import ch.epfl.bluebrain.nexus.service.config.Permissions.views
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{NoProgress, SingleProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -138,7 +139,9 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
   ): Set[CompositeView.Source] =
     view.sourcesBy[CrossProjectEventStream].foldLeft(Set.empty[CompositeView.Source]) { (inaccessible, current) =>
       val acl       = current.project.findIn(projectsAcls.keySet).map(projectsAcls(_)).getOrElse(AccessControlList.empty)
-      val readPerms = acl.value.exists { case (id, perms) => current.identities.contains(id) && perms.contains(read) }
+      val readPerms = acl.value.exists {
+        case (id, perms) => current.identities.contains(id) && perms.contains(views.read)
+      }
       if (readPerms) inaccessible else inaccessible + current
     }
 

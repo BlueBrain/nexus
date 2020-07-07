@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
+import ch.epfl.bluebrain.nexus.iam.types.Identity
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.simpleF
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.Permissions.resources
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.service.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.util.{EitherValues, IOOptionValues}
@@ -55,7 +56,7 @@ class MultiProjectResolutionSpec
   implicit private val clock: Clock     = Clock.systemUTC
 
   private val repo        = mock[Repo[IO]]
-  private val managePerms = Set(Permission.unsafe("resources/read"), Permission.unsafe("resources/write"))
+  private val managePerms = Set(resources.read, resources.write)
 
   private val base                        = Iri.absolute("https://nexus.example.com").getOrElse(fail)
   private val resId                       = base + "some-id"

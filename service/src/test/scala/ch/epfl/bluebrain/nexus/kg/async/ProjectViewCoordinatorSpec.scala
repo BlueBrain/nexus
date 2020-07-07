@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.{CompositeViewOffset, OrganizationRef}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.config.Permissions.{files, resources}
 import ch.epfl.bluebrain.nexus.service.config.Settings
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{OffsetProgress, OffsetsProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionProgress, Projections, StreamSupervisor}
@@ -201,7 +202,7 @@ class ProjectViewCoordinatorSpec
 
       currentStart.incrementAndGet()
       acls.list(anyProject, ancestors = true, self = false)(Caller.anonymous) shouldReturn
-        Task(AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> Set(read)))))
+        Task(AccessControlLists(/ -> resourceAcls(AccessControlList(Anonymous -> Set(resources.read)))))
       viewCache.put(view4).runToFuture.futureValue
       eventually(counterStart.get shouldEqual currentStart.get)
 
@@ -394,8 +395,8 @@ class ProjectViewCoordinatorSpec
     "restart CompositeView on ACLs change" in {
       val projectPath = project.value.organizationLabel / project.value.label
       val acls        = AccessControlLists(
-        projectPath -> resourceAcls(AccessControlList(Anonymous -> Set(read, write))),
-        /           -> resourceAcls(AccessControlList(User(genString(), genString()) -> Set(read, write)))
+        projectPath -> resourceAcls(AccessControlList(Anonymous -> Set(resources.read, files.write))),
+        /           -> resourceAcls(AccessControlList(User(genString(), genString()) -> Set(resources.read, files.write)))
       )
 
       coordinator.changeAcls(acls, project).runToFuture.futureValue
@@ -407,8 +408,8 @@ class ProjectViewCoordinatorSpec
     "do nothing when the ACL changes do not affect the triggered project" in {
       val projectPath = project.value.organizationLabel / project.value.label
       val acls        = AccessControlLists(
-        projectPath -> resourceAcls(AccessControlList(Anonymous -> Set(read, write))),
-        /           -> resourceAcls(AccessControlList(User(genString(), genString()) -> Set(read, write)))
+        projectPath -> resourceAcls(AccessControlList(Anonymous -> Set(resources.read, files.write))),
+        /           -> resourceAcls(AccessControlList(User(genString(), genString()) -> Set(resources.read, files.write)))
       )
 
       coordinator.changeAcls(acls, project2).runToFuture.futureValue

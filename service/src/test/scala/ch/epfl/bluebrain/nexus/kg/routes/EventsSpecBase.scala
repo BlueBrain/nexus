@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.{ResourceF => AdminResourceF}
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists}
 import ch.epfl.bluebrain.nexus.iam.types.Identity.User
-import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, ResourceF}
 import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.resources.Event._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.{Id, OrganizationRef}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.DiskStorage
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.service.config.Settings
+import ch.epfl.bluebrain.nexus.service.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
@@ -55,9 +55,8 @@ class EventsSpecBase
 
   val base = url"http://example.com/base"
 
-  val instant       = Instant.EPOCH
-  val subject       = User("uuid", "myrealm")
-  override val read = Permission.unsafe("events/read")
+  val instant = Instant.EPOCH
+  val subject = User("uuid", "myrealm")
 
   val acls   = AccessControlLists(
     Path./ -> ResourceF[AccessControlList](
@@ -68,7 +67,7 @@ class EventsSpecBase
       subject,
       instant,
       subject,
-      AccessControlList(subject -> Set(Permission.unsafe("resources/read"), read))
+      AccessControlList(subject -> Set(Permissions.resources.read, Permissions.events.read))
     )
   )
   val caller = Caller(subject, Set(subject))
