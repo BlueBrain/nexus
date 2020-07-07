@@ -10,7 +10,12 @@ object CassandraDocker extends ContainerDef {
   override def config: Config = {
     Config(
       image = "cassandra:3.11.6",
-      ports = Seq(primaryPort)
+      ports = Seq(primaryPort),
+      env = Map(
+        "JVM_OPTS"      -> "-Xms1g -Xmx1g",
+        "MAX_HEAP_SIZE" -> "1g",
+        "HEAP_NEWSIZE"  -> "100m"
+      )
     )
   }
 }

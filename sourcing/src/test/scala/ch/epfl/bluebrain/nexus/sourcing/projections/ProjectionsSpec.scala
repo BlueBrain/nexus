@@ -17,6 +17,7 @@ import izumi.distage.effect.modules.CatsDIEffectModule
 import izumi.distage.model.definition.StandardAxis
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
+import izumi.distage.testkit.TestConfig.ParallelLevel
 import izumi.distage.testkit.scalatest.DistageSpecScalatest
 import org.scalatest.matchers.should.Matchers.{contain, empty}
 
@@ -31,6 +32,7 @@ class ProjectionsSpec extends DistageSpecScalatest[IO] with TestHelpers with Sho
     TestConfig(
       pluginConfig = PluginConfig.empty,
       activation = StandardAxis.testDummyActivation,
+      parallelTests = ParallelLevel.Sequential,
       moduleOverrides = new ModuleDef {
         // add docker dependencies and override default configuration
         include(new DockerSupportModule[IO] overridenBy new ModuleDef {
