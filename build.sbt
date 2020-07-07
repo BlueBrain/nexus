@@ -77,7 +77,7 @@ lazy val akkaStream               = "com.typesafe.akka"                %% "akka-
 lazy val akkaTestKit              = "com.typesafe.akka"                %% "akka-testkit"                        % akkaVersion
 lazy val alleycatsCore            = "org.typelevel"                    %% "alleycats-core"                      % catsVersion
 lazy val alpakkaFiles             = "com.lightbend.akka"               %% "akka-stream-alpakka-file"            % alpakkaVersion
-lazy val alpakkaSse             = "com.lightbend.akka"               %% "akka-stream-alpakka-sse"            % alpakkaVersion
+lazy val alpakkaSse               = "com.lightbend.akka"               %% "akka-stream-alpakka-sse"             % alpakkaVersion
 lazy val alpakkaS3                = "com.lightbend.akka"               %% "akka-stream-alpakka-s3"              % alpakkaVersion
 lazy val apacheCompress           = "org.apache.commons"                % "commons-compress"                    % apacheCompressVersion
 lazy val asm                      = "org.ow2.asm"                       % "asm"                                 % asmVersion
@@ -225,18 +225,17 @@ lazy val sourcing = project
       circeParser,
       scalaLogging,
       pureconfig,
-      akkaPersistenceInMem    % Test,
-      akkaPersistenceLauncher % Test,
-      akkaSlf4j               % Test,
-      akkaTestKit             % Test,
-      akkaHttpTestKit         % Test,
-      distageDocker           % Test,
-      distageTestkit          % Test,
-      kryo                    % Test,
-      logback                 % Test,
-      scalaTest               % Test,
-      mockito                 % Test,
-      pureconfig              % Test
+      akkaPersistenceInMem % Test,
+      akkaSlf4j            % Test,
+      akkaTestKit          % Test,
+      akkaHttpTestKit      % Test,
+      distageDocker        % Test,
+      distageTestkit       % Test,
+      kryo                 % Test,
+      logback              % Test,
+      scalaTest            % Test,
+      mockito              % Test,
+      pureconfig           % Test
     ),
     Test / fork          := true
   )

@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.sourcing
 
 import org.scalactic.source
-import org.scalatest.{Inspectors, OptionValues, TryValues}
 import org.scalatest.exceptions.{StackDepthException, TestFailedException}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{Inspectors, OptionValues, TryValues}
 
 trait SourcingSpec
     extends org.scalatest.wordspec.AnyWordSpecLike

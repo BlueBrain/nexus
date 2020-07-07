@@ -42,7 +42,8 @@ class AbstractHttpClient[F[_]: Timer](client: Client[F], env: EnvConfig)(implici
 
   private def execute[A](req: Request[F], f: Response[F] => F[ClientErrOr[A]]): F[ClientErrOr[A]] =
     client
-      .run(req).use(ClientError.errorOr[F, A](r => f(r)))
+      .run(req)
+      .use(ClientError.errorOr[F, A](r => f(r)))
       .recoverWith {
         case NonFatal(err) => F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
       }
