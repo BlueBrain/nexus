@@ -18,6 +18,11 @@ object Vocabulary {
     val value      = url"${base}value"
   }
 
+  object rdfs {
+    val base       = "http://www.w3.org/2000/01/rdf-schema#"
+    val label      = url"${base}label"
+  }
+
   /**
     * OWL vocabulary from W3C
     */

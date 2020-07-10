@@ -8,6 +8,18 @@
       "type": "keyword",
       "copy_to": "_all_fields"
     },
+    "prefLabel": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "label": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
+    "name": {
+      "type": "keyword",
+      "copy_to": "_all_fields"
+    },
     "_rev": {
       "type": "long",
       "copy_to": "_all_fields"

@@ -12,6 +12,11 @@ import ch.epfl.bluebrain.nexus.rdf.implicits._
   */
 object Vocabulary {
 
+  object skos {
+    private val baseStr = "http://www.w3.org/2004/02/skos/core#"
+    val prefLabel       = IriNode(url"${baseStr}prefLabel")
+  }
+
   /**
     * Nexus archive vocabulary.
     */
