@@ -19,8 +19,8 @@ object Vocabulary {
   }
 
   object rdfs {
-    val base       = "http://www.w3.org/2000/01/rdf-schema#"
-    val label      = url"${base}label"
+    val base  = "http://www.w3.org/2000/01/rdf-schema#"
+    val label = url"${base}label"
   }
 
   /**
