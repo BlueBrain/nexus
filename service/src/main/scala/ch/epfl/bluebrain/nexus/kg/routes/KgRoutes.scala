@@ -1,17 +1,16 @@
 package ch.epfl.bluebrain.nexus.kg.routes
 
 import akka.actor.ActorSystem
-import akka.cluster.Cluster
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges, Location}
 import akka.http.scaladsl.model.{EntityStreamSizeException, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.http.scaladsl.server.PathMatchers.Segment
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, PredefinedFromEntityUnmarshallers}
-import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure._
 import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
@@ -35,20 +34,17 @@ import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes._
-import ch.epfl.bluebrain.nexus.kg.routes.AppInfoRoutes.StatusGroup
-import ch.epfl.bluebrain.nexus.kg.routes.Status._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.service.config.AppConfig
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.service.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.service.routes.CassandraHealth
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
+import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import io.circe.parser.parse
-import com.typesafe.scalalogging.Logger
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -88,9 +84,6 @@ class KgRoutes(
   implicit private val orgCache: OrganizationCache[Task] = cache.org
   implicit private val viewCache: ViewCache[Task]        = cache.view
   implicit private val pagination: PaginationConfig      = config.pagination
-
-  private val healthStatusGroup = StatusGroup(CassandraHealth(system), new ClusterStatus(Cluster(system)))
-  private val appInfoRoutes     = AppInfoRoutes(config.description, healthStatusGroup).routes
 
   private def list(implicit caller: Caller, project: ProjectResource): Route = {
     val projectPath = project.value.path
@@ -183,8 +176,7 @@ class KgRoutes(
               }
             }
           )
-        },
-        appInfoRoutes
+        }
       )
     )
 

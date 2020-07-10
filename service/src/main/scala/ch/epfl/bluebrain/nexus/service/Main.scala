@@ -285,7 +285,7 @@ object Main {
         bootstrapIndexers(acls, realms, orgs, projects, resources, files, storages, views, resolvers, cache, saCaller)
       val iamRoutes              = IamRoutes(acls, realms, perms)
       val adminRoutes            = AdminRoutes(orgs, projects, orgCache, projectCache, acls, realms)
-      val infoRoutes             = AppInfoRoutes(cfg.description, cluster).routes
+      val infoRoutes             = AppInfoRoutes(cfg.description, cluster, clients).routes
       val kgRoutes               = new KgRoutes(
         resources,
         resolvers,

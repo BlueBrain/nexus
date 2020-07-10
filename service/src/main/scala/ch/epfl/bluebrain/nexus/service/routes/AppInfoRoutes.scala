@@ -1,44 +1,77 @@
 package ch.epfl.bluebrain.nexus.service.routes
 
 import akka.actor.ActorSystem
-import akka.cluster.{Cluster, MemberStatus}
+import akka.cluster.Cluster
+import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.service.config.AppConfig.Description
-import ch.epfl.bluebrain.nexus.service.marshallers.instances._
-import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes.Status.{Inaccessible, Up}
-import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes.{Health, ServiceDescription, Status}
-import io.circe.Encoder
-import io.circe.generic.auto._
+import ch.epfl.bluebrain.nexus.service.routes.AppInfoRoutes.Health
+import ch.epfl.bluebrain.nexus.service.routes.ServiceInfo.{DescriptionValue, StatusValue}
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.{Encoder, Json}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-
-import scala.util._
+import monix.eval.Task
+import monix.execution.Scheduler.Implicits.global
 
 /**
   * Akka HTTP route definition for service description and health status
   */
-class AppInfoRoutes(serviceDescription: ServiceDescription, cluster: Cluster, cassandraHealth: CassandraHealth) {
+class AppInfoRoutes(
+    serviceDescription: DescriptionValue,
+    clusterInfo: ServiceInfo[Task],
+    cassandraInfo: ServiceInfo[Task],
+    elasticsearchInfo: ServiceInfo[Task],
+    blazegraphInfo: ServiceInfo[Task],
+    storageInfo: ServiceInfo[Task]
+) {
 
-  private def clusterStatus: Status =
-    Status(
-      !cluster.isTerminated &&
-        cluster.state.leader.isDefined && cluster.state.members.nonEmpty &&
-        !cluster.state.members.exists(_.status != MemberStatus.Up) && cluster.state.unreachable.isEmpty
-    )
+  implicit private val orderedKeys =
+    OrderedKeys(List(serviceDescription.name, "cluster", "cassandra", "storage", "elasticsearch", "blazegraph", ""))
+
+  implicit private val descriptionValueListEnc: Encoder[List[DescriptionValue]] = Encoder.instance {
+    _.foldLeft(Json.obj()) {
+      case (acc, DescriptionValue(name, version)) => acc deepMerge Json.obj(name -> Json.fromString(version))
+    }
+  }
 
   def routes: Route =
     concat(
       (get & pathEndOrSingleSlash) {
         operationName("/") {
-          complete(serviceDescription)
+          complete(OK -> serviceDescription)
         }
       },
-      (pathPrefix("health") & get & pathEndOrSingleSlash) {
-        operationName("/health") {
-          onComplete(cassandraHealth.check) {
-            case Success(true) => complete(Health(cluster = clusterStatus, cassandra = Up))
-            case _             => complete(Health(cluster = clusterStatus, cassandra = Inaccessible))
+      (pathPrefix("status") & get & pathEndOrSingleSlash) {
+        operationName("/status") {
+          val stats = (
+            clusterInfo.status,
+            cassandraInfo.status,
+            elasticsearchInfo.status,
+            blazegraphInfo.status,
+            storageInfo.status
+          ).mapN {
+            case (clusterStats, cassandraStats, elasticSearchStats, sparqlStats, storageStats) =>
+              Health(clusterStats, cassandraStats, elasticSearchStats, sparqlStats, storageStats)
           }
+          complete(stats.runWithStatus(OK))
+        }
+      },
+      (pathPrefix("version") & get & pathEndOrSingleSlash) {
+        operationName("/version") {
+          val descriptions = List(
+            Task.pure(Some(serviceDescription)),
+            clusterInfo.description,
+            cassandraInfo.description,
+            elasticsearchInfo.description,
+            blazegraphInfo.description,
+            storageInfo.description
+          ).sequence.map(_.collect { case Some(sd) => sd })
+          complete(descriptions.runWithStatus(OK))
         }
       }
     )
@@ -47,58 +80,40 @@ class AppInfoRoutes(serviceDescription: ServiceDescription, cluster: Cluster, ca
 object AppInfoRoutes {
 
   /**
-    * Enumeration type for possible status.
-    */
-  sealed trait Status extends Product with Serializable
-
-  object Status {
-
-    implicit val enc: Encoder[Status] = Encoder.encodeString.contramap {
-      case Up           => "up"
-      case Inaccessible => "inaccessible"
-    }
-
-    def apply(value: Boolean): Status =
-      if (value) Up else Inaccessible
-
-    /**
-      * A service is up and running
-      */
-    final case object Up extends Status
-
-    /**
-      * A service is inaccessible from within the app
-      */
-    final case object Inaccessible extends Status
-
-  }
-
-  /**
-    * A service description.
-    *
-    * @param name    the name of the service
-    * @param version the current version of the service
-    */
-  final case class ServiceDescription(name: String, version: String)
-
-  /**
     * A collection of health status
     *
-    * @param cluster   the cluster status
-    * @param cassandra the cassandra status
+   * @param cluster       the cluster status
+    * @param cassandra     the cassandra status
+    * @param elasticsearch the elasticsearch status
+    * @param blazegraph    the blazegraph status
+    * @param storage       the storage status
     */
-  final case class Health(cluster: Status, cassandra: Status)
+  final case class Health(
+      cluster: StatusValue,
+      cassandra: StatusValue,
+      elasticsearch: StatusValue,
+      blazegraph: StatusValue,
+      storage: StatusValue
+  )
+
+  object Health {
+    implicit val healthEncoder: Encoder[Health] = deriveEncoder[Health]
+
+  }
 
   /**
     * Default factory method for building [[AppInfoRoutes]] instances.
-    *
-    * @param descConfig the description service configuration
-    * @param cluster    the cluster
-    * @return a new [[AppInfoRoutes]] instance
     */
-  def apply(descConfig: Description, cluster: Cluster)(implicit as: ActorSystem): AppInfoRoutes = {
-    val cassandraHealth = CassandraHealth(as)
-    new AppInfoRoutes(ServiceDescription(descConfig.name, descConfig.version), cluster, cassandraHealth)
-  }
+  def apply(descConfig: Description, cluster: Cluster, clients: Clients[Task])(implicit
+      as: ActorSystem
+  ): AppInfoRoutes =
+    new AppInfoRoutes(
+      DescriptionValue(descConfig.name, descConfig.version),
+      ServiceInfo.cluster(cluster),
+      ServiceInfo.cassandra(as),
+      ServiceInfo.elasticSearch(clients.elasticSearch),
+      ServiceInfo.blazegraph(clients.sparql),
+      ServiceInfo.storage(clients.defaultRemoteStorage)
+    )
 
 }
