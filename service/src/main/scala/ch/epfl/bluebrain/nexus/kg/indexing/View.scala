@@ -32,7 +32,8 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.kg.{identities, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
+import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
+import ch.epfl.bluebrain.nexus.rdf.Vocabulary.{rdf, rdfs, schema}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.{Cursor, Graph, GraphDecoder, NonEmptyString}
 import ch.epfl.bluebrain.nexus.service.config.AppConfig
@@ -507,12 +508,16 @@ object View {
       val id           = res.id.value
       val keysToRemove = if (includeMetadata) Seq.empty[String] else metaKeys
 
-      val metaGraph   = if (includeMetadata) Graph(id) ++ res.metadata(metadataOpts) else Graph(id)
+      val graph       = if (includeMetadata) Graph(id) ++ res.metadata(metadataOpts) else Graph(id)
+      val docGraph    = graph ++ res.value.graph.filter {
+        case (s, p, _) =>
+          s == IriNode(id) && (p == skos.prefLabel || p == IriNode(rdfs.label) || p == IriNode(schema.name))
+      }
       val transformed =
         if (sourceAsText)
-          metaGraph.append(nxv.original_source, res.value.source.removeKeys(metaKeys: _*).noSpaces).toJson(ctx)
+          docGraph.append(nxv.original_source, res.value.source.removeKeys(metaKeys: _*).noSpaces).toJson(ctx)
         else
-          metaGraph.toJson(ctx).map(metaJson => res.value.source.removeKeys(keysToRemove: _*) deepMerge metaJson)
+          docGraph.toJson(ctx).map(metaJson => res.value.source.removeKeys(keysToRemove: _*) deepMerge metaJson)
 
       transformed match {
         case Left(err)    =>
