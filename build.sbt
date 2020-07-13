@@ -325,17 +325,17 @@ lazy val storage = project
     }
   )
 
-lazy val service = project
-  .in(file("service"))
+lazy val delta = project
+  .in(file("delta"))
   .dependsOn(sourcing, rdf)
   .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging)
   .settings(shared, compilation, coverage, release, servicePackaging)
   .settings(
-    name             := "service",
-    moduleName       := "service",
+    name             := "delta",
+    moduleName       := "delta",
     coverageMinimum  := 20d,
     buildInfoKeys    := Seq[BuildInfoKey](version),
-    buildInfoPackage := "ch.epfl.bluebrain.nexus.service.config"
+    buildInfoPackage := "ch.epfl.bluebrain.nexus.delta.config"
   )
   .settings(kamonSettings)
   .settings(
@@ -396,7 +396,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, rdf, storage, service)
+  .aggregate(docs, cli, sourcing, rdf, storage, delta)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
