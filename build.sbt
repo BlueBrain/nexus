@@ -26,7 +26,6 @@ val alpakkaVersion                  = "2.0.1"
 val apacheCompressVersion           = "1.20"
 val asmVersion                      = "7.3.1"
 val byteBuddyAgentVersion           = "1.10.13"
-val blazegraphVersion               = "2.1.5"
 val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.1.1"
@@ -39,8 +38,6 @@ val fs2Version                      = "2.4.2"
 val guavaVersion                    = "29.0-jre"
 val http4sVersion                   = "0.21.6"
 val iamVersion                      = "1.3.0"
-val jacksonVersion                  = "2.10.2"
-val jacksonBindVersion              = "2.10.2"
 val jenaVersion                     = "3.15.0"
 val jsonldjavaVersion               = "0.13.0"
 val kamonVersion                    = "2.1.2"
@@ -81,7 +78,6 @@ lazy val alpakkaSse               = "com.lightbend.akka"               %% "akka-
 lazy val alpakkaS3                = "com.lightbend.akka"               %% "akka-stream-alpakka-s3"              % alpakkaVersion
 lazy val apacheCompress           = "org.apache.commons"                % "commons-compress"                    % apacheCompressVersion
 lazy val asm                      = "org.ow2.asm"                       % "asm"                                 % asmVersion
-lazy val blazegraph               = "com.blazegraph"                    % "blazegraph-jar"                      % blazegraphVersion
 lazy val byteBuddyAgent           = "net.bytebuddy"                     % "byte-buddy-agent"                    % byteBuddyAgentVersion
 lazy val catsCore                 = "org.typelevel"                    %% "cats-core"                           % catsVersion
 lazy val catsEffect               = "org.typelevel"                    %% "cats-effect"                         % catsEffectVersion
@@ -108,9 +104,6 @@ lazy val http4sClient             = "org.http4s"                       %% "http4
 lazy val http4sDsl                = "org.http4s"                       %% "http4s-dsl"                          % http4sVersion
 lazy val guava                    = "com.google.guava"                  % "guava"                               % guavaVersion
 lazy val iamClient                = "ch.epfl.bluebrain.nexus"          %% "iam-client"                          % iamVersion
-lazy val jacksonAnnotations       = "com.fasterxml.jackson.core"        % "jackson-annotations"                 % jacksonVersion
-lazy val jacksonCore              = "com.fasterxml.jackson.core"        % "jackson-core"                        % jacksonVersion
-lazy val jacksonDatabind          = "com.fasterxml.jackson.core"        % "jackson-databind"                    % jacksonBindVersion
 lazy val jenaArq                  = "org.apache.jena"                   % "jena-arq"                            % jenaVersion
 lazy val jsonldjava               = "com.github.jsonld-java"            % "jsonld-java"                         % jsonldjavaVersion
 lazy val kanelaAgent              = "io.kamon"                          % "kanela-agent"                        % kanelaAgentVersion
@@ -223,8 +216,8 @@ lazy val sourcing = project
       circeCore,
       circeGenericExtras,
       circeParser,
-      scalaLogging,
       pureconfig,
+      scalaLogging,
       akkaPersistenceInMem % Test,
       akkaSlf4j            % Test,
       akkaTestKit          % Test,
@@ -369,15 +362,13 @@ lazy val delta = project
       akkaPersistenceLauncher % Test,
       akkaTestKit             % Test,
       asm                     % Test,
-      blazegraph              % Test,
       circeLiteral            % Test,
+      distageDocker           % Test,
+      distageTestkit          % Test,
       esCore                  % Test,
       esPainless              % Test,
       esReindex               % Test,
       esTransportClient       % Test,
-      jacksonAnnotations      % Test,
-      jacksonCore             % Test,
-      jacksonDatabind         % Test,
       jsonldjava              % Test,
       log4jCore               % Test,
       log4jApi                % Test,
@@ -441,10 +432,8 @@ lazy val storageAssemblySettings = Seq(
 )
 
 lazy val compilation = {
-  import java.util.Properties
   import sbt.Keys._
   import sbt._
-  import scala.sys.process._
 
   Seq(
     scalaVersion                     := scalaCompilerVersion,
