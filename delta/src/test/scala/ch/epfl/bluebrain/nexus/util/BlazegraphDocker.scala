@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.util
 import distage.{ModuleDef, TagK}
 import izumi.distage.docker.ContainerDef
 import izumi.distage.docker.Docker.DockerPort
+import izumi.distage.docker.healthcheck.ContainerHealthCheck
 
 object BlazegraphDocker extends ContainerDef {
   val primaryPort: DockerPort = DockerPort.TCP(9999)
@@ -10,7 +11,8 @@ object BlazegraphDocker extends ContainerDef {
   override def config: Config = {
     Config(
       image = "bluebrain/blazegraph-nexus:2.1.5",
-      ports = Seq(primaryPort)
+      ports = Seq(primaryPort),
+      healthCheck = ContainerHealthCheck.httpGetCheck(primaryPort)
     )
   }
 }
