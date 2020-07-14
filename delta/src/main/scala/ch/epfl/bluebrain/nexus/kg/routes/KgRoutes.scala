@@ -198,7 +198,7 @@ class KgRoutes(
             },
             pathPrefix(config.http.prefix / "files") {
               project.apply { implicit project =>
-                routesSelector(SchemaId(storageSchemaUri))
+                routesSelector(SchemaId(fileSchemaUri))
               }
             }
           )
