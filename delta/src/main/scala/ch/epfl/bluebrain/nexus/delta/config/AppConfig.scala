@@ -45,7 +45,8 @@ final case class AppConfig(
     composite: CompositeViewConfig,
     archives: ArchivesConfig,
     defaultAskTimeout: FiniteDuration,
-    serviceAccount: ServiceAccountConfig
+    serviceAccount: ServiceAccountConfig,
+    migration: Migration
 )
 
 object AppConfig {
@@ -373,6 +374,21 @@ object AppConfig {
   final case class ServiceAccountConfig(token: Option[String]) {
     def credentials: Option[AccessToken] = token.map(AccessToken)
   }
+
+  /**
+    * Migration configuration used to repair tag views table and perform migrations to single service
+    *
+   * @param kgKeyspace    the kg keyspace
+    * @param adminKeyspace the admin keyspace
+    * @param iamKeyspace   the iam keyspace
+    * @param logInterval   the number of events between log messages
+    */
+  final case class Migration(
+      kgKeyspace: String,
+      adminKeyspace: String,
+      iamKeyspace: String,
+      logInterval: Int
+  )
 
   val orderedKeys: OrderedKeys = OrderedKeys(
     List(

@@ -44,8 +44,9 @@ class Settings(config: Config) extends Extension {
   implicit private val authTokenConverter: ConfigConvert[AccessToken] =
     ConfigConvert.viaString[AccessToken](catchReadError(s => AccessToken(s)), _.value)
 
-  val appConfig: AppConfig =
+  val appConfig: AppConfig = {
     ConfigSource.fromConfig(config).at("app").loadOrThrow[AppConfig]
+  }
 }
 
 object Settings extends ExtensionId[Settings] with ExtensionIdProvider {
