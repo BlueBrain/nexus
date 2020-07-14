@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.kg.routes
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
-import akka.http.scaladsl.model.headers.{HttpChallenges, Location, `WWW-Authenticate`}
+import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges, Location}
 import akka.http.scaladsl.model.{EntityStreamSizeException, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.PathMatchers.Segment
@@ -308,9 +308,9 @@ object KgRoutes {
       .withExposedHeaders(List(Location.name))
     cors(corsSettings) {
       handleExceptions(exceptionHandler) {
-          uriPrefix(hc.publicUri) {
-            route
-          }
+        uriPrefix(hc.publicUri) {
+          route
+        }
       }
     }
   }
