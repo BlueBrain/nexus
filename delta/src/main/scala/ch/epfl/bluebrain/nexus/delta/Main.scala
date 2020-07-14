@@ -37,7 +37,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttribu
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, Settings}
-import ch.epfl.bluebrain.nexus.delta.routes.AppInfoRoutes
+import ch.epfl.bluebrain.nexus.delta.routes.{AppInfoRoutes, Routes}
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.storage.client.config.StorageClientConfig
@@ -302,7 +302,7 @@ object Main {
 
       val httpBinding = {
         Http().bindAndHandle(
-          RouteResult.route2HandlerFlow(infoRoutes ~ KgRoutes.wrap(iamRoutes ~ adminRoutes ~ kgRoutes)),
+          RouteResult.route2HandlerFlow(infoRoutes ~ Routes.wrap(iamRoutes ~ adminRoutes ~ kgRoutes)),
           cfg.http.interface,
           cfg.http.port
         )

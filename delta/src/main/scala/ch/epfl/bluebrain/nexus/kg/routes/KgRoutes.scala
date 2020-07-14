@@ -16,6 +16,9 @@ import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure._
 import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.commons.http.{RdfMediaTypes, RejectionHandling}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlFailure.SparqlClientError
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.delta.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Caller
@@ -36,9 +39,6 @@ import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes._
 import ch.epfl.bluebrain.nexus.kg.search.QueryResultEncoder._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -166,31 +166,45 @@ class KgRoutes(
                 new EventRoutes(acls, realms, caller).organizationRoutes(organization)
               }
             },
-            pathPrefix(config.http.prefix / Segment) { resourceSegment =>
+            pathPrefix(config.http.prefix / "resources") {
               project.apply { implicit project =>
-                resourceSegment match {
-                  case "resources" =>
-                    pathPrefix(IdSegmentOrUnderscore)(routesSelector) ~ list ~ createDefault ~ projectEvents
-                  case segment     => mapToSchema(segment).map(routesSelector).getOrElse(reject())
-                }
+                pathPrefix(IdSegmentOrUnderscore)(routesSelector) ~ list ~ createDefault ~ projectEvents
+              }
+            },
+            pathPrefix(config.http.prefix / "archives") {
+              project.apply { implicit project =>
+                routesSelector(SchemaId(archiveSchemaUri))
+              }
+            },
+            pathPrefix(config.http.prefix / "views") {
+              project.apply { implicit project =>
+                routesSelector(SchemaId(viewSchemaUri))
+              }
+            },
+            pathPrefix(config.http.prefix / "resolvers") {
+              project.apply { implicit project =>
+                routesSelector(SchemaId(resolverSchemaUri))
+              }
+            },
+            pathPrefix(config.http.prefix / "schemas") {
+              project.apply { implicit project =>
+                routesSelector(SchemaId(shaclSchemaUri))
+              }
+            },
+            pathPrefix(config.http.prefix / "storages") {
+              project.apply { implicit project =>
+                routesSelector(SchemaId(storageSchemaUri))
+              }
+            },
+            pathPrefix(config.http.prefix / "files") {
+              project.apply { implicit project =>
+                routesSelector(SchemaId(fileSchemaUri))
               }
             }
           )
         }
       )
     )
-
-  private def mapToSchema(resourceSegment: String): Option[SchemaId] =
-    resourceSegment match {
-      case "archives"  => Some(SchemaId(archiveSchemaUri))
-      case "views"     => Some(SchemaId(viewSchemaUri))
-      case "resolvers" => Some(SchemaId(resolverSchemaUri))
-      case "schemas"   => Some(SchemaId(shaclSchemaUri))
-      case "storages"  => Some(SchemaId(storageSchemaUri))
-      case "files"     => Some(SchemaId(fileSchemaUri))
-      case _           => None
-
-    }
 }
 
 object KgRoutes {
@@ -294,10 +308,8 @@ object KgRoutes {
       .withExposedHeaders(List(Location.name))
     cors(corsSettings) {
       handleExceptions(exceptionHandler) {
-        handleRejections(rejectionHandler) {
-          uriPrefix(hc.publicUri) {
-            route
-          }
+        uriPrefix(hc.publicUri) {
+          route
         }
       }
     }
