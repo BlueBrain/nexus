@@ -281,6 +281,15 @@ object Main {
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
+
+      if (sys.env.getOrElse("MIGRATE_V13_TO_V14", "false").toBoolean) {
+        MigrateV13ToV14.migrate(cfg, as, Scheduler.global, pm)
+      }
+
+      if (sys.env.getOrElse("REPAIR_FROM_MESSAGES", "false").toBoolean) {
+        RepairFromMessages.repair(cfg, as, Scheduler.global, pm)
+      }
+
       val projectViewCoordinator =
         bootstrapIndexers(acls, realms, orgs, projects, resources, files, storages, views, resolvers, cache, saCaller)
       val iamRoutes              = IamRoutes(acls, realms, perms)
