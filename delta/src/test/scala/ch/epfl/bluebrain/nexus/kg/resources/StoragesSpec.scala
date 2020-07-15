@@ -226,6 +226,7 @@ class StoragesSpec
       "deprecate a storage" in new Base {
         storageCache.put(eqTo(diskStorageModel))(any[Instant]) shouldReturn IO.pure(())
         storages.create(resId, diskStorage).value.accepted shouldBe a[Resource]
+        storageCache.put(any[Storage])(any[Instant]) shouldReturn IO.pure(())
         val result   = storages.deprecate(resId, 1L).value.accepted
         val expected =
           KgResourceF.simpleF(resId, diskStorage, 2L, schema = storageRef, types = typesDisk, deprecated = true)
@@ -235,6 +236,7 @@ class StoragesSpec
       "prevent deprecating a resolver already deprecated" in new Base {
         storageCache.put(eqTo(diskStorageModel))(any[Instant]) shouldReturn IO.pure(())
         storages.create(resId, diskStorage).value.accepted shouldBe a[Resource]
+        storageCache.put(any[Storage])(any[Instant]) shouldReturn IO.pure(())
         storages.deprecate(resId, 1L).value.accepted shouldBe a[Resource]
         storages.deprecate(resId, 2L).value.rejected[ResourceIsDeprecated] shouldBe a[ResourceIsDeprecated]
       }
