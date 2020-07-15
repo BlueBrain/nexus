@@ -26,13 +26,13 @@ import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectivesSpec.MappingValue
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.OrganizationRef
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
-import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes
 import ch.epfl.bluebrain.nexus.kg.{Error, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.delta.routes.Routes
 import ch.epfl.bluebrain.nexus.util.EitherValues
 import io.circe.Decoder
 import io.circe.generic.auto._
@@ -161,7 +161,7 @@ class ProjectDirectivesSpec
 
       def route(label: String): Route = {
         import monix.execution.Scheduler.Implicits.global
-        KgRoutes.wrap(
+        Routes.wrap(
           (get & org(label)) { o =>
             complete(StatusCodes.OK -> o)
           }
@@ -210,7 +210,7 @@ class ProjectDirectivesSpec
 
       def route: Route = {
         import monix.execution.Scheduler.Implicits.global
-        KgRoutes.wrap(
+        Routes.wrap(
           (get & project) { project =>
             complete(StatusCodes.OK -> project)
           }
@@ -218,7 +218,7 @@ class ProjectDirectivesSpec
       }
 
       def notDeprecatedRoute(implicit proj: ProjectResource): Route =
-        KgRoutes.wrap(
+        Routes.wrap(
           (get & projectNotDeprecated) {
             complete(StatusCodes.OK)
           }

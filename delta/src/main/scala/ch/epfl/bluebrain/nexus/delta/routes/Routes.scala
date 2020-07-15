@@ -40,9 +40,10 @@ import ch.epfl.bluebrain.nexus.iam.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.iam.types.IamError
 import ch.epfl.bluebrain.nexus.iam.types.IamError.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.kg.KgError
+import ch.epfl.bluebrain.nexus.kg.KgError._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.delta.exceptions.ServiceError
-import ch.epfl.bluebrain.nexus.delta.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClientError
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
