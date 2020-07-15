@@ -119,8 +119,13 @@ class Storages[F[_]](repo: Repo[F], private val index: StorageCache[F])(implicit
     * @param rev the last known revision of the storage
     * @return Some(resource) in the F context when found and None in the F context when not found
     */
-  def deprecate(id: ResId, rev: Long)(implicit subject: Subject): RejOrResource[F] =
-    repo.deprecate(id, storageRef, rev)
+  def deprecate(id: ResId, rev: Long)(implicit subject: Subject, project: ProjectResource): RejOrResource[F] =
+    for {
+      res               <- repo.deprecate(id, storageRef, rev)
+      updated           <- fetchStorage(id)
+      (storage, instant) = updated
+      _                 <- EitherT.right(index.put(storage)(instant))
+    } yield res
 
   /**
     * Fetches the latest revision of a storage.

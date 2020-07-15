@@ -307,10 +307,8 @@ object KgRoutes {
       .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
     cors(corsSettings) {
-      handleExceptions(exceptionHandler) {
-        uriPrefix(hc.publicUri) {
-          route
-        }
+      uriPrefix(hc.publicUri) {
+        route
       }
     }
   }

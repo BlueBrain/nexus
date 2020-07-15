@@ -45,6 +45,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.Settings
 import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.routes.Routes
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
@@ -86,6 +87,7 @@ class ViewRoutesSpec
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
   implicit private val appConfig = Settings(system).appConfig
+  implicit private val http      = appConfig.http
   implicit private val clock     = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault())
 
   implicit private val projectCache  = mock[ProjectCache[Task]]
@@ -122,9 +124,22 @@ class ViewRoutesSpec
   private val viewsQuery             = Permission.unsafe("views/query")
   private val manageResolver         =
     Set(viewsQuery, Permission.unsafe("resources/read"), viewsWrite)
-  // format: off
-  private val routes = new KgRoutes(resources, mock[Resolvers[Task]], views, mock[Storages[Task]], mock[Schemas[Task]], mock[Files[Task]], mock[Archives[Task]], tagsRes, aclsApi, realms, coordinator).routes
-  // format: on
+
+  private val routes = Routes.wrap(
+    new KgRoutes(
+      resources,
+      mock[Resolvers[Task]],
+      views,
+      mock[Storages[Task]],
+      mock[Schemas[Task]],
+      mock[Files[Task]],
+      mock[Archives[Task]],
+      tagsRes,
+      aclsApi,
+      realms,
+      coordinator
+    ).routes
+  )
 
   //noinspection NameBooleanParameters
   abstract class Context(perms: Set[Permission] = manageResolver) extends RoutesFixtures {
