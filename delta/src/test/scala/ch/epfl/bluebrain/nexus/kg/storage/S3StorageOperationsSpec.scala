@@ -9,11 +9,11 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.Uri
+import akka.stream.Materializer
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{BucketAccess, S3Attributes}
 import akka.stream.scaladsl.{FileIO, Sink}
-import akka.stream.{Materializer, SystemMaterializer}
-import cats.effect.{ContextShift, IO, Resource}
+import cats.effect.{ContextShift, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.kg.KgError.{DownstreamServiceError, RemoteFileNotFound}
@@ -23,11 +23,6 @@ import ch.epfl.bluebrain.nexus.kg.resources.file.File.{Digest, FileAttributes, F
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.{S3Credentials, S3Settings, S3Storage}
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.util._
-import com.typesafe.config.ConfigFactory
-import distage.ModuleDef
-import izumi.distage.docker.Docker
-import izumi.distage.docker.modules.DockerSupportModule
-import izumi.distage.effect.modules.CatsDIEffectModule
 import izumi.distage.model.definition.StandardAxis
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
@@ -101,37 +96,8 @@ class S3StorageOperationsSpec
       pluginConfig = PluginConfig.empty,
       activation = StandardAxis.testDummyActivation,
       parallelTests = ParallelLevel.Sequential,
-      moduleOverrides = new ModuleDef {
-        // add docker dependencies and override default configuration
-        include(new DockerSupportModule[IO] overridenBy new ModuleDef {
-          make[Docker.ClientConfig].from {
-            Docker.ClientConfig(
-              readTimeoutMs = 60000, // long timeout for gh actions
-              connectTimeoutMs = 500,
-              allowReuse = true,
-              useRemote = false,
-              useRegistry = true,
-              remote = None,
-              registry = None
-            )
-          }
-        })
-        include(CatsDIEffectModule)
+      moduleOverrides = new DistageModuleDef("S3StorageOperationsSpec") {
         include(MinioDockerModule[IO])
-
-        make[ActorSystem].fromResource {
-          val acquire = for {
-            cfg <- IO(ConfigFactory.load("test.conf").withFallback(ConfigFactory.load()))
-            as  <- IO(ActorSystem("S3StorageOperationsSpec", cfg))
-          } yield as
-          val release = (system: ActorSystem) => wrapFuture(system.terminate()) >> IO.unit
-          Resource.make(acquire)(release)
-        }
-
-        make[Materializer].from { as: ActorSystem =>
-          SystemMaterializer(as).materializer
-        }
-
         make[TestFactory].from { (c: MinioDocker.Container, mt: Materializer, as: ActorSystem) =>
           val port = c.availablePorts.first(MinioDocker.primaryPort)
           new TestFactory(port.port)(as, mt)

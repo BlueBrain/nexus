@@ -5,9 +5,8 @@ import java.util.regex.Pattern.quote
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpResponse, Uri}
-import akka.stream.{Materializer, SystemMaterializer}
-import cats.effect.{ContextShift, IO, Resource, Timer}
-import cats.implicits._
+import akka.stream.Materializer
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -24,14 +23,9 @@ import ch.epfl.bluebrain.nexus.rdf.jsonld.syntax._
 import ch.epfl.bluebrain.nexus.rdf.syntax.all._
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.util._
-import com.typesafe.config.ConfigFactory
-import distage.ModuleDef
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Json, Printer}
-import izumi.distage.docker.Docker
-import izumi.distage.docker.modules.DockerSupportModule
-import izumi.distage.effect.modules.CatsDIEffectModule
 import izumi.distage.model.definition.StandardAxis
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
@@ -62,36 +56,8 @@ class BlazegraphClientSpec
       pluginConfig = PluginConfig.empty,
       activation = StandardAxis.testDummyActivation,
       parallelTests = ParallelLevel.Sequential,
-      moduleOverrides = new ModuleDef {
-        // add docker dependencies and override default configuration
-        include(new DockerSupportModule[IO] overridenBy new ModuleDef {
-          make[Docker.ClientConfig].from {
-            Docker.ClientConfig(
-              readTimeoutMs = 60000, // long timeout for gh actions
-              connectTimeoutMs = 500,
-              allowReuse = true,
-              useRemote = false,
-              useRegistry = true,
-              remote = None,
-              registry = None
-            )
-          }
-        })
-        include(CatsDIEffectModule)
+      moduleOverrides = new DistageModuleDef("BlazegraphClientSpec") {
         include(BlazegraphDockerModule[IO])
-
-        make[ActorSystem].fromResource {
-          val acquire = for {
-            cfg <- IO(ConfigFactory.load("test.conf").withFallback(ConfigFactory.load()))
-            as  <- IO(ActorSystem("BlazegraphClientSpec", cfg))
-          } yield as
-          val release = (system: ActorSystem) => IO.fromFuture(IO(system.terminate())) >> IO.unit
-          Resource.make(acquire)(release)
-        }
-
-        make[Materializer].from { as: ActorSystem =>
-          SystemMaterializer(as).materializer
-        }
 
         make[HttpClient[IO, HttpResponse]].from { (as: ActorSystem, mt: Materializer) =>
           implicit val a: ActorSystem  = as
