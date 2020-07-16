@@ -42,7 +42,6 @@ import org.scalatest.matchers.dsl.MatcherWords._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
 
 class BlazegraphClientSpec
     extends DistageSpecScalatest[IO]
@@ -50,6 +49,7 @@ class BlazegraphClientSpec
     with Randomness
     with Resources
     with OptionValues
+    with DistageSpecSugar
     with CirceEq {
 
   implicit private val cs: ContextShift[IO]             = IO.contextShift(ExecutionContext.global)
@@ -239,14 +239,7 @@ class BlazegraphClientSpec
       val c = cf.create(f.namespace)
       for {
         props <- cf.properties("/commons/sparql/wrong.properties")
-        _     <- c.createNamespace(props)
-                   .redeemWith(
-                     {
-                       case _: SparqlServerError => IO.unit
-                       case NonFatal(e)          => IO.raiseError(new RuntimeException("Received unexpected error", e))
-                     },
-                     _ => IO.unit
-                   )
+        _     <- c.createNamespace(props).passWhenErrorType[SparqlServerError]
       } yield ()
     }
 
@@ -378,14 +371,7 @@ class BlazegraphClientSpec
         _     <- c.createNamespace(props)
         graph <- cf.load(f.id, f.label, f.value)
         _     <- c.replace(f.graph, graph)
-        _     <- c.queryRaw(s"SELECT somethingwrong")
-                   .redeemWith(
-                     {
-                       case _: SparqlClientError => IO.unit
-                       case NonFatal(e)          => IO.raiseError(new RuntimeException("Received unexpected error", e))
-                     },
-                     _ => IO.unit
-                   )
+        _     <- c.queryRaw(s"SELECT somethingwrong").passWhenErrorType[SparqlClientError]
       } yield ()
     }
 

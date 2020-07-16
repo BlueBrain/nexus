@@ -23,11 +23,12 @@ object S3StorageOperations {
   final class Verify[F[_]](storage: S3Storage)(implicit F: Effect[F], as: ActorSystem) extends VerifyStorage[F] {
 
     implicit private val contextShift: ContextShift[IO] = IO.contextShift(as.dispatcher)
+    private val attributes                              = S3Attributes.settings(storage.toAlpakkaSettings)
 
     override def apply: F[Either[String, Unit]] = {
       val future = IO(
         S3.listBucket(storage.bucket, None)
-          .withAttributes(S3Attributes.settings(storage.settings.toAlpakka))
+          .withAttributes(attributes)
           .runWith(Sink.head)
       )
       IO.fromFuture(future)
@@ -44,25 +45,26 @@ object S3StorageOperations {
   final class Fetch[F[_]](storage: S3Storage)(implicit F: Effect[F], as: ActorSystem) extends FetchFile[F, AkkaSource] {
 
     implicit private val contextShift: ContextShift[IO] = IO.contextShift(as.dispatcher)
+    private val attributes                              = S3Attributes.settings(storage.toAlpakkaSettings)
 
-    override def apply(fileMeta: FileAttributes): F[AkkaSource] = {
+    override def apply(path: Uri.Path, location: Uri): F[AkkaSource] = {
       val future = IO(
-        S3.download(storage.bucket, URLDecoder.decode(fileMeta.path.toString, UTF_8.toString))
-          .withAttributes(S3Attributes.settings(storage.settings.toAlpakka))
+        S3.download(storage.bucket, URLDecoder.decode(path.toString, UTF_8.toString))
+          .withAttributes(attributes)
           .runWith(Sink.head)
       )
       IO.fromFuture(future)
         .flatMap {
           case Some((source, _)) => IO.pure(source: AkkaSource)
-          case None              => IO.raiseError(KgError.RemoteFileNotFound(fileMeta.location))
+          case None              => IO.raiseError(KgError.RemoteFileNotFound(location))
         }
         .handleErrorWith {
           case e: KgError   => IO.raiseError(e)
           case e: Throwable =>
             IO.raiseError(
-              KgError.DownstreamServiceError(
-                s"Error fetching S3 object with key '${fileMeta.path}' in bucket '${storage.bucket}': ${e.getMessage}"
-              )
+              KgError.DownstreamServiceError {
+                s"Error fetching S3 object with key '$path' in bucket '${storage.bucket}': ${e.getMessage}"
+              }
             )
         }
         .to[F]
@@ -74,8 +76,7 @@ object S3StorageOperations {
 
     implicit private val ec: ExecutionContext           = as.dispatcher
     implicit private val contextShift: ContextShift[IO] = IO.contextShift(ec)
-
-    private val attributes = S3Attributes.settings(storage.settings.toAlpakka)
+    private val attributes                              = S3Attributes.settings(storage.toAlpakkaSettings)
 
     override def apply(id: ResId, fileDesc: FileDescription, source: AkkaSource): F[FileAttributes] = {
       val key            = mangle(storage.ref, fileDesc.uuid, fileDesc.filename)
@@ -128,12 +129,13 @@ object S3StorageOperations {
 
     implicit private val ec: ExecutionContext           = as.dispatcher
     implicit private val contextShift: ContextShift[IO] = IO.contextShift(ec)
+    private val attributes                              = S3Attributes.settings(storage.toAlpakkaSettings)
 
     override def apply(id: ResId, fileDesc: FileDescription, key: Uri.Path): F[FileAttributes] = {
-      val location: Uri = s"${storage.settings.address}/${storage.bucket}/$key"
+      val location: Uri = s"${storage.settings.address(storage.bucket)}/$key"
       val future        =
         S3.download(storage.bucket, URLDecoder.decode(key.toString, UTF_8.toString))
-          .withAttributes(S3Attributes.settings(storage.settings.toAlpakka))
+          .withAttributes(attributes)
           .runWith(Sink.head)
           .flatMap {
             case Some((source, meta)) =>

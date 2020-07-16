@@ -277,6 +277,31 @@ object Storage {
         case S3Credentials(ak, as) => S3Credentials(ak.decrypt(config.derivedKey), as.decrypt(config.derivedKey))
       }))
 
+    /**
+      * @return these settings converted to an instance of [[akka.stream.alpakka.s3.S3Settings]]
+      */
+    private[storage] def toAlpakkaSettings: s3.S3Settings = {
+      val credsProvider = settings.credentials match {
+        case Some(S3Credentials(accessKey, secretKey)) =>
+          StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
+        case None                                      =>
+          StaticCredentialsProvider.create(AnonymousCredentialsProvider.create().resolveCredentials())
+      }
+
+      val regionProvider: AwsRegionProvider = new AwsRegionProvider {
+        val getRegion: Region = settings.region.map(Region.of).getOrElse {
+          settings.endpoint match {
+            case None                                   => Region.US_EAST_1
+            case Some(s) if s.contains("amazonaws.com") => Region.US_EAST_1
+            case _                                      => Region.AWS_GLOBAL
+          }
+        }
+      }
+
+      s3.S3Settings(MemoryBufferType, credsProvider, regionProvider, ApiVersion.ListBucketVersion2)
+        .withEndpointUrl(settings.address(bucket).toString())
+    }
+
   }
 
   implicit private val permissionDecoder: GraphDecoder[Permission] =
@@ -292,39 +317,17 @@ object Storage {
     * @param region      optional region
     */
   final case class S3Settings(credentials: Option[S3Credentials], endpoint: Option[String], region: Option[String]) {
-    val address: Uri = endpoint match {
-      case None    => "https://s3.amazonaws.com"
-      case Some(s) =>
-        if (s.startsWith("https://") || s.startsWith("http://")) s
-        else s"https://$s"
-    }
+    private val regexScheme = "^(https?)(:\\/\\/)(.*)".r
 
-    /**
-      * @return these settings converted to an instance of [[akka.stream.alpakka.s3.S3Settings]]
-      */
-    def toAlpakka: s3.S3Settings = {
-      val credsProvider = credentials match {
-        case Some(S3Credentials(accessKey, secretKey)) =>
-          StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
-        case None                                      =>
-          StaticCredentialsProvider.create(AnonymousCredentialsProvider.create().resolveCredentials())
+    private[storage] def address(bucket: String): Uri =
+      endpoint match {
+        case Some(regexScheme(scheme, _, host)) =>
+          s"$scheme://$bucket.$host"
+        case Some(host)                         =>
+          s"https://$bucket.$host"
+        case None                               =>
+          region.fold(s"https://$bucket.s3.amazonaws.com")(r => (s"https://$bucket.s3.$r.amazonaws.com"))
       }
-
-      val regionProvider: AwsRegionProvider = new AwsRegionProvider {
-        val getRegion: Region = region.map(Region.of).getOrElse {
-          endpoint match {
-            case None                                   => Region.US_EAST_1
-            case Some(s) if s.contains("amazonaws.com") => Region.US_EAST_1
-            case _                                      => Region.AWS_GLOBAL
-          }
-        }
-      }
-
-      // TODO: path-style is deprecated, we will have to do something to support virtual-hosted style: https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/
-      s3.S3Settings(MemoryBufferType, credsProvider, regionProvider, ApiVersion.ListBucketVersion2)
-        //        .withPathStyleAccess(true)
-        .withEndpointUrl(address.toString())
-    }
   }
 
   object S3Settings {
@@ -435,7 +438,15 @@ object Storage {
       *
       * @param fileMeta the file metadata
       */
-    def apply(fileMeta: FileAttributes): F[Out]
+    def apply(fileMeta: FileAttributes): F[Out] = apply(fileMeta.path, fileMeta.location)
+
+    /**
+      * Fetches the file with the passed parameters.
+      *
+     * @param path     the file path
+      * @param location the file location
+      */
+    def apply(path: Uri.Path, location: Uri): F[Out]
   }
 
   trait SaveFile[F[_], In] {
