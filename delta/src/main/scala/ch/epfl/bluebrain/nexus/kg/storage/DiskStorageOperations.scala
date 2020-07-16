@@ -42,12 +42,12 @@ object DiskStorageOperations {
     */
   final class FetchDiskFile[F[_]](implicit F: Effect[F]) extends FetchFile[F, AkkaSource] {
 
-    override def apply(fileMeta: FileAttributes): F[AkkaSource] =
-      uriToPath(fileMeta.location) match {
+    override def apply(path: Uri.Path, location: Uri): F[AkkaSource] =
+      uriToPath(location) match {
         case Some(path) => F.pure(FileIO.fromPath(path))
         case None       =>
-          logger.error(s"Invalid file location: '${fileMeta.location}'")
-          F.raiseError(KgError.InternalError(s"Invalid file location: '${fileMeta.location}'"))
+          logger.error(s"Invalid file location: '$location'")
+          F.raiseError(KgError.InternalError(s"Invalid file location: '${location}'"))
       }
   }
 

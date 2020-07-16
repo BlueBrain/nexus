@@ -41,8 +41,8 @@ object RemoteDiskStorageOperations {
   final class Fetch[F[_]](storage: RemoteDiskStorage, client: StorageClient[F]) extends FetchFile[F, AkkaSource] {
     implicit val cred = storage.credentials.map(AccessToken)
 
-    override def apply(fileMeta: FileAttributes): F[AkkaSource] =
-      client.getFile(storage.folder, fileMeta.path)
+    override def apply(path: Uri.Path, location: Uri): F[AkkaSource] =
+      client.getFile(storage.folder, path)
 
   }
 
