@@ -466,6 +466,7 @@ object View {
 
     private[indexing] val ctx: Json = jsonContentOf("/elasticsearch/default-context.json")
     private val settings: Json      = jsonContentOf("/elasticsearch/settings.json")
+    private val namePredicates      = Set(skos.prefLabel, IriNode(rdfs.label), IriNode(schema.name))
 
     def index(implicit config: AppConfig): String = s"${config.elasticSearch.indexPrefix}_$name"
 
@@ -510,8 +511,7 @@ object View {
 
       val graph       = if (includeMetadata) Graph(id) ++ res.metadata(metadataOpts) else Graph(id)
       val docGraph    = graph ++ res.value.graph.filter {
-        case (s, p, _) =>
-          s == IriNode(id) && (p == skos.prefLabel || p == IriNode(rdfs.label) || p == IriNode(schema.name))
+        case (s, p, o) => s == IriNode(id) && namePredicates.contains(p) && o.asLiteral.exists(_.isString)
       }
       val transformed =
         if (sourceAsText)
