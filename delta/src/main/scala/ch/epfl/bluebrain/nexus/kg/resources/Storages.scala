@@ -347,7 +347,7 @@ object Storages {
     val projectionId                    = "storage-indexer"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
       .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
-      .eventsByTag(TaggingAdapter.ResolverTag, NoOffset)
+      .eventsByTag(TaggingAdapter.StorageTag, NoOffset)
       .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
 
     val flow = ProgressFlowElem[F, Any]

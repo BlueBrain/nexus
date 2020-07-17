@@ -28,15 +28,30 @@
         "copy_to": "_all_fields"
       },
       "prefLabel": {
-        "type": "keyword",
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        },
         "copy_to": "_all_fields"
       },
       "label": {
-        "type": "keyword",
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        },
         "copy_to": "_all_fields"
       },
       "name": {
-        "type": "keyword",
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        },
         "copy_to": "_all_fields"
       },
       "_rev": {

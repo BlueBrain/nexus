@@ -35,6 +35,9 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/constrainedBy",
       "@type": "@id"
     },
+    "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
+    "name": "http://schema.org/name",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
     "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
     "_original_source": "https://bluebrain.github.io/nexus/vocabulary/original_source",
     "_digest": "https://bluebrain.github.io/nexus/vocabulary/digest",

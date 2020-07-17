@@ -11,9 +11,10 @@ import io.circe.Decoder
 final case class ServiceDescription(name: String, version: String)
 
 object ServiceDescription {
+  private val name = "elasticsearch"
+
   implicit val serviceDescDecoder: Decoder[ServiceDescription] = Decoder.instance { hc =>
     for {
-      name    <- hc.get[String]("cluster_name")
       version <- hc.downField("version").get[String]("number")
     } yield ServiceDescription(name, version)
   }
