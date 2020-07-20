@@ -76,6 +76,7 @@ lazy val akkaHttpTestKit          = "com.typesafe.akka"                %% "akka-
 lazy val akkaPersistence          = "com.typesafe.akka"                %% "akka-persistence"                    % akkaVersion
 
 lazy val akkaPersistenceTyped     = "com.typesafe.akka"                %% "akka-persistence-typed"              % akkaVersion
+lazy val akkaPersistenceTestKit   ="com.typesafe.akka"                 %% "akka-persistence-testkit"            % akkaVersion
 
 lazy val akkaPersistenceCassandra = "com.typesafe.akka"                %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
 lazy val akkaPersistenceInMem     = "com.github.dnvriend"              %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
@@ -181,7 +182,6 @@ lazy val docs = project
     // gh pages settings
     git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll                   := true,
-    ghpagesBranch                     := "gh-pages"
   )
 
 lazy val cli = project
@@ -271,7 +271,9 @@ lazy val sourcingNew = project
       fs2,
       scalaLogging,
       streamz,
-      scalaTest            % Test
+      akkaActorTyped          % Test,
+      akkaPersistenceTestKit  % Test,
+      scalaTest               % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork          := true
   )
