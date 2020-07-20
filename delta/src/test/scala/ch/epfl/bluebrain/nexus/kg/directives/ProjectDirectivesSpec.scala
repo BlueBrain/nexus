@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.kg.resources.OrganizationRef
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.{Error, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, Settings}

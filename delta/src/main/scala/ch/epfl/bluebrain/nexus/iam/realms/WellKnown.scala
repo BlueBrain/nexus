@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.iam.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.iam.types.GrantType
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.nimbusds.jose.jwk.{JWK, KeyType}
 import io.circe.generic.semiauto._
 import io.circe.{CursorOp, Decoder, Json}

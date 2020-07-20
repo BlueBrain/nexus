@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.kg.client
+package ch.epfl.bluebrain.nexus.delta.client
 
 import java.util.UUID
 
@@ -45,7 +45,7 @@ object EventSource {
     * @tparam A the type of the data parameter on the SSE, attempted to convert using Json
     */
   def apply[A: Decoder](
-      config: KgClientConfig
+      config: DeltaClientConfig
   )(implicit as: ActorSystem, mt: Materializer, ec: ExecutionContext): EventSource[A] =
     new EventSource[A] {
       private val logger = Logger[this.type]

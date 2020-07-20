@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.iam.types.GrantType.Camel._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Url
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.delta.config.Settings
 import io.circe.generic.extras.Configuration

@@ -5,14 +5,14 @@ import java.util.UUID
 
 import akka.cluster.ddata.LWWRegister.Clock
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.Contexts._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Decoder, DecodingFailure, Encoder, HCursor, Json}
 
 /**
   * The metadata information for any resource in the service
@@ -103,6 +103,39 @@ object ResourceF {
           nxv.createdAt.prefix  -> Json.fromString(createdAt.toString),
           nxv.updatedAt.prefix  -> Json.fromString(updatedAt.toString)
         )
+    }
+
+  // TODO: That should be done using a Graph decoder instead. We will evaluate how to do it with Jena in 1.5 release
+  private def decodeTypes(hc: HCursor): Decoder.Result[Set[AbsoluteIri]] =
+    hc.getOrElse("@type")(Set.empty[AbsoluteIri])
+      .orElse(hc.get[AbsoluteIri]("@type").map(Set(_)))
+      .orElse(hc.getOrElse("@type")(Set.empty[String]).map(_.map(nxv.withSuffix(_).value)))
+      .orElse(hc.get[String]("@type").map(tpe => Set(nxv.withSuffix(tpe).value)))
+
+
+  implicit val resourceMetaDecoder: Decoder[ResourceMetadata] =
+    Decoder.instance { hc =>
+      for {
+        id           <- hc.get[AbsoluteIri]("@id")
+        types        <- decodeTypes(hc)
+        uuid         <- hc.get[UUID](nxv.uuid.prefix)
+        rev          <- hc.get[Long](nxv.rev.prefix)
+        deprecated   <- hc.get[Boolean](nxv.deprecated.prefix)
+        createdByIri <- hc.get[AbsoluteIri](nxv.createdBy.prefix)
+        createdBy    <- Subject(createdByIri).toRight(DecodingFailure(s"Wrong createdBy '$createdByIri'", hc.history))
+        updatedByIri <- hc.get[AbsoluteIri](nxv.updatedBy.prefix)
+        updatedBy    <- Subject(createdByIri).toRight(DecodingFailure(s"Wrong updatedBy '$updatedByIri'", hc.history))
+        createdAt    <- hc.get[Instant](nxv.createdAt.prefix)
+        updatedAt    <- hc.get[Instant](nxv.updatedAt.prefix)
+      } yield ResourceF.unit(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy)
+    }
+
+  implicit def resourceDecoder[A](implicit aDecoder: Decoder[A]): Decoder[ResourceF[A]] =
+    Decoder.instance { hc =>
+      for {
+        resourceUnit <- resourceMetaDecoder(hc)
+        value        <- aDecoder(hc)
+      } yield resourceUnit.copy(value = value)
     }
 
   implicit def resourceEncoder[A: Encoder](implicit http: HttpConfig): Encoder[ResourceF[A]] =

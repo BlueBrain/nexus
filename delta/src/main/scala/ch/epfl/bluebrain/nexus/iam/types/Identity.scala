@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.iam.types
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import io.circe.Decoder.Result
 import io.circe._
@@ -46,6 +45,11 @@ object Identity {
     * Base enumeration type for subject classes.
     */
   sealed trait Subject extends Identity
+
+  object Subject {
+    def apply(id: AbsoluteIri): Option[Subject] =
+      Identity(id).collect { case subject: Subject => subject }
+  }
 
   sealed trait Anonymous extends Subject
 

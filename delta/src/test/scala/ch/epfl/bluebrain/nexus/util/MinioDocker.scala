@@ -13,7 +13,7 @@ object MinioDocker extends ContainerDef with Randomness {
 
   override def config: Config = {
     Config(
-      image = "minio/minio:RELEASE.2020-07-14T19-14-30Z",
+      image = "minio/minio:RELEASE.2020-07-20T02-25-16Z",
       ports = Seq(primaryPort),
       healthCheck = ContainerHealthCheck.httpGetCheck(primaryPort),
       env = Map(

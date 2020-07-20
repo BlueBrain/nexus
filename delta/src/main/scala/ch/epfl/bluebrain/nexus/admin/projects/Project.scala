@@ -3,9 +3,10 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.util.UUID
 
 import cats.Show
-import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import io.circe.{Encoder, Json}
+import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.{Decoder, Encoder, Json}
 
 /**
   * Type that represents a project.
@@ -60,5 +61,22 @@ object Project {
         case Some(desc) => Json.obj("description" -> Json.fromString(desc))
         case None       => Json.obj()
       })
+  }
+
+  final private[projects] case class ApiMappings(prefix: String, namespace: AbsoluteIri)
+  implicit private[projects] val apiMappingsDecoder: Decoder[ApiMappings] = deriveDecoder[ApiMappings]
+
+  implicit val projectDecoder: Decoder[Project] = Decoder.instance { hc =>
+    for {
+      label             <- hc.get[String]("_label")
+      organizationUuid  <- hc.get[UUID]("_organizationUuid")
+      organizationLabel <- hc.get[String]("_organizationLabel")
+      description       <- hc.get[Option[String]]("description")
+      base              <- hc.get[AbsoluteIri]("base")
+      vocab             <- hc.get[AbsoluteIri]("vocab")
+      apiMappingList    <- hc.get[List[ApiMappings]]("apiMappings")
+      apiMappings        = apiMappingList.map(v => v.prefix -> v.namespace).toMap
+    } yield Project(label, organizationUuid, organizationLabel, description, apiMappings, base, vocab)
+
   }
 }

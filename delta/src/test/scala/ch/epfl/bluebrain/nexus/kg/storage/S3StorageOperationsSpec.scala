@@ -54,11 +54,8 @@ class S3StorageOperationsSpec
     IO.fromFuture(IO(future))
 
   class TestFactory(port: Int)(implicit val as: ActorSystem, val mt: Materializer) {
-    val base: Uri          = s"http://${MinioDocker.virtualHost}:$port"
-    // TODO: The bucket is duplicated here due to an error on the minio response where the bucket is duplicated.
-    // I've reported it and when it is solved we should remove the duplication: https://github.com/minio/minio/issues/10054
-    val bucketBaseDup: Uri = s"http://bucket.bucket.${MinioDocker.virtualHost}:$port"
-    val bucketBase: Uri    = s"http://bucket.${MinioDocker.virtualHost}:$port"
+    val base: Uri       = s"http://${MinioDocker.virtualHost}:$port"
+    val bucketBase: Uri = s"http://bucket.${MinioDocker.virtualHost}:$port"
 
     val storage: S3Storage =
       // format: off
@@ -127,7 +124,7 @@ class S3StorageOperationsSpec
 
     "save file" in { (tf: TestFactory) =>
       val resid = Id(projectRef, url"http://example.com/id")
-      val loc   = Uri(s"${tf.bucketBaseDup}/$uriPath")
+      val loc   = Uri(s"${tf.bucketBase}/$uriPath")
 
       for {
         attr <- tf.save(resid, desc, FileIO.fromPath(path))
@@ -149,7 +146,7 @@ class S3StorageOperationsSpec
 
     "download file" in { (tf: TestFactory) =>
       import tf.mt
-      val loc = Uri(s"${tf.bucketBaseDup}/$uriPath")
+      val loc = Uri(s"${tf.bucketBase}/$uriPath")
 
       for {
         downloaded     <- tf.fetch(uriPath, loc)
@@ -160,7 +157,7 @@ class S3StorageOperationsSpec
 
     "fail downloading a file that does not exists" in { (tf: TestFactory) =>
       val nonExistPath = Uri.Path(mangle(projectRef, fileUuid, "nonexists.json"))
-      val loc          = Uri(s"${tf.bucketBaseDup}/$nonExistPath")
+      val loc          = Uri(s"${tf.bucketBase}/$nonExistPath")
 
       for {
         _ <- tf.fetch(nonExistPath, loc).passWhenError(RemoteFileNotFound(loc))
@@ -171,7 +168,7 @@ class S3StorageOperationsSpec
     "fail downloading when bucket does not exists" in { (tf: TestFactory) =>
       import tf.as
       val fetch       = new S3StorageOperations.Fetch[IO](tf.storage.copy(bucket = "bucket2"))
-      val loc         = Uri(s"${tf.bucketBaseDup}/$uriPath")
+      val loc         = Uri(s"${tf.bucketBase}/$uriPath")
       val expectedErr =
         s"Error fetching S3 object with key '$uriPath' in bucket 'bucket2': The specified bucket does not exist"
 

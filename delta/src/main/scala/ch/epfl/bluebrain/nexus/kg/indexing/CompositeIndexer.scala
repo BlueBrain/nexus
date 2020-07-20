@@ -12,7 +12,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlWriteQuery
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.client.{KgClient, KgClientConfig}
+import ch.epfl.bluebrain.nexus.delta.client.{DeltaClient, DeltaClientConfig}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.RemoteProjectEventStream
 import ch.epfl.bluebrain.nexus.kg.indexing.View.{CompositeView, Filter, SparqlView}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Source => CompositeSource}
@@ -126,8 +126,8 @@ object CompositeIndexer {
     def fetchRemoteResource(
         event: Event
     )(source: RemoteProjectEventStream, filter: Filter)(implicit project: ProjectResource): F[Option[ResourceV]] = {
-      val clientCfg = KgClientConfig(source.endpoint)
-      val client    = KgClient(clientCfg)
+      val clientCfg = DeltaClientConfig(source.endpoint)
+      val client    = DeltaClient(clientCfg)
       filter.resourceTag.filter(_.trim.nonEmpty) match {
         case Some(tag) => client.resource(project, event.id.value, tag)(source.token)
         case _         => client.resource(project, event.id.value)(source.token)
@@ -135,8 +135,8 @@ object CompositeIndexer {
     }
 
     def fetchRemoteEvents(source: RemoteProjectEventStream, offset: Offset): Source[EventEnvelope, NotUsed] = {
-      val clientCfg = KgClientConfig(source.endpoint)
-      val client    = KgClient(clientCfg)
+      val clientCfg = DeltaClientConfig(source.endpoint)
+      val client    = DeltaClient(clientCfg)
       client.events(source.project, offset)(source.token)
     }
 

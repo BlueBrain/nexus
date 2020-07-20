@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.kg.IdStats
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.Msg._
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor._
 import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
-import ch.epfl.bluebrain.nexus.kg.client.{KgClient, KgClientConfig}
+import ch.epfl.bluebrain.nexus.delta.client.{DeltaClient, DeltaClientConfig}
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.ViewStatistics
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProjectEventStream, RemoteProjectEventStream}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Source => CompositeSource}
@@ -179,8 +179,8 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
 
   private def startProjectStreamFromSSE(remoteSource: RemoteProjectEventStream): Unit = {
     val progressId                                   = projectStreamId()
-    val clientCfg                                    = KgClientConfig(remoteSource.endpoint)
-    val client                                       = KgClient[Task](clientCfg)
+    val clientCfg                                    = DeltaClientConfig(remoteSource.endpoint)
+    val client                                       = DeltaClient[Task](clientCfg)
     val sourceF: Task[Source[ProjectionProgress, _]] = projections.progress(progressId).map { initial =>
       val source = client
         .events(remoteSource.project, initial.minProgress.offset)(remoteSource.token)

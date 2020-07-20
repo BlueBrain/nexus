@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.admin.projects
 
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import io.circe.{Decoder, DecodingFailure}
 
