@@ -21,6 +21,7 @@ val akkaHttpCirceVersion            = "1.33.0"
 val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
+val akkaPersistenceJdbcVersion      = "4.0.0"
 val akkaVersion                     = "2.6.6"
 val alpakkaVersion                  = "2.0.1"
 val apacheCompressVersion           = "1.20"
@@ -53,19 +54,37 @@ val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.13.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.2.0"
+val slickVersion                    = "3.3.2"
+val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2"
 
-lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
-lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
-lazy val akkaClusterSharding      = "com.typesafe.akka"          %% "akka-cluster-sharding"               % akkaVersion
-lazy val akkaHttp                 = "com.typesafe.akka"          %% "akka-http"                           % akkaHttpVersion
-lazy val akkaHttpXml              = "com.typesafe.akka"          %% "akka-http-xml"                       % akkaHttpVersion
-lazy val akkaHttpCors             = "ch.megard"                  %% "akka-http-cors"                      % akkaCorsVersion
-lazy val akkaHttpCirce            = "de.heikoseeberger"          %% "akka-http-circe"                     % akkaHttpCirceVersion
-lazy val akkaHttpTestKit          = "com.typesafe.akka"          %% "akka-http-testkit"                   % akkaHttpVersion
-lazy val akkaPersistence          = "com.typesafe.akka"          %% "akka-persistence"                    % akkaVersion
-lazy val akkaPersistenceCassandra = "com.typesafe.akka"          %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceInMem     = "com.github.dnvriend"        %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
+lazy val akkaActor                = "com.typesafe.akka"                %% "akka-actor"                          % akkaVersion
+lazy val akkaCluster              = "com.typesafe.akka"                %% "akka-cluster"                        % akkaVersion
+lazy val akkaClusterSharding      = "com.typesafe.akka"                %% "akka-cluster-sharding"               % akkaVersion
+
+lazy val akkaActorTyped           = "com.typesafe.akka"                %% "akka-actor-typed"                    % akkaVersion
+lazy val akkaClusterTyped         = "com.typesafe.akka"                %% "akka-cluster-typed"                  % akkaVersion
+lazy val akkaClusterShardingTyped = "com.typesafe.akka"                %% "akka-cluster-sharding-typed"         % akkaVersion
+
+lazy val akkaHttp                 = "com.typesafe.akka"                %% "akka-http"                           % akkaHttpVersion
+lazy val akkaHttpXml              = "com.typesafe.akka"                %% "akka-http-xml"                       % akkaHttpVersion
+lazy val akkaHttpCors             = "ch.megard"                        %% "akka-http-cors"                      % akkaCorsVersion
+lazy val akkaHttpCirce            = "de.heikoseeberger"                %% "akka-http-circe"                     % akkaHttpCirceVersion
+lazy val akkaHttpTestKit          = "com.typesafe.akka"                %% "akka-http-testkit"                   % akkaHttpVersion
+
+lazy val akkaPersistence          = "com.typesafe.akka"                %% "akka-persistence"                    % akkaVersion
+
+lazy val akkaPersistenceTyped     = "com.typesafe.akka"                %% "akka-persistence-typed"              % akkaVersion
+
+lazy val akkaPersistenceCassandra = "com.typesafe.akka"                %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceInMem     = "com.github.dnvriend"              %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
+
+lazy val akkaPersistenceJdbc      = Seq(
+  "com.lightbend.akka" %% "akka-persistence-jdbc" % akkaPersistenceJdbcVersion,
+  "com.typesafe.slick" %% "slick" % slickVersion,
+  "com.typesafe.slick" %% "slick-hikaricp" % slickVersion
+)
+
 lazy val akkaPersistenceLauncher  = "com.typesafe.akka"          %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
 lazy val akkaPersistenceQuery     = "com.typesafe.akka"          %% "akka-persistence-query"              % akkaVersion
 lazy val akkaSlf4j                = "com.typesafe.akka"          %% "akka-slf4j"                          % akkaVersion
@@ -268,6 +287,30 @@ lazy val sourcing = project
     ),
     Test / fork          := true
   )
+
+lazy val sourcingNew = project
+  .in(file("sourcing-new"))
+  .settings(name := "sourcing-new", moduleName := "sourcing-new")
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaActorTyped,
+      akkaClusterTyped,
+      akkaClusterShardingTyped,
+      akkaPersistenceTyped,
+      akkaPersistenceCassandra,
+      akkaPersistenceQuery,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
+      fs2,
+      scalaLogging,
+      streamz,
+      scalaTest            % Test
+    ) ++ akkaPersistenceJdbc,
+    Test / fork          := true
+  )
+
 lazy val rdf      = project
   .in(file("rdf"))
   .settings(shared, compilation, coverage, release)
@@ -447,7 +490,8 @@ lazy val shared = Seq(
   organization := "ch.epfl.bluebrain.nexus",
   resolvers   ++= Seq(
     Resolver.bintrayRepo("bbp", "nexus-releases"),
-    Resolver.bintrayRepo("bbp", "nexus-snapshots")
+    Resolver.bintrayRepo("bbp", "nexus-snapshots"),
+    Resolver.bintrayRepo("streamz", "maven")
   )
 )
 
