@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.kg.client
+package ch.epfl.bluebrain.nexus.delta.client
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.kg.KgError.AuthenticationFailed
-import ch.epfl.bluebrain.nexus.kg.client.KgClientError._
+import ch.epfl.bluebrain.nexus.kg.KgError.{AuthenticationFailed, AuthorizationFailed}
+import ch.epfl.bluebrain.nexus.delta.client.DeltaClientError._
 import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, ResourceF, ResourceV}
@@ -33,8 +33,9 @@ import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-class KgClient[F[_]] private[client] (
-    config: KgClientConfig,
+class DeltaClient[F[_]] private[client] (
+    config: DeltaClientConfig,
+    pc: HttpClient[F, ProjectResource],
     source: EventSource[Event],
     resourceClientFromRef: ProjectRef => HttpClient[F, ResourceV]
 )(implicit
@@ -83,6 +84,16 @@ class KgClient[F[_]] private[client] (
       case (off, event) => EventEnvelope(off, event.id.value.asString, event.rev, event, event.rev)
     }
 
+  /**
+    * Fetch [[ProjectResource]] with the passed ''organization'' and ''label''.
+    */
+  def project(organization: String, label: String)(implicit
+      credentials: Option[AccessToken]
+  ): F[Option[ProjectResource]]                        =
+    pc(requestFrom(config.projectsIri + (organization / label)))
+      .map[Option[ProjectResource]](Some(_))
+      .recoverWith { case NotFound(_) => F.pure(None) }
+
   private def toString(offset: Offset): Option[String] =
     offset match {
       case Sequence(value)      => Some(value.toString)
@@ -90,14 +101,14 @@ class KgClient[F[_]] private[client] (
       case _                    => None
     }
 
-  private def requestFrom(iri: AbsoluteIri, query: Query)(implicit credentials: Option[AccessToken]) = {
+  private def requestFrom(iri: AbsoluteIri, query: Query = Query.Empty)(implicit credentials: Option[AccessToken]) = {
     val request = Get(iri.asAkka.withQuery(query)).addHeader(accept)
     credentials.map(token => request.addCredentials(OAuth2BearerToken(token.value))).getOrElse(request)
   }
 
 }
 
-object KgClient {
+object DeltaClient {
 
   private def httpClient[F[_], A: ClassTag](implicit
       L: LiftIO[F],
@@ -113,7 +124,7 @@ object KgClient {
 
       private def handleError[B](req: HttpRequest): Throwable => F[B] = {
         case NonFatal(th) =>
-          logger.error(s"Unexpected response for KG call. Request: '${req.method} ${req.uri}'", th)
+          logger.error(s"Unexpected response for Delta call. Request: '${req.method} ${req.uri}'", th)
           F.raiseError(UnknownError(StatusCodes.InternalServerError, th.getMessage))
       }
 
@@ -136,7 +147,7 @@ object KgClient {
                 logger.error(
                   s"Received Forbidden when accessing '${req.method.name()} ${req.uri.toString()}'. Details: $entityAsString"
                 )
-                F.raiseError[A](AuthenticationFailed)
+                F.raiseError[A](AuthorizationFailed)
               }
             case other if other.isSuccess() =>
               val value = L.liftIO(IO.fromFuture(IO(um(resp.entity))))
@@ -170,20 +181,21 @@ object KgClient {
     }
 
   /**
-    * Construct [[KgClient]].
+    * Construct [[DeltaClient]].
     *
     * @param cfg configuration for the client
     */
   def apply[F[_]: Effect](
-      cfg: KgClientConfig
-  )(implicit as: ActorSystem): KgClient[F] = {
-    implicit val ec: ExecutionContext              = as.dispatcher
-    implicit val ucl: UntypedHttpClient[F]         = HttpClient.untyped[F]
-    val rc: ProjectRef => HttpClient[F, ResourceV] = (ref: ProjectRef) => {
+      cfg: DeltaClientConfig
+  )(implicit as: ActorSystem): DeltaClient[F] = {
+    implicit val ec: ExecutionContext               = as.dispatcher
+    implicit val ucl: UntypedHttpClient[F]          = HttpClient.untyped[F]
+    val rc: ProjectRef => HttpClient[F, ResourceV]  = (ref: ProjectRef) => {
       implicit val resourceVDecoder: Decoder[ResourceV] = ResourceF.resourceVGraphDecoder(ref)
       httpClient[F, ResourceV]
     }
-    val sse: EventSource[Event]                    = EventSource[Event](cfg)
-    new KgClient(cfg, sse, rc)
+    implicit val pc: HttpClient[F, ProjectResource] = httpClient[F, ProjectResource]
+    val sse: EventSource[Event]                     = EventSource[Event](cfg)
+    new DeltaClient(cfg, pc, sse, rc)
   }
 }

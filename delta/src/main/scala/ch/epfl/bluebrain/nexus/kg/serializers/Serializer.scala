@@ -37,7 +37,7 @@ object Serializer {
   implicit private val config: Configuration = Configuration.default.withDiscriminator("@type")
 
   implicit private val refEncoder: Encoder[Ref] = Encoder.encodeString.contramap(_.iri.show)
-  implicit private val refDecoder: Decoder[Ref] = absoluteIriDecoder.map(Ref(_))
+  implicit private val refDecoder: Decoder[Ref] = AbsoluteIri.absoluteIriDecoder.map(Ref(_))
 
   implicit private val uriEncoder: Encoder[Uri] = Encoder.encodeString.contramap(_.toString)
   implicit private val uriDecoder: Decoder[Uri] = Decoder.decodeString.emapTry(uri => Try(Uri(uri)))

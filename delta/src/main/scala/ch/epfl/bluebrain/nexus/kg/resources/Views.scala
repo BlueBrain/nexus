@@ -15,9 +15,13 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchFailure.ElasticSearchClientError
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{CompositeViewConfig, HttpConfig}
+import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.kg.KgError.{AuthenticationFailed, AuthorizationFailed}
 import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
@@ -43,9 +47,6 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{CompositeViewConfig, HttpConfig}
-import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
 import com.typesafe.scalalogging.Logger
@@ -57,6 +58,7 @@ import scala.concurrent.ExecutionContext
 
 class Views[F[_]](repo: Repo[F], private val index: ViewCache[F])(implicit
     F: Effect[F],
+    as: ActorSystem,
     materializer: Materializer[F],
     config: AppConfig,
     projectCache: ProjectCache[F],
@@ -345,7 +347,13 @@ class Views[F[_]](repo: Repo[F], private val index: ViewCache[F])(implicit
           val fetchProjectsF = v.sourcesBy[RemoteProjectEventStream].toList.traverse { source =>
             val ref = source.id.ref
             source.fetchProject[F].map(_.toRight[Rejection](ProjectRefNotFound(source.project))).recoverWith {
-              case _ =>
+              case AuthenticationFailed =>
+                val err = "Wrong 'endpoint' and/or 'token' fields. Reason: The request did not complete successfully due to an invalid authentication method."
+                F.pure(Left(InvalidResourceFormat(ref, err): Rejection))
+              case AuthorizationFailed  =>
+                val err = "Wrong 'endpoint' and/or 'token' fields. Reason: The request did not complete successfully due to lack of access to the resource."
+                F.pure(Left(InvalidResourceFormat(ref, err): Rejection))
+              case _                    =>
                 F.pure(Left(InvalidResourceFormat(ref, "Unable to validate the remote project reference"): Rejection))
             }
           }
@@ -424,7 +432,8 @@ class Views[F[_]](repo: Repo[F], private val index: ViewCache[F])(implicit
 object Views {
 
   final def apply[F[_]: Effect: ProjectCache: Clients: Materializer](repo: Repo[F], index: ViewCache[F])(implicit
-      config: AppConfig
+      config: AppConfig,
+      as: ActorSystem
   ): Views[F] = new Views[F](repo, index)
 
   def indexer[F[_]: Timer](

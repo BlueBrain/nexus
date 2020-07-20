@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.regex.Pattern.quote
 import java.util.{Properties, UUID}
 
+import akka.actor.ActorSystem
 import cats.data.EitherT
 import cats.effect.{Effect, Timer}
 import cats.implicits._
@@ -14,6 +15,7 @@ import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults, SparqlWriteQuery}
+import ch.epfl.bluebrain.nexus.delta.client.{DeltaClient, DeltaClientConfig}
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
@@ -807,9 +809,10 @@ object View {
           endpoint: AbsoluteIri,
           token: Option[AccessToken]
       ) extends Source {
+        private lazy val clientCfg = DeltaClientConfig(endpoint)
 
-        def fetchProject[F[_]](implicit projectCache: ProjectCache[F]): F[Option[ProjectResource]] =
-          projectCache.getBy(project.organization, project.value)
+        def fetchProject[F[_]: Effect](implicit as: ActorSystem): F[Option[ProjectResource]] =
+          DeltaClient[F](clientCfg).project(project.organization, project.value)(token)
       }
     }
 

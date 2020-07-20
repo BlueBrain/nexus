@@ -292,7 +292,7 @@ object Event {
       })
 
     implicit private val refEncoder: Encoder[Ref]          = Encoder.encodeJson.contramap(_.iri.asJson)
-    implicit private val refDecoder: Decoder[Ref]          = absoluteIriDecoder.map(Ref(_))
+    implicit private val refDecoder: Decoder[Ref]          = AbsoluteIri.absoluteIriDecoder.map(Ref(_))
     implicit private val uriEncoder: Encoder[Uri]          = Encoder.encodeString.contramap(_.toString)
     implicit private val uriDecoder: Decoder[Uri]          = Decoder.decodeString.emapTry(s => Try(Uri(s)))
     implicit private val uriPathEncoder: Encoder[Uri.Path] = Encoder.encodeString.contramap(_.toString)

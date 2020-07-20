@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.kg.client
+package ch.epfl.bluebrain.nexus.delta.client
 
 import java.time.Instant
 
@@ -13,14 +13,14 @@ import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectResource}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.delta.client.DeltaClientError.NotFound
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.kg.KgError.AuthenticationFailed
-import ch.epfl.bluebrain.nexus.kg.client.KgClientError.NotFound
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
@@ -38,7 +38,7 @@ import org.scalatest.{BeforeAndAfter, Inspectors}
 
 import scala.concurrent.duration._
 
-class KgClientSpec
+class DeltaClientSpec
     extends TestKit(ActorSystem("IamClientSpec"))
     with AnyWordSpecLike
     with Matchers
@@ -54,16 +54,17 @@ class KgClientSpec
   implicit override val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 15.milliseconds)
 
   private val config =
-    KgClientConfig(url"http://example.com/v1")
+    DeltaClientConfig(url"http://example.com/v1")
 
-  private val resClient: HttpClient[IO, ResourceV] = mock[HttpClient[IO, ResourceV]]
-  private val accept                               = Accept(`application/json`.mediaType, `application/ld+json`)
+  private val resClient: HttpClient[IO, ResourceV]           = mock[HttpClient[IO, ResourceV]]
+  private val projectClient: HttpClient[IO, ProjectResource] = mock[HttpClient[IO, ProjectResource]]
+  private val accept                                         = Accept(`application/json`.mediaType, `application/ld+json`)
 
   private val source = mock[EventSource[Event]]
-  private val client = new KgClient[IO](config, source, _ => resClient)
+  private val client = new DeltaClient[IO](config, projectClient, source, _ => resClient)
 
   before {
-    Mockito.reset(source, resClient)
+    Mockito.reset(source, resClient, projectClient)
   }
 
   trait Ctx {
@@ -76,7 +77,7 @@ class KgClientSpec
     val json          = jsonContentOf("/serialization/resource.json")
     private val graph = json.toGraph(id).rightValue
 
-    val model                               = KgResourceF(
+    val model = KgResourceF(
       Id(ProjectRef(project.uuid), url"http://example.com/prefix/myId"),
       1L,
       Set(url"https://example.com/vocab/A", url"https://example.com/vocab/B"),
@@ -90,10 +91,13 @@ class KgClientSpec
       Schemas.unconstrainedRef,
       Value(Json.obj(), Json.obj(), graph)
     )
+
     implicit val token: Option[AccessToken] = None
 
     val resourceEndpoint =
       s"http://example.com/v1/resources/${project.value.organizationLabel}/${project.value.label}/_/$resourceId"
+    val projectEndpoint  =
+      s"http://example.com/v1/projects/${project.value.organizationLabel}/${project.value.label}"
     val eventsEndpoint   =
       url"http://example.com/v1/resources/${project.value.organizationLabel}/${project.value.label}/events"
   }
@@ -127,12 +131,38 @@ class KgClientSpec
         val query                = Query("format" -> "expanded")
         val exs: List[Exception] = List(
           AuthenticationFailed,
-          KgClientError.UnmarshallingError(""),
-          KgClientError.UnknownError(StatusCodes.InternalServerError, "")
+          DeltaClientError.UnmarshallingError(""),
+          DeltaClientError.UnknownError(StatusCodes.InternalServerError, "")
         )
         forAll(exs) { ex =>
           resClient(Get(Uri(resourceEndpoint).withQuery(query)).addHeader(accept)) shouldReturn IO.raiseError(ex)
           client.resource(project, id).failed[Exception] shouldEqual ex
+        }
+      }
+    }
+
+    "fetching a project" should {
+
+      "succeed" in new Ctx {
+        projectClient(Get(Uri(projectEndpoint)).addHeader(accept)) shouldReturn IO.pure(project)
+        client.project(project.value.organizationLabel, project.value.label).some shouldEqual project
+      }
+
+      "return None" in new Ctx {
+        projectClient(Get(Uri(projectEndpoint)).addHeader(accept)) shouldReturn
+          IO.raiseError(NotFound(""))
+        client.project(project.value.organizationLabel, project.value.label).ioValue shouldEqual None
+      }
+
+      "propagate the underlying exception" in new Ctx {
+        val exs: List[Exception] = List(
+          AuthenticationFailed,
+          DeltaClientError.UnmarshallingError(""),
+          DeltaClientError.UnknownError(StatusCodes.InternalServerError, "")
+        )
+        forAll(exs) { ex =>
+          projectClient(Get(Uri(projectEndpoint)).addHeader(accept)) shouldReturn IO.raiseError(ex)
+          client.project(project.value.organizationLabel, project.value.label).failed[Exception] shouldEqual ex
         }
       }
     }
