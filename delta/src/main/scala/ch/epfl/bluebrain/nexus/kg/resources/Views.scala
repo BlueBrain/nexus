@@ -40,7 +40,7 @@ import ch.epfl.bluebrain.nexus.kg.resources.Views._
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.routes.Clients._
 import ch.epfl.bluebrain.nexus.kg.routes.{Clients, SearchParams}
-import ch.epfl.bluebrain.nexus.kg.{KgError, uuid}
+import ch.epfl.bluebrain.nexus.kg.{uuid, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Graph
 import ch.epfl.bluebrain.nexus.rdf.Graph.Triple
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
@@ -350,10 +350,10 @@ class Views[F[_]](repo: Repo[F], private val index: ViewCache[F])(implicit
               case AuthenticationFailed =>
                 val err = "Wrong 'endpoint' and/or 'token' fields. Reason: The request did not complete successfully due to an invalid authentication method."
                 F.pure(Left(InvalidResourceFormat(ref, err): Rejection))
-              case AuthorizationFailed =>
+              case AuthorizationFailed  =>
                 val err = "Wrong 'endpoint' and/or 'token' fields. Reason: The request did not complete successfully due to lack of access to the resource."
                 F.pure(Left(InvalidResourceFormat(ref, err): Rejection))
-              case _                                      =>
+              case _                    =>
                 F.pure(Left(InvalidResourceFormat(ref, "Unable to validate the remote project reference"): Rejection))
             }
           }

@@ -112,7 +112,6 @@ object ResourceF {
       .orElse(hc.getOrElse("@type")(Set.empty[String]).map(_.map(nxv.withSuffix(_).value)))
       .orElse(hc.get[String]("@type").map(tpe => Set(nxv.withSuffix(tpe).value)))
 
-
   implicit val resourceMetaDecoder: Decoder[ResourceMetadata] =
     Decoder.instance { hc =>
       for {

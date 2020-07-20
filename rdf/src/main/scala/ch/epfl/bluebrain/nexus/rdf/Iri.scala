@@ -12,7 +12,7 @@ import io.circe.{Decoder, Encoder}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{ArraySeq, SortedSet}
-import scala.collection.{SortedMap, View, immutable}
+import scala.collection.{immutable, SortedMap, View}
 
 /**
   * An Iri as defined by RFC 3987.
@@ -262,8 +262,8 @@ object Iri {
     final def apply(string: String): Either[String, RelativeIri] =
       new IriParser(string).parseRelative
 
-    implicit final val relativeIriShow: Show[RelativeIri] = Show.show(_.asString)
-    implicit final val relativeIriEq: Eq[RelativeIri] = Eq.fromUniversalEquals
+    implicit final val relativeIriShow: Show[RelativeIri]       = Show.show(_.asString)
+    implicit final val relativeIriEq: Eq[RelativeIri]           = Eq.fromUniversalEquals
     implicit final val relativeIriEncoder: Encoder[RelativeIri] = Encoder.encodeString.contramap(_.asString)
     implicit final val relativeIriDecoder: Decoder[RelativeIri] = Decoder.decodeString.emap(Iri.relative)
 
@@ -314,8 +314,8 @@ object Iri {
     final def unsafe(string: String): AbsoluteIri =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    implicit final val absoluteIriShow: Show[AbsoluteIri] = Show.show(_.asString)
-    implicit final val absoluteIriEq: Eq[AbsoluteIri]     = Eq.fromUniversalEquals
+    implicit final val absoluteIriShow: Show[AbsoluteIri]       = Show.show(_.asString)
+    implicit final val absoluteIriEq: Eq[AbsoluteIri]           = Eq.fromUniversalEquals
     implicit final val absoluteIriEncoder: Encoder[AbsoluteIri] = Encoder.encodeString.contramap(_.asString)
     implicit final val absoluteIriDecoder: Decoder[AbsoluteIri] = Decoder.decodeString.emap(Iri.absolute)
 
@@ -430,8 +430,8 @@ object Iri {
     private[rdf] def unsafe(string: String): Url =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    implicit final def urlShow: Show[Url] = Show.show(_.asString)
-    implicit final val urlEq: Eq[Url] = Eq.fromUniversalEquals
+    implicit final def urlShow: Show[Url]                                         = Show.show(_.asString)
+    implicit final val urlEq: Eq[Url]                                             = Eq.fromUniversalEquals
     implicit final def urlEncoder(implicit E: Encoder[AbsoluteIri]): Encoder[Url] = E.contramap(identity)
     implicit final val urlDecoder: Decoder[Url]                                   = Decoder.decodeString.emap(Url.apply)
 
@@ -1122,8 +1122,8 @@ object Iri {
       def size: Int                                          = 1 + rest.size
     }
 
-    implicit final val pathShow: Show[Path] = Show.show(_.asString)
-    implicit final val pathEq: Eq[Path] = Eq.fromUniversalEquals
+    implicit final val pathShow: Show[Path]          = Show.show(_.asString)
+    implicit final val pathEq: Eq[Path]              = Eq.fromUniversalEquals
     implicit final val iriPathEncoder: Encoder[Path] = Encoder.encodeString.contramap(_.asString)
     implicit final val iriPathDecoder: Decoder[Path] = Decoder.decodeString.emap(Path.apply)
 
@@ -1352,8 +1352,8 @@ object Iri {
     private[rdf] def unsafe(string: String): Urn =
       apply(string).fold(left => throw new IllegalArgumentException(left), identity)
 
-    implicit final val urnShow: Show[Urn] = Show.show(_.asString)
-    implicit final val urnEq: Eq[Urn] = Eq.fromUniversalEquals
+    implicit final val urnShow: Show[Urn]                                         = Show.show(_.asString)
+    implicit final val urnEq: Eq[Urn]                                             = Eq.fromUniversalEquals
     implicit final def urnEncoder(implicit E: Encoder[AbsoluteIri]): Encoder[Urn] = E.contramap(identity)
     implicit final val urnDecoder: Decoder[Urn]                                   = Decoder.decodeString.emap(Urn.apply)
 
@@ -1366,6 +1366,6 @@ object Iri {
       case url: Url       => url.show
       case urn: Urn       => urn.show
     }
-  implicit final val iriEncoder: Encoder[Iri] = Encoder.encodeString.contramap(_.asString)
-  implicit final val iriDecoder: Decoder[Iri] = Decoder.decodeString.emap(Iri.apply)
+  implicit final val iriEncoder: Encoder[Iri]                                                                        = Encoder.encodeString.contramap(_.asString)
+  implicit final val iriDecoder: Decoder[Iri]                                                                        = Decoder.decodeString.emap(Iri.apply)
 }
