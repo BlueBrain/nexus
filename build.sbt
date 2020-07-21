@@ -287,7 +287,7 @@ lazy val storage = project
     coverageFailOnMinimum    := true,
     buildInfoKeys            := Seq[BuildInfoKey](version),
     buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
-    Docker / packageName     := "storage",
+    Docker / packageName     := "nexus-storage",
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       apacheCompress,
@@ -321,13 +321,14 @@ lazy val storage = project
 lazy val delta = project
   .in(file("delta"))
   .dependsOn(sourcing, rdf)
-  .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging)
+  .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, coverage, release, servicePackaging)
   .settings(
     name             := "delta",
     moduleName       := "delta",
-    coverageMinimum  := 20d,
+    coverageMinimum  := 75d,
     buildInfoKeys    := Seq[BuildInfoKey](version),
+    Docker / packageName     := "nexus-delta",
     buildInfoPackage := "ch.epfl.bluebrain.nexus.delta.config"
   )
   .settings(kamonSettings)
