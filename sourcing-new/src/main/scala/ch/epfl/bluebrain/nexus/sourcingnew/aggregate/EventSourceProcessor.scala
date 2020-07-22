@@ -5,7 +5,6 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
-import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
 import akka.persistence.typed.{PersistenceId, RecoveryCompleted}
 import cats.effect.{ContextShift, IO, Timer, Effect => CatsEffect}
@@ -18,7 +17,8 @@ import scala.util.control.NonFatal
 /**
   * Event source based processor based on a Akka behavior which accepts and evaluates commands
   * and then applies the resulting events on the current state
-  * @param entityContext
+  * @param entityType
+  * @param entityId
   * @param initialState
   * @param next
   * @param evaluate
@@ -35,13 +35,14 @@ private [aggregate] abstract class EventSourceProcessor[
   EvaluateCommand: ClassTag,
   Event: ClassTag,
   Rejection: ClassTag](
-         entityContext: EntityContext[Command],
+         entityType: String,
+         entityId: String,
          initialState: State,
          next: (State, Event) => State,
          evaluate: (State, EvaluateCommand) => F[Either[Rejection, Event]],
          config: AggregateConfig) {
 
-  protected val id = s"${entityContext.entityTypeKey}-${URLEncoder.encode(entityContext.entityId, "UTF-8")}"
+  protected val id = s"$entityType-${URLEncoder.encode(entityId, "UTF-8")}"
 
   protected def stateBehavior(state: State): Behavior[EventSourceCommand]
 
@@ -50,12 +51,12 @@ private [aggregate] abstract class EventSourceProcessor[
       Behaviors.withStash(config.stashSize) { buffer =>
         val stateActor = context.spawn(
           stateBehavior(initialState),
-          s"${entityContext.entityId}_state"
+          s"${entityId}_state"
         )
 
         def assertCommandId(command: Command): Unit =
           command match {
-            case i: InputCommand => require(i.id == entityContext.entityId, s"Unexpected message id ${i.id} received in actor with id $id")
+            case i: InputCommand => require(i.id == entityId, s"Unexpected message id ${i.id} received in actor with id $id")
             case _ => ()
           }
 
@@ -71,7 +72,7 @@ private [aggregate] abstract class EventSourceProcessor[
                 stash(state, replyTo)
               case DryRun(_, subCommand: EvaluateCommand, replyTo: ActorRef[DryRunResult]) =>
                 evaluateCommand(state, subCommand, c, dryRun = true)
-                stash(state, replyTo)
+                stash(state, replyTo.unsafeUpcast[EvaluateResult])
               case _: EvaluateResult =>
                 context.log.error("Getting an evaluation result should happen within a stashing behavior")
                 Behaviors.same
@@ -86,7 +87,7 @@ private [aggregate] abstract class EventSourceProcessor[
                 stateActor ! ro
                 Behaviors.same
               case success @ EvaluateSuccess(event: Event, state: State) =>
-                stateActor ! Append(entityContext.entityId, event)
+                stateActor ! Append(entityId, event)
                 replyTo ! success
                 active(state)
               case rejection: EvaluateRejection[Rejection] =>
@@ -134,7 +135,7 @@ private [aggregate] abstract class EventSourceProcessor[
       _ <- IO.shift(config.evaluationExecutionContext)
       r <- evaluate(state, cmd).toIO.timeout(config.evaluationMaxDuration)
       _ <- IO.shift(context.executionContext)
-      _ <- tellResult(r.map(EvaluateSuccess(_, next(state, _))).valueOr(EvaluateRejection(_)))
+      _ <- tellResult(r.map{ e => EvaluateSuccess(e, next(state, e)) }.valueOr(EvaluateRejection(_)))
     } yield ()
     val io    = eval.onError {
       case _: TimeoutException =>
@@ -153,7 +154,8 @@ object EventSourceProcessor {
   /**
     * Event source processor implementation relying on akka-persistence
     * so than its state can be recovered
-    * @param entityContext
+    * @param entityType
+    * @param entityId
     * @param initialState
     * @param next
     * @param evaluate
@@ -170,12 +172,13 @@ object EventSourceProcessor {
     State: ClassTag,
     EvaluateCommand: ClassTag,
     Event: ClassTag,
-    Rejection: ClassTag](entityContext: EntityContext[Command],
+    Rejection: ClassTag](entityType: String,
+                         entityId: String,
                           initialState: State,
                           next: (State, Event) => State,
                           evaluate: (State, EvaluateCommand) => F[Either[Rejection, Event]],
                           config: AggregateConfig)
-        extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityContext, initialState, next, evaluate, config) {
+        extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityType, entityId, initialState, next, evaluate, config) {
 
           private def commandHandler(actorContext: ActorContext[EventSourceCommand]):
           (State, EventSourceCommand) => Effect[Event, State] = {
@@ -195,8 +198,8 @@ object EventSourceProcessor {
             val persistenceId = PersistenceId.ofUniqueId(id)
             Behaviors.setup { context =>
               context.log.info2("Starting aggregate for type {} and id {}",
-                entityContext.entityTypeKey.name,
-                entityContext.entityId)
+                entityType,
+                entityId)
               EventSourcedBehavior[EventSourceCommand, Event, State](
                 persistenceId,
                 emptyState = initialState,
@@ -214,7 +217,8 @@ object EventSourceProcessor {
 
   /**
     * Event source processor without persistence: if the processor is lost, so is its state
-    * @param entityContext
+    * @param entityType
+    * @param entityId
     * @param initialState
     * @param next
     * @param evaluate
@@ -226,17 +230,18 @@ object EventSourceProcessor {
     * @tparam Rejection
     * @return
     */
-  class NonPersistentEventProcessor[
+  class TransientEventProcessor[
     F[_]: CatsEffect,
     State: ClassTag,
     EvaluateCommand: ClassTag,
     Event: ClassTag,
-    Rejection: ClassTag](entityContext: EntityContext[Command],
+    Rejection: ClassTag](entityType: String,
+                         entityId: String,
                          initialState: State,
                          next: (State, Event) => State,
                          evaluate: (State, EvaluateCommand) => F[Either[Rejection, Event]],
                          config: AggregateConfig)
-    extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityContext, initialState, next, evaluate, config) {
+    extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityType, entityId, initialState, next, evaluate, config) {
       override protected def stateBehavior(state: State): Behavior[EventSourceCommand] = Behaviors.receive {
         (_, cmd) =>
           cmd match {

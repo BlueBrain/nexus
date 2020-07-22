@@ -27,13 +27,14 @@ final case class Snapshot(id: String) extends ReadonlyCommand
 final case class Append[Event](id: String, event: Event) extends EventSourceCommand
 
 final case class Evaluate[EvaluateCommand](id: String, evaluateCommand: EvaluateCommand, replyTo: ActorRef[EvaluateResult]) extends InputCommand
-final case class DryRun[EvaluateCommand](id: String, evaluateCommand: EvaluateCommand, replyTo: ActorRef[EvaluateResult]) extends InputCommand
+final case class DryRun[EvaluateCommand](id: String, evaluateCommand: EvaluateCommand, replyTo: ActorRef[DryRunResult]) extends InputCommand
 
 // Evaluation results
 sealed trait EvaluateResult extends Command
 final case class EvaluateSuccess[Event, State](value: Event, state: State) extends EvaluateResult
 final case class EvaluateRejection[Rejection](value: Rejection) extends EvaluateResult
-sealed trait EvaluateError extends EvaluateResult
+
+abstract class EvaluateError extends Exception with EvaluateResult
 final case class EvaluateCommandTimeout[EvaluateCommand](value: EvaluateCommand, timeoutAfter: FiniteDuration) extends EvaluateError
 final case class EvaluateCommandError[EvaluateCommand](value: EvaluateCommand, message: Option[String]) extends EvaluateError
 
