@@ -308,6 +308,9 @@ lazy val sourcingNew = project
       streamz,
       akkaActorTyped          % Test,
       akkaPersistenceTestKit  % Test,
+      akkaSlf4j               % Test,
+      kryo                    % Test,
+      logback                 % Test,
       scalaTest               % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork          := true

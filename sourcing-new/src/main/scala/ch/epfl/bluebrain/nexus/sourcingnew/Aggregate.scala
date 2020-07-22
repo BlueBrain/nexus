@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.sourcingnew
 
 import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.{DryRunResult, EvaluateResult}
 
-trait Aggregate[F[_], Id, Command, Event, Rejection, State] {
+trait Aggregate[F[_], Id, State, Command, Event, Rejection] {
 
   /**
     * Get the current state for the entity with the given __id__
     * @param id
     * @return
     */
-  def state(id: Id): F[Option[State]]
+  def state(id: Id): F[State]
 
   /**
     * Given the state for the __id__ at the given __seq____
@@ -17,14 +17,7 @@ trait Aggregate[F[_], Id, Command, Event, Rejection, State] {
     * @param seq
     * @return
     */
-  def state(id: Id, seq: Long): F[Option[State]]
-
-  /**
-    * Appends the __event____ at the end of the event log of the given __id__
-    * @param id the entity identifier
-    * @return the current state of the entity with id __id__
-    */
-  def append(id: Id, event: Event): F[State]
+  def state(id: Id, seq: Long): F[State]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
@@ -45,6 +38,6 @@ trait Aggregate[F[_], Id, Command, Event, Rejection, State] {
     * @return the state and event that would be generated in __F__ if the command was tested for evaluation
     *         successfully, or the rejection of the __command__ in __F__ otherwise
     */
-  def dryRun(id: Id, command: Command): F[DryRunResult] 
+  def dryRun(id: Id, command: Command): F[DryRunResult]
 
 }
