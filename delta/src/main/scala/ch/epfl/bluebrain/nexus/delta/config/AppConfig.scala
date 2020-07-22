@@ -6,15 +6,16 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig._
+import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.types.Permission
+import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.storage.Crypto
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig._
-import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.statemachine.StateMachineConfig
@@ -45,9 +46,11 @@ final case class AppConfig(
     composite: CompositeViewConfig,
     archives: ArchivesConfig,
     defaultAskTimeout: FiniteDuration,
-    serviceAccount: ServiceAccountConfig,
+    serviceAccountCaller: Option[Caller],
     migration: Migration
-)
+) {
+  val saCaller = serviceAccountCaller.getOrElse(Caller.anonymous)
+}
 
 object AppConfig {
 
@@ -369,10 +372,16 @@ object AppConfig {
   /**
     * Service account configuration
     *
-   * @param token the service account token
+   * @param realm   the service account realm
+    * @param subject the service account subject
+    * @param groups  the service account groups
     */
-  final case class ServiceAccountConfig(token: Option[String]) {
-    def credentials: Option[AccessToken] = token.map(AccessToken)
+  final case class ServiceAccountCaller(realm: String, subject: String, groups: Set[String]) {
+    def value: Caller =
+      Caller(
+        User(subject, realm),
+        groups.map[Identity](group => Group(group, realm)) + Authenticated(realm) + Anonymous
+      )
   }
 
   /**

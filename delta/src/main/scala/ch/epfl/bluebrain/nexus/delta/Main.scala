@@ -12,32 +12,30 @@ import akka.http.scaladsl.server.RouteResult
 import cats.effect.Effect
 import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
-import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ResolverCache, StorageCache, ViewCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.routes.AdminRoutes
 import ch.epfl.bluebrain.nexus.commons.es.client.{ElasticSearchClient, ElasticSearchDecoder}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.{untyped, withUnmarshaller}
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults}
-import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, _}
+import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.delta.routes.{AppInfoRoutes, Routes}
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig._
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.{Groups, Realms}
 import ch.epfl.bluebrain.nexus.iam.routes.IamRoutes
-import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async.{ProjectAttributesCoordinator, ProjectViewCoordinator}
+import ch.epfl.bluebrain.nexus.kg.cache.{Caches, ResolverCache, StorageCache, ViewCache}
 import ch.epfl.bluebrain.nexus.kg.resolve.{Materializer, ProjectResolution}
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.kg.routes.{Clients, KgRoutes}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage.StorageOperations.FetchAttributes
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, Settings}
-import ch.epfl.bluebrain.nexus.delta.routes.{AppInfoRoutes, Routes}
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.storage.client.config.StorageClientConfig
@@ -109,7 +107,7 @@ object Main {
     deferred.runSyncUnsafe()(Scheduler.global, pm)
   }
 
-  def bootstrapAdmin(acls: Acls[Task], saCaller: Caller)(implicit
+  def bootstrapAdmin(acls: Acls[Task])(implicit
       system: ActorSystem,
       cfg: AppConfig
   ): (Organizations[Task], Projects[Task], OrganizationCache[Task], ProjectCache[Task]) = {
@@ -123,15 +121,14 @@ object Main {
     val oc       = OrganizationCache[Task]
     val pc       = ProjectCache[Task]
     val deferred = for {
-      orgs  <- Organizations(oc, acls, saCaller)
-      projs <- Projects(pc, orgs, acls, saCaller)
+      orgs  <- Organizations(oc, acls, cfg.saCaller)
+      projs <- Projects(pc, orgs, acls, cfg.saCaller)
     } yield (orgs, projs, oc, pc)
     deferred.runSyncUnsafe()(Scheduler.global, pm)
   }
 
   def bootstrapKg(
       acls: Acls[Task],
-      saCaller: Caller,
       orgCache: OrganizationCache[Task],
       projectCache: ProjectCache[Task]
   )(implicit
@@ -169,7 +166,8 @@ object Main {
         ArchiveCache[Task].runSyncUnsafe()(Scheduler.global, pm)
       )
     implicit val pc: ProjectCache[Task]           = cache.project
-    implicit val projectResolution                = ProjectResolution.task(repo, cache.resolver, cache.project, acls, saCaller)
+    implicit val projectResolution                =
+      ProjectResolution.task(repo, cache.resolver, cache.project, acls, cfg.saCaller)
     implicit val materializer: Materializer[Task] = new Materializer[Task](projectResolution, cache.project)
 
     implicit val utClient            = untyped[Task]
@@ -221,8 +219,7 @@ object Main {
       storages: Storages[Task],
       views: Views[Task],
       resolvers: Resolvers[Task],
-      cache: Caches[Task],
-      saCaller: Caller
+      cache: Caches[Task]
   )(implicit
       as: ActorSystem,
       cfg: AppConfig,
@@ -244,7 +241,7 @@ object Main {
       _           <- Storages.indexer[Task](storages)
       projections <- Projections[Task, String]
       fa           = FetchAttributes.apply[Task]
-      pvc         <- ProjectViewCoordinator(resources, cache, acls, saCaller)(cfg, as, clients, projections)
+      pvc         <- ProjectViewCoordinator(resources, cache, acls, cfg.saCaller)(cfg, as, clients, projections)
       pac         <- ProjectAttributesCoordinator(files, cache)(cfg, fa, as, projections)
       _           <- ProjectInitializer.fromCache[Task](storages, views, resolvers, pvc, pac)
     } yield pvc
@@ -269,11 +266,9 @@ object Main {
     }
 
     val (perms, acls, realms)                                                                   = bootstrapIam()
-    val saCallerF                                                                               = cfg.serviceAccount.credentials.map(realms.caller).getOrElse(Task.pure(Caller.anonymous))
-    val saCaller                                                                                = saCallerF.runSyncUnsafe()(Scheduler.global, pm)
-    val (orgs, projects, orgCache, projectCache)                                                = bootstrapAdmin(acls, saCaller)
+    val (orgs, projects, orgCache, projectCache)                                                = bootstrapAdmin(acls)
     val (resources, storages, files, archives, views, resolvers, schemas, tags, clients, cache) =
-      bootstrapKg(acls, saCaller, orgCache, projectCache)
+      bootstrapKg(acls, orgCache, projectCache)
     implicit val cl                                                                             = clients
     implicit val cc                                                                             = cache
     val logger                                                                                  = Logging(as, getClass)
@@ -291,7 +286,7 @@ object Main {
       }
 
       val projectViewCoordinator =
-        bootstrapIndexers(acls, realms, orgs, projects, resources, files, storages, views, resolvers, cache, saCaller)
+        bootstrapIndexers(acls, realms, orgs, projects, resources, files, storages, views, resolvers, cache)
       val iamRoutes              = IamRoutes(acls, realms, perms)
       val adminRoutes            = AdminRoutes(orgs, projects, orgCache, projectCache, acls, realms)
       val infoRoutes             = AppInfoRoutes(cfg.description, cluster, clients).routes

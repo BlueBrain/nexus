@@ -4,14 +4,16 @@ import java.nio.file.{Path, Paths}
 
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig.ServiceAccountCaller
 import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
-import ch.epfl.bluebrain.nexus.iam.types.Permission
+import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.typesafe.config.Config
-import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers.{catchReadError, optF}
-import pureconfig.{ConfigConvert, ConfigSource}
+import pureconfig.generic.auto._
+import pureconfig.generic.semiauto.deriveConvert
+import pureconfig.{ConfigConvert, ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
 
@@ -27,6 +29,10 @@ class Settings(config: Config) extends Extension {
   @nowarn("cat=unused")
   implicit private val uriConverter: ConfigConvert[Uri] =
     ConfigConvert.viaString[Uri](catchReadError(Uri(_)), _.toString)
+
+  @nowarn("cat=unused")
+  implicit private val callerReader: ConfigReader[Caller] =
+    deriveConvert[ServiceAccountCaller].map(_.value)
 
   @nowarn("cat=unused")
   implicit private val permissionConverter: ConfigConvert[Permission] =
