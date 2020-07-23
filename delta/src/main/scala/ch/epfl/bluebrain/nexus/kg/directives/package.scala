@@ -32,7 +32,7 @@ package object directives {
   implicit private[directives] val sortFromStringUnmarshaller: Unmarshaller[String, Sort] =
     Unmarshaller.strict[String, Sort](Sort(_))
 
-  private def toIriOrElseBase(s: String)(implicit project: ProjectResource): Option[AbsoluteIri] =
+  private[directives] def toIriOrElseBase(s: String)(implicit project: ProjectResource): Option[AbsoluteIri] =
     toIri(s) orElse Iri.absolute(project.value.base.asString + s).toOption
 
   private def toIriOrElseVocab(s: String)(implicit project: ProjectResource): Option[AbsoluteIri] =
