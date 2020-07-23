@@ -1,6 +1,9 @@
 //- Main Index
 extends ./markup/layouts/base.pug
 
+include markup/mixins/button.pug
 
 block header
   h1 #{hello}
+  p Yo Banana
+  +button('Clicked!')
