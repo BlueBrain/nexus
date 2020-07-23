@@ -3,8 +3,21 @@ doctype html
 html(lang="en-US")
   head
     title Test Stuff - #{title}
+    link(
+      href="css/style.css"
+      rel="stylesheet"
+    )
+    link(
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@700;800;900&display=swap"
+      rel="stylesheet"
+    )
+    link(
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;1,100;1,300;1,400&display=swap"
+      rel="stylesheet"
+    )
+     
     block scripts
-      script(src='../../js/index.js')
+      //- script(src='../../js/index.js')
   body
     block header
      #header 
