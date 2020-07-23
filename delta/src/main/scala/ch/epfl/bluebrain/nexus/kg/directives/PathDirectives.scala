@@ -41,7 +41,7 @@ object PathDirectives {
   def IdSegmentOrUnderscore(implicit project: ProjectResource): PathMatcher1[IdOrUnderscore] =
     Segment flatMap {
       case "_"   => Some(Underscore)
-      case other => toIri(other).map(SchemaId)
+      case other => toIriOrElseBase(other).map(SchemaId)
     }
 
   /**
@@ -56,9 +56,7 @@ object PathDirectives {
     */
   @SuppressWarnings(Array("MethodNames"))
   def IdSegment(implicit project: ProjectResource): PathMatcher1[AbsoluteIri] =
-    Segment flatMap { s =>
-      toIri(s) orElse Iri.absolute(project.value.base.asString + s).toOption
-    }
+    Segment flatMap toIriOrElseBase
 
   def toIri(s: String)(implicit project: ProjectResource): Option[AbsoluteIri] =
     project.value.apiMappings.get(s) orElse
