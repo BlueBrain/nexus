@@ -1,3 +1,7 @@
+:root {
+  --link: #a51aa5;
+}
+
 @media (min-width: 320px) {
   /* smartphones, portrait iPhone, portrait 480x320 phones (Android) */
 }
@@ -20,6 +24,7 @@
 body {
   font-family: "Roboto", sans-serif;
   font-weight: 300;
+  margin: 0;
 }
 
 h1 {
@@ -30,7 +35,7 @@ h1 {
 button {
   font-family: "Roboto", sans-serif;
   font-weight: 400;
-  background-color: #a51aa5;
+  background-color: var(--link);
   border: none;
   color: #fff;
   font-weight: 600;
@@ -38,4 +43,30 @@ button {
   border-radius: 38px;
   text-align: center;
   width: 100px;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+footer {
+  background-color: black;
+  padding: 1em;
+  color: #fff;
+}
+
+footer h4 {
+  color: #fff;
+}
+
+.gradient {
+  background-color: #060b13;
+  background-image: linear-gradient(326deg, #060b13 0%, #0b1848 74%);
 }

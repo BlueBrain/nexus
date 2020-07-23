@@ -2,11 +2,10 @@
   "name": "bluebrainnexus.io",
   "version": "1.0.0",
   "description": "A landing page showing off the technology of nexus!",
-  "main": "index.js",
   "homepage": "https://github.com/BlueBrain/nexus#readme",
   "scripts": {
-    "start": "parcel index.pug ./js/gtm.js -p 8000 --hmr-port 1234",
-    "build": "parcel build index.pug ./js/gtm.js --no-source-maps --out-dir ./public --public-url public",
+    "start": "ls && parcel index.pug -p 8000 --hmr-port 1234",
+    "build": "parcel build index.pug --no-source-maps --out-dir ./public --public-url public",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "echo \"Error: no lint specified\" && exit 1"
   },
