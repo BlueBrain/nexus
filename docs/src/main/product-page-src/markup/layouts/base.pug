@@ -1,0 +1,17 @@
+//- Base Layout
+doctype html
+html(lang="en-US")
+  head
+    title Test Stuff - #{title}
+    block scripts
+      script(src='../../js/index.js')
+  body
+    block header
+     #header 
+      header empty header
+    block content
+      #content 
+        section empty content block
+    block foot
+      #footer
+        footer some footer content

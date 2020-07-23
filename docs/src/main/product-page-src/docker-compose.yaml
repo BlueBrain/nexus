@@ -2,7 +2,7 @@ version: "3"
 
 services:
   nexus-product-page:
-    image: node:slim
+    image: node:12-alpine
     working_dir: /app
     tty: true
     volumes:
