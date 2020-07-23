@@ -11,7 +11,7 @@ import cats.data.EitherT
 import cats.effect.{Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
-import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
+import ch.epfl.bluebrain.nexus.admin.projects.{ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.commons.es.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
@@ -322,7 +322,8 @@ object Storages {
   ): Storages[F] = new Storages[F](repo, index)
 
   def indexer[F[_]: Timer](
-      storages: Storages[F]
+      storages: Storages[F],
+      projects: Projects[F]
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = Timeout(config.keyValueStore.askTimeout)
@@ -331,9 +332,13 @@ object Storages {
     def toStorage(event: Event): F[Option[(Storage, Instant)]] =
       projectCache
         .get(event.organization.id, event.id.parent.id)
-        .flatMap[ProjectResource] {
+        .flatMap {
           case Some(project) => F.pure(project)
-          case _             => F.raiseError(KgError.NotFound(Some(event.id.parent.show)): KgError)
+          case _             =>
+            projects.fetch(event.id.parent.id).flatMap[ProjectResource] {
+              case Some(project) => F.pure(project)
+              case _             => F.raiseError(KgError.NotFound(Some(event.id.parent.show)): KgError)
+            }
         }
         .flatMap { implicit project =>
           storages.fetchStorage(event.id).value.map {

@@ -236,9 +236,9 @@ object Main {
       _           <- Realms.indexer[Task](realms)
       _           <- Organizations.indexer[Task](orgs)
       _           <- Projects.indexer[Task](projects)
-      _           <- Views.indexer[Task](views)
-      _           <- Resolvers.indexer[Task](resolvers)
-      _           <- Storages.indexer[Task](storages)
+      _           <- Views.indexer[Task](views, projects)
+      _           <- Resolvers.indexer[Task](resolvers, projects)
+      _           <- Storages.indexer[Task](storages, projects)
       projections <- Projections[Task, String]
       fa           = FetchAttributes.apply[Task]
       pvc         <- ProjectViewCoordinator(resources, cache, acls, cfg.saCaller)(cfg, as, clients, projections)
