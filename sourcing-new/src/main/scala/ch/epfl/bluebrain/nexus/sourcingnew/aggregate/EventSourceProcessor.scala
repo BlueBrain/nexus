@@ -6,7 +6,7 @@ import java.util.concurrent.TimeoutException
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import akka.persistence.typed.{PersistenceId, RecoveryCompleted}
+import akka.persistence.typed.{DeleteEventsCompleted, DeleteEventsFailed, DeleteSnapshotsCompleted, DeleteSnapshotsFailed, DeletionTarget, PersistenceId, RecoveryCompleted, RecoveryFailed, SnapshotCompleted, SnapshotFailed, SnapshotMetadata}
 import cats.effect.{ContextShift, IO, Timer, Effect => CatsEffect}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.config.AggregateConfig
@@ -160,6 +160,7 @@ object EventSourceProcessor {
     * @param next
     * @param evaluate
     * @param config
+    * @param snapshotStrategy
     * @tparam F
     * @tparam State
     * @tparam EvaluateCommand
@@ -174,10 +175,12 @@ object EventSourceProcessor {
     Event: ClassTag,
     Rejection: ClassTag](entityType: String,
                          entityId: String,
-                          initialState: State,
-                          next: (State, Event) => State,
-                          evaluate: (State, EvaluateCommand) => F[Either[Rejection, Event]],
-                          config: AggregateConfig)
+                         initialState: State,
+                         next: (State, Event) => State,
+                         evaluate: (State, EvaluateCommand) => F[Either[Rejection, Event]],
+                         config: AggregateConfig,
+                         // TODO: Default snapshot strategy ?
+                         snapshotStrategy: SnapshotStrategy = SnapshotStrategy.NoSnapshot)
         extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityType, entityId, initialState, next, evaluate, config) {
 
           private def commandHandler(actorContext: ActorContext[EventSourceCommand]):
@@ -195,6 +198,7 @@ object EventSourceProcessor {
           }
 
           override protected def stateBehavior(state: State): Behavior[EventSourceCommand] =  {
+            import SnapshotStrategy._
             val persistenceId = PersistenceId.ofUniqueId(id)
             Behaviors.setup { context =>
               context.log.info2("Starting aggregate for type {} and id {}",
@@ -205,11 +209,44 @@ object EventSourceProcessor {
                 emptyState = initialState,
                 commandHandler(context),
                 next
-              ).receiveSignal {
+              ) .snapshotStrategy(snapshotStrategy)
+                .receiveSignal {
                 case (state, RecoveryCompleted) =>
                   context.log.debugN("Entity {} has been successfully recovered at state {}",
                     persistenceId,
                     state)
+                case (state, RecoveryFailed(failure)) =>
+                  context.log.error(s"Entity $persistenceId couldn't be recovered at state $state",
+                    failure
+                  )
+                case (state, SnapshotCompleted(metadata: SnapshotMetadata)) =>
+                  context.log.debugN("Entity {} has been successfully snapshotted at state {} with metadata {}",
+                    persistenceId,
+                    state,
+                    metadata
+                  )
+                case (state, SnapshotFailed(metadata: SnapshotMetadata, failure: Throwable)) =>
+                  context.log.error(s"Entity $persistenceId couldn't be snapshotted at state $state with metadata $metadata",
+                    failure
+                  )
+                case (_, DeleteSnapshotsCompleted(target: DeletionTarget)) =>
+                  context.log.debugN("Snapshots for Entity {} have been successfully deleted with target {}",
+                    persistenceId,
+                    target
+                  )
+                case (_, DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwable)) =>
+                  context.log.error(s"Snapshots for Entity {} couldn't be deleted with target $target",
+                    failure
+                  )
+                case (_, DeleteEventsCompleted(toSequenceNr: Long)) =>
+                  context.log.debugN("Events for Entity {} have been successfully deleted until sequence {}",
+                    persistenceId,
+                    toSequenceNr
+                  )
+                case (_, DeleteEventsFailed(toSequenceNr: Long, failure: Throwable)) =>
+                  context.log.error(s"Snapshots for Entity {} couldn't be deleted until sequence $toSequenceNr",
+                    failure
+                  )
               }
             }
           }
