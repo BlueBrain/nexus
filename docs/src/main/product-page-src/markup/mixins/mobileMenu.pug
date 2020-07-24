@@ -1,0 +1,73 @@
+mixin mobileMenu
+	button(
+		id="menu-icon"
+		class="menu-button-mobile"
+	)
+		img(
+			src="img/icons/menuIcon.svg"
+			alt="mobile menu button"
+		)
+	div(
+		id="menu-container"
+	)
+		ul
+			li(
+				class="menu-item"
+			)
+				a(
+					class="menu-link"
+					href="/features"
+				) Features
+			li(
+				class="menu-item"
+			)
+				button(
+					id="products-button"
+					class="menu-item-button"
+				) Products >
+				ul(
+					id="products-submenu"
+					class="submenu"
+				)
+					li Nexus Delta
+					li Nexus Forge
+					li Nexus Fusion (prev. Web)
+					li Utilities
+						ul
+							li Nexus.js
+							li Python SDK
+							li CLI
+			li(
+				class="menu-item"
+			)
+				button(
+					id="use-cases-button"
+					class="menu-item-button"
+				) Use Cases >
+				ul(
+					id="use-cases-submenu"
+					class="submenu"
+				)
+					li EPFL Blue Brain Project
+					li CAMH/KCNI
+					li Swiss Data Connectome
+					li Human Brain Project
+			li(
+				class="menu-item"
+			)
+				button(
+					id="getting-started-button"
+					class="menu-item-button"
+				) Getting started >
+				ul(
+					id="getting-started-submenu"
+					class="submenu"
+				)
+					li Quick Start Guide
+					li Nexus Sandbox
+					li Running Nexus Delta and Fusion
+					li Understanding Knowledge Graphs
+					li Building Knowledge graphs with the Forge
+			li(
+				class="menu-item"
+			) Developers >

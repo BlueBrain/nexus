@@ -1,0 +1,37 @@
+mixin navbar
+	div(
+		id="nav"
+		class="navigation"
+	)
+		a(
+			href="/"
+			class="nav-link"
+		) Features
+		div(
+			class="dropdown-item"
+		)
+			button(
+				class="nav-button"
+				id="products-nav-item-button"
+			) Products
+			div(
+				id="products-dropdown"
+			)
+				ul
+					li Nexus Delta
+						li Nexus Forge
+						li Nexus Fusion (prev. Web)
+						li Utilities
+							ul
+								li Nexus.js
+								li Python SDK
+								li CLI 
+		button(
+			class="nav-button"
+		) Use Cases
+		button(
+			class="nav-button"
+		) Getting Started
+		button(
+			class="nav-button"
+		) Developers
