@@ -40,27 +40,36 @@ object EventLog {
     Event](readJournal: RJ,
            f: EventEnvelope => Event)
           (implicit as: ActorSystem) extends EventLog[F, Event] {
+
     implicit val executionContext: ExecutionContext = as.dispatcher
     implicit val materializer: Materializer = Materializer.createMaterializer(as)
+
     private def toStream[A](source: Source[A, _]) =
       source.toStream[F]( _ => ())
+
     override def currentPersistenceIds: Stream[F, String] = toStream(readJournal.currentPersistenceIds())
+
     override def persistenceIds: Stream[F, String] = toStream(readJournal.persistenceIds())
+
     override def eventsByPersistenceId(persistenceId: String,
                                        fromSequenceNr: Long,
                                        toSequenceNr: Long): Stream[F, Event] =
       toStream(readJournal.eventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)).map(f)
+
     override def currentEventsByPersistenceId(persistenceId: String,
                                               fromSequenceNr: Long,
                                               toSequenceNr: Long): Stream[F, Event] =
       toStream(readJournal.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr)).map(f)
+
     override def eventsByTag(tag: String,
                              offset: Offset): Stream[F, Event] =
       toStream(readJournal.eventsByTag(tag, offset)).map(f)
+
     override def currentEventsByTag(tag: String,
                                     offset: Offset): Stream[F, Event] =
       toStream(readJournal.currentEventsByTag(tag, offset)).map(f)
   }
+
   def cassandra[F[_]: ContextShift: Async, Event](f: EventEnvelope => Event)
                                                  (implicit as: ActorSystem): EventLog[F, Event] =
     new AkkaEventLog[F, CassandraReadJournal, Event](
