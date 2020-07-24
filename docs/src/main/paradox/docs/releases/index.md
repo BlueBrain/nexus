@@ -1,5 +1,6 @@
 @@@ index
 
+- [v1.4 Release Notes](v1.4-release-notes.md)
 - [v1.3 Release Notes](v1.3-release-notes.md)
 - [v1.2 To v1.3 Migration](v1.2-to-v1.3-migration.md)
 - [v1.2 Release Notes](v1.2-release-notes.md)
@@ -14,6 +15,18 @@
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
 The latest stable release is **v1.3.0** released on **25.02.2020**.
+
+## v1.4.0 (24.07.2020)
+
+The release is backwards compatible with v1.x.y releases in terms of API. If you're upgrading from v1.3.x please visit
+the @ref:[migration instructions](v1.3-to-v1.4-migration.md).
+
+Summary of the significant changes:
+
+- Merged iam, admin and kg services into a single service, called delta;
+- listings API now shows - besides resources metadata - the following predicates, when present: sko:prefLabel, schema:name, rdfs:label;
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.4-release-notes.md).
 
 ## v1.3.0 (25.02.2020)
 
