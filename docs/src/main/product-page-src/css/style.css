@@ -20,6 +20,7 @@
 body {
   font-family: "Roboto", sans-serif;
   font-weight: 300;
+  margin: 0;
 }
 
 h1 {
@@ -28,14 +29,87 @@ h1 {
 }
 
 button {
+  outline-style: none;
+  border: none;
+  background-color: transparent;
+  padding: 0;
+  cursor: pointer;
   font-family: "Roboto", sans-serif;
+}
+
+.button {
   font-weight: 400;
   background-color: #a51aa5;
-  border: none;
   color: #fff;
   font-weight: 600;
   padding: 0.5em 1em;
   border-radius: 38px;
   text-align: center;
   width: 100px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 1em;
+}
+
+.header {
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  padding: 0.7em;
+  justify-content: space-between;
+  height: 40px;
+  align-items: center;
+  position: relative;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  font-size: 1.5em;
+  letter-spacing: 2px;
+}
+
+.menu-button {
+  width: 2.5em;
+}
+
+.logo {
+  margin-right: 0.3em;
+}
+
+#menu-container {
+  display: none;
+  position: absolute;
+  top: 60px;
+  right: 0;
+  padding: 0.5em;
+  width: 80%;
+  height: 100vh;
+  background-color: grey;
+}
+
+.menu-item {
+  list-style-type: none;
+  margin-bottom: 1em;
+  border-bottom: 1px solid #fff;
+  padding-bottom: 1em;
+  color: #fff;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: #fff;
+  font-size: 1em;
+}
+
+.submenu {
+  display: none;
+}
+
+.menu-item-button {
+  color: #fff;
+  font-weight: 300;
+  font-size: 1em;
 }

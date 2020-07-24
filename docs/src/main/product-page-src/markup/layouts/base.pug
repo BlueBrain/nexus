@@ -1,7 +1,13 @@
 //- Base Layout
+include ../mixins/header.pug
+
 doctype html
 html(lang="en-US")
   head
+    meta(
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    )
     title Test Stuff - #{title}
     link(
       href="css/style.css"
@@ -19,12 +25,14 @@ html(lang="en-US")
     block scripts
       //- script(src='../../js/index.js')
   body
-    block header
-     #header 
-      header empty header
+    +header()
     block content
       #content 
         section empty content block
     block foot
       #footer
         footer some footer content
+  script(
+    type='text/javascript'
+    src='js/menu.js'
+  )
