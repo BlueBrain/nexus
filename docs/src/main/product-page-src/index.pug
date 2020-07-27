@@ -3,6 +3,23 @@ extends ./markup/layouts/base.pug
 
 include markup/mixins/button.pug
 
-//- h1 #{hello}
-//- p Yo Banana
-//- +button('Clicked!')
+block content
+  section.hero.is-fullheight
+    .gradient
+    .hero-body
+      .container
+        h1.title.is-spaced Better data management starts here <br /> and we're open source
+        h2.subtitle Quickly build, use, and manage knowledge graphs using our web app, backend services, or python framework.
+        .columns
+          .column
+            +button("Why Nexus?", true)
+          .column
+            +button("What is Nexus?", true)
+          .column  
+            +button("Get started")
+
+  section#what-is-nexus
+    .container
+      .content.centered
+        h2 What is nexus?
+        p.subtitle Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et.

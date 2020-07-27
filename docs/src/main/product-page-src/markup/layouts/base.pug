@@ -25,7 +25,8 @@ html(lang="en-US")
     block scripts
       //- script(src='../../js/index.js')
   body
-    +header()
+    block header
+      +header()
     block content
       #content 
         section empty content block
