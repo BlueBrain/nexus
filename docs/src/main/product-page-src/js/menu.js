@@ -1,3 +1,4 @@
+// mobile menu
 function toggle(elementId) {
   let isShown = false;
 
@@ -32,28 +33,36 @@ gettingStartedButton.addEventListener(
 const devButton = document.getElementById("dev-button");
 devButton.addEventListener("click", toggle("dev-submenu"));
 
-const productsDropdow = document.getElementById("products-nav-item-button");
+// desktop menu
+const header = document.getElementById("header");
+const products = document.getElementById("products-dropdown");
+const useCases = document.getElementById("use-cases-dropdown");
+const getStarted = document.getElementById("getting-started-dropdown");
+const dev = document.getElementById("dev-dropdown");
 
-productsDropdow.addEventListener("mouseover", function () {
-  const element = document.getElementById("products-dropdown");
-  element.style.display = "block";
-});
+header.addEventListener("mouseleave", closeAll());
 
-productsDropdow.addEventListener("mouseout", function () {
-  const element = document.getElementById("products-dropdown");
-  element.style.display = "none";
-});
+function closeAll() {
+  products.style.display = "none";
+  useCases.style.display = "none";
+  getStarted.style.display = "none";
+  dev.style.display = "none";
+}
 
-const useCasesDropdown = document.getElementById("use-cases-nav-item-button");
-useCasesDropdown.addEventListener("mouseover", toggle("use-cases-dropdown"));
+function setDropdown(triggerId, dropdown) {
+  const trigger = document.getElementById(triggerId);
 
-const getStartedDropdown = document.getElementById(
-  "getting-started-nav-item-button"
-);
-getStartedDropdown.addEventListener(
-  "mouseover",
-  toggle("getting-started-dropdown")
-);
+  trigger.addEventListener("mouseover", function () {
+    closeAll();
+    dropdown.style.display = "block";
+  });
 
-const devDropdown = document.getElementById("dev-nav-item-button");
-devDropdown.addEventListener("mouseover", toggle("dev-dropdown"));
+  dropdown.addEventListener("mouseleave", function () {
+    dropdown.style.display = "none";
+  });
+}
+
+setDropdown("products-nav-item-button", products);
+setDropdown("use-cases-nav-item-button", useCases);
+setDropdown("getting-started-nav-item-button", getStarted);
+setDropdown("dev-nav-item-button", dev);

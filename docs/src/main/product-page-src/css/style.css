@@ -176,6 +176,10 @@ ul {
   line-height: 25px;
 }
 
+#dev-dropdown {
+  left: -70%;
+}
+
 #products-submenu,
 #use-cases-submenu,
 #getting-started-submenu,
