@@ -29,5 +29,31 @@ gettingStartedButton.addEventListener(
   toggle("getting-started-submenu")
 );
 
+const devButton = document.getElementById("dev-button");
+devButton.addEventListener("click", toggle("dev-submenu"));
+
 const productsDropdow = document.getElementById("products-nav-item-button");
-productsDropdow.addEventListener("click", toggle("products-dropdown"));
+
+productsDropdow.addEventListener("mouseover", function () {
+  const element = document.getElementById("products-dropdown");
+  element.style.display = "block";
+});
+
+productsDropdow.addEventListener("mouseout", function () {
+  const element = document.getElementById("products-dropdown");
+  element.style.display = "none";
+});
+
+const useCasesDropdown = document.getElementById("use-cases-nav-item-button");
+useCasesDropdown.addEventListener("mouseover", toggle("use-cases-dropdown"));
+
+const getStartedDropdown = document.getElementById(
+  "getting-started-nav-item-button"
+);
+getStartedDropdown.addEventListener(
+  "mouseover",
+  toggle("getting-started-dropdown")
+);
+
+const devDropdown = document.getElementById("dev-nav-item-button");
+devDropdown.addEventListener("mouseover", toggle("dev-dropdown"));

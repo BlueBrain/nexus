@@ -1,3 +1,8 @@
+include ../mixins/productsList.pug
+include ../mixins/useCasesList.pug
+include ../mixins/gettingStartedList.pug
+include ../mixins/devList.pug
+
 mixin mobileMenu
   button(
     id="menu-icon"
@@ -25,18 +30,8 @@ mixin mobileMenu
           id="products-button"
           class="menu-item-button"
         ) Products >
-        ul(
-          id="products-submenu"
-          class="submenu"
-        )
-          li Nexus Delta
-          li Nexus Forge
-          li Nexus Fusion (prev. Web)
-          li Utilities
-            ul
-              li Nexus.js
-              li Python SDK
-              li CLI
+        div(id="products-submenu")
+          +productsList()
       li(
         class="menu-item"
       )
@@ -44,14 +39,8 @@ mixin mobileMenu
           id="use-cases-button"
           class="menu-item-button"
         ) Use Cases >
-        ul(
-          id="use-cases-submenu"
-          class="submenu"
-        )
-          li EPFL Blue Brain Project
-          li CAMH/KCNI
-          li Swiss Data Connectome
-          li Human Brain Project
+        div(id="use-cases-submenu")
+          +useCasesList()
       li(
         class="menu-item"
       )
@@ -59,15 +48,14 @@ mixin mobileMenu
           id="getting-started-button"
           class="menu-item-button"
         ) Getting started >
-        ul(
-          id="getting-started-submenu"
-          class="submenu"
-        )
-          li Quick Start Guide
-          li Nexus Sandbox
-          li Running Nexus Delta and Fusion
-          li Understanding Knowledge Graphs
-          li Building Knowledge graphs with the Forge
+        div(id="getting-started-submenu")
+          +gettingStartedList()
       li(
         class="menu-item"
-      ) Developers >
+      )
+        button(
+          id="dev-button"
+          class="menu-item-button"
+        ) Developers >
+        div(id="dev-submenu")
+          +devList()

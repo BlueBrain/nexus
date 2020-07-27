@@ -51,6 +51,7 @@ button {
 ul {
   list-style-type: none;
   padding: 1em;
+  margin: 0;
 }
 
 .header {
@@ -115,7 +116,6 @@ ul {
 .menu-item {
   list-style-type: none;
   margin-bottom: 1em;
-  border-bottom: 1px solid #fff;
   padding-bottom: 1em;
   color: #fff;
 }
@@ -124,10 +124,6 @@ ul {
   text-decoration: none;
   color: #fff;
   font-size: 1em;
-}
-
-.submenu {
-  display: none;
 }
 
 .menu-item-button {
@@ -163,11 +159,26 @@ ul {
   position: relative;
 }
 
-#products-dropdown {
+#products-dropdown,
+#use-cases-dropdown,
+#getting-started-dropdown,
+#dev-dropdown {
   display: none;
   position: absolute;
   color: #000;
   border: 1px solid #000;
   border-radius: 8px;
-  left: -50%;
+  left: -15%;
+  background-color: #fff;
+  top: 40px;
+  width: 250px;
+  font-size: 14px;
+  line-height: 25px;
+}
+
+#products-submenu,
+#use-cases-submenu,
+#getting-started-submenu,
+#dev-submenu {
+  display: none;
 }
