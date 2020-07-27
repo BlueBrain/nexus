@@ -1,0 +1,61 @@
+include ../mixins/productsList.pug
+include ../mixins/useCasesList.pug
+include ../mixins/gettingStartedList.pug
+include ../mixins/devList.pug
+
+mixin mobileMenu
+  button(
+    id="menu-icon"
+    class="menu-button-mobile"
+  )
+    img(
+      src="img/icons/menuIcon.svg"
+      alt="mobile menu button"
+    )
+  div(
+    id="menu-container"
+  )
+    ul
+      li(
+        class="menu-item"
+      )
+        a(
+          class="menu-link"
+          href="/features"
+        ) Features
+      li(
+        class="menu-item"
+      )
+        button(
+          id="products-button"
+          class="menu-item-button"
+        ) Products >
+        div(id="products-submenu")
+          +productsList()
+      li(
+        class="menu-item"
+      )
+        button(
+          id="use-cases-button"
+          class="menu-item-button"
+        ) Use Cases >
+        div(id="use-cases-submenu")
+          +useCasesList()
+      li(
+        class="menu-item"
+      )
+        button(
+          id="getting-started-button"
+          class="menu-item-button"
+        ) Getting started >
+        div(id="getting-started-submenu")
+          +gettingStartedList()
+      li(
+        class="menu-item"
+      )
+        button(
+          id="dev-button"
+          class="menu-item-button"
+        ) Developers >
+        div(id="dev-submenu")
+          +devList()

@@ -1,0 +1,58 @@
+include ../mixins/productsList.pug
+include ../mixins/useCasesList.pug
+include ../mixins/gettingStartedList.pug
+include ../mixins/devList.pug
+
+mixin navbar
+  div(
+    id="nav"
+    class="navigation"
+  )
+    a(
+      href="/features"
+      class="nav-link"
+    ) Features
+    div(
+      class="dropdown-item"
+    )
+      button(
+        class="nav-button"
+        id="products-nav-item-button"
+      ) Products
+      div(
+        id="products-dropdown"
+      )
+        +productsList() 
+    div(
+      class="dropdown-item"
+    )
+      button(
+        class="nav-button"
+        id="use-cases-nav-item-button"
+      ) Use Cases
+      div(
+        id="use-cases-dropdown"
+      )
+        +useCasesList()
+    div(
+      class="dropdown-item"
+    )
+      button(
+        class="nav-button"
+        id="getting-started-nav-item-button"
+      ) Getting Started
+      div(
+        id="getting-started-dropdown"
+      )
+        +gettingStartedList()
+    div(
+      class="dropdown-item"
+    )
+      button(
+        id="dev-nav-item-button"
+        class="nav-button"
+      ) Developers
+      div(
+        id="dev-dropdown"
+      )
+        +devList()

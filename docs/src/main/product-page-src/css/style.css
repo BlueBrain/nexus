@@ -37,7 +37,15 @@ h1 {
 }
 
 button {
+  outline-style: none;
+  border: none;
+  background-color: transparent;
+  padding: 0;
+  cursor: pointer;
   font-family: "Roboto", sans-serif;
+}
+
+.button {
   font-weight: 400;
   background-color: var(--link);
   border: none;
@@ -49,6 +57,137 @@ button {
   width: 100px;
 }
 
+.header {
+  background-color: #000;
+  color: #fff;
+  display: flex;
+  padding: 0.7em;
+  justify-content: space-between;
+  height: 40px;
+  align-items: center;
+  position: relative;
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100vw;
+}
+
+@media (min-width: 1281px) {
+  .container {
+    width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  font-size: 1.5em;
+  letter-spacing: 2px;
+}
+
+.logo {
+  margin-right: 0.3em;
+}
+
+.menu-button-mobile {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .menu-button-mobile {
+    display: block;
+    width: 2.5em;
+  }
+}
+
+#menu-container {
+  display: none;
+  position: absolute;
+  top: 62px;
+  right: 0;
+  padding: 0.5em;
+  width: 80%;
+  height: 100vh;
+  background-color: grey;
+}
+
+.menu-item {
+  list-style-type: none;
+  margin-bottom: 1em;
+  padding-bottom: 1em;
+  color: #fff;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: #fff;
+  font-size: 1em;
+}
+
+.menu-item-button {
+  color: #fff;
+  font-weight: 300;
+  font-size: 1em;
+}
+
+.navigation {
+  display: flex;
+}
+
+.nav-link {
+  text-decoration: none;
+}
+
+.nav-button,
+.nav-link {
+  color: #fff;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 300;
+  margin: 0 20px;
+}
+
+@media (max-width: 800px) {
+  .navigation {
+    display: none;
+  }
+}
+
+.dropdown-item {
+  position: relative;
+}
+
+#products-dropdown,
+#use-cases-dropdown,
+#getting-started-dropdown,
+#dev-dropdown {
+  display: none;
+  position: absolute;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 8px;
+  left: -15%;
+  background-color: #fff;
+  top: 40px;
+  width: 250px;
+  font-size: 14px;
+  line-height: 25px;
+}
+
+#dev-dropdown {
+  left: -70%;
+}
+
+#products-submenu,
+#use-cases-submenu,
+#getting-started-submenu,
+#dev-submenu {
+  display: none;
 a {
   color: var(--link);
   text-decoration: none;
