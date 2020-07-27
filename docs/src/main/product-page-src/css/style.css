@@ -1,3 +1,5 @@
+@import "bulma/css/bulma.css";
+
 :root {
   --link: #a51aa5;
 }
@@ -56,14 +58,29 @@ ul {
   margin: 0;
 }
 
-footer {
+/* 
+  Footer
+*/
+
+.footer {
   background-color: black;
-  padding: 1em;
   color: #fff;
 }
 
-footer h4 {
+.footer .content {
+  padding: 2em;
+}
+
+.footer a {
   color: #fff;
+}
+
+.footer h3 {
+  color: #fff;
+}
+
+.footer img.logo {
+  max-width: 200px;
 }
 
 .gradient {
