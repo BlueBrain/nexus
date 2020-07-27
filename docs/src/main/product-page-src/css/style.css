@@ -1,7 +1,9 @@
 @import "bulma/css/bulma.css";
+@import "./footer.css";
 
 :root {
-  --link: #a51aa5;
+  --link: #f058ea;
+  --link-hover: #fff;
 }
 
 @media (min-width: 320px) {
@@ -50,6 +52,11 @@ button {
 a {
   color: var(--link);
   text-decoration: none;
+  transition: all 300ms cubic-bezier(0.995, 0.015, 0.01, 0.98);
+}
+
+a:hover {
+  color: var(--link-hover);
 }
 
 ul {
@@ -58,29 +65,13 @@ ul {
   margin: 0;
 }
 
-/* 
-  Footer
-*/
-
-.footer {
-  background-color: black;
-  color: #fff;
+.content ul {
+  padding: 0;
+  margin: 0;
 }
 
-.footer .content {
-  padding: 2em;
-}
-
-.footer a {
-  color: #fff;
-}
-
-.footer h3 {
-  color: #fff;
-}
-
-.footer img.logo {
-  max-width: 200px;
+li {
+  list-style: none;
 }
 
 .gradient {
