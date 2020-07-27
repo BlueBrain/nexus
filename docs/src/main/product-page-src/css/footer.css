@@ -1,0 +1,34 @@
+/* 
+  Footer
+*/
+
+.footer {
+  color: #fff;
+  padding-bottom: 1rem;
+}
+
+.footer .content {
+  padding: 2em;
+}
+
+.footer h3 {
+  color: #fff;
+}
+
+.footer img.logo {
+  max-width: 120px;
+}
+
+.footer .socials img {
+  height: 3em;
+}
+
+/* 
+  Responsive
+*/
+
+@media (max-width: 600px) {
+  .footer {
+    padding-top: 1rem;
+  }
+}
