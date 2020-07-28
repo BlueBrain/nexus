@@ -1,5 +1,5 @@
 .header {
-  background-color: #000;
+  background-color: transparent;
   color: #fff;
   display: flex;
   padding: 0.7em;
@@ -7,6 +7,7 @@
   height: 50px;
   align-items: center;
   position: relative;
+  z-index: 1;
 }
 
 .header-container {

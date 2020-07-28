@@ -6,6 +6,7 @@
 :root {
   --link: #f058ea;
   --link-hover: #fff;
+  --primary: #a51aa5;
 }
 
 @media (min-width: 320px) {
@@ -54,14 +55,20 @@ button {
 
 .button {
   font-weight: 400;
-  background-color: var(--link);
+  background-color: var(--primary);
   border: none;
   color: #fff;
   font-weight: 600;
   padding: 0.5em 1em;
   border-radius: 38px;
   text-align: center;
-  width: 100px;
+  width: auto;
+}
+
+.button img.arrow {
+  width: 0.5em;
+  margin-left: 0.5em;
+  height: auto;
 }
 
 a {
@@ -92,6 +99,55 @@ li {
 .gradient {
   background-color: #060b13;
   background-image: linear-gradient(326deg, #060b13 0%, #0b1848 74%);
+}
+
+/* 
+Hero
+*/
+
+.hero {
+  color: white;
+}
+.hero .title,
+.hero .subtitle {
+  color: white;
+}
+.hero .subtitle {
+  max-width: 750px;
+}
+.hero h1 {
+  font-size: 3em;
+}
+.hero .gradient {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  background: transparent
+    linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
+    0% 0% no-repeat padding-box;
+  clip-path: polygon(0 0, 100% 0, 100% 60%, 0 100%);
+  z-index: 0;
+}
+
+.content.centered {
+  text-align: center;
+}
+
+.placeholder {
+  display: block;
+  width: 300px;
+  height: 200px;
+  background-color: #0a1e55;
+  margin: 0 auto;
+}
+
+.short-product-description {
+  padding: 1em 0;
+}
+
+.columns.alternating-orientation:nth-of-type(even) {
+  flex-direction: row-reverse;
 }
 
 .page-title {

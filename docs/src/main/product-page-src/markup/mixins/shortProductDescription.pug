@@ -1,0 +1,12 @@
+
+mixin shortProductDescription(title, subtitle, description)
+  .columns.short-product-description.alternating-orientation
+    .column
+      .placeholder
+    .column
+      h3.title= title
+      h4.subtitle= subtitle
+      p= description
+      a(href="")
+        +button("Read More", true)
+

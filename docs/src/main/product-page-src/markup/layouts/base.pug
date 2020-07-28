@@ -10,7 +10,7 @@ html(lang="en-US")
     )
     title Test Stuff - #{title}
     link(
-      href="css/style.css"
+      href="../css/style.css"
       rel="stylesheet"
     )
     link(
@@ -25,7 +25,8 @@ html(lang="en-US")
     block scripts
       //- script(src='../../js/index.js')
   body
-    +header()
+    block header
+      +header()
     block content
       #content 
         section empty content block
@@ -33,5 +34,5 @@ html(lang="en-US")
       include ./footer.pug
     script(
       type='text/javascript'
-      src='js/menu.js'
+      src='../js/menu.js'
     )
