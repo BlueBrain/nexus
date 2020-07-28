@@ -260,3 +260,19 @@ Hero
 .content.centered {
   text-align: center;
 }
+
+.placeholder {
+  display: block;
+  width: 300px;
+  height: 200px;
+  background-color: #0a1e55;
+  margin: 0 auto;
+}
+
+.short-product-description {
+  padding: 1em 0;
+}
+
+.columns.alternating-orientation:nth-of-type(even) {
+  flex-direction: row-reverse;
+}

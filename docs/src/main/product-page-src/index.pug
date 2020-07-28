@@ -2,6 +2,7 @@
 extends ./markup/layouts/base.pug
 
 include markup/mixins/button.pug
+include markup/mixins/shortProductDescription.pug
 
 block content
   section.hero.is-fullheight
@@ -12,14 +13,34 @@ block content
         h2.subtitle Quickly build, use, and manage knowledge graphs using our web app, backend services, or python framework.
         .columns
           .column
-            +button("Why Nexus?", true)
+            a(href="#why")
+              +button("Why Nexus?", true)
           .column
-            +button("What is Nexus?", true)
-          .column  
-            +button("Get started")
+            a(href="#what")
+              +button("What is Nexus?", true)
+          .column
+            a(href="#getting-started")  
+              +button("Get started")
 
   section#what-is-nexus
     .container
       .content.centered
         h2 What is nexus?
-        p.subtitle Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et.
+        p.subtitle Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
+      .content
+        +shortProductDescription(
+          "Nexus Fusion", 
+          "Enabling Data and Knowledge Discovery", 
+          "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
+        )
+        +shortProductDescription(
+          "Nexus Delta", 
+          "Managing Data and Knowledge Graph Lifecycles", 
+          "A scalable and secure service to store and leverage all your data, neatly organised in a Knowledge Graph.",
+        )
+        +shortProductDescription(
+          "Nexus Forge", 
+          "Building and Using Knowledge Graphs Made Easy.", 
+          "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
+        )
+  include markup/layouts/open-source.pug
