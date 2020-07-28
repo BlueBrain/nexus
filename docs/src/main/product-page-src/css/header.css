@@ -19,17 +19,17 @@
 
 @media (min-width: 1281px) {
   .header-container {
-    width: 1200px;
+    width: 1344px;
     margin-left: auto;
     margin-right: auto;
   }
 }
 
 .logo-container {
+  font-family: "Nunito Sans", sans-serif;
   display: flex;
   align-items: center;
-  font-size: 1.5em;
-  letter-spacing: 2px;
+  font-size: 1.3em;
 }
 
 .logo {
@@ -50,7 +50,7 @@
 #menu-container {
   display: none;
   position: absolute;
-  top: 62px;
+  top: 50px;
   right: 0;
   padding: 0.5em;
   width: 80%;
@@ -79,6 +79,7 @@
 .navigation {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   font-weight: 400;
 }
 
@@ -94,13 +95,20 @@
   margin: 0 20px;
 }
 
+@media (max-width: 860px) {
+  .nav-button,
+  .nav-link {
+    margin: 0 10px;
+  }
+}
+
 @media (max-width: 800px) {
   .navigation {
     display: none;
   }
 }
 
-.dropdown-item {
+.nav-dropdown-item {
   position: relative;
 }
 
