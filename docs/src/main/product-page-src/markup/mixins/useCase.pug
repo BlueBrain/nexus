@@ -1,0 +1,32 @@
+mixin useCase(name, description, logoUrl, link, paperLink)
+  div.container.use-case-section
+    h1.page-title Learn how Nexus is used at the #{name} to speed up simulation neuroscience.
+    p= description
+    div.tile.use-case-nav-block
+      div.tile
+        div.tile.is-vertical.is-4.use-case-buttons
+          a.button(
+            href="#challenges"
+          ) Challenges
+          a.button(
+            href="#solutions"
+          ) Sollutions
+          a.button(
+            href="#retrospective"
+          ) Retrospective
+        div.tile.is-vertical.is-8.gradient.bbp-block
+          p
+            img(
+              class="use-case-logo"
+              src= logoUrl
+              alt="use case company logo"
+              width="60px"
+            )
+            span= name
+          p Website:
+            a(
+              class="use-case-link"
+              href= link
+              target="_blank"
+            )= link
+          p White Paper: ???

@@ -1,6 +1,7 @@
 @import "bulma/css/bulma.css";
 @import "./footer.css";
 @import "./header.css";
+@import "./use-case.css";
 
 :root {
   --link: #f058ea;
@@ -35,6 +36,11 @@ body {
 h1 {
   font-family: "Nunito Sans", sans-serif;
   font-weight: 800;
+}
+
+h2,
+h3 {
+  font-family: "Nunito Sans", sans-serif;
 }
 
 button {
@@ -86,4 +92,26 @@ li {
 .gradient {
   background-color: #060b13;
   background-image: linear-gradient(326deg, #060b13 0%, #0b1848 74%);
+}
+
+.page-title {
+  margin: 4rem 0 2rem;
+  font-size: 42px;
+}
+
+@media (max-width: 800px) {
+  .page-title {
+    margin: 2em 0 1em;
+    font-size: 32px;
+  }
+}
+
+.page-subtitle {
+  font-size: 24px;
+  font-weight: 800;
+  margin: 3em 0 1em;
+}
+
+.text-centered {
+  text-align: center;
 }
