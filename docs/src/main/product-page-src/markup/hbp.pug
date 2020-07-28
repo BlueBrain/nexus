@@ -1,0 +1,45 @@
+//- Main Index
+extends ./layouts/base.pug
+
+include ./mixins/useCase.pug
+
+block content
+  +useCase(
+    "Human Brain Project",
+    "Lorem ipsum dolor sit amet consectetur adipisicing elit. Totam repellat aut officiis dolores vitae autem tempora enim, quibusdam animi unde, nihil cupiditate molestiae ipsam. Minus ipsum perspiciatis tempora beatae recusandae! Lorem, ipsum dolor sit amet consectetur adipisicing elit. Tenetur, fugit! Animi eius pariatur corporis provident culpa, incidunt cum rem officiis impedit perferendis rerum magni dolore, illo ipsum delectus tenetur velit?",
+    "",
+    "",
+    "",
+  )
+  div.container.use-case-section(
+      id="challenges"
+    )
+      h2.page-subtitle.text-centered Challenges - to update
+      // update when we have content
+      p Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero veniam vel totam nulla praesentium aliquam sunt dolorum natus, non, quaerat nisi saepe! Perspiciatis quo officiis cum molestias deleniti sit eveniet!
+
+  // update me when github block is ready
+  div.container.use-case-section
+    br
+    h3 ****************Subscribe block - add later****************
+
+  div.container.use-case-section(
+    id="solutions"
+  )
+    h2.page-subtitle.text-centered  Solutions - to update
+    // update when we have content
+    p Lorem ipsum dolor sit amet consectetur adipisicing elit. Vel sint, eum quibusdam dolorem cum enim praesentium impedit modi quae libero repudiandae tempora, excepturi atque, ex recusandae et officia aliquid repellendus.
+
+  // update me when github block is ready
+  div.container.use-case-section
+    br
+    h3 ****************Github block-add later****************
+
+  div.container.use-case-section(
+    id="retrospective"
+  )
+    h2.page-subtitle.text-centered Retrospective - to update
+    // update when we have content
+    p Lorem ipsum dolor sit amet consectetur adipisicing elit. Ad sed perferendis temporibus blanditiis atque obcaecati sint vero eius. Cum non vitae nisi repellat dolorum voluptate, asperiores ipsum eaque enim laudantium.
+
+  
