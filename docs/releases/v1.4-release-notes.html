@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>v1.0 To v1.1 Migration · Blue Brain Nexus</title>
+<title>v1.4 Release Notes · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-v1.0 To v1.1 Migration
+v1.4 Release Notes
 </span>
 </div>
 </div>
@@ -214,13 +214,13 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.4-release-notes.html" class="active page">v1.4 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
     <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
     <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="active page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
     <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
   </ul></li>
   <li><a href="../../docs/faq.html" class="page">Frequently asked questions</a></li>
@@ -241,12 +241,14 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#v1-0-to-v1-1-migration" class="header">v1.0 To v1.1 Migration</a>
+  <li><a href="../../docs/releases/v1.4-release-notes.html#v1-4-release-notes" class="header">v1.4 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#migration-process" class="header">Migration process</a>
+    <li><a href="../../docs/releases/v1.4-release-notes.html#highlights" class="header">Highlights</a>
     <ul>
-      <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#iam-and-admin-migration-process" class="header">Iam and admin migration process</a></li>
-      <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#kg-migration-process" class="header">Kg migration process</a></li>
+      <li><a href="../../docs/releases/v1.4-release-notes.html#services-merge" class="header">Services merge</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.4-release-notes.html#listing-results" class="header">Listing results</a></li>
+      </ul></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -269,12 +271,14 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#v1-0-to-v1-1-migration" class="header">v1.0 To v1.1 Migration</a>
+  <li><a href="../../docs/releases/v1.4-release-notes.html#v1-4-release-notes" class="header">v1.4 Release Notes</a>
   <ul>
-    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#migration-process" class="header">Migration process</a>
+    <li><a href="../../docs/releases/v1.4-release-notes.html#highlights" class="header">Highlights</a>
     <ul>
-      <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#iam-and-admin-migration-process" class="header">Iam and admin migration process</a></li>
-      <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html#kg-migration-process" class="header">Kg migration process</a></li>
+      <li><a href="../../docs/releases/v1.4-release-notes.html#services-merge" class="header">Services merge</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.4-release-notes.html#listing-results" class="header">Listing results</a></li>
+      </ul></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -286,54 +290,60 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#v1-0-to-v1-1-migration" name="v1-0-to-v1-1-migration" class="anchor"><span class="anchor-link"></span></a>v1.0 To v1.1 Migration</h1>
-<p>As part of the v1.1 release there were two significant changes that require a primary store migration:</p>
-<ol>
-  <li>Updates to the event model</li>
-  <li>ElasticSearch default view mapping update for 7.x compatibility</li>
-</ol>
-<p>Additionally, due to a bug in the underlying persistence library some events may have been skipped when the <code>tag_views</code> table is populated as a reverse index for event tags.</p>
-<p>The migration steps are as follows:</p>
-<ol>
-  <li>Stop the 3 services: iam, admin and kg.</li>
-  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html">Backup</a> the  cassandra store. This step is a safeguard against anything which could go wrong during migration scripts. It&rsquo;s also a  good practice to protect from hardware failures.</li>
-  <li>Delete all ElasticSearch indices
-    <pre><code>curl -XDELETE &#39;http://{elasticsearch_host}/kg_*&#39;
-</code></pre>
-  </li>
-  <li>
-    <p>Delete all BlazeGraph namespaces:</p>
-    <pre><code>for i in `curl -s &#39;http://{blazegraph_host}/blazegraph/namespace?describe-each-named-graph=false&#39; | grep sparqlEndpoint | grep -o --color &quot;rdf:resource=\&quot;[^\&quot;]*&quot; | sed &#39;s/rdf:resource=&quot;//&#39; | sed &#39;s#/sparql$##&#39; | grep -v kb | grep -v LBS`
-   do curl -X DELETE &quot;$i&quot;
-done
-</code></pre>
-  </li>
-  <li>
-  <p>Update Elasticsearch software from 6.x to 7.2 or above.</p></li>
-  <li>Deploy the new service images (tag <code>1.1</code>): <a href="https://hub.docker.com/r/bluebrain/nexus-iam">iam</a>,  <a href="https://hub.docker.com/r/bluebrain/nexus-admin">admin</a> and <a href="https://hub.docker.com/r/bluebrain/nexus-kg">kg</a>;  make sure to start the iam, admin and kg services one by one, in order and wait for the service to become available,  following the instructions:</li>
-</ol>
+<h1><a href="#v1-4-release-notes" name="v1-4-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.4 Release Notes</h1>
+<blockquote>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.3 (and the rest of the v1.x releases, i.e. v1.2, v1.1 and v1.0) but requires rebuilding all indices and performing schema migrations. Please visit the <a href="v1.3-to-v1.4-migration.html">migration instructions</a> for the exact steps necessary to upgrade from the previous release.</p>
+</blockquote>
+<h2><a href="#highlights" name="highlights" class="anchor"><span class="anchor-link"></span></a>Highlights</h2>
+<p>The goal of this release is to improve performance and shrink the service footprint when deploying the Nexus ecosystem.</p>
+<h3><a href="#services-merge" name="services-merge" class="anchor"><span class="anchor-link"></span></a>Services merge</h3>
+<p>Up until 1.3, Nexus backend was splitted into 3 services:</p>
 <ul>
-  <li>When running iam and admin services for the first time in v1.1, set the environment variable  <code>REPAIR_FROM_MESSAGES</code> to <code>true</code>. This environment variable should be removed in subsequent runs. It makes  services rebuild the cassandra database from the <code>messages</code> table and correcting any problems with the  <code>tag_views</code> table</li>
-  <li>When running kg service for the first time in v1.1, set the environment variable <code>MIGRATE_V10_TO_V11</code> to <code>true</code>.  This environment variable should be removed in subsequent runs. It triggers the event migration, full  rebuild of the cassandra database from the <code>messages</code> table and correcting any problems with the <code>tag_views</code>  table.</li>
+  <li>iam: dealing with identity and access management.</li>
+  <li>admin: dealing with organizations and project management.</li>
+  <li>kg: dealing with resources and their lifecycle.</li>
 </ul>
-<h2><a href="#migration-process" name="migration-process" class="anchor"><span class="anchor-link"></span></a>Migration process</h2>
-<p>This section explains what happens during the migration process. Although the knowledge of what is happening behind the scenes should not be necessary to successfully migrate to v1.1, it might be of interest.</p>
-<h3><a href="#iam-and-admin-migration-process" name="iam-and-admin-migration-process" class="anchor"><span class="anchor-link"></span></a>Iam and admin migration process</h3>
-<p>The migration for these services is straight forward since the changes introduced did not affect the main models in the cassandra store. The migration is essentially a repair of the cassandra store to make sure that every row which should be present in the <code>tag_views</code> cassandra table, is indeed there. To achieve that, during the boot process the service wipes all tables but <code>messages</code> and materializes all persistent actors found in the <code>messages</code> table to force repair all dependent tables. </p>
-<h3><a href="#kg-migration-process" name="kg-migration-process" class="anchor"><span class="anchor-link"></span></a>Kg migration process</h3>
-<p>The migration for this service includes several steps, since the content on the cassandra store <code>messages</code> table requires modifications as per the description above.</p>
-<p>The following steps are executed:</p>
-<ol>
-  <li>all tables but <code>messages</code> are wiped</li>
-  <li>all project information is loaded from <code>admin.messages</code></li>
-  <li>all events in the <code>messages</code> table are migrated to the new model</li>
-  <li>a full rebuild of the cassandra store is performed by materializing all persistent actors found in the <code>messages</code>  table to force repair all dependent tables (equivalent to the behaviour of the <code>REPAIR_FROM_MESSAGES</code> flag for the  iam and admin services)</li>
-  <li>restart all index processes from scratch</li>
-</ol>
-<p>Depending on the volume of data stored in the system, the migration process can take a fairly long time. During this window the service does not bind on the HTTP port to avoid any de-synchronization.</p>
+<p>In 1.4 we have merged the 3 services together. Combining the 3 services into one has the following benefits:</p>
+<ul>
+  <li>Easier to deploy, test and monitor.</li>
+  <li>Decrease latency since the services do not have to interact with each other. The degree to which this aspect improves depends on the quality of the network where the service are running.</li>
+</ul>
+<h4><a href="#listing-results" name="listing-results" class="anchor"><span class="anchor-link"></span></a>Listing results</h4>
+<p>Listing API responses return, along with the resource metadata, the following predicates: <code>sko:prefLabel</code>, <code>schema:name</code> and <code>rdfs:label</code> when they are present in the resource payload.</p>
+<pre><code>GET /v1/resources/{org_label}/{project_label}
+</code></pre>
+<p>An example response:</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/resource.json&quot;
+  ],
+  &quot;_total&quot;: 1,
+  &quot;_results&quot;: [
+    {
+      &quot;@id&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+      &quot;@type&quot;: &quot;http://example.com/Custom&quot;,
+      &quot;prefLabel&quot;: &quot;my prefered label&quot;,
+      &quot;name&quot;: &quot;my schema name&quot;,
+      &quot;label&quot;: &quot;my schema label&quot;,
+      &quot;_incoming&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
+      &quot;_outgoing&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
+      &quot;_self&quot;: &quot;https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+      &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
+      &quot;_project&quot;: &quot;https://nexus.example.com/v1/projects/myorg/myproj&quot;,
+      &quot;_rev&quot;: 4,
+      &quot;_deprecated&quot;: true,
+      &quot;_createdAt&quot;: &quot;2018-09-17T14:54:42.939Z&quot;,
+      &quot;_createdBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;,
+      &quot;_updatedAt&quot;: &quot;2018-09-17T15:02:42.939Z&quot;,
+      &quot;_updatedBy&quot;: &quot;https://nexus.example.com/v1/realms/myrealm/users/john&quot;
+    }
+  ]
+}
+</code></pre>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.0-to-v1.1-migration.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.4-release-notes.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -349,7 +359,7 @@ bd09c912
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/v1.1-release-notes.html" title="v1.1 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -358,17 +368,17 @@ bd09c912
 <span class="md-footer-nav__direction">
 Previous
 </span>
-v1.1 Release Notes
+Releases
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.0-release-notes.html" title="v1.0 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.3-to-v1.4-migration.html" title="v1.3 To v1.4 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.0 Release Notes
+v1.3 To v1.4 Migration
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
