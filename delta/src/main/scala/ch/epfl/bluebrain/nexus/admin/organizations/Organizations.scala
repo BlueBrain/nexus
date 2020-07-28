@@ -210,16 +210,16 @@ object Organizations {
       aclsApi: Acls[F],
       saCaller: Caller
   )(implicit config: AppConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
-    implicit val retryPolicy: RetryPolicy[F] = config.aggregate.retry.retryPolicy[F]
+    implicit val retryPolicy: RetryPolicy[F] = config.organizations.aggregate.retry.retryPolicy[F]
     val aggF: F[Agg[F]]                      =
       AkkaAggregate.sharded(
         "organizations",
         Initial,
         next,
         evaluate[F],
-        config.aggregate.passivationStrategy(),
-        config.aggregate.akkaAggregateConfig,
-        config.cluster.shards
+        config.organizations.aggregate.passivationStrategy(),
+        config.organizations.aggregate.akkaAggregateConfig,
+        config.organizations.aggregate.shards
       )
     aggF.map(agg => new Organizations(agg, index, aclsApi, saCaller))
   }
@@ -227,7 +227,7 @@ object Organizations {
   def indexer[F[_]: Timer](
       organizations: Organizations[F]
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
-    implicit val ac: AggregateConfig  = config.aggregate
+    implicit val ac: AggregateConfig  = config.organizations.aggregate
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 

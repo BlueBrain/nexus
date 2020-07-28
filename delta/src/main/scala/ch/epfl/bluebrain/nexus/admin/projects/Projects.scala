@@ -285,7 +285,7 @@ object Projects {
       aclsApi: Acls[F],
       saCaller: Caller
   )(implicit config: AppConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val retryPolicy: RetryPolicy[F] = config.aggregate.retry.retryPolicy[F]
+    implicit val retryPolicy: RetryPolicy[F] = config.projects.aggregate.retry.retryPolicy[F]
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -293,9 +293,9 @@ object Projects {
         ProjectState.Initial,
         next,
         Eval.apply[F],
-        config.aggregate.passivationStrategy(),
-        config.aggregate.akkaAggregateConfig,
-        config.cluster.shards
+        config.projects.aggregate.passivationStrategy(),
+        config.projects.aggregate.akkaAggregateConfig,
+        config.projects.aggregate.shards
       )
     aggF.map(agg => new Projects(agg, index, organizations, aclsApi, saCaller))
   }
@@ -303,7 +303,7 @@ object Projects {
   def indexer[F[_]: Timer](
       projects: Projects[F]
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
-    implicit val ac: AggregateConfig  = config.aggregate
+    implicit val ac: AggregateConfig  = config.projects.aggregate
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = ac.askTimeout
 
