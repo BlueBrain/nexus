@@ -10,7 +10,7 @@ The first stage is the input of the pipeline: a stream of sources.
 
 The last stage takes the resulting output from the pipeline and index it on the configured projection.
 
-[![CompositeView pipeline](../../assets/views/compositeview_pipeline.png "CompositeView pipeline")](../../assets/views/compositeview_pipeline.png)
+[![CompositeView pipeline](../assets/views/compositeview_pipeline.png "CompositeView pipeline")](../assets/views/compositeview_pipeline.png)
 
 ## Sources
 
@@ -400,13 +400,13 @@ The supported payload is defined on the [ElasticSearch documentation](https://ww
 **Example**
 
 Request
-:   @@snip [composite-view-es-id-search.sh](../../assets/views/composite-view-es-id-search.sh)
+:   @@snip [composite-view-es-id-search.sh](../assets/views/composite-view-es-id-search.sh)
 
 Payload
-:   @@snip [composite-view-es-payload.json](../../assets/views/composite-view-es-search-payload.json)
+:   @@snip [composite-view-es-payload.json](../assets/views/composite-view-es-search-payload.json)
 
 Response
-:   @@snip [composite-view-es-search.json](../../assets/views/composite-view-es-search.json)
+:   @@snip [composite-view-es-search.json](../assets/views/composite-view-es-search.json)
 
 ### Search Documents in all projections
 
@@ -421,13 +421,13 @@ The supported payload is defined on the [ElasticSearch documentation](https://ww
 **Example**
 
 Request
-:   @@snip [composite-view-es-search.sh](../../assets/views/composite-view-es-search.sh)
+:   @@snip [composite-view-es-search.sh](../assets/views/composite-view-es-search.sh)
 
 Payload
-:   @@snip [composite-view-es-payload.json](../../assets/views/composite-view-es-search-payload.json)
+:   @@snip [composite-view-es-payload.json](../assets/views/composite-view-es-search-payload.json)
 
 Response
-:   @@snip [composite-view-es-search.json](../../assets/views/composite-view-es-search.json)
+:   @@snip [composite-view-es-search.json](../assets/views/composite-view-es-search.json)
 
 
 ### SPARQL query in a projection
@@ -451,10 +451,10 @@ The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [composite-view-sparql-search.sh](../../assets/views/composite-view-sparql-id-search.sh)
+:   @@snip [composite-view-sparql-search.sh](../assets/views/composite-view-sparql-id-search.sh)
 
 Response
-:   @@snip [composite-view-sparql-search.json](../../assets/views/composite-view-sparql-search.json)
+:   @@snip [composite-view-sparql-search.json](../assets/views/composite-view-sparql-search.json)
 
 ### SPARQL query in all projections
 
@@ -475,10 +475,10 @@ The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [composite-view-sparql-projections-search.sh](../../assets/views/composite-view-sparql-projections-search.sh)
+:   @@snip [composite-view-sparql-projections-search.sh](../assets/views/composite-view-sparql-projections-search.sh)
 
 Response
-:   @@snip [composite-view-sparql-search.json](../../assets/views/composite-view-sparql-search.json)
+:   @@snip [composite-view-sparql-search.json](../assets/views/composite-view-sparql-search.json)
 
 ### SPARQL query in the intermediate space
 
@@ -499,10 +499,10 @@ The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [composite-view-intermediate-sparql-search.sh](../../assets/views/composite-view-intermediate-sparql-search.sh)
+:   @@snip [composite-view-intermediate-sparql-search.sh](../assets/views/composite-view-intermediate-sparql-search.sh)
 
 Response
-:   @@snip [composite-view-sparql-search.json](../../assets/views/composite-view-sparql-search.json)
+:   @@snip [composite-view-sparql-search.json](../assets/views/composite-view-sparql-search.json)
 
 
 ### Fetch statistics
@@ -516,10 +516,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-intermediate-stats.sh](../../assets/views/compositeview-fetch-intermediate-stats.sh)
+:   @@snip [compositeview-fetch-intermediate-stats.sh](../assets/views/compositeview-fetch-intermediate-stats.sh)
 
 Response
-:   @@snip [compositeview-fetch-stats.json](../../assets/views/compositeview-fetch-stats.json)
+:   @@snip [compositeview-fetch-stats.json](../assets/views/compositeview-fetch-stats.json)
 
 where:
 
@@ -547,10 +547,10 @@ where `{source_id}` is the @id value of the source.
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-source-id-stats.sh](../../assets/views/compositeview-fetch-source-id-stats.sh)
+:   @@snip [compositeview-fetch-source-id-stats.sh](../assets/views/compositeview-fetch-source-id-stats.sh)
 
 Response
-:   @@snip [compositeview-fetch-source-stat.json](../../assets/views/compositeview-fetch-source-stat.json)
+:   @@snip [compositeview-fetch-source-stat.json](../assets/views/compositeview-fetch-source-stat.json)
 
 where:
 
@@ -574,10 +574,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/sources/_/statistics
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-sources-stats.sh](../../assets/views/compositeview-fetch-sources-stats.sh)
+:   @@snip [compositeview-fetch-sources-stats.sh](../assets/views/compositeview-fetch-sources-stats.sh)
 
 Response
-:   @@snip [compositeview-fetch-sources-stat.json](../../assets/views/compositeview-fetch-sources-stat.json)
+:   @@snip [compositeview-fetch-sources-stat.json](../assets/views/compositeview-fetch-sources-stat.json)
 
 where:
 
@@ -607,10 +607,10 @@ where `{projection_id}` is the @id value of the projection.
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-stats.sh](../../assets/views/compositeview-fetch-id-stats.sh)
+:   @@snip [compositeview-fetch-stats.sh](../assets/views/compositeview-fetch-id-stats.sh)
 
 Response
-:   @@snip [compositeview-fetch-stats.json](../../assets/views/compositeview-fetch-stats.json)
+:   @@snip [compositeview-fetch-stats.json](../assets/views/compositeview-fetch-stats.json)
 
 where:
 
@@ -636,10 +636,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/projections/_/statistics
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-stats.sh](../../assets/views/compositeview-fetch-stats.sh)
+:   @@snip [compositeview-fetch-stats.sh](../assets/views/compositeview-fetch-stats.sh)
 
 Response
-:   @@snip [compositeview-fetch-all-stats.json](../../assets/views/compositeview-fetch-all-stats.json)
+:   @@snip [compositeview-fetch-all-stats.json](../assets/views/compositeview-fetch-all-stats.json)
 
 where:
 
@@ -665,10 +665,10 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [view-restart.sh](../../assets/views/view-restart.sh)
+:   @@snip [view-restart.sh](../assets/views/view-restart.sh)
 
 Response
-:   @@snip [composite-view-restart.json](../../assets/views/composite-view-restart.json)
+:   @@snip [composite-view-restart.json](../assets/views/composite-view-restart.json)
 
 
 ### Restart projection
@@ -685,10 +685,10 @@ where `{projection_id}` is the @id value of the projection.
 **Example**
 
 Request
-:   @@snip [composite-view-projection-id-restart.sh](../../assets/views/composite-view-projection-id-restart.sh)
+:   @@snip [composite-view-projection-id-restart.sh](../assets/views/composite-view-projection-id-restart.sh)
 
 Response
-:   @@snip [composite-view-projection-id-restart.json](../../assets/views/composite-view-projection-id-restart.json)
+:   @@snip [composite-view-projection-id-restart.json](../assets/views/composite-view-projection-id-restart.json)
 
 ### Restart all projections
 
@@ -701,7 +701,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/_/offset
 **Example**
 
 Request
-:   @@snip [composite-view-projection-restart.sh](../../assets/views/composite-view-projection-restart.sh)
+:   @@snip [composite-view-projection-restart.sh](../assets/views/composite-view-projection-restart.sh)
 
 Response
-:   @@snip [composite-view-projection-restart.json](../../assets/views/composite-view-projection-restart.json)
+:   @@snip [composite-view-projection-restart.json](../assets/views/composite-view-projection-restart.json)

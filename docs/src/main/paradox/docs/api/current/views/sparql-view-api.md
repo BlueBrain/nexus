@@ -14,7 +14,7 @@ The first stage is the input of the pipeline: a stream of events scoped for the 
 
 The last stage takes the resource, generated through the pipeline steps, and extracts its RDF triples to store them in a Blazegraph namespace.
 
-[![SparqlView pipeline](../../assets/views/sparql_pipeline.png "SparqlView pipeline")](../../assets/views/sparql_pipeline.png)
+[![SparqlView pipeline](../assets/views/sparql_pipeline.png "SparqlView pipeline")](../assets/views/sparql_pipeline.png)
 
 
 ## Payload
@@ -85,10 +85,10 @@ The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [sparql-view-search.sh](../../assets/views/sparql-view-search.sh)
+:   @@snip [sparql-view-search.sh](../assets/views/sparql-view-search.sh)
 
 Response
-:   @@snip [sparql-view-search.json](../../assets/views/sparql-view-search.json)
+:   @@snip [sparql-view-search.json](../assets/views/sparql-view-search.json)
 
 
 ### Fetch statistics
@@ -100,10 +100,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
 **Example**
 
 Request
-:   @@snip [view-fetch.sh](../../assets/views/view-statistics.sh)
+:   @@snip [view-fetch.sh](../assets/views/view-statistics.sh)
 
 Response
-:   @@snip [view-fetched.json](../../assets/views/view-statistics.json)
+:   @@snip [view-fetched.json](../assets/views/view-statistics.json)
 
 where...
 
@@ -127,7 +127,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [view-restart.sh](../../assets/views/view-restart.sh)
+:   @@snip [view-restart.sh](../assets/views/view-restart.sh)
 
 Response
-:   @@snip [view-restart.json](../../assets/views/view-restart.json)
+:   @@snip [view-restart.json](../assets/views/view-restart.json)

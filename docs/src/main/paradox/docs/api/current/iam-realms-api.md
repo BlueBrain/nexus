@@ -5,7 +5,7 @@ Realms are rooted in `/v1/realms` collection.
 Each realm defines a specific authentication provider.
 Any of the authentication providers can be used to obtain access tokens that can be used with Nexus.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -28,13 +28,13 @@ The following examples describe the payload used to create a realm.
 **Example**
 
 Request
-:   @@snip [realm-add.sh](../assets/realms/realm-add.sh)
+:   @@snip [realm-add.sh](assets/realms/realm-add.sh)
 
 Payload
-:   @@snip [realm-add.json](../assets/realms/realm-add.json)
+:   @@snip [realm-add.json](assets/realms/realm-add.json)
 
 Response
-:   @@snip [realm-added-ref.json](../assets/realms/realm-added-ref.json)
+:   @@snip [realm-added-ref.json](assets/realms/realm-added-ref.json)
 
 The `logo` parameter is optional.
 
@@ -53,13 +53,13 @@ PUT /v1/realms/{realm}?rev={previous_rev}
  **Example**
 
 Request
- :   @@snip [realm-replace.sh](../assets/realms/realm-replace.sh)
+ :   @@snip [realm-replace.sh](assets/realms/realm-replace.sh)
 
 Payload
- :   @@snip [realm-replace.json](../assets/realms/realm-replace.json)
+ :   @@snip [realm-replace.json](assets/realms/realm-replace.json)
 
 Response
- :   @@snip [realm-replaced-ref.json](../assets/realms/realm-replaced-ref.json)
+ :   @@snip [realm-replaced-ref.json](assets/realms/realm-replaced-ref.json)
 
 
 ## Deprecate a realm
@@ -74,10 +74,10 @@ This operation deprecates a realm. After deprecation, realms loose their metadat
   where `{previous_rev}` is the last known revision number for the realm.
 
 Request
- :   @@snip [realm-delete.sh](../assets/realms/realm-delete.sh)
+ :   @@snip [realm-delete.sh](assets/realms/realm-delete.sh)
 
 Response
- :   @@snip [realm-deleted-ref.json](../assets/realms/realm-deleted-ref.json)
+ :   @@snip [realm-deleted-ref.json](assets/realms/realm-deleted-ref.json)
 
 
 ## List realms
@@ -96,10 +96,10 @@ where...
 - `{updatedBy}`: Iri - can be used to filter the resulting realms based on the person which performed the last update
 
 Request
- :   @@snip [realms-list.sh](../assets/realms/realms-list.sh)
+ :   @@snip [realms-list.sh](assets/realms/realms-list.sh)
 
 Response
- :   @@snip [realms-list.json](../assets/realms/realms-list.json)
+ :   @@snip [realms-list.json](assets/realms/realms-list.json)
 
 ## Fetch a realm (current version)
 
@@ -110,10 +110,10 @@ GET /v1/realms/{realm}
 **Example**
 
 Request
-:   @@snip [realm-fetch.sh](../assets/realms/realm-fetch.sh)
+:   @@snip [realm-fetch.sh](assets/realms/realm-fetch.sh)
 
 Response
-:   @@snip [realm-fetch.json](../assets/realms/realm-fetch.json)
+:   @@snip [realm-fetch.json](assets/realms/realm-fetch.json)
 
 
 ## Fetch a realm (specific version)
@@ -126,10 +126,10 @@ GET /v1/realms/{realm}?rev={rev}
 **Example**
 
 Request
-:   @@snip [realm-fetch-revision.sh](../assets/realms/realm-fetch-revision.sh)
+:   @@snip [realm-fetch-revision.sh](assets/realms/realm-fetch-revision.sh)
 
 Response
-:   @@snip [realm-fetch.json](../assets/realms/realm-fetch.json)
+:   @@snip [realm-fetch.json](assets/realms/realm-fetch.json)
 
 
 ## Realms Server Sent Events
@@ -159,7 +159,7 @@ where...
 **Example**
 
 Request
-:   @@snip [realm-event.sh](../assets/realms/event.sh)
+:   @@snip [realm-event.sh](assets/realms/event.sh)
 
 Response
-:   @@snip [realm-event.json](../assets/realms/event.json)
+:   @@snip [realm-event.json](assets/realms/event.json)

@@ -11,7 +11,7 @@ Each storage...
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list,
 a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header
-(`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn how to retrieve an access token.
+(`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }
 
@@ -95,13 +95,13 @@ Json payload:
 **Example**
 
 Request
-:   @@snip [storage-post.sh](../assets/storages/storage-post.sh)
+:   @@snip [storage-post.sh](assets/storages/storage-post.sh)
 
 Payload
-:   @@snip [storage-post.json](../assets/storages/storage-post.json)
+:   @@snip [storage-post.json](assets/storages/storage-post.json)
 
 Response
-:   @@snip [storage-ref-new.json](../assets/storages/storage-ref-new.json)
+:   @@snip [storage-ref-new.json](assets/storages/storage-ref-new.json)
 
 
 ## Create a storage using PUT
@@ -119,13 +119,13 @@ Note that if the payload contains an @id different from the `{storage_id}`, the 
 **Example**
 
 Request
-:   @@snip [storage-put.sh](../assets/storages/storage-put.sh)
+:   @@snip [storage-put.sh](assets/storages/storage-put.sh)
 
 Payload
-:   @@snip [storage-put.json](../assets/storages/storage-put.json)
+:   @@snip [storage-put.json](assets/storages/storage-put.json)
 
 Response
-:   @@snip [storage-ref-new.json](../assets/storages/storage-ref-new.json)
+:   @@snip [storage-ref-new.json](assets/storages/storage-ref-new.json)
 
 ## Update a storage
 
@@ -144,13 +144,13 @@ PUT /v1/storages/{org_label}/{project_label}/{storage_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [storage-update.sh](../assets/storages/storage-update.sh)
+:   @@snip [storage-update.sh](assets/storages/storage-update.sh)
 
 Payload
-:   @@snip [storage.json](../assets/storages/storage-update.json)
+:   @@snip [storage.json](assets/storages/storage-update.json)
 
 Response
-:   @@snip [storage-ref-updated.json](../assets/storages/storage-ref-updated.json)
+:   @@snip [storage-ref-updated.json](assets/storages/storage-ref-updated.json)
 
 ## Tag a storage
 
@@ -175,13 +175,13 @@ POST /v1/storages/{org_label}/{project_label}/{storage_id}/tags?rev={previous_re
 **Example**
 
 Request
-:   @@snip [storage-tag.sh](../assets/storages/storage-tag.sh)
+:   @@snip [storage-tag.sh](assets/storages/storage-tag.sh)
 
 Payload
-:   @@snip [tag.json](../assets/tag.json)
+:   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [storage-ref-tagged.json](../assets/storages/storage-ref-tagged.json)
+:   @@snip [storage-ref-tagged.json](assets/storages/storage-ref-tagged.json)
 
 ## Deprecate a storage
 
@@ -199,10 +199,10 @@ DELETE /v1/storages/{org_label}/{project_label}/{storage_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [storage-deprecate.sh](../assets/storages/storage-deprecate.sh)
+:   @@snip [storage-deprecate.sh](assets/storages/storage-deprecate.sh)
 
 Response
-:   @@snip [storage-ref-deprecated.json](../assets/storages/storage-ref-deprecated.json)
+:   @@snip [storage-ref-deprecated.json](assets/storages/storage-ref-deprecated.json)
 
 ## Fetch a storage
 
@@ -227,10 +227,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [storage-fetch.sh](../assets/storages/storage-fetch.sh)
+:   @@snip [storage-fetch.sh](assets/storages/storage-fetch.sh)
 
 Response
-:   @@snip [storage-fetched.json](../assets/storages/storage-fetched.json)
+:   @@snip [storage-fetched.json](assets/storages/storage-fetched.json)
 
 
 ## Fetch a storage original payload
@@ -249,10 +249,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [storage-fetch.sh](../assets/storages/storage-fetch-source.sh)
+:   @@snip [storage-fetch.sh](assets/storages/storage-fetch-source.sh)
 
 Response
-:   @@snip [storage-fetched.json](../assets/storages/storage-fetched-source.json)
+:   @@snip [storage-fetched.json](assets/storages/storage-fetched-source.json)
 
 ## List storages
 
@@ -275,7 +275,7 @@ where...
 **Example**
 
 Request
-:   @@snip [storage-list.sh](../assets/storages/storage-list.sh)
+:   @@snip [storage-list.sh](assets/storages/storage-list.sh)
 
 Response
-:   @@snip [storage-list.json](../assets/storages/storage-list.json)
+:   @@snip [storage-list.json](assets/storages/storage-list.json)

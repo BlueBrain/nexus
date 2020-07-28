@@ -16,7 +16,7 @@ GET /v1/identities
 **Example**
 
 Request
-:   @@snip [identities-fetch.sh](../assets/identities/identities-fetch.sh)
+:   @@snip [identities-fetch.sh](assets/identities/identities-fetch.sh)
 
 Response
-:   @@snip [identities-fetch-response.json](../assets/identities/identities-fetch-response.json)
+:   @@snip [identities-fetch-response.json](assets/identities/identities-fetch-response.json)

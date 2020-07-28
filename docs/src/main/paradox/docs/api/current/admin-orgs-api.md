@@ -3,7 +3,7 @@
 Organizations are rooted in the `/v1/orgs` path and are used to group and categorize sub-resources.
 
 Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
-Please visit @ref:[Authentication](../iam/authentication.md) to learn more about retrieving access tokens.
+Please visit @ref:[Authentication](authentication.md) to learn more about retrieving access tokens.
 
 
 @@@ note { .tip title="Authorization notes" }	
@@ -29,13 +29,13 @@ consistent with the type of data provided by its sub-resources, since it'll be a
 **Example**
 
 Request
-:   @@snip [organization.sh](../assets/organization.sh)
+:   @@snip [organization.sh](assets/organization.sh)
 
 Payload
-:   @@snip [organization.json](../assets/organization.json)
+:   @@snip [organization.json](assets/organization.json)
 
 Response
-:   @@snip [organization-ref-new.json](../assets/organization-ref-new.json)
+:   @@snip [organization-ref-new.json](assets/organization-ref-new.json)
 
 
 ## Update an organization
@@ -57,13 +57,13 @@ PUT /v1/orgs/{label}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [organization-update.sh](../assets/organization-update.sh)
+:   @@snip [organization-update.sh](assets/organization-update.sh)
 
 Payload
-:   @@snip [organization.json](../assets/organization.json)
+:   @@snip [organization.json](assets/organization.json)
 
 Response
-:   @@snip [organization-ref-new.json](../assets/organization-ref-updated.json)
+:   @@snip [organization-ref-new.json](assets/organization-ref-updated.json)
 
 
 ## Deprecate an organization
@@ -84,10 +84,10 @@ DELETE /v1/orgs/{label}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [organization-deprecate.sh](../assets/organization-deprecate.sh)
+:   @@snip [organization-deprecate.sh](assets/organization-deprecate.sh)
 
 Response
-:   @@snip [organization-ref-deprecated.json](../assets/organization-ref-deprecated.json)
+:   @@snip [organization-ref-deprecated.json](assets/organization-ref-deprecated.json)
 
 
 ## Fetch an organization (current version)
@@ -102,10 +102,10 @@ GET /v1/orgs/{label}
 **Example**
 
 Request
-:   @@snip [organization-fetch.sh](../assets/organization-fetch.sh)
+:   @@snip [organization-fetch.sh](assets/organization-fetch.sh)
 
 Response
-:   @@snip [organization-fetched.json](../assets/organization-fetched.json)
+:   @@snip [organization-fetched.json](assets/organization-fetched.json)
 
 
 ## Fetch an organization (specific version)
@@ -121,10 +121,10 @@ GET /v1/orgs/{label}?rev={rev}
 **Example**
 
 Request
-:   @@snip [organization-fetch-revision.sh](../assets/organization-fetch-revision.sh)
+:   @@snip [organization-fetch-revision.sh](assets/organization-fetch-revision.sh)
 
 Response
-:   @@snip [organization-fetched.json](../assets/organization-fetched.json)
+:   @@snip [organization-fetched.json](assets/organization-fetched.json)
 
 
 ## List organizations
@@ -147,10 +147,10 @@ where...
 **Example**
 
 Request
-:   @@snip [organization-list.sh](../assets/organization-list.sh)
+:   @@snip [organization-list.sh](assets/organization-list.sh)
 
 Response
-:   @@snip [organization-list.json](../assets/organization-list.json)
+:   @@snip [organization-list.json](assets/organization-list.json)
 
 
 ## Organization Server Sent Events
@@ -180,7 +180,7 @@ where...
 **Example**
 
 Request
-:   @@snip [organization-event.sh](../assets/organization-event.sh)
+:   @@snip [organization-event.sh](assets/organization-event.sh)
 
 Response
-:   @@snip [organization-event.json](../assets/organization-event.json)
+:   @@snip [organization-event.json](assets/organization-event.json)

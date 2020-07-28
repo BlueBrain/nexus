@@ -14,7 +14,7 @@ The first stage is the input of the pipeline: a stream of events scoped for the 
 
 The last stage takes the JSON document, generated through the pipeline steps, and stores it as a Document in an ElasticSearch index
 
-[![ElasticSearchView pipeline](../../assets/views/elasticsearch_pipeline.png "ElasticSearchView pipeline")](../../assets/views/elasticsearch_pipeline.png)
+[![ElasticSearchView pipeline](../assets/views/elasticsearch_pipeline.png "ElasticSearchView pipeline")](../assets/views/elasticsearch_pipeline.png)
 
 ## Payload
 
@@ -104,13 +104,13 @@ The string `documents` is used as a prefix of the default ElasticSearch `view_id
 **Example**
 
 Request
-:   @@snip [elastic-view-search.sh](../../assets/views/elastic-view-search.sh)
+:   @@snip [elastic-view-search.sh](../assets/views/elastic-view-search.sh)
 
 Payload
-:   @@snip [elastic-view-payload.json](../../assets/views/elastic-view-search-payload.json)
+:   @@snip [elastic-view-payload.json](../assets/views/elastic-view-search-payload.json)
 
 Response
-:   @@snip [elastic-view-search.json](../../assets/views/elastic-view-search.json)
+:   @@snip [elastic-view-search.json](../assets/views/elastic-view-search.json)
 
 
 ### Fetch statistics
@@ -122,10 +122,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
 **Example**
 
 Request
-:   @@snip [view-fetch.sh](../../assets/views/view-statistics.sh)
+:   @@snip [view-fetch.sh](../assets/views/view-statistics.sh)
 
 Response
-:   @@snip [view-fetched.json](../../assets/views/view-statistics.json)
+:   @@snip [view-fetched.json](../assets/views/view-statistics.json)
 
 where...
 
@@ -150,7 +150,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [view-restart.sh](../../assets/views/view-restart.sh)
+:   @@snip [view-restart.sh](../assets/views/view-restart.sh)
 
 Response
-:   @@snip [view-restart.json](../../assets/views/view-restart.json)
+:   @@snip [view-restart.json](../assets/views/view-restart.json)

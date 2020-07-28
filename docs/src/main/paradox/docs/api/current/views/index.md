@@ -19,7 +19,7 @@ Each view...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the [view schema](https://bluebrainnexus.io/schemas/view.json).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -33,7 +33,7 @@ When  reading views, the caller must have `resources/read` permissions on the cu
 
 ## View types
 
-[![view types](../../assets/views/view-defaults.png "View types")](../../assets/views/view-defaults.png)
+[![view types](../assets/views/view-defaults.png "View types")](../assets/views/view-defaults.png)
 
 
 
@@ -148,13 +148,13 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-tag.sh](../../assets/views/view-tag.sh)
+:   @@snip [view-tag.sh](../assets/views/view-tag.sh)
 
 Payload
-:   @@snip [tag.json](../../assets/tag.json)
+:   @@snip [tag.json](../assets/tag.json)
 
 Response
-:   @@snip [view-elastic-ref-tagged.json](../../assets/views/view-elastic-ref-tagged.json)
+:   @@snip [view-elastic-ref-tagged.json](../assets/views/view-elastic-ref-tagged.json)
 
 ### Deprecate a view
 
@@ -171,10 +171,10 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [view-deprecate.sh](../../assets/views/view-deprecate.sh)
+:   @@snip [view-deprecate.sh](../assets/views/view-deprecate.sh)
 
 Response
-:   @@snip [view-elastic-ref-deprecated.json](../../assets/views/view-elastic-ref-deprecated.json)
+:   @@snip [view-elastic-ref-deprecated.json](../assets/views/view-elastic-ref-deprecated.json)
 
 
 ### Fetch a view
@@ -199,10 +199,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [view-fetch.sh](../../assets/views/view-fetch.sh)
+:   @@snip [view-fetch.sh](../assets/views/view-fetch.sh)
 
 Response
-:   @@snip [view-fetched.json](../../assets/views/view-fetched.json)
+:   @@snip [view-fetched.json](../assets/views/view-fetched.json)
 
 ### Fetch a view original payload
 
@@ -217,10 +217,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [view-fetch.sh](../../assets/views/view-fetch-source.sh)
+:   @@snip [view-fetch.sh](../assets/views/view-fetch-source.sh)
 
 Response
-:   @@snip [view-fetched.json](../../assets/views/view-fetched-source.json)
+:   @@snip [view-fetched.json](../assets/views/view-fetched-source.json)
 
 
 ### List views
@@ -245,7 +245,7 @@ where...
 **Example**
 
 Request
-:   @@snip [view-list.sh](../../assets/views/view-list.sh)
+:   @@snip [view-list.sh](../assets/views/view-list.sh)
 
 Response
-:   @@snip [view-list.json](../../assets/views/view-list.json)
+:   @@snip [view-list.json](../assets/views/view-list.json)

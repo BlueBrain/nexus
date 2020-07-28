@@ -2,30 +2,113 @@
 
 * [Services anatomy](anatomy.md)
 * [Operating on resources](operating-on-resources.md)
-* [Admin API](admin/index.md)
-* [KnowledgeGraph API](kg/index.md)
-* [IAM API](iam/index.md)
+* [Realms](iam-realms-api.md)
+* [Authentication](authentication.md)
+* [Permissions](iam-permissions-api.md)
+* [ACLs](iam-acls-api.md)
+* [Identities](iam-identities.md)
+* [Organizations](admin-orgs-api.md)
+* [Projects](admin-projects-api.md)
+* [Schemas](kg-schemas-api.md)
+* [Resolvers](kg-resolvers-api.md)
+* [Views](views/index.md)
+* [Storages](kg-storages-api.md)
+* [Files](kg-files-api.md)
+* [Archives](kg-archives-api.md)
+* [Resources](kg-resources-api.md)
 * [Error Signaling](error-signaling.md)
 
 @@@
 
 # API reference
 
-All Nexus services expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically [JSON-LD](https://json-ld.org/).
+Nexus Delta expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically [JSON-LD](https://json-ld.org/).
 
-The services operates on 3 primary types of resources: Organizations, Projects and Resources. Each of them is constrained by a set of [SHACL] constraints, grouped in what is called a Schema.
+The API provides access and management of several primary resource types.
 
-![Resources tree](./assets/resources-tree.png "Resources tree")
 
-* An **@ref:[organization](./admin/admin-orgs-api.md)** is used to organize and categorize its sub-resources.
-* A **@ref:[project](./admin/admin-projects-api.md)** is rooted on a given `organization`. It is used to organize and categorize its sub-resources while providing a way to [interact with them conveniently](./admin/admin-projects-api.html#prefix-mappings).
-* A **@ref:[resource](./kg/kg-resources-api.md)** is rooted on a given `project`. In this level of the hierarchy, multiple types of resources can be found. Each of them has a different purpose:
-  - A **@ref:[schema](./kg/kg-schemas-api.md)** is a resource that defines a set of constraints using [SHACL].
-  - A **@ref:[resolvers](./kg/kg-resolvers-api.md)**: is a resource that defines the way ids are retrieved inside a project.
-  - A **@ref:[views](./kg/views/index.md)**: is a resource that describes the way indexing is applied to certain resources inside a project.
-  - A **@ref:[storage](./kg/kg-storages-api.md)**: is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.
-  - A **@ref:[file](./kg/kg-files-api.md)**: is a binary resource.
-  - A **@ref:[archive](./kg/kg-archives-api.md)**: is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
+## Realms 
+A realm provides with the necessary information to perform authentication against a certain [OIDC](https://en.wikipedia.org/wiki/OpenID_Connect) provider .  
+
+@ref:[Operations on realms](iam-realms-api.md)
+
+## Permissions 
+A permission is the basic unit to provide a way to limit applications' access to sensitive information.  
+
+@ref:[Operations on permisions](iam-permissions-api.md)
+
+## ACLs
+
+In order to restrict applications' access to data by placing restrictions on them, three parameters are important:
+
+- permission: the value used to limit a client (user, group) access to resources.
+- identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.
+- path: the location where to apply the restrictions
+
+An ACL defines the set of **permissions** that certain **identities** have on a concrete **path**.
+
+@ref:[Operations on ACLs](iam-acls-api.md)
+
+## Identities
+Identities endpoint can be used to fetch user identities.
+
+@ref:[Operations on identities](iam-identities.md)
+
+
+## Organizations 
+
+The top-level grouping resource in the platform, called organization
+
+@ref:[Operations on organizations](admin-orgs-api.md)
+
+## Projects
+
+The 2nd level grouping resources in the platform, called project. Projects provide isolation of ACLs, resource resolution and indices (ElasticSearch index and Blazegraph namespace).
+
+@ref:[Operations on projects](admin-projects-api.md)
+
+## Schemas
+
+A schema is a resource which defines a set of rules and constrains using [SHACL](https://www.w3.org/TR/shacl/). 
+
+@ref:[Operations on schemas](kg-schemas-api.md)
+
+## Resolvers
+
+A resolver is a resource which defines the way ids are retrieved inside a project.
+
+@ref:[Operations on resolvers](kg-resolvers-api.md)
+
+## Views
+
+A view is a resource which defines the way indexing is applied to certain resources inside a project.
+
+@ref:[Operations on views](views/index.md)
+
+## Storages
+
+A storage is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.
+
+@ref:[Operations on storages](kg-storages-api.md)
+
+## Files
+
+A file is a binary attachment resource.
+
+@ref:[Operations on files](kg-files-api.md)
+
+## Archives
+
+An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
+
+@ref:[Operations on archives](kg-archives-api.md)
+
+## Resources
+
+A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views`,
+`storages`, `files` or `data`.
+
+@ref:[Operations on resources](kg-resources-api.md)
 
 ## Resource Lifecycle
 

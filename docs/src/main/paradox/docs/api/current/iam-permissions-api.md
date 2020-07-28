@@ -4,7 +4,7 @@ Permissions are rooted in the `/v1/permissions` collection.
 
 Each permission is the basic unit to provide a way to limit applications' access to sensitive information.  
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](./authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -69,13 +69,13 @@ The json payload contains the set of permissions to be added.
 **Example**
 
 Request
-:   @@snip [permissions-replace.sh](../assets/permissions/permissions-replace.sh)
+:   @@snip [permissions-replace.sh](assets/permissions/permissions-replace.sh)
 
 Payload
-:   @@snip [permissions-add.json](../assets/permissions/permissions-add.json)
+:   @@snip [permissions-add.json](assets/permissions/permissions-add.json)
 
 Response
-:   @@snip [permissions-replaced-ref.json](../assets/permissions/permissions-replaced-ref.json)
+:   @@snip [permissions-replaced-ref.json](assets/permissions/permissions-replaced-ref.json)
 
 
 ## Subtract permissions
@@ -92,13 +92,13 @@ The json payload contains the set of permissions to be deleted.
 **Example**
 
 Request
-:   @@snip [permissions-subtract.sh](../assets/permissions/permissions-subtract.sh)
+:   @@snip [permissions-subtract.sh](assets/permissions/permissions-subtract.sh)
 
 Payload
-:   @@snip [permissions-subtract.json](../assets/permissions/permissions-subtract.json)
+:   @@snip [permissions-subtract.json](assets/permissions/permissions-subtract.json)
 
 Response
-:   @@snip [permissions-subtracted-ref.json](../assets/permissions/permissions-subtracted-ref.json)
+:   @@snip [permissions-subtracted-ref.json](assets/permissions/permissions-subtracted-ref.json)
 
 ## Append permissions
 
@@ -115,13 +115,13 @@ The json payload contains the set of permissions to be added.
 **Example**
 
 Request
-:   @@snip [permissions-append.sh](../assets/permissions/permissions-append.sh)
+:   @@snip [permissions-append.sh](assets/permissions/permissions-append.sh)
 
 Payload
-:   @@snip [permissions-append.json](../assets/permissions/permissions-append.json)
+:   @@snip [permissions-append.json](assets/permissions/permissions-append.json)
 
 Response
-:   @@snip [permissions-appended-ref.json](../assets/permissions/permissions-appended-ref.json)
+:   @@snip [permissions-appended-ref.json](assets/permissions/permissions-appended-ref.json)
 
 ## Delete all permissions
 
@@ -135,10 +135,10 @@ DELETE /v1/permissions?rev={previous_rev}
 
 
 Request
-:   @@snip [permissions-delete.sh](../assets/permissions/permissions-delete.sh)
+:   @@snip [permissions-delete.sh](assets/permissions/permissions-delete.sh)
 
 Response
-:   @@snip [permissions-deleted-ref.json](../assets/permissions/permissions-deleted-ref.json)
+:   @@snip [permissions-deleted-ref.json](assets/permissions/permissions-deleted-ref.json)
 
 
 ## Fetch permissions (latest revision)
@@ -148,10 +148,10 @@ GET /v1/permissions
 ```
 
 Request
-:   @@snip [permissions-get.sh](../assets/permissions/permissions-get.sh)
+:   @@snip [permissions-get.sh](assets/permissions/permissions-get.sh)
 
 Response
-:   @@snip [permissions-get.json](../assets/permissions/permissions-get.json)
+:   @@snip [permissions-get.json](assets/permissions/permissions-get.json)
 
 ## Fetch permissions (specific revision)
 ```
@@ -161,10 +161,10 @@ GET /v1/permissions?rev={rev}
 ...where `{rev}` is the revision number of the permissions to be retrieved.
 
 Request
-:   @@snip [permissions-get-rev.sh](../assets/permissions/permissions-get-rev.sh)
+:   @@snip [permissions-get-rev.sh](assets/permissions/permissions-get-rev.sh)
 
 Response
-:   @@snip [permissions-get-rev.json](../assets/permissions/permissions-get-rev.json)
+:   @@snip [permissions-get-rev.json](assets/permissions/permissions-get-rev.json)
 
 
 ## Permissions Server Sent Events
@@ -194,7 +194,7 @@ where...
 **Example**
 
 Request
-:   @@snip [permission-event.sh](../assets/permissions/event.sh)
+:   @@snip [permission-event.sh](assets/permissions/event.sh)
 
 Response
-:   @@snip [permission-event.json](../assets/permissions/event.json)
+:   @@snip [permission-event.json](assets/permissions/event.json)

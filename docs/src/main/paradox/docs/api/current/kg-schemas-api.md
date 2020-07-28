@@ -8,7 +8,7 @@ Each schema...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the [shacl schema](https://bluebrainnexus.io/schemas/shacl-20170720.ttl) (version 20170720).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -33,13 +33,13 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [schema.sh](../assets/schemas/schema.sh)
+:   @@snip [schema.sh](assets/schemas/schema.sh)
 
 Payload
-:   @@snip [schema.json](../assets/schemas/schema.json)
+:   @@snip [schema.json](assets/schemas/schema.json)
 
 Response
-:   @@snip [schema-ref-new.json](../assets/schemas/schema-ref-new.json)
+:   @@snip [schema-ref-new.json](assets/schemas/schema-ref-new.json)
 
 
 ## Create a schema using PUT
@@ -55,13 +55,13 @@ Note that if the payload contains an @id different from the `{schema_id}`, the r
 **Example**
 
 Request
-:   @@snip [schema-put.sh](../assets/schemas/schema-put.sh)
+:   @@snip [schema-put.sh](assets/schemas/schema-put.sh)
 
 Payload
-:   @@snip [schema.json](../assets/schemas/schema.json)
+:   @@snip [schema.json](assets/schemas/schema.json)
 
 Response
-:   @@snip [schema-ref-new.json](../assets/schemas/schema-ref-new.json)
+:   @@snip [schema-ref-new.json](assets/schemas/schema-ref-new.json)
 
 
 ## Update a schema
@@ -81,13 +81,13 @@ PUT /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-update.sh](../assets/schemas/schema-update.sh)
+:   @@snip [schema-update.sh](assets/schemas/schema-update.sh)
 
 Payload
-:   @@snip [schema.json](../assets/schemas/schema.json)
+:   @@snip [schema.json](assets/schemas/schema.json)
 
 Response
-:   @@snip [schema-ref-new-updated.json](../assets/schemas/schema-ref-new-updated.json)
+:   @@snip [schema-ref-new-updated.json](assets/schemas/schema-ref-new-updated.json)
 
 
 ## Tag a schema
@@ -112,13 +112,13 @@ POST /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-tag.sh](../assets/schemas/schema-tag.sh)
+:   @@snip [schema-tag.sh](assets/schemas/schema-tag.sh)
 
 Payload
-:   @@snip [tag.json](../assets/tag.json)
+:   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [schema-ref-new-tagged.json](../assets/schemas/schema-ref-new-tagged.json)
+:   @@snip [schema-ref-new-tagged.json](assets/schemas/schema-ref-new-tagged.json)
 
 ## Deprecate a schema
 
@@ -135,10 +135,10 @@ DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-deprecate.sh](../assets/schemas/schema-deprecate.sh)
+:   @@snip [schema-deprecate.sh](assets/schemas/schema-deprecate.sh)
 
 Response
-:   @@snip [schema-ref-new-deprecated.json](../assets/schemas/schema-ref-new-deprecated.json)
+:   @@snip [schema-ref-new-deprecated.json](assets/schemas/schema-ref-new-deprecated.json)
 
 ## Fetch a schema
 
@@ -164,10 +164,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [schema-fetch.sh](../assets/schemas/schema-fetch.sh)
+:   @@snip [schema-fetch.sh](assets/schemas/schema-fetch.sh)
 
 Response
-:   @@snip [schema-fetched.json](../assets/schemas/schema-fetched.json)
+:   @@snip [schema-fetched.json](assets/schemas/schema-fetched.json)
 
 ## Fetch a schema original payload
 
@@ -184,10 +184,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [schema-fetch.sh](../assets/schemas/schema-fetch-source.sh)
+:   @@snip [schema-fetch.sh](assets/schemas/schema-fetch-source.sh)
 
 Response
-:   @@snip [resource-fetched.json](../assets/schemas/schema-fetched-source.json)
+:   @@snip [resource-fetched.json](assets/schemas/schema-fetched-source.json)
 
 ## List schemas
 
@@ -211,7 +211,7 @@ where...
 **Example**
 
 Request
-:   @@snip [schema-list.sh](../assets/schemas/schema-list.sh)
+:   @@snip [schema-list.sh](assets/schemas/schema-list.sh)
 
 Response
-:   @@snip [schema-list.json](../assets/schemas/schema-list.json)
+:   @@snip [schema-list.json](assets/schemas/schema-list.json)

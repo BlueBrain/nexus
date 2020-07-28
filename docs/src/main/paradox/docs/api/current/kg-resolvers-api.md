@@ -11,7 +11,7 @@ Each resolver...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the [resolver schema](https://bluebrainnexus.io/schemas/resolver.json).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -78,13 +78,13 @@ where...
 **Example**
 
 Request
-:   @@snip [resolver-cross-project.sh](../assets/resolvers/resolver-cross-project-put.sh)
+:   @@snip [resolver-cross-project.sh](assets/resolvers/resolver-cross-project-put.sh)
 
 Payload
-:   @@snip [resolver-cross-project.json](../assets/resolvers/resolver-cross-project.json)
+:   @@snip [resolver-cross-project.json](assets/resolvers/resolver-cross-project.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-new.json](../assets/resolvers/resolver-cross-project-ref-new.json)
+:   @@snip [resolver-cross-project-ref-new.json](assets/resolvers/resolver-cross-project-ref-new.json)
 
 ## Create a resolver using POST
 
@@ -101,13 +101,13 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [resolver-cross-project.sh](../assets/resolvers/resolver-cross-project.sh)
+:   @@snip [resolver-cross-project.sh](assets/resolvers/resolver-cross-project.sh)
 
 Payload
-:   @@snip [resolver-cross-project.json](../assets/resolvers/resolver-cross-project.json)
+:   @@snip [resolver-cross-project.json](assets/resolvers/resolver-cross-project.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-new.json](../assets/resolvers/resolver-cross-project-ref-new.json)
+:   @@snip [resolver-cross-project-ref-new.json](assets/resolvers/resolver-cross-project-ref-new.json)
 
 
 ## Create a resolver using PUT
@@ -122,13 +122,13 @@ Note that if the payload contains an @id different from the `{resolver_id}`, the
 **Example**
 
 Request
-:   @@snip [resolver-cross-project.sh](../assets/resolvers/resolver-cross-project-put.sh)
+:   @@snip [resolver-cross-project.sh](assets/resolvers/resolver-cross-project-put.sh)
 
 Payload
-:   @@snip [resolver-cross-project-put.json](../assets/resolvers/resolver-cross-project-put.json)
+:   @@snip [resolver-cross-project-put.json](assets/resolvers/resolver-cross-project-put.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-new.json](../assets/resolvers/resolver-cross-project-ref-new.json)
+:   @@snip [resolver-cross-project-ref-new.json](assets/resolvers/resolver-cross-project-ref-new.json)
 
 
 ## Update a resolver
@@ -148,13 +148,13 @@ PUT /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [resolver-cross-project-update.sh](../assets/resolvers/resolver-cross-project-update.sh)
+:   @@snip [resolver-cross-project-update.sh](assets/resolvers/resolver-cross-project-update.sh)
 
 Payload
-:   @@snip [resolver-cross-project.json](../assets/resolvers/resolver-cross-project.json)
+:   @@snip [resolver-cross-project.json](assets/resolvers/resolver-cross-project.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-updated.json](../assets/resolvers/resolver-cross-project-ref-updated.json)
+:   @@snip [resolver-cross-project-ref-updated.json](assets/resolvers/resolver-cross-project-ref-updated.json)
 
 
 ## Tag a resolver
@@ -179,13 +179,13 @@ POST /v1/resolvers/{org_label}/{project_label}/{resolver_id}/tags?rev={previous_
 **Example**
 
 Request
-:   @@snip [resolver-tag.sh](../assets/resolvers/resolver-tag.sh)
+:   @@snip [resolver-tag.sh](assets/resolvers/resolver-tag.sh)
 
 Payload
-:   @@snip [tag.json](../assets/tag.json)
+:   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [resolver-cross-project-ref-tagged.json](../assets/resolvers/resolver-cross-project-ref-tagged.json)
+:   @@snip [resolver-cross-project-ref-tagged.json](assets/resolvers/resolver-cross-project-ref-tagged.json)
 
 
 ## Deprecate a resolver
@@ -203,10 +203,10 @@ DELETE /v1/resolvers/{org_label}/{project_label}/{resolver_id}?rev={previous_rev
 **Example**
 
 Request
-:   @@snip [resolver-deprecate.sh](../assets/resolvers/resolver-deprecate.sh)
+:   @@snip [resolver-deprecate.sh](assets/resolvers/resolver-deprecate.sh)
 
 Response
-:   @@snip [resolver-ref-deprecated.json](../assets/resolvers/resolver-cross-project-ref-deprecated.json)
+:   @@snip [resolver-ref-deprecated.json](assets/resolvers/resolver-cross-project-ref-deprecated.json)
 
 
 ## Fetch a resolver
@@ -233,10 +233,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [resolver-fetch.sh](../assets/resolvers/resolver-fetch.sh)
+:   @@snip [resolver-fetch.sh](assets/resolvers/resolver-fetch.sh)
 
 Response
-:   @@snip [resolver-fetched.json](../assets/resolvers/resolver-fetched.json)
+:   @@snip [resolver-fetched.json](assets/resolvers/resolver-fetched.json)
 
 
 ## Fetch a resolver original payload
@@ -254,10 +254,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [resolver-fetch.sh](../assets/resolvers/resolver-fetch-source.sh)
+:   @@snip [resolver-fetch.sh](assets/resolvers/resolver-fetch-source.sh)
 
 Response
-:   @@snip [resolver-fetched.json](../assets/resolvers/resolver-fetched-source.json)
+:   @@snip [resolver-fetched.json](assets/resolvers/resolver-fetched-source.json)
 
 ## List resolvers
 
@@ -281,10 +281,10 @@ where...
 **Example**
 
 Request
-:   @@snip [resolver-list.sh](../assets/resolvers/resolver-list.sh)
+:   @@snip [resolver-list.sh](assets/resolvers/resolver-list.sh)
 
 Response
-:   @@snip [resolver-list.json](../assets/resolvers/resolver-list.json)
+:   @@snip [resolver-list.json](assets/resolvers/resolver-list.json)
 
 
 ## Fetch resource using resolvers
@@ -307,7 +307,7 @@ GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={r
 **Example**
 
 Request
-:   @@snip [resolver-fetch-resource.sh](../assets/resolvers/resolver-fetch-resource.sh)
+:   @@snip [resolver-fetch-resource.sh](assets/resolvers/resolver-fetch-resource.sh)
 
 Response
-:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
+:   @@snip [resource-fetched.json](assets/resources/resource-fetched.json)

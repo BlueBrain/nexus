@@ -36,7 +36,7 @@ the @ref:[migration instructions](v1.2-to-v1.3-migration.md).
 
 Summary of the significant changes:
 
-- Introduced a @ref:[new type of view](../api/current/kg/views/composite-view-api.md) (_CompositeView_, currently as a
+- Introduced a @ref:[new type of view](../api/current/views/composite-view-api.md) (_CompositeView_, currently as a
   Beta feature) that expands on the indexing capabilities of the system through the ability to consume multiple sources
   (multiple projects in the same Nexus deployment and projects in different Nexus deployments);
 - Added the ability to generate tabular views on the data available to a specific project (using any SparqlView defined
@@ -80,7 +80,7 @@ Storage service related updates:
 
 KG updates:
 
-- Added @ref:[archives resources](../api/current/kg/kg-archives-api.md).
+- Added @ref:[archives resources](../api/current/kg-archives-api.md).
 - Added [/source](../api/current/kg/kg-resources-api.html#fetch-a-resource-original-payload) sub-resource.
 - [Fixed issue](https://github.com/BlueBrain/nexus/issues/750) with resource retrieval when linked context changes.
 - Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
