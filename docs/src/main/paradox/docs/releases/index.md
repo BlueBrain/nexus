@@ -1,6 +1,7 @@
 @@@ index
 
 - [v1.4 Release Notes](v1.4-release-notes.md)
+- [v1.3 To v1.4 Migration](v1.3-to-v1.4-migration.md)
 - [v1.3 Release Notes](v1.3-release-notes.md)
 - [v1.2 To v1.3 Migration](v1.2-to-v1.3-migration.md)
 - [v1.2 Release Notes](v1.2-release-notes.md)
