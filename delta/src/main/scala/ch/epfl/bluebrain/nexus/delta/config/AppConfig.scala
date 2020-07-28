@@ -160,16 +160,18 @@ object AppConfig {
   /**
     * Organizations configuration
     *
-   * @param retry the retry strategy configuration
+   * @param aggregate the aggregate configuration
+    * @param retry     the retry strategy configuration
     */
-  final case class OrgsConfig(retry: RetryStrategyConfig)
+  final case class OrgsConfig(aggregate: AggregateConfig, retry: RetryStrategyConfig)
 
   /**
     * Projects configuration
     *
-   * @param retry the retry strategy configuration
+   * @param aggregate the aggregate configuration
+    * @param retry     the retry strategy configuration
     */
-  final case class ProjectsConfig(retry: RetryStrategyConfig)
+  final case class ProjectsConfig(aggregate: AggregateConfig, retry: RetryStrategyConfig)
 
   /**
     * The archives configuration
