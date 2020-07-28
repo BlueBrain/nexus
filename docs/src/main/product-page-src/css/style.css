@@ -148,6 +148,8 @@ Hero
 
 .columns.alternating-orientation:nth-of-type(even) {
   flex-direction: row-reverse;
+}
+
 .page-title {
   margin: 4rem 0 2rem;
   font-size: 42px;

@@ -1,8 +1,8 @@
 //- Main Index
-extends ./markup/layouts/base.pug
+extends ./layouts/base.pug
 
-include markup/mixins/button.pug
-include markup/mixins/shortProductDescription.pug
+include ./mixins/button.pug
+include ./mixins/shortProductDescription.pug
 
 block content
   section.hero.is-fullheight
@@ -25,7 +25,7 @@ block content
   section#what-is-nexus
     .container
       .content.centered
-        h2 What is nexus?
+        h2 What is Nexus?
         p.subtitle Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
       .content
         +shortProductDescription(
@@ -43,4 +43,21 @@ block content
           "Building and Using Knowledge Graphs Made Easy.", 
           "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
         )
-  include markup/layouts/open-source.pug
+  include ./layouts/openSourceCallOut.pug
+  section#why-nexus
+    .container
+      .content.centered
+        h2 Why Nexus?
+        p.subtitle Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
+  include ./layouts/poweredByCallOut.pug
+  section#get-started
+    .container
+      .content.centered
+        h2 Get Started
+        p.subtitle Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
+  include ./layouts/newsletterCatchCallOut.pug
+  section#why-nexus
+    .container
+      .content.centered
+        h2 Still have questions?
+  
