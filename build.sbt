@@ -234,6 +234,7 @@ lazy val cli = project
 
 lazy val sourcing = project
   .in(file("sourcing"))
+  .dependsOn(testkit % "test->compile")
   .settings(name := "sourcing", moduleName := "sourcing")
   .settings(shared, compilation, coverage, release)
   .settings(

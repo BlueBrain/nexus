@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.sourcing.Command.{Increment, IncrementAsync, Init
 import ch.epfl.bluebrain.nexus.sourcing.Event.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.sourcing.State.Current
 
-import scala.concurrent.Execut  ionContext
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class InMemoryAggregateSpec extends SourcingSpec {
