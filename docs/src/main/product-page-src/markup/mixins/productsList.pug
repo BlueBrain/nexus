@@ -1,9 +1,80 @@
-mixin productsList()
-	ul
-		li Nexus Delta
-		li Nexus Forge
-		li Nexus Fusion (prev. Web)
-		h4 Utilities
-		li Nexus.js
-		li Python SDK
-		li CLI
+mixin productsList(className)
+  div(
+      class= className
+    )
+    ul.submenu
+      li
+        a(
+          href="/product/nexus-delta"
+          class= className + '-link'
+        )
+          div.item-with-icon
+            if className === "mobile" 
+              img(
+                src="../img/icons/deltaIconPink.svg"
+                alt="nexus delta icon"
+                class="submenu-icon"
+              )
+            else
+              img(
+                src="../img/icons/deltaIcon.svg"
+                alt="nexus delta icon"
+                class="submenu-icon"
+              )
+            span Nexus Delta
+      li
+        a(
+          href="/product/nexus-forge"
+          class= className + '-link'
+        )
+          div.item-with-icon
+            if className === "mobile"
+              img(
+                src="../img/icons/forgeIconPink.svg"
+                alt="nexus forge icon"
+                class="submenu-icon"
+              )
+            else
+              img(
+                src="../img/icons/forgeIcon.svg"
+                alt="nexus forge icon"
+                class="submenu-icon"
+              )
+            span Nexus Forge
+      li
+        a(
+          href="/product/nexus-fusion"
+          class= className + '-link'
+        )
+          div.item-with-icon
+            if className === "mobile"
+              img(
+                src="../img/icons/fusionIconPink.svg"
+                alt="nexus fusion icon"
+                class="submenu-icon"
+              )
+            else
+              img(
+                src="../img/icons/fusionIcon.svg"
+                alt="nexus fusion icon"
+                class="submenu-icon"
+              )
+            span Nexus Fusion (prev. Web)
+      h2(
+        class= className + '-subtitle'
+      ) Utilities
+      li
+        a(
+          href="/product/nexus-js"
+          class= className + '-link'
+        ) Nexus.js
+      li
+        a(
+          href="/product/python-sdk"
+          class= className + '-link'
+        ) Python SDK
+      li
+        a(
+          href="/product/cli"
+          class= className + '-link'
+        ) CLI

@@ -8,10 +8,6 @@ mixin navbar
     id="nav"
     class="navigation"
   )
-    a(
-      href="/features"
-      class="nav-link"
-    ) Features
     div(
       class="nav-dropdown-item"
     )
@@ -22,18 +18,8 @@ mixin navbar
       div(
         id="products-dropdown"
       )
-        +productsList() 
-    div(
-      class="nav-dropdown-item"
-    )
-      button(
-        class="nav-button"
-        id="use-cases-nav-item-button"
-      ) Use Cases
-      div(
-        id="use-cases-dropdown"
-      )
-        +useCasesList()
+        div.arrow-up
+        +productsList("desktop")
     div(
       class="nav-dropdown-item"
     )
@@ -44,7 +30,8 @@ mixin navbar
       div(
         id="getting-started-dropdown"
       )
-        +gettingStartedList()
+        div.arrow-up
+        +gettingStartedList("desktop")
     div(
       class="nav-dropdown-item"
     )
@@ -55,4 +42,5 @@ mixin navbar
       div(
         id="dev-dropdown"
       )
-        +devList()
+        div.arrow-up
+        +devList("desktop")

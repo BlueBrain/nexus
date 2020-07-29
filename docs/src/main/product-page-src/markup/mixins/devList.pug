@@ -1,13 +1,61 @@
-mixin devList()
-	ul
-		li Overview
-		li Architecture
-		li Releases
-		li Roadmap
-		h4 By product
-		li Nexs Delta
-		li Nexus Fusion
-		li Nexus Forge
-		li Nexus.js
-		li Python SDK
-		li CLI
+mixin devList(className)
+  div.dev-list(
+    class= className
+  )
+    div
+      ul.submenu
+        li 
+          a(
+            href=""
+            class= className + '-link'
+          ) Overview
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Architecture
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Releases
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Roadmap
+    div
+      h2(
+        class= className + '-subtitle'
+      ) By product
+      ul.submenu
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Nexus Delta
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Nexus Fusion
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Nexus Forge
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Nexus.js
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) Python SDK
+        li
+          a(
+            href="#"
+            class= className + '-link'
+          ) CLI
