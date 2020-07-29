@@ -1,7 +1,30 @@
-mixin gettingStartedList()
-  ul
-    li Quick Start Guide
-    li Nexus Sandbox
-    li Running Nexus Delta and Fusion
-    li Understanding Knowledge Graphs
-    li Building Knowledge graphs with the Forge
+mixin gettingStartedList(className)
+  div(
+    class= className
+  )
+    ul.submenu
+      li
+        a(
+          href="https://bluebrainnexus.io/docs/tutorial/getting-started/index.html"
+          class= className + '-link'
+        ) Quick Start Guide
+      li
+        a(
+          href="#"
+          class= className + '-link'
+        ) Nexus Sandbox
+      li
+        a(
+          href="#"
+          class= className + '-link'
+        ) Running Nexus Delta and Fusion
+      li
+        a(
+          href="#"
+          class= className + '-link'
+        ) Understanding Knowledge Graphs
+      li
+        a(
+          class= className + '-link'
+          href="#"
+        ) Building Knowledge graphs with the Forge
