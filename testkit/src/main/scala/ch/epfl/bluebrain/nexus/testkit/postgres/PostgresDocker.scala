@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.cli.postgres
+package ch.epfl.bluebrain.nexus.testkit.postgres
 
 import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import distage.TagK

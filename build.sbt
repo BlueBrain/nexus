@@ -222,8 +222,23 @@ lazy val docs = project
     ghpagesNoJekyll                   := true,
   )
 
+lazy val testkit = project
+  .in(file("testkit"))
+  .settings(name := "testkit", moduleName := "testkit")
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      catsEffectRetry,
+      doobiePostgres,
+      distageDocker,
+      distageTestkit,
+      scalaTest
+    )
+  )
+
 lazy val cli = project
   .in(file("cli"))
+  .dependsOn(testkit % "test->compile")
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
@@ -248,11 +263,8 @@ lazy val cli = project
       monixEval,
       pureconfig,
       circeLiteral   % Test,
-      distageDocker  % Test,
-      distageTestkit % Test,
       http4sDsl      % Test,
-      jenaArq        % Test,
-      scalaTest      % Test
+      jenaArq        % Test
     )
   )
 
