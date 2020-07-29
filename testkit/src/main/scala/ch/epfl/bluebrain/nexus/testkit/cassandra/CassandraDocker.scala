@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections
+package ch.epfl.bluebrain.nexus.testkit.cassandra
 
 import distage.{ModuleDef, TagK}
 import izumi.distage.docker.ContainerDef
