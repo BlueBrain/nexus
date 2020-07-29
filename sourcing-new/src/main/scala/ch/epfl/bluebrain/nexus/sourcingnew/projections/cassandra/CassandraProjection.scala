@@ -1,6 +1,6 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.projections
+package ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import akka.stream.Materializer
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
@@ -9,13 +9,21 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.Projection._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.instances._
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.{Projection, ProjectionProgress}
 import com.typesafe.config.Config
 import fs2.Stream
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import streamz.converter._
 
-private class Statements(journalCfg: Config) {
+private [projections] class CassandraProjection
+        [F[_]: ContextShift, A: Encoder: Decoder](session: CassandraSession,
+                                                  journalCfg: Config,
+                                                  as: ActorSystem[Nothing])(implicit F: Async[F])
+  extends Projection[F, A] {
+  implicit val cs: ContextShift[IO] = IO.contextShift(as.executionContext)
+  implicit val materializer: Materializer = Materializer.createMaterializer(as)
+
   val keyspace: String            = journalCfg.getString("keyspace")
   val progressTable: String       = journalCfg.getString("projection-progress-table")
   val failuresTable: String       = journalCfg.getString("projection-failures-table")
@@ -28,25 +36,16 @@ private class Statements(journalCfg: Config) {
 
   val recordFailureQuery: String =
     s"""INSERT INTO $keyspace.$failuresTable (projection_id, offset, persistence_id, sequence_nr, value)
-         |VALUES (?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
+       |VALUES (?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
 
   val failuresQuery: String =
     s"SELECT offset, value from $keyspace.$failuresTable WHERE projection_id = ? ALLOW FILTERING"
-}
-
-//FIXME Add creation of tables somewhere else
-private [projections] class CassandraProjections
-        [F[_]: ContextShift, A: Encoder: Decoder](session: CassandraSession,
-                                    stmts: Statements)(implicit as: ActorSystem, F: Async[F])
-  extends Projection[F, A] {
-  implicit val cs: ContextShift[IO] = IO.contextShift(as.dispatcher)
-  implicit val materializer: Materializer = Materializer.createMaterializer(as)
 
   override def recordProgress(id: String, progress: ProjectionProgress): F[Unit] =
-    wrapFuture(session.executeWrite(stmts.recordProgressQuery, progress.asJson.noSpaces, id)) >> F.unit
+    wrapFuture(session.executeWrite(recordProgressQuery, progress.asJson.noSpaces, id)) >> F.unit
 
   override def progress(id: String): F[ProjectionProgress] =
-    wrapFuture(session.selectOne(stmts.progressQuery, id)).flatMap {
+    wrapFuture(session.selectOne(progressQuery, id)).flatMap {
         r => Projection.decodeOption[ProjectionProgress, F](
           r.map(_.getString("progress")),
           NoProgress
@@ -56,7 +55,7 @@ private [projections] class CassandraProjections
   override def recordFailure(id: String, persistenceId: String, sequenceNr: Long, offset: Offset, value: A): F[Unit] =
     wrapFuture(
       session.executeWrite(
-        stmts.recordFailureQuery,
+        recordFailureQuery,
         id,
           offset.asJson.noSpaces,
         persistenceId,
@@ -67,7 +66,7 @@ private [projections] class CassandraProjections
 
   override def failures(id: String): Stream[F, (A, Offset)] =
     session
-      .select(stmts.failuresQuery, id).toStream[F]( _ => ())
+      .select(failuresQuery, id).toStream[F]( _ => ())
       .mapFilter { row =>
         Projection.decodeTuple[A, Offset](
           (row.getString("value"), row.getString("offset"))

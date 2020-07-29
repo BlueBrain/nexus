@@ -1,10 +1,11 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.projections
+package ch.epfl.bluebrain.nexus.sourcingnew.projections.jdbc
 
 import akka.persistence.query.Offset
 import cats.effect.{Async, ContextShift}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.instances._
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.{Projection, ProjectionProgress}
 import com.typesafe.config.Config
 import doobie.implicits._
 import doobie.util.transactor.Transactor

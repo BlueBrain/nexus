@@ -306,6 +306,7 @@ lazy val sourcing = project
 
 lazy val sourcingNew = project
   .in(file("sourcing-new"))
+  .dependsOn(testkit % "test->compile")
   .settings(name := "sourcing-new", moduleName := "sourcing-new")
   .settings(shared, compilation, coverage, release)
   .settings(
@@ -322,6 +323,7 @@ lazy val sourcingNew = project
       circeCore,
       circeGenericExtras,
       circeParser,
+      distageCore,
       doobiePostgres,
       fs2,
       flyway,
@@ -330,11 +332,8 @@ lazy val sourcingNew = project
       akkaActorTyped          % Test,
       akkaPersistenceTestKit  % Test,
       akkaSlf4j               % Test,
-      distageDocker           % Test,
-      distageTestkit          % Test,
       kryo                    % Test,
-      logback                 % Test,
-      scalaTest               % Test
+      logback                 % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork          := true
   )
