@@ -29,6 +29,7 @@ import scala.util.control.NonFatal
   * @tparam Event
   * @tparam Rejection
   */
+//FIXME: Add the passivation strategies
 private [aggregate] abstract class EventSourceProcessor[
   F[_]: CatsEffect,
   State: ClassTag,
