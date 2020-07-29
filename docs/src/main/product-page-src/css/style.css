@@ -172,3 +172,7 @@ Hero
 .text-centered {
   text-align: center;
 }
+
+.wrapping {
+  flex-wrap: wrap;
+}
