@@ -1,12 +1,14 @@
 @@@ index
 
-- [Getting Started](getting-started/index.md)
-- [Tutorials](tutorial/index.md)
-- [API Reference](api/current/index.md)
-- [Nexus Web](nexus-web/index.md)
+- [Overview](overview.md)
+- [Quick Start Guide](getting-started/index.md)
 - [Releases](releases/index.md)
-- [Frequently asked questions](faq.md)
-- [Additional Information](additional-info/index.md)
+- [Roadmap](roadmap.md)
+- [Nexus Delta](delta/index.md)
+- [Nexus Fusion](fusion/index.md)
+- [Nexus Forge](forge.md)
+- [Utilities](utilities.md)
+- [FAQ](faq.md)
 
 @@@
 
