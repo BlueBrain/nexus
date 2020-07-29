@@ -176,3 +176,10 @@ Hero
 .wrapping {
   flex-wrap: wrap;
 }
+
+.center-flex {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
