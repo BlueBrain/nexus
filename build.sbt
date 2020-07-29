@@ -34,6 +34,7 @@ val circeVersion                    = "0.13.0"
 val declineVersion                  = "1.2.0"
 val distageVersion                  = "0.10.16"
 val doobieVersion                   = "0.9.0"
+val flywayVersion                   = "6.5.2"
 val fs2Version                      = "2.4.2"
 val guavaVersion                    = "29.0-jre"
 val http4sVersion                   = "0.21.6"
@@ -113,6 +114,7 @@ lazy val distageDocker            = "io.7mind.izumi"             %% "distage-fra
 lazy val distageTestkit           = "io.7mind.izumi"             %% "distage-testkit-scalatest"           % distageVersion
 lazy val doobiePostgres           = "org.tpolecat"               %% "doobie-postgres"                     % doobieVersion
 lazy val fs2                      = "co.fs2"                     %% "fs2-core"                            % fs2Version
+lazy val flyway                   = "org.flywaydb"                      % "flyway-core"                         % flywayVersion
 lazy val http4sCirce              = "org.http4s"                 %% "http4s-circe"                        % http4sVersion
 lazy val http4sClient             = "org.http4s"                 %% "http4s-blaze-client"                 % http4sVersion
 lazy val http4sDsl                = "org.http4s"                 %% "http4s-dsl"                          % http4sVersion
@@ -135,6 +137,7 @@ lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"
 lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
 lazy val scalaReflect             = "org.scala-lang"              % "scala-reflect"                       % scalaCompilerVersion
+lazy val streamz                  = "com.github.krasserm"              %% "streamz-converter"             % streamzVersion
 lazy val topBraidShacl            = "org.topbraid"                % "shacl"                               % topBraidVersion
 
 val javaSpecificationVersion = SettingKey[String](
@@ -306,12 +309,16 @@ lazy val sourcingNew = project
       circeCore,
       circeGenericExtras,
       circeParser,
+      doobiePostgres,
       fs2,
+      flyway,
       scalaLogging,
       streamz,
       akkaActorTyped          % Test,
       akkaPersistenceTestKit  % Test,
       akkaSlf4j               % Test,
+      distageDocker           % Test,
+      distageTestkit          % Test,
       kryo                    % Test,
       logback                 % Test,
       scalaTest               % Test

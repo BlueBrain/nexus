@@ -1,8 +1,11 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import akka.persistence.query.Offset
-import cats.effect.{ContextShift, IO, LiftIO}
+import cats.effect.{Async, ContextShift, IO, LiftIO}
+import cats.implicits._
 import fs2.Stream
+import io.circe.Decoder
+import io.circe.parser.decode
 
 import scala.concurrent.Future
 
@@ -13,7 +16,7 @@ import scala.concurrent.Future
   *
   * Projections replay an event stream
   */
-trait Projections[F[_], A] {
+trait Projection[F[_], A] {
 
   /**
     * Records progress against a projection identifier.
@@ -58,4 +61,18 @@ object Projection {
   private [projections] def wrapFuture[F[_]: LiftIO, A](f: => Future[A])
                                                        (implicit cs: ContextShift[IO]): F[A] =
     IO.fromFuture(IO(f)).to[F]
+
+  private [projections] def decodeOption[A: Decoder, F[_]]
+                                  (input: Option[String], defaultValue: A)
+                                  (implicit F: Async[F]): F[A] =
+    input match {
+      case Some(value) => F.fromTry(decode[A](value).toTry)
+      case None => F.pure(defaultValue)
+    }
+
+  private [projections] def decodeTuple[A: Decoder, B: Decoder](input: (String, String)): Option[(A, B)] = {
+      (decode[A](input._1), decode[B](input._2)).tupled.toOption
+    }
+
+
 }
