@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.cli.postgres
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.cli.AbstractCliSpec
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
-import ch.epfl.bluebrain.nexus.cli.postgres.PostgresDocker.PostgresHostConfig
+import ch.epfl.bluebrain.nexus.testkit.postgres.{PostgresDocker, PostgresPolicy}
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresHostConfig
 import doobie.util.transactor.Transactor
 import izumi.distage.model.definition.{Module, ModuleDef}
 
@@ -43,21 +44,7 @@ class AbstractPostgresSpec extends AbstractCliSpec {
           cfg.postgres.username,
           cfg.postgres.password
         )
-        waitForPostgresReady(xa).as(xa)
+        PostgresPolicy.waitForPostgresReady(xa).as(xa)
       }
     }
-
-  private def waitForPostgresReady(xa: Transactor[IO], maxDelay: FiniteDuration = 30.seconds): IO[Unit] = {
-    import doobie.implicits._
-    import retry.CatsEffect._
-    import retry.RetryPolicies._
-    import retry._
-    val policy = limitRetriesByCumulativeDelay[IO](maxDelay, constantDelay(1.second))
-    retryingOnAllErrors(
-      policy = policy,
-      onError = (_: Throwable, _) => IO.delay(println("Postgres Container not ready, retrying..."))
-    ) {
-      sql"select 1;".query[Int].unique.transact(xa)
-    } *> IO.unit
-  }
 }
