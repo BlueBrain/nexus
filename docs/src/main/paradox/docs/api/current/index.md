@@ -129,7 +129,7 @@ Data is never removed from the system, but rather is marked as deprecated. Depen
 - **Files**: attachments cannot be added/deleted
 - **Data**: the resource itself cannot be updated
 
-`Archives` resources are an exception. Those resources are ephemeral. They will be automatically removed from the system after certain time. This time is configurable (env. variable `ARCHIVES_CACHE_INVALIDATE_AFTER`) and it defaults to 5 hours.
+`Archives` resources are an exception. Those resources are ephemeral. They will be automatically removed from the system after certain time. This time is configurable (config property `app.archives.cache-invalidate-after`) and it defaults to 5 hours.
 
 Future policies may use this flag to determine if or when the deprecated data may be archived.
 

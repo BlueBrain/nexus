@@ -22,7 +22,7 @@ When reading archives, the caller must have `resources/read` permissions on the 
 
 Contrarily to the rest of the platform resources, archives are not persisted resources, given their nature. Therefore there are no update, tag or deprecation operations available on archive resources.
 
-An archive resource will be automatically erased from the system after certain after certain time. This time is configurable (env. variable `ARCHIVES_CACHE_INVALIDATE_AFTER`) and it defaults to 5 hours.
+An archive resource will be automatically erased from the system after certain after certain time. This time is configurable (config property `app.archives.cache-invalidate-after`) and it defaults to 5 hours.
 
 ## Archive format
 
