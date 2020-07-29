@@ -6,7 +6,7 @@ When performing queries on the `_search` endpoint, this view will make use of th
 
 If the caller does not have the permission `views/query` on all the projects defined on the aggregated view, only a subset of indices (or none) will be selected, respecting the defined permissions.
 
-![Aggregate ElasticSearchView](../../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
+![Aggregate ElasticSearchView](../assets/views/aggregate-view.png "Aggregate ElasticSearchView")
 
 ## Payload
 
@@ -50,10 +50,10 @@ The string `documents` is used as a prefix of the default ElasticSearch `view_id
 **Example**
 
 Request
-:   @@snip [elastic-view-search.sh](../../assets/views/elastic-view-search.sh)
+:   @@snip [elastic-view-search.sh](../assets/views/elastic-view-search.sh)
 
 Payload
-:   @@snip [elastic-view-payload.json](../../assets/views/elastic-view-search-payload.json)
+:   @@snip [elastic-view-payload.json](../assets/views/elastic-view-search-payload.json)
 
 Response
-:   @@snip [elastic-view-search.json](../../assets/views/elastic-view-search.json)
+:   @@snip [elastic-view-search.json](../assets/views/elastic-view-search.json)

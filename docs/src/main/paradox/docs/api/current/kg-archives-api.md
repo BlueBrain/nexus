@@ -8,7 +8,7 @@ Each archive...
 - belongs to a `project` identifier by the label `{project_label}`
 - inside an `organization` identifier by the label `{org_label}` 
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -22,7 +22,7 @@ When reading archives, the caller must have `resources/read` permissions on the 
 
 Contrarily to the rest of the platform resources, archives are not persisted resources, given their nature. Therefore there are no update, tag or deprecation operations available on archive resources.
 
-An archive resource will be automatically erased from the system after certain after certain time. This time is configurable (env. variable `ARCHIVES_CACHE_INVALIDATE_AFTER`) and it defaults to 5 hours.
+An archive resource will be automatically erased from the system after certain after certain time. This time is configurable (config property `app.archives.cache-invalidate-after`) and it defaults to 5 hours.
 
 ## Archive format
 
@@ -80,7 +80,7 @@ The json payload:
 The response will be an HTTP 303 Location redirect, which will point to the url where to consume the archive (tarball).
 
 The following diagram can help to understand the HTTP exchange
-![post-redirect-get](../assets/archives/post-redirect-get.png "Post/Redirect/Get archive")
+![post-redirect-get](assets/archives/post-redirect-get.png "Post/Redirect/Get archive")
 
 **Example**
 
@@ -88,10 +88,10 @@ The following example shows how to create an archive containing 3 files. 2 of th
 As a response, the tarball will be offered.
 
 Request
-:   @@snip [archive.sh](../assets/archives/archive.sh)
+:   @@snip [archive.sh](assets/archives/archive.sh)
 
 Payload
-:   @@snip [archive.json](../assets/archives/archive.json)
+:   @@snip [archive.json](assets/archives/archive.json)
 
 
 ## Create an archive using PUT
@@ -107,13 +107,13 @@ PUT /v1/archives/{org_label}/{project_label}/{archive_id}
 **Example**
 
 Request
-:   @@snip [archive-put.sh](../assets/archives/archive-put.sh)
+:   @@snip [archive-put.sh](assets/archives/archive-put.sh)
 
 Payload
-:   @@snip [archive.json](../assets/archives/archive.json)
+:   @@snip [archive.json](assets/archives/archive.json)
 
 Response
-:   @@snip [archive-created.json](../assets/archives/archive-created.json)
+:   @@snip [archive-created.json](assets/archives/archive-created.json)
 
 Note that if the payload contains an @id different from the `{archive_id}`, the request will fail.
 
@@ -132,10 +132,10 @@ GET /v1/archives/{org_label}/{project_label}/{archive_id}
 **Example**
 
 Request (tarball)
-:   @@snip [archive-fetch.sh](../assets/archives/archive-fetch.sh)
+:   @@snip [archive-fetch.sh](assets/archives/archive-fetch.sh)
 
 Request (metadata)
-:   @@snip [archive-fetch-meta.sh](../assets/archives/archive-fetch-meta.sh)
+:   @@snip [archive-fetch-meta.sh](assets/archives/archive-fetch-meta.sh)
 
 Response
-:   @@snip [archive-fetched-meta.json](../assets/archives/archive-fetched-meta.json)
+:   @@snip [archive-fetched-meta.json](assets/archives/archive-fetched-meta.json)

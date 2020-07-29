@@ -5,10 +5,10 @@ The purposes of projects are:
 
 - Group and categorize sub-resources.
 - Define settings that apply for operations on all sub-resources. 
-- Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](../kg/kg-resolvers-api.md)
+- Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](kg-resolvers-api.md)
 
 Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
-Please visit @ref:[Authentication](../iam/authentication.md) to learn more about retrieving access tokens.
+Please visit @ref:[Authentication](authentication.md) to learn more about retrieving access tokens.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -102,13 +102,13 @@ consistent with the type of data provided by its sub-resources, since it'll be a
 **Example**
 
 Request
-:   @@snip [project.sh](../assets/project.sh)
+:   @@snip [project.sh](assets/project.sh)
 
 Payload
-:   @@snip [project.json](../assets/project.json)
+:   @@snip [project.json](assets/project.json)
 
 Response
-:   @@snip [project-ref-new.json](../assets/project-ref-new.json)
+:   @@snip [project-ref-new.json](assets/project-ref-new.json)
 
 
 ## Update a project
@@ -130,13 +130,13 @@ PUT /v1/projects/{org_label}/{label}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [project-update.sh](../assets/project-update.sh)
+:   @@snip [project-update.sh](assets/project-update.sh)
 
 Payload
-:   @@snip [project.json](../assets/project.json)
+:   @@snip [project.json](assets/project.json)
 
 Response
-:   @@snip [project-ref-updated.json](../assets/project-ref-updated.json)
+:   @@snip [project-ref-updated.json](assets/project-ref-updated.json)
 
 
 ## Deprecate a project
@@ -157,10 +157,10 @@ DELETE /v1/projects/{org_label}/{label}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [project-deprecate.sh](../assets/project-deprecate.sh)
+:   @@snip [project-deprecate.sh](assets/project-deprecate.sh)
 
 Response
-:   @@snip [project-ref-deprecated.json](../assets/project-ref-deprecated.json)
+:   @@snip [project-ref-deprecated.json](assets/project-ref-deprecated.json)
 
 
 ## Fetch a project (current version)
@@ -175,10 +175,10 @@ GET /v1/projects/{org_label}/{label}
 **Example**
 
 Request
-:   @@snip [project-fetch.sh](../assets/project-fetch.sh)
+:   @@snip [project-fetch.sh](assets/project-fetch.sh)
 
 Response
-:   @@snip [project-fetched.json](../assets/project-fetched.json)
+:   @@snip [project-fetched.json](assets/project-fetched.json)
 
 
 ## Fetch a project (specific version)
@@ -195,10 +195,10 @@ GET /v1/projects/{org_label}/{label}?rev={rev}
 **Example**
 
 Request
-:   @@snip [project-fetch-revision.sh](../assets/project-fetch-revision.sh)
+:   @@snip [project-fetch-revision.sh](assets/project-fetch-revision.sh)
 
 Response
-:   @@snip [project-fetched.json](../assets/project-fetched.json)
+:   @@snip [project-fetched.json](assets/project-fetched.json)
 
 
 ## List projects
@@ -222,10 +222,10 @@ where...
 **Example**
 
 Request
-:   @@snip [project-list.sh](../assets/project-list.sh)
+:   @@snip [project-list.sh](assets/project-list.sh)
 
 Response
-:   @@snip [project-list.json](../assets/project-list.json)
+:   @@snip [project-list.json](assets/project-list.json)
 
 
 ## List projects belonging to an organization
@@ -249,10 +249,10 @@ where...
 **Example**
 
 Request
-:   @@snip [project-list-org.sh](../assets/project-list-org.sh)
+:   @@snip [project-list-org.sh](assets/project-list-org.sh)
 
 Response
-:   @@snip [project-list.json](../assets/project-list.json)
+:   @@snip [project-list.json](assets/project-list.json)
 
 
 ## Project Server Sent Events
@@ -282,7 +282,7 @@ where...
 **Example**
 
 Request
-:   @@snip [project-event.sh](../assets/project-event.sh)
+:   @@snip [project-event.sh](assets/project-event.sh)
 
 Response
-:   @@snip [project-event.json](../assets/project-event.json)
+:   @@snip [project-event.json](assets/project-event.json)

@@ -2,33 +2,20 @@
 
 ![Component View](components1.png)
 
-The Nexus platform is made up of a collection of services and web applications that work together to manage data stored
-within the system. The services and web applications are powered by a collection of libraries and tools built
+The Nexus platform is made up of the Nexus Delta serrvice and web applications that work together to manage data stored
+within the system. The service and web applications are powered by a collection of libraries and tools built
 specifically to address the needs of the platform. Underneath it all there are popular open source technologies that
 we all know and love.
 
-## Nexus Services
+## Nexus Delta
 
-### Nexus KnowledgeGraph
+The service provides all the core Nexus capabilities.
+- manages the access to data within the platform. It makes use of configurable downstream OpenID Connect compliant identity providers to authenticate clients and manages the access controls for the entire platform.
+- manages the platform wide scopes for data and their configuration (i.e.: the API mapping).
+- manages the Knowledge Graph and ElasticSearch indices to support semantic search and to discover similar and relevant data in the platform.
+- manages attachments.
 
-This service is the heart of the BlueBrain Nexus platform. It allows users to define their domain, populate the
-knowledge graph with data, attach files to data. It also provides semantic search facilities to discover similar and
-relevant data in the platform.
-
-[Source Code](https://github.com/BlueBrain/nexus-kg) | @ref:[Documentation](../../api/current/kg/index.md)
-
-### Nexus Admin
-
-This service manages the platform wide scopes for data and their configuration (i.e.: the API mapping).
-
-[Source Code](https://github.com/BlueBrain/nexus-admin) | @ref:[Documentation](../../api/current/admin/index.md)
-
-### Nexus IAM
-
-This service manages the access to data within the platform. It makes use of configurable downstream OpenID Connect
-compliant identity providers to authenticate clients and manages the access controls for the entire platform.
-
-[Source Code](https://github.com/BlueBrain/nexus-iam) | @ref:[Documentation](../../api/current/iam/index.md)
+[Source Code](https://github.com/BlueBrain/nexus/tree/master/delta/src) | @ref:[Documentation](../../api/current/index.md)
 
 ## Nexus Web Applications
 

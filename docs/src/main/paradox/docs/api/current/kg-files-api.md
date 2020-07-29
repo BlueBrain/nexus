@@ -7,7 +7,7 @@ Each file...
 - belongs to a `project` identifier by the label `{project_label}`
 - inside an `organization` identifier by the label `{org_label}` 
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -31,10 +31,10 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [file.sh](../assets/files/file.sh)
+:   @@snip [file.sh](assets/files/file.sh)
 
 Response
-:   @@snip [file-created.json](../assets/files/file-created.json)
+:   @@snip [file-created.json](assets/files/file-created.json)
 
 ## Create a file using PUT
 
@@ -50,10 +50,10 @@ Note that if the payload contains an @id different from the `{file_id}`, the req
 **Example**
 
 Request
-:   @@snip [file-put.sh](../assets/files/file-put.sh)
+:   @@snip [file-put.sh](assets/files/file-put.sh)
 
 Response
-:   @@snip [file-put-created.json](../assets/files/file-put-created.json)
+:   @@snip [file-put-created.json](assets/files/file-put-created.json)
 
 ## Create a file (specific storage)
 
@@ -72,10 +72,10 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
 **Example**
 
 Request
-:   @@snip [file-post-storageid.sh](../assets/files/file-post-storageid.sh)
+:   @@snip [file-post-storageid.sh](assets/files/file-post-storageid.sh)
 
 Response
-:   @@snip [file-created.json](../assets/files/file-created.json)
+:   @@snip [file-created.json](assets/files/file-created.json)
 
 ## Link an existing file using POST
 
@@ -95,13 +95,13 @@ POST /v1/files/{org_label}/{project_label}?storage={storageId}
 **Example**
 
 Request
-:   @@snip [file-link.sh](../assets/files/file-link.sh)
+:   @@snip [file-link.sh](assets/files/file-link.sh)
 
 Payload
-:   @@snip [file-link.json](../assets/files/file-link.json)
+:   @@snip [file-link.json](assets/files/file-link.json)
 
 Response
-:   @@snip [file-link-created.json](../assets/files/file-link-created.json)
+:   @@snip [file-link-created.json](assets/files/file-link-created.json)
 
 ## Link an existing file using PUT
 
@@ -123,13 +123,13 @@ PUT /v1/files/{org_label}/{project_label}/{file_id}?storage={storageId}
 **Example**
 
 Request
-:   @@snip [file-link-put.sh](../assets/files/file-link-put.sh)
+:   @@snip [file-link-put.sh](assets/files/file-link-put.sh)
 
 Payload
-:   @@snip [file-link.json](../assets/files/file-link.json)
+:   @@snip [file-link.json](assets/files/file-link.json)
 
 Response
-:   @@snip [file-link-created.json](../assets/files/file-link-created.json)
+:   @@snip [file-link-created.json](assets/files/file-link-created.json)
 
 ## Update a file
 
@@ -148,10 +148,10 @@ PUT /v1/files/{org_label}/{project_label}/{resource_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [file-update.sh](../assets/files/file-update.sh)
+:   @@snip [file-update.sh](assets/files/file-update.sh)
 
 Response
-:   @@snip [file-updated.json](../assets/files/file-updated.json)
+:   @@snip [file-updated.json](assets/files/file-updated.json)
 
 
 ## Tag a file
@@ -177,13 +177,13 @@ POST /v1/files/{org_label}/{project_label}/{file_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [file-tag.sh](../assets/files/file-tag.sh)
+:   @@snip [file-tag.sh](assets/files/file-tag.sh)
 
 Payload
-:   @@snip [tag.json](../assets/files/file-tag.json)
+:   @@snip [tag.json](assets/files/file-tag.json)
 
 Response
-:   @@snip [file-tagged.json](../assets/files/file-tagged.json)
+:   @@snip [file-tagged.json](assets/files/file-tagged.json)
 
 ## Deprecate a file
 
@@ -200,10 +200,10 @@ DELETE /v1/files/{org_label}/{project_label}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [file-deprecate.sh](../assets/files/file-deprecate.sh)
+:   @@snip [file-deprecate.sh](assets/files/file-deprecate.sh)
 
 Response
-:   @@snip [file-deprecated.json](../assets/files/file-deprecated.json)
+:   @@snip [file-deprecated.json](assets/files/file-deprecated.json)
 
 ## Fetch a file
 
@@ -227,13 +227,13 @@ where ...
 **Example**
 
 Request (binary)
-:   @@snip [file-fetch.sh](../assets/files/file-fetch.sh)
+:   @@snip [file-fetch.sh](assets/files/file-fetch.sh)
 
 Request (metadata)
-:   @@snip [file-fetch-meta.sh](../assets/files/file-fetch-meta.sh)
+:   @@snip [file-fetch-meta.sh](assets/files/file-fetch-meta.sh)
 
 Response
-:   @@snip [file-fetched-meta.json](../assets/files/file-fetched-meta.json)
+:   @@snip [file-fetched-meta.json](assets/files/file-fetched-meta.json)
 
 ## List files
 
@@ -256,7 +256,7 @@ where...
 **Example**
 
 Request
-:   @@snip [files-list.sh](../assets/files/files-list.sh)
+:   @@snip [files-list.sh](assets/files/files-list.sh)
 
 Response
-:   @@snip [files-list.json](../assets/files/files-list.json)
+:   @@snip [files-list.json](assets/files/files-list.json)

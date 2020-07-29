@@ -8,7 +8,7 @@ Each resource...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against a `schema` with id `{schema_id}`. In case of using `_` for this segment, the schema segment reads as `irrelevant`.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../iam/authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -33,13 +33,13 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [resource.sh](../assets/resources/resource.sh)
+:   @@snip [resource.sh](assets/resources/resource.sh)
 
 Payload
-:   @@snip [resource.json](../assets/resources/resource.json)
+:   @@snip [resource.json](assets/resources/resource.json)
 
 Response
-:   @@snip [resource-ref-new.json](../assets/resources/resource-ref-new.json)
+:   @@snip [resource-ref-new.json](assets/resources/resource-ref-new.json)
 
 
 ## Create a resource using PUT
@@ -55,13 +55,13 @@ Note that if the payload contains an @id different from the `{resource_id}`, the
 **Example**
 
 Request
-:   @@snip [resource-put.sh](../assets/resources/resource-put.sh)
+:   @@snip [resource-put.sh](assets/resources/resource-put.sh)
 
 Payload
-:   @@snip [resource.json](../assets/resources/resource.json)
+:   @@snip [resource.json](assets/resources/resource.json)
 
 Response
-:   @@snip [resource-ref-new.json](../assets/resources/resource-ref-new.json)
+:   @@snip [resource-ref-new.json](assets/resources/resource-ref-new.json)
 
 
 ## Update a resource
@@ -81,13 +81,13 @@ PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={pre
 **Example**
 
 Request
-:   @@snip [resource-update.sh](../assets/resources/resource-update.sh)
+:   @@snip [resource-update.sh](assets/resources/resource-update.sh)
 
 Payload
-:   @@snip [resource.json](../assets/resources/resource.json)
+:   @@snip [resource.json](assets/resources/resource.json)
 
 Response
-:   @@snip [resource-ref-new-updated.json](../assets/resources/resource-ref-new-updated.json)
+:   @@snip [resource-ref-new-updated.json](assets/resources/resource-ref-new-updated.json)
 
 
 ## Tag a resource
@@ -112,13 +112,13 @@ POST /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/tags?re
 **Example**
 
 Request
-:   @@snip [resource-tag.sh](../assets/resources/resource-tag.sh)
+:   @@snip [resource-tag.sh](assets/resources/resource-tag.sh)
 
 Payload
-:   @@snip [tag.json](../assets/tag.json)
+:   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [resource-ref-new-tagged.json](../assets/resources/resource-ref-new-tagged.json)
+:   @@snip [resource-ref-new-tagged.json](assets/resources/resource-ref-new-tagged.json)
 
 
 ## Deprecate a resource
@@ -136,10 +136,10 @@ DELETE /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={
 **Example**
 
 Request
-:   @@snip [resource-deprecate.sh](../assets/resources/resource-deprecate.sh)
+:   @@snip [resource-deprecate.sh](assets/resources/resource-deprecate.sh)
 
 Response
-:   @@snip [resource-ref-new-deprecated.json](../assets/resources/resource-ref-new-deprecated.json)
+:   @@snip [resource-ref-new-deprecated.json](assets/resources/resource-ref-new-deprecated.json)
 
 ## Fetch a resource
 
@@ -165,10 +165,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [resource-fetch.sh](../assets/resources/resource-fetch.sh)
+:   @@snip [resource-fetch.sh](assets/resources/resource-fetch.sh)
 
 Response
-:   @@snip [resource-fetched.json](../assets/resources/resource-fetched.json)
+:   @@snip [resource-fetched.json](assets/resources/resource-fetched.json)
 
 ## Fetch a resource original payload
 
@@ -185,10 +185,10 @@ where ...
 **Example**
 
 Request
-:   @@snip [resource-fetch.sh](../assets/resources/resource-fetch-source.sh)
+:   @@snip [resource-fetch.sh](assets/resources/resource-fetch-source.sh)
 
 Response
-:   @@snip [resource-fetched.json](../assets/resources/resource-fetched-source.json)
+:   @@snip [resource-fetched.json](assets/resources/resource-fetched-source.json)
 
 ## List resources
 
@@ -213,10 +213,10 @@ where...
 **Example**
 
 Request
-:   @@snip [resources-list.sh](../assets/resources/resources-list.sh)
+:   @@snip [resources-list.sh](assets/resources/resources-list.sh)
 
 Response
-:   @@snip [resources-list.json](../assets/resources/resources-list.json)
+:   @@snip [resources-list.json](assets/resources/resources-list.json)
 
 
 ## List resources belonging to a schema
@@ -239,10 +239,10 @@ where...
 **Example**
 
 Request
-:   @@snip [resources-schema-list.sh](../assets/resources/resources-schema-list.sh)
+:   @@snip [resources-schema-list.sh](assets/resources/resources-schema-list.sh)
 
 Response
-:   @@snip [resources-list.json](../assets/resources/resources-list.json)
+:   @@snip [resources-list.json](assets/resources/resources-list.json)
 
 ## List incoming links
 
@@ -260,10 +260,10 @@ where...
 **Example**
 
 Request
-:   @@snip [resources-incoming.sh](../assets/resources/incoming.sh)
+:   @@snip [resources-incoming.sh](assets/resources/incoming.sh)
 
 Response
-:   @@snip [resources-incoming.json](../assets/resources/incoming.json)
+:   @@snip [resources-incoming.json](assets/resources/incoming.json)
 
 ## List outgoing links
 
@@ -282,10 +282,10 @@ where...
 **Example**
 
 Request
-:   @@snip [resources-outgoing.sh](../assets/resources/outgoing.sh)
+:   @@snip [resources-outgoing.sh](assets/resources/outgoing.sh)
 
 Response
-:   @@snip [resources-outgoing.json](../assets/resources/outgoing.json)
+:   @@snip [resources-outgoing.json](assets/resources/outgoing.json)
 
 ## Resources Server Sent Events
 
@@ -318,10 +318,10 @@ where `Last-Event-Id` is an optional HTTP Header that identifies the last consum
 **Example**
 
 Request
-:   @@snip [resources-event-all.sh](../assets/resources/event-all.sh)
+:   @@snip [resources-event-all.sh](assets/resources/event-all.sh)
 
 Response
-:   @@snip [resources-event-all.json](../assets/resources/event-all.json)
+:   @@snip [resources-event-all.json](assets/resources/event-all.json)
 
 
 ### Server Sent Events organization resources
@@ -338,10 +338,10 @@ where
 **Example**
 
 Request
-:   @@snip [resources-event-org.sh](../assets/resources/event-org.sh)
+:   @@snip [resources-event-org.sh](assets/resources/event-org.sh)
 
 Response
-:   @@snip [resources-event-org.json](../assets/resources/event-org.json)
+:   @@snip [resources-event-org.json](assets/resources/event-org.json)
 
 ### Server Sent Events project resources
 
@@ -358,7 +358,7 @@ where
 **Example**
 
 Request
-:   @@snip [resources-event-project.sh](../assets/resources/event-project.sh)
+:   @@snip [resources-event-project.sh](assets/resources/event-project.sh)
 
 Response
-:   @@snip [resources-event-project.json](../assets/resources/event-project.json)
+:   @@snip [resources-event-project.json](assets/resources/event-project.json)

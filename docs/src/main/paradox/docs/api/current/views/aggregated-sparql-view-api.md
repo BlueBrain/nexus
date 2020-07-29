@@ -66,8 +66,8 @@ The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 **Example**
 
 Request
-:   @@snip [sparql-view-search.sh](../../assets/views/sparql-view-search.sh)
+:   @@snip [sparql-view-search.sh](../assets/views/sparql-view-search.sh)
 
 Response
-:   @@snip [sparql-view-search.json](../../assets/views/sparql-view-search.json)
+:   @@snip [sparql-view-search.json](../assets/views/sparql-view-search.json)
 
