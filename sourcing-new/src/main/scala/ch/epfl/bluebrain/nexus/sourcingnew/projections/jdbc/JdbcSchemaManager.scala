@@ -18,7 +18,6 @@ class JdbcSchemaManager[F[_]: LiftIO](jdbcConfig: JdbcConfig)
           .locations("classpath:scripts/postgres")
           .load()
       }
-      _ <- IO(flyway.validate())
       _ <- IO(flyway.migrate())
     } yield ()
     migration.to[F]

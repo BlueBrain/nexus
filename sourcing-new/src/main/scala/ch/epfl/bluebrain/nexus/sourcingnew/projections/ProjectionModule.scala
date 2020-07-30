@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra.{CassandraProje
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.jdbc.{JdbcConfig, JdbcProjection, JdbcSchemaManager}
 import com.typesafe.config.Config
 import distage.{Axis, ModuleDef, Tag, TagK}
+import doobie.util.transactor.Transactor
 import io.circe.{Decoder, Encoder}
 
 object Persistence extends Axis {
@@ -17,6 +18,7 @@ object Persistence extends Axis {
 
 final class ProjectionModule[F[_]: ContextShift: Async: TagK, A: Encoder: Decoder: Tag] extends ModuleDef {
 
+  // Cassandra
   make[SchemaManager[F]].tagged(Persistence.Cassandra).from {
     (cassandraSession: CassandraSession, journalConfig: Config, actorSystem: ActorSystem[Nothing]) =>
       new CassandraSchemaManager[F](cassandraSession, journalConfig, actorSystem)
@@ -28,13 +30,23 @@ final class ProjectionModule[F[_]: ContextShift: Async: TagK, A: Encoder: Decode
 
   }
 
+  // Postgresql
+  make[Transactor[F]].tagged(Persistence.Postgres).from {
+    (jdbcConfig: JdbcConfig) =>
+      Transactor.fromDriverManager[F](
+        jdbcConfig.driver,
+        jdbcConfig.url,
+        jdbcConfig.username,
+        jdbcConfig.password,
+      )
+  }
   make[SchemaManager[F]].tagged(Persistence.Postgres).from {
     (jdbcConfig: JdbcConfig) =>
       new JdbcSchemaManager[F](jdbcConfig)
   }
   make[Projection[F,A]].tagged(Persistence.Postgres).from {
-    (jdbcConfig: JdbcConfig, journalConfig: Config) =>
-      new JdbcProjection[F, A](jdbcConfig, journalConfig)
+    (xa: Transactor[F]) =>
+      new JdbcProjection[F, A](xa)
   }
 
 }
