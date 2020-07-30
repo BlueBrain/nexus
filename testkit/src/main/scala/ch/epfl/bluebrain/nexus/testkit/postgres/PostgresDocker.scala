@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.postgres
 
-import cats.effect.{ConcurrentEffect, ContextShift, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift}
 import distage.TagK
 import izumi.distage.docker.Docker.{ContainerConfig, DockerPort}
 import izumi.distage.docker.modules.DockerSupportModule
@@ -20,7 +20,7 @@ object PostgresDocker extends ContainerDef {
       reuse = true
     )
 
-  class Module[F[_]: ConcurrentEffect: ContextShift: Timer: TagK] extends ModuleDef {
+  class Module[F[_]: ConcurrentEffect: ContextShift: TagK] extends ModuleDef {
     make[PostgresDocker.Container].fromResource {
       PostgresDocker.make[F]
     }

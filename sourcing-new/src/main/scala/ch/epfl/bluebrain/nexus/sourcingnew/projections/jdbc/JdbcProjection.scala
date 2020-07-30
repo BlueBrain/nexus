@@ -6,35 +6,23 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.instances._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.{Projection, ProjectionProgress}
-import com.typesafe.config.Config
 import doobie.implicits._
 import doobie.util.transactor.Transactor
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 
-final case class JdbcConfig(driver: String,
-                            host: String,
+final case class JdbcConfig(host: String,
                             port: Int,
                             database: String,
                             username: String,
-                            password: String) {
+                            password: String,
+                            driver: String = "org.postgresql.Driver") {
   def url: String = s"jdbc:postgresql://$host:$port/$database?stringtype=unspecified"
 }
 
 class JdbcProjection[F[_]: ContextShift: Async,
-                     A: Encoder: Decoder](jdbcConfig: JdbcConfig,
-                                          journalConfig: Config)
+                     A: Encoder: Decoder](xa: Transactor[F])
   extends Projection[F, A] {
-
-  private val progressTable: String       = journalConfig.getString("projection-progress-table")
-  private val failuresTable: String       = journalConfig.getString("projection-failures-table")
-
-  private val xa = Transactor.fromDriverManager[F](
-    jdbcConfig.driver,
-    jdbcConfig.url,
-    jdbcConfig.username,
-    jdbcConfig.password,
-  )
 
   /**
     * Records progress against a projection identifier.
@@ -44,7 +32,9 @@ class JdbcProjection[F[_]: ContextShift: Async,
     * @return a future () value
     */
   override def recordProgress(id: String, progress: ProjectionProgress): F[Unit] =
-    sql"UPDATE $progressTable SET progress = ${progress.asJson.noSpaces} WHERE projection_id = $id".
+    sql"""INSERT into projections_progress(projection_id, progress)
+         |VALUES($id, ${progress.asJson.noSpaces})
+         |ON CONFLICT (projection_id) DO UPDATE SET progress=EXCLUDED.progress""".stripMargin.
       update.run.transact(xa).map(_ => ())
 
   /**
@@ -55,7 +45,7 @@ class JdbcProjection[F[_]: ContextShift: Async,
     * @return a future progress value for the specified projection projectionId
     */
   override def progress(id: String): F[ProjectionProgress] =
-    sql"SELECT progress FROM $progressTable WHERE projection_id = $id"
+    sql"SELECT progress FROM projections_progress WHERE projection_id = $id"
       .query[String].option.transact(xa).flatMap {
         Projection.decodeOption[ProjectionProgress, F](_, NoProgress)
       }
@@ -70,9 +60,9 @@ class JdbcProjection[F[_]: ContextShift: Async,
     * @param value         the value to be recorded
     */
   override def recordFailure(id: String, persistenceId: String, sequenceNr: Long, offset: Offset, value: A): F[Unit] =
-    sql"""INSERT INTO $failuresTable (projection_id, offset, persistence_id, sequence_nr, value)
+    sql"""INSERT INTO projections_failures (projection_id, akka_offset, persistence_id, sequence_nr, value)
          |VALUES ($id, ${offset.asJson.noSpaces}, $persistenceId, $sequenceNr, ${value.asJson.noSpaces})
-         |ON CONFLICT DO NOTHING""""".stripMargin.update.run.transact(xa).map(_ => ())
+         |ON CONFLICT DO NOTHING""".stripMargin.update.run.transact(xa).map(_ => ())
 
   /**
     * An event stream for all failures recorded for a projection.
@@ -81,7 +71,7 @@ class JdbcProjection[F[_]: ContextShift: Async,
     * @return a source of the failed events
     */
   override def failures(id: String): fs2.Stream[F, (A, Offset)] =
-    sql"SELECT value, offset,  from $failuresTable WHERE projection_id = ? ORDER BY ordering"
+    sql"""SELECT value, akka_offset from projections_failures WHERE projection_id = $id ORDER BY ordering"""
       .query[(String, String)].stream
       .transact(xa).mapFilter(Projection.decodeTuple[A, Offset])
 }
