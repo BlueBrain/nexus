@@ -111,7 +111,7 @@ A resource is the most generic entity on the Knowledge Graph. Resources can be `
 
 ## Resource Lifecycle
 
-Our services are build using the [event sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) approach. This strategy captures all changes to an application state as a sequence of events.
+Nexus Delta is build using the [event sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) approach. This strategy captures all changes to an application state as a sequence of events.
 
 All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.
 

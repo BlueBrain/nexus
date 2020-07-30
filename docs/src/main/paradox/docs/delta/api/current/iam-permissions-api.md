@@ -16,7 +16,7 @@ When  reading permissions, the caller must have `permissions/read` permissions o
 
 ## Minimum permissions
 
-IAM is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are necessary for correct functioning of Nexus.
+Delta is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are necessary for correct functioning of Nexus.
 
 Currently the following permissions are required:
 
@@ -35,21 +35,31 @@ Currently the following permissions are required:
  - generic permissions for full read access to the global event log
     - `events/read`
 
--  admin specific permissions
-    - `projects/read`
-    - `projects/write`
-    - `projects/create`
+- default permissions for organizations
     - `organizations/read`
     - `organizations/write`
     - `organizations/create`
+    
+- default permissions for projects
+    - `projects/read`
+    - `projects/write`
+    - `projects/create`
 
-- KG specific permissions
+- default permissions for resources
     - `resources/read`
     - `resources/write`
+    
+- default permissions for resolvers
     - `resolvers/write`
+
+- default permissions for views
     - `views/query`
     - `views/write`
+    
+ - default permissions for schemas
     - `schemas/write`
+    
+- default permissions for files
     - `files/write`
 
 

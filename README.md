@@ -32,7 +32,7 @@ It is to be noted that many other scientific fields (Astronomy, Agriculture, Bio
 
 ## More information
 
-The Blue Brain Nexus [documentation] offers more information about the software, its [architecture](https://bluebrainnexus.io/docs/additional-info/architecture/index.html), an [api reference]
+The Blue Brain Nexus [documentation] offers more information about the software, its [architecture], an [api reference]
 and the current [roadmap].
 
 Please head over to the [getting started] section for a description of various options on running Nexus and
@@ -40,12 +40,12 @@ introductory material to [Linked Data] and the [Shapes Constraint Language].
 
 For more details, you can talk with the development team directly on [Gitter].
 
+[architecture]: https://bluebrainnexus.io/docs/delta/architecture.html
 [documentation]: https://bluebrainnexus.io/docs/
 [components]: https://bluebrainnexus.io/docs/index.html#nexus-components
-[getting started]: https://bluebrainnexus.io/docs/getting-started/
-[api reference]: https://bluebrainnexus.io/docs/api/current/
-[architecture]: https://bluebrainnexus.io/docs/additional-info/architecture/
-[roadmap]: https://github.com/BlueBrain/nexus/milestones
+[getting started]: https://bluebrainnexus.io/docs/getting-started/index.html
+[api reference]: https://bluebrainnexus.io/docs/delta/api/current/index.html
+[roadmap]: https://bluebrainnexus.io/docs/roadmap.html
 
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/

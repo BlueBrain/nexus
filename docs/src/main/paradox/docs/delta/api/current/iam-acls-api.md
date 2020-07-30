@@ -21,7 +21,7 @@ When  reading ACLs, the caller must have `acls/read` permissions on the path whe
  
 ## Default permissions
 
-When IAM starts for the first time, it applies the default permissions to `/`. This gives all permissions to the anonymous user to enable setting up realms. It is recommended to replace these permissions once user has setup an authorization realm.
+When the service starts for the first time, it applies the default permissions to `/`. This gives all permissions to the anonymous user to enable setting up realms. It is recommended to replace these permissions once user has setup an authorization realm.
 
 ## ACLs Hierarchy
 
