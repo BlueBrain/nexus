@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.sourcingnew.projections.Projection._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.instances._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.{Projection, ProjectionProgress}
-import com.typesafe.config.Config
 import fs2.Stream
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
@@ -18,15 +17,13 @@ import streamz.converter._
 
 private [projections] class CassandraProjection
         [F[_]: ContextShift, A: Encoder: Decoder](session: CassandraSession,
-                                                  journalCfg: Config,
+                                                  projectionConfig: ProjectionConfig,
                                                   as: ActorSystem[Nothing])(implicit F: Async[F])
   extends Projection[F, A] {
   implicit val cs: ContextShift[IO] = IO.contextShift(as.executionContext)
   implicit val materializer: Materializer = Materializer.createMaterializer(as)
 
-  val keyspace: String            = journalCfg.getString("keyspace")
-  val progressTable: String       = journalCfg.getString("projection-progress-table")
-  val failuresTable: String       = journalCfg.getString("projection-failures-table")
+  import projectionConfig._
 
   val recordProgressQuery: String =
     s"UPDATE $keyspace.$progressTable SET progress = ? WHERE projection_id = ?"

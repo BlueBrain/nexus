@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.postgres
 
-import cats.effect.{ConcurrentEffect, ContextShift}
+import cats.effect.{ConcurrentEffect, ContextShift, IO}
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport
 import distage.TagK
 import izumi.distage.docker.Docker.{ContainerConfig, DockerPort}
 import izumi.distage.docker.modules.DockerSupportModule
@@ -31,17 +32,9 @@ object PostgresDocker extends ContainerDef {
     }
 
     // add docker dependencies and override default configuration
-    include(new DockerSupportModule[F] overridenBy new ModuleDef {
+    include(new DockerSupportModule[IO] overridenBy new ModuleDef {
       make[Docker.ClientConfig].from {
-        Docker.ClientConfig(
-          readTimeoutMs = 60000, // long timeout for gh actions
-          connectTimeoutMs = 500,
-          allowReuse = false,
-          useRemote = false,
-          useRegistry = true,
-          remote = None,
-          registry = None
-        )
+        DockerSupport.clientConfig
       }
     })
   }
