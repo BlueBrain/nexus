@@ -1,10 +1,10 @@
 include ../mixins/mobileMenu.pug
 include ../mixins/navbar.pug
 
-mixin header()
+mixin header(className)
   header(
     id="header"
-    class="header"
+    class=`header ${className}`
   )
     div(
       class="header-container"
