@@ -1,12 +1,12 @@
-//- Base Layout
+// Layout with clear header
 include ../mixins/header.pug
 
 doctype html
 html(lang="en-US")
-  include ../layouts/headers.pug
+  include ../layouts/headers.pug 
   body
     block header
-      +header()
+      +header("clear")
     block content
       #content 
         section empty content block

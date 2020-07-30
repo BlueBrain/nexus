@@ -2,6 +2,12 @@
   margin: 3em 0;
 }
 
+@media (max-width: 480px) {
+  .use-case-nav-block {
+    margin: 2em 0;
+  }
+}
+
 .use-case-section {
   margin-bottom: 3em;
 }
