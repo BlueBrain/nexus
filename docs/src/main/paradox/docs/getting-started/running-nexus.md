@@ -503,7 +503,7 @@ $
 
 #### Deploy Delta
 
-Delta is the service providing Nexus REST API/
+Delta is the service providing the Nexus REST API.
 
 Command
 :

@@ -12,7 +12,7 @@ Yes, Nexus is a free, Open Source platform released under [Apache Licence 2.0](h
 
 ### How do I run Blue Brain Nexus?
 
-There are many ways to run Nexus. The public instance is running in a [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install [Docker](getting-started/running-nexus/index.html#docker) or [Minikube](getting-started/running-nexus/index.html#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
+There are many ways to run Nexus. The public instance is running in a [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
 
 ### How can I try Blue Brain Nexus without installing it? What is the difference with a relational database like PostgreSQL?
 
@@ -65,7 +65,7 @@ There are several channels provided to address different issues:
 
 ### What are the clients I can use with Blue Brain Nexus? What are the requirements to run Blue Brain Nexus locally?
 
-On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GB of memory in total. You can increase the limits in Docker settings in the menu _Preferences > Advanced_. More details are in the dedicated @ref:[page](getting-started/running-nexus/index.md).
+On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires at least 2 CPUs and 8 GB of memory in total. You can increase the limits in Docker settings in the menu _Preferences > Advanced_. More details are in the dedicated @ref:[page](getting-started/running-nexus.md).
 
 ### What is JSON-LD?
 
