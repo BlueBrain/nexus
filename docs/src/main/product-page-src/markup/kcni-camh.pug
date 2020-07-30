@@ -1,7 +1,17 @@
-//- Main Index
 extends ./layouts/base.pug
 
+include ./mixins/header.pug
+include ./mixins/seoHeaders.pug
 include ./mixins/useCase.pug
+
+block pageHeaders
+  +seoHeaders(
+    "CAMH/KCNI",
+    "Some description"
+  )
+
+block header
+  +header("clear")
 
 block content
   +useCase(

@@ -1,8 +1,19 @@
 //- Main Index
 extends ./layouts/base.pug
 
+include ./mixins/header.pug
 include ./mixins/button.pug
 include ./mixins/shortProductDescription.pug
+include ./mixins/seoHeaders.pug
+
+block header
+  +header()
+
+block pageHeaders
+  +seoHeaders(
+    "Blue Brain Nexus",
+    "Some description"
+  )
 
 block content
   section.hero.is-fullheight

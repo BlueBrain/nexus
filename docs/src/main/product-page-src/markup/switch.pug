@@ -1,7 +1,17 @@
-//- Main Index
-extends ./layouts/clear.pug
+extends ./layouts/base.pug
 
+include ./mixins/header.pug
 include ./mixins/useCase.pug
+include ./mixins/seoHeaders.pug
+
+block pageHeaders
+  +seoHeaders(
+    "Swiss Data Connectome",
+    "Some description"
+  )
+
+block header
+  +header("clear")
 
 block content
   +useCase(

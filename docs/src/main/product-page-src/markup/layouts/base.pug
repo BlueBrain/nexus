@@ -1,12 +1,25 @@
 //- Base Layout
-include ../mixins/header.pug
-
 doctype html
-html(lang="en-US")
-  include ../layouts/headers.pug
+html(
+  lang="en-US"
+  prefix="og: https://ogp.me/ns#"
+)
+  head
+    block pageHeaders
+    link(
+      href="../css/style.css"
+      rel="stylesheet"
+    )
+    link(
+      href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@700;800;900&display=swap"
+      rel="stylesheet"
+    )
+    link(
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;1,100;1,300;1,400&display=swap"
+      rel="stylesheet"
+    )
   body
     block header
-      +header()
     block content
       #content 
         section empty content block

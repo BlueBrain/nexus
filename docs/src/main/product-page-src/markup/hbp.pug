@@ -1,7 +1,17 @@
-//- Main Index
 extends ./layouts/base.pug
 
+include ./mixins/header.pug
 include ./mixins/useCase.pug
+include ./mixins/seoHeaders.pug
+
+block pageHeaders
+  +seoHeaders(
+    "Human Brain Project",
+    "Some description"
+  )
+
+block header
+  +header("clear")
 
 block content
   +useCase(
