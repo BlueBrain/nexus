@@ -56,9 +56,7 @@ of a slower startup and a decreased overall performance, you should be able to g
 | Cassandra     |          512 |
 | Elasticsearch |          512 |
 | Blazegraph    |         1024 |
-| KG            |         1024 |
-| IAM           |          512 |
-| Admin         |          512 |
+| Delta            |         1024 |
 
 ### Recommended: Docker Swarm
 
@@ -129,7 +127,7 @@ curl http://localhost/kg
 Example
 :
 ```
-$ curl http://localhost/kg
+$ curl http://localhost/version
 {"name":"kg","version":"1.1.0"}
 ```
 
@@ -173,52 +171,13 @@ deployment. If you'd like help with creating persistent volumes, feel free to co
 
 @@@
 
-### Legacy: Docker Compose
-
-While not recommended, we provide a [Docker Compose template](./docker-compose/docker-compose.yaml)
-in the old *version 2* format. It comes with lower memory settings and it's a convenient way to quickly try
-out Nexus on your own computer.
-
-Download the file into a directory of your choice, for instance `~/docker/nexus/`.
-
-Download the [http proxy configuration](./docker-swarm/nginx.conf) to the same directory.
-
-You can then simply run `docker-compose up` within this directory:
-
-Command
-:
-```
-docker-compose up
-```
-
-Example
-:
-```
-$ docker-compose up
-Creating network "nexus_default" with the default driver
-Pulling cassandra (cassandra:3)...
-[...]
-Creating nexus_admin_1         ... done
-Creating nexus_blazegraph_1    ... done
-Creating nexus_router_1        ... done
-Creating nexus_iam_1           ... done
-Creating nexus_web_1           ... done
-Creating nexus_cassandra_1     ... done
-Creating nexus_kg_1            ... done
-Creating nexus_elasticsearch_1 ... done
-Attaching to nexus_iam_1, nexus_kg_1, nexus_blazegraph_1, nexus_cassandra_1, nexus_elasticsearch_1, nexus_admin_1, nexus_router_1, nexus_web_1
-[...]
-```
-
 ### Endpoints
 
 The provided reverse proxy (the `nginx` image) exposes several endpoints:
 
 * [root](http://localhost): Nexus web interface
 * [v1](http://localhost/v1): API root
-* [admin](http://localhost/admin): Admin service descriptor
-* [iam](http://localhost/iam): IAM service descriptor
-* [kg](http://localhost/kg): KG service descriptor
+* [delta](http://localhost/version): Delta service descriptor
 * [elasticsearch](http://localhost/elasticsearch): Elasticsearch endpoint
 * [blazegraph](http://localhost/blazegraph): Blazegraph web interface
 
@@ -542,133 +501,9 @@ $ kubectl get configmap/config -o yaml | grep public.ip:
 $
 ```
 
-#### Deploy IAM
+#### Deploy Delta
 
-IAM is the service that manages identities and tokens via OIDC providers and manages the permissions to
-arbitrary resources in the system. By default, anonymous users will be granted enough permissions to
-fully manage resources in the system. If you'd like to change this behavior, you must set up
-[realms and permissions](../../delta/api/current/iam/index.html) manually.
-
-Command
-:
-```
-kubectl apply -f $MINI/iam.yaml && \
-  kubectl wait pod iam-0 --for condition=ready --timeout=180s
-```
-
-Example
-:
-```
-$ kubectl apply -f $MINI/iam.yaml
-service/iam created
-service/iam-hd created
-statefulset.apps/iam created
-ingress.extensions/iam created
-ingress.extensions/iam-direct created
-$ kubectl wait pod iam-0 --for condition=ready --timeout=180s
-pod/iam-0 condition met
-$ curl -s "http://$NEXUS/iam" | jq
-{
-  "name": "iam",
-  "version": "1.1.0"
-}
-$ curl -s "http://$NEXUS/v1/acls/" | jq
-{
-  "@context": [
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/iam.json",
-    "https://bluebrain.github.io/nexus/contexts/search.json"
-  ],
-  "_total": 1,
-  "_results": [
-    {
-      "@id": "http://192.168.39.171/v1/acls",
-      "@type": "AccessControlList",
-      "acl": [
-        {
-          "identity": {
-            "@id": "http://192.168.39.171/v1/anonymous",
-            "@type": "Anonymous"
-          },
-          "permissions": [
-            "schemas/write",
-            "views/write",
-            "files/write",
-            "permissions/write",
-            "acls/write",
-            "realms/write",
-            "projects/read",
-            "acls/read",
-            "organizations/create",
-            "organizations/write",
-            "resources/write",
-            "realms/read",
-            "projects/create",
-            "permissions/read",
-            "resources/read",
-            "organizations/read",
-            "resolvers/write",
-            "events/read",
-            "views/query",
-            "projects/write"
-          ]
-        }
-      ],
-      "_path": "/",
-      "_rev": 0,
-      "_createdAt": "1970-01-01T00:00:00Z",
-      "_createdBy": "http://192.168.39.171/v1/anonymous",
-      "_updatedAt": "1970-01-01T00:00:00Z",
-      "_updatedBy": "http://192.168.39.171/v1/anonymous"
-    }
-  ]
-}
-$
-```
-
-#### Deploy Admin
-
-Admin is the service that manages organizations, projects and their configuration.
-
-Command
-:
-```
-kubectl apply -f $MINI/admin.yaml && \
-  kubectl wait pod admin-0 --for condition=ready --timeout=180s
-```
-
-Example
-:
-```
-$ kubectl apply -f $MINI/admin.yaml
-service/admin created
-service/admin-hd created
-statefulset.apps/admin created
-ingress.extensions/admin created
-ingress.extensions/admin-direct created
-$ kubectl wait pod admin-0 --for condition=ready --timeout=180s
-pod/admin-0 condition met
-$ curl -s "http://$NEXUS/admin" | jq
-{
-  "name": "admin",
-  "version": "1.1.0"
-}
-$ curl -s "http://$NEXUS/v1/projects" | jq
-{
-  "@context": [
-    "https://bluebrain.github.io/nexus/contexts/admin.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/search.json"
-  ],
-  "_total": 0,
-  "_results": []
-}
-$
-```
-
-#### Deploy KG
-
-KG is the service that manages user defined resources, their schemas and configuration like resolvers, views etc.
+Delta is the service providing the Nexus REST API.
 
 Command
 :
@@ -689,10 +524,12 @@ ingress.extensions/kg created
 ingress.extensions/kg-direct created
 $ kubectl wait pod kg-0 --for condition=ready --timeout=180s
 pod/kg-0 condition met
-$ curl -s "http://$NEXUS/kg" | jq
+$ curl -s "http://$NEXUS/version" | jq
 {
-  "name": "kg",
-  "version": "1.1.0"
+  "delta": "1.4.0",
+  "storage": "1.4.0",
+  "elasticsearch": "7.4.0",
+  "blazegraph": "2.1.5"
 }
 $ curl -s "http://$NEXUS/v1/resources/org/proj" | jq # the 404 error is expected
 {
