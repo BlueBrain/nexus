@@ -1,6 +1,6 @@
 # Error Signaling
 
-The services makes use of the HTTP status codes to report the outcome of each API call. The status codes are
+Nexus Delta makes use of the HTTP status codes to report the outcome of each API call. The status codes are
 complemented by a consistent response data model for reporting client and system level failures.
 
 Format
