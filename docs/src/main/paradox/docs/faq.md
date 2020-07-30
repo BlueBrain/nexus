@@ -28,13 +28,13 @@ Although Blue Brain Nexus can be used as a regular database, it's flexibility an
 
 ### Is there a cloud deployment of Blue Brain Nexus?
 
-There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following @ref:[page](./nexus-web/index.md) is explained how to interact with Blue Brain Nexus Web interface. It is possible to deploy Nexus on Amazon's AWS infrastructure. Instructions for how to do so will be made available shortly.
+There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following @ref:[page](fusion/index.md) is explained how to interact with Blue Brain Nexus Web interface. It is possible to deploy Nexus on Amazon's AWS infrastructure. Instructions for how to do so will be made available shortly.
 
 ### Is there a limit on the number of resources Blue Brain Nexus can store?
 
 Blue Brain Nexus leverages scalable open source technologies, therefore limitations and performance depends heavily on the deployment setup where Nexus is running.
 
-To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](additional-info/benchmarks/index.md) where we were able to ingest over 3.5 billion triples representing 120 million resources.
+To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](delta/benchmarks.md) where we were able to ingest over 3.5 billion triples representing 120 million resources.
 
 ### What is a Knowledge Graph?
 
@@ -42,7 +42,7 @@ A Knowledge Graph is a modern approach to enabling the interlinked representatio
 
 Blue Brain Nexus employs a Knowledge Graph to enable validation, search, analysis and integration of data.
 
-As you can see in 'Understanding the Knowledge Graph' @ref:[page](tutorial/knowledge-graph/index.md), at the heart of Blue Brain Nexus platform lies a Knowledge Graph, that provides knowledge representation to enable data integration and FAIR principles at Blue Brain and across the neuroscience community.
+As you can see in 'Understanding the Knowledge Graph' @ref:[page](getting-started/understanding-knowledge-graphs.md), at the heart of Blue Brain Nexus platform lies a Knowledge Graph, that provides knowledge representation to enable data integration and FAIR principles at Blue Brain and across the neuroscience community.
 
 Indeed, Nexus allow scientists to:
 
@@ -117,7 +117,7 @@ Yes. As long as the client supports the ability to provide a `Authentication` HT
 
 ### How can I create an Organizations as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
 
-The permissions for anonymous are pre-set in the @ref:[ACLs](api/current/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](api/current/iam-permissions-api.md).
+The permissions for anonymous are pre-set in the @ref:[ACLs](delta/api/current/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](delta/api/current/iam-permissions-api.md).
 
 ### Can I use Blue Brain Nexus from Jupyter Notebooks?
 
