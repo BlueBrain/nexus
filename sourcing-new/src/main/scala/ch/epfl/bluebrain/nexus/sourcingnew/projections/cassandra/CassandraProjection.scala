@@ -15,10 +15,10 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import streamz.converter._
 
-private [projections] class CassandraProjection
-        [F[_]: ContextShift, A: Encoder: Decoder](session: CassandraSession,
-                                                  projectionConfig: ProjectionConfig,
-                                                  as: ActorSystem[Nothing])(implicit F: Async[F])
+class CassandraProjection [F[_]: ContextShift,
+                           A: Encoder: Decoder](session: CassandraSession,
+                                                projectionConfig: ProjectionConfig,
+                                                as: ActorSystem[Nothing])(implicit F: Async[F])
   extends Projection[F, A] {
   implicit val cs: ContextShift[IO] = IO.contextShift(as.executionContext)
   implicit val materializer: Materializer = Materializer.createMaterializer(as)
