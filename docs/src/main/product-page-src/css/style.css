@@ -204,6 +204,9 @@ Hero
 }
 
 @media (max-width: 600px) {
+  .hero .gradient {
+    height: 120%;
+  }
   .container {
     padding: 2em;
   }
