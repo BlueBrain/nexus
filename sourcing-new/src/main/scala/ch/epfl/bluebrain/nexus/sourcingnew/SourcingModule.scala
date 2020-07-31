@@ -1,11 +1,12 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.projections
-
+package ch.epfl.bluebrain.nexus.sourcingnew
 
 import akka.actor.typed.ActorSystem
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
 import cats.effect.{Async, ContextShift}
-import ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra.{CassandraProjection, CassandraSchemaManager, ProjectionConfig, CassandraConfig}
+import ch.epfl.bluebrain.nexus.sourcingnew.EventLog.{CassandraEventLogFactory, JdbcEventLogFactory}
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra.{CassandraConfig, CassandraProjection, CassandraSchemaManager, ProjectionConfig}
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.jdbc.{JdbcConfig, JdbcProjection, JdbcSchemaManager}
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.{Projection, SchemaManager}
 import distage.{Axis, ModuleDef, Tag, TagK}
 import doobie.util.transactor.Transactor
 import io.circe.{Decoder, Encoder}
@@ -13,6 +14,12 @@ import io.circe.{Decoder, Encoder}
 object Persistence extends Axis {
   case object Cassandra extends AxisValueDef
   case object Postgres extends AxisValueDef
+}
+
+final class EventLogModule[F[_]: ContextShift: Async: TagK] extends ModuleDef {
+  make[CassandraEventLogFactory[F]].tagged(Persistence.Cassandra)
+
+  make[JdbcEventLogFactory[F]].tagged(Persistence.Postgres)
 }
 
 final class ProjectionModule[F[_]: ContextShift: Async: TagK, A: Encoder: Decoder: Tag] extends ModuleDef {

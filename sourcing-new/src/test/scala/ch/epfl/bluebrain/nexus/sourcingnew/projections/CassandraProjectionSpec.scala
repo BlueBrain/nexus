@@ -6,6 +6,7 @@ import akka.stream.alpakka.cassandra.CassandraSessionSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
 import cats.effect.{IO, Resource}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcingnew.{Persistence, ProjectionModule}
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra.{CassandraConfig, ProjectionConfig}
 import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker
 import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.CassandraHostConfig
