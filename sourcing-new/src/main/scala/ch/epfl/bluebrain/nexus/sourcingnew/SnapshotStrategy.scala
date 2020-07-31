@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.aggregate
+package ch.epfl.bluebrain.nexus.sourcingnew
 
 import akka.persistence.typed.scaladsl.{EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 
@@ -14,7 +14,7 @@ object SnapshotStrategy {
                                  keepNSnapshots: Int,
                                  deleteEventsOnSnapshot: Boolean = false) extends  SnapshotStrategy {
 
-    private [aggregate] def toSnapshotCriteria: SnapshotCountRetentionCriteria = {
+    def toSnapshotCriteria: SnapshotCountRetentionCriteria = {
       val criteria = RetentionCriteria.snapshotEvery(numberOfEvents, keepNSnapshots)
       if(deleteEventsOnSnapshot)
         criteria.withDeleteEventsOnSnapshot
