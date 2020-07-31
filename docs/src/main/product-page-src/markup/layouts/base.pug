@@ -1,14 +1,11 @@
 //- Base Layout
-include ../mixins/header.pug
-
 doctype html
-html(lang="en-US")
+html(
+  lang="en-US"
+  prefix="og: https://ogp.me/ns#"
+)
   head
-    meta(
-      name="viewport"
-      content="width=device-width, initial-scale=1"
-    )
-    title Test Stuff - #{title}
+    block pageHeaders
     link(
       href="../css/style.css"
       rel="stylesheet"
@@ -21,12 +18,10 @@ html(lang="en-US")
       href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;1,100;1,300;1,400&display=swap"
       rel="stylesheet"
     )
-     
     block scripts
       script(src='../js/index.js')
   body
     block header
-      +header()
     block content
       #content 
         section empty content block

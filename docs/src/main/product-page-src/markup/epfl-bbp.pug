@@ -1,7 +1,17 @@
-//- Main Index
 extends ./layouts/base.pug
 
+include ./mixins/header.pug
 include ./mixins/useCase.pug
+include ./mixins/seoHeaders.pug
+
+block pageHeaders
+  +seoHeaders(
+    "EPFL Blue Brain Project",
+    "Some description"
+  )
+
+block header
+  +header("clear")
 
 block content
   +useCase(
@@ -18,10 +28,7 @@ block content
       // update when we have content
       p Lorem ipsum dolor sit amet consectetur adipisicing elit. Libero veniam vel totam nulla praesentium aliquam sunt dolorum natus, non, quaerat nisi saepe! Perspiciatis quo officiis cum molestias deleniti sit eveniet!
 
-  // update me when github block is ready
-  div.container.use-case-section
-    br
-    h3 ****************Subscribe block - add later****************
+  include ./layouts/newsletterCatchCallOut.pug
 
   div.container.use-case-section(
     id="solutions"
@@ -30,10 +37,7 @@ block content
     // update when we have content
     p Lorem ipsum dolor sit amet consectetur adipisicing elit. Vel sint, eum quibusdam dolorem cum enim praesentium impedit modi quae libero repudiandae tempora, excepturi atque, ex recusandae et officia aliquid repellendus.
 
-  // update me when github block is ready
-  div.container.use-case-section
-    br
-    h3 ****************Github block-add later****************
+  include ./layouts/openSourceCallOut.pug
 
   div.container.use-case-section(
     id="retrospective"

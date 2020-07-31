@@ -1,72 +1,91 @@
-// mobile menu
 export default () => {
-  function toggle(elementId) {
-    let isShown = false;
+  function hide(element) {
+    element.style.display = "none";
+  }
 
+  function hideMany(elements) {
+    for (i = 0; i < elements.length; i++) {
+      elements[i].style.display = "none";
+    }
+  }
+
+  function show(element) {
+    element.style.display = "block";
+  }
+
+  function grabElement(id) {
+    return document.getElementById(id);
+  }
+
+  function onClick(elementId, action) {
+    var element = document.getElementById(elementId);
+    element.addEventListener("click", action);
+  }
+
+  // mobile menu
+  var productsSubmenu = grabElement("products-submenu");
+  var getStartedSubmenu = grabElement("getting-started-submenu");
+  var devSubmenu = grabElement("dev-submenu");
+  var menu = grabElement("menu-container");
+
+  function closeAllMobile() {
+    hideMany([productsSubmenu, getStartedSubmenu, devSubmenu]);
+  }
+
+  function toggleMenu(element) {
     return function () {
-      const element = document.getElementById(elementId);
-
-      isShown = !isShown;
+      let isShown = element.style.display === "block";
 
       if (isShown) {
-        element.style.display = "block";
+        hide(element);
       } else {
-        element.style.display = "none";
+        show(element);
       }
     };
   }
 
-  const productsButton = document.getElementById("products-button");
-  productsButton.addEventListener("click", toggle("products-submenu"));
+  function expandItem(item) {
+    return function () {
+      closeAllMobile();
+      show(item);
+    };
+  }
 
-  const menuButton = document.getElementById("menu-icon");
-  menuButton.addEventListener("click", toggle("menu-container"));
+  onClick("menu-close-button", function () {
+    return hide(menu);
+  });
 
-  const useCasesButton = document.getElementById("use-cases-button");
-  useCasesButton.addEventListener("click", toggle("use-cases-submenu"));
-
-  const gettingStartedButton = document.getElementById(
-    "getting-started-button"
-  );
-  gettingStartedButton.addEventListener(
-    "click",
-    toggle("getting-started-submenu")
-  );
-
-  const devButton = document.getElementById("dev-button");
-  devButton.addEventListener("click", toggle("dev-submenu"));
+  onClick("menu-icon", toggleMenu(menu));
+  onClick("products-button", expandItem(productsSubmenu));
+  onClick("getting-started-button", expandItem(getStartedSubmenu));
+  onClick("dev-button", expandItem(devSubmenu));
 
   // desktop menu
-  const header = document.getElementById("header");
-  const products = document.getElementById("products-dropdown");
-  const useCases = document.getElementById("use-cases-dropdown");
-  const getStarted = document.getElementById("getting-started-dropdown");
-  const dev = document.getElementById("dev-dropdown");
+  var header = grabElement("header");
+  var products = grabElement("products-dropdown");
+  var getStarted = grabElement("getting-started-dropdown");
+  var dev = grabElement("dev-dropdown");
 
   header.addEventListener("mouseleave", closeAll());
 
   function closeAll() {
-    products.style.display = "none";
-    useCases.style.display = "none";
-    getStarted.style.display = "none";
-    dev.style.display = "none";
+    hideMany([products, getStarted, dev]);
   }
 
   function setDropdown(triggerId, dropdown) {
-    const trigger = document.getElementById(triggerId);
+    var trigger = document.getElementById(triggerId);
 
     trigger.addEventListener("mouseover", function () {
       closeAll();
-      dropdown.style.display = "block";
+      show(dropdown);
     });
 
     dropdown.addEventListener("mouseleave", function () {
-      dropdown.style.display = "none";
+      return hide(dropdown);
     });
   }
 
   setDropdown("products-nav-item-button", products);
-  setDropdown("use-cases-nav-item-button", useCases);
   setDropdown("getting-started-nav-item-button", getStarted);
   setDropdown("dev-nav-item-button", dev);
 };
