@@ -18,6 +18,8 @@ html(
       href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;1,100;1,300;1,400&display=swap"
       rel="stylesheet"
     )
+    block scripts
+      script(src='../js/index.js')
   body
     block header
     block content
@@ -25,7 +27,3 @@ html(
         section empty content block
     block foot
       include ./footer.pug
-    script(
-      type='text/javascript'
-      src='../js/menu.js'
-    )

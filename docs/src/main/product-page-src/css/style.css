@@ -1,14 +1,10 @@
 @import "bulma/css/bulma.css";
+@import "./variables.css";
 @import "./footer.css";
 @import "./header.css";
 @import "./use-case.css";
-
-:root {
-  --link: #f058ea;
-  --link-hover: #fff;
-  --primary: #a51aa5;
-  --font: #4a4a4a;
-}
+@import "./call-out.css";
+@import "./email-catch.css";
 
 @media (min-width: 320px) {
   /* smartphones, portrait iPhone, portrait 480x320 phones (Android) */
@@ -33,6 +29,11 @@ body {
   font-family: "Roboto", sans-serif;
   font-weight: 300;
   margin: 0;
+}
+
+section .container {
+  padding-top: 2em;
+  padding-bottom: 2em;
 }
 
 h1 {
@@ -127,7 +128,7 @@ Hero
   background: transparent
     linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
     0% 0% no-repeat padding-box;
-  clip-path: polygon(0 0, 100% 0, 100% 60%, 0 100%);
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
   z-index: 0;
 }
 
@@ -185,4 +186,28 @@ Hero
 
 .text-centered {
   text-align: center;
+}
+
+.wrapping {
+  flex-wrap: wrap;
+}
+
+.center-flex {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .hero .gradient {
+    height: 120%;
+  }
+  .container {
+    padding: 2em;
+  }
 }

@@ -1,4 +1,24 @@
 section.call-out.gradient
   .container
     .content
-      p Newsletter Content
+      .columns
+        .column
+          h4.title.is-4 Never miss an update.
+          p 
+            | We won't spam you, and you can unsubscribe in one click.
+        .column 
+          form#email-catch
+            .state.success
+              p Thanks! Nice email!
+            .state.error
+              p Sorry, there was a problem signing you up
+            .state.pending
+              p Delivering email...
+            .state.normal
+              .field.has-addons
+                .control.has-icons-left
+                  input(type="email", placeholder="Enter your email", name="email").input
+                  span.icon.is-small.is-left
+                    i.fas.fa-envelope
+                .control
+                  button(type="submit").button Submit
