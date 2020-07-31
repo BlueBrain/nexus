@@ -21,7 +21,7 @@ abstract class ProjectionSpec extends DistageSpecScalatest[IO] with TestHelpers 
     val progressUpdated = OffsetProgress(Offset.sequence(888), 888, 888, 0)
 
     "store and retrieve progress" in {
-      (projections: Projection[IO, SomeEvent],schemaManager: SchemaManager[IO]) =>
+      (projections: Projection[IO, SomeEvent],schemaManager: SchemaMigration[IO]) =>
         for {
           _     <- schemaManager.migrate()
           _ <- projections.recordProgress(id, progress)
@@ -35,7 +35,7 @@ abstract class ProjectionSpec extends DistageSpecScalatest[IO] with TestHelpers 
 
 
     "retrieve NoProgress for unknown projections" in {
-      (projections: Projection[IO, SomeEvent],schemaManager: SchemaManager[IO]) =>
+      (projections: Projection[IO, SomeEvent],schemaManager: SchemaMigration[IO]) =>
         for {
           _     <- schemaManager.migrate()
           read <- projections.progress(genString())
@@ -49,7 +49,7 @@ abstract class ProjectionSpec extends DistageSpecScalatest[IO] with TestHelpers 
     val secondEvent          = SomeEvent(2L, "description2")
 
     "store and retrieve failures for events" in {
-      (projections: Projection[IO, SomeEvent],schemaManager: SchemaManager[IO]) =>
+      (projections: Projection[IO, SomeEvent],schemaManager: SchemaMigration[IO]) =>
         val expected                            = Seq((firstEvent, firstOffset), (secondEvent, secondOffset))
         for {
           _     <- schemaManager.migrate()
@@ -61,7 +61,7 @@ abstract class ProjectionSpec extends DistageSpecScalatest[IO] with TestHelpers 
     }
 
     "retrieve no failures for an unknown projection" in {
-      (projections: Projection[IO, SomeEvent],schemaManager: SchemaManager[IO]) =>
+      (projections: Projection[IO, SomeEvent],schemaManager: SchemaMigration[IO]) =>
         for {
           _     <- schemaManager.migrate()
           log <- projections.failures(genString()).compile.toVector

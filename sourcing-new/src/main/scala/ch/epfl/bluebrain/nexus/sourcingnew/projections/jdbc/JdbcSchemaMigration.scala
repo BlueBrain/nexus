@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections.jdbc
 
 import cats.effect.{IO, LiftIO}
-import ch.epfl.bluebrain.nexus.sourcingnew.projections.SchemaManager
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.SchemaMigration
 import org.flywaydb.core.Flyway
 
-class JdbcSchemaManager[F[_]: LiftIO](jdbcConfig: JdbcConfig)
-  extends SchemaManager[F] {
+class JdbcSchemaMigration[F[_]: LiftIO](jdbcConfig: JdbcConfig)
+  extends SchemaMigration[F] {
 
   def migrate(): F[Unit] = {
     val migration = for {

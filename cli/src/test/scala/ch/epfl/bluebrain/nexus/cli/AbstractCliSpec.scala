@@ -81,7 +81,7 @@ abstract class AbstractCliSpec
         DIKey.get[AppConfig],
         DIKey.get[Console[IO]]
       ),
-      configBaseName = "cli-test"
+      configBaseName = s"${getClass.getSimpleName}-cli-test"
     )
 
   def copyConfigs: IO[(Path, Path, Path)] =
