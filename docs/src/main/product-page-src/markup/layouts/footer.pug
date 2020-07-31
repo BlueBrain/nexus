@@ -1,3 +1,6 @@
+include ../mixins/gettingStartedList.pug
+include ../mixins/devList.pug
+
 footer.footer.gradient
   .content
     .columns
@@ -31,42 +34,37 @@ footer.footer.gradient
             li CLI
           a(href="/")
             li Roadmap
+      .column.is-one-quarter
+        h3 Getting Started
+        +gettingStartedList("footer-list")
       .column
+        h3 Developers
+        +devList("footer-list")
+      .column.social-icons
         a(href="/")
-          h3 Getting Started
-      .column
+          img(
+            class="logo"
+            src="../img/logos/gitter.svg"
+            alt="Gitter"
+          )
         a(href="/")
-          h3 Developers
-      .column.socials
-        .columns
-          .column
-            a(href="/")
-              img(
-                class="logo"
-                src="../img/logos/gitter.svg"
-                alt="Gitter"
-              )
-          .column
-            a(href="/")
-              img(
-                class="logo"
-                src="../img/logos/linkedin.svg"
-                alt="LinkedIn"
-              )
-          .column
-            a(href="/")
-              img(
-                class="logo"
-                src="../img/logos/github-square.svg"
-                alt="Github"
-              )
-          .column
-            a(href="/")
-              img(
-                class="logo"
-                src="../img/logos/twitter-square.svg"
-                alt="Twitter"
-              )
+          img(
+            class="logo"
+            src="../img/logos/linkedin.svg"
+            alt="LinkedIn"
+          )
+        a(href="/")
+          img(
+            class="logo"
+            src="../img/logos/github-square.svg"
+            alt="Github"
+          )
+        a(href="/")
+          img(
+            class="logo"
+            src="../img/logos/twitter-square.svg"
+            alt="Twitter"
+          )
 
   p Blue Brain Nexus is Open Source and available under the Apache License 2.0
   p © Blue Brain Project/EPFL 2005 – 2020. All rights reserved. 
