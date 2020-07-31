@@ -21,4 +21,20 @@
 
 .call-out#powered-by-nexus a {
   display: flex;
+  height: 100%;
+}
+
+.call-out#powered-by-nexus img {
+  max-width: 100px;
+}
+.call-out#powered-by-nexus a {
+  color: #fff;
+}
+.call-out#powered-by-nexus p:not(.title) {
+  align-self: center;
+  margin-left: 1em;
+}
+
+.call-out .title {
+  color: #fff;
 }

@@ -1,52 +1,42 @@
-import $ from "jquery";
-
-function serializeFormData($form) {
-  return $form.serializeArray().reduce((obj, item) => {
-    obj[item.name] = item.value;
+function serializeFormData(form) {
+  return Array.from(form.elements).reduce((obj, field) => {
+    if (field.value) {
+      obj[field.name] = field.value;
+    }
     return obj;
   }, {});
 }
 
-// keys of data must match exactly column headers in gSheets
 function submitForm(api, data) {
-  return new Promise((resolve, reject) => {
-    $.post(api, data)
-      .done(resolve)
-      .fail(reject);
-  });
+  return fetch(`${api}?email=${data.email}`);
 }
 
-function renderPending($form) {
-  $form.html(`
-    <div class="pending">
-      <span>Sending...</span>
-    </div>
-  `);
+function renderPending(form) {
+  form.classList.add("pending");
 }
 
-function renderFulfilled($form) {
-  $form.html(`
-    <div class="fulfilled">
-      <span>Thanks! We'll keep you up to date.</span>
-    </div>
-  `);
+function renderFulfilled(form) {
+  return () => {
+    form.classList.remove("pending");
+    form.classList.add("success");
+  };
 }
 
-function renderFailed($form) {
-  $form.html(`
-    <div class="failed">
-      <span>Oh, bother! We failed to save your email!</span>
-    </div>
-  `);
+function renderFailed(form) {
+  return (error) => {
+    form.classList.remove("pending");
+    form.classList.add("error");
+    console.error(error);
+  };
 }
 
-export default (apiPath, $form) => {
-  $form.on('submit', function (e) {
+export default (apiPath, form) => {
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
-    let data = serializeFormData($(this));
-    renderPending($form);
+    let data = serializeFormData(form);
+    renderPending(form);
     submitForm(apiPath, data)
-      .then(() => renderFulfilled($form))
-      .catch(() => renderFailed($form));
+      .then(renderFulfilled(form))
+      .catch(renderFailed(form));
   });
 };

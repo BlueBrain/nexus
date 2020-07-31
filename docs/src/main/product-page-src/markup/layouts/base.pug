@@ -23,7 +23,7 @@ html(lang="en-US")
     )
      
     block scripts
-      //- script(src='../../js/index.js')
+      script(src='../js/index.js')
   body
     block header
       +header()
@@ -32,7 +32,3 @@ html(lang="en-US")
         section empty content block
     block foot
       include ./footer.pug
-    script(
-      type='text/javascript'
-      src='../js/menu.js'
-    )

@@ -1,9 +1,10 @@
-@import "./variables.css";
 @import "bulma/css/bulma.css";
+@import "./variables.css";
 @import "./footer.css";
 @import "./header.css";
 @import "./use-case.css";
 @import "./call-out.css";
+@import "./email-catch.css";
 
 @media (min-width: 320px) {
   /* smartphones, portrait iPhone, portrait 480x320 phones (Android) */
@@ -182,4 +183,14 @@ Hero
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 2em;
+  }
 }
