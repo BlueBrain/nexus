@@ -28,7 +28,7 @@ abstract class EventSourceProcessorSpec(config: Config)
   implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
 
-  val aggregateConfig = AggregateConfig(
+  val aggregateConfig: AggregateConfig = AggregateConfig(
     100.millis,
     100.millis,
     system.executionContext,
@@ -79,7 +79,7 @@ abstract class EventSourceProcessorSpec(config: Config)
 
   protected def expectNextPersisted(event: Event): Unit
 
-  private def expectEvaluate(evaluate: (Command, Either[Rejection, (Event, State)])*) = {
+  private def expectEvaluate(evaluate: (Command, Either[Rejection, (Event, State)])*): Unit = {
     val probe      = testKit.createTestProbe[EvaluateResult]()
     val probeState = testKit.createTestProbe[State]()
 
@@ -102,7 +102,7 @@ abstract class EventSourceProcessorSpec(config: Config)
     }
   }
 
-  private def expectDryRun(initialState: State, evaluate: (Command, Either[Rejection, (Event, State)])*) = {
+  private def expectDryRun(initialState: State, evaluate: (Command, Either[Rejection, (Event, State)])*): Unit = {
     val probe      = testKit.createTestProbe[EvaluateResult]()
     val probeState = testKit.createTestProbe[State]()
 
@@ -131,17 +131,20 @@ class PersistentEventProcessorSpec
     )
     with BeforeAndAfterEach {
 
-  override val agg = testKit.spawn(
+  override val agg: ActorRef[aggregate.Command] = testKit.spawn(
     new PersistentEventProcessor[IO, State, Command, Event, Rejection](
-      "increment",
       entityId,
-      State.Initial,
-      AggregateFixture.next,
-      AggregateFixture.evaluate[IO],
+      PersistentEventDefinition(
+        "increment",
+        State.Initial,
+        AggregateFixture.next,
+        AggregateFixture.evaluate[IO],
+        (_: Event) => Set.empty[String]
+      ),
       aggregateConfig
     ).behavior()
   )
-  val persistenceTestKit = PersistenceTestKit(system)
+  private val persistenceTestKit = PersistenceTestKit(system)
 
   override def beforeEach(): Unit = {
     persistenceTestKit.clearAll()
@@ -172,11 +175,13 @@ class TransientEventProcessorSpec
   override val agg: ActorRef[aggregate.Command] =
     testKit.spawn(
       new TransientEventProcessor[IO, State, Command, Event, Rejection](
-        "increment",
         entityId,
-        State.Initial,
-        AggregateFixture.next,
-        AggregateFixture.evaluate[IO],
+        TransientEventDefinition(
+          "increment",
+          State.Initial,
+          AggregateFixture.next,
+          AggregateFixture.evaluate[IO]
+        ),
         aggregateConfig
       ).behavior()
     )
