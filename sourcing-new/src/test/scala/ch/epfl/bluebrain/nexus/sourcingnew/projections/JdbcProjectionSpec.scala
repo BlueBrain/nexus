@@ -43,7 +43,7 @@ class JdbcProjectionSpec extends ProjectionSpec {
 
   "Schema" should {
     "be properly initialized" in {
-      (schemaManager: SchemaManager[IO], xa: Transactor[IO]) =>
+      (schemaManager: SchemaMigration[IO], xa: Transactor[IO]) =>
         val expectedTables = List(
           "flyway_schema_history",
           "journal",

@@ -15,6 +15,7 @@ object CassandraDocker extends ContainerDef {
     Config(
       image = "cassandra:3.11.6",
       ports = Seq(primaryPort),
+      reuse = true,
       env = Map(
         "JVM_OPTS"      -> "-Xms1g -Xmx1g",
         "MAX_HEAP_SIZE" -> "1g",

@@ -71,7 +71,7 @@ trait CirceInstances {
 trait OffsetOrderingInstances {
   implicit final val offsetOrdering: Ordering[Offset] = {
     case (x: Sequence, y: Sequence)           => x compare y
-    case (x: TimeBasedUUID, y: TimeBasedUUID) => x.value.timestamp() compareTo y.value.timestamp()
+    case (x: TimeBasedUUID, y: TimeBasedUUID) => x compare y
     case (NoOffset, _)                        => -1
     case (_, NoOffset)                        => 1
     case _                                    => 0

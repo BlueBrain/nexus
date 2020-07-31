@@ -63,33 +63,33 @@ private [aggregate] abstract class EventSourceProcessor[
               case ese: EventSourceCommand =>
                 stateActor ! ese
                 Behaviors.same
-              case Evaluate(_, subCommand: EvaluateCommand, replyTo: ActorRef[EvaluateResult]) =>
+              case Evaluate(_, subCommand: EvaluateCommand, replyTo: ActorRef[EvaluationResult]) =>
                 evaluateCommand(state, subCommand, c)
-                stash(state, replyTo)
+                stash(state, replyTo.unsafeUpcast[RunResult])
               case DryRun(_, subCommand: EvaluateCommand, replyTo: ActorRef[DryRunResult]) =>
                 evaluateCommand(state, subCommand, c, dryRun = true)
-                stash(state, replyTo.unsafeUpcast[EvaluateResult])
-              case _: EvaluateResult =>
+                stash(state, replyTo.unsafeUpcast[RunResult])
+              case _: EvaluationResult =>
                 context.log.error("Getting an evaluation result should happen within a stashing behavior")
                 Behaviors.same
             }
         }
 
-        def stash(state: State, replyTo: ActorRef[EvaluateResult]): Behavior[Command] = Behaviors.receive{
+        def stash(state: State, replyTo: ActorRef[RunResult]): Behavior[Command] = Behaviors.receive{
           (_, cmd) =>
             assertCommandId(cmd)
             cmd match {
               case ro: ReadonlyCommand =>
                 stateActor ! ro
                 Behaviors.same
-              case success @ EvaluateSuccess(event: Event, state: State) =>
+              case success @ EvaluationSuccess(event: Event, state: State) =>
                 stateActor ! Append(entityId, event)
                 replyTo ! success
                 active(state)
-              case rejection: EvaluateRejection[Rejection] =>
+              case rejection: EvaluationRejection[Rejection] =>
                 replyTo ! rejection
                 buffer.unstashAll(active(state))
-              case error: EvaluateError =>
+              case error: EvaluationError =>
                 replyTo ! error
                 buffer.unstashAll(active(state))
               case dryRun: DryRunResult =>
@@ -121,7 +121,7 @@ private [aggregate] abstract class EventSourceProcessor[
                               cmd: EvaluateCommand,
                               context: ActorContext[Command],
                               dryRun: Boolean = false): Unit = {
-    def tellResult(evaluateResult: EvaluateResult) = {
+    def tellResult(evaluateResult: EvaluationResult) = {
       val result = if(dryRun) { DryRunResult(evaluateResult) } else { evaluateResult }
       IO(context.self ! result)
     }
@@ -131,15 +131,15 @@ private [aggregate] abstract class EventSourceProcessor[
       _ <- IO.shift(config.evaluationExecutionContext)
       r <- definition.evaluate(state, cmd).toIO.timeout(config.evaluationMaxDuration)
       _ <- IO.shift(context.executionContext)
-      _ <- tellResult(r.map{ e => EvaluateSuccess(e, definition.next(state, e)) }.valueOr(EvaluateRejection(_)))
+      _ <- tellResult(r.map{ e => EvaluationSuccess(e, definition.next(state, e)) }.valueOr(EvaluationRejection(_)))
     } yield ()
     val io    = eval.onError {
       case _: TimeoutException =>
         context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)
-        IO.shift(context.executionContext) >> tellResult(EvaluateCommandTimeout(cmd, config.evaluationMaxDuration))
+        IO.shift(context.executionContext) >> tellResult(EvaluationCommandTimeout(cmd, config.evaluationMaxDuration))
       case NonFatal(th)         =>
         context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)
-        IO.shift(context.executionContext) >> tellResult(EvaluateCommandError(cmd, Option(th.getMessage)))
+        IO.shift(context.executionContext) >> tellResult(EvaluationCommandError(cmd, Option(th.getMessage)))
     }
     io.unsafeRunAsyncAndForget()
   }

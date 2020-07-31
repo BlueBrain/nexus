@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.sourcingnew.Event.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.sourcingnew.Rejection.InvalidRevision
 import ch.epfl.bluebrain.nexus.sourcingnew.State.Current
 import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.EventSourceProcessor.{PersistentEventProcessor, TransientEventProcessor}
-import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.{DryRun, DryRunResult, Evaluate, EvaluateRejection, EvaluateResult, EvaluateSuccess, GetLastSeqNr, RequestLastSeqNr, RequestState}
+import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.{DryRun, DryRunResult, Evaluate, EvaluationRejection, EvaluationResult, EvaluationSuccess, GetLastSeqNr, RequestLastSeqNr, RequestState}
 import ch.epfl.bluebrain.nexus.sourcingnew.config.AggregateConfig
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
@@ -80,7 +80,7 @@ abstract class EventSourceProcessorSpec(config: Config)
   protected def expectNextPersisted(event: Event): Unit
 
   private def expectEvaluate(evaluate: (Command, Either[Rejection, (Event, State)])*): Unit = {
-    val probe      = testKit.createTestProbe[EvaluateResult]()
+    val probe      = testKit.createTestProbe[EvaluationResult]()
     val probeState = testKit.createTestProbe[State]()
 
     evaluate.foreach {
@@ -90,10 +90,10 @@ abstract class EventSourceProcessorSpec(config: Config)
         result match {
           case Left(rejection)       =>
             expectNothingPersisted()
-            probe.expectMessage(EvaluateRejection(rejection))
+            probe.expectMessage(EvaluationRejection(rejection))
           case Right((event, state)) =>
             expectNextPersisted(event)
-            probe.expectMessage(EvaluateSuccess(event, state))
+            probe.expectMessage(EvaluationSuccess(event, state))
 
             agg ! RequestState(entityId, probeState.ref)
             probeState.expectMessage(state)
@@ -103,7 +103,7 @@ abstract class EventSourceProcessorSpec(config: Config)
   }
 
   private def expectDryRun(initialState: State, evaluate: (Command, Either[Rejection, (Event, State)])*): Unit = {
-    val probe      = testKit.createTestProbe[EvaluateResult]()
+    val probe      = testKit.createTestProbe[DryRunResult]()
     val probeState = testKit.createTestProbe[State]()
 
     evaluate.foreach {
@@ -113,9 +113,9 @@ abstract class EventSourceProcessorSpec(config: Config)
 
         result match {
           case Left(rejection)       =>
-            probe.expectMessage(DryRunResult(EvaluateRejection(rejection)))
+            probe.expectMessage(DryRunResult(EvaluationRejection(rejection)))
           case Right((event, state)) =>
-            probe.expectMessage(DryRunResult(EvaluateSuccess(event, state)))
+            probe.expectMessage(DryRunResult(EvaluationSuccess(event, state)))
         }
 
         agg ! RequestState(entityId, probeState.ref)

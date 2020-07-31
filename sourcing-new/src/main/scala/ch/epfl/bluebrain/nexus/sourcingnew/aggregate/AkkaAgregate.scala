@@ -57,8 +57,8 @@ class AkkaAgregate[
     * @return the newly generated state and appended event in __F__ if the command was evaluated successfully, or the
     *         rejection of the __command__ in __F__ otherwise
     */
-  override def evaluate(id: String, command: EvaluateCommand): F[EvaluateResult] =
-    send(id, { askTo: ActorRef[EvaluateResult] => Evaluate(id, command, askTo) })
+  override def evaluate(id: String, command: EvaluateCommand): F[EvaluationResult] =
+    send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) })
 
   /**
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any
@@ -74,7 +74,7 @@ class AkkaAgregate[
 
   private def retryIf(e: Throwable): Boolean = e match {
     case _: IOException => true
-    case _: EvaluateCommandTimeout[_] => true
+    case _: EvaluationCommandTimeout[_] => true
     case _ => false
   }
 
@@ -85,8 +85,8 @@ class AkkaAgregate[
     val fa     = IO.fromFuture(future).to[F]
 
     fa.flatMap[A] {
-        case ect: EvaluateCommandTimeout[_] => F.raiseError(ect)
-        case ece: EvaluateCommandError[_]   => F.raiseError(ece)
+        case ect: EvaluationCommandTimeout[_] => F.raiseError(ect)
+        case ece: EvaluationCommandError[_]   => F.raiseError(ece)
         case value                          => F.pure(value)
       }.retryingOnSomeErrors(retryIf)
   }

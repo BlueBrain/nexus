@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
-import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.{DryRunResult, EvaluateResult}
+import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.{DryRunResult, EvaluationResult}
 
 trait Aggregate[F[_], Id, State, Command, Event, Rejection] {
 
@@ -27,7 +27,7 @@ trait Aggregate[F[_], Id, State, Command, Event, Rejection] {
     * @return the newly generated state and appended event in __F__ if the command was evaluated successfully, or the
     *         rejection of the __command__ in __F__ otherwise
     */
-  def evaluate(id: Id, command: Command): F[EvaluateResult]
+  def evaluate(id: Id, command: Command): F[EvaluationResult]
 
   /**
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any

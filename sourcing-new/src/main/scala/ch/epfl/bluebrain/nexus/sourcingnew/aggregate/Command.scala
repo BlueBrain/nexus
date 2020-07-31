@@ -26,19 +26,21 @@ final case class Snapshot(id: String) extends ReadonlyCommand
 // Write command
 final case class Append[Event](id: String, event: Event) extends EventSourceCommand
 
-final case class Evaluate[EvaluateCommand](id: String, evaluateCommand: EvaluateCommand, replyTo: ActorRef[EvaluateResult]) extends InputCommand
+//TODO: Add a FlatMap or Monad implementation ?
+final case class Evaluate[EvaluateCommand](id: String, evaluateCommand: EvaluateCommand, replyTo: ActorRef[EvaluationResult]) extends InputCommand
 final case class DryRun[EvaluateCommand](id: String, evaluateCommand: EvaluateCommand, replyTo: ActorRef[DryRunResult]) extends InputCommand
 
 // Evaluation results
-sealed trait EvaluateResult extends Command
-final case class EvaluateSuccess[Event, State](value: Event, state: State) extends EvaluateResult
-final case class EvaluateRejection[Rejection](value: Rejection) extends EvaluateResult
+sealed trait RunResult extends Command
+sealed trait EvaluationResult extends RunResult
+final case class EvaluationSuccess[Event, State](value: Event, state: State) extends EvaluationResult
+final case class EvaluationRejection[Rejection](value: Rejection) extends EvaluationResult
 
-abstract class EvaluateError extends Exception with EvaluateResult
-final case class EvaluateCommandTimeout[EvaluateCommand](value: EvaluateCommand, timeoutAfter: FiniteDuration) extends EvaluateError
-final case class EvaluateCommandError[EvaluateCommand](value: EvaluateCommand, message: Option[String]) extends EvaluateError
+abstract class EvaluationError extends Exception with EvaluationResult
+final case class EvaluationCommandTimeout[EvaluateCommand](value: EvaluateCommand, timeoutAfter: FiniteDuration) extends EvaluationError
+final case class EvaluationCommandError[EvaluateCommand](value: EvaluateCommand, message: Option[String]) extends EvaluationError
 
-final case class DryRunResult(evaluateResult: EvaluateResult) extends EvaluateResult
+final case class DryRunResult(evaluateResult: EvaluationResult) extends RunResult
 
 // Replies
 sealed trait AggregateReply
