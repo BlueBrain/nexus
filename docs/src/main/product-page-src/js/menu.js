@@ -4,7 +4,7 @@ export default () => {
   }
 
   function hideMany(elements) {
-    for (i = 0; i < elements.length; i++) {
+    for (let i = 0; i < elements.length; i++) {
       elements[i].style.display = "none";
     }
   }
@@ -18,15 +18,15 @@ export default () => {
   }
 
   function onClick(elementId, action) {
-    var element = document.getElementById(elementId);
+    let element = document.getElementById(elementId);
     element.addEventListener("click", action);
   }
 
   // mobile menu
-  var productsSubmenu = grabElement("products-submenu");
-  var getStartedSubmenu = grabElement("getting-started-submenu");
-  var devSubmenu = grabElement("dev-submenu");
-  var menu = grabElement("menu-container");
+  let productsSubmenu = grabElement("products-submenu");
+  let getStartedSubmenu = grabElement("getting-started-submenu");
+  let devSubmenu = grabElement("dev-submenu");
+  let menu = grabElement("menu-container");
 
   function closeAllMobile() {
     hideMany([productsSubmenu, getStartedSubmenu, devSubmenu]);
@@ -61,10 +61,10 @@ export default () => {
   onClick("dev-button", expandItem(devSubmenu));
 
   // desktop menu
-  var header = grabElement("header");
-  var products = grabElement("products-dropdown");
-  var getStarted = grabElement("getting-started-dropdown");
-  var dev = grabElement("dev-dropdown");
+  let header = grabElement("header");
+  let products = grabElement("products-dropdown");
+  let getStarted = grabElement("getting-started-dropdown");
+  let dev = grabElement("dev-dropdown");
 
   header.addEventListener("mouseleave", closeAll());
 
@@ -73,7 +73,7 @@ export default () => {
   }
 
   function setDropdown(triggerId, dropdown) {
-    var trigger = document.getElementById(triggerId);
+    let trigger = document.getElementById(triggerId);
 
     trigger.addEventListener("mouseover", function () {
       closeAll();
