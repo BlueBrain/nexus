@@ -69,9 +69,9 @@ object Main {
     }
   }
 
-  def shutdownMonitoring(): Unit = {
+  def shutdownMonitoring()(implicit cfg: AppConfig): Unit = {
     if (sys.env.getOrElse("KAMON_ENABLED", "false").toBoolean) {
-      Await.result(Kamon.stopModules(), 10.seconds)
+      Await.result(Kamon.stopModules(), cfg.runtime.shutdownTimeout)
     }
   }
 
@@ -321,7 +321,7 @@ object Main {
             cfg.http.interface,
             cfg.http.port
           )
-          Await.result(as.terminate(), 10.seconds)
+          Await.result(as.terminate(), cfg.runtime.shutdownTimeout)
       }
     }
 
@@ -333,7 +333,7 @@ object Main {
     }
     // attempt to leave the cluster before shutting down
     val _ = sys.addShutdownHook {
-      Await.result(as.terminate().map(_ => ())(as.dispatcher), 10.seconds)
+      Await.result(as.terminate().map(_ => ())(as.dispatcher), cfg.runtime.shutdownTimeout)
     }
   }
 }

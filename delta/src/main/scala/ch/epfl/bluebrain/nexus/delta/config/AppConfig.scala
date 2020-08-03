@@ -30,6 +30,7 @@ final case class AppConfig(
     cluster: ClusterConfig,
     persistence: PersistenceConfig,
     http: HttpConfig,
+    runtime: RuntimeConfig,
     pagination: PaginationConfig,
     indexing: IndexingConfig,
     keyValueStore: StoreConfig,
@@ -72,6 +73,13 @@ object AppConfig {
     val fullName: String = s"$name-${version.replaceAll("\\W", "-")}"
 
   }
+
+  /**
+    * The runtime configuration
+    *
+   * @param shutdownTimeout the shutdown timeout
+    */
+  final case class RuntimeConfig(shutdownTimeout: FiniteDuration)
 
   /**
     * HTTP configuration
