@@ -77,9 +77,9 @@ object AppConfig {
   /**
     * The runtime configuration
     *
-   * @param defaultTimeout arbitrary Future completion timeout when
+   * @param shutdownTimeout the shutdown timeout
     */
-  final case class RuntimeConfig(defaultTimeout: FiniteDuration)
+  final case class RuntimeConfig(shutdownTimeout: FiniteDuration)
 
   /**
     * HTTP configuration
