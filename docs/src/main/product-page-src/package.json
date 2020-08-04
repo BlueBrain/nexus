@@ -7,7 +7,8 @@
     "start": "ls && parcel markup/*.pug -p 8000 --hmr-port 1234",
     "build": "parcel build markup/*.pug --no-source-maps --out-dir ./public --public-url public",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "echo \"Error: no lint specified\" && exit 1"
+    "lint": "echo \"Error: no lint specified\" && exit 1",
+    "postBuild": "node ./postBuild.prod.js"
   },
   "repository": {
     "type": "git",
