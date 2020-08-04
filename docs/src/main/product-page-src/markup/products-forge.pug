@@ -1,0 +1,54 @@
+//- Products
+extends ./layouts/base.pug
+
+include ./mixins/header.pug
+include ./mixins/button.pug
+include ./mixins/shortProductDescription.pug
+include ./mixins/valueProposition.pug
+include ./mixins/getStartedLink.pug
+include ./mixins/seoHeaders.pug
+
+block header
+  +header()
+
+block pageHeaders
+  +seoHeaders(
+    "Blue Brain Nexus",
+    "Some description"
+  )
+
+block content
+  - 
+    var features = [{
+      title: "Data Management",
+      description: "Store and manage all your Data and describe them with Metadata. Take control of your metadata using schemas and benefit from automatic validation. All your data and metadata is versioned so you cannot lose anything.",
+    },
+    {
+      title: "Scalable & Secure",
+      description: "Nexus grows with your data. Leveraging modern deployment technologies (Docker, Kubernetes), you can add additional hardware to speed up Nexus or cope with more data. Security is a primary concern and all data access through the API is secure. Nexus interfaces with your organization’s authentication provider."
+    },
+    {
+      title: "Flexible Storage",
+      description: "Configure Nexus to use the storage technology you already use, we support both POSIX systems and cloud storage."
+    },
+    {
+      title: "Powerful indexing",
+      description: "We index all your data automatically to enable search in the Knowledge Graph. You can customize the indexing to suit your needs."
+    },
+    {
+      title: "Extensibility",
+      description: "Use Server Sent Event (SSE) to write your own extensions that leverage your Knowledge Graph’s events. Because Delta is open source, you can also add your own features and contribute to the community."
+    },
+    {
+      title: "Federation",
+      description: "Because sharing of your data is often essential, our federation capabilities allow you to make data available across several deployment of Nexus."
+    }]
+    var title = "Nexus Forge"
+    var overviewText = "Delta can be used as a store for Nexus Forge and works seamlessly with Nexus Fusion.We offer several clients that consume the API of Delta. Nexus.js allows you to build data-driven web applications, Nexus Python SDK to integrate your data pipelines with the Knowledge Graph and the Nexus CLI allows you to manage your deployment from the command line.All data and metadata stored into your Knowledge Graph is versioned. All metadata is further indexed into views that offer several access modalities such as Graph and Document."
+    var featureText = "Delta offers a rich set of features to manage your data."
+    var product = "forge"
+    var imagePath = "../img/products/forge.png"
+    var productTagline = "Managing Data and Knowledge Graph Lifecycles."
+    var productDescription = "A secure and scalable service that allows you to organize your data into a Knowledge Graph. Its API enables you to store your data, describe them with metadata, enforce format using schemas combined with automatic validation, capture provenance, and access revisions."
+
+  include ./layouts/product.pug
