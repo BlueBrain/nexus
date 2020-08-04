@@ -1,18 +1,17 @@
 package ch.epfl.bluebrain.nexus.kg.resources
 
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.directives.ProjectDirectives._
 import ch.epfl.bluebrain.nexus.kg.urlEncode
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.util.Randomness
 
-import scala.util.Random
+object AccessId extends Randomness {
 
-object AccessId {
-
-  private val randBase: AbsoluteIri = url"http://notused.com/${Random.nextString(20)}"
+  private val randBase: AbsoluteIri = url"http://notused.com/${genString()}"
 
   /**
     * Build an access id (the Uri from where to fetch the resource from the API)
