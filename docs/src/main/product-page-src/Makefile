@@ -12,8 +12,8 @@ build:
 	$(MAKE) clean
 	@echo "Building project... 👷"
 	@docker-compose run --rm nexus-product-page
-	@echo "Copying index.html to paradox root folder... 📋"
-	@mv ../paradox/public/index.html ../paradox/index.html
+	@echo "Copying html files to paradox root folder... 📋"
+	@docker-compose run --rm nexus-product-page postBuild
 	@rm -rf public
 	$(MAKE) open
 
