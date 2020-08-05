@@ -1,0 +1,48 @@
+
+section.hero.is-fullheight
+    .gradient
+    .hero-body
+      .container
+        h1.title.is-spaced #{title}
+        h2.subtitle #{productTagline}
+        p.subtitle #{productDescription}
+        .columns
+          .column
+            a(href="#overview")
+              +button("Overview", true)
+          .column
+            a(href="#features")
+              +button("Features", true)
+          .column
+            a(href="/docs") 
+              +button("Docs")
+
+section#overview
+    .container
+      .content.centered
+        h2 Overview
+        p.subtitle #{overviewText}
+      .content.centered  
+        img(
+          class="product-image"
+          src="../img/products/circles.png"
+          alt="products"
+        )
+      .content.centered  
+        img(
+            class="product-image"
+            src= imagePath
+            alt= product
+           )
+ 
+include ./newsletterCatchCallOut.pug
+section#features
+    .container
+      .content.centered
+        h2 Features
+        p.subtitle #{featureText}
+        .tile.is-ancestor.wrapping
+          each feature in features
+            .tile.is-parent.is-4
+              article.tile.is-child.box
+                +valueProposition(feature.title, feature.description)

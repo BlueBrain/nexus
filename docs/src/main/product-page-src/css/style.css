@@ -211,3 +211,8 @@ Hero
     padding: 2em;
   }
 }
+
+.product-image {
+  margin-bottom: 1em;
+  margin-top: 1em;
+}
