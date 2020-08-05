@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.cassandra.scaladsl._
 import akka.stream.alpakka.cassandra.{CassandraSessionSettings, CassandraWriteSettings}
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import ch.epfl.bluebrain.nexus.delta.MigrateV13ToV14._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections.cassandraDefaultConfigPath
@@ -18,11 +18,9 @@ import monix.execution.schedulers.CanBlock
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 
 // $COVERAGE-OFF$
 class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as: ActorSystem) {
-  import as.dispatcher
   private def truncateMessagesTable: String =
     s"TRUNCATE ${config.description.name}.messages"
 
@@ -38,33 +36,17 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
   private def insertAllPersIdsStmt: String =
     s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
 
-  private def countProject(project: UUID): String =
-    s"""SELECT COUNT(*) AS count FROM ${config.migration.adminKeyspace}.messages WHERE persistence_id='projects-$project' AND partition_nr=0;"""
-
-  private def readVerify(keyspace: String): Source[Message, NotUsed] =
-    read(keyspace)
-      .mapAsync[(Boolean, Message)](1) { m =>
-        m.persistence_id match {
-          case resourceRegex(projectUuid, id) =>
-            Try(UUID.fromString(projectUuid)) match {
-              case Failure(_)    =>
-                log.error(s"project '$projectUuid' could not be converted to UUID")
-                Future.successful(false -> m)
-              case Success(uuid) =>
-                session.selectOne(countProject(uuid)).map {
-                  case Some(row) if row.getLong("count") > 0L => true -> m
-                  case Some(_)                                =>
-                    log.warn(s"project '$uuid' does not exist. Resource '$id' is going to be omitted")
-                    false -> m
-                  case None                                   =>
-                    log.error(s"COUNT query for project '$uuid' failed")
-                    false -> m
-                }
-            }
-          case _                              => Future.successful(true -> m)
-        }
+  private def skipNonExisting(projects: Set[String]): Flow[Message, Message, NotUsed] =
+    Flow[Message].filter { m =>
+      m.persistence_id match {
+        case resourceRegex(projectUuid, id) =>
+          if (projects.contains(s"projects-$projectUuid")) true
+          else
+            log.warn(s"project '$projectUuid' does not exist. Resource '$id' is going to be omitted")
+          false
+        case _                              => true
       }
-      .collect { case (true, message) => message }
+    }
 
   private def read(keyspace: String): Source[Message, NotUsed] = {
     CassandraSource(
@@ -128,20 +110,19 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
   def migrate(): Task[Unit] = {
     implicit val session: CassandraSession =
       CassandraSessionRegistry.get(as).sessionFor(CassandraSessionSettings(cassandraDefaultConfigPath))
-    val iamSource                          = read(config.migration.iamKeyspace)
-    val adminSource                        = read(config.migration.adminKeyspace)
-    val kgSource                           =
-      if (config.migration.verifyProjectIntegrity) readVerify(config.migration.kgKeyspace)
-      else read(config.migration.kgKeyspace)
+    val iamS                               = read(config.migration.iamKeyspace)
+    val adminS                             = read(config.migration.adminKeyspace)
+    val kgS                                = read(config.migration.kgKeyspace)
     for {
-      _       <- Task.delay(log.info("Migrating messages from multiple keyspaces into a single keyspace."))
-      _       <- Task.deferFuture(session.executeDDL(truncateMessagesTable))
-      _       <- Task.deferFuture(session.executeDDL(truncateAllPersIdTable))
-      _       <- Task.deferFuture(session.executeDDL(truncateSnapshotTable))
-      _       <- Task.sleep(1.seconds)
-      records <- Task.deferFuture(iamSource.concat(adminSource).concat(kgSource).runWith(write))
-      _       <- Task.sleep(1.seconds)
-      _       <- Task.delay(log.info(s"Migrated a total of '$records' events."))
+      _        <- Task.delay(log.info("Migrating messages from multiple keyspaces into a single keyspace."))
+      _        <- Task.deferFuture(session.executeDDL(truncateMessagesTable))
+      _        <- Task.deferFuture(session.executeDDL(truncateAllPersIdTable))
+      _        <- Task.deferFuture(session.executeDDL(truncateSnapshotTable))
+      _        <- Task.sleep(1.seconds)
+      projects <- Task.deferFuture(adminS.map(_.persistence_id).runFold(Set.empty[String])(_ + _))
+      records  <- Task.deferFuture(iamS.concat(adminS).concat(kgS.via(skipNonExisting(projects))).runWith(write))
+      _        <- Task.sleep(1.seconds)
+      _        <- Task.delay(log.info(s"Migrated a total of '$records' events."))
     } yield ()
   }
 }
