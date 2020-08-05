@@ -381,7 +381,7 @@ object Resolvers {
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = Timeout(config.keyValueStore.askTimeout)
-    implicit val log: Logger          = Logger[Views.type]
+    implicit val log: Logger          = Logger[Resolvers.type]
 
     def toResolver(event: Event): F[Option[Resolver]] =
       projectCache
