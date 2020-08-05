@@ -41,24 +41,8 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
   private def countPersIdStmt(persistenceId: String): String =
     s"""SELECT COUNT(*) AS count FROM ${config.migration.adminKeyspace}.messages WHERE persistence_id='$persistenceId' AND partition_nr=0;"""
 
-  private def read(keyspace: String): Source[Message, NotUsed] = {
-    CassandraSource(
-      s"SELECT persistence_id, partition_nr, sequence_nr, timestamp, timebucket, writer_uuid, ser_id, ser_manifest, event_manifest, event, tags FROM $keyspace.messages;"
-    ).map(r =>
-        Message(
-          r.getString("persistence_id"),
-          r.getLong("partition_nr"),
-          r.getLong("sequence_nr"),
-          r.getUuid("timestamp"),
-          r.getString("timebucket"),
-          r.getString("writer_uuid"),
-          r.getInt("ser_id"),
-          r.getString("ser_manifest"),
-          r.getString("event_manifest"),
-          r.getByteBuffer("event"),
-          r.getSet("tags", classOf[String])
-        )
-      )
+  private def readVerify(keyspace: String): Source[Message, NotUsed] =
+    read(keyspace)
       .mapAsync[(Boolean, Message)](1) { m =>
         m.persistence_id match {
           case resourceRegex(projectUuid, id) =>
@@ -81,6 +65,25 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
         }
       }
       .collect { case (true, message) => message }
+
+  private def read(keyspace: String): Source[Message, NotUsed] = {
+    CassandraSource(
+      s"SELECT persistence_id, partition_nr, sequence_nr, timestamp, timebucket, writer_uuid, ser_id, ser_manifest, event_manifest, event, tags FROM $keyspace.messages;"
+    ).map(r =>
+      Message(
+        r.getString("persistence_id"),
+        r.getLong("partition_nr"),
+        r.getLong("sequence_nr"),
+        r.getUuid("timestamp"),
+        r.getString("timebucket"),
+        r.getString("writer_uuid"),
+        r.getInt("ser_id"),
+        r.getString("ser_manifest"),
+        r.getString("event_manifest"),
+        r.getByteBuffer("event"),
+        r.getSet("tags", classOf[String])
+      )
+    )
   }
 
   private def write: Sink[Message, Future[Long]] = {
@@ -127,7 +130,9 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
       CassandraSessionRegistry.get(as).sessionFor(CassandraSessionSettings(cassandraDefaultConfigPath))
     val iamSource                          = read(config.migration.iamKeyspace)
     val adminSource                        = read(config.migration.adminKeyspace)
-    val kgSource                           = read(config.migration.kgKeyspace)
+    val kgSource                           =
+      if (config.migration.verifyProjectIntegrity) readVerify(config.migration.kgKeyspace)
+      else read(config.migration.kgKeyspace)
     for {
       _       <- Task.delay(log.info("Migrating messages from multiple keyspaces into a single keyspace."))
       _       <- Task.deferFuture(session.executeDDL(truncateMessagesTable))

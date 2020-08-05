@@ -397,16 +397,18 @@ object AppConfig {
   /**
     * Migration configuration used to repair tag views table and perform migrations to single service
     *
-   * @param kgKeyspace    the kg keyspace
-    * @param adminKeyspace the admin keyspace
-    * @param iamKeyspace   the iam keyspace
-    * @param logInterval   the number of events between log messages
+   * @param kgKeyspace             the kg keyspace
+    * @param adminKeyspace          the admin keyspace
+    * @param iamKeyspace            the iam keyspace
+    * @param logInterval            the number of events between log messages
+    * @param verifyProjectIntegrity the flag that verify for each resource if parent project exists
     */
   final case class Migration(
       kgKeyspace: String,
       adminKeyspace: String,
       iamKeyspace: String,
-      logInterval: Int
+      logInterval: Int,
+      verifyProjectIntegrity: Boolean
   )
 
   val orderedKeys: OrderedKeys = OrderedKeys(
