@@ -18,9 +18,11 @@ import monix.execution.schedulers.CanBlock
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 // $COVERAGE-OFF$
 class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as: ActorSystem) {
+  import as.dispatcher
   private def truncateMessagesTable: String =
     s"TRUNCATE ${config.description.name}.messages"
 
@@ -36,24 +38,49 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
   private def insertAllPersIdsStmt: String =
     s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
 
+  private def countPersIdStmt(persistenceId: String): String =
+    s"""SELECT COUNT(*) AS count FROM ${config.migration.adminKeyspace}.messages WHERE persistence_id='$persistenceId' AND partition_nr=0;"""
+
   private def read(keyspace: String): Source[Message, NotUsed] = {
     CassandraSource(
       s"SELECT persistence_id, partition_nr, sequence_nr, timestamp, timebucket, writer_uuid, ser_id, ser_manifest, event_manifest, event, tags FROM $keyspace.messages;"
     ).map(r =>
-      Message(
-        r.getString("persistence_id"),
-        r.getLong("partition_nr"),
-        r.getLong("sequence_nr"),
-        r.getUuid("timestamp"),
-        r.getString("timebucket"),
-        r.getString("writer_uuid"),
-        r.getInt("ser_id"),
-        r.getString("ser_manifest"),
-        r.getString("event_manifest"),
-        r.getByteBuffer("event"),
-        r.getSet("tags", classOf[String])
+        Message(
+          r.getString("persistence_id"),
+          r.getLong("partition_nr"),
+          r.getLong("sequence_nr"),
+          r.getUuid("timestamp"),
+          r.getString("timebucket"),
+          r.getString("writer_uuid"),
+          r.getInt("ser_id"),
+          r.getString("ser_manifest"),
+          r.getString("event_manifest"),
+          r.getByteBuffer("event"),
+          r.getSet("tags", classOf[String])
+        )
       )
-    )
+      .mapAsync[(Boolean, Message)](1) { m =>
+        m.persistence_id match {
+          case resourceRegex(projectUuid, id) =>
+            Try(UUID.fromString(projectUuid)) match {
+              case Failure(_)    =>
+                log.error(s"project '$projectUuid' could not be converted to UUID")
+                Future.successful(false -> m)
+              case Success(uuid) =>
+                session.selectOne(countPersIdStmt(s"projects-$uuid")).map {
+                  case Some(row) if row.getLong("count") > 0L => true -> m
+                  case Some(_)                                =>
+                    log.warn(s"project '$uuid' does not exist. Resource '$id' is going to be omitted")
+                    false -> m
+                  case None                                   =>
+                    log.error(s"COUNT query for project '$uuid' failed")
+                    false -> m
+                }
+            }
+          case _                              => Future.successful(true -> m)
+        }
+      }
+      .collect { case (true, message) => message }
   }
 
   private def write: Sink[Message, Future[Long]] = {
@@ -116,7 +143,9 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
 
 object MigrateV13ToV14 {
 
-  val log: Logger = Logger[MigrateV13ToV14.type]
+  val resourceRegex =
+    "^resources\\-([0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12})\\-(.+)$".r
+  val log: Logger   = Logger[MigrateV13ToV14.type]
 
   final def migrate(implicit config: AppConfig, as: ActorSystem, sc: Scheduler, pm: CanBlock): Unit =
     (for {
