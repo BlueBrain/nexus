@@ -119,7 +119,8 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
       _        <- Task.deferFuture(session.executeDDL(truncateAllPersIdTable))
       _        <- Task.deferFuture(session.executeDDL(truncateSnapshotTable))
       _        <- Task.sleep(1.seconds)
-      projects <- Task.deferFuture(adminS.map(_.persistence_id).runFold(Set.empty[String])(_ + _))
+      projects <-
+        Task.deferFuture(read(config.migration.adminKeyspace).map(_.persistence_id).runFold(Set.empty[String])(_ + _))
       records  <- Task.deferFuture(iamS.concat(adminS).concat(kgS.via(skipNonExisting(projects))).runWith(write))
       _        <- Task.sleep(1.seconds)
       _        <- Task.delay(log.info(s"Migrated a total of '$records' events."))
