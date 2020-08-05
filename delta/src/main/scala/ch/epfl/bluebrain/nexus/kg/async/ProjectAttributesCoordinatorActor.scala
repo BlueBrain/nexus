@@ -116,7 +116,14 @@ object ProjectAttributesCoordinatorActor {
         implicit val tm: Timeout                                                          = Timeout(config.storage.askTimeout)
         implicit val logErrors: (Either[Rejection, Resource], RetryDetails) => Task[Unit] =
           (err, d) =>
-            Task.pure(log.warning("Retrying on resource creation with retry details '{}' and error: '{}'", err, d))
+            Task.pure(
+              log.warning(
+                "Retrying on resource creation with retry details '{}' from project '{}' and error: '{}'",
+                err,
+                project.value.show,
+                d
+              )
+            )
         val projectionId: String                                                          = progressName(project.uuid)
 
         val initFetchProgressF: Task[ProjectionProgress] =
