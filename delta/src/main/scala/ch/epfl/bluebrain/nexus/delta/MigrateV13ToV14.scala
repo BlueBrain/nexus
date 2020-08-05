@@ -38,8 +38,8 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
   private def insertAllPersIdsStmt: String =
     s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
 
-  private def countPersIdStmt(persistenceId: String): String =
-    s"""SELECT COUNT(*) AS count FROM ${config.migration.adminKeyspace}.messages WHERE persistence_id='$persistenceId' AND partition_nr=0;"""
+  private def countProject(project: UUID): String =
+    s"""SELECT COUNT(*) AS count FROM ${config.migration.adminKeyspace}.messages WHERE persistence_id='projects-$project' AND partition_nr=0;"""
 
   private def readVerify(keyspace: String): Source[Message, NotUsed] =
     read(keyspace)
@@ -51,7 +51,7 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
                 log.error(s"project '$projectUuid' could not be converted to UUID")
                 Future.successful(false -> m)
               case Success(uuid) =>
-                session.selectOne(countPersIdStmt(s"projects-$uuid")).map {
+                session.selectOne(countProject(uuid)).map {
                   case Some(row) if row.getLong("count") > 0L => true -> m
                   case Some(_)                                =>
                     log.warn(s"project '$uuid' does not exist. Resource '$id' is going to be omitted")
