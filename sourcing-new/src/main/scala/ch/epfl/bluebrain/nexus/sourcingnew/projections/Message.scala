@@ -6,9 +6,11 @@ import io.circe.{Encoder, Json}
 
 import scala.reflect.ClassTag
 
-/*
-
- */
+/**
+  * Message going though a projection
+  *
+  * @tparam A
+  */
 sealed trait Message[+A] {
   def offset: Offset
   def persistenceId: String
@@ -19,22 +21,59 @@ sealed trait SkippedMessage extends Message[Nothing]
 
 sealed trait ErrorMessage extends SkippedMessage
 
+/**
+  * Message when its processing failed at a point of the projection
+  * After the failure, it keeps untouched
+  * until the end of the processing
+  *
+  * @param offset
+  * @param persistenceId
+  * @param sequenceNr
+  * @param value
+  * @param throwable
+  */
 final case class FailureMessage(offset: Offset,
                                 persistenceId: String,
                                 sequenceNr: Long,
                                 value: Json,
                                 throwable: Throwable) extends ErrorMessage
 
+/**
+  * Message when it suffers a ClassCastException when parsing the event in
+  * the akka-persistence enveloppe
+  *
+  * @param offset
+  * @param persistenceId
+  * @param sequenceNr
+  * @param expectedClassname
+  * @param encounteredClassName
+  */
 final case class CastFailedMessage(offset: Offset,
                                    persistenceId: String,
                                    sequenceNr: Long,
                                    expectedClassname: String,
                                    encounteredClassName: String) extends ErrorMessage
 
+/**
+  * Message when it has been filtered out during the projection process
+  * @param offset
+  * @param persistenceId
+  * @param sequenceNr
+  */
 final case class DiscardedMessage(offset: Offset,
                                   persistenceId: String,
                                   sequenceNr: Long) extends SkippedMessage
 
+/**
+  * Message which hasn't been filtered out nor been victim of a failure
+  * during the projection process
+  *
+  * @param offset
+  * @param persistenceId
+  * @param sequenceNr
+  * @param value
+  * @tparam A
+  */
 final case class SuccessMessage[A](offset: Offset,
                                    persistenceId: String,
                                    sequenceNr: Long,
