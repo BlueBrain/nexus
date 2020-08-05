@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, Pagination}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.kg.{resources, KgError}
+import ch.epfl.bluebrain.nexus.kg.KgError
 import ch.epfl.bluebrain.nexus.kg.cache.StorageCache
 import ch.epfl.bluebrain.nexus.kg.config.Contexts._
 import ch.epfl.bluebrain.nexus.kg.config.Schemas._
@@ -327,7 +327,7 @@ object Storages {
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem, projectCache: ProjectCache[F]): F[Unit] = {
     implicit val ec: ExecutionContext = as.dispatcher
     implicit val tm: Timeout          = Timeout(config.keyValueStore.askTimeout)
-    implicit val log: Logger          = Logger[resources.Storages.type]
+    implicit val log: Logger          = Logger[Storages.type]
 
     def toStorage(event: Event): F[Option[(Storage, Instant)]] =
       projectCache
