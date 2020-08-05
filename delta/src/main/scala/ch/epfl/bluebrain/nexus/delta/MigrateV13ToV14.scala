@@ -7,7 +7,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.cassandra.scaladsl._
 import akka.stream.alpakka.cassandra.{CassandraSessionSettings, CassandraWriteSettings}
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import ch.epfl.bluebrain.nexus.delta.MigrateV13ToV14._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections.cassandraDefaultConfigPath
@@ -35,6 +35,18 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
 
   private def insertAllPersIdsStmt: String =
     s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
+
+  private def skipNonExisting(projects: Set[String]): Flow[Message, Message, NotUsed] =
+    Flow[Message].filter { m =>
+      m.persistence_id match {
+        case resourceRegex(projectUuid, id) =>
+          if (projects.contains(s"projects-$projectUuid")) true
+          else
+            log.warn(s"project '$projectUuid' does not exist. Resource '$id' is going to be omitted")
+          false
+        case _                              => true
+      }
+    }
 
   private def read(keyspace: String): Source[Message, NotUsed] = {
     CassandraSource(
@@ -98,25 +110,28 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
   def migrate(): Task[Unit] = {
     implicit val session: CassandraSession =
       CassandraSessionRegistry.get(as).sessionFor(CassandraSessionSettings(cassandraDefaultConfigPath))
-    val iamSource                          = read(config.migration.iamKeyspace)
-    val adminSource                        = read(config.migration.adminKeyspace)
-    val kgSource                           = read(config.migration.kgKeyspace)
+    val iamS                               = read(config.migration.iamKeyspace)
+    val adminS                             = read(config.migration.adminKeyspace)
+    val kgS                                = read(config.migration.kgKeyspace)
     for {
-      _       <- Task.delay(log.info("Migrating messages from multiple keyspaces into a single keyspace."))
-      _       <- Task.deferFuture(session.executeDDL(truncateMessagesTable))
-      _       <- Task.deferFuture(session.executeDDL(truncateAllPersIdTable))
-      _       <- Task.deferFuture(session.executeDDL(truncateSnapshotTable))
-      _       <- Task.sleep(1.seconds)
-      records <- Task.deferFuture(iamSource.concat(adminSource).concat(kgSource).runWith(write))
-      _       <- Task.sleep(1.seconds)
-      _       <- Task.delay(log.info(s"Migrated a total of '$records' events."))
+      _        <- Task.delay(log.info("Migrating messages from multiple keyspaces into a single keyspace."))
+      _        <- Task.deferFuture(session.executeDDL(truncateMessagesTable))
+      _        <- Task.deferFuture(session.executeDDL(truncateAllPersIdTable))
+      _        <- Task.deferFuture(session.executeDDL(truncateSnapshotTable))
+      _        <- Task.sleep(1.seconds)
+      projects <- Task.deferFuture(adminS.map(_.persistence_id).runFold(Set.empty[String])(_ + _))
+      records  <- Task.deferFuture(iamS.concat(adminS).concat(kgS.via(skipNonExisting(projects))).runWith(write))
+      _        <- Task.sleep(1.seconds)
+      _        <- Task.delay(log.info(s"Migrated a total of '$records' events."))
     } yield ()
   }
 }
 
 object MigrateV13ToV14 {
 
-  val log: Logger = Logger[MigrateV13ToV14.type]
+  val resourceRegex =
+    "^resources\\-([0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12})\\-(.+)$".r
+  val log: Logger   = Logger[MigrateV13ToV14.type]
 
   final def migrate(implicit config: AppConfig, as: ActorSystem, sc: Scheduler, pm: CanBlock): Unit =
     (for {
