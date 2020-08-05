@@ -1,0 +1,15 @@
+Model:
+  name: RdfModel
+  origin: store
+  source: BlueBrainNexus
+  context:
+    iri: "https://schema.org/docs/jsonldcontext.json"
+    bucket: "tutorialnexus/akk"
+
+Store:
+  name: BlueBrainNexus
+  endpoint: https://sandbox.bluebrainnexus.io/v1
+  versioned_id_template: "{x.id}?rev={x._store_metadata._rev}"
+  
+Formatters:
+  identifier: https://movielens.org/{}/{}
