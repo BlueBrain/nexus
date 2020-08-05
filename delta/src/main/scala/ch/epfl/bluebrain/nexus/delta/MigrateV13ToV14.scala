@@ -40,10 +40,12 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
     Flow[Message].filter { m =>
       m.persistence_id match {
         case resourceRegex(projectUuid, id) =>
-          if (projects.contains(s"projects-$projectUuid")) true
-          else
+          if (projects.contains(s"projects-$projectUuid")) {
+            true
+          } else {
             log.warn(s"project '$projectUuid' does not exist. Resource '$id' is going to be omitted")
-          false
+            false
+          }
         case _                              => true
       }
     }
