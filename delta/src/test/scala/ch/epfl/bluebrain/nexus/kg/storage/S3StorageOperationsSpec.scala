@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.kg.storage.Storage.{S3Credentials, S3Settings, S3
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.util._
 import izumi.distage.model.definition.StandardAxis
+import izumi.distage.model.reflection.DIKey
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
 import izumi.distage.testkit.TestConfig.ParallelLevel
@@ -93,6 +94,7 @@ class S3StorageOperationsSpec
       pluginConfig = PluginConfig.empty,
       activation = StandardAxis.testDummyActivation,
       parallelTests = ParallelLevel.Sequential,
+      memoizationRoots = Set(DIKey[TestFactory]),
       moduleOverrides = new DistageModuleDef("S3StorageOperationsSpec") {
         include(MinioDockerModule[IO])
         make[TestFactory].from { (c: MinioDocker.Container, mt: Materializer, as: ActorSystem) =>
