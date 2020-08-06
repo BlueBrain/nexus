@@ -390,7 +390,7 @@ object AppConfig {
     def value: Caller =
       Caller(
         User(subject, realm),
-        groups.map[Identity](group => Group(group, realm)) + Authenticated(realm) + Anonymous
+        groups.map[Identity](group => Group(group, realm)) + User(subject, realm) + Authenticated(realm) + Anonymous
       )
   }
 
