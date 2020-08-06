@@ -302,7 +302,6 @@ object AppConfig {
     * @param indexPrefix  the prefix of the index
     * @param username     the SPARQL endpoint username
     * @param password     the SPARQL endpoint password
-    * @param defaultIndex the SPARQL default index
     * @param indexing     the indexing configuration
     * @param query        the query retry strategy configuration
     * @param askTimeout   the ask timeout to interact with the index actor
@@ -312,7 +311,6 @@ object AppConfig {
       indexPrefix: String,
       username: Option[String],
       password: Option[String],
-      defaultIndex: String,
       indexing: IndexingConfig,
       query: RetryStrategyConfig,
       askTimeout: FiniteDuration
@@ -330,7 +328,6 @@ object AppConfig {
     *
    * @param base         the application base uri for operating on resources
     * @param indexPrefix  the prefix of the index
-    * @param defaultIndex the default index
     * @param indexing     the indexing configuration
     * @param query        the query retry strategy configuration
     * @param askTimeout   the ask timeout to interact with the index actor
@@ -338,7 +335,6 @@ object AppConfig {
   final case class ElasticSearchConfig(
       base: Uri,
       indexPrefix: String,
-      defaultIndex: String,
       indexing: IndexingConfig,
       query: RetryStrategyConfig,
       askTimeout: FiniteDuration
@@ -390,7 +386,7 @@ object AppConfig {
     def value: Caller =
       Caller(
         User(subject, realm),
-        groups.map[Identity](group => Group(group, realm)) + Authenticated(realm) + Anonymous
+        groups.map[Identity](group => Group(group, realm)) + User(subject, realm) + Authenticated(realm) + Anonymous
       )
   }
 

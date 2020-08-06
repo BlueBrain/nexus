@@ -438,7 +438,7 @@ class ViewRoutesSpec
       when(
         elasticSearch.searchRaw(
           Eq(query),
-          Eq(Set(s"kg_${defaultEsView.name}")),
+          Eq(Set(s"delta_${defaultEsView.name}")),
           Eq(Uri.Query(Map("other" -> "value"))),
           any[Throwable => Boolean]
         )(any[HttpClient[Task, Json]])
@@ -470,7 +470,7 @@ class ViewRoutesSpec
       when(
         elasticSearch.searchRaw(
           Eq(query),
-          Eq(Set(s"kg_${defaultEsView.name}")),
+          Eq(Set(s"delta_${defaultEsView.name}")),
           Eq(Uri.Query(Map("other" -> "value"))),
           any[Throwable => Boolean]
         )(any[HttpClient[Task, Json]])
@@ -503,7 +503,7 @@ class ViewRoutesSpec
         )
       ).thenReturn(Task.pure(Some(defaultSparqlView)))
 
-      when(sparql.copy(namespace = s"kg_${defaultSparqlView.name}")).thenReturn(sparql)
+      when(sparql.copy(namespace = s"delta_${defaultSparqlView.name}")).thenReturn(sparql)
 
       sparql.queryRaw(query, any[Throwable => Boolean]) shouldReturn
         Task.pure(result.as[SparqlResults].rightValue)
@@ -548,7 +548,7 @@ class ViewRoutesSpec
       when(
         elasticSearch.searchRaw(
           Eq(query),
-          Eq(Set(s"kg_${defaultEsView.name}", s"kg_${otherEsView.name}")),
+          Eq(Set(s"delta_${defaultEsView.name}", s"delta_${otherEsView.name}")),
           Eq(Query()),
           any[Throwable => Boolean]
         )(any[HttpClient[Task, Json]])
@@ -577,7 +577,7 @@ class ViewRoutesSpec
         .thenReturn(Task.pure(Some(defaultEsView)))
 
       when(
-        elasticSearch.searchRaw(Eq(query), Eq(Set(s"kg_${defaultEsView.name}")), Eq(qp), any[Throwable => Boolean])(
+        elasticSearch.searchRaw(Eq(query), Eq(Set(s"delta_${defaultEsView.name}")), Eq(qp), any[Throwable => Boolean])(
           any[HttpClient[Task, Json]]
         )
       ).thenReturn(Task.raiseError(ElasticSearchClientError(StatusCodes.BadRequest, esResponse.noSpaces)))
@@ -604,7 +604,7 @@ class ViewRoutesSpec
         .thenReturn(Task.pure(Some(defaultEsView)))
 
       when(
-        elasticSearch.searchRaw(Eq(query), Eq(Set(s"kg_${defaultEsView.name}")), Eq(qp), any[Throwable => Boolean])(
+        elasticSearch.searchRaw(Eq(query), Eq(Set(s"delta_${defaultEsView.name}")), Eq(qp), any[Throwable => Boolean])(
           any[HttpClient[Task, Json]]
         )
       ).thenReturn(Task.raiseError(ElasticSearchClientError(StatusCodes.BadRequest, esResponse)))
@@ -630,7 +630,7 @@ class ViewRoutesSpec
         .thenReturn(Task.pure(Some(defaultEsView)))
 
       when(
-        elasticSearch.searchRaw(Eq(query), Eq(Set(s"kg_${defaultEsView.name}")), Eq(qp), any[Throwable => Boolean])(
+        elasticSearch.searchRaw(Eq(query), Eq(Set(s"delta_${defaultEsView.name}")), Eq(qp), any[Throwable => Boolean])(
           any[HttpClient[Task, Json]]
         )
       ).thenReturn(Task.raiseError(ElasticUnexpectedError(StatusCodes.ImATeapot, esResponse)))
@@ -650,7 +650,7 @@ class ViewRoutesSpec
       when(viewCache.getBy[View](Eq(projectRef), Eq(nxv.defaultSparqlIndex.value))(any[ClassTag[View]]))
         .thenReturn(Task.pure(Some(defaultSQLView)))
 
-      when(sparql.copy(namespace = s"kg_${defaultSQLView.name}")).thenReturn(sparql)
+      when(sparql.copy(namespace = s"delta_${defaultSQLView.name}")).thenReturn(sparql)
 
       sparql.queryRaw(query, any[Throwable => Boolean]) shouldReturn
         Task.pure(result.as[SparqlResults].rightValue)
@@ -679,7 +679,7 @@ class ViewRoutesSpec
       when(viewCache.getBy[View](Eq(projectRef), Eq(nxv.defaultSparqlIndex.value))(any[ClassTag[View]]))
         .thenReturn(Task.pure(Some(defaultSQLView)))
 
-      when(sparql.copy(namespace = s"kg_${defaultSQLView.name}")).thenReturn(sparql)
+      when(sparql.copy(namespace = s"delta_${defaultSQLView.name}")).thenReturn(sparql)
 
       sparql.queryRaw(query, any[Throwable => Boolean]) shouldReturn
         Task.raiseError(SparqlClientError(StatusCodes.BadRequest, "some error"))
@@ -722,8 +722,8 @@ class ViewRoutesSpec
       when(viewCache.getBy[SparqlView](Eq(projectRef), Eq(nxv.defaultSparqlIndex.value))(any[ClassTag[SparqlView]]))
         .thenReturn(Task.pure(Some(defaultSQLView)))
 
-      when(sparql.copy(namespace = s"kg_${defaultSQLView.name}")).thenReturn(sparql1)
-      when(sparql.copy(namespace = s"kg_${otherSQLView.name}")).thenReturn(sparql2)
+      when(sparql.copy(namespace = s"delta_${defaultSQLView.name}")).thenReturn(sparql1)
+      when(sparql.copy(namespace = s"delta_${otherSQLView.name}")).thenReturn(sparql2)
       sparql1.queryRaw(query, any[Throwable => Boolean]) shouldReturn
         Task.pure(response1.as[SparqlResults].rightValue)
       sparql2.queryRaw(query, any[Throwable => Boolean]) shouldReturn
