@@ -1,0 +1,38 @@
+{
+  "name": "bluebrainnexus.io",
+  "description": "the Blue Brain Nexus homepage",
+  "version": "1.4.0",
+  "scripts": {
+    "build": "gatsby build",
+    "develop": "gatsby develop -H 0.0.0.0",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "start": "npm run develop",
+    "serve": "gatsby serve",
+    "clean": "gatsby clean",
+    "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\" && exit 1"
+  },
+  "dependencies": {
+    "gatsby": "^2.24.26",
+    "gatsby-plugin-typescript": "^2.4.16",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  },
+  "devDependencies": {
+    "gatsby-cli": "^2.12.77",
+    "prettier": "2.0.5"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BlueBrain/nexus.git"
+  },
+  "contributors": [
+    "kenneth.pirman@epfl.ch",
+    "alexander.ulbrich@epfl.ch",
+    "natalia.stafeeva@epfl.ch",
+    "dhanesh.neelamana@epfl.ch"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/BlueBrain/nexus/issues"
+  }
+}

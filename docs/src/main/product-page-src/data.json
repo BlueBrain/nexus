@@ -1,0 +1,16 @@
+{
+  "products": [
+    {
+      "name": "Forge",
+      "slug": "forge"
+    },
+    {
+      "name": "Fusion",
+      "slug": "fusion"
+    },
+    {
+      "name": "Delta",
+      "slug": "delta"
+    }
+  ]
+}
