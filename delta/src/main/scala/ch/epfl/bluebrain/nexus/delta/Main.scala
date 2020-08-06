@@ -178,7 +178,7 @@ object Main {
 
     def defaultSparqlClient(implicit config: SparqlConfig): BlazegraphClient[Task] = {
       implicit val retryConfig = config.query
-      BlazegraphClient[Task](config.base, config.defaultIndex, config.akkaCredentials)
+      BlazegraphClient[Task](config.base, config.indexPrefix, config.akkaCredentials)
     }
 
     def defaultElasticSearchClient(implicit config: ElasticSearchConfig): ElasticSearchClient[Task] = {
