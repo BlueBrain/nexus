@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
+import java.io.{PrintWriter, StringWriter}
+
 import akka.persistence.query.Offset
 import cats.effect.{Async, ContextShift, IO, LiftIO}
 import cats.implicits._
@@ -25,7 +27,7 @@ trait Projection[F[_], A] {
     * @param progress the offset to record
     * @return a future () value
     */
-  def recordProgress(id: String, progress: ProjectionProgress): F[Unit]
+  def recordProgress(id: ProjectionId, progress: ProjectionProgress): F[Unit]
 
   /**
     * Retrieves the progress for the specified projection projectionId. If there is no record of progress
@@ -34,18 +36,15 @@ trait Projection[F[_], A] {
     * @param id an unique projectionId for a projection
     * @return a future progress value for the specified projection projectionId
     */
-  def progress(id: String): F[ProjectionProgress]
+  def progress(id: ProjectionId): F[ProjectionProgress]
 
   /**
     * Record a specific event against a index failures log projectionId.
     *
-    * @param id            the project identifier
-    * @param persistenceId the persistenceId to record
-    * @param sequenceNr    the sequence number to record
-    * @param offset        the offset to record
-    * @param value         the value to be recorded
+    * @param id             the project identifier
+    * @param failureMessage the failure message to persist
     */
-  def recordFailure(id: String, persistenceId: String, sequenceNr: Long, offset: Offset, value: A): F[Unit]
+  def recordFailure(id: ProjectionId, failureMessage: FailureMessage[A], f: Throwable => String = Projection.stackTraceAsString): F[Unit]
 
   /**
     * An event stream for all failures recorded for a projection.
@@ -53,7 +52,7 @@ trait Projection[F[_], A] {
     * @param id the projection identifier
     * @return a source of the failed events
     */
-  def failures(id: String):Stream[F, (A, Offset)]
+  def failures(id: ProjectionId):Stream[F, (A, Offset, String)]
 }
 
 object Projection {
@@ -70,9 +69,20 @@ object Projection {
       case None => F.pure(defaultValue)
     }
 
-  private [projections] def decodeTuple[A: Decoder, B: Decoder](input: (String, String)): Option[(A, B)] = {
-      (decode[A](input._1), decode[B](input._2)).tupled.toOption
+  private [projections] def decodeError[A: Decoder, B: Decoder](input: (String, String, String)): Option[(A, B, String)] = {
+    (decode[A](input._1), decode[B](input._2), Right(input._3)).tupled.toOption
     }
+
+  /**
+    * Allows to get a readable stacktrace
+    * @param t
+    * @return
+    */
+  def stackTraceAsString(t: Throwable) = {
+    val sw = new StringWriter
+    t.printStackTrace(new PrintWriter(sw))
+    sw.toString
+  }
 
 
 }

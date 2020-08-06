@@ -9,7 +9,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.Projection._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.instances._
-import ch.epfl.bluebrain.nexus.sourcingnew.projections.{Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.{FailureMessage, Projection, ProjectionId, ProjectionProgress}
 import fs2.Stream
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
@@ -26,47 +26,60 @@ class CassandraProjection [F[_]: ContextShift,
   import projectionConfig._
 
   val recordProgressQuery: String =
-    s"UPDATE $keyspace.$progressTable SET progress = ? WHERE projection_id = ?"
+    s"UPDATE $keyspace.$progressTable SET offset = ?, processed = ?, discarded = ?, failed = ? WHERE projection_id = ?"
 
   val progressQuery: String =
-    s"SELECT progress FROM $keyspace.$progressTable WHERE projection_id = ?"
+    s"SELECT offset, processed, discarded, failed FROM $keyspace.$progressTable WHERE projection_id = ?"
 
   val recordFailureQuery: String =
-    s"""INSERT INTO $keyspace.$failuresTable (projection_id, offset, persistence_id, sequence_nr, value)
-       |VALUES (?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
+    s"""INSERT INTO $keyspace.$failuresTable (projection_id, offset, persistence_id, sequence_nr, value, error)
+       |VALUES (?, ?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
 
   val failuresQuery: String =
-    s"SELECT offset, value from $keyspace.$failuresTable WHERE projection_id = ? ALLOW FILTERING"
+    s"SELECT offset, value, error from $keyspace.$failuresTable WHERE projection_id = ? ALLOW FILTERING"
 
-  override def recordProgress(id: String, progress: ProjectionProgress): F[Unit] =
-    wrapFuture(session.executeWrite(recordProgressQuery, progress.asJson.noSpaces, id)) >> F.unit
+  override def recordProgress(id: ProjectionId, progress: ProjectionProgress): F[Unit] =
+    wrapFuture(session.executeWrite(recordProgressQuery,
+      progress.offset.asJson.noSpaces,
+      progress.processed : java.lang.Long,
+      progress.discarded : java.lang.Long,
+      progress.failed : java.lang.Long,
+      id.value
+    )) >> F.unit
 
-  override def progress(id: String): F[ProjectionProgress] =
-    wrapFuture(session.selectOne(progressQuery, id)).flatMap {
-        r => Projection.decodeOption[ProjectionProgress, F](
-          r.map(_.getString("progress")),
-          NoProgress
+  override def progress(id: ProjectionId): F[ProjectionProgress] =
+    wrapFuture(session.selectOne(progressQuery, id.value)).map {
+      _.fold(NoProgress) { row =>
+        ProjectionProgress.fromTuple(
+          (
+            row.getString("offset"),
+            row.getLong("processed"),
+            row.getLong("discarded"),
+            row.getLong("failed")
+          )
         )
+      }
     }
 
-  override def recordFailure(id: String, persistenceId: String, sequenceNr: Long, offset: Offset, value: A): F[Unit] =
+  override def recordFailure(id: ProjectionId, failureMessage: FailureMessage[A], f: Throwable => String = Projection.stackTraceAsString): F[Unit] =
     wrapFuture(
       session.executeWrite(
         recordFailureQuery,
-        id,
-          offset.asJson.noSpaces,
-        persistenceId,
-        sequenceNr: java.lang.Long,
-        value.asJson.noSpaces
+        id.value,
+        failureMessage.offset.asJson.noSpaces,
+        failureMessage.persistenceId,
+        failureMessage.sequenceNr: java.lang.Long,
+        failureMessage.value.asJson.noSpaces,
+        f(failureMessage.throwable)
       )
     ) >> F.unit
 
-  override def failures(id: String): Stream[F, (A, Offset)] =
+  override def failures(id: ProjectionId): Stream[F, (A, Offset, String)] =
     session
-      .select(failuresQuery, id).toStream[F]( _ => ())
+      .select(failuresQuery, id.value).toStream[F]( _ => ())
       .mapFilter { row =>
-        Projection.decodeTuple[A, Offset](
-          (row.getString("value"), row.getString("offset"))
+        Projection.decodeError[A, Offset](
+          (row.getString("value"), row.getString("offset"), row.getString("error"))
         )
       }
 }

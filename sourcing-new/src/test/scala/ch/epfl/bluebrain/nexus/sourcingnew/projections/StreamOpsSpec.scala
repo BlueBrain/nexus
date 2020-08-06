@@ -4,7 +4,7 @@ import akka.persistence.query.Sequence
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import fs2.{Chunk, Stream}
-import io.circe.{Encoder, Json}
+import io.circe.Json
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -71,9 +71,9 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
     // Expected result after applying fetch
     val expected = List(
       (0, 0, 0, Json.fromString("FETCHED-0-0")).success,
-      (1, 0, 1, Json.fromString("0-1")).failed,
+      (1, 0, 1, "0-1").failed,
       (2, 1, 0).discarded,
-      (3, 1, 1, Json.fromString("1-1")).failed
+      (3, 1, 1, "1-1").failed
     )
 
     // Expected result after applying fetch + filterMap
@@ -224,8 +224,7 @@ object StreamOpsSpec {
     )
   }
 
-  implicit class IntTupleOps4[A](tuple: (Int, Int, Int, A))
-                                        (implicit encoder: Encoder[A]) {
+  implicit class IntTupleOps4[A](tuple: (Int, Int, Int, A)) {
 
     def success: SuccessMessage[A] =
       SuccessMessage[A](Sequence(tuple._1.toLong),
@@ -233,17 +232,16 @@ object StreamOpsSpec {
         tuple._3.toLong,
         tuple._4)
 
-    def failed: FailureMessage = FailureMessage(
+    def failed: FailureMessage[A] = FailureMessage(
       Sequence(tuple._1.toLong),
       s"persistence-${tuple._2}",
       tuple._3.toLong,
-      encoder(tuple._4),
+      tuple._4,
       DummyException(s"${tuple._2}-${tuple._3}")
     )
   }
 
-  implicit class IntTupleOps5[A](tuple: (Int, Int, Int, A, String))
-                                (implicit encoder: Encoder[A]) {
+  implicit class IntTupleOps5[A](tuple: (Int, Int, Int, A, String)) {
 
     def success: SuccessMessage[A] =
       SuccessMessage[A](Sequence(tuple._1.toLong),
@@ -251,11 +249,11 @@ object StreamOpsSpec {
         tuple._3.toLong,
         tuple._4)
 
-    def failed: FailureMessage = FailureMessage(
+    def failed: FailureMessage[A] = FailureMessage(
       Sequence(tuple._1.toLong),
       s"persistence-${tuple._2}",
       tuple._3.toLong,
-      encoder(tuple._4),
+      tuple._4,
       DummyException(tuple._5)
     )
   }
