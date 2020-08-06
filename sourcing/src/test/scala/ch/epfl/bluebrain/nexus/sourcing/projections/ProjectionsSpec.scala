@@ -9,7 +9,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{NoProgress, OffsetProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionsSpec.SomeEvent
 import com.typesafe.config.ConfigFactory
-import distage.ModuleDef
+import distage.{DIKey, ModuleDef}
 import io.circe.{Decoder, Encoder}
 import izumi.distage.docker.Docker
 import izumi.distage.docker.modules.DockerSupportModule
@@ -33,6 +33,7 @@ class ProjectionsSpec extends DistageSpecScalatest[IO] with TestHelpers with Sho
       pluginConfig = PluginConfig.empty,
       activation = StandardAxis.testDummyActivation,
       parallelTests = ParallelLevel.Sequential,
+      memoizationRoots = Set(DIKey[Projections[IO, SomeEvent]], DIKey[ActorSystem], DIKey[Materializer]),
       moduleOverrides = new ModuleDef {
         // add docker dependencies and override default configuration
         include(new DockerSupportModule[IO] overridenBy new ModuleDef {

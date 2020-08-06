@@ -27,6 +27,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Json, Printer}
 import izumi.distage.model.definition.StandardAxis
+import izumi.distage.model.reflection.DIKey
 import izumi.distage.plugins.PluginConfig
 import izumi.distage.testkit.TestConfig
 import izumi.distage.testkit.TestConfig.ParallelLevel
@@ -56,6 +57,7 @@ class BlazegraphClientSpec
       pluginConfig = PluginConfig.empty,
       activation = StandardAxis.testDummyActivation,
       parallelTests = ParallelLevel.Sequential,
+      memoizationRoots = Set(DIKey[ClientFactory]),
       moduleOverrides = new DistageModuleDef("BlazegraphClientSpec") {
         include(BlazegraphDockerModule[IO])
 
