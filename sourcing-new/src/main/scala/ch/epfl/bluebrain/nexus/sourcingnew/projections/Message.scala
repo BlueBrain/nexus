@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import akka.persistence.query.{EventEnvelope, Offset}
 import cats.{Eq, Functor}
-import io.circe.{Encoder, Json}
 
 import scala.reflect.ClassTag
 
@@ -32,10 +31,10 @@ sealed trait ErrorMessage extends SkippedMessage
   * @param value
   * @param throwable
   */
-final case class FailureMessage(offset: Offset,
+final case class FailureMessage[A](offset: Offset,
                                 persistenceId: String,
                                 sequenceNr: Long,
-                                value: Json,
+                                value: A,
                                 throwable: Throwable) extends ErrorMessage
 
 /**
@@ -81,8 +80,8 @@ final case class SuccessMessage[A](offset: Offset,
 
   def discarded: DiscardedMessage = DiscardedMessage(offset, persistenceId, sequenceNr)
 
-  def failed(throwable: Throwable)(implicit encoder: Encoder[A]): FailureMessage =
-    FailureMessage(offset, persistenceId, sequenceNr, encoder(value), throwable)
+  def failed(throwable: Throwable): FailureMessage[A] =
+    FailureMessage(offset, persistenceId, sequenceNr, value, throwable)
 
 }
 

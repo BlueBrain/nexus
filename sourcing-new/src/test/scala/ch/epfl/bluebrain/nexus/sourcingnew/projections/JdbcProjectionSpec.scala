@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import cats.effect.IO
-import ch.epfl.bluebrain.nexus.sourcingnew.{Persistence, ProjectionModule}
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.jdbc.JdbcConfig
+import ch.epfl.bluebrain.nexus.sourcingnew.{Persistence, ProjectionModule}
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresHostConfig
 import distage.ModuleDef

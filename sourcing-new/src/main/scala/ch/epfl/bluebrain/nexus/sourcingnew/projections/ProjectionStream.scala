@@ -16,8 +16,7 @@ object ProjectionStream {
 
     implicit def F: ConcurrentEffect[F]
 
-    protected def toResource[B, R](fetchResource: A => F[Option[R]], collect: R => Option[B])
-                        (implicit encoder : Encoder[A]): Message[A] => F[Message[B]] =
+    protected def toResource[B, R](fetchResource: A => F[Option[R]], collect: R => Option[B]): Message[A] => F[Message[B]] =
       (message: Message[A]) =>
         message match {
           case s: SuccessMessage[A] =>
@@ -86,6 +85,11 @@ object ProjectionStream {
         }
       }
 
+    /**
+      * Scan and persist errors occured in the stream
+      * @param persistErrors
+      * @return
+      */
     def persistErrors(persistErrors: ErrorMessage => F[Unit]): Stream[F, Message[A]] =
       stream.mapAsync(1) { message =>
         message match {
@@ -93,9 +97,6 @@ object ProjectionStream {
           case _: Message[A] => F.pure(message)
         }
       }
-
-    //def toProgress(initial: ProjectionProgress = NoProgress): Stream[F, ProjectionProgress]
-
   }
 
   implicit class ChunckStreamOps[F[_]: Timer, A: Encoder]
