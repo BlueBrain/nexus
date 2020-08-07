@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.sourcingnew.projections
 import akka.persistence.query.Sequence
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.config.PersistProgressConfig
 import fs2.{Chunk, Stream}
 import io.circe.Json
 import org.scalatest.matchers.should.Matchers
@@ -159,7 +160,7 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
 
   "Running async" should {
 
-    // Stream to deduplicate
+    // Stream to evaluate
     val stream = Stream.emits(
       (0, 0, 0, "first").success ::
       (1, 0, 1).discarded ::
@@ -210,6 +211,46 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
         ) :: Nil
 
       messages should contain theSameElementsInOrderAs expected
+    }
+  }
+
+  "Persisting progress" should {
+    "reporting correctly progress and errors during the given projection" in {
+      // Results to be asserted later
+      var errorCalls = 0
+      var resultProgress = ProjectionProgress.NoProgress
+
+      val stream = Stream.emits(
+          (1, 0, 0, "first").success ::
+          (2, 0, 1).discarded ::
+          (3, 1, 0, "second").success ::
+          (4, 0, 2, "failed").failed ::
+          (5, 1, 1, "second new").success ::
+          (6, 2, 0, "third").failed ::
+          Nil
+      ).covary[IO]
+
+      stream.persistProgress(
+        ViewProjectionId("myProjection"),
+        resultProgress,
+        // Stub method to retrieve the accumulated progress
+        (_: ProjectionId,
+          projectionProgress: ProjectionProgress) => {
+            IO.pure { resultProgress = projectionProgress } >>
+            IO.unit
+        },
+        // Stub method to trace error persist calls
+        (_, _) => IO.pure { errorCalls += 1 } >> IO.unit,
+        PersistProgressConfig(3, 5.seconds)
+      ).compile.drain.unsafeRunSync()
+
+      errorCalls shouldBe 2
+      resultProgress shouldBe ProjectionProgress(
+        offset = Sequence(6L),
+        processed = 6L,
+        discarded = 1L,
+        failed    = 2L
+      )
     }
   }
 }

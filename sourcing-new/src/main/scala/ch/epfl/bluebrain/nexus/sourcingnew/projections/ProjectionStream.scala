@@ -2,6 +2,9 @@ package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import cats.effect.{ConcurrentEffect, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.config.PersistProgressConfig
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.syntax._
 import fs2.{Chunk, Stream}
 import io.circe.Encoder
 
@@ -46,15 +49,17 @@ object ProjectionStream {
 
     /**
       * Fetch a resource without transformation
+      *
       * @param fetchResource
       * @tparam R
       * @return
       */
     def resourceIdentity[R](fetchResource: A => F[Option[R]]): Stream[F, Message[R]] =
-      resource(fetchResource, (r:R) => Option(r))
+      resource(fetchResource, (r: R) => Option(r))
 
     /**
       * Fetch a resource and maps and filter thanks to a partial function
+      *
       * @param fetchResource
       * @param collect
       * @tparam B
@@ -74,7 +79,7 @@ object ProjectionStream {
       * @return
       */
     def runAsync(f: A => F[Unit]): Stream[F, Message[A]] =
-      stream.mapAsync(1) {  message: Message[A] =>
+      stream.mapAsync(1) { message: Message[A] =>
         message match {
           case s: SuccessMessage[A] =>
             (f(s.value) >> F.pure[Message[A]](s))
@@ -86,17 +91,36 @@ object ProjectionStream {
       }
 
     /**
-      * Scan and persist errors occured in the stream
+      * Map over the stream of messages
+      * @param projectionId
+      * @param initial
       * @param persistErrors
+      * @param persistProgress
+      * @param config
       * @return
       */
-    def persistErrors(persistErrors: ErrorMessage => F[Unit]): Stream[F, Message[A]] =
+    def persistProgress(projectionId: ProjectionId,
+                        initial: ProjectionProgress = NoProgress,
+                        persistProgress: (ProjectionId, ProjectionProgress) => F[Unit],
+                        persistErrors: (ProjectionId, ErrorMessage) => F[Unit],
+                        config: PersistProgressConfig): Stream[F, Unit] =
       stream.mapAsync(1) { message =>
         message match {
-          case e: ErrorMessage => persistErrors(e) >> F.pure(message)
+          case e: ErrorMessage => persistErrors(projectionId, e) >> F.pure(message)
           case _: Message[A] => F.pure(message)
         }
-      }
+      }.scan(initial) { (acc, m) =>
+        m match {
+          case m if m.offset.gt(initial.offset) => acc + m
+          case _ => acc
+        }
+      }.groupWithin(config.maxBatchSize, config.maxTimeWindow)
+        .filter(_.nonEmpty)
+        .mapAsync(1) { p =>
+          p.last.fold(F.unit) {
+            persistProgress(projectionId, _)
+          }
+        }
   }
 
   implicit class ChunckStreamOps[F[_]: Timer, A: Encoder]
