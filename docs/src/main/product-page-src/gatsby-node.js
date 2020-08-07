@@ -6,7 +6,7 @@ exports.createPages = async ({ actions: { createPage } }) => {
   data.products.forEach(product => {
     createPage({
       path: `/products/${product.slug}/`,
-      component: require.resolve("./src/templates/product-page.tsx"),
+      component: require.resolve("./src/templates/ProductPage.tsx"),
       context: { product },
     })
   })

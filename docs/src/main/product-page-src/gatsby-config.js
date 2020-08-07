@@ -5,14 +5,22 @@
  */
 
 module.exports = {
-  /* Your site config here */
   plugins: [
     {
       resolve: `gatsby-plugin-typescript`,
       options: {
-        isTSX: true, // defaults to false
-        allExtensions: true, // defaults to false
+        isTSX: true,
+        allExtensions: true,
       },
     },
   ],
+  siteMetadata: {
+    title: "Blue Brain Nexus",
+    description:
+      "The flexible, open-source knowledge graph built for data-driven science.",
+    url: "https://bluebrainnexus.io", // No trailing slash allowed!
+    siteURL: "https://bluebrainnexus.io", // No trailing slash allowed!
+    image: "/img/Nexus-v1.4-slate.png", // Path to your image you placed in the 'static' folder
+    twitterUsername: "@bluebrainnexus",
+  },
 }

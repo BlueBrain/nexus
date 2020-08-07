@@ -12,11 +12,7 @@ build:
 	$(MAKE) clean
 	@echo "Building project... 👷"
 	@docker-compose run --rm nexus-product-page run build
-	# $(MAKE) open
-
-open:
-	@echo "Opening output html in your browser... 🏖"
-	@open ../paradox/index.html
+	$(MAKE) copy
 
 test:
 	@echo "Running tests... 🧪"
@@ -29,3 +25,8 @@ lint:
 clean:
 	@echo "Cleaning old output... 🧼"
 	@docker-compose run --rm nexus-product-page run clean
+
+copy:
+	@echo "Copying build output to paradox folder... 🍝"
+	@cp -R public ../paradox
+	@echo "Done. 🍝"

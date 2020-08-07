@@ -1,4 +1,5 @@
 import * as React from "react"
+import MainLayout from "../layouts/main"
 
 export type Product = {
   name: string
@@ -8,9 +9,9 @@ export type Product = {
 const ProductPage = ({ pageContext: { product } }) => {
   const { name } = product
   return (
-    <div>
+    <MainLayout>
       <h1>{name}</h1>
-    </div>
+    </MainLayout>
   )
 }
 
