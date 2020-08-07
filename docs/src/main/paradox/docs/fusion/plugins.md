@@ -1,5 +1,13 @@
 # Plugins
 
+## What are Plugins
+
+A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Web. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.
+
+Plugins are developed using javascript and are loaded into the Nexus Fusion instance from in the /plugins folder.
+
+## Development
+
 Your plugin must export a default function with the following signature:
 
 ```typescript
@@ -10,14 +18,14 @@ export default ({ ref: HTMLElement, nexusClient: NexusClient, resource: Resource
 };
 ```
 
-Nexus Plugin uses [SystemJS](https://github.com/systemjs/systemjs).
+Nexus Plugins uses [SystemJS](https://github.com/systemjs/systemjs).
 
 You have to transpile and bundle your code using SystemJS as output:
 
 - with [rollup](https://rollupjs.org/guide/en/#outputformat): use `system` as output format
 - with [webpack](https://webpack.js.org/configuration/output/#outputlibrarytarget): use `system` as `outputTarget`
 
-# Configuring Nexus to run your plugins
+### Configuring Nexus to run your plugins
 
 Once you have your javascript bundled into a single file, you can place it in the `./plugins` folder at the root of your Nexus Web instance.
 
@@ -35,6 +43,69 @@ Plugins should follow this folder naming convention:
 │   ...
 ```
 
-Once restarted, your Nexus Web instance will read the available files, which will be visible to add in the Dashboard Edit Form via an autocomplete searchbox.
+## Plugin Manifest
 
-@ref:[Read about configuring a Studio Dashboard](studio.md)
+The plugin manifest should be available at the same remote endpoint as the plugins. This is so Nexus can find the plugins and apply them dynamically.
+
+The plugin manifest is a json object with keys that correspond to the plugin name with a value that corresponds to a descriptive payload of where to find the manifest, as well as some information about it's development. It's similar to a package.json file.
+
+```json
+{
+    "circuit": {
+      "modulePath": "circuit.f7755e13c8b410efdf02.js",
+      "name": "Circuit",
+      "description": "",
+      "version": "",
+      "tags": [],
+      "author": "",
+      "license": "",
+      "mapping": {}
+    }
+}
+```
+
+Plugin Config
+
+The plugin config should be available as an object under the `mapping` key of the plugin manifest. This tells nexus when a plugin should be displayed, by matching a resource to a shape.
+
+### Matching all resources
+
+The following will show `nexus-plugin-test` for _every_ resource inside Nexus Web.
+
+```json
+{
+    "nexus-plugin-test": {
+      "modulePath": "nexus-plugin-test.js",
+      "name": "Nexus Plugin Test",
+      "description": "",
+      "version": "",
+      "tags": [],
+      "author": "",
+      "license": "",
+      "mapping": {}
+    }
+}
+```
+
+### Matching a resource with a specific type and shape
+
+The following will show `nexus-plugin-test` for any resource of type `File` but only if they have a `distribution.encodingFormat` property that's `application/swc`
+
+```json
+{
+    "nexus-plugin-test": {
+      "modulePath": "nexus-plugin-test.js",
+      "name": "Nexus Plugin Test",
+      "description": "",
+      "version": "",
+      "tags": [],
+      "author": "",
+      "license": "",
+      "mapping": {
+        "@type": "File",
+        "distribution:" {
+            "encodingFormat": "application/swc"
+        }
+    }
+}
+```
