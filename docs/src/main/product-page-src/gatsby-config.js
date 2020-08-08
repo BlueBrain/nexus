@@ -22,5 +22,7 @@ module.exports = {
     siteURL: "https://bluebrainnexus.io", // No trailing slash allowed!
     image: "/img/Nexus-v1.4-slate.png", // Path to your image you placed in the 'static' folder
     twitterUsername: "@bluebrainnexus",
+    emailCatchAPI:
+      "https://script.google.com/macros/s/AKfycbzG21hsMSsWiPa5fDd6IbPzrfPvZKVf0Xy7eJ4RmxWh38VHJIQ/exec",
   },
 }

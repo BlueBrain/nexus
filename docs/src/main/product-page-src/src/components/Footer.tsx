@@ -4,17 +4,19 @@ import { Link } from "gatsby"
 export default function Footer() {
   return (
     <footer className="footer gradient">
-      <div className="content">
-        <div className="columns">
-          <a href="">
-            <img className="logo"></img>
-          </a>
+      <div className="container">
+        <div className="content">
+          <div className="columns">
+            <a href="">
+              <img className="logo"></img>
+            </a>
+          </div>
+          <p>
+            Blue Brain Nexus is Open Source and available under the Apache
+            License 2.0
+          </p>
+          <p>Blue Brain Project/EPFL 2005 – 2020. All rights reserved.</p>
         </div>
-        <p>
-          Blue Brain Nexus is Open Source and available under the Apache License
-          2.0
-        </p>
-        <p>Blue Brain Project/EPFL 2005 – 2020. All rights reserved.</p>
       </div>
     </footer>
   )

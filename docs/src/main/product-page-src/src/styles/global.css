@@ -2,6 +2,8 @@
 @import "./variables.css";
 @import "./footer.css";
 @import "./header.css";
+@import "./call-out.css";
+@import "./email-catch.css";
 
 @media (min-width: 320px) {
   /* smartphones, portrait iPhone, portrait 480x320 phones (Android) */
