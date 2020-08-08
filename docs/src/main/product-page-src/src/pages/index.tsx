@@ -1,5 +1,4 @@
 import * as React from "react"
-import { Link } from "gatsby"
 import MainLayout from "../layouts/main"
 import WhatIsNexus from "../components/WhatIsNexus"
 import MainHero from "../components/MainHero"

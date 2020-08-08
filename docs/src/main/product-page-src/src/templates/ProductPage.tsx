@@ -6,7 +6,9 @@ export type Product = {
   slug: string
 }
 
-const ProductPage = ({ pageContext: { product } }) => {
+const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
+  pageContext: { product },
+}) => {
   const { name } = product
   return (
     <MainLayout>

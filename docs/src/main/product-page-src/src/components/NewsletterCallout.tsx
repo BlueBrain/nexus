@@ -21,9 +21,9 @@ const NewsletterCallout: React.FC<{
   status: EMAIL_CATCH_STATUS
   submitEmail: (data: { email?: string }) => Promise<void>
 }> = ({ status, submitEmail }) => {
-  const formRef = React.useRef(null)
+  const formRef = React.useRef<HTMLFormElement>(null)
 
-  const handleSubmit = e => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formRef.current) {
       return

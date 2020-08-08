@@ -3,7 +3,7 @@ import Header from "../components/header"
 import Footer from "../components/footer"
 import SEO from "../components/SEO"
 
-export default function MainLayout({ children }) {
+const MainLayout: React.FC = ({ children }) => {
   return (
     <>
       <SEO />
@@ -13,3 +13,5 @@ export default function MainLayout({ children }) {
     </>
   )
 }
+
+export default MainLayout
