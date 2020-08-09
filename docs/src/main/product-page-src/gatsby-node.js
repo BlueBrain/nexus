@@ -1,8 +1,7 @@
-const data = require("./data.json")
+const data = require("./data")
 
 exports.createPages = async ({ actions: { createPage } }) => {
   // Product Pages
-  console.log({ data })
   data.products.forEach(product => {
     createPage({
       path: `/products/${product.slug}/`,

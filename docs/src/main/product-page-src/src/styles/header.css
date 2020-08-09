@@ -8,7 +8,6 @@
   display: flex;
   padding: 0.7em;
   justify-content: space-between;
-  height: 50px;
   align-items: center;
   position: relative;
   z-index: 1;
@@ -21,6 +20,10 @@
   width: 100vw;
 }
 
+.header > .container > a {
+  color: white;
+}
+
 @media (min-width: 1281px) {
   .header > .container {
     width: 1344px;
@@ -29,11 +32,21 @@
   }
 }
 
-.header > .container > .logo {
+.header > .container .logo {
   font-family: "Nunito Sans", sans-serif;
   display: flex;
   align-items: center;
-  font-size: 1.3em;
+  font-size: 1.5em;
+  color: white;
+  transition: all 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.header > .container .logo span {
+  transition: all 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.header > .container .logo:hover span {
+  opacity: 0.5;
 }
 
 .logo img {

@@ -1,6 +1,10 @@
 import * as React from "react"
+import { useLocation } from "@reach/router"
+import { scrollIntoView } from "../libs/scroll"
 
 export default function MainHero() {
+  const { pathname } = useLocation()
+
   return (
     <section className="hero is-fullheight">
       <div className="gradient"></div>
@@ -15,17 +19,26 @@ export default function MainHero() {
           </h2>
           <div className="columns">
             <div className="column">
-              <a href="#why-nexus">
+              <a
+                href="#why-nexus"
+                onClick={scrollIntoView(pathname, "why-nexus")}
+              >
                 <button className="button">Why Nexus?</button>
               </a>
             </div>
             <div className="column">
-              <a href="#what-is-nexus">
+              <a
+                href="#what-is-nexus"
+                onClick={scrollIntoView(pathname, "what-is-nexus")}
+              >
                 <button className="button">What is Nexus?</button>
               </a>
             </div>
             <div className="column">
-              <a href="#get-started">
+              <a
+                href="#get-started"
+                onClick={scrollIntoView(pathname, "get-started")}
+              >
                 <button className="button">Get Started</button>
               </a>
             </div>

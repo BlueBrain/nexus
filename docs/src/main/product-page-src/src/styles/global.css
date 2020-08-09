@@ -100,6 +100,7 @@ li {
 .gradient {
   background-color: #060b13;
   background-image: linear-gradient(326deg, #060b13 0%, #0b1848 74%);
+  /* background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%); */
 }
 
 /* 
@@ -124,9 +125,20 @@ Hero
   width: 100%;
   position: absolute;
   top: 0;
-  background: transparent
+  /* background: transparent
     linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
-    0% 0% no-repeat padding-box;
+    0% 0% no-repeat padding-box; */
+  /* background-image: linear-gradient(36deg, #a18cd1 0%, #fbc2eb 100%);
+   */
+  background: linear-gradient(limegreen, transparent),
+    linear-gradient(90deg, skyblue, transparent),
+    linear-gradient(-90deg, coral, transparent);
+
+  background: linear-gradient(#ffe375, transparent),
+    linear-gradient(90deg, #52b9e4, transparent),
+    linear-gradient(-90deg, coral, transparent);
+
+  background-blend-mode: screen;
   clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
   z-index: 0;
 }
@@ -200,6 +212,12 @@ Hero
 
 .overflow-hidden {
   overflow: hidden;
+}
+
+.stretch {
+  width: 100%;
+  display: flex;
+  justify-content: inherit;
 }
 
 @media (max-width: 600px) {

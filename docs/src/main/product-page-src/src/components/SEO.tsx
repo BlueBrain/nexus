@@ -3,6 +3,8 @@ import { Helmet } from "react-helmet"
 import { useLocation } from "@reach/router"
 import { useStaticQuery, graphql } from "gatsby"
 
+import favicon from "../../static/favicon.ico"
+
 export type SEOProps = {
   title?: string
   description?: string
@@ -15,7 +17,6 @@ const SEO: React.FC<SEOProps> = ({ title, description, image }) => {
 
   const {
     defaultTitle,
-    // titleTemplate,
     defaultDescription,
     siteUrl,
     defaultImage,
@@ -30,9 +31,9 @@ const SEO: React.FC<SEOProps> = ({ title, description, image }) => {
   }
 
   return (
-    // @ts-ignore TODO fix this type error
     <Helmet>
       <title>{seo.title}</title>
+      <link rel="icon" type="image/png" href={favicon} sizes="32x32" />
       <meta name="description" content={seo.description} />
       <meta name="image" content={seo.image} />
 

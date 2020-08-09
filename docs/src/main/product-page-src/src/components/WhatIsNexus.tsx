@@ -1,20 +1,24 @@
 import * as React from "react"
+import { Link } from "gatsby"
 
 const products = [
   {
     title: "Nexus Fusion",
+    slug: "nexus-fusion",
     subtitle: "Enabling Data and Knowledge Discovery",
     description:
       "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
   },
   {
     title: "Nexus Delta",
+    slug: "nexus-delta",
     subtitle: "Managing Data and Knowledge Graph Lifecycles",
     description:
       "A scalable and secure service to store and leverage all your data, neatly organised in a Knowledge Graph.",
   },
   {
     title: "Nexus Forge",
+    slug: "nexus-forge",
     subtitle: "Building and Using Knowledge Graphs Made Easy.",
     description:
       "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
@@ -25,7 +29,8 @@ const ShortProductDescription: React.FC<{
   title: string
   subtitle: string
   description: string
-}> = ({ title, subtitle, description }) => {
+  slug: string
+}> = ({ title, slug, subtitle, description }) => {
   return (
     <div className="columns short-product-description alternating-orientation">
       <div className="column">
@@ -35,9 +40,9 @@ const ShortProductDescription: React.FC<{
         <h3 className="title">{title}</h3>
         <h4 className="subtitle">{subtitle}</h4>
         <p>{description}</p>
-        <a href="">
+        <Link to={`/products/${slug}`}>
           <button className="button">Read More</button>
-        </a>
+        </Link>
       </div>
     </div>
   )
@@ -50,10 +55,10 @@ export default function WhatIsNexus() {
         <div className="content centered">
           <h2>What is Nexus?</h2>
           <p className="subtitle">
-            subtitle Blue Brain Nexus is an ecosystem that allows you to
-            organize and better leverage your data through the use of a
-            Knowledge Graph. In addition to the products listed here, you’ll
-            find a rich ecosystem of libraries and tools.
+            Blue Brain Nexus is an ecosystem that allows you to organize and
+            better leverage your data through the use of a Knowledge Graph. In
+            addition to the products listed here, you’ll find a rich ecosystem
+            of libraries and tools.
           </p>
         </div>
         <div className="content">
