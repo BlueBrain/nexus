@@ -13,6 +13,10 @@
   z-index: 1;
 }
 
+.header a:hover {
+  color: var(--font);
+}
+
 .header > .container {
   display: flex;
   align-items: center;
@@ -29,6 +33,12 @@
     width: 1344px;
     margin-left: auto;
     margin-right: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .header > .container {
+    padding: 0.5em;
   }
 }
 
@@ -242,4 +252,8 @@
 
 .clear .dropdown {
   border: 1px solid rgb(231, 231, 231);
+}
+
+.submenu-title {
+  margin-top: 1em;
 }
