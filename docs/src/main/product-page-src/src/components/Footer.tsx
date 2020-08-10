@@ -1,5 +1,8 @@
 import * as React from "react"
-import { Link } from "gatsby"
+
+import GettingStartedList from "./GettingStartedList"
+import DevList from "./DevList"
+import ProductList from "./ProductsList"
 
 import epflLogo from "../../static/img/logos/epfl.svg"
 import bbpLogo from "../../static/img/logos/bbp.png"
@@ -7,9 +10,6 @@ import gitterLogo from "../../static/img/logos/gitter.svg"
 import linkedInLogo from "../../static/img/logos/linkedin.svg"
 import githubLogoSquare from "../../static/img/logos/github-square.svg"
 import twitterLogo from "../../static/img/logos/twitter-square.svg"
-import GettingStartedList from "./GettingStartedList"
-import DevList from "./DevList"
-import ProductList from "./ProductsList"
 
 export default function Footer() {
   return (
@@ -67,69 +67,3 @@ export default function Footer() {
     </footer>
   )
 }
-
-// footer.footer.gradient
-//   .content
-//     .columns
-//       .column
-//         a(href="https://www.epfl.ch/en/")
-//             img(
-//             class="logo"
-//             src="../img/logos/epfl.svg"
-//             alt="EPFL Logo"
-//           )
-//         br
-//         a(href="https://www.epfl.ch/research/domains/bluebrain/")
-//           img(
-//             class="logo"
-//             src="../img/logos/bbp.png"
-//             alt="Blue Brain Project logo"
-//           )
-//       .column
-//         a(href="/")
-//           h3 Products
-//         ul
-//           a(href="/")
-//             li Fusion
-//           a(href="/")
-//             li Forge
-//           a(href="/")
-//             li Delta
-//           a(href="/")
-//             li Nexus.js
-//           a(href="/")
-//             li CLI
-//           a(href="/")
-//             li Roadmap
-//       .column.is-one-quarter
-//         h3 Getting Started
-//         +gettingStartedList("footer-list")
-//       .column
-//         h3 Developers
-//         +devList("footer-list")
-//       .column.social-icons
-//         a(href="https://gitter.im/BlueBrain/nexus")
-//           img(
-//             class="logo"
-//             src="../img/logos/gitter.svg"
-//             alt="Gitter"
-//           )
-//         //- TODO missing link
-//         a(href="/")
-//           img(
-//             class="logo"
-//             src="../img/logos/linkedin.svg"
-//             alt="LinkedIn"
-//           )
-//         a(href="https://github.com/BlueBrain/nexus")
-//           img(
-//             class="logo"
-//             src="../img/logos/github-square.svg"
-//             alt="Github"
-//           )
-//         a(href="https://twitter.com/bluebrainnexus")
-//           img(
-//             class="logo"
-//             src="../img/logos/twitter-square.svg"
-//             alt="Twitter"
-//           )

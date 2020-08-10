@@ -5,6 +5,7 @@
 @import "./call-out.css";
 @import "./email-catch.css";
 @import "./mobile-menu.css";
+@import "./nav-menu.css";
 
 @media (min-width: 320px) {
   /* smartphones, portrait iPhone, portrait 480x320 phones (Android) */
@@ -134,7 +135,7 @@ Hero
 }
 .hero .title,
 .hero .subtitle {
-  color: rgb(121, 120, 120);
+  color: white;
 }
 .hero .subtitle {
   max-width: 750px;
@@ -147,18 +148,18 @@ Hero
   width: 100%;
   position: absolute;
   top: 0;
-  /* background: transparent
+  background: transparent
     linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
-    0% 0% no-repeat padding-box; */
+    0% 0% no-repeat padding-box;
   /* background-image: linear-gradient(36deg, #a18cd1 0%, #fbc2eb 100%);
-   */
+  
   background: linear-gradient(limegreen, transparent),
     linear-gradient(90deg, skyblue, transparent),
     linear-gradient(-90deg, coral, transparent);
 
   background: linear-gradient(#ffe375, transparent),
     linear-gradient(90deg, #52b9e4, transparent),
-    linear-gradient(-90deg, coral, transparent);
+    linear-gradient(-90deg, coral, transparent); */
 
   background-blend-mode: screen;
   clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
@@ -188,6 +189,10 @@ Hero
 .page-title {
   margin: 4rem 0 2rem;
   font-size: 42px;
+}
+
+.lines {
+  opacity: 0.2;
 }
 
 @media (max-width: 800px) {

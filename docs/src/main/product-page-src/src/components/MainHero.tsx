@@ -1,13 +1,18 @@
 import * as React from "react"
 import { useLocation } from "@reach/router"
 import { scrollIntoView } from "../libs/scroll"
+import lines from "../libs/lines"
 
 export default function MainHero() {
   const { pathname } = useLocation()
 
+  React.useEffect(() => {
+    lines("gradient")
+  }, [])
+
   return (
     <section className="hero is-fullheight">
-      <div className="gradient"></div>
+      <div className="gradient" id="gradient"></div>
       <div className="hero-body">
         <div className="container">
           <h1 className="title is-spaced">

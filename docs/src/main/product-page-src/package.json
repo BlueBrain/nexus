@@ -24,8 +24,8 @@
     "react-dom": "^16.12.0",
     "react-helmet": "^6.1.0",
     "react-typography": "^0.16.19",
+    "svgjs": "^2.6.2",
     "typography": "^0.16.19",
-    "typography-theme-judah": "^0.16.19",
     "typography-theme-ocean-beach": "^0.16.19"
   },
   "devDependencies": {

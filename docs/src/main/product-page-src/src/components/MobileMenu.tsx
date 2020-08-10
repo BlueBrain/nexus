@@ -21,7 +21,7 @@ const SubMenu: React.FC<{ title: string; defaultOpened?: boolean }> = ({
       <button className="menu-item-button" onClick={handleButtonClick}>
         {title}
       </button>
-      {open && <div className="dev-submenu">{children}</div>}
+      {open && <div className="submenu">{children}</div>}
     </>
   )
 }
