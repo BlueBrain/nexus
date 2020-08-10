@@ -109,3 +109,9 @@ The following will show `nexus-plugin-test` for any resource of type `File` but 
     }
 }
 ```
+
+## Default Plugins
+
+> To do, list default plugins and their behaviour.
+
+### Admin Plugin

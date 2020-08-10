@@ -12,6 +12,14 @@ The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In pa
 
 > Note: Some organizations in Nexus Delta are created to support Nexus Fusion internals, such as the `webapps` organization. Be careful when deleting those.
 
+## Organizations and Projects Indexes
+
+> To do, discuss Base and API Mapping.
+
+### Creating a New Organization
+
+### Creating a New Project
+
 ## Project View
 
 The project view in your admin app is the center stage to manage a project.
@@ -20,10 +28,16 @@ The project view in your admin app is the center stage to manage a project.
 
 * On the left hand side, you will find the `Default Query`. You can filter and search resources, order them, as well as share that query with your peers. You can create as many queries as you like by clicking `+ Add another resource list`.
 * The next panel is the `Studios`. Here you can create a new studio in your project, as well as list and search existing studios in the project.
-* Finally, on the right hand side, you find the `Project Tools`. You'll find the SPARQL and elasticsearch query editors, and check the project permissions.
+* Finally, on the right hand side, you find the `Project Tools`. You'll find the SPARQL and elasticsearch query editors, and check the project permissions. You can also @ref:[create a new resource](admin.md#creating-a-new-resource) and upload files.
 
 In the header, the breadcrumb menu shows the organization and project your are in. You can also check the indexing status of your project.
 
+### Creating a New Resource
+
+Navigate to the project where you want to create a resource. Click on the “Create Resource” button in the right sidebar. Build the JSON payload with the help of the interactive editor, then hit “Save”.
+
 ## Resource View
+
+> Note: for details about default plugins shipped with Nexus Fusion, @ref:[click here](plugins.md#default-plugins).
 
 > To do, and reference this anchor in other pages such as studios and plugins.
