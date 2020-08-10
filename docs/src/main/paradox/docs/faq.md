@@ -1,8 +1,10 @@
-# Frequently asked questions
+# Frequently Asked Questions (FAQ)
+
+## General FAQ
 
 ### What is Blue Brain Nexus?
 
-Blue Brain Nexus is an Open Source, data and knowledge management platform designed to enable ingestion, integration and search of virtually any kind of data. Entities (real world data) are described using well defined and validatable schemas (using JSON-LD and optionally SHACL). Nexus can be used with existing data schemas from http://schema.org or new ones custom created for your own applications. For neuroscience data, http://Neuroshapes.org provides open, community-developed schemas. While Nexus is engineered to support rich semantics, it is not obligatory. In fact, data can be ingested from existing data sources such as CSV files and SQL databases, and iteratively reshaped into well defined data schemas.
+Blue Brain Nexus is an Open Source, data and knowledge management platform designed to enable ingestion, integration and search of virtually any kind of data. Entities (real world data) are described using well defined and validatable schemas (using JSON-LD and optionally SHACL). Nexus can be used with existing data schemas from <http://schema.org> or new ones custom created for your own applications. For neuroscience data, <http://Neuroshapes.org> provides open, community-developed schemas. While Nexus is engineered to support rich semantics, it is not obligatory. In fact, data can be ingested from existing data sources such as CSV files and SQL databases, and iteratively reshaped into well defined data schemas.
 
 Nexus creates and manages entities in accordance with the FAIR (Findable, Accessible, Interoperable and Re-usable) Principles. The FAIR principles are also applied to data where Nexus provides the ability to track data provenance and supports data longevity in a secure and scalable manner.
 
@@ -61,7 +63,7 @@ There are several channels provided to address different issues:
 - **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found [here](https://bluebrain.github.io/nexus/docs)
 - **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the [list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature). In case there isn't already one, please [open a feature request](https://github.com/BlueBrain/nexus/issues/new?labels=feature) describing your feature with as much detail as possible.
 
-## Technical
+## Technical FAQ  
 
 ### What are the clients I can use with Blue Brain Nexus? What are the requirements to run Blue Brain Nexus locally?
 

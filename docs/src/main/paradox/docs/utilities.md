@@ -33,7 +33,7 @@ neuroscience data.
 
 [Source Code](https://github.com/INCF/neuroshapes)
 
-## Nexus tools
+## Nexus Tools
 
 ### Nexus CLI
 
@@ -47,8 +47,14 @@ This library will help Python users to integrate their tools with the Blue Brain
 
 [Source Code](https://github.com/BlueBrain/nexus-python-sdk) | [Documentation](https://bluebrain.github.io/nexus-python-sdk/)
 
-### JS SDK for Nexus
+### Nexus.js
 
 A set of helpers to abstract the Nexus API and build Javascript / Typescript applications.
 
-[Source Code](https://github.com/BlueBrain/nexus-sdk-js) | [Documentation](http://FIXME)
+[Source Code](https://github.com/BlueBrain/nexus-sdk-js)
+
+Documentation:
+
+- [nexus-sdk](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-sdk/README.md#readme)
+- [react-nexus](https://github.com/BlueBrain/nexus-js/blob/master/packages/react-nexus/README.md#readme)
+- [nexus-link](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-link/README.md#readme)
