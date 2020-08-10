@@ -40,8 +40,9 @@ object PathDirectives {
   @SuppressWarnings(Array("MethodNames"))
   def IdSegmentOrUnderscore(implicit project: ProjectResource): PathMatcher1[IdOrUnderscore] =
     Segment flatMap {
-      case "_"   => Some(Underscore)
-      case other => toIriOrElseBase(other).map(SchemaId)
+      case "events" => None
+      case "_"      => Some(Underscore)
+      case other    => toIriOrElseBase(other).map(SchemaId)
     }
 
   /**
