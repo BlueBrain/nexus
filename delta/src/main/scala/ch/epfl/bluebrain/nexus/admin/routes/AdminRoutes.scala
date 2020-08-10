@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.projects.Projects
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.routes.EventRoutes
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, PaginationConfig, PersistenceConfig}
 import monix.eval.Task
