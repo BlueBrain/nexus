@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@reach/router": "^1.3.4",
+    "@rooks/use-raf": "^3.6.0",
     "bulma": "^0.9.0",
     "gatsby": "^2.24.26",
     "gatsby-plugin-tslint": "^0.0.2",
@@ -25,6 +26,7 @@
     "react-helmet": "^6.1.0",
     "react-typography": "^0.16.19",
     "svgjs": "^2.6.2",
+    "three": "^0.119.1",
     "typography": "^0.16.19",
     "typography-theme-ocean-beach": "^0.16.19"
   },
@@ -32,6 +34,7 @@
     "@types/react": "^16.9.45",
     "@types/react-dom": "^16.9.8",
     "@types/react-helmet": "^6.1.0",
+    "@types/three": "^0.103.2",
     "@types/typography": "^0.16.3",
     "gatsby-cli": "^2.12.77",
     "prettier": "2.0.5",

@@ -64,6 +64,7 @@ function generatePaths(id: string) {
   if (!elm) {
     return
   }
+  elm.querySelectorAll("*").forEach(n => n.remove())
   const bounds = getCanvasBounds(elm)
   const draw = SVG(id)
     .size(bounds.canvasWidth, bounds.canvasHeight)
@@ -74,5 +75,12 @@ function generatePaths(id: string) {
 }
 
 export default (id: string) => {
-  generatePaths(id)
+  const generate = () => {
+    generatePaths(id)
+  }
+  window.addEventListener("resize", generate)
+  generate()
+  return () => {
+    window.removeEventListener("resize", generate)
+  }
 }
