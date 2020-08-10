@@ -1,1 +1,29 @@
 # Admin
+
+The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In particular, you can:
+
+* list, create, edit and deprecate organizations,
+* list, create, edit and deprecate projects within an organization
+* check permissions on your projects and organizations
+* create, view, edit, and deprecate ressources within your projects
+* query your knowledge graph with SPARQL and elasticsearch views
+* create new Studios (or edit or deprecate them, as Studios are ressources)
+* check the indexing status of your projects
+
+> Note: Some organizations in Nexus Delta are created to support Nexus Fusion internals, such as the `webapps` organization. Be careful when deleting those.
+
+## Project View
+
+The project view in your admin app is the center stage to manage a project.
+
+![Project View](../assets/fusion-admin-project-page.png)
+
+* On the left hand side, you will find the `Default Query`. You can filter and search resources, order them, as well as share that query with your peers. You can create as many queries as you like by clicking `+ Add another resource list`.
+* The next panel is the `Studios`. Here you can create a new studio in your project, as well as list and search existing studios in the project.
+* Finally, on the right hand side, you find the `Project Tools`. You'll find the SPARQL and elasticsearch query editors, and check the project permissions.
+
+In the header, the breadcrumb menu shows the organization and project your are in. You can also check the indexing status of your project.
+
+## Resource View
+
+> To do, and reference this anchor in other pages such as studios and plugins.
