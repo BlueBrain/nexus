@@ -13,6 +13,12 @@ module.exports = {
         allExtensions: true,
       },
     },
+    // {
+    //   resolve: `gatsby-plugin-typography`,
+    //   options: {
+    //     pathToConfigModule: `./typography`,
+    //   },
+    // },
   ],
   siteMetadata: {
     title: "Blue Brain Nexus",

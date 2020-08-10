@@ -4,6 +4,7 @@
 @import "./header.css";
 @import "./call-out.css";
 @import "./email-catch.css";
+@import "./mobile-menu.css";
 
 @media (min-width: 320px) {
   /* smartphones, portrait iPhone, portrait 480x320 phones (Android) */
@@ -24,10 +25,26 @@
   /* hi-res laptops and desktops */
 }
 
+@font-face {
+  font-family: "Metropolis";
+  src: url("../../static/fonts/Metropolis/Metropolis-Bold.otf"),
+    format("opentype");
+  src: url("../../static/fonts/Metropolis/Metropolis-ExtraBold.otf"),
+    format("opentype");
+  src: url("../../static/fonts/Metropolis/Metropolis-Regular.otf"),
+    format("opentype");
+  src: url("../../static/fonts/Metropolis/Metropolis-Light.otf"),
+    format("opentype");
+  src: url("../../static/fonts/Metropolis/Metropolis-ExtraLight.otf"),
+    format("opentype");
+}
+
 body {
-  font-family: "Roboto", sans-serif;
-  font-weight: 300;
   margin: 0;
+}
+
+.card {
+  border-radius: 0.5em;
 }
 
 section .container {
@@ -36,13 +53,13 @@ section .container {
 }
 
 h1 {
-  font-family: "Nunito Sans", sans-serif;
+  font-family: "Roboto", sans-serif;
   font-weight: 800;
 }
 
 h2,
 h3 {
-  font-family: "Nunito Sans", sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 button {
@@ -93,6 +110,11 @@ ul {
   margin: 0;
 }
 
+ul ul,
+.content ul ul {
+  margin-left: 1em;
+}
+
 li {
   list-style: none;
 }
@@ -112,7 +134,7 @@ Hero
 }
 .hero .title,
 .hero .subtitle {
-  color: white;
+  color: rgb(121, 120, 120);
 }
 .hero .subtitle {
   max-width: 750px;

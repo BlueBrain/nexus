@@ -9,6 +9,7 @@ import githubLogoSquare from "../../static/img/logos/github-square.svg"
 import twitterLogo from "../../static/img/logos/twitter-square.svg"
 import GettingStartedList from "./GettingStartedList"
 import DevList from "./DevList"
+import ProductList from "./ProductsList"
 
 export default function Footer() {
   return (
@@ -31,17 +32,7 @@ export default function Footer() {
             </div>
             <div className="column">
               <h3>Products</h3>
-              <ul>
-                <Link to="/products/nexus-fusion">
-                  <li>Nexus Fusion</li>
-                </Link>
-                <Link to="/products/nexus-forge">
-                  <li>Nexus Forge</li>
-                </Link>
-                <Link to="/products/nexus-delta">
-                  <li>Nexus Delta</li>
-                </Link>
-              </ul>
+              <ProductList />
             </div>
             <div className="column is-one-quarter">
               <h3>Getting Started</h3>
