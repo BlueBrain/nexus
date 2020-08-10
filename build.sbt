@@ -122,11 +122,13 @@ val javaSpecificationVersion = SettingKey[String](
   "The java specification version to be used for source and target compatibility."
 )
 
+lazy val checkJavaVersion = taskKey[Unit]("Verifies the current Java version is compatible with the code java version")
+
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
   .disablePlugins(ScapegoatSbtPlugin)
-  .settings(shared, compilation)
+  .settings(shared, compilation, assertJavaVersion)
   .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
   .settings(
     name                              := "docs",
@@ -161,7 +163,7 @@ lazy val docs = project
 lazy val cli = project
   .in(file("cli"))
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
-  .settings(shared, compilation, coverage, release, servicePackaging)
+  .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
     name                 := "cli",
     moduleName           := "cli",
@@ -195,7 +197,7 @@ lazy val cli = project
 lazy val sourcing = project
   .in(file("sourcing"))
   .settings(name := "sourcing", moduleName := "sourcing")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
       akkaActor,
@@ -261,7 +263,7 @@ lazy val storage = project
   .in(file("storage"))
   .dependsOn(rdf)
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
   .settings(cargo := {
     import scala.sys.process._
 
@@ -316,7 +318,7 @@ lazy val delta = project
   .in(file("delta"))
   .dependsOn(sourcing, rdf)
   .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
-  .settings(shared, compilation, coverage, release, servicePackaging)
+  .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
     name                 := "delta",
     moduleName           := "delta",
@@ -382,6 +384,16 @@ lazy val root = project
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
+lazy val assertJavaVersion =
+  Seq(
+    checkJavaVersion   := {
+      val current  = VersionNumber(sys.props("java.specification.version"))
+      val required = VersionNumber(javaSpecificationVersion.value)
+      assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
+    },
+    compile in Compile := (compile in Compile).dependsOn(checkJavaVersion).value
+  )
+
 lazy val shared = Seq(
   organization := "ch.epfl.bluebrain.nexus",
   resolvers   ++= Seq(
@@ -443,15 +455,6 @@ lazy val compilation = {
     apiMappings                      += {
       val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
       ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
-    },
-    // fail the build initialization if the JDK currently used is not ${javaSpecificationVersion} or higher
-    initialize                       := {
-      // runs the previous initialization
-      initialize.value
-      // runs the java compatibility check
-      val current  = VersionNumber(sys.props("java.specification.version"))
-      val required = VersionNumber(javaSpecificationVersion.value)
-      assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
     }
   )
 }
