@@ -1,0 +1,67 @@
+/* 
+  Footer
+*/
+
+.footer {
+  color: #fff;
+  padding-bottom: 1rem;
+}
+
+.footer h3 {
+  color: #fff;
+}
+
+.footer img.logo {
+  max-width: 120px;
+}
+
+.footer .socials img {
+  height: 3em;
+}
+
+.footer-list > .submenu > li,
+.footer-list > div > .submenu > li {
+  margin: 0;
+}
+
+.footer-list-subtitle {
+  display: none;
+}
+
+.social-icons {
+  display: flex;
+  justify-content: space-evenly;
+  flex-wrap: wrap;
+}
+
+.social-icons > a {
+  margin: 0.3em;
+}
+
+.social-icons > a > img {
+  width: 35px;
+}
+
+.footer .logo {
+  margin-bottom: 1em;
+}
+
+/* 
+  Responsive
+*/
+
+@media (max-width: 600px) {
+  .footer {
+    padding-top: 1rem;
+  }
+
+  .footer .content {
+    padding: 1em 0;
+  }
+}
+
+@media (min-width: 950px) {
+  .social-icons {
+    min-width: 270px;
+  }
+}
