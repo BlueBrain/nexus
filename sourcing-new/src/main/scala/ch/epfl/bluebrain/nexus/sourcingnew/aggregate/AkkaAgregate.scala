@@ -1,18 +1,15 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.aggregate
 
-import java.io.IOException
-
 import akka.actor.typed.{ActorRef, ActorSystem}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
 import cats.effect.{ContextShift, Effect, IO, Timer}
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.sourcingnew._
+import ch.epfl.bluebrain.nexus.sourcingnew.config.AggregateConfig
 import retry.CatsEffect._
 import retry.syntax.all._
-import ch.epfl.bluebrain.nexus.sourcingnew.{Aggregate, PersistentEventDefinition, TransientEventDefinition, aggregate}
-import ch.epfl.bluebrain.nexus.sourcingnew.config.AggregateConfig
-import retry.{RetryDetails, RetryPolicy}
 
 import scala.reflect.ClassTag
 
@@ -23,13 +20,15 @@ class AkkaAgregate[
   Event: ClassTag,
   Rejection: ClassTag](entityTypeKey: EntityTypeKey[Command],
                        clusterSharding: ClusterSharding,
+                       retryStrategy: RetryStrategy[F],
                        askTimeout: Timeout)
-                      (implicit F: Effect[F], as: ActorSystem[Nothing], policy: RetryPolicy[F])
+                      (implicit F: Effect[F], as: ActorSystem[Nothing])
     extends Aggregate[F, String, State, EvaluateCommand, Event, Rejection] {
 
   implicit private[aggregate] val contextShift: ContextShift[IO]        = IO.contextShift(as.executionContext)
-  implicit private[aggregate] def noop[A]: (A, RetryDetails) => F[Unit] = retry.noop[F, A]
   implicit private val timeout: Timeout                            = askTimeout
+
+  import retryStrategy._
 
   /**
     * Get the current state for the entity with the given __id__
@@ -72,12 +71,6 @@ class AkkaAgregate[
   override def dryRun(id: String, command: EvaluateCommand): F[DryRunResult] =
     send(id, { askTo: ActorRef[DryRunResult] => DryRun(id, command, askTo) })
 
-  private def retryIf(e: Throwable): Boolean = e match {
-    case _: IOException => true
-    case _: EvaluationCommandTimeout[_] => true
-    case _ => false
-  }
-
   private def send[A](entityId: String, askTo: ActorRef[A] => Command): F[A] = {
     val ref = clusterSharding.entityRefFor(entityTypeKey, entityId)
 
@@ -88,7 +81,7 @@ class AkkaAgregate[
         case ect: EvaluationCommandTimeout[_] => F.raiseError(ect)
         case ece: EvaluationCommandError[_]   => F.raiseError(ece)
         case value                          => F.pure(value)
-      }.retryingOnSomeErrors(retryIf)
+      }.retryingOnSomeErrors(retryWhen)
   }
 }
 
@@ -101,10 +94,10 @@ object AkkaAgregate {
     Event: ClassTag,
     Rejection: ClassTag](entityTypeKey: EntityTypeKey[Command],
                          eventSourceProcessor: EntityContext[Command] => EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection],
+                         retryStrategy: RetryStrategy[F],
                          askTimeout: Timeout,
                          shardingSettings: Option[ClusterShardingSettings])
-                        (implicit as: ActorSystem[Nothing],
-                         policy: RetryPolicy[F]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] = {
+                        (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] = {
     val F                                = implicitly[Effect[F]]
     F.delay {
       val clusterSharding = ClusterSharding(as)
@@ -116,7 +109,7 @@ object AkkaAgregate {
         }.withSettings(settings)
       )
 
-      new AkkaAgregate[F, State, EvaluateCommand, Event, Rejection](entityTypeKey, clusterSharding, askTimeout)
+      new AkkaAgregate[F, State, EvaluateCommand, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
     }
   }
 
@@ -127,9 +120,9 @@ object AkkaAgregate {
     Event: ClassTag,
     Rejection: ClassTag](definition: PersistentEventDefinition[F, State, EvaluateCommand, Event, Rejection],
                          config: AggregateConfig,
+                         retryStrategy: RetryStrategy[F],
                          shardingSettings: Option[ClusterShardingSettings] = None)
-                          (implicit as: ActorSystem[Nothing],
-                           policy: RetryPolicy[F]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
+                          (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
       EntityTypeKey[Command](definition.entityType),
       entityContext => new aggregate.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
@@ -137,6 +130,7 @@ object AkkaAgregate {
         definition,
         config
       ),
+      retryStrategy,
       config.askTimeout,
       shardingSettings
     )
@@ -148,9 +142,9 @@ object AkkaAgregate {
     Event: ClassTag,
     Rejection: ClassTag](definition: TransientEventDefinition[F, State, EvaluateCommand, Event, Rejection],
                          config: AggregateConfig,
+                         retryStrategy: RetryStrategy[F],
                          shardingSettings: Option[ClusterShardingSettings] = None)
-                         (implicit as: ActorSystem[Nothing],
-                         policy: RetryPolicy[F]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
+                         (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
       EntityTypeKey[Command](definition.entityType),
       entityContext => new aggregate.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](
@@ -158,6 +152,7 @@ object AkkaAgregate {
         definition,
         config
       ),
+      retryStrategy,
       config.askTimeout,
       shardingSettings
     )
