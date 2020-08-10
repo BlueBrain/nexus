@@ -26,7 +26,7 @@ object NonEmptyString {
     * @return Some(nonEmptyString) if the passed string is not empty, None otherwise
     */
   def apply(string: String): Option[NonEmptyString] =
-    if (string.isBlank) None
+    if (string.isEmpty || string.trim.isEmpty) None
     else Some(unsafe(string.trim))
 
   /**

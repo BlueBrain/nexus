@@ -30,8 +30,7 @@ jobs:
           restore-keys: ${{ runner.os }}-coursier-scala-
       - uses: olafurpg/setup-scala@v5
         with:
-#          java-version: adopt@1.8-0
-          java-version: adopt@1.11
+          java-version: adopt@1.8-0
       - name: StaticAnalysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
@@ -64,8 +63,7 @@ jobs:
           restore-keys: ${{ runner.os }}-coursier-scala-
       - uses: olafurpg/setup-scala@v5
         with:
-#          java-version: adopt@1.8-0
-          java-version: adopt@1.11
+          java-version: adopt@1.8-0
       - name: PublishToBintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
       - name: PublishToDockerHub
@@ -97,8 +95,7 @@ jobs:
           restore-keys: ${{ runner.os }}-coursier-scala-
       - uses: olafurpg/setup-scala@v5
         with:
-#          java-version: adopt@1.8-0
-          java-version: adopt@1.11
+          java-version: adopt@1.8-0
       - name: SetVersion
         run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
       - name: PublishToBintray
