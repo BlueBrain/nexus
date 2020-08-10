@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Link } from "gatsby"
+import Fun from "./Fun"
 
 const products = [
   {
@@ -31,10 +32,15 @@ const ShortProductDescription: React.FC<{
   description: string
   slug: string
 }> = ({ title, slug, subtitle, description }) => {
+  const object =
+    slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"
+
   return (
     <div className="columns short-product-description alternating-orientation">
       <div className="column">
-        <div className="placeholder"></div>
+        <div className="placeholder">
+          <Fun object={object} />
+        </div>
       </div>
       <div className="column">
         <h3 className="title">{title}</h3>
@@ -52,7 +58,7 @@ export default function WhatIsNexus() {
   return (
     <section id="what-is-nexus">
       <div className="container">
-        <div className="content centered">
+        <div className="content centered" style={{ marginBottom: "4em" }}>
           <h2>What is Nexus?</h2>
           <p className="subtitle">
             Blue Brain Nexus is an ecosystem that allows you to organize and

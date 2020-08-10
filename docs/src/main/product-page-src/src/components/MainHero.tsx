@@ -7,12 +7,12 @@ export default function MainHero() {
   const { pathname } = useLocation()
 
   React.useEffect(() => {
-    lines("gradient")
+    return lines("gradient")
   }, [])
 
   return (
     <section className="hero is-fullheight">
-      <div className="gradient" id="gradient"></div>
+      <div className="gradient" id="gradient" />
       <div className="hero-body">
         <div className="container">
           <h1 className="title is-spaced">
