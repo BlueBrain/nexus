@@ -3,31 +3,33 @@ import * as React from "react"
 const getHelpLinks = [
   {
     title: "Explore the FAQ",
-    href: "",
+    href: "https://bluebrainnexus.io/docs/faq",
   },
   {
     title: "Reach out on Twitter",
-    href: "",
+    href: "https://twitter.com/bluebrainnexus",
+    newTab: true,
   },
   {
     title: "Check the Roadmap",
-    href: "",
+    href: "https://bluebrainnexus.io/docs/roadmap",
   },
 ]
 
 const GetHelpLink: React.FC<{
   title: string
   href: string
-}> = ({ title, href }) => {
+  newTab?: boolean
+}> = ({ title, href, newTab }) => {
   return (
     <div className="get-started center-flex">
-      <h4 className="title">{title}</h4>
-      <div className="figure image is-128x128">
-        <img
-          src="https://bulma.io/images/placeholders/128x128.png"
-          alt="placeholder"
-        />
-      </div>
+      <a
+        href={href}
+        className="get-help-link button"
+        target={newTab ? "_blank" : ""}
+      >
+        {title}
+      </a>
     </div>
   )
 }
@@ -37,11 +39,11 @@ export default function AnyQuestions() {
     <section id="any-questions">
       <div className="container">
         <div className="content centered">
-          <h2>Still have questions?</h2>
+          <h2 className="section-title">Still have questions?</h2>
           <div className="tile is-ancestor wrapping">
             {getHelpLinks.map(getStartedLink => (
               <div className="tile is-parent is-4" key={getStartedLink.title}>
-                <article className="tile is-child box">
+                <article className="tile is-child">
                   <GetHelpLink {...getStartedLink} />
                 </article>
               </div>

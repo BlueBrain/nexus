@@ -40,6 +40,18 @@
     format("opentype");
 }
 
+@font-face {
+  font-family: "Metropolis-ExtraBold";
+  src: url("../../static/fonts/Metropolis/Metropolis-ExtraBold.otf"),
+    format("opentype");
+  src: url("../../static/fonts/Metropolis/Metropolis-Regular.otf"),
+    format("opentype");
+  src: url("../../static/fonts/Metropolis/Metropolis-Light.otf"),
+    format("opentype");
+  src: url("../../static/fonts/Metropolis/Metropolis-ExtraLight.otf"),
+    format("opentype");
+}
+
 body {
   margin: 0;
 }
@@ -54,13 +66,14 @@ section .container {
 }
 
 h1 {
-  font-family: "Roboto", sans-serif;
+  font-family: "Metropolis", sans-serif;
   font-weight: 800;
 }
 
 h2,
 h3 {
-  font-family: "Roboto", sans-serif;
+  font-family: "Metropolis", sans-serif;
+  font-weight: 800;
 }
 
 button {
@@ -129,7 +142,9 @@ li {
 /* 
 Hero
 */
-
+.title {
+  font-weight: 800;
+}
 .hero {
   color: white;
 }
@@ -168,6 +183,11 @@ Hero
 
 .content.centered {
   text-align: center;
+}
+
+.content h2,
+h3 {
+  font-weight: 800;
 }
 
 .placeholder {
@@ -259,4 +279,12 @@ Hero
 .product-image {
   margin-bottom: 1em;
   margin-top: 1em;
+}
+
+#any-questions .section-title {
+  margin-bottom: 1.5em;
+}
+
+.get-help-link {
+  width: 200px;
 }
