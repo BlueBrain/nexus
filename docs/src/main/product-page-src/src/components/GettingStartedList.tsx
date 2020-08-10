@@ -4,21 +4,21 @@ const GettingStartedList: React.FC = () => {
   return (
     <div>
       <ul className="submenu">
-        <a>
-          <li>Quick Start Guide</li>
-        </a>
-        <a>
-          <li>Nexus Sandbox</li>
-        </a>
-        <a>
-          <li>Running Nexus Delta and Fusion</li>
-        </a>
-        <a>
-          <li>Understanding Knowledge Graphs</li>
-        </a>
-        <a>
-          <li>Building Knowledge graphs with the Forge</li>
-        </a>
+        <li>
+          <a>Quick Start Guide</a>
+        </li>
+        <li>
+          <a>Nexus Sandbox</a>
+        </li>
+        <li>
+          <a>Running Nexus Delta and Fusion</a>
+        </li>
+        <li>
+          <a>Understanding Knowledge Graphs</a>
+        </li>
+        <li>
+          <a>Building Knowledge graphs with the Forge</a>
+        </li>
       </ul>
     </div>
   )

@@ -37,4 +37,12 @@ nav.mobile-menu h2 {
     transform: perspective(1000px) rotate3D(1, 0, 0, 0deg);
     opacity: 1;
   }
+
+  nav.mobile-menu > button {
+    min-width: 45px;
+  }
+
+  nav.mobile-menu > button > img {
+    width: 25px;
+  }
 }

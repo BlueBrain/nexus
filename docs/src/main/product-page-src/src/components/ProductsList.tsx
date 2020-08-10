@@ -15,7 +15,7 @@ const ProductList: React.FC = () => {
           <Link to="/products/nexus-delta">Nexus Delta</Link>
         </li>
         <li>
-          <h2>Utilities</h2>
+          <h4 className="submenu-title">Utilities</h4>
           <ul>
             <li>
               <Link to="https://bluebrainnexus.io/docs/utilities#js-sdk-for-nexus">

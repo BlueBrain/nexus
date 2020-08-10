@@ -40,18 +40,6 @@
     format("opentype");
 }
 
-@font-face {
-  font-family: "Metropolis-ExtraBold";
-  src: url("../../static/fonts/Metropolis/Metropolis-ExtraBold.otf"),
-    format("opentype");
-  src: url("../../static/fonts/Metropolis/Metropolis-Regular.otf"),
-    format("opentype");
-  src: url("../../static/fonts/Metropolis/Metropolis-Light.otf"),
-    format("opentype");
-  src: url("../../static/fonts/Metropolis/Metropolis-ExtraLight.otf"),
-    format("opentype");
-}
-
 body {
   margin: 0;
 }
