@@ -175,15 +175,6 @@ Hero
   background: transparent
     linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
     0% 0% no-repeat padding-box;
-  /* background-image: linear-gradient(36deg, #a18cd1 0%, #fbc2eb 100%);
-  
-  background: linear-gradient(limegreen, transparent),
-    linear-gradient(90deg, skyblue, transparent),
-    linear-gradient(-90deg, coral, transparent);
-
-  background: linear-gradient(#ffe375, transparent),
-    linear-gradient(90deg, #52b9e4, transparent),
-    linear-gradient(-90deg, coral, transparent); */
 
   background-blend-mode: screen;
   clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
@@ -203,7 +194,6 @@ h3 {
   display: block;
   width: 200px;
   height: 200px;
-  /* background-color: #0a1e55; */
   margin: 0 auto;
 }
 
