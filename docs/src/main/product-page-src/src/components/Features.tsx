@@ -11,7 +11,11 @@ const ValuePropoisition: React.FC<{
         <div className="value-prop center-flex">
           <div className="figure image is-64x64">
             {image ? (
-              <img src={image} alt={title} className="secondary subtle" />
+              <img
+                src={image}
+                alt={title}
+                className="svgify secondary subtle"
+              />
             ) : (
               <img
                 src="https://bulma.io/images/placeholders/128x128.png"
@@ -35,7 +39,7 @@ const Features: React.FC<{
   features: { title: string; description: string; image?: string }[]
 }> = ({ title, subtitle, features }) => {
   return (
-    <section id="why-nexus">
+    <section id="why">
       <div className="container with-room">
         <div className="content centered">
           <h2>{title}</h2>

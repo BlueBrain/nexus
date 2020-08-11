@@ -14,7 +14,7 @@ import productionReady from "../../static/img/icons/server.svg"
 import allInOne from "../../static/img/icons/schema.svg"
 import extensible from "../../static/img/icons/puzzle.svg"
 import valueFromData from "../../static/img/icons/market.svg"
-import versatile from "../../static/img/icons/cubes.svg"
+import versatile from "../../static/img/icons/comic.svg"
 
 const features = [
   {

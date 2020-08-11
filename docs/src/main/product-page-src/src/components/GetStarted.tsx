@@ -34,7 +34,7 @@ const GetStartedLink: React.FC<{
         <div className="get-started center-flex">
           <h4 className="title">{title}</h4>
           <div className="figure image is-64x64">
-            <img src={image} alt={title} className="primary subtle" />
+            <img src={image} alt={title} className="svgify primary subtle" />
           </div>
         </div>
       </a>

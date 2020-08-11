@@ -3,7 +3,11 @@
  */
 export default () => {
   document.querySelectorAll<HTMLImageElement>("img").forEach(elm => {
-    if (!elm.src || !elm.src.includes("data:image/svg+xml")) {
+    if (
+      !elm.src ||
+      !elm.src.includes("data:image/svg+xml") ||
+      !elm.classList.contains("svgify")
+    ) {
       return
     }
     fetch(elm.src)
