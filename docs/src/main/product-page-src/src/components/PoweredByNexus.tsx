@@ -3,6 +3,7 @@ import * as React from "react"
 import camhLogo from "../../static/img/logos/camh.svg"
 import hbpLogo from "../../static/img/logos/hbp.svg"
 import epflLogo from "../../static/img/logos/epfl.svg"
+import conpLogo from "../../static/img/logos/conp-pcno-logo.png"
 
 export default function PoweredByNexus() {
   return (
@@ -35,6 +36,13 @@ export default function PoweredByNexus() {
                   alt="École Polytechnique Fédérale de Lausanne"
                 />
                 <p>Blue Brain Project</p>
+              </a>
+            </div>
+
+            <div className="column">
+              <a href="https://conp.ca/">
+                <img src={conpLogo} alt="Canadian Open Neuroscience Platform" />
+                <p>Canadian Open Neuroscience Platform</p>
               </a>
             </div>
           </div>

@@ -25,7 +25,7 @@
 }
 
 .call-out#powered-by-nexus img {
-  max-width: 100px;
+  max-width: 80px;
 }
 .call-out#powered-by-nexus a {
   color: #fff;
@@ -33,6 +33,7 @@
 .call-out#powered-by-nexus p:not(.title) {
   align-self: center;
   margin-left: 1em;
+  font-size: 0.8em;
 }
 
 .call-out .title {
