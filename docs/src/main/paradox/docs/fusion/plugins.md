@@ -9,7 +9,7 @@ A core component of Studio is the ability for data curators to develop a domain-
 Plugins are developed using javascript and are loaded into the Nexus Fusion instance from in the /plugins folder.
 
 ## Plugin examples
-Below you can find the screen shots from some plugins plugins that can be integrated into Fusion. They extend the Fusion presentation layer.
+Below you can find the screen shots from some plugins that can be integrated into Fusion. They extend the Fusion presentation layer.
 
 Neuron Electro physiology viewer
 ![](../assets/fusion-ephys-plugin.png)
