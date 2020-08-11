@@ -176,6 +176,11 @@ Hero
   z-index: 0;
 }
 
+canvas {
+  z-index: 1;
+  position: relative;
+}
+
 .hero .gradient.subtraction {
   background-image: url("../../static/img/subtraction.svg");
   clip-path: none;
@@ -184,6 +189,12 @@ Hero
 @media (max-width: 600px) {
   .hero .gradient.subtraction {
     background-size: cover;
+  }
+}
+@media (min-width: 1025px) {
+  .hero .gradient.subtraction {
+    background-position-y: -100vh;
+    height: 130vh;
   }
 }
 @media (min-width: 1281px) {
@@ -316,6 +327,11 @@ section .container.with-room {
 a.box:hover,
 a.box:focus {
   box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0 0 1px var(--link);
+}
+
+svg.replaced-svg {
+  height: 100%;
+  width: 100%;
 }
 
 svg.secondary {

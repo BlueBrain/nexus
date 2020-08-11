@@ -19,7 +19,11 @@ const ValuePropoisition: React.FC<{
                 className="svgify secondary subtle"
               />
             ) : (
-              <img src={getIcon(title)} alt="placeholder" />
+              <img
+                src={getIcon(title)}
+                alt="placeholder"
+                className="svgify secondary subtle"
+              />
             )}
           </div>
           <h4 className="title" style={{ marginTop: "1em" }}>
