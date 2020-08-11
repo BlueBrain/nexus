@@ -64,7 +64,6 @@ class GlobalEventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
     concat(
       routesFor("events", EventTag, s"/$prefix/events", events.read, eventToSse),
       routesFor("resources" / "events", EventTag, "/resources/events", resRead, typedEventToSse[Event]),
-      routesFor("resources" / "events", EventTag, "/resources/events", resRead, typedEventToSse[Event]),
       routesFor("orgs" / "events", OrganizationTag, "/orgs/events", orgs.read, typedEventToSse[OrganizationEvent]),
       routesFor("projects" / "events", ProjectTag, "/projects/events", projects.read, typedEventToSse[ProjectEvent]),
       routesFor("acls" / "events", "/acls/events", AclEventTag, aclsp.read, typedEventToSse[AclEvent]),
