@@ -1,4 +1,7 @@
-import SVG from "svgjs"
+import { isBrowser } from "./browser"
+
+// @ts-ignore
+const SVG = isBrowser() ? require("svgjs") : () => {}
 
 /*
  * Draw decorative lines within an HTML Element
@@ -76,6 +79,7 @@ function generatePaths(id: string) {
 
 export default (id: string) => {
   const generate = () => {
+    if (!isBrowser()) return
     generatePaths(id)
   }
   window.addEventListener("resize", generate)

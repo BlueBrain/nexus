@@ -4,6 +4,7 @@ import { useLocation } from "@reach/router"
 import { useStaticQuery, graphql } from "gatsby"
 
 import favicon from "../../static/favicon.ico"
+import ogImage from "../../static/img/Nexus-v1.4-slate.png"
 
 export type SEOProps = {
   title?: string
@@ -26,8 +27,8 @@ const SEO: React.FC<SEOProps> = ({ title, description, image }) => {
   const seo = {
     title: title || defaultTitle,
     description: description || defaultDescription,
-    image: `${siteUrl}${image || defaultImage}`,
-    url: `${siteUrl}${pathname}`,
+    image: `${image || defaultImage}`,
+    url: ogImage,
   }
 
   return (
@@ -40,6 +41,7 @@ const SEO: React.FC<SEOProps> = ({ title, description, image }) => {
       {seo.url && <meta property="og:url" content={seo.url} />}
 
       {seo.title && <meta property="og:title" content={seo.title} />}
+      {seo.image && <meta name="og:image" content={seo.image} />}
 
       {seo.description && (
         <meta property="og:description" content={seo.description} />
