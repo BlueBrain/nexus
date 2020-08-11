@@ -57,7 +57,7 @@ const ShortProductDescription: React.FC<{
 export default function WhatIsNexus() {
   return (
     <section id="what-is-nexus">
-      <div className="container">
+      <div className="container with-room">
         <div className="content centered" style={{ marginBottom: "4em" }}>
           <h2>What is Nexus?</h2>
           <p className="subtitle">

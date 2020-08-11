@@ -9,34 +9,47 @@ import GetStartedWithNexus from "../components/GetStarted"
 import AnyQuestions from "../components/AnyQuestions"
 import EmailCatch from "../containers/EmailCatch"
 
+import scienceDriven from "../../static/img/icons/microscope.svg"
+import productionReady from "../../static/img/icons/server.svg"
+import allInOne from "../../static/img/icons/schema.svg"
+import extensible from "../../static/img/icons/puzzle.svg"
+import valueFromData from "../../static/img/icons/market.svg"
+import versatile from "../../static/img/icons/cubes.svg"
+
 const features = [
   {
     title: "Science-Driven",
+    image: scienceDriven,
     description:
       "While most companies have a plethora of people and tools to manage their data, scientists and researchers don’t have the time nor resources to do so. We developed Nexus by focusing on their specific needs, and by integrating with their existing workflows.",
   },
   {
     title: "Production-Ready",
+    image: productionReady,
     description:
       "Developed to cover the need of any data-intensive team, laboratory or organization. You can manage your data and knowledge graph in a secure and scalable fashion. The level of performance can be scaled to your needs, and we take extra-precautions to protect your data.",
   },
   {
     title: "All-in-One",
+    image: allInOne,
     description:
       "A complete suite of integrated tools and services to organize, manage and leverage your data. You could start structuring your data by using our Forge python framework, store it using our Delta web services, and easily access and share it through our Fusion web interface. We also have a CLI to manage the instance, and javascript and python libraries to develop your own apps.",
   },
   {
     title: "Versatile",
+    image: versatile,
     description:
       "Ready to cope with any field of application, Nexus allows you to structure and evolve your data continuously. Extensive use of data representation standards. Easily used in combination with your Data Science tools.",
   },
   {
     title: "Value from Data",
+    image: valueFromData,
     description:
       "From organizing your data to drawing value from them, Nexus has the tools you need. Keep track of data lineage to enable evaluation of data quality and experiment reproducibility. Ensure valuable data is made available and reused by your team, your organization or the rest of the world. Leverage your Knowledge Graph to fuel your next Artificial Intelligence application.",
   },
   {
     title: "Extensible",
+    image: extensible,
     description:
       "Nexus is built with flexibility and extensibility in mind. Beyond the tools and services offered, build your own extensions to suit your needs. For example, you can create your own data mappers in Forge, data visualisation plugins in Fusion and react to Knowledge Graph events in Delta. ",
   },

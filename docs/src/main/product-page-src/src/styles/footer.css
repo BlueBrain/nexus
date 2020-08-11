@@ -46,6 +46,10 @@
   margin-bottom: 1em;
 }
 
+.footer .submenu-title {
+  color: white;
+}
+
 /* 
   Responsive
 */
