@@ -155,6 +155,13 @@ Hero
 .hero h1 {
   font-size: 3em;
 }
+.full-height {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+}
 .hero .gradient {
   height: 100%;
   width: 100%;
@@ -170,13 +177,20 @@ Hero
 }
 
 .hero .gradient.subtraction {
-  background: url("../../static/img/subtraction.svg") no-repeat;
-  background-size: cover;
+  background-image: url("../../static/img/subtraction.svg");
   clip-path: none;
 }
 
-.hero .gradient.subtraction svg {
-  mask: url("../../static/img/subtraction.svg");
+@media (max-width: 600px) {
+  .hero .gradient.subtraction {
+    background-size: cover;
+  }
+}
+@media (min-width: 1281px) {
+  .hero .gradient.subtraction {
+    background-position-y: -50vh;
+    height: 130vh;
+  }
 }
 
 .hero .button {

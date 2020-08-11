@@ -43,8 +43,9 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   return (
     <MainLayout>
       <section className="hero is-fullheight">
-        <div className="gradient subtraction">
+        <div className="full-height">
           <Fun object={object} />
+          <div className="gradient subtraction" />
         </div>
         <div className="hero-body">
           <div
