@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{BlazegraphClient, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, _}
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, Settings}
-import ch.epfl.bluebrain.nexus.delta.routes.{AppInfoRoutes, Routes}
+import ch.epfl.bluebrain.nexus.delta.routes.{AppInfoRoutes, GlobalEventRoutes, Routes}
 import ch.epfl.bluebrain.nexus.iam.acls.Acls
 import ch.epfl.bluebrain.nexus.iam.permissions.Permissions
 import ch.epfl.bluebrain.nexus.iam.realms.{Groups, Realms}
@@ -257,6 +257,7 @@ object Main {
     implicit val pm          = CanBlock.permit
     implicit val ec          = as.dispatcher
     implicit val hc          = cfg.http
+    implicit val pc          = cfg.persistence
     val cluster              = Cluster(as)
     val seeds: List[Address] = cfg.cluster.seeds.toList
       .flatMap(_.split(","))
@@ -304,9 +305,13 @@ object Main {
         projectViewCoordinator
       ).routes
 
+      val globalEventRoutes = new GlobalEventRoutes(acls, realms).routes
+
       val httpBinding = {
         Http().bindAndHandle(
-          RouteResult.route2HandlerFlow(infoRoutes ~ Routes.wrap(iamRoutes ~ adminRoutes ~ kgRoutes)),
+          RouteResult.route2HandlerFlow(
+            infoRoutes ~ Routes.wrap(globalEventRoutes ~ iamRoutes ~ adminRoutes ~ kgRoutes)
+          ),
           cfg.http.interface,
           cfg.http.port
         )

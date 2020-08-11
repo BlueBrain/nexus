@@ -358,7 +358,7 @@ object Realms {
     val projectionId                    = "realm-index"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
       .readJournalFor[EventsByTagQuery](rc.aggregate.queryJournalPlugin)
-      .eventsByTag(TaggingAdapter.realmEventTag, NoOffset)
+      .eventsByTag(TaggingAdapter.RealmEventTag, NoOffset)
       .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
 
     val flow = ProgressFlowElem[F, Any]

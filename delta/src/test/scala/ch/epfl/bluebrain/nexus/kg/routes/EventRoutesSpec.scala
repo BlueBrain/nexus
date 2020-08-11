@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.kg.resources.Event
 import ch.epfl.bluebrain.nexus.kg.routes.EventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import io.circe.Encoder
 import monix.eval.Task
 
 class EventRoutesSpec extends EventsSpecBase {
@@ -76,10 +75,7 @@ object EventRoutesSpec {
         EventEnvelope(Sequence(idx.toLong), "persistenceid", 1L, ev, 1L)
     }
 
-    override protected def source(
-        tag: String,
-        offset: Offset
-    )(implicit enc: Encoder[Event]): Source[ServerSentEvent, NotUsed] = {
+    override protected def source(tag: String, offset: Offset): Source[ServerSentEvent, NotUsed] = {
       val toDrop = offset match {
         case NoOffset    => 0
         case Sequence(v) => v + 1

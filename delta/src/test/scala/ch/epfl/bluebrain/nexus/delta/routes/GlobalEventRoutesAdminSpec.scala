@@ -1,30 +1,20 @@
-package ch.epfl.bluebrain.nexus.admin.routes
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.time.Instant
 import java.util.UUID
 
-import akka.NotUsed
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
-import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
-import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.{events, orgs, projects}
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
-import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
+import ch.epfl.bluebrain.nexus.delta.config.Settings
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission, ResourceF => IamResourceF}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.delta.config.Settings
-import ch.epfl.bluebrain.nexus.delta.routes.Routes
 import ch.epfl.bluebrain.nexus.util.{EitherValues, Resources}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
@@ -39,7 +29,7 @@ import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
-class EventRoutesSpec
+class GlobalEventRoutesAdminSpec
     extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
@@ -59,6 +49,7 @@ class EventRoutesSpec
   private val config        = Settings(system).appConfig
   implicit private val http = config.http
   implicit private val pc   = config.persistence
+  private val prefix        = config.http.prefix
   private val aclsApi       = mock[Acls[Task]]
   private val realmsApi     = mock[Realms[Task]]
 
@@ -187,7 +178,7 @@ class EventRoutesSpec
   "The EventRoutes" should {
     "return the organization events in the right order" in {
       val routes = new TestableEventRoutes(orgEvents, aclsApi, realmsApi).routes
-      forAll(List("/orgs/events", "/orgs/events/")) { path =>
+      forAll(List(s"/$prefix/orgs/events", s"/$prefix/orgs/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           responseAs[String] shouldEqual eventStreamFor(orgEventsJsons)
@@ -196,28 +187,10 @@ class EventRoutesSpec
     }
     "return the project events in the right order" in {
       val routes = new TestableEventRoutes(projectEvents, aclsApi, realmsApi).routes
-      forAll(List("/projects/events", "/projects/events/")) { path =>
+      forAll(List(s"/$prefix/projects/events", s"/$prefix/projects/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           responseAs[String] shouldEqual eventStreamFor(projectEventsJsons)
-        }
-      }
-    }
-    "return all events in the right order" in {
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
-      forAll(List("/events", "/events/")) { path =>
-        Get(path) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          responseAs[String] shouldEqual eventStreamFor(orgEventsJsons ++ projectEventsJsons)
-        }
-      }
-    }
-    "return events from the last seen" in {
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
-      forAll(List("/events", "/events/")) { path =>
-        Get(path).addHeader(`Last-Event-ID`(1.toString)) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          responseAs[String] shouldEqual eventStreamFor(orgEventsJsons ++ projectEventsJsons, 2)
         }
       }
     }
@@ -228,14 +201,12 @@ class EventRoutesSpec
       aclsApi2.hasPermission(Path./, orgRead)(Caller.anonymous) shouldReturn Task.pure(false)
       aclsApi2.hasPermission(Path./, projRead)(Caller.anonymous) shouldReturn Task.pure(false)
       aclsApi2.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task(AccessControlLists.empty)
-      val routes    = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi2, realmsApi).routes
+      val routes    = Routes.wrap(new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi2, realmsApi).routes)
       val endpoints = List(
-        "/events",
-        "/events/",
-        "/orgs/events",
-        "/orgs/events/",
-        "/projects/events",
-        "/projects/events/"
+        s"/$prefix/orgs/events",
+        s"/$prefix/orgs/events/",
+        s"/$prefix/projects/events",
+        s"/$prefix/projects/events/"
       )
       forAll(endpoints) { path =>
         Get(path) ~> routes ~> check {
@@ -244,37 +215,4 @@ class EventRoutesSpec
       }
     }
   }
-
-}
-
-object EventRoutesSpec {
-
-  //noinspection TypeAnnotation
-  class TestableEventRoutes(
-      events: List[Any],
-      acls: Acls[Task],
-      realms: Realms[Task]
-  )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig)
-      extends EventRoutes(acls, realms) {
-
-    override def routes: Route = Routes.wrap(super.routes)
-
-    private val envelopes = events.zipWithIndex.map {
-      case (ev, idx) =>
-        EventEnvelope(Sequence(idx.toLong), "persistenceid", 1L, ev, Instant.now().toEpochMilli)
-    }
-
-    override protected def source(
-        tag: String,
-        offset: Offset,
-        toSse: EventEnvelope => Option[ServerSentEvent]
-    ): Source[ServerSentEvent, NotUsed] = {
-      val toDrop = offset match {
-        case NoOffset    => 0
-        case Sequence(v) => v + 1
-      }
-      Source(envelopes).drop(toDrop).flatMapConcat(ee => Source(toSse(ee).toList))
-    }
-  }
-
 }

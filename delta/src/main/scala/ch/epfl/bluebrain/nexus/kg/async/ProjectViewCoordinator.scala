@@ -353,7 +353,7 @@ object ProjectViewCoordinator {
 
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
       .readJournalFor[EventsByTagQuery](aggc.queryJournalPlugin)
-      .eventsByTag(TaggingAdapter.aclEventTag, NoOffset)
+      .eventsByTag(TaggingAdapter.AclEventTag, NoOffset)
       .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
 
     val flow = ProgressFlowElem[Task, Any]

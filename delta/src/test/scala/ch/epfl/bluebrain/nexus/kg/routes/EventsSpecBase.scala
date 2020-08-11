@@ -80,6 +80,8 @@ class EventsSpecBase
   val types       = Set(base + "type")
 
   implicit val appConfig  = Settings(system).appConfig
+  implicit val hc         = appConfig.http
+  implicit val pcc        = appConfig.persistence
   implicit val storageCfg = appConfig.storage
   val orgRef              = OrganizationRef(orgUuid)
   // format: off

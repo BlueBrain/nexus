@@ -21,16 +21,16 @@ class TaggingAdapter extends WriteEventAdapter {
 
   override def toJournal(event: Any): Any =
     event match {
-      case ev: PermissionsEvent => Tagged(ev, Set(permissionsEventTag, eventTag))
-      case ev: AclEvent         => Tagged(ev, Set(aclEventTag, eventTag))
-      case ev: RealmEvent       => Tagged(ev, Set(realmEventTag, eventTag))
+      case ev: PermissionsEvent => Tagged(ev, Set(PermissionsEventTag, EventTag))
+      case ev: AclEvent         => Tagged(ev, Set(AclEventTag, EventTag))
+      case ev: RealmEvent       => Tagged(ev, Set(RealmEventTag, EventTag))
       case _                    => event
     }
 }
 
 object TaggingAdapter {
-  final val eventTag            = "event"
-  final val permissionsEventTag = "permissions"
-  final val aclEventTag         = "acl"
-  final val realmEventTag       = "realm"
+  final val EventTag            = "event"
+  final val PermissionsEventTag = "permissions"
+  final val AclEventTag         = "acl"
+  final val RealmEventTag       = "realm"
 }
