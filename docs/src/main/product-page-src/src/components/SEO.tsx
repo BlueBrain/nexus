@@ -37,6 +37,7 @@ const SEO: React.FC<SEOProps> = ({ title, description, image }) => {
       <link rel="icon" type="image/png" href={favicon} sizes="32x32" />
       <meta name="description" content={seo.description} />
       <meta name="image" content={seo.image} />
+      <meta property="og:type" content="website" />
 
       {seo.url && <meta property="og:url" content={seo.url} />}
 
