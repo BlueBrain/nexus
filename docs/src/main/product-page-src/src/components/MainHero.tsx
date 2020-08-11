@@ -23,7 +23,7 @@ export default function MainHero() {
             backend services, or python framework.
           </h2>
           <div className="columns">
-            <div className="column">
+            <div className="column" style={{ width: "50%" }}>
               <a
                 href="#why-nexus"
                 onClick={scrollIntoView(pathname, "why-nexus")}

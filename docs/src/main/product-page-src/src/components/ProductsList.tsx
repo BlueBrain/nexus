@@ -18,19 +18,19 @@ const ProductList: React.FC = () => {
           <h4 className="submenu-title">Utilities</h4>
           <ul>
             <li>
-              <Link to="https://bluebrainnexus.io/docs/utilities#js-sdk-for-nexus">
+              <a href="https://bluebrainnexus.io/docs/utilities#js-sdk-for-nexus">
                 Nexus.js
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="https://bluebrainnexus.io/docs/utilities#nexus-python-sdk">
+              <a href="https://bluebrainnexus.io/docs/utilities#nexus-python-sdk">
                 Python SDK
-              </Link>
+              </a>
             </li>
             <li>
-              <Link to="https://bluebrainnexus.io/docs/utilities#nexus-cli">
+              <a href="https://bluebrainnexus.io/docs/utilities#nexus-cli">
                 CLI
-              </Link>
+              </a>
             </li>
           </ul>
         </li>
