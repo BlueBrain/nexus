@@ -7,7 +7,7 @@
 - [Nexus Delta](delta/index.md)
 - [Nexus Fusion](fusion/index.md)
 - [Nexus Forge](forge.md)
-- [Utilities](utilities.md)
+- [Utilities](utilities/utilities.md)
 - [FAQ](faq.md)
 
 @@@

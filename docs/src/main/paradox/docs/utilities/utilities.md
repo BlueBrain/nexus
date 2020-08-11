@@ -1,6 +1,14 @@
+@@@ index
+
+* [Indexing data in other systems](projections.md)
+
+@@@
+
 # Utilities
 
 ## Domains (Schemas, Vocabularies)
+
+Nexus provides some schemas which make building provenance based knowledge graphs easier.
 
 ### Nexus Core Schemas
 
@@ -37,19 +45,46 @@ neuroscience data.
 
 ### Nexus CLI
 
-A command line interface (CLI) to operate basic operation on a Nexus deployment.
+A command line interface (CLI) to perform basic operations on a Nexus deployment.
 
 [Source Code](https://github.com/BlueBrain/nexus-cli)
 
 ### Nexus Python SDK
 
-This library will help Python users to integrate their tools with the Blue Brain Nexus platform.
+A Python wrapper for the Blue Brain Nexus REST API.
+
+#### How to install
+
+`pip install nexus-sdk`
+
+#### Usage
+```
+import nexussdk as nexus
+
+nexus.config.set_environment(DEPLOYMENT)
+nexus.config.set_token(TOKEN)
+
+nexus.permissions.fetch()
+```
 
 [Source Code](https://github.com/BlueBrain/nexus-python-sdk) | [Documentation](https://bluebrain.github.io/nexus-python-sdk/)
 
 ### Nexus.js
 
-A set of helpers to abstract the Nexus API and build Javascript / Typescript applications.
+The [Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js) provides many features to help you build web applications that integrate with Blue Brain Nexus.
+
+![Nexus JS logo](../assets/nexus-js-logo.png)
+
+#### How to install
+
+`npm install @bbp/nexus-sdk`
+
+#### Typescript declarations
+
+The SDK is written in Typescript, so type declarations for all operations are included in the package.
+
+You can generate documentation using `npm run documentation` or with `docker` by running `make documentation`. More information can be found [here](https://github.com/BlueBrain/nexus-sdk-js#development).
+
 
 [Source Code](https://github.com/BlueBrain/nexus-sdk-js)
 
@@ -58,3 +93,8 @@ Documentation:
 - [nexus-sdk](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-sdk/README.md#readme)
 - [react-nexus](https://github.com/BlueBrain/nexus-js/blob/master/packages/react-nexus/README.md#readme)
 - [nexus-link](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-link/README.md#readme)
+
+### Indexing data in other systems
+
+Nexus also provides a CLI tool to index data into other systems. PostgreSQL and InfluxDB are currently supported.
+More information about this tool can be found @ref:[here](projections.md).
