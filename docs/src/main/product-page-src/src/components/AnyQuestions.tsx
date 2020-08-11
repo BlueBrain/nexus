@@ -39,7 +39,7 @@ export default function AnyQuestions() {
     <section id="any-questions">
       <div className="container with-room">
         <div className="content centered">
-          <h2 className="section-title">Still have questions?</h2>
+          <h2 className="section-title">Looking for more?</h2>
           <div className="tile is-ancestor wrapping">
             {getHelpLinks.map(getStartedLink => (
               <div className="tile is-parent is-4" key={getStartedLink.title}>
