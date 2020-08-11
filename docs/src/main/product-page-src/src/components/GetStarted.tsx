@@ -1,41 +1,51 @@
 import * as React from "react"
 
+import sandbox from "../../static/img/icons/sandbox.svg"
+import py from "../../static/img/icons/py.svg"
+import notebook from "../../static/img/icons/notebook.svg"
+
 const getStartedLinks = [
   {
     title: "Play in the Sandbox",
-    href: "",
+    image: sandbox,
+    href: "https://sandbox.bluebrainnexus.io/",
   },
   {
     title: "Explore Python Notebooks",
-    href: "",
+    image: py,
+    href:
+      "https://github.com/BlueBrain/nexus-forge/tree/master/examples/notebooks",
   },
   {
     title: "Read the Documentation",
-    href: "/docs",
+    image: notebook,
+    href: "https://bluebrainnexus.io/docs",
   },
 ]
 
 const GetStartedLink: React.FC<{
   title: string
   href: string
-}> = ({ title, href }) => {
+  image: string
+}> = ({ title, href, image }) => {
   return (
-    <div className="get-started center-flex">
-      <h4 className="title">{title}</h4>
-      <div className="figure image is-128x128">
-        <img
-          src="https://bulma.io/images/placeholders/128x128.png"
-          alt="placeholder"
-        />
-      </div>
+    <div className="tile is-parent is-4">
+      <a href={href} className="tile is-child box">
+        <div className="get-started center-flex">
+          <h4 className="title">{title}</h4>
+          <div className="figure image is-64x64">
+            <img src={image} alt={title} className="svgify primary subtle" />
+          </div>
+        </div>
+      </a>
     </div>
   )
 }
 
 export default function GetStartedWithNexus() {
   return (
-    <section id="get-started">
-      <div className="container">
+    <section id="getting-started">
+      <div className="container with-room">
         <div className="content centered">
           <h2>Get Started</h2>
           <p className="subtitle">
@@ -46,11 +56,7 @@ export default function GetStartedWithNexus() {
           </p>
           <div className="tile is-ancestor wrapping">
             {getStartedLinks.map(getStartedLink => (
-              <div className="tile is-parent is-4" key={getStartedLink.title}>
-                <article className="tile is-child box">
-                  <GetStartedLink {...getStartedLink} />
-                </article>
-              </div>
+              <GetStartedLink {...getStartedLink} key={getStartedLink.title} />
             ))}
           </div>
         </div>

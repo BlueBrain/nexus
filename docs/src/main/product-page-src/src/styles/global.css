@@ -85,7 +85,7 @@ button {
   text-align: center;
   width: auto;
   opacity: 0.8;
-  transition: all 300ms cubic-bezier(0.6, -0.28, 0.735, 0.045);
+  transition: all 300ms cubic-bezier(0.995, 0.015, 0.01, 0.98);
 }
 
 .button:hover,
@@ -167,6 +167,10 @@ Hero
   background-blend-mode: screen;
   clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
   z-index: 0;
+}
+
+.hero .button {
+  min-width: 160px;
 }
 
 .content.centered {
@@ -274,4 +278,33 @@ h3 {
 
 .get-help-link {
   width: 200px;
+}
+
+section .container.with-room {
+  padding-top: 5em;
+  padding-bottom: 5em;
+}
+
+a.box:hover,
+a.box:focus {
+  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0 0 1px var(--link);
+}
+
+svg.secondary {
+  fill: var(--secondary);
+  stroke: var(--secondary);
+}
+
+svg.primary {
+  fill: var(--link);
+  stroke: var(--link);
+}
+
+.subtle {
+  transition: all 300ms cubic-bezier(0.995, 0.015, 0.01, 0.98);
+  opacity: 0.5;
+}
+.subtle:hover,
+a:hover .subtle {
+  opacity: 1;
 }

@@ -21,9 +21,9 @@ module.exports = {
     // },
   ],
   siteMetadata: {
-    title: "Blue Brain Nexus",
+    title: "The Nexus Ecosystem: Better (Research) Data Management",
     description:
-      "The flexible, open-source knowledge graph built for data-driven science.",
+      "Quickly build, use, and manage knowledge graphs, organize your data, and build your own integrations. Nexus leverages the latest web technologies and makes them easily accessible.",
     url: "https://bluebrainnexus.io", // No trailing slash allowed!
     siteURL: "https://bluebrainnexus.io", // No trailing slash allowed!
     image: "/img/Nexus-v1.4-slate.png", // Path to your image you placed in the 'static' folder

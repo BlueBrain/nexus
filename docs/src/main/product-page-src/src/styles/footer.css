@@ -5,6 +5,15 @@
 .footer {
   color: #fff;
   padding-bottom: 1rem;
+  font-size: 14px;
+}
+
+.footer a {
+  opacity: 0.8;
+}
+
+.footer a:hover {
+  opacity: 1;
 }
 
 .footer h3 {
@@ -44,6 +53,10 @@
 
 .footer .logo {
   margin-bottom: 1em;
+}
+
+.footer .submenu-title {
+  color: white;
 }
 
 /* 
