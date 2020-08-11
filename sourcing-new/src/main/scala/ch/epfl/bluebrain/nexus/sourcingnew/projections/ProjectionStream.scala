@@ -45,7 +45,7 @@ object ProjectionStream {
     type O[_] = Message[_]
 
     def resource[B, R](fetchResource: A => F[Option[R]], collect: R => Option[B]): Stream[F, Message[B]] =
-      stream.mapAsync(1)(toResource(fetchResource, collect))
+      stream.evalMap(toResource(fetchResource, collect))
 
     /**
       * Fetch a resource without transformation
@@ -79,7 +79,7 @@ object ProjectionStream {
       * @return
       */
     def runAsync(f: A => F[Unit]): Stream[F, Message[A]] =
-      stream.mapAsync(1) { message: Message[A] =>
+      stream.evalMap { message: Message[A] =>
         message match {
           case s: SuccessMessage[A] =>
             (f(s.value) >> F.pure[Message[A]](s))
@@ -104,7 +104,7 @@ object ProjectionStream {
                         persistProgress: (ProjectionId, ProjectionProgress) => F[Unit],
                         persistErrors: (ProjectionId, ErrorMessage) => F[Unit],
                         config: PersistProgressConfig): Stream[F, Unit] =
-      stream.mapAsync(1) { message =>
+      stream.evalMap { message =>
         message match {
           case e: ErrorMessage => persistErrors(projectionId, e) >> F.pure(message)
           case _: Message[A] => F.pure(message)
@@ -116,7 +116,7 @@ object ProjectionStream {
         }
       }.groupWithin(config.maxBatchSize, config.maxTimeWindow)
         .filter(_.nonEmpty)
-        .mapAsync(1) { p =>
+        .evalMap { p =>
           p.last.fold(F.unit) {
             persistProgress(projectionId, _)
           }
@@ -171,7 +171,7 @@ object ProjectionStream {
       * @return
       */
     def resource[B, R](fetchResource: A => F[Option[R]], filterMap: R => Option[B]): Stream[F, Chunk[Message[B]]] =
-      stream.mapAsync(1) { chunk =>
+      stream.evalMap { chunk =>
         chunk.map(toResource(fetchResource, filterMap)).sequence
       }
 
@@ -204,7 +204,7 @@ object ProjectionStream {
       * @param f
       * @return
       */
-    def runAsync(f: List[A] => F[Unit]): Stream[F, Chunk[Message[A]]] = stream.mapAsync(1) {
+    def runAsync(f: List[A] => F[Unit]): Stream[F, Chunk[Message[A]]] = stream.evalMap {
       chunk =>
         val successMessages: List[SuccessMessage[A]] = chunk.toList.collect {
           case s: SuccessMessage[A] => s
