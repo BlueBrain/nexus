@@ -169,6 +169,10 @@ Hero
   z-index: 0;
 }
 
+.hero .button {
+  min-width: 160px;
+}
+
 .content.centered {
   text-align: center;
 }
