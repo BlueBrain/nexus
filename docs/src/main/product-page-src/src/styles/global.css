@@ -308,3 +308,18 @@ svg.primary {
 a:hover .subtle {
   opacity: 1;
 }
+
+.product-diagram {
+  margin: 5em 0;
+}
+
+.product-diagram img {
+  max-width: 700px;
+}
+
+@media (max-width: 850px) {
+  .product-diagram img {
+    max-width: none;
+    width: 100%;
+  }
+}
