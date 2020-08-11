@@ -1,7 +1,7 @@
 # Plugins
-A resource returned by nexus delta API is usually a JSON-LD document. By default fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.
+A resource returned by nexus delta API is usually a JSON-LD document. By default Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.
 
-Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electro physiology, a set of files to download, a set of images and so on. So a user may want to  extend fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.
+Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electro physiology, a set of files to download, a set of images and so on. So a user may want to  extend Fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.
 
 ## What are Plugins
 A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Web. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.
@@ -9,7 +9,7 @@ A core component of Studio is the ability for data curators to develop a domain-
 Plugins are developed using javascript and are loaded into the Nexus Fusion instance from in the /plugins folder.
 
 ## Plugin examples
-Below you can find the screen shots from some plugins that are available in Fusion, that extends the fusion presentation layer.
+Below you can find the screen shots from some plugins plugins that can be integrated into Fusion. They extend the Fusion presentation layer.
 
 Neuron Electro physiology viewer
 ![](../assets/fusion-ephys-plugin.png)
@@ -126,7 +126,7 @@ The following will show `nexus-plugin-test` for any resource of type `File` but 
 
 ## Default Plugins
 
-Default plugins are part of fusion. They define the default presentation of resources.
+Default plugins are part of Fusion. They define the default presentation of resources.
 
 ### Admin Plugin
 
