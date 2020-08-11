@@ -1,5 +1,7 @@
 import * as React from "react"
 
+import getIcon from "./featureIcon"
+
 const ValuePropoisition: React.FC<{
   title: string
   description: string
@@ -17,10 +19,7 @@ const ValuePropoisition: React.FC<{
                 className="svgify secondary subtle"
               />
             ) : (
-              <img
-                src="https://bulma.io/images/placeholders/128x128.png"
-                alt="placeholder"
-              />
+              <img src={getIcon(title)} alt="placeholder" />
             )}
           </div>
           <h4 className="title" style={{ marginTop: "1em" }}>
