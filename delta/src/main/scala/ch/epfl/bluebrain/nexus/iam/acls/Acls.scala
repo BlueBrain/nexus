@@ -242,7 +242,7 @@ object Acls {
     val projectionId: String            = "acl-index"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
       .readJournalFor[EventsByTagQuery](ac.aggregate.queryJournalPlugin)
-      .eventsByTag(TaggingAdapter.aclEventTag, NoOffset)
+      .eventsByTag(TaggingAdapter.AclEventTag, NoOffset)
       .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
 
     val flow = ProgressFlowElem[F, Any]
