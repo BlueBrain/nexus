@@ -4,6 +4,7 @@ import MainLayout from "../layouts/Main"
 import EmailCatch from "../containers/EmailCatch"
 import { scrollIntoView } from "../libs/scroll"
 import Features from "../components/Features"
+import ProductDiagram from "../components/ProductDiagram"
 
 export type Product = {
   name: string
@@ -20,6 +21,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
 }) => {
   const {
     name,
+    slug,
     tagLine,
     description,
     overviewText,
@@ -68,6 +70,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
         <div className="container">
           <div className="content centered">
             <h2>{overviewText}</h2>
+            <ProductDiagram name={slug} />
           </div>
         </div>
       </section>
