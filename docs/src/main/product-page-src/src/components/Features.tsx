@@ -44,7 +44,7 @@ const Features: React.FC<{
         <div className="content centered">
           <h2>{title}</h2>
           <p className="subtitle">{subtitle}</p>
-          <div className="tile is-ancestor wrapping">
+          <div className="tile is-ancestor wrapping centered">
             {features.map(feature => (
               <ValuePropoisition {...feature} key={feature.title} />
             ))}
