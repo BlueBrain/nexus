@@ -11,18 +11,18 @@ const products = [
       "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
   },
   {
-    title: "Nexus Delta",
-    slug: "nexus-delta",
-    subtitle: "Managing Data and Knowledge Graph Lifecycles",
-    description:
-      "A scalable and secure service to store and leverage all your data, neatly organised in a Knowledge Graph.",
-  },
-  {
     title: "Nexus Forge",
     slug: "nexus-forge",
     subtitle: "Building and Using Knowledge Graphs Made Easy.",
     description:
       "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
+  },
+  {
+    title: "Nexus Delta",
+    slug: "nexus-delta",
+    subtitle: "Managing Data and Knowledge Graph Lifecycles",
+    description:
+      "A scalable and secure service to store and leverage all your data, neatly organised in a Knowledge Graph. It offers an API to perform all your data management operations, this way it can easily integrate with your software stack. Its advanced indexing capabilities automatically build views from your metadata.",
   },
 ]
 
@@ -56,7 +56,7 @@ const ShortProductDescription: React.FC<{
 
 export default function WhatIsNexus() {
   return (
-    <section id="what-is-nexus">
+    <section id="what">
       <div className="container with-room">
         <div className="content centered" style={{ marginBottom: "4em" }}>
           <h2>What is Nexus?</h2>

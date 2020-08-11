@@ -16,33 +16,28 @@ export default function MainHero() {
       <div className="hero-body">
         <div className="container">
           <h1 className="title is-spaced">
-            Better data management starts here <br /> and we're open source
+            Better data management starts here. <br /> and we're open source.
           </h1>
           <h2 className="subtitle">
-            Quickly build, use, and manage knowledge graphs using our web app,
-            backend services, or python framework.
+            Quickly build, manage and leverage Knowledge Graphs using our Python
+            framework, web application and services.
           </h2>
           <div className="columns" style={{ width: "50%" }}>
             <div className="column">
-              <a
-                href="#why-nexus"
-                onClick={scrollIntoView(pathname, "why-nexus")}
-              >
-                <button className="button">Why Nexus?</button>
-              </a>
-            </div>
-            <div className="column">
-              <a
-                href="#what-is-nexus"
-                onClick={scrollIntoView(pathname, "what-is-nexus")}
-              >
+              <a href="#what" onClick={scrollIntoView(pathname, "what")}>
                 <button className="button">What is Nexus?</button>
               </a>
             </div>
             <div className="column">
+              <a href="#why" onClick={scrollIntoView(pathname, "why")}>
+                <button className="button">Why Nexus?</button>
+              </a>
+            </div>
+
+            <div className="column">
               <a
-                href="#get-started"
-                onClick={scrollIntoView(pathname, "get-started")}
+                href="#getting-started"
+                onClick={scrollIntoView(pathname, "getting-started")}
               >
                 <button className="button">Get Started</button>
               </a>
