@@ -1,42 +1,46 @@
-package ch.epfl.bluebrain.nexus.kg.routes
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.types.Caller
-import ch.epfl.bluebrain.nexus.kg.resources.Event
-import ch.epfl.bluebrain.nexus.kg.routes.GlobalEventRoutesSpec.TestableEventRoutes
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import io.circe.Encoder
+import ch.epfl.bluebrain.nexus.iam.acls.Acls
+import ch.epfl.bluebrain.nexus.iam.auth.AccessToken
+import ch.epfl.bluebrain.nexus.iam.realms.Realms
+import ch.epfl.bluebrain.nexus.kg.resources.Event
+import ch.epfl.bluebrain.nexus.kg.routes.EventsSpecBase
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import monix.eval.Task
+import ch.epfl.bluebrain.nexus.delta.routes.GlobalEventRoutesSpec._
 
 class GlobalEventRoutesSpec extends EventsSpecBase {
 
   private val aclsApi = mock[Acls[Task]]
   private val realms  = mock[Realms[Task]]
 
-  val routes = new TestableEventRoutes(events, aclsApi, realms, caller).routes
+  private val routes                     = new TestableEventRoutes(events, aclsApi, realms).routes
+  private val token: Option[AccessToken] = Some(AccessToken("valid"))
+  private val oauthToken                 = OAuth2BearerToken("valid")
+  private val prefix                     = appConfig.http.prefix
   aclsApi.hasPermission(Path./, read)(caller) shouldReturn Task.pure(true)
+  realms.caller(token.value) shouldReturn Task(caller)
 
   "GlobalEventRoutes" should {
 
-    "return all events for a project" in {
-      Get("/") ~> routes ~> check {
+    "return all events" in {
+      Get(s"/$prefix/events") ~> addCredentials(oauthToken) ~> routes ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected)
       }
     }
 
-    "return all events for a project from the last seen" in {
-      Get("/").addHeader(`Last-Event-ID`(0.toString)) ~> routes ~> check {
+    "return all events from the last seen" in {
+      Get(s"/$prefix/events").addHeader(`Last-Event-ID`(0.toString)) ~> addCredentials(oauthToken) ~> routes ~> check {
         val expected = jsonContentOf("/events/events.json").asArray.value
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual eventStreamFor(expected, 1)
@@ -47,10 +51,10 @@ class GlobalEventRoutesSpec extends EventsSpecBase {
 
 object GlobalEventRoutesSpec {
 
-  class TestableEventRoutes(events: List[Event], acls: Acls[Task], realms: Realms[Task], caller: Caller)(implicit
+  class TestableEventRoutes(events: List[Event], acls: Acls[Task], realms: Realms[Task])(implicit
       as: ActorSystem,
       config: AppConfig
-  ) extends GlobalEventRoutes(acls, realms, caller) {
+  ) extends GlobalEventRoutes(acls, realms)(as, config.persistence, config.http) {
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>
@@ -60,7 +64,7 @@ object GlobalEventRoutesSpec {
     override protected def source(
         tag: String,
         offset: Offset
-    )(implicit enc: Encoder[Event]): Source[ServerSentEvent, NotUsed] = {
+    ): Source[ServerSentEvent, NotUsed] = {
       val toDrop = offset match {
         case NoOffset    => 0
         case Sequence(v) => v + 1

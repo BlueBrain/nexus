@@ -14,6 +14,10 @@ import akka.persistence.query._
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, PersistenceConfig}
+import ch.epfl.bluebrain.nexus.delta.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.marshallers.instances._
 import ch.epfl.bluebrain.nexus.iam.acls.AclEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.acls.{AclEvent, Acls}
 import ch.epfl.bluebrain.nexus.iam.io.TaggingAdapter._
@@ -21,13 +25,8 @@ import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.iam.realms.{RealmEvent, Realms}
-import ch.epfl.bluebrain.nexus.iam.routes.EventRoutes._
 import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.iam.{acls => aclsp, permissions => permissionsp, realms => realmsp}
-import ch.epfl.bluebrain.nexus.delta.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.delta.marshallers.instances._
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -59,7 +58,6 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
       routesFor("acls" / "events", s"/${hc.prefix}/acls/events", aclEventTag, aclsp.read, typedEventToSse[AclEvent]),
       routesFor("permissions" / "events", s"/${hc.prefix}/permissions/events", permissionsEventTag, permissionsp.read, typedEventToSse[PermissionsEvent]),
       routesFor("realms" / "events", s"/${hc.prefix}/realms/events", realmEventTag, realmsp.read, typedEventToSse[RealmEvent]),
-      routesFor("events", s"/${hc.prefix}/events", eventTag, eventsRead, eventToSse)
     )
   // format: on
 
@@ -114,14 +112,6 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
       }
     )
   }
-
-  private def eventToSse(envelope: EventEnvelope): Option[ServerSentEvent] =
-    envelope.event match {
-      case value: AclEvent         => Some(aToSse(value, envelope.offset))
-      case value: RealmEvent       => Some(aToSse(value, envelope.offset))
-      case value: PermissionsEvent => Some(aToSse(value, envelope.offset))
-      case _                       => None
-    }
 
   private def typedEventToSse[A: Encoder](envelope: EventEnvelope)(implicit A: ClassTag[A]): Option[ServerSentEvent] =
     envelope.event match {

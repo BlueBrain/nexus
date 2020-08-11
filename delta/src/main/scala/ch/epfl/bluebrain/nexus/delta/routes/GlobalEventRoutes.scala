@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.admin.routes
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.util.UUID
 
@@ -9,36 +9,41 @@ import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive1, PathMatcher0, Route}
-import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.http.scaladsl.server.{Directive1, Route}
 import akka.persistence.query._
+import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.admin.config.Permissions._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent.JsonLd._
-import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
-import ch.epfl.bluebrain.nexus.iam.acls.Acls
-import ch.epfl.bluebrain.nexus.iam.realms.Realms
-import ch.epfl.bluebrain.nexus.iam.types.Permission
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.delta.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.iam.acls.AclEvent.JsonLd._
+import ch.epfl.bluebrain.nexus.iam.acls.{AclEvent, Acls}
+import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent
+import ch.epfl.bluebrain.nexus.iam.permissions.PermissionsEvent.JsonLd._
+import ch.epfl.bluebrain.nexus.iam.realms.RealmEvent.JsonLd._
+import ch.epfl.bluebrain.nexus.iam.realms.{RealmEvent, Realms}
+import ch.epfl.bluebrain.nexus.kg.persistence.TaggingAdapter
+import ch.epfl.bluebrain.nexus.kg.resources.Event
+import ch.epfl.bluebrain.nexus.kg.resources.Event.JsonLd._
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
+import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 
 import scala.concurrent.duration._
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 /**
   * Server Sent Events routes for organizations, projects and the entire event log.
   */
-class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
+class GlobalEventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
     as: ActorSystem,
     pc: PersistenceConfig,
     http: HttpConfig
@@ -48,32 +53,19 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
   private val printer: Printer     = Printer.noSpaces.copy(dropNullValues = true)
 
   def routes: Route =
-    concat(
-      routesFor("orgs" / "events", OrganizationTag, orgs.read, typedEventToSse[OrganizationEvent]),
-      routesFor("projects" / "events", ProjectTag, projects.read, typedEventToSse[ProjectEvent])
-    )
-
-  private def routesFor(
-      pm: PathMatcher0,
-      tag: String,
-      permission: Permission,
-      toSse: EventEnvelope => Option[ServerSentEvent]
-  ): Route =
-    (get & pathPrefix(pm) & pathEndOrSingleSlash) {
-      extractCaller { caller =>
-        authorizeFor(permission = permission)(caller) {
-          lastEventId { offset => complete(source(tag, offset, toSse)) }
+    (get & pathPrefix(http.prefix / "events") & pathEndOrSingleSlash) {
+      operationName(s"/${hc.prefix}/events") {
+        extractCaller { caller =>
+          authorizeFor(permission = events.read)(caller) {
+            lastEventId { offset => complete(source(TaggingAdapter.EventTag, offset)) }
+          }
         }
       }
     }
 
-  protected def source(
-      tag: String,
-      offset: Offset,
-      toSse: EventEnvelope => Option[ServerSentEvent]
-  ): Source[ServerSentEvent, NotUsed] = {
+  protected def source(tag: String, offset: Offset): Source[ServerSentEvent, NotUsed] = {
     pq.eventsByTag(tag, offset)
-      .flatMapConcat(ee => Source(toSse(ee).toList))
+      .flatMapConcat(ee => Source(eventToSse(ee).toList))
       .keepAlive(10.seconds, () => ServerSentEvent.heartbeat)
   }
 
@@ -102,9 +94,14 @@ class EventRoutes(acls: Acls[Task], realms: Realms[Task])(implicit
     )
   }
 
-  private def typedEventToSse[A: Encoder](envelope: EventEnvelope)(implicit A: ClassTag[A]): Option[ServerSentEvent] =
+  protected def eventToSse(envelope: EventEnvelope): Option[ServerSentEvent] =
     envelope.event match {
-      case A(a) => Some(aToSse(a, envelope.offset))
-      case _    => None
+      case value: OrganizationEvent => Some(aToSse(value, envelope.offset))
+      case value: ProjectEvent      => Some(aToSse(value, envelope.offset))
+      case value: AclEvent          => Some(aToSse(value, envelope.offset))
+      case value: RealmEvent        => Some(aToSse(value, envelope.offset))
+      case value: PermissionsEvent  => Some(aToSse(value, envelope.offset))
+      case value: Event             => Some(aToSse(value, envelope.offset))
+      case _                        => None
     }
 }

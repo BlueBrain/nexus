@@ -155,12 +155,6 @@ class KgRoutes(
         extractCaller { implicit caller =>
           implicit val subject: Subject = caller.subject
           concat(
-            (get & pathPrefix(config.http.prefix / "events") & pathEndOrSingleSlash) {
-              new GlobalEventRoutes(acls, realms, caller).routes
-            },
-            (get & pathPrefix(config.http.prefix / "resources" / "events") & pathEndOrSingleSlash) {
-              new GlobalEventRoutes(acls, realms, caller).routes
-            },
             (get & pathPrefix(config.http.prefix / "resources" / Segment / "events") & pathEndOrSingleSlash) { label =>
               org(label).apply { implicit organization =>
                 new EventRoutes(acls, realms, caller).organizationRoutes(organization)

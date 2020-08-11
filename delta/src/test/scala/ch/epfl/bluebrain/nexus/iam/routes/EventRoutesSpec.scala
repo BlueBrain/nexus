@@ -5,7 +5,6 @@ import java.time.Instant
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
@@ -184,30 +183,6 @@ class EventRoutesSpec
           status shouldEqual StatusCodes.OK
           responseAs[String] shouldEqual eventStreamFor(expected)
         }
-      }
-    }
-
-    "return all the events in the right order" in {
-      val routes =
-        Routes.wrap(new TestableEventRoutes(aclEvents ++ realmEvents ++ permissionsEvents, acls, realms).routes)
-      forAll(List("/events", "/events/")) { path =>
-        Get(path) ~> routes ~> check {
-          val expected =
-            jsonContentOf("/events/acl-events.json").asArray.value ++
-              jsonContentOf("/events/realm-events.json").asArray.value ++
-              jsonContentOf("/events/permissions-events.json").asArray.value
-          status shouldEqual StatusCodes.OK
-          responseAs[String] shouldEqual eventStreamFor(expected)
-        }
-      }
-    }
-
-    "return events from the last seen" in {
-      val routes = Routes.wrap(new TestableEventRoutes(realmEvents, acls, realms).routes)
-      Get("/realms/events").addHeader(`Last-Event-ID`(0.toString)) ~> routes ~> check {
-        val expected = jsonContentOf("/events/realm-events.json").asArray.value
-        status shouldEqual StatusCodes.OK
-        responseAs[String] shouldEqual eventStreamFor(expected, 1)
       }
     }
 

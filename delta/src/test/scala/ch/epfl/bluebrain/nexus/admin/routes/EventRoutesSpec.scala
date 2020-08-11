@@ -6,7 +6,6 @@ import java.util.UUID
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -203,24 +202,6 @@ class EventRoutesSpec
         }
       }
     }
-    "return all events in the right order" in {
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
-      forAll(List("/events", "/events/")) { path =>
-        Get(path) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          responseAs[String] shouldEqual eventStreamFor(orgEventsJsons ++ projectEventsJsons)
-        }
-      }
-    }
-    "return events from the last seen" in {
-      val routes = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi, realmsApi).routes
-      forAll(List("/events", "/events/")) { path =>
-        Get(path).addHeader(`Last-Event-ID`(1.toString)) ~> routes ~> check {
-          status shouldEqual StatusCodes.OK
-          responseAs[String] shouldEqual eventStreamFor(orgEventsJsons ++ projectEventsJsons, 2)
-        }
-      }
-    }
 
     "return Forbidden when requesting the log with no permissions" in {
       val aclsApi2  = mock[Acls[Task]]
@@ -230,8 +211,6 @@ class EventRoutesSpec
       aclsApi2.list(Path./, ancestors = true, self = true)(Caller.anonymous) shouldReturn Task(AccessControlLists.empty)
       val routes    = new TestableEventRoutes(orgEvents ++ projectEvents, aclsApi2, realmsApi).routes
       val endpoints = List(
-        "/events",
-        "/events/",
         "/orgs/events",
         "/orgs/events/",
         "/projects/events",
