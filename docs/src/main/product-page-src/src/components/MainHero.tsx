@@ -22,8 +22,8 @@ export default function MainHero() {
             Quickly build, use, and manage knowledge graphs using our web app,
             backend services, or python framework.
           </h2>
-          <div className="columns">
-            <div className="column" style={{ width: "50%" }}>
+          <div className="columns" style={{ width: "50%" }}>
+            <div className="column">
               <a
                 href="#why-nexus"
                 onClick={scrollIntoView(pathname, "why-nexus")}
