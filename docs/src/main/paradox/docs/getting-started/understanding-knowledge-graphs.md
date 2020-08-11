@@ -59,7 +59,7 @@ and directly get **Toy Story**'s voices cast without having to navigate through 
 
  ![Graph Structure](./assets/kg_inferred-relation.png)
 
-In reality inferring knowledge is a complex topic. [This video lecure](https://www.youtube.com/watch?v=AUtk6NBqEFY) shows some
+In reality inferring knowledge is a complex topic. [This video lecture](https://www.youtube.com/watch?v=AUtk6NBqEFY) shows some
 real-world examples of algorithms and rules for inference engines. E.g. [reasoning about a persons creditworthiness based on what
 their home address is](https://youtu.be/AUtk6NBqEFY?t=3867) or trying to spot fake papers that have been submitted to a journal.
 
