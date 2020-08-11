@@ -35,10 +35,6 @@ export default function Footer() {
               <ProductList />
             </div>
             <div className="column is-one-quarter">
-              <h3>Getting Started</h3>
-              <GettingStartedList />
-            </div>
-            <div className="column is-one-quarter">
               <h3>Developers</h3>
               <DevList />
             </div>

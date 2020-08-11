@@ -14,26 +14,6 @@ const ProductList: React.FC = () => {
         <li>
           <Link to="/products/nexus-delta">Nexus Delta</Link>
         </li>
-        <li>
-          <h4 className="submenu-title">Utilities</h4>
-          <ul>
-            <li>
-              <a href="https://bluebrainnexus.io/docs/utilities#js-sdk-for-nexus">
-                Nexus.js
-              </a>
-            </li>
-            <li>
-              <a href="https://bluebrainnexus.io/docs/utilities#nexus-python-sdk">
-                Python SDK
-              </a>
-            </li>
-            <li>
-              <a href="https://bluebrainnexus.io/docs/utilities#nexus-cli">
-                CLI
-              </a>
-            </li>
-          </ul>
-        </li>
       </ul>
     </div>
   )

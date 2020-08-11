@@ -5,40 +5,32 @@ const DevList: React.FC = () => {
     <div className="dev-list">
       <ul className="submenu">
         <li>
-          <a>Overview</a>
+          <a href="https://bluebrainnexus.io/docs">Overview</a>
+        </li>
+
+        <li>
+          <a href="https://bluebrainnexus.io/docs/releases">Releases</a>
         </li>
         <li>
-          <a>Architecture</a>
+          <a href="https://bluebrainnexus.io/docs/roadmap">Roadmap</a>
         </li>
         <li>
-          <a>Releases</a>
-        </li>
-        <li>
-          <a>Roadmap</a>
-        </li>
-        <li>
-          <a>Building Knowledge graphs with the Forge</a>
+          <a href="https://bluebrainnexus.io/docs/faq">FAQ</a>
         </li>
         <li>
           <h4 className="submenu-title">By Product</h4>
           <ul className="submenu">
             <li>
-              <a>Nexus Forge</a>
+              <a href="https://bluebrainnexus.io/docs/fusion">Nexus Fusion</a>
             </li>
             <li>
-              <a>Nexus Fusion</a>
+              <a href="https://bluebrainnexus.io/docs/forge">Nexus Forge</a>
             </li>
             <li>
-              <a>Nexus Delta</a>
+              <a href="https://bluebrainnexus.io/docs/delta">Nexus Delta</a>
             </li>
             <li>
-              <a>Nexus.js</a>
-            </li>
-            <li>
-              <a>Python SDK</a>
-            </li>
-            <li>
-              <a>CLI</a>
+              <a href="https://bluebrainnexus.io/docs/utilities">Utilities</a>
             </li>
           </ul>
         </li>
