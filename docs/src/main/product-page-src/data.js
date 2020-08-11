@@ -46,7 +46,7 @@ module.exports = {
       name: "Nexus Fusion",
       slug: "nexus-fusion",
       overviewText:
-        "Nexus Fusion is the web application that runs on top of our Nexus Delta API. It supports all the functionalities of the backend services, from managing permissions to indexing resources. It is built with collaboration in mind.Our Fusion web app comes with default apps for working with data and managing the Nexus instance. Not enough? You can plug your own app and leverage our stack.In addition, resources available in the instance can be easily visualized through plugins. Do you need more plugins? No problem, just write your own and upload it to the plugin library.Nexus Fusion leverages our javascript library, Nexus.js.",
+        "Nexus Fusion is the web application that runs on top of our Nexus Delta API. It supports all the functionalities of the backend services, from managing permissions to indexing resources. It is built with collaboration in mind.",
       featureText:
         "Nexus Fusion offers rich features for working with data. We are constantly enriching those.",
       tagLine: "Enabling Collaborative Data and Knowledge Discovery.",

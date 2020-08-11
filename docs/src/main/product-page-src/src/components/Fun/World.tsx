@@ -14,13 +14,15 @@ const World = (canvas: HTMLCanvasElement): WorldObj => {
     antialias: true,
     alpha: true,
   })
+  renderer.setSize(canvas.clientWidth, canvas.clientHeight)
+  renderer.setPixelRatio(window.devicePixelRatio)
   const camera = new THREE.PerspectiveCamera(
     45,
     canvas.clientWidth / canvas.clientHeight,
     0.01,
     1000
   )
-  camera.position.set(3, 3, 0)
+  camera.position.set(3.5, 3.5, 0)
 
   return {
     scene,

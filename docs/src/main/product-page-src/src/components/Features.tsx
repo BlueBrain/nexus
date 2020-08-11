@@ -33,12 +33,13 @@ const ValuePropoisition: React.FC<{
 }
 
 const Features: React.FC<{
+  id?: string
   title: string
   subtitle: string
   features: { title: string; description: string; image?: string }[]
-}> = ({ title, subtitle, features }) => {
+}> = ({ id = "features", title, subtitle, features }) => {
   return (
-    <section id="why">
+    <section id={id}>
       <div className="container with-room">
         <div className="content centered">
           <h2>{title}</h2>

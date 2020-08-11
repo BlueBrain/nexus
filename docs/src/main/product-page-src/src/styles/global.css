@@ -169,6 +169,16 @@ Hero
   z-index: 0;
 }
 
+.hero .gradient.subtraction {
+  background: url("../../static/img/subtraction.svg") no-repeat;
+  background-size: auto;
+  background-size: 100%;
+}
+
+.hero .gradient.subtraction svg {
+  mask: url("../../static/img/subtraction.svg");
+}
+
 .hero .button {
   min-width: 160px;
 }
