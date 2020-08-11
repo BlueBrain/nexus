@@ -292,8 +292,8 @@ svg.secondary {
 }
 
 svg.primary {
-  fill: var(--primary);
-  stroke: var(--primary);
+  fill: var(--link);
+  stroke: var(--link);
 }
 
 .subtle {

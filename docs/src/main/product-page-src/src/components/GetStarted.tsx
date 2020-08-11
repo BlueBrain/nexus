@@ -44,7 +44,7 @@ const GetStartedLink: React.FC<{
 
 export default function GetStartedWithNexus() {
   return (
-    <section id="get-started">
+    <section id="getting-started">
       <div className="container with-room">
         <div className="content centered">
           <h2>Get Started</h2>
