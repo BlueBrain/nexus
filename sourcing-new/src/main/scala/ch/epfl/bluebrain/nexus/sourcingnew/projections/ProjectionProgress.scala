@@ -35,7 +35,7 @@ final case class ProjectionProgress(offset: Offset,
 
 final case class CompositeProjectionProgress(id: ViewProjectionId,
                                              sourceProgress: Map[SourceProjectionId, ProjectionProgress],
-                                             viewProgress: Map[CompositeViewId, ProjectionProgress])
+                                             viewProgress: Map[CompositeViewProjectionId, ProjectionProgress])
 
 object ProjectionProgress {
 

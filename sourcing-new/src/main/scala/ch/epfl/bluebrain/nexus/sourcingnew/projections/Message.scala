@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import akka.persistence.query.{EventEnvelope, Offset}
-import cats.{Eq, Functor}
+import cats.Functor
 
 import scala.reflect.ClassTag
 
@@ -113,7 +113,4 @@ object Message {
         case e: SkippedMessage    => e
       }
   }
-
-  implicit val samePersistenceId: Eq[Message[_]] =
-    (x: Message[_], y: Message[_]) => x.persistenceId == y.persistenceId
 }
