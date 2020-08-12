@@ -6,11 +6,11 @@ import java.util.concurrent.TimeoutException
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
-import akka.persistence.typed.{DeleteEventsCompleted, DeleteEventsFailed, DeleteSnapshotsCompleted, DeleteSnapshotsFailed, DeletionTarget, PersistenceId, RecoveryCompleted, RecoveryFailed, SnapshotCompleted, SnapshotFailed, SnapshotMetadata}
+import akka.persistence.typed._
 import cats.effect.{ContextShift, IO, Timer, Effect => CatsEffect}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.sourcingnew.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
 import ch.epfl.bluebrain.nexus.sourcingnew.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcingnew.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
 
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
@@ -18,35 +18,46 @@ import scala.util.control.NonFatal
 /**
   * Event source based processor based on a Akka behavior which accepts and evaluates commands
   * and then applies the resulting events on the current state
-  * @param entityId
-  * @param config
+  * @param entityId the id of the entity
+  * @param config the configuration
+  * @param stopAfterInactivity the function to apply when the actor is being stopped,
+  *                            implies passivation for sharded actors
   * @tparam F
   * @tparam State
   * @tparam EvaluateCommand
   * @tparam Event
   * @tparam Rejection
   */
-//FIXME: Add the passivation strategies
 private [aggregate] abstract class EventSourceProcessor[
   F[_]: CatsEffect,
   State: ClassTag,
   EvaluateCommand: ClassTag,
   Event: ClassTag,
-  Rejection: ClassTag](
-         entityId: String,
-         config: AggregateConfig) {
+  Rejection: ClassTag](entityId: String,
+                       stopAfterInactivity: ActorRef[Command] => Behavior[Command],
+                       config: AggregateConfig) {
 
+  /**
+    * Defines the behavior to adopt for the given events
+    * @return
+    */
   def definition: EventDefinition[F, State, EvaluateCommand, Event, Rejection]
+
+  /**
+    * When the actor has to be stopped (idling for too long, ...)
+    * @return
+    */
+  def stopStrategy: StopStrategy
 
   protected val id = s"${definition.entityType}-${URLEncoder.encode(entityId, "UTF-8")}"
 
-  protected def stateBehavior(state: State): Behavior[EventSourceCommand]
+  protected def stateBehavior(state: State, parent: ActorRef[Command]): Behavior[EventSourceCommand]
 
   def behavior(): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       Behaviors.withStash(config.stashSize) { buffer =>
         val stateActor = context.spawn(
-          stateBehavior(definition.initialState),
+          stateBehavior(definition.initialState, context.self),
           s"${entityId}_state"
         )
 
@@ -72,6 +83,8 @@ private [aggregate] abstract class EventSourceProcessor[
               case _: EvaluationResult =>
                 context.log.error("Getting an evaluation result should happen within a stashing behavior")
                 Behaviors.same
+              case Idle =>
+                stopAfterInactivity(context.self)
             }
         }
 
@@ -95,10 +108,16 @@ private [aggregate] abstract class EventSourceProcessor[
               case dryRun: DryRunResult =>
                 replyTo ! dryRun
                 buffer.unstashAll(active(state))
+              case Idle =>
+                stopAfterInactivity(context.self)
               case c =>
                 buffer.stash(c)
                 Behaviors.same
             }
+        }
+
+        stopStrategy.lapsedSinceLastInteraction.foreach { duration =>
+          context.setReceiveTimeout(duration, Idle)
         }
 
         active(definition.initialState)
@@ -167,8 +186,10 @@ object EventSourceProcessor {
     Event: ClassTag,
     Rejection: ClassTag](entityId: String,
                          override val definition: PersistentEventDefinition[F, State, EvaluateCommand, Event, Rejection],
+                         override val stopStrategy: PersistentStopStrategy,
+                         stopAfterInactivity: ActorRef[Command] => Behavior[Command],
                          config: AggregateConfig)
-        extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityId, config) {
+        extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityId, stopAfterInactivity, config) {
 
           import definition._
 
@@ -186,7 +207,7 @@ object EventSourceProcessor {
               }
           }
 
-          override protected def stateBehavior(state: State): Behavior[EventSourceCommand] =  {
+          override protected def stateBehavior(state: State, parent: ActorRef[Command]): Behavior[EventSourceCommand] =  {
             import SnapshotStrategy._
             val persistenceId = PersistenceId.ofUniqueId(id)
             Behaviors.setup { context =>
@@ -202,6 +223,10 @@ object EventSourceProcessor {
                 .snapshotStrategy(snapshotStrategy)
                 .receiveSignal {
                 case (state, RecoveryCompleted) =>
+                  // The actor will be stopped/passivated after a fix period after recovery
+                  stopStrategy.lapsedSinceRecoveryCompleted.foreach { duration =>
+                    context.scheduleOnce(duration, parent, Idle)
+                  }
                   context.log.debugN("Entity {} has been successfully recovered at state {}",
                     persistenceId,
                     state)
@@ -240,7 +265,7 @@ object EventSourceProcessor {
               }
             }
           }
-        }
+  }
 
   /**
     * Event source processor without persistence: if the processor is lost, so is its state
@@ -261,12 +286,14 @@ object EventSourceProcessor {
     Event: ClassTag,
     Rejection: ClassTag](entityId: String,
                          override val definition: TransientEventDefinition[F, State, EvaluateCommand, Event, Rejection],
+                         override val stopStrategy: TransientStopStrategy,
+                         stopAfterInactivity: ActorRef[Command] => Behavior[Command],
                          config: AggregateConfig)
-    extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityId, config) {
+    extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityId, stopAfterInactivity, config) {
 
     import definition._
 
-    override protected def stateBehavior(state: State): Behavior[EventSourceCommand] = Behaviors.receive {
+    override protected def stateBehavior(state: State, parent: ActorRef[Command]): Behavior[EventSourceCommand] = Behaviors.receive {
         (_, cmd) =>
           cmd match {
             case RequestState(_, replyTo: ActorRef[State]) =>
@@ -275,7 +302,7 @@ object EventSourceProcessor {
             case _: RequestLastSeqNr =>
               Behaviors.same
             case Append(_, event: Event) =>
-              stateBehavior(next(state, event))
+              stateBehavior(next(state, event), parent)
           }
       }
     }
