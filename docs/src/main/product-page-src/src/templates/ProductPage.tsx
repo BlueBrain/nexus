@@ -16,6 +16,7 @@ export type Product = {
   featureText: string
   tagLine: string
   description: string
+  additionalInfo?: string
 }
 
 const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
@@ -29,6 +30,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
     overviewText,
     featureText,
     features,
+    additionalInfo,
   } = product
 
   const { pathname } = useLocation()
@@ -96,6 +98,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
             </h2>
             <p>{overviewText}</p>
             <ProductDiagram name={slug} />
+            <p>{additionalInfo}</p>
           </div>
         </div>
       </section>

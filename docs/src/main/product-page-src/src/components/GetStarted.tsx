@@ -6,7 +6,7 @@ import notebook from "../../static/img/icons/notebook.svg"
 
 const getStartedLinks = [
   {
-    title: "Play in the Sandbox",
+    title: "Try Nexus",
     image: sandbox,
     href: "https://sandbox.bluebrainnexus.io/",
   },

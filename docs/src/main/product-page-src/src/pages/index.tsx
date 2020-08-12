@@ -21,7 +21,7 @@ const features = [
     title: "Science-Driven",
     image: scienceDriven,
     description:
-      "Developed in the largest european neuroscience research lab, together with scientists and domain experts. You can trust us.",
+      "Originally developed to handle data across all levels and scales of the brain, together with scientists and domain experts. Designed for any research applications.",
   },
   {
     title: "Secure, Scalable, and Production-Ready ",
@@ -42,10 +42,10 @@ const features = [
       "Evolve your data continuously by adopting the same technologies and standards that support the world wide web.",
   },
   {
-    title: "Value from Data",
+    title: "Make Data Computable",
     image: valueFromData,
     description:
-      "Leverage powerful out-of-the-box indexing, FAIR data support, and power your applications with your new knowledge graph.",
+      "Nexus makes it possible to work with data at scale. Instantiate real computable objects directly from your data, to power your research and apps.",
   },
   {
     title: "Extensible",

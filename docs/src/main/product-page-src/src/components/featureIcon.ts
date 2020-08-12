@@ -23,7 +23,7 @@ const featureIcons: Icon[] = [
     iconSrc: studiosIcon,
   },
   {
-    name: "Extensible (plugins)",
+    name: "Extensible",
     iconSrc: pluginsIcon,
   },
   {
