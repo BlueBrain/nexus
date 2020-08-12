@@ -36,9 +36,9 @@ module.exports = {
         },
       ],
       overviewText:
-        "Delta can be used as a store for Nexus Forge and works seamlessly with Nexus Fusion.We offer several clients that consume the API of Delta. Nexus.js allows you to build data-driven web applications, Nexus Python SDK to integrate your data pipelines with the Knowledge Graph and the Nexus CLI allows you to manage your deployment from the command line.All data and metadata stored into your Knowledge Graph is versioned. All metadata is further indexed into views that offer several access modalities such as Graph and Document.",
+        "Delta can be used as a store for Nexus Forge and works seamlessly with Nexus Fusion. We offer several clients that consume the API of Delta. Nexus.js allows you to build data-driven web applications, Nexus Python SDK to integrate your data pipelines with the Knowledge Graph and the Nexus CLI allows you to manage your deployment from the command line. All data and metadata stored into your Knowledge Graph is versioned. All metadata is further indexed into views that offer several access modalities such as Graph and Document.",
       featureText: "Delta offers a rich set of features to manage your data.",
-      tagLine: "Managing Data and Knowledge Graph Lifecycles.",
+      tagLine: "Managing Data and Knowledge Graph Lifecycles",
       description:
         "A secure and scalable service that allows you to organize your data into a Knowledge Graph. Its API enables you to store your data, describe them with metadata, enforce format using schemas combined with automatic validation, capture provenance, and access revisions.",
     },
@@ -49,7 +49,7 @@ module.exports = {
         "Nexus Fusion is the web application that runs on top of our Nexus Delta API. It supports all the functionalities of the backend services, from managing permissions to indexing resources. It is built with collaboration in mind.",
       featureText:
         "Nexus Fusion offers rich features for working with data. We are constantly enriching those.",
-      tagLine: "Enabling Collaborative Data and Knowledge Discovery.",
+      tagLine: "Enabling Collaborative Data and Knowledge Discovery",
       description:
         "An extensible, open-source web interface that thrives on your data. With workspaces, plugins, and an admin interface available out-of-the-box, you can start working with your ingested data immediately.",
       features: [
@@ -118,7 +118,7 @@ module.exports = {
       overviewText:
         "Delta can be used as a store for Nexus Forge and works seamlessly with Nexus Fusion. \n We offer several clients that consume the API of Delta. Nexus.js allows you to build data-driven web applications, Nexus Python SDK to integrate your data pipelines with the Knowledge Graph and the Nexus CLI allows you to manage your deployment from the command line.",
       featureText: "Delta offers a rich set of features to manage your data.",
-      tagLine: "Managing Data and Knowledge Graph Lifecycles.",
+      tagLine: "Managing Data and Knowledge Graph Lifecycles",
       description:
         "A secure and scalable service that allows you to organize your data into a Knowledge Graph. Its API enables you to store your data, describe them with metadata, enforce format using schemas combined with automatic validation, capture provenance, and access revisions.",
     },

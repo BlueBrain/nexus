@@ -65,7 +65,7 @@ const NewsletterCallout: React.FC<{
                     <div className="control has-icons-left">
                       <input
                         type="email"
-                        placeholder="Enter your emai address"
+                        placeholder="Enter your email address"
                         name="email"
                         className="input"
                       ></input>

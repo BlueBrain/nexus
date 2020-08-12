@@ -5,20 +5,17 @@ const GettingStartedList: React.FC = () => {
     <div>
       <ul className="submenu">
         <li>
-          <a href="https://bluebrainnexus.io/docs/understanding-knowledge-graphs">
+          <a href="https://bluebrainnexus.io/docs/getting-started/understanding-knowledge-graphs.html">
             Understanding Knowledge Graphs
           </a>
         </li>
         <li>
-          <a href="https://github.com/BlueBrain/nexus-forge/tree/master/examples/notebooks/getting-started">
-            Building Knowledge Graphs with Forge
+          <a href="https://bluebrainnexus.io/docs/getting-started/try-nexus.html">
+            Try Nexus
           </a>
         </li>
         <li>
-          <a href="https://bluebrainnexus.io/docs/try-nexus">Try Nexus</a>
-        </li>
-        <li>
-          <a href="https://bluebrainnexus.io/docs/runnin-nexus">
+          <a href="https://bluebrainnexus.io/docs/getting-started/running-nexus.html">
             Running Nexus
           </a>
         </li>

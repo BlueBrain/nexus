@@ -40,6 +40,11 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   const object =
     slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"
 
+  const docsLink = `https://bluebrainnexus.io/docs/${slug.replace(
+    "nexus-",
+    ""
+  )}.html`
+
   return (
     <MainLayout>
       <section className="hero is-fullheight">
@@ -75,7 +80,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
                 </a>
               </div>
               <div className="column">
-                <a href="/docs">
+                <a href={docsLink}>
                   <button className="button">Docs</button>
                 </a>
               </div>
@@ -86,7 +91,9 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
       <section id="overview">
         <div className="container">
           <div className="content centered">
-            <h2 className="title">What is {name}?</h2>
+            <h2 className="title">
+              {name.replace("Nexus ", "")} inside Nexus ecosystem
+            </h2>
             <p>{overviewText}</p>
             <ProductDiagram name={slug} />
           </div>
