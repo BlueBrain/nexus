@@ -32,11 +32,11 @@ class CassandraProjection [F[_]: ContextShift,
     s"SELECT offset, processed, discarded, failed FROM $keyspace.$progressTable WHERE projection_id = ?"
 
   val recordFailureQuery: String =
-    s"""INSERT INTO $keyspace.$failuresTable (projection_id, offset, persistence_id, sequence_nr, value, error)
-       |VALUES (?, ?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
+    s"""INSERT INTO $keyspace.$failuresTable (projection_id, offset, persistence_id, sequence_nr, value, error_type, error)
+       |VALUES (?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
 
   val failuresQuery: String =
-    s"SELECT offset, value, error from $keyspace.$failuresTable WHERE projection_id = ? ALLOW FILTERING"
+    s"SELECT offset, value, error_type from $keyspace.$failuresTable WHERE projection_id = ? ALLOW FILTERING"
 
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress): F[Unit] =
     wrapFuture(session.executeWrite(recordProgressQuery,
@@ -70,6 +70,7 @@ class CassandraProjection [F[_]: ContextShift,
         failureMessage.persistenceId,
         failureMessage.sequenceNr: java.lang.Long,
         failureMessage.value.asJson.noSpaces,
+        failureMessage.throwable.getClass.getSimpleName,
         f(failureMessage.throwable)
       )
     ) >> F.unit
@@ -79,7 +80,7 @@ class CassandraProjection [F[_]: ContextShift,
       .select(failuresQuery, id.value).toStream[F]( _ => ())
       .mapFilter { row =>
         Projection.decodeError[A, Offset](
-          (row.getString("value"), row.getString("offset"), row.getString("error"))
+          (row.getString("value"), row.getString("offset"), row.getString("error_type"))
         )
       }
 }
