@@ -6,6 +6,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.syntax._
+import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
 import io.circe.Encoder
 
@@ -16,9 +17,22 @@ final case class IndexingConfig(batch: Int, batchTimeout: FiniteDuration)
 
 object ProjectionStream {
 
+  private val log = Logger("ProjectionStream")
+
   trait StreamOps[F[_], A] {
 
     implicit def F: ConcurrentEffect[F]
+
+    implicit def projectionId: ProjectionId
+
+    //TODO: Properly handle errors
+    protected def onError[B](s: SuccessMessage[A]): PartialFunction[Throwable, F[Message[B]]] = {
+      case NonFatal(err) =>
+        val msg = s"Exception caught while running for message '${s.value}' for projection $projectionId"
+        log.error(msg, err)
+        // Mark the message as failed
+        F.pure(s.failed(err))
+    }
 
     protected def toResource[B, R](fetchResource: A => F[Option[R]], collect: R => Option[B]): Message[A] => F[Message[B]] =
       (message: Message[A]) =>
@@ -32,16 +46,14 @@ object ProjectionStream {
                   case _              => s.discarded
                 }
               }
-              .recoverWith {
-                //TODO Handle errors properly
-                case NonFatal(err) => F.pure(s.failed(err))
-              }
+              .recoverWith(onError(s))
           case e: SkippedMessage      => F.pure(e)
         }
   }
 
   implicit class SimpleStreamOps[F[_]: Timer, A: Encoder]
-    (val stream: Stream[F, Message[A]])(implicit override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {
+    (val stream: Stream[F, Message[A]])(implicit override val projectionId: ProjectionId,
+                                        override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {
 
     type O[_] = Message[_]
 
@@ -97,24 +109,20 @@ object ProjectionStream {
         message match {
           case s: SuccessMessage[A] if predicate(s) =>
             (f(s.value) >> F.pure[Message[A]](s))
-              .recoverWith {
-                err => F.pure(s.failed(err))
-              }
+              .recoverWith(onError(s))
           case v => F.pure(v)
         }
       }
 
     /**
       * Map over the stream of messages
-      * @param projectionId
       * @param initial
       * @param persistErrors
       * @param persistProgress
       * @param config
       * @return
       */
-    def persistProgress(projectionId: ProjectionId,
-                        initial: ProjectionProgress = NoProgress,
+    def persistProgress(initial: ProjectionProgress = NoProgress,
                         persistProgress: (ProjectionId, ProjectionProgress) => F[Unit],
                         persistErrors: (ProjectionId, ErrorMessage) => F[Unit],
                         config: PersistProgressConfig): Stream[F, Unit] =
@@ -138,7 +146,8 @@ object ProjectionStream {
   }
 
   implicit class ChunckStreamOps[F[_]: Timer, A: Encoder]
-    (val stream: Stream[F, Chunk[Message[A]]])(implicit override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {
+    (val stream: Stream[F, Chunk[Message[A]]])(implicit override val projectionId: ProjectionId,
+                                               override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {
 
     type O[_] = Chunk[Message[_]]
 
@@ -228,7 +237,8 @@ object ProjectionStream {
           F.pure(chunk)
         } else {
           (f(successMessages.map(_.value)) >> F.pure(chunk))
-            .recoverWith { case err =>
+            .recoverWith { case NonFatal(err) =>
+              log.error(s"An exception occurred while running 'runAsync' on elements $successMessages for projection $projectionId", err)
               F.pure(
                 chunk.map {
                   case s: SuccessMessage[A] => s.failed(err)
