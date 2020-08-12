@@ -40,6 +40,8 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   const object =
     slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"
 
+  const docsLink = `/docs/${slug.replace("nexus-", "")}`
+
   return (
     <MainLayout>
       <section className="hero is-fullheight">
@@ -75,7 +77,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
                 </a>
               </div>
               <div className="column">
-                <a href="/docs">
+                <a href={docsLink}>
                   <button className="button">Docs</button>
                 </a>
               </div>
