@@ -21,6 +21,8 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
   implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
 
+  implicit val projectionId: ViewProjectionId = ViewProjectionId("myProjection")
+
   /**
     * Generate a stream of messages with numberOfEvents persistenceId
     * each with numberOfRevisions
@@ -31,10 +33,10 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
     * @param errorIndex
     * @return
     */
-  def streamSuccessFrom(numberOfEvents: Int,
-                        numberOfRevisions: Int,
-                        discardedIndex: Set[(Int, Int)],
-                        errorIndex: Set[(Int, Int)]): Stream[IO, Message[String]] =
+  def streamFrom(numberOfEvents: Int,
+                 numberOfRevisions: Int,
+                 discardedIndex: Set[(Int, Int)],
+                 errorIndex: Set[(Int, Int)]): Stream[IO, Message[String]] =
     Stream.emits(
       List.tabulate(numberOfEvents) { event =>
         List.tabulate(numberOfRevisions) { revision =>
@@ -56,7 +58,7 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
 
   import ProjectionStream._
   "Fetching resources" should {
-    val stream = streamSuccessFrom(2, 2, Set(1 -> 0), Set(1 -> 1))
+    val stream = streamFrom(2, 2, Set(1 -> 0), Set(1 -> 1))
 
     def fetch(input: String): IO[Option[Json]] = {
       input match {
@@ -296,7 +298,6 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
       ).covary[IO]
 
       stream.persistProgress(
-        ViewProjectionId("myProjection"),
         resultProgress,
         // Stub method to retrieve the accumulated progress
         (_: ProjectionId,
