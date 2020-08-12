@@ -4,6 +4,8 @@
 
 ## Release 1.5 (scheduled for Q4, 2020)
 
+Check our [Github milestone](https://github.com/BlueBrain/nexus/milestone/9) for more details or start contributing today!
+
 ### Nexus Fusion
 
 Fusion is the web interface that helps scientists with their day-to-day data-driven activities. This release will bring the following features:
