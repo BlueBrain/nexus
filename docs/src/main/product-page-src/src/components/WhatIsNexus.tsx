@@ -15,7 +15,7 @@ const products = [
     slug: "nexus-forge",
     subtitle: "Building and Using Knowledge Graphs Made Easy",
     description:
-      "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
+      "Blue Brain Nexus Forge enables data scientists and data and knowledge engineers to uniquely combine components, such as data transformations (ETL), data models (ontologies, schemas) defining the targeted domain, scalable stores for managing the resulting graph, as well as data and factual knowledge search and access, under a consistent, single and generic Python Framework.",
   },
   {
     title: "Nexus Delta",

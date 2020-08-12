@@ -13,12 +13,12 @@ export default function PoweredByNexus() {
           <h4 className="title is-4">Powered by Nexus</h4>
           <div className="columns">
             <div className="column">
-              <a href="https://www.camh.ca/en/science-and-research/institutes-and-centres/krembil-centre-for-neuroinformatics">
+              <a href="https://www.epfl.ch/research/domains/bluebrain/">
                 <img
-                  src={camhLogo}
-                  alt="The Centre for Addiction and Mental Health"
+                  src={epflLogo}
+                  alt="École Polytechnique Fédérale de Lausanne"
                 />
-                <p>Krembil Centre for Neuroinformatics</p>
+                <p>Blue Brain Project</p>
               </a>
             </div>
 
@@ -30,12 +30,12 @@ export default function PoweredByNexus() {
             </div>
 
             <div className="column">
-              <a href="https://www.epfl.ch/research/domains/bluebrain/">
+              <a href="https://www.camh.ca/en/science-and-research/institutes-and-centres/krembil-centre-for-neuroinformatics">
                 <img
-                  src={epflLogo}
-                  alt="École Polytechnique Fédérale de Lausanne"
+                  src={camhLogo}
+                  alt="The Centre for Addiction and Mental Health"
                 />
-                <p>Blue Brain Project</p>
+                <p>Krembil Centre for Neuroinformatics</p>
               </a>
             </div>
 
