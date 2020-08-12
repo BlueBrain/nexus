@@ -6,7 +6,6 @@ import { scrollIntoView } from "../libs/scroll"
 import Features from "../components/Features"
 import ProductDiagram from "../components/ProductDiagram"
 import Fun from "../components/Fun"
-import svgify from "../libs/svgify"
 
 export type Product = {
   name: string
@@ -35,10 +34,6 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
 
   const { pathname } = useLocation()
 
-  React.useEffect(() => {
-    svgify()
-  }, [])
-
   const object =
     slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"
 
@@ -64,7 +59,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
               <em>{tagLine}</em>
             </h2>
             <p className="subtitle">{description}</p>
-            <div className="columns" style={{ width: "50%" }}>
+            <div className="columns">
               <div className="column">
                 <a
                   href="#overview"

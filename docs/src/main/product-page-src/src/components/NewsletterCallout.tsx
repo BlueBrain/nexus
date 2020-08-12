@@ -38,7 +38,7 @@ const NewsletterCallout: React.FC<{
         <div className="content">
           <div className="columns">
             <div className="column">
-              <h4 className="title is-4">Never miss an update.</h4>
+              <b>Never miss an update.</b>
               <p>We won't spam you, and you can unsubscribe in one click.</p>
             </div>
             <div className="column">
