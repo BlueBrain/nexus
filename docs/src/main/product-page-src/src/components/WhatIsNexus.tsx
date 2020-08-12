@@ -6,21 +6,21 @@ const products = [
   {
     title: "Nexus Fusion",
     slug: "nexus-fusion",
-    subtitle: "Enabling Data and Knowledge Discovery",
+    subtitle: "Enabling Collaborative Data and Knowledge Discovery",
     description:
       "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
   },
   {
     title: "Nexus Forge",
     slug: "nexus-forge",
-    subtitle: "Building and Using Knowledge Graphs Made Easy.",
+    subtitle: "Building and Using Knowledge Graphs Made Easy",
     description:
-      "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
+      "Blue Brain Nexus Forge enables data scientists and data and knowledge engineers to uniquely combine components, such as data transformations (ETL), data models (ontologies, schemas) defining the targeted domain, scalable stores for managing the resulting graph, as well as data and factual knowledge search and access, under a consistent, single and generic Python Framework.",
   },
   {
     title: "Nexus Delta",
     slug: "nexus-delta",
-    subtitle: "Managing Data and Knowledge Graph Lifecycles",
+    subtitle: "Managing the Data and Knowledge Graph Lifecycle",
     description:
       "A scalable and secure service to store and leverage all your data, neatly organised in a Knowledge Graph. It offers an API to perform all your data management operations, this way it can easily integrate with your software stack. Its advanced indexing capabilities automatically build views from your metadata.",
   },

@@ -40,7 +40,7 @@ module.exports = {
       featureText: "Delta offers a rich set of features to manage your data.",
       tagLine: "Managing Data and Knowledge Graph Lifecycles",
       description:
-        "A secure and scalable service that allows you to organize your data into a Knowledge Graph. Its API enables you to store your data, describe them with metadata, enforce format using schemas combined with automatic validation, capture provenance, and access revisions.",
+        "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs.",
     },
     {
       name: "Nexus Fusion",
@@ -76,7 +76,7 @@ module.exports = {
         {
           title: "Administration",
           description:
-            "Manage your Nexus Delta instance from the a visual interface instead of the command line.",
+            "Manage your Nexus Delta instance from the visual interface instead of the command line.",
         },
       ],
     },
@@ -118,9 +118,11 @@ module.exports = {
       overviewText:
         "Delta can be used as a store for Nexus Forge and works seamlessly with Nexus Fusion. \n We offer several clients that consume the API of Delta. Nexus.js allows you to build data-driven web applications, Nexus Python SDK to integrate your data pipelines with the Knowledge Graph and the Nexus CLI allows you to manage your deployment from the command line.",
       featureText: "Delta offers a rich set of features to manage your data.",
-      tagLine: "Managing Data and Knowledge Graph Lifecycles",
+      tagLine: "Managing the Data and Knowledge Graph Lifecycle",
       description:
         "A secure and scalable service that allows you to organize your data into a Knowledge Graph. Its API enables you to store your data, describe them with metadata, enforce format using schemas combined with automatic validation, capture provenance, and access revisions.",
+      additionalInfo:
+        "All data and metadata stored into your Knowledge Graph is versioned. All metadata is further indexed into views that offer several access modalities such as Graph and Document.",
     },
   ],
 }
