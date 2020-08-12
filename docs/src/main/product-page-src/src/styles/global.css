@@ -173,11 +173,9 @@ Hero
 
   background-blend-mode: screen;
   clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
-  z-index: 0;
 }
 
 canvas {
-  z-index: 1;
   position: relative;
 }
 
@@ -201,6 +199,12 @@ canvas {
   .hero .gradient.subtraction {
     background-position-y: -50vh;
     height: 130vh;
+  }
+}
+@media (min-width: 1400px) {
+  .hero .gradient.subtraction {
+    background-position-y: 0;
+    height: 100vh;
   }
 }
 
