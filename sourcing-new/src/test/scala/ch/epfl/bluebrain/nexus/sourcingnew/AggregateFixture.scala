@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
-import cats.effect.{Async, Timer}
+import cats.effect.{Async, IO, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.Command._
 import ch.epfl.bluebrain.nexus.sourcingnew.Event.{Incremented, Initialized}
@@ -56,6 +56,21 @@ object AggregateFixture {
     case (Current(_, _), Initialized(rev))           => State.Current(rev, 0)
     case (other, _)                                  => other
   }
+
+  def persistentDefinition[F[_]: Async: Timer]: PersistentEventDefinition[F, State, Command, Event, Rejection] = PersistentEventDefinition(
+    "increment",
+    State.Initial,
+    next,
+    evaluate[F],
+    (_: Event) => Set("increment")
+  )
+
+  def transientDefinition[F[_]: Async: Timer]: TransientEventDefinition[F, State, Command, Event, Rejection] = TransientEventDefinition(
+    "increment",
+    State.Initial,
+    next,
+    evaluate[F]
+  )
 
   def evaluate[F[_]](state: State, cmd: Command)(implicit F: Async[F], T: Timer[F]): F[Either[Rejection, Event]] =
     (state, cmd) match {
