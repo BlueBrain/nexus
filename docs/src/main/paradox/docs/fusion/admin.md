@@ -18,7 +18,19 @@ The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In pa
 
 ### Creating a New Organization
 
+@@@ div { .center }
+![](../assets/try-nexus-sandbox-admin-create-org-form.png)
+@@@
+
 ### Creating a New Project
+
+@@@ div { .center }
+![](../assets/try-nexus-sandbox-admin-organization.png)
+@@@
+
+@@@ div { .center }
+![](../assets/try-nexus-sandbox-admin-create-project-form.png)
+@@@
 
 ## Project View
 
