@@ -3,9 +3,10 @@ import useRaf from "@rooks/use-raf"
 import World, { WorldObj } from "./World"
 import useResize from "../../hooks/useResize"
 import objects from "./objects"
+import { isSmall } from "../../libs/browser"
 
 const Fun: React.FC<{ object: string }> = ({ object }) => {
-  const canvasRef = React.useRef()
+  const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const world = React.useRef<WorldObj>()
   const [lastTick, setLastTick] = React.useState(0)
 
@@ -35,8 +36,8 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
       if (world.current && world.current.scene) {
         const focusObject = world.current.scene.getObjectByName("focusObject")
         if (focusObject) {
-          focusObject.rotation.x += 0.01
-          focusObject.rotation.y -= 0.01
+          focusObject.rotation.x += 0.005
+          focusObject.rotation.y -= 0.005
         }
         world.current.update(delta)
       }
@@ -44,7 +45,11 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
       console.error(error)
     }
   }, true)
+
   return <canvas className="fun" ref={canvasRef} />
 }
 
-export default Fun
+export const WithIsNotMobile = (wrappedCompenent: React.FC<any>) =>
+  !isSmall() ? wrappedCompenent : () => null
+
+export default WithIsNotMobile(Fun)

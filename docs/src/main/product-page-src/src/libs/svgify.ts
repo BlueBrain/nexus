@@ -6,7 +6,8 @@ export default () => {
     if (
       !elm.src ||
       !elm.src.includes("data:image/svg+xml") ||
-      !elm.classList.contains("svgify")
+      !elm.classList.contains("svgify") ||
+      !elm.parentNode
     ) {
       return
     }
@@ -16,6 +17,9 @@ export default () => {
         const parser = new DOMParser()
         const htmlDoc = parser.parseFromString(data, "text/html")
         const svg = htmlDoc.querySelector("svg")
+        if (!svg) {
+          return
+        }
         svg.classList.add("replaced-svg")
         elm.classList.forEach(className => svg.classList.add(className))
         if (elm.id) {
@@ -40,7 +44,7 @@ export default () => {
           )
         }
 
-        elm.parentNode.replaceChild(svg, elm)
+        elm.parentNode?.replaceChild(svg, elm)
       })
       .catch(error => console.error(error))
   })

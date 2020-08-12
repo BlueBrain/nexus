@@ -64,7 +64,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
               <em>{tagLine}</em>
             </h2>
             <p className="subtitle">{description}</p>
-            <div className="columns" style={{ width: "50%" }}>
+            <div className="columns">
               <div className="column">
                 <a
                   href="#overview"
@@ -94,7 +94,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
         <div className="container">
           <div className="content centered">
             <h2 className="title">
-              {name.replace("Nexus ", "")} inside Nexus ecosystem
+              {name.replace("Nexus ", "")} inside the Nexus ecosystem
             </h2>
             <p>{overviewText}</p>
             <ProductDiagram name={slug} />

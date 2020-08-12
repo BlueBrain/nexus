@@ -7,6 +7,7 @@
 @import "./mobile-menu.css";
 @import "./nav-menu.css";
 @import "./fun.css";
+@import "./hero.css";
 
 @media (min-width: 320px) {
   /* smartphones, portrait iPhone, portrait 480x320 phones (Android) */
@@ -76,7 +77,7 @@ button {
 
 .button {
   font-weight: 400;
-  background-color: var(--primary);
+  background-color: var(--primary-light);
   border: none;
   color: #fff;
   font-weight: 600;
@@ -84,14 +85,13 @@ button {
   border-radius: 38px;
   text-align: center;
   width: auto;
-  opacity: 0.8;
   transition: all 300ms cubic-bezier(0.995, 0.015, 0.01, 0.98);
 }
 
 .button:hover,
 .button.is-hovered {
+  background-color: var(--primary);
   color: white;
-  opacity: 1;
 }
 
 .button img.arrow {
@@ -134,82 +134,6 @@ li {
   background-color: #060b13;
   background-image: linear-gradient(326deg, #060b13 0%, #0b1848 74%);
   /* background-image: linear-gradient(to top, #a18cd1 0%, #fbc2eb 100%); */
-}
-
-/* 
-Hero
-*/
-.title {
-  font-weight: 800;
-}
-.hero {
-  color: white;
-}
-.hero .title,
-.hero .subtitle {
-  color: white;
-}
-.hero .subtitle {
-  max-width: 750px;
-}
-.hero h1 {
-  font-size: 3em;
-}
-.full-height {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: 100vw;
-}
-.hero .gradient {
-  height: 100%;
-  width: 100%;
-  position: absolute;
-  top: 0;
-  background: transparent
-    linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
-    0% 0% no-repeat padding-box;
-
-  background-blend-mode: screen;
-  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
-}
-
-canvas {
-  position: relative;
-}
-
-.hero .gradient.subtraction {
-  background-image: url("../../static/img/subtraction.svg");
-  clip-path: none;
-}
-
-@media (max-width: 600px) {
-  .hero .gradient.subtraction {
-    background-size: cover;
-  }
-}
-@media (min-width: 1025px) {
-  .hero .gradient.subtraction {
-    background-position-y: -100vh;
-    height: 130vh;
-  }
-}
-@media (min-width: 1281px) {
-  .hero .gradient.subtraction {
-    background-position-y: -50vh;
-    height: 130vh;
-  }
-}
-@media (min-width: 1400px) {
-  .hero .gradient.subtraction {
-    background-position-y: 0;
-    height: 100vh;
-  }
-}
-
-.hero .button {
-  min-width: 160px;
 }
 
 .content.centered {
@@ -301,15 +225,6 @@ h3 {
   justify-content: inherit;
 }
 
-@media (max-width: 600px) {
-  .hero .gradient {
-    height: 120%;
-  }
-  .container {
-    padding: 2em;
-  }
-}
-
 .product-image {
   margin-bottom: 1em;
   margin-top: 1em;
@@ -368,6 +283,23 @@ a:hover .subtle {
 @media (max-width: 850px) {
   .product-diagram img {
     max-width: none;
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 2em;
+  }
+  .columns {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .column {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .column .button {
     width: 100%;
   }
 }
