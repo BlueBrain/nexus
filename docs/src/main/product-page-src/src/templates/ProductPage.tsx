@@ -46,8 +46,8 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
     <MainLayout>
       <section className="hero is-fullheight">
         <div className="full-height">
-          <Fun object={object} />
           <div className="gradient subtraction" />
+          <Fun object={object} />
         </div>
         <div className="hero-body">
           <div
@@ -59,7 +59,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
               <em>{tagLine}</em>
             </h2>
             <p className="subtitle">{description}</p>
-            <div className="columns" style={{ width: "50%" }}>
+            <div className="columns">
               <div className="column">
                 <a
                   href="#overview"
@@ -88,7 +88,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
       <section id="overview">
         <div className="container">
           <div className="content centered">
-            <h2 className="title">What is {name}?</h2>
+            <h2 className="title">{name} inside the Nexus ecosystem</h2>
             <p>{overviewText}</p>
             <ProductDiagram name={slug} />
             <p>{additionalInfo}</p>

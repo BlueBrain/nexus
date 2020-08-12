@@ -41,8 +41,8 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
       if (world.current && world.current.scene) {
         const focusObject = world.current.scene.getObjectByName("focusObject")
         if (focusObject) {
-          focusObject.rotation.x += 0.01
-          focusObject.rotation.y -= 0.01
+          focusObject.rotation.x += 0.005
+          focusObject.rotation.y -= 0.005
         }
         world.current.update(delta)
       }
