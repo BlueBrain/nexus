@@ -18,7 +18,7 @@ export default function MainHero() {
       <div className="hero-body">
         <div className="container">
           <h1 className="title is-spaced">
-            Better data management starts here. <br /> and we're open source.
+            Better data management starts here. <br /> And we're open source.
           </h1>
           <h2 className="subtitle">
             Quickly build, manage and leverage Knowledge Graphs using our Python

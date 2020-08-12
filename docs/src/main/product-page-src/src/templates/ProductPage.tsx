@@ -40,7 +40,10 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   const object =
     slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"
 
-  const docsLink = `/docs/${slug.replace("nexus-", "")}`
+  const docsLink = `https://bluebrainnexus.io/docs/${slug.replace(
+    "nexus-",
+    ""
+  )}.html`
 
   return (
     <MainLayout>
@@ -88,7 +91,9 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
       <section id="overview">
         <div className="container">
           <div className="content centered">
-            <h2 className="title">What is {name}?</h2>
+            <h2 className="title">
+              {name.replace("Nexus ", "")} inside Nexus ecosystem
+            </h2>
             <p>{overviewText}</p>
             <ProductDiagram name={slug} />
           </div>
