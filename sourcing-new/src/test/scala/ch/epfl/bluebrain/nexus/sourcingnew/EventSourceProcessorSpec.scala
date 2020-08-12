@@ -172,13 +172,7 @@ class PersistentEventProcessorSpec
     testKit.spawn(
       new PersistentEventProcessor[IO, State, Command, Event, Rejection](
         entityId,
-        PersistentEventDefinition(
-          "increment",
-          State.Initial,
-          AggregateFixture.next,
-          AggregateFixture.evaluate[IO],
-          (_: Event) => Set.empty[String]
-        ),
+        AggregateFixture.persistentDefinition[IO],
         stopStrategy,
         stopAfterInactivity,
         aggregateConfig
@@ -233,12 +227,7 @@ class TransientEventProcessorSpec
     testKit.spawn(
       new TransientEventProcessor[IO, State, Command, Event, Rejection](
         entityId,
-        TransientEventDefinition(
-          "increment",
-          State.Initial,
-          AggregateFixture.next,
-          AggregateFixture.evaluate[IO]
-        ),
+        AggregateFixture.transientDefinition[IO],
         stopStrategy,
         stopAfterInactivity,
         aggregateConfig
