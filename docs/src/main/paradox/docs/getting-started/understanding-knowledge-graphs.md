@@ -5,7 +5,7 @@ This section will help you understand knowledge graphs and related standards and
 ## What is a knowledge graph?
 
 A knowledge graph is a [graph](https://en.wikipedia.org/wiki/Graph_%28abstract_data_type%29) structure that links entities
-together. The links between the entities contain knowledge, based on how the entities connect to each other. For example,
+together. The links between the entities contain knowledge, based on how they connect to each other. For example,
 an apple can be connected to a tree (to show that it grows on trees) or in another case connected to a pie recipe
 (to show that it is part of a recipe). It is a formalized knowledge that enables programmatical reasoning
 about concepts in the world around us.
@@ -26,9 +26,14 @@ The entity is an object with properties that describe it. For example, a person,
 can be called the entity's "metadata".
 
 The relation describes how entities are connected. For example, being member of, visiting a place, belonging to a country...
+
+@@@ div { .half .center }
+
 ![Graph Structure](./assets/kg-entity_relation.png)
 
-It's worth noting that having this graph data structure makes it easy to merge new data into an existing graph by connecting new entities and new relations.
+@@@
+
+It's worth noting that having this graph data structure makes it easy to add new data into an existing graph by connecting new entities and new relations.
 
 ### Describing knowledge in a graph
 
@@ -42,7 +47,11 @@ The name of the person can be encoded in a [givenName](https://schema.org/givenN
 
 For example, in the image below, you can see that the entity **Toy Story** with a property **Release date** that has the value **March 29th, 1995** and the **Director** property with the value John Lasseter.
 
+@@@ div { .half .center }
+
  ![Graph Structure](./assets/kg-structure0.png)
+
+@@@
 
 ### Inferring new data from existing relationships
 
@@ -56,7 +65,11 @@ Having defined this, we can now define a rule that instructs the inference engin
 new relations **Voice Cast** whenever we find the **Cast** of a **Character**. This enables us to query the graph
 and directly get **Toy Story**'s voices cast without having to navigate through its **Cast** first.
 
+@@@ div { .half .center }
+
  ![Graph Structure](./assets/kg_inferred-relation.png)
+
+@@@
 
 In reality inferring knowledge is a complex topic. [This video lecture](https://www.youtube.com/watch?v=AUtk6NBqEFY) shows some
 real-world examples of algorithms and rules for inference engines. E.g. [reasoning about a persons creditworthiness based on what
@@ -74,9 +87,13 @@ domains such as:
  - Cities and associations related to motion picture production (e.g. Motion Picture Association of America)
  - Places and people connected to animation movies (e.g. Steve Jobs)
 
+@@@ div { .half .center }
+
  ![Graph Structure](./assets/kg_alive-structure0.png)
 
-## Understanding RDF, JSON-LD, and other standards
+@@@
+
+## Encoding knowledge graphs: RDF, JSON-LD, and other standards
 
 ### RDF
 How do you encode knowledge graphs in a way that is interoperable with other applications and can be integrated with
@@ -84,7 +101,11 @@ other data sources? You use some common formalism, a language, to describe your 
 For knowledge graphs this format is RDF. [RDF (Resource Description Framework)](https://en.wikipedia.org/wiki/RDF) is
 a data format where every piece of knowledge can be broken down into a structure (subject, predicate and object) called triple.
 
+@@@ div { .half .center }
+
 ![ds](./assets/triple.png)
+
+@@@
 
 RDF-formatted data can be queried using a query language such as [SPARQL](https://en.wikipedia.org/wiki/SPARQL). This
 allows us to create applications that can process knowledge graphs, for example, to infer new data or get answers to
