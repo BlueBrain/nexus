@@ -6,6 +6,13 @@ import retry.{RetryDetails, RetryPolicy}
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+  * Strategy to apply when an action fails
+  * @param config the config which allows to define a cats-retry policy
+  * @param retryWhen to decide whether a given error is worth retrying
+  * @param onError an error handler
+  * @tparam F the effect type
+  */
 final case class RetryStrategy[F[_]: Applicative](config: RetryStrategyConfig,
                                retryWhen: Throwable => Boolean,
                                onError: (Throwable, RetryDetails) => F[Unit]) {

@@ -2,14 +2,37 @@ package ch.epfl.bluebrain.nexus.sourcingnew
 
 import akka.persistence.typed.scaladsl.{EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 
+/**
+  * Snapshot strategy to apply to a [[ch.epfl.bluebrain.nexus.sourcingnew.eventsource.EventSourceProcessor.PersistentEventProcessor]]
+  * See <https://doc.akka.io/docs/akka/current/typed/persistence-snapshot.html>
+  */
 sealed trait SnapshotStrategy
 
 object SnapshotStrategy {
 
+  /**
+    * No snapshot will be made
+    */
   case object NoSnapshot extends SnapshotStrategy
 
+  /**
+    * Snapshot will occur when the predicate
+    * with the State, Event and sequence is satisfied
+    * @param predicate
+    * @tparam State
+    * @tparam Event
+    */
   final case class SnapshotPredicate[State, Event](predicate: (State, Event, Long) => Boolean) extends SnapshotStrategy
 
+  /**
+    * A Snapshot will be made every numberOfEvents and keepNSnapshots will be kept
+    * deleteEventsOnSnapshot allows to delete events prior which are older than
+    * the older snapshot
+    *
+    * @param numberOfEvents
+    * @param keepNSnapshots
+    * @param deleteEventsOnSnapshot
+    */
   final case class SnapshotEvery(numberOfEvents: Int,
                                  keepNSnapshots: Int,
                                  deleteEventsOnSnapshot: Boolean = false) extends  SnapshotStrategy {
@@ -24,6 +47,13 @@ object SnapshotStrategy {
 
   }
 
+  /**
+    * Combine the [[SnapshotPredicate]] and the [[SnapshotEvery]] strategies
+    * @param predicate
+    * @param snapshotEvery
+    * @tparam State
+    * @tparam Event
+    */
   final case class SnapshotCombined[State, Event](predicate: SnapshotPredicate[State, Event],
                                                   snapshotEvery: SnapshotEvery) extends  SnapshotStrategy
 
