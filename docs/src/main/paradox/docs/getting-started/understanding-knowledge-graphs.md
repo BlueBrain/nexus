@@ -121,18 +121,18 @@ We start by looking at a simple [JSON](https://en.wikipedia.org/wiki/JSON) examp
 
 ```json
 [
-  	 {
-  		"title":"Floating island",
-  		"author":"Unknown"
-  	 },
   	{
-  		"name":"Apple balloon",
-  		"author":"Grant Achatz"
-  	 },
+            "title":"Floating island",
+            "author":"Unknown"
+  	},
   	{
-  		"name":"Opera",
-  		"author":"Cyriaque Gavillon"
-  	 }
+            "title":"Apple balloon",
+            "author":"Grant Achatz"
+  	},
+  	{
+            "title":"Opera",
+            "author":"Cyriaque Gavillon"
+  	}
 
   ]
 ```
@@ -147,20 +147,20 @@ and [Opera](https://en.wikipedia.org/wiki/Opera_cake).
 
 ```json
   [
-  	 {
-        "@context":"https://json-ld.org/contexts/recipe.jsonld",
-  		"title":"Floating island",
-  		"author":"Unknown"
-  	 },
   	{
-        "@context":"https://json-ld.org/contexts/recipe.jsonld",
-  		"name":"Apple balloon",
-  		"author":"Grant Achatz"
-  	 },
+            "@context":"https://json-ld.org/contexts/recipe.jsonld",
+            "title":"Floating island",
+            "author":"Unknown"
+  	},
   	{
-        "@context":"https://json-ld.org/contexts/recipe.jsonld",
-  		"name":"Opera",
-  		"author":"Cyriaque Gavillon"
+            "@context":"https://json-ld.org/contexts/recipe.jsonld",
+            "title":"Apple balloon",
+            "author":"Grant Achatz"
+  	},
+  	{
+            "@context":"https://json-ld.org/contexts/recipe.jsonld",
+            "title":"Opera",
+            "author":"Cyriaque Gavillon"
   	 }
 
   ] 
