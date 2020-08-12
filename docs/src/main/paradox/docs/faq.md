@@ -14,7 +14,7 @@ Yes, Nexus is a free, Open Source platform released under @ref:[Apache Licence 2
 
 There are many ways to run Nexus. Our public Sandbox is running @ref:[here](https://sandbox.bluebrainnexus.io/web/) and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can help you to run Nexus step by step.
 
-Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus @ref:[“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
+Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus @ref:[“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using @ref:[Kubernetes](https://kubernetes.io/).
 
 ### How can I try Blue Brain Nexus without installing it? 
 
