@@ -18,7 +18,7 @@ object CassandraStatements {
 
   def createFailuresTable(keyspace: String, progressTable: String): String =
     s"""CREATE TABLE IF NOT EXISTS $keyspace.$progressTable (
-       |projection_id varchar, offset text, persistence_id text, sequence_nr bigint, value text, error text,
+       |projection_id varchar, offset text, persistence_id text, sequence_nr bigint, value text, error_type varchar, error text,
        |PRIMARY KEY (projection_id, offset, persistence_id, sequence_nr))
        |WITH CLUSTERING ORDER BY (offset ASC)""".stripMargin
 }

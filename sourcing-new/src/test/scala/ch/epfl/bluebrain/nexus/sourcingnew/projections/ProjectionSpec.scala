@@ -50,7 +50,7 @@ abstract class ProjectionSpec extends DistageSpecScalatest[IO] with TestHelpers 
 
     "store and retrieve failures for events" in {
       (projections: Projection[IO, SomeEvent],schemaManager: SchemaMigration[IO]) =>
-        val expected                            = Seq((firstEvent, firstOffset, "Error"), (secondEvent, secondOffset, "Error"))
+        val expected                            = Seq((firstEvent, firstOffset, "IllegalArgumentException"), (secondEvent, secondOffset, "IllegalArgumentException"))
         def throwableToString(t: Throwable) = t.getMessage
         for {
           _     <- schemaManager.migrate()

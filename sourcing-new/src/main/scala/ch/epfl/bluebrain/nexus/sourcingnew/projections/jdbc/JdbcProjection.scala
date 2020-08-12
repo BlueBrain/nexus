@@ -57,8 +57,8 @@ class JdbcProjection[F[_]: ContextShift: Async,
     * @param failureMessage the failure message to persist
     */
   override def recordFailure(id: ProjectionId, failureMessage: FailureMessage[A], f: Throwable => String = Projection.stackTraceAsString): F[Unit] =
-    sql"""INSERT INTO projections_failures (projection_id, akka_offset, persistence_id, sequence_nr, value, error)
-         |VALUES (${id.value}, ${failureMessage.offset.asJson.noSpaces}, ${failureMessage.persistenceId}, ${failureMessage.sequenceNr}, ${failureMessage.value.asJson.noSpaces}, ${f(failureMessage.throwable)})
+    sql"""INSERT INTO projections_failures (projection_id, akka_offset, persistence_id, sequence_nr, value, error_type, error)
+         |VALUES (${id.value}, ${failureMessage.offset.asJson.noSpaces}, ${failureMessage.persistenceId}, ${failureMessage.sequenceNr}, ${failureMessage.value.asJson.noSpaces}, ${failureMessage.throwable.getClass.getSimpleName}, ${f(failureMessage.throwable)})
          |ON CONFLICT DO NOTHING""".stripMargin.update.run.transact(xa).map(_ => ())
 
   /**
@@ -68,7 +68,7 @@ class JdbcProjection[F[_]: ContextShift: Async,
     * @return a source of the failed events
     */
   override def failures(id: ProjectionId): fs2.Stream[F, (A, Offset, String)] =
-    sql"""SELECT value, akka_offset, error from projections_failures WHERE projection_id = ${id.value} ORDER BY ordering"""
+    sql"""SELECT value, akka_offset, error_type from projections_failures WHERE projection_id = ${id.value} ORDER BY ordering"""
       .query[(String, String, String)].stream
       .transact(xa).mapFilter( Projection.decodeError[A, Offset])
 }
