@@ -24,7 +24,11 @@ The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In pa
 
 The project view in your admin app is the center stage to manage a project.
 
+@@@ div { .center }
+
 ![Project View](../assets/fusion-admin-project-page.png)
+
+@@@
 
 * On the left hand side, you will find the `Default Query`. You can filter and search resources, order them, as well as share that query with your peers. You can create as many queries as you like by clicking `+ Add another resource list`.
 * The next panel is the `Studios`. Here you can create a new studio in your project, as well as list and search existing studios in the project.

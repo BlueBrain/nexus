@@ -131,18 +131,30 @@ In the Project View, you will see a list of Studios with the `Create Studio` but
 
 Click the `Create Studio` button.
 
+@@@ div { .half .center }
+
 ![Create a studio](../assets/fusion-studio-create-studio-pane.png)
+
+@@@
 
 Fill in a form providing the following:
 
 - `Label`: the name of your new Studio (required field)
 - `Description` for your Studio
 
+@@@ div { .half .center }
+
 ![Create a studio form](../assets/fusion-studio-create-studio-form.png)
+
+@@@
 
 - Click `Save` and you will be navigated to the Studio View.
 
+@@@ div { .center }
+
 ![Empty Studio Example](../assets/fusion-studio-empty-studio.png)
+
+@@@
 
 That's it! Your new Studio is empty for now, but don't worry!
 We will add Workspaces and Dashboards later.
@@ -166,11 +178,19 @@ Fill in a form providing the following:
 - `Label`: the name of your new `Workspace` (required field)
 - `Description` for your `Workspace`
 
+@@@ div { .half .center }
+
 ![Create a new Workspace form](../assets/fusion-studio-create-workspace-form.png)
+
+@@@
 
 Click `Save` and you will be navigated to the new workspace section of your `Studio View`, which is given a navigable URI.
 
+@@@ div { .center }
+
 ![Empty Workspace Example](../assets/fusion-studio-empty-workspace.png)
+
+@@@
 
 Your `Workspace` is created, but it will need to have at least one `Dashboard`/`View` association for anything to show there.
 
@@ -185,7 +205,11 @@ Inside any `Studio`, under a `Workspace` tab label, click on the Edit link. Then
 - `Name`: the name of your new `Workspace` (required field).
 - `Description` for your `Workspace`.
 
+@@@ div { .half .center }
+
 ![Workspace Updating Form](../assets/fusion-studio-edit-workspace-form.png)
+
+@@@
 
 After your forms have been edited, simple click save to update the changes.
 
@@ -203,7 +227,11 @@ Fill in a form providing the following:
 - `Description`: an optional description for your `Dashboard`
 - `Sparql Query`: a valid [SPARQL](https://www.w3.org/TR/rdf-sparql-query/) query that conforms to the `dataQuery` field in the configuration.
 
+@@@ div { .half .center }
+
 ![Create Dashboard form](../assets/fusion-studio-create-dashboard-form.png)
+
+@@@
 
 > You can click on the "view query in Sparql Editor" to open the `Sparql Editor` in a new tab to work on your query while querying it against a `Sparql View` in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.
 
@@ -262,9 +290,13 @@ LIMIT 20
 
 ## Configuring the Studios index page
 
-The Studios space lists al the studios you have permissions to view or edit.
+The Studios space lists all the studios you have permissions to view or edit.
+
+@@@ div { .half .center }
 
 ![Studios Index Page](../assets/fusion-studio-index-page.png)
+
+@@@
 
 To enable this feature, the following should be done:
 
