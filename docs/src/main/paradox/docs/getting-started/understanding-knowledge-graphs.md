@@ -2,12 +2,12 @@
 
 This section will help you understand knowledge graphs and related standards and technologies.
 
-## What is a Knowledge Graph?
+## What is a knowledge graph?
 
 A knowledge graph is a [graph](https://en.wikipedia.org/wiki/Graph_%28abstract_data_type%29) structure that links entities
 together. The links between the entities contain knowledge, based on how the entities connect to each other. For example,
 an apple can be connected to a tree (to show that it grows on trees) or in another case connected to a pie recipe
-(to show that it is part of a recipe). It is a kind of formalized knowledge that enables programmatical reasoning
+(to show that it is part of a recipe). It is a formalized knowledge that enables programmatical reasoning
 about concepts in the world around us.
 
 In [this introduction to knowledge graphs](https://doi.org/10.1007/978-3-030-37439-6_1) the authors conclude that there is
@@ -28,7 +28,7 @@ can be called the entity's "metadata".
 The relation describes how entities are connected. For example, being member of, visiting a place, belonging to a country...
 ![Graph Structure](./assets/kg-entity_relation.png)
 
-It's worth noting that having this kind of graph data structure makes it easy to merge new data into an existing graph by connecting new entities and new relations.
+It's worth noting that having this graph data structure makes it easy to merge new data into an existing graph by connecting new entities and new relations.
 
 ### Describing knowledge in a graph
 
@@ -40,8 +40,7 @@ The ontology is a kind of dictionary containing types that can be used to descri
 that matches what you wish to describe and defining the properties of the chosen type. E.g. a person can be described by a [Person](https://schema.org/Person) type.
 The name of the person can be encoded in a [givenName](https://schema.org/givenName) property. This results in a set of data that can be processed both by humans and computers (as it is structured).
 
-For example, in the image below, you can see that the entity **Toy Story** is an **Animated movie** (also known as the **type** of the entity)
-and it has a property **Release date** for this the value is **March 29th, 1995**.
+For example, in the image below, you can see that the entity **Toy Story** with a property **Release date** that has the value **March 29th, 1995** and the **Director** property with the value John Lasseter.
 
  ![Graph Structure](./assets/kg-structure0.png)
 
@@ -55,13 +54,13 @@ birth year we could create an inference engine with rules that determine whether
 In the second example below, we have **Toy Story**, it has characters (using the relation called **Character**) and we have asserted the cast of characters.
 Having defined this, we can now define a rule that instructs the inference engine to create
 new relations **Voice Cast** whenever we find the **Cast** of a **Character**. This enables us to query the graph
-and directly get **Toy Story**'s voices cast without having to navigate through its cast first.
+and directly get **Toy Story**'s voices cast without having to navigate through its **Cast** first.
 
  ![Graph Structure](./assets/kg_inferred-relation.png)
 
 In reality inferring knowledge is a complex topic. [This video lecture](https://www.youtube.com/watch?v=AUtk6NBqEFY) shows some
 real-world examples of algorithms and rules for inference engines. E.g. [reasoning about a persons creditworthiness based on what
-their home address is](https://youtu.be/AUtk6NBqEFY?t=3867) or trying to spot fake papers that have been submitted to a journal.
+their home address is](https://youtu.be/AUtk6NBqEFY?t=3867) or [trying to spot fake papers that have been submitted to a journal](https://youtu.be/AUtk6NBqEFY?t=1690).
 
 ### Growing a knowledge graph
 
@@ -81,7 +80,7 @@ domains such as:
 
 ### RDF
 How do you encode knowledge graphs in a way that is interoperable with other applications and can be integrated with
-other data sources? You use some kind of a common formalism, a language, to describe your entities and relationships.
+other data sources? You use some common formalism, a language, to describe your entities and relationships.
 For knowledge graphs this format is RDF. [RDF (Resource Description Framework)](https://en.wikipedia.org/wiki/RDF) is
 a data format where every piece of knowledge can be broken down into a structure (subject, predicate and object) called triple.
 
@@ -102,35 +101,45 @@ We start by looking at a simple [JSON](https://en.wikipedia.org/wiki/JSON) examp
 ```json
 [
   	 {
-  		"name":"python",
-  		"loadedFrom":"java"
+  		"title":"Floating island",
+  		"author":"Unknown"
   	 },
   	{
-  		"name":"java",
-  		"testedFrom":"java"
+  		"name":"Apple balloon",
+  		"author":"Grant Achatz"
+  	 },
+  	{
+  		"name":"Opera",
+  		"author":"Cyriaque Gavillon"
   	 }
 
   ]
 ```
 
-After reading the above JSON we can ask ourselves what this data describes? Is it related to the [Python](https://en.wikipedia.org/wiki/Python_%28programming_language%28) and [Java](https://en.wikipedia.org/wiki/Java_%28programming_language%29) programming languages?
-Or perhaps a specefic [kind of snake](https://en.wikipedia.org/wiki/Pythonidae)? Or coffee from the [Indonesian island of Java](https://en.wikipedia.org/wiki/Java)?
+After reading the above JSON we can ask ourselves what this data describes? If we don't recognise the names we may think these perhaps are titles of books or movies.
 There is clearly a lack of context resulting in an ambiguity. JSON-LD allows to solve the ambiguity problem by enabling a semantic-preserving data encoding.
 This is achieved by adding an **@context** object where every key is associated with an identifier.
 
-If we extend the JSON example with the payload below, then both a machine and a human can look up the context to find out which Java this JSON data concerns.
+If we extend the JSON example with the payload below, then both a machine and a human can look up the context to find out that the JSON refers to recipes.
+I.e. [Floating island](https://en.wikipedia.org/wiki/Floating_island_%28dessert%29), [Apple balloon](https://www.businessinsider.com/edible-balloon-alinea-restaurant-chicago-three-michelin-stars-2016-5)
+and [Opera](https://en.wikipedia.org/wiki/Opera_cake).
 
 ```json
   [
   	 {
-  	    "@context":"https://json-ld.org/contexts/programminglanguage.jsonld",
-  		"name":"python",
-  		"loadedFrom":"java"
+        "@context":"https://json-ld.org/contexts/recipe.jsonld",
+  		"title":"Floating island",
+  		"author":"Unknown"
   	 },
   	{
-  	    "@context":"https://json-ld.org/contexts/programminglanguage.jsonld",
-  		"name":"java",
-  		"testedFrom":"java"
+        "@context":"https://json-ld.org/contexts/recipe.jsonld",
+  		"name":"Apple balloon",
+  		"author":"Grant Achatz"
+  	 },
+  	{
+        "@context":"https://json-ld.org/contexts/recipe.jsonld",
+  		"name":"Opera",
+  		"author":"Cyriaque Gavillon"
   	 }
 
   ] 
