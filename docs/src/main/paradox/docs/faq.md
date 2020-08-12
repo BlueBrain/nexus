@@ -1,4 +1,4 @@
-# Frequently Asked Questions (FAQ)
+# FAQ
 
 ## General FAQ
 

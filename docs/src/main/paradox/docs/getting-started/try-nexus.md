@@ -30,3 +30,5 @@ Finally, check our @ref:[Learn More](try-nexus.md#learn-more) section for more a
 ## Exploring the Graph in Nexus Fusion
 
 ## Learn More
+
+> todo: link to forge notebooks
