@@ -1,0 +1,95 @@
+/* 
+Hero
+*/
+.title {
+  font-weight: 800;
+}
+.hero {
+  color: white;
+}
+.hero .title,
+.hero .subtitle {
+  color: white;
+}
+.hero .subtitle {
+  max-width: 750px;
+}
+.hero h1 {
+  font-size: 3em;
+}
+.full-height {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+}
+.hero .gradient {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  background: transparent
+    linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
+    0% 0% no-repeat padding-box;
+
+  background-blend-mode: screen;
+  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
+}
+
+.hero .button {
+  min-width: 160px;
+}
+
+.hero .columns {
+  width: 50%;
+}
+
+canvas {
+  position: relative;
+}
+
+.hero .gradient.subtraction {
+  background-image: url("../../static/img/subtraction.svg");
+  clip-path: none;
+}
+
+@media (max-width: 600px) {
+  .hero .gradient {
+    height: 120%;
+  }
+  .hero .columns {
+    width: 100%;
+  }
+  .hero .button {
+    width: 100%;
+  }
+  .hero .gradient.subtraction {
+    background-size: cover;
+  }
+}
+@media (min-width: 1025px) {
+  .hero .gradient.subtraction {
+    background-position-y: -100vh;
+    height: 130vh;
+  }
+}
+@media (min-width: 1281px) {
+  .hero .gradient.subtraction {
+    background-position-y: -50vh;
+    height: 130vh;
+  }
+}
+@media (min-width: 1400px) {
+  .hero .gradient.subtraction {
+    background-position-y: 0;
+    height: 100vh;
+  }
+}
+
+@media (max-width: 340px) {
+  .hero .gradient {
+    clip-path: none;
+    height: 150%;
+  }
+}

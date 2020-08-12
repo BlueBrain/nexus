@@ -24,7 +24,7 @@ export default function MainHero() {
             Quickly build, manage and leverage Knowledge Graphs using our Python
             framework, web application and services.
           </h2>
-          <div className="columns" style={{ width: "50%" }}>
+          <div className="columns">
             <div className="column">
               <a href="#what" onClick={scrollIntoView(pathname, "what")}>
                 <button className="button">What is Nexus?</button>
