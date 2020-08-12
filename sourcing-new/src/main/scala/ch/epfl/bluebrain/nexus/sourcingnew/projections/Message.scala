@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import akka.persistence.query.{EventEnvelope, Offset}
 import cats.Functor
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.syntax._
 
 import scala.reflect.ClassTag
 
@@ -113,4 +114,9 @@ object Message {
         case e: SkippedMessage    => e
       }
   }
+
+  def always[A]: Message[A] => Boolean = (_: Message[A]) => true
+
+  def filterOffset[A](offset: Offset): Message[A] => Boolean =
+      (m: Message[A]) => m.offset.gt(offset)
 }

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
+import akka.persistence.query.Offset
 import cats.effect.{ConcurrentEffect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
@@ -70,18 +71,31 @@ object ProjectionStream {
       resource(fetchResource, collect.lift)
 
     /**
+      * On replay, skip all messages with a offset lower than the
+      * starting offset
+      *
+      * @param offset
+      * @return
+      */
+    def discardOnReplay(offset: Offset): Stream[F, Message[A]] = stream.map {
+      case s: SuccessMessage[A] if !s.offset.gt(offset) => s.discarded
+      case other                                        => other
+    }
+
+    /**
       * Apply the given function for every success message
       *
       * If the function gives an error, the message will be marked as failed,
       * It will remain unmodified otherwise
       *
-      * @param f
+      * @param f the function to apply to each success message
+      * @param predicate to apply f only to the messages matching this predicate  (for example, based on the offset during a replay)
       * @return
       */
-    def runAsync(f: A => F[Unit]): Stream[F, Message[A]] =
+    def runAsync(f: A => F[Unit], predicate: Message[A] => Boolean = Message.always): Stream[F, Message[A]] =
       stream.evalMap { message: Message[A] =>
         message match {
-          case s: SuccessMessage[A] =>
+          case s: SuccessMessage[A] if predicate(s) =>
             (f(s.value) >> F.pure[Message[A]](s))
               .recoverWith {
                 err => F.pure(s.failed(err))
@@ -201,13 +215,14 @@ object ProjectionStream {
       * If an error occurs for any of this messages, every success message in the
       * chunk will be marked as failed for the same reason
       *
-      * @param f
+      * @param f the function to apply to each success message of the chunk
+      * @param predicate to apply f only to the messages matching this predicate  (for example, based on the offset during a replay)
       * @return
       */
-    def runAsync(f: List[A] => F[Unit]): Stream[F, Chunk[Message[A]]] = stream.evalMap {
+    def runAsync(f: List[A] => F[Unit], predicate: Message[A] => Boolean = Message.always): Stream[F, Chunk[Message[A]]] = stream.evalMap {
       chunk =>
         val successMessages: List[SuccessMessage[A]] = chunk.toList.collect {
-          case s: SuccessMessage[A] => s
+          case s: SuccessMessage[A] if predicate(s) => s
         }
         if(successMessages.isEmpty) {
           F.pure(chunk)

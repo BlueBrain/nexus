@@ -158,6 +158,34 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
     }
   }
 
+  "Discard on replay" should {
+
+    // Stream to evaluate
+    val stream = Stream.emits(
+        (0, 0, 0, "first").success ::
+        (1, 0, 1).discarded ::
+        (2, 1, 0, "second").success ::
+        (3, 0, 2, "failed").failed ::
+        (4, 1, 1, "second new").success ::
+        (5, 2, 0, "third").success ::
+        Nil
+    ).covary[IO]
+
+    "discard all messages with a smaller offset" in {
+      val expected =
+          (0, 0, 0).discarded :: // <- Discarded
+          (1, 0, 1).discarded ::
+          (2, 1, 0).discarded :: // <- Discarded
+          (3, 0, 2, "failed").failed ::
+          (4, 1, 1, "second new").success ::
+          (5, 2, 0, "third").success ::
+          Nil
+
+      val messages = stream.discardOnReplay(Sequence(2L)).compile.toList.unsafeRunSync()
+      messages should contain theSameElementsInOrderAs expected
+    }
+  }
+
   "Running async" should {
 
     // Stream to evaluate
@@ -191,6 +219,21 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
       messages should contain theSameElementsInOrderAs expected
     }
 
+    "Not marked the message as failed as it has been excluded due to the predicate" in {
+      val messages = stream.runAsync(f, Message.filterOffset(Sequence(2L))).compile.toList.unsafeRunSync()
+
+      val expected =
+        (0, 0, 0, "first").success ::
+          (1, 0, 1).discarded ::
+          (2, 1, 0, "second").success :: // <- f has not been applied and therefore hasn't failed
+          (3, 0, 2, "failed").failed ::
+          (4, 1, 1, "second new").success ::
+          (5, 2, 0, "third").success ::
+          Nil
+
+      messages should contain theSameElementsInOrderAs expected
+    }
+
     "Mark all batch as failed for a grouped stream" in {
       val messages = stream.groupWithin(3, 2.seconds).runAsync { list =>
         list.map(f).sequence >> IO.unit
@@ -209,6 +252,28 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
           (5, 2, 0, "third").success ::
           Nil
         ) :: Nil
+
+      messages should contain theSameElementsInOrderAs expected
+    }
+
+    "Not marked the batch as failed as the third message has been excluded due to the predicate" in {
+      val messages = stream.groupWithin(3, 2.seconds).runAsync ({ list =>
+        list.map(f).sequence >> IO.unit
+      }, Message.filterOffset(Sequence(2L))).compile.toList.unsafeRunSync()
+
+      val expected =
+        Chunk.seq(
+            (0, 0, 0, "first").success ::
+            (1, 0, 1).discarded ::
+            (2, 1, 0, "second").success :: // <- f has not been applied and therefore hasn't failed
+            Nil
+        ) ::
+          Chunk.seq(
+            (3, 0, 2, "failed").failed ::
+              (4, 1, 1, "second new").success ::
+              (5, 2, 0, "third").success ::
+              Nil
+          ) :: Nil
 
       messages should contain theSameElementsInOrderAs expected
     }
