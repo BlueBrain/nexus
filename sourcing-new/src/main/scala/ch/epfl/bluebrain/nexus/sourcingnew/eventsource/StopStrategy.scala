@@ -1,7 +1,10 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.aggregate
+package ch.epfl.bluebrain.nexus.sourcingnew.eventsource
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+  * Strategy to stop an actor
+  */
 sealed trait StopStrategy {
 
   /**

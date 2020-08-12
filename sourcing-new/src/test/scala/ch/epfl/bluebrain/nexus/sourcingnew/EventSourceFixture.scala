@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
-import cats.effect.{Async, IO, Timer}
+import cats.effect.{Async, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.Command._
 import ch.epfl.bluebrain.nexus.sourcingnew.Event.{Incremented, Initialized}
@@ -45,7 +45,7 @@ object State {
   final case object Initial                      extends State
 }
 
-object AggregateFixture {
+object EventSourceFixture {
 
   val initialState: State = State.Initial
 
