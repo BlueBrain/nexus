@@ -8,14 +8,9 @@ import { isSmall } from "../../libs/browser"
 const Fun: React.FC<{ object: string }> = ({ object }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const world = React.useRef<WorldObj>()
-  const isSmallEnvironment = isSmall()
-  const shouldRun = !isSmallEnvironment
   const [lastTick, setLastTick] = React.useState(0)
 
   React.useEffect(() => {
-    if (isSmallEnvironment) {
-      return
-    }
     if (canvasRef.current && !world.current) {
       world.current = World(canvasRef.current)
       if (objects[object]) {
@@ -25,7 +20,7 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
         world.current.camera.lookAt(focusObject.position)
       }
     }
-  }, [canvasRef.current, world.current, isSmallEnvironment])
+  }, [canvasRef.current, world.current])
 
   useResize(() => {
     if (world.current) {
@@ -49,9 +44,12 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
     } catch (error) {
       console.error(error)
     }
-  }, shouldRun)
+  }, true)
 
   return <canvas className="fun" ref={canvasRef} />
 }
 
-export default Fun
+export const WithIsNotMobile = (wrappedCompenent: React.FC<any>) =>
+  !isSmall() ? wrappedCompenent : () => null
+
+export default WithIsNotMobile(Fun)
