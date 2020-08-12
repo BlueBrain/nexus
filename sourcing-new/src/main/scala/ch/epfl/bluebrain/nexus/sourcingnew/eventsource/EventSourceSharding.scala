@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.aggregate
+package ch.epfl.bluebrain.nexus.sourcingnew.eventsource
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
@@ -8,25 +8,45 @@ import akka.util.Timeout
 import cats.effect.{ContextShift, Effect, IO, Timer}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.sourcingnew._
-import ch.epfl.bluebrain.nexus.sourcingnew.config.AggregateConfig
 import retry.CatsEffect._
 import retry.syntax.all._
 
 import scala.reflect.ClassTag
 
-class AkkaAgregate[
+/**
+  * Relies on cluster sharding to distribute the work for the given
+  * (State, Command, Event, Rejection)
+  *
+  * @param entityTypeKey
+  * @param clusterSharding
+  * @param retryStrategy
+  * @param askTimeout
+  * @param timer$F$0
+  * @param classTag$State$0
+  * @param classTag$Command$0
+  * @param classTag$Event$0
+  * @param classTag$Rejection$0
+  * @param F
+  * @param as
+  * @tparam F
+  * @tparam State
+  * @tparam Command
+  * @tparam Event
+  * @tparam Rejection
+  */
+class EventSourceSharding[
   F[_]: Timer,
   State: ClassTag,
-  EvaluateCommand: ClassTag,
+  Command: ClassTag,
   Event: ClassTag,
-  Rejection: ClassTag](entityTypeKey: EntityTypeKey[Command],
+  Rejection: ClassTag](entityTypeKey: EntityTypeKey[ProcessorCommand],
                        clusterSharding: ClusterSharding,
                        retryStrategy: RetryStrategy[F],
                        askTimeout: Timeout)
                       (implicit F: Effect[F], as: ActorSystem[Nothing])
-    extends Aggregate[F, String, State, EvaluateCommand, Event, Rejection] {
+    extends EventSourceHandler[F, String, State, Command, Event, Rejection] {
 
-  implicit private[aggregate] val contextShift: ContextShift[IO]        = IO.contextShift(as.executionContext)
+  implicit private[eventsource] val contextShift: ContextShift[IO]        = IO.contextShift(as.executionContext)
   implicit private val timeout: Timeout                            = askTimeout
 
   import retryStrategy._
@@ -57,7 +77,7 @@ class AkkaAgregate[
     * @return the newly generated state and appended event in __F__ if the command was evaluated successfully, or the
     *         rejection of the __command__ in __F__ otherwise
     */
-  override def evaluate(id: String, command: EvaluateCommand): F[EvaluationResult] =
+  override def evaluate(id: String, command: Command): F[EvaluationResult] =
     send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) })
 
   /**
@@ -69,10 +89,10 @@ class AkkaAgregate[
     * @return the state and event that would be generated in __F__ if the command was tested for evaluation
     *         successfully, or the rejection of the __command__ in __F__ otherwise
     */
-  override def dryRun(id: String, command: EvaluateCommand): F[DryRunResult] =
+  override def dryRun(id: String, command: Command): F[DryRunResult] =
     send(id, { askTo: ActorRef[DryRunResult] => DryRun(id, command, askTo) })
 
-  private def send[A](entityId: String, askTo: ActorRef[A] => Command): F[A] = {
+  private def send[A](entityId: String, askTo: ActorRef[A] => ProcessorCommand): F[A] = {
     val ref = clusterSharding.entityRefFor(entityTypeKey, entityId)
 
     val future = IO(ref ? askTo)
@@ -86,19 +106,19 @@ class AkkaAgregate[
   }
 }
 
-object AkkaAgregate {
+object EventSourceSharding {
 
   private def sharded[
     F[_]: Effect: Timer,
     State: ClassTag,
     EvaluateCommand: ClassTag,
     Event: ClassTag,
-    Rejection: ClassTag](entityTypeKey: EntityTypeKey[Command],
-                         eventSourceProcessor: EntityContext[Command] => EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection],
+    Rejection: ClassTag](entityTypeKey: EntityTypeKey[ProcessorCommand],
+                         eventSourceProcessor: EntityContext[ProcessorCommand] => EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection],
                          retryStrategy: RetryStrategy[F],
                          askTimeout: Timeout,
                          shardingSettings: Option[ClusterShardingSettings])
-                        (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] = {
+                        (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] = {
     val F                                = implicitly[Effect[F]]
     F.delay {
       val clusterSharding = ClusterSharding(as)
@@ -110,7 +130,7 @@ object AkkaAgregate {
         }.withSettings(settings)
       )
 
-      new AkkaAgregate[F, State, EvaluateCommand, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
+      new EventSourceSharding[F, State, EvaluateCommand, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
     }
   }
 
@@ -120,26 +140,43 @@ object AkkaAgregate {
     * @param shard the shard responsible for the actor to be passivated
     * @return
     */
-  private def passivateAfterInactivity(shard: ActorRef[ClusterSharding.ShardCommand]): ActorRef[Command] => Behavior[Command] =
-    (actor: ActorRef[Command]) => {
+  private def passivateAfterInactivity(shard: ActorRef[ClusterSharding.ShardCommand]): ActorRef[ProcessorCommand] => Behavior[ProcessorCommand] =
+    (actor: ActorRef[ProcessorCommand]) => {
       shard ! ClusterSharding.Passivate(actor)
       Behaviors.same
     }
 
+  /**
+    * Creates an [[EventSourceSharding]] that makes use of persistent actors to perform its functions. The actors
+    * are automatically spread across all nodes of the cluster.
+    *
+    * @param definition
+    * @param config
+    * @param retryStrategy
+    * @param stopStrategy
+    * @param shardingSettings
+    * @param as
+    * @tparam F
+    * @tparam State
+    * @tparam EvaluateCommand
+    * @tparam Event
+    * @tparam Rejection
+    * @return
+    */
   def persistentSharded[
     F[_]: Effect: Timer,
     State: ClassTag,
     EvaluateCommand: ClassTag,
     Event: ClassTag,
     Rejection: ClassTag](definition: PersistentEventDefinition[F, State, EvaluateCommand, Event, Rejection],
-                         config: AggregateConfig,
+                         config: EventSourceConfig,
                          retryStrategy: RetryStrategy[F],
                          stopStrategy: PersistentStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)
-                          (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
+                          (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
-      EntityTypeKey[Command](definition.entityType),
-      entityContext => new aggregate.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
+      EntityTypeKey[ProcessorCommand](definition.entityType),
+      entityContext => new eventsource.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
         entityContext.entityId,
         definition,
         stopStrategy,
@@ -151,20 +188,36 @@ object AkkaAgregate {
       shardingSettings
     )
 
+  /**
+    * Creates an [[EventSourceSharding]] that makes use of transient actors to perform its functions. The actors
+    * are automatically spread across all nodes of the cluster.
+    * @param definition
+    * @param config
+    * @param retryStrategy
+    * @param stopStrategy
+    * @param shardingSettings
+    * @param as
+    * @tparam F
+    * @tparam State
+    * @tparam EvaluateCommand
+    * @tparam Event
+    * @tparam Rejection
+    * @return
+    */
   def transientSharded[
     F[_]: Effect: Timer,
     State: ClassTag,
     EvaluateCommand: ClassTag,
     Event: ClassTag,
     Rejection: ClassTag](definition: TransientEventDefinition[F, State, EvaluateCommand, Event, Rejection],
-                         config: AggregateConfig,
+                         config: EventSourceConfig,
                          retryStrategy: RetryStrategy[F],
                          stopStrategy: TransientStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)
-                         (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
+                         (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
-      EntityTypeKey[Command](definition.entityType),
-      entityContext => new aggregate.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](
+      EntityTypeKey[ProcessorCommand](definition.entityType),
+      entityContext => new eventsource.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](
         entityContext.entityId,
         definition,
         stopStrategy,

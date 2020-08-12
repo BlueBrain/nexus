@@ -10,9 +10,8 @@ import ch.epfl.bluebrain.nexus.sourcingnew.Command.{Increment, IncrementAsync, I
 import ch.epfl.bluebrain.nexus.sourcingnew.Event.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.sourcingnew.Rejection.InvalidRevision
 import ch.epfl.bluebrain.nexus.sourcingnew.State.Current
-import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.EventSourceProcessor.{PersistentEventProcessor, TransientEventProcessor}
-import ch.epfl.bluebrain.nexus.sourcingnew.aggregate.{Command => AggregateCommand, DryRun, DryRunResult, Evaluate, EvaluationRejection, EvaluationResult, EvaluationSuccess, GetLastSeqNr, PersistentStopStrategy, RequestLastSeqNr, RequestState, TransientStopStrategy}
-import ch.epfl.bluebrain.nexus.sourcingnew.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcingnew.eventsource.EventSourceProcessor.{PersistentEventProcessor, TransientEventProcessor}
+import ch.epfl.bluebrain.nexus.sourcingnew.eventsource.{EventSourceConfig, DryRun, DryRunResult, Evaluate, EvaluationRejection, EvaluationResult, EvaluationSuccess, GetLastSeqNr, PersistentStopStrategy, RequestLastSeqNr, RequestState, TransientStopStrategy, ProcessorCommand}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
@@ -29,7 +28,7 @@ abstract class EventSourceProcessorSpec(config: Config)
   implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
 
-  val aggregateConfig: AggregateConfig = AggregateConfig(
+  val eventSourceConfig: EventSourceConfig = eventsource.EventSourceConfig(
     100.millis,
     100.millis,
     system.executionContext,
@@ -39,7 +38,7 @@ abstract class EventSourceProcessorSpec(config: Config)
   val entityId      = "A"
   val persistenceId = "increment-A"
 
-  def aggregationWithoutStop: ActorRef[AggregateCommand]
+  def processorWithoutStop: ActorRef[ProcessorCommand]
 
   "Evaluation" should {
     "update its state when accepting commands" in {
@@ -63,7 +62,7 @@ abstract class EventSourceProcessorSpec(config: Config)
       )
 
       val probeState = testKit.createTestProbe[State]
-      aggregationWithoutStop ! RequestState(entityId, probeState.ref)
+      processorWithoutStop ! RequestState(entityId, probeState.ref)
       probeState.expectMessage(Current(2, 7))
     }
 
@@ -76,18 +75,18 @@ abstract class EventSourceProcessorSpec(config: Config)
     }
   }
 
-  def aggregateWithStop(stopAfterInactivity: ActorRef[AggregateCommand] => Behavior[AggregateCommand]): ActorRef[AggregateCommand]
+  def processorWithStop(stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]): ActorRef[ProcessorCommand]
 
   "Stop" should {
     "happen after some inactivity" in {
       val probe = testKit.createTestProbe[String]
 
-      def stopAfterInactivity(actorRef: ActorRef[AggregateCommand]) = {
+      def stopAfterInactivity(actorRef: ActorRef[ProcessorCommand]) = {
         probe.ref ! s"${actorRef.path.name} got stopped"
-        Behaviors.stopped[AggregateCommand]
+        Behaviors.stopped[ProcessorCommand]
       }
 
-      val actor = aggregateWithStop(stopAfterInactivity)
+      val actor = processorWithStop(stopAfterInactivity)
       probe.expectMessage(s"${actor.path.name} got stopped")
     }
   }
@@ -102,7 +101,7 @@ abstract class EventSourceProcessorSpec(config: Config)
 
     evaluate.foreach {
       case (command, result) =>
-        aggregationWithoutStop ! Evaluate(entityId, command, probe.ref)
+        processorWithoutStop ! Evaluate(entityId, command, probe.ref)
 
         result match {
           case Left(rejection)       =>
@@ -112,7 +111,7 @@ abstract class EventSourceProcessorSpec(config: Config)
             expectNextPersisted(event)
             probe.expectMessage(EvaluationSuccess(event, state))
 
-            aggregationWithoutStop ! RequestState(entityId, probeState.ref)
+            processorWithoutStop ! RequestState(entityId, probeState.ref)
             probeState.expectMessage(state)
         }
 
@@ -125,7 +124,7 @@ abstract class EventSourceProcessorSpec(config: Config)
 
     evaluate.foreach {
       case (command, result) =>
-        aggregationWithoutStop ! DryRun(entityId, command, probe.ref)
+        processorWithoutStop ! DryRun(entityId, command, probe.ref)
         expectNothingPersisted()
 
         result match {
@@ -135,7 +134,7 @@ abstract class EventSourceProcessorSpec(config: Config)
             probe.expectMessage(DryRunResult(EvaluationSuccess(event, state)))
         }
 
-        aggregationWithoutStop ! RequestState(entityId, probeState.ref)
+        processorWithoutStop ! RequestState(entityId, probeState.ref)
         probeState.expectMessage(initialState)
 
     }
@@ -148,10 +147,10 @@ class PersistentEventProcessorSpec
     )
     with BeforeAndAfterEach {
 
-  override val aggregationWithoutStop: ActorRef[AggregateCommand] =
-    aggregate(
+  override val processorWithoutStop: ActorRef[ProcessorCommand] =
+    processor(
       PersistentStopStrategy.never,
-      (_: ActorRef[AggregateCommand]) => Behaviors.same
+      (_: ActorRef[ProcessorCommand]) => Behaviors.same
     )
   private val persistenceTestKit = PersistenceTestKit(system)
 
@@ -167,25 +166,25 @@ class PersistentEventProcessorSpec
     ()
   }
 
-  private def aggregate(stopStrategy: PersistentStopStrategy,
-                        stopAfterInactivity: ActorRef[AggregateCommand] => Behavior[AggregateCommand]) =
+  private def processor(stopStrategy: PersistentStopStrategy,
+                        stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]) =
     testKit.spawn(
       new PersistentEventProcessor[IO, State, Command, Event, Rejection](
         entityId,
-        AggregateFixture.persistentDefinition[IO],
+        EventSourceFixture.persistentDefinition[IO],
         stopStrategy,
         stopAfterInactivity,
-        aggregateConfig
+        eventSourceConfig
       ).behavior()
     )
 
-  override def aggregateWithStop(stopAfterInactivity: ActorRef[AggregateCommand] => Behavior[AggregateCommand]): ActorRef[AggregateCommand] =
-    aggregate(PersistentStopStrategy(Some(60.millis), None), stopAfterInactivity)
+  override def processorWithStop(stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]): ActorRef[ProcessorCommand] =
+    processor(PersistentStopStrategy(Some(60.millis), None), stopAfterInactivity)
 
   "Requesting the last seq nr" should {
     "return the current seq nr" in {
       val probe = testKit.createTestProbe[GetLastSeqNr]()
-      aggregationWithoutStop ! RequestLastSeqNr(entityId, probe.ref)
+      processorWithoutStop ! RequestLastSeqNr(entityId, probe.ref)
 
       probe.expectMessage(GetLastSeqNr(5L))
     }
@@ -195,12 +194,12 @@ class PersistentEventProcessorSpec
     "happen after recovery has been completed" in {
       val probe = testKit.createTestProbe[String]
 
-      def stopAfterInactivity(actorRef: ActorRef[AggregateCommand]) = {
+      def stopAfterInactivity(actorRef: ActorRef[ProcessorCommand]) = {
         probe.ref ! s"${actorRef.path.name} got stopped"
-        Behaviors.stopped[AggregateCommand]
+        Behaviors.stopped[ProcessorCommand]
       }
 
-      val actor = aggregate(PersistentStopStrategy(None, Some(60.millis)), stopAfterInactivity)
+      val actor = processor(PersistentStopStrategy(None, Some(60.millis)), stopAfterInactivity)
       probe.expectMessage(s"${actor.path.name} got stopped")
     }
   }
@@ -213,27 +212,27 @@ class TransientEventProcessorSpec
     )
     with BeforeAndAfterEach {
 
-  override val aggregationWithoutStop: ActorRef[AggregateCommand] =
-      aggregate(TransientStopStrategy.never,
-        (_: ActorRef[AggregateCommand]) => Behaviors.same
+  override val processorWithoutStop: ActorRef[ProcessorCommand] =
+      processor(TransientStopStrategy.never,
+        (_: ActorRef[ProcessorCommand]) => Behaviors.same
       )
 
   override protected def expectNothingPersisted(): Unit = {}
 
   override protected def expectNextPersisted(event: Event): Unit = {}
 
-  private def aggregate(stopStrategy: TransientStopStrategy,
-                        stopAfterInactivity: ActorRef[AggregateCommand] => Behavior[AggregateCommand]) =
+  private def processor(stopStrategy: TransientStopStrategy,
+                        stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]) =
     testKit.spawn(
       new TransientEventProcessor[IO, State, Command, Event, Rejection](
         entityId,
-        AggregateFixture.transientDefinition[IO],
+        EventSourceFixture.transientDefinition[IO],
         stopStrategy,
         stopAfterInactivity,
-        aggregateConfig
+        eventSourceConfig
       ).behavior()
     )
 
-  override def aggregateWithStop(stopAfterInactivity: ActorRef[AggregateCommand] => Behavior[AggregateCommand]): ActorRef[AggregateCommand] =
-    aggregate(TransientStopStrategy(Some(60.millis)), stopAfterInactivity)
+  override def processorWithStop(stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]): ActorRef[ProcessorCommand] =
+    processor(TransientStopStrategy(Some(60.millis)), stopAfterInactivity)
 }
