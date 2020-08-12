@@ -3,17 +3,17 @@ import useRaf from "@rooks/use-raf"
 import World, { WorldObj } from "./World"
 import useResize from "../../hooks/useResize"
 import objects from "./objects"
-import { isMobile } from "../../libs/browser"
+import { isSmall } from "../../libs/browser"
 
 const Fun: React.FC<{ object: string }> = ({ object }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const world = React.useRef<WorldObj>()
-  const small = isMobile()
-  const shouldRun = !small
+  const isSmallEnvironment = isSmall()
+  const shouldRun = !isSmallEnvironment
   const [lastTick, setLastTick] = React.useState(0)
 
   React.useEffect(() => {
-    if (small) {
+    if (isSmallEnvironment) {
       return
     }
     if (canvasRef.current && !world.current) {
@@ -25,7 +25,7 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
         world.current.camera.lookAt(focusObject.position)
       }
     }
-  }, [canvasRef.current, world.current, small])
+  }, [canvasRef.current, world.current, isSmallEnvironment])
 
   useResize(() => {
     if (world.current) {
@@ -50,6 +50,7 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
       console.error(error)
     }
   }, shouldRun)
+
   return <canvas className="fun" ref={canvasRef} />
 }
 

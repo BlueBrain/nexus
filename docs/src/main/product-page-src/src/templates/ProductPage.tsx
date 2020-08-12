@@ -6,6 +6,7 @@ import { scrollIntoView } from "../libs/scroll"
 import Features from "../components/Features"
 import ProductDiagram from "../components/ProductDiagram"
 import Fun from "../components/Fun"
+import svgify from "../libs/svgify"
 
 export type Product = {
   name: string
@@ -34,20 +35,19 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
 
   const { pathname } = useLocation()
 
+  React.useEffect(() => {
+    svgify()
+  }, [])
+
   const object =
     slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"
-
-  const docsLink = `https://bluebrainnexus.io/docs/${slug.replace(
-    "nexus-",
-    ""
-  )}.html`
 
   return (
     <MainLayout>
       <section className="hero is-fullheight">
         <div className="full-height">
-          <div className="gradient subtraction" />
           <Fun object={object} />
+          <div className="gradient subtraction" />
         </div>
         <div className="hero-body">
           <div
@@ -59,7 +59,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
               <em>{tagLine}</em>
             </h2>
             <p className="subtitle">{description}</p>
-            <div className="columns">
+            <div className="columns" style={{ width: "50%" }}>
               <div className="column">
                 <a
                   href="#overview"
@@ -77,7 +77,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
                 </a>
               </div>
               <div className="column">
-                <a href={docsLink}>
+                <a href="/docs">
                   <button className="button">Docs</button>
                 </a>
               </div>
@@ -88,9 +88,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
       <section id="overview">
         <div className="container">
           <div className="content centered">
-            <h2 className="title">
-              {name.replace("Nexus ", "")} inside Nexus ecosystem
-            </h2>
+            <h2 className="title">What is {name}?</h2>
             <p>{overviewText}</p>
             <ProductDiagram name={slug} />
             <p>{additionalInfo}</p>
