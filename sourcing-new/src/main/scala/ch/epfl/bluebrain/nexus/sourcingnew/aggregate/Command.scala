@@ -7,6 +7,8 @@ import scala.concurrent.duration.FiniteDuration
 
 sealed trait Command extends Product with Serializable
 
+case object Idle extends Command
+
 // Read commands
 sealed trait InputCommand extends ConsistentHashable with Command {
 

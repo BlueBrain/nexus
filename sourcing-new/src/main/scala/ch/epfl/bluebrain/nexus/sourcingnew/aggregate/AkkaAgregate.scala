@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.aggregate
 
-import akka.actor.typed.{ActorRef, ActorSystem}
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
@@ -113,6 +114,18 @@ object AkkaAgregate {
     }
   }
 
+  /**
+    * When the actor is sharded, we have to properly gracefully stopped with passivation
+    * so as not to lose messages
+    * @param shard the shard responsible for the actor to be passivated
+    * @return
+    */
+  private def passivateAfterInactivity(shard: ActorRef[ClusterSharding.ShardCommand]): ActorRef[Command] => Behavior[Command] =
+    (actor: ActorRef[Command]) => {
+      shard ! ClusterSharding.Passivate(actor)
+      Behaviors.same
+    }
+
   def persistentSharded[
     F[_]: Effect: Timer,
     State: ClassTag,
@@ -121,6 +134,7 @@ object AkkaAgregate {
     Rejection: ClassTag](definition: PersistentEventDefinition[F, State, EvaluateCommand, Event, Rejection],
                          config: AggregateConfig,
                          retryStrategy: RetryStrategy[F],
+                         stopStrategy: PersistentStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)
                           (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
@@ -128,6 +142,8 @@ object AkkaAgregate {
       entityContext => new aggregate.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
         entityContext.entityId,
         definition,
+        stopStrategy,
+        passivateAfterInactivity(entityContext.shard),
         config
       ),
       retryStrategy,
@@ -143,6 +159,7 @@ object AkkaAgregate {
     Rejection: ClassTag](definition: TransientEventDefinition[F, State, EvaluateCommand, Event, Rejection],
                          config: AggregateConfig,
                          retryStrategy: RetryStrategy[F],
+                         stopStrategy: TransientStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)
                          (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
@@ -150,6 +167,8 @@ object AkkaAgregate {
       entityContext => new aggregate.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](
         entityContext.entityId,
         definition,
+        stopStrategy,
+        passivateAfterInactivity(entityContext.shard),
         config
       ),
       retryStrategy,
