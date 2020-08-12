@@ -19,7 +19,11 @@ const ValuePropoisition: React.FC<{
                 className="svgify secondary subtle"
               />
             ) : (
-              <img src={getIcon(title)} alt="placeholder" />
+              <img
+                src={getIcon(title)}
+                alt="placeholder"
+                className="svgify secondary subtle"
+              />
             )}
           </div>
           <h4 className="title" style={{ marginTop: "1em" }}>
@@ -33,17 +37,18 @@ const ValuePropoisition: React.FC<{
 }
 
 const Features: React.FC<{
+  id?: string
   title: string
   subtitle: string
   features: { title: string; description: string; image?: string }[]
-}> = ({ title, subtitle, features }) => {
+}> = ({ id = "features", title, subtitle, features }) => {
   return (
-    <section id="why">
+    <section id={id}>
       <div className="container with-room">
         <div className="content centered">
           <h2>{title}</h2>
           <p className="subtitle">{subtitle}</p>
-          <div className="tile is-ancestor wrapping">
+          <div className="tile is-ancestor wrapping centered">
             {features.map(feature => (
               <ValuePropoisition {...feature} key={feature.title} />
             ))}

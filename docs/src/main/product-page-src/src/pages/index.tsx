@@ -62,6 +62,7 @@ export default function Home() {
       <WhatIsNexus />
       <WeAreOpenSource />
       <Features
+        id="why"
         title="Why Nexus?"
         subtitle="Nexus was born out of a need for better data management in the
             simulation neuroscience field, but built with genericity in mind.
