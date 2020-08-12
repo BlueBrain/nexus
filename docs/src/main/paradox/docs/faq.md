@@ -4,21 +4,23 @@
 
 ### What is Blue Brain Nexus?
 
-Blue Brain Nexus is an Open Source, data and knowledge management platform designed to enable ingestion, integration and search of virtually any kind of data. Entities (real world data) are described using well defined and validatable schemas (using JSON-LD and optionally SHACL). Nexus can be used with existing data schemas from <http://schema.org> or new ones custom created for your own applications. For neuroscience data, <http://Neuroshapes.org> provides open, community-developed schemas. While Nexus is engineered to support rich semantics, it is not obligatory. In fact, data can be ingested from existing data sources such as CSV files and SQL databases, and iteratively reshaped into well defined data schemas.
-
-Nexus creates and manages entities in accordance with the FAIR (Findable, Accessible, Interoperable and Re-usable) Principles. The FAIR principles are also applied to data where Nexus provides the ability to track data provenance and supports data longevity in a secure and scalable manner.
+Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools. You can find out more high level information on our @ref:[product home page](https://bluebrainnexus.io/).
 
 ### Is Blue Brain Nexus free to use?
 
-Yes, Nexus is a free, Open Source platform released under [Apache Licence 2.0](https://opensource.org/licenses/Apache-2.0)
+Yes, Nexus is a free, Open Source platform released under @ref:[Apache Licence 2.0](https://opensource.org/licenses/Apache-2.0)
 
 ### How do I run Blue Brain Nexus?
 
-There are many ways to run Nexus. The public instance is running in a [Sandbox](https://sandbox.bluebrainnexus.io/web/), meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus [“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
+There are many ways to run Nexus. Our public Sandbox is running @ref:[here](https://sandbox.bluebrainnexus.io/web/) and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can help you to run Nexus step by step.
 
-### How can I try Blue Brain Nexus without installing it? What is the difference with a relational database like PostgreSQL?
+Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus @ref:[“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS and information on deploying in the Amazon cloud will be made available shortly.
 
-The [Sandbox](https://sandbox.bluebrainnexus.io/web/) provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.
+### How can I try Blue Brain Nexus without installing it? 
+
+The @ref:[Sandbox](https://sandbox.bluebrainnexus.io/web/) provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.
+
+### What is the difference with a relational database like PostgreSQL?
 
 Although Blue Brain Nexus can be used as a regular database, it's flexibility and feature set are well beyond that. Just to mention some of the Nexus features:
 
