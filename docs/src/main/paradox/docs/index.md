@@ -1,6 +1,5 @@
 @@@ index
 
-- [Overview](overview.md)
 - [Quick Start Guide](getting-started/index.md)
 - [Releases](releases/index.md)
 - [Roadmap](roadmap.md)
