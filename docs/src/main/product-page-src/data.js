@@ -45,7 +45,7 @@ module.exports = {
         "Search and download data and metadata from a knowledge graph.",
       ],
       featureText: "Delta offers a rich set of features to manage your data.",
-      tagLine: "Managing Data and Knowledge Graph Lifecycles",
+      tagLine: "Building and Using Knowledge Graphs Made Easy",
       description:
         "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs.",
     },
