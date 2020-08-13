@@ -29,6 +29,8 @@ The [Nexus Sandbox](https://sandbox.bluebrainnexus.io/) is a deployment of Nexus
 
 Nexus Fusion is the web interface that you will use in order to interact with Nexus Delta (the web services that manages the underlying knowledge graph).
 
+Please bear in mind that the data stored in the Nexus Sandbox is being purged at regular intervals. We recommend you do not store any sensitive data in this environment since it is accessible to many other users.
+
 @@@ div { .center }
 ![sandbox-home](../assets/try-nexus-sandbox-home-not-logged-in.png)
 @@@
