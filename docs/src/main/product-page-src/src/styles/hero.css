@@ -50,32 +50,11 @@ canvas {
 }
 
 .hero .gradient.subtraction {
-  background-image: url("../../static/img/subtraction.svg");
+  background-image: url("../../static/img/subtraction.png");
   clip-path: none;
-  background-size: 100vw;
-  height: 120vh;
+  background-size: cover;
   background-position-y: 100%;
 }
-
-@media (min-width: 2000px) {
-  .hero .gradient.subtraction {
-    background-position-y: -5vh;
-  }
-}
-
-/* @media (min-width: 1281px) {
-  .hero .gradient.subtraction {
-    background-position-y: -50vh;
-    height: 130vh;
-  }
-} */
-
-/* @media (min-width: 1025px) and (max-width: 1281px) {
-  .hero .gradient.subtraction {
-    background-position-y: -100vh;
-    height: 130vh;
-  }
-} */
 
 @media (max-width: 600px) {
   .hero .gradient {
@@ -86,9 +65,6 @@ canvas {
   }
   .hero .button {
     width: 100%;
-  }
-  .hero .gradient.subtraction {
-    background-size: cover;
   }
   .hero .title {
     font-size: 2em;
