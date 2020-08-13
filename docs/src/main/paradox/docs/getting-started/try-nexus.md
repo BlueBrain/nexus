@@ -184,7 +184,9 @@ forge = KnowledgeGraphForge("./config.yml", token=TOKEN, bucket=f"{ORGANIZATION}
 Let's download the MovieLens datasets and load the data in Python:
 
 ```python
-!curl -s -O http://files.grouplens.org/datasets/movielens/ml-latest-small.zip && unzip -qq ml-latest-small.zip && cd ml-latest-small && ls # Download the data using curl ans unzipping the file
+# Download the data using curl and unzipping the file
+# Please note that the prefix '!' is meant to execute a shell command from inside a notebook, you will have to remove it if you do it from a terminal.
+!curl -s -O http://files.grouplens.org/datasets/movielens/ml-latest-small.zip && unzip -qq ml-latest-small.zip && cd ml-latest-small && ls 
 
 directory  = "./ml-latest-small" # Location of the files (from unzipping)
 
@@ -231,7 +233,7 @@ print(ratings_resources[0])
 print(tags_resources[629])
 ```
 
-### Register Resources with Nexus Delta
+### Register Resources into Nexus Delta
 
 Now that we have the resources, let's push them to our Sandbox deployment:
 
@@ -243,7 +245,7 @@ forge.register(tags_resources)
 
 That's it! You can check your project in the web interface to see the newly created resources.
 
-### Query Resources from Nexus Delta
+### Query Resources with Nexus Forge from Nexus Delta
 
 As the resources are being indexed in the elasticsearch and blazegraph indices, that means that we can soon query those resources using a SPARQL query.
 
