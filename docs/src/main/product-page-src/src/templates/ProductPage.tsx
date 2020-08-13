@@ -15,6 +15,7 @@ export type Product = {
   features: { title: string; description: string }[]
   overviewText: string
   overviewItems?: string[]
+  docsLink?: string
   featureText: string
   tagLine: string
   description: string
@@ -34,6 +35,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
     featureText,
     features,
     additionalInfo,
+    docsLink: doc,
   } = product
 
   const { pathname } = useLocation()
@@ -45,10 +47,9 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   const object =
     slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"
 
-  const docsLink = `https://bluebrainnexus.io/docs/${slug.replace(
-    "nexus-",
-    ""
-  )}.html`
+  const docsLink = doc
+    ? doc
+    : `https://bluebrainnexus.io/docs/${slug.replace("nexus-", "")}.html`
 
   const hasOverviewItems = !!overviewItems && overviewItems.length
 

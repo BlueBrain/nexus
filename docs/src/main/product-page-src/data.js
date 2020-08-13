@@ -5,34 +5,29 @@ module.exports = {
       slug: "nexus-forge",
       features: [
         {
-          title: "Storing",
+          title: "Modelling",
           description:
-            "Storing allows us to persist and manage Resources in the configured Store. Resources contain additional information to allow users recovering from errors.",
-        },
-        {
-          title: "Querying",
-          description:
-            "It is possible to retrieve resources from the store by (1) its id, (2) specifying filters with the properties and a specific value and (3) using a simplified version of SPARQL query.",
-        },
-        {
-          title: "Versioning",
-          description:
-            "The user can create versions of Resources, if the Store supports this feature.",
+            "Modeling enables users to discover and reuse available data models (such as ontologies and schemas) by means of available types and data templates to shape and constraint a Knowledge Graph.",
         },
         {
           title: "Resolving",
           description:
-            "Resolvers are helpers to find commonly used resources that one may want to link to.",
-        },
-        {
-          title: "Modelling",
-          description:
-            "To create Resources, the user can make use of Modeling functions. The user can explore predefined Types and the properties that describe them via Templates.",
+            "Resolving enables users to find, retrieve and link to master resources as a single source of truth for data models and data.",
         },
         {
           title: "Mapping",
           description:
-            "Mappings are predefined configuration files that encode the logic on how to transform a specific data source into Resources that follow a template of a targeted Type.",
+            "Mappings encode the logic on how to transform a specific data source and format into Resources that conform to a schema template of a targeted type.",
+        },
+        {
+          title: "Storing",
+          description:
+            "Storing enables users to persist and manage data as resources in a configured Store.",
+        },
+        {
+          title: "Querying",
+          description:
+            "Querying enables users to search for resources from a configured store by: i) identifier, ii) metadata filters and iii) store specific query language such as SPARQL 1.1 query.",
         },
       ],
       overviewText:
@@ -48,6 +43,7 @@ module.exports = {
       tagLine: "Building and Using Knowledge Graphs Made Easy",
       description:
         "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs.",
+      docsLink: "https://nexus-forge.readthedocs.io/en/latest/",
     },
     {
       name: "Nexus Fusion",
