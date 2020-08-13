@@ -20,7 +20,7 @@ Base is an IRI used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/
 
 Vocab is an IRI used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) prefix for all unqualified predicates in child resources of the project. Json object - provides a convenient way to deal with URIs when performing operations on a sub-resource. This field is optional.
 
-More info can be found [here](../delta/api/current/admin/admin-projects-api.html#api-mappings).
+More info can be found @ref:[here](../delta/api/current/admin/admin-projects-api.html#api-mappings) regarding API Mappings.
 
 ### Creating a New Organization
 
