@@ -15,7 +15,7 @@ const products = [
     slug: "nexus-forge",
     subtitle: "Building and Using Knowledge Graphs Made Easy",
     description:
-      "Blue Brain Nexus Forge enables data scientists and data and knowledge engineers to uniquely combine components, such as data transformations (ETL), data models (ontologies, schemas) defining the targeted domain, scalable stores for managing the resulting graph, as well as data and factual knowledge search and access, under a consistent, single and generic Python Framework.",
+      "Knowledge Graphs are often built from heterogeneous data and knowledge (i.e. data models such as ontologies, schemas) coming from different sources and often with different formats (ie. structured, unstructured). Nexus Forge enables data scientists, data and knowledge engineers to address these challenges by uniquely combining under a consistent and generic Python Framework all necessary components to build and search a knowledge graph.",
   },
   {
     title: "Nexus Delta",
