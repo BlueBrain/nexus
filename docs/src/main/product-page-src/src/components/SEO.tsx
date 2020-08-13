@@ -39,6 +39,8 @@ const SEO: React.FC<SEOProps> = ({ title, description, image }) => {
       <meta name="image" content={seo.image} />
       <meta property="og:type" content="website" />
 
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
       {seo.url && <meta property="og:url" content={seo.url} />}
 
       {seo.title && <meta property="og:title" content={seo.title} />}

@@ -90,6 +90,9 @@ canvas {
   .hero .gradient.subtraction {
     background-size: cover;
   }
+  .hero .title {
+    font-size: 2em;
+  }
 }
 
 @media (max-width: 340px) {
