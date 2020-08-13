@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.eventsource
+package ch.epfl.bluebrain.nexus.sourcingnew.processor
 
 import java.net.URLEncoder
 import java.util.concurrent.TimeoutException
@@ -18,8 +18,8 @@ import scala.util.control.NonFatal
   * Event source based processor based on a Akka behavior which accepts and evaluates commands
   * and then applies the resulting events on the current state
   *
-  * Can be either a [[ch.epfl.bluebrain.nexus.sourcingnew.eventsource.EventSourceProcessor.TransientEventProcessor]]
-  * or a [[ch.epfl.bluebrain.nexus.sourcingnew.eventsource.EventSourceProcessor.PersistentEventProcessor]]
+  * Can be either a [[ch.epfl.bluebrain.nexus.sourcingnew.processor.EventSourceProcessor.TransientEventProcessor]]
+  * or a [[ch.epfl.bluebrain.nexus.sourcingnew.processor.EventSourceProcessor.PersistentEventProcessor]]
   *
   * @param entityId the id of the entity
   * @param config the configuration
@@ -31,7 +31,7 @@ import scala.util.control.NonFatal
   * @tparam Event
   * @tparam Rejection
   */
-private [eventsource] abstract class EventSourceProcessor[
+private [processor] abstract class EventSourceProcessor[
   F[_]: CatsEffect,
   State: ClassTag,
   EvaluateCommand: ClassTag,

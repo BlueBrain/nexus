@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
-import ch.epfl.bluebrain.nexus.sourcingnew.eventsource.{DryRunResult, EvaluationResult}
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.{DryRunResult, EvaluationResult}
 
 /**
   * A stateful handler based on event sourcing that can be controlled through commands;

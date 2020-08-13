@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.sourcingnew.Command.{Increment, IncrementAsync, I
 import ch.epfl.bluebrain.nexus.sourcingnew.Event.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.sourcingnew.Rejection.InvalidRevision
 import ch.epfl.bluebrain.nexus.sourcingnew.State.Current
-import ch.epfl.bluebrain.nexus.sourcingnew.eventsource.EventSourceProcessor.{PersistentEventProcessor, TransientEventProcessor}
-import ch.epfl.bluebrain.nexus.sourcingnew.eventsource.{EventSourceConfig, DryRun, DryRunResult, Evaluate, EvaluationRejection, EvaluationResult, EvaluationSuccess, GetLastSeqNr, PersistentStopStrategy, RequestLastSeqNr, RequestState, TransientStopStrategy, ProcessorCommand}
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.EventSourceProcessor.{PersistentEventProcessor, TransientEventProcessor}
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.{EventSourceConfig, DryRun, DryRunResult, Evaluate, EvaluationRejection, EvaluationResult, EvaluationSuccess, GetLastSeqNr, PersistentStopStrategy, RequestLastSeqNr, RequestState, TransientStopStrategy, ProcessorCommand}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
@@ -28,7 +28,7 @@ abstract class EventSourceProcessorSpec(config: Config)
   implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
 
-  val eventSourceConfig: EventSourceConfig = eventsource.EventSourceConfig(
+  val eventSourceConfig: EventSourceConfig = processor.EventSourceConfig(
     100.millis,
     100.millis,
     system.executionContext,

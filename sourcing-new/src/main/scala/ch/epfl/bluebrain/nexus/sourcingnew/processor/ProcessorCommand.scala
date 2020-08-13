@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.eventsource
+package ch.epfl.bluebrain.nexus.sourcingnew.processor
 
 import akka.actor.typed.ActorRef
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
@@ -49,7 +49,7 @@ final case class RequestLastSeqNr(id: String, replyTo: ActorRef[GetLastSeqNr])  
   * @param event
   * @tparam Event
   */
-final case class Append[Event] private [eventsource](id: String, event: Event) extends EventSourceCommand
+final case class Append[Event] private [processor](id: String, event: Event) extends EventSourceCommand
 
 /**
   * Defines a command to evaluate the evaluateCommand giving a [[EvaluationResult]]

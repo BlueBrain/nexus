@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.sourcingnew
 import akka.persistence.typed.scaladsl.{EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 
 /**
-  * Snapshot strategy to apply to a [[ch.epfl.bluebrain.nexus.sourcingnew.eventsource.EventSourceProcessor.PersistentEventProcessor]]
+  * Snapshot strategy to apply to a [[ch.epfl.bluebrain.nexus.sourcingnew.processor.EventSourceProcessor.PersistentEventProcessor]]
   * See <https://doc.akka.io/docs/akka/current/typed/persistence-snapshot.html>
   */
 sealed trait SnapshotStrategy

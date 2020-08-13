@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.eventsource
+package ch.epfl.bluebrain.nexus.sourcingnew.processor
 
 import akka.util.Timeout
 
