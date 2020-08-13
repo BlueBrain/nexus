@@ -14,6 +14,7 @@ export type Product = {
   slug: string
   features: { title: string; description: string }[]
   overviewText: string
+  overviewItems?: string[]
   featureText: string
   tagLine: string
   description: string
@@ -29,6 +30,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
     tagLine,
     description,
     overviewText,
+    overviewItems,
     featureText,
     features,
     additionalInfo,
@@ -47,6 +49,8 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
     "nexus-",
     ""
   )}.html`
+
+  const hasOverviewItems = !!overviewItems && overviewItems.length
 
   return (
     <MainLayout>
@@ -93,12 +97,33 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
       </section>
       <section id="overview">
         <div className="container">
-          <div className="content centered">
-            <h2 className="title">
+          <div className={`content ${!hasOverviewItems && "centered"}`}>
+            <h2 className="title text-centered">
               {name.replace("Nexus ", "")} inside the Nexus ecosystem
             </h2>
-            <p>{overviewText}</p>
-            <ProductDiagram name={slug} />
+            {hasOverviewItems ? (
+              <div className="columns">
+                <div className="column">
+                  <p>{overviewText}</p>
+                  <ul className="list">
+                    {overviewItems?.map((item, index) => (
+                      <li key={`list-elm-${index}`}>
+                        <p>{item}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="column">
+                  <ProductDiagram name={slug} />
+                </div>
+              </div>
+            ) : (
+              <>
+                <p>{overviewText}</p>
+                <ProductDiagram name={slug} />
+              </>
+            )}
+
             <p>{additionalInfo}</p>
           </div>
         </div>

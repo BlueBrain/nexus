@@ -5,38 +5,45 @@ module.exports = {
       slug: "nexus-forge",
       features: [
         {
-          title: "Data Management",
+          title: "Storing",
           description:
-            "Store and manage all your Data and describe them with Metadata. Take control of your metadata using schemas and benefit from automatic validation. All your data and metadata is versioned so you cannot lose anything.",
+            "Storing allows us to persist and manage Resources in the configured Store. Resources contain additional information to allow users recovering from errors.",
         },
         {
-          title: "Scalable & Secure",
+          title: "Querying",
           description:
-            "Nexus grows with your data. Leveraging modern deployment technologies (Docker, Kubernetes), you can add additional hardware to speed up Nexus or cope with more data. Security is a primary concern and all data access through the API is secure. Nexus interfaces with your organization’s authentication provider.",
+            "It is possible to retrieve resources from the store by (1) its id, (2) specifying filters with the properties and a specific value and (3) using a simplified version of SPARQL query.",
         },
         {
-          title: "Flexible Storage",
+          title: "Versioning",
           description:
-            "Configure Nexus to use the storage technology you already use, we support both POSIX systems and cloud storage.",
+            "The user can create versions of Resources, if the Store supports this feature.",
         },
         {
-          title: "Powerful indexing",
+          title: "Resolving",
           description:
-            "We index all your data automatically to enable search in the Knowledge Graph. You can customize the indexing to suit your needs.",
+            "Resolvers are helpers to find commonly used resources that one may want to link to.",
         },
         {
-          title: "Extensibility",
+          title: "Modelling",
           description:
-            "Use Server Sent Event (SSE) to write your own extensions that leverage your Knowledge Graph’s events. Because Delta is open source, you can also add your own features and contribute to the community.",
+            "To create Resources, the user can make use of Modeling functions. The user can explore predefined Types and the properties that describe them via Templates.",
         },
         {
-          title: "Federation",
+          title: "Mapping",
           description:
-            "Because sharing of your data is often essential, our federation capabilities allow you to make data available across several deployment of Nexus.",
+            "Mappings are predefined configuration files that encode the logic on how to transform a specific data source into Resources that follow a template of a targeted Type.",
         },
       ],
       overviewText:
-        "Delta can be used as a store for Nexus Forge and works seamlessly with Nexus Fusion. We offer several clients that consume the API of Delta. Nexus.js allows you to build data-driven web applications, Nexus Python SDK to integrate your data pipelines with the Knowledge Graph and the Nexus CLI allows you to manage your deployment from the command line. All data and metadata stored into your Knowledge Graph is versioned. All metadata is further indexed into views that offer several access modalities such as Graph and Document.",
+        "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs by making it easy to:",
+      overviewItems: [
+        "Discover and reuse available knowledge resources such as ontologies and schemas to shape, constraint, link and add semantics to datasets.",
+        "Build knowledge graphs from datasets generated from heterogeneous sources and formats. Defining, executing and sharing data mappers to transform data from a source format to a target one conformant to schemas and ontologies.",
+        "Interface with various stores offering knowledge graph storage, management and scaling capabilities, for example Nexus Delta store or an In-memory store.",
+        "Validate and register data and metadata.",
+        "Search and download data and metadata from a knowledge graph.",
+      ],
       featureText: "Delta offers a rich set of features to manage your data.",
       tagLine: "Managing Data and Knowledge Graph Lifecycles",
       description:

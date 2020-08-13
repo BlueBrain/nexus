@@ -5,12 +5,20 @@ import adminIcon from "../../static/img/icons/admin.svg"
 import searchIcon from "../../static/img/icons/monitor.svg"
 import graphIcon from "../../static/img/icons/graph.svg"
 
-// Forge icons
+// Delta icons
 import shareIcon from "../../static/img/icons/share.svg"
 import foldersIcon from "../../static/img/icons/folders.svg"
 import lockIcon from "../../static/img/icons/padlock.svg"
 import cloudIcon from "../../static/img/icons/cloud.svg"
 import researchIcon from "../../static/img/icons/research.svg"
+
+// Forge Icons
+import storingIcon from "../../static/img/icons/storage.svg"
+import queryIcon from "../../static/img/icons/query.svg"
+import versionIcon from "../../static/img/icons/version.svg"
+import resolvingIcon from "../../static/img/icons/resolving.svg"
+import modellingIcon from "../../static/img/icons/modelling.svg"
+import mappingIcon from "../../static/img/icons/mapping.svg"
 
 type Icon = {
   name: string
@@ -61,6 +69,30 @@ const featureIcons: Icon[] = [
   {
     name: "Federation",
     iconSrc: shareIcon,
+  },
+  {
+    name: "Storing",
+    iconSrc: storingIcon,
+  },
+  {
+    name: "Querying",
+    iconSrc: queryIcon,
+  },
+  {
+    name: "Versioning",
+    iconSrc: versionIcon,
+  },
+  {
+    name: "Resolving",
+    iconSrc: resolvingIcon,
+  },
+  {
+    name: "Modelling",
+    iconSrc: modellingIcon,
+  },
+  {
+    name: "Mapping",
+    iconSrc: mappingIcon,
   },
 ]
 
