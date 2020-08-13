@@ -9,10 +9,8 @@ start:
 	@docker-compose run --rm --service-port nexus-product-page start
 
 build:
-	$(MAKE) clean
 	@echo "Building project... 👷"
 	@docker-compose run --rm nexus-product-page run build
-	$(MAKE) copy
 
 test:
 	@echo "Running tests... 🧪"
@@ -21,12 +19,3 @@ test:
 lint:
 	@echo "Linting... ✨"
 	@docker-compose run --rm nexus-product-page run lint
-
-clean:
-	@echo "Cleaning old output... 🧼"
-	@docker-compose run --rm nexus-product-page run clean
-
-copy:
-	@echo "Copying build output to paradox folder... 🍝"
-	@cp -R public ../paradox
-	@echo "Done. 🍝"
