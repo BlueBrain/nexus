@@ -14,7 +14,7 @@ const getStartedLinks = [
     title: "Explore Python Notebooks",
     image: py,
     href:
-      "https://github.com/BlueBrain/nexus-forge/tree/master/examples/notebooks",
+      "https://mybinder.org/v2/gh/BlueBrain/nexus-forge/master?filepath=examples%2Fnotebooks%2Fgetting-started",
   },
   {
     title: "Read the Documentation",
