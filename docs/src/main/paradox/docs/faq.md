@@ -4,21 +4,21 @@
 
 ### What is Blue Brain Nexus?
 
-Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools. You can find out more high level information on our @ref:[product home page](https://bluebrainnexus.io/).
+Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools. You can find out more high level information on our [product home page](https://bluebrainnexus.io/).
 
 ### Is Blue Brain Nexus free to use?
 
-Yes, Nexus is a free, Open Source platform released under @ref:[Apache Licence 2.0](https://opensource.org/licenses/Apache-2.0)
+Yes, Nexus is a free, Open Source platform released under [Apache Licence 2.0](https://opensource.org/licenses/Apache-2.0)
 
 ### How do I run Blue Brain Nexus?
 
-There are many ways to run Nexus. Our public Sandbox is running @ref:[here](https://sandbox.bluebrainnexus.io/web/) and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can help you to run Nexus step by step.
+There are many ways to run Nexus. Our public Sandbox is running [here](https://sandbox.bluebrainnexus.io/web/) and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can help you to run Nexus step by step.
 
-Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus @ref:[“on premise”](getting-started/running-nexus/index.html#on-premise-cloud-deployment), as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using @ref:[Kubernetes](https://kubernetes.io/).
+Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus @ref:[“on premise”](getting-started/running-nexus.md#on-premise-cloud-deployment), as a single instance or as a cluster. Blue Brain Nexus has also been deployed and tested on AWS using [Kubernetes](https://kubernetes.io/).
 
 ### How can I try Blue Brain Nexus without installing it? 
 
-The @ref:[Sandbox](https://sandbox.bluebrainnexus.io/web/) provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.
+The [Sandbox](https://sandbox.bluebrainnexus.io/web/) provides a public instance that can serve as a testbed. Be aware that the content of the Sandbox is regularly purged.
 
 ### What is the difference with a relational database like PostgreSQL?
 
@@ -30,10 +30,6 @@ Although Blue Brain Nexus can be used as a regular database, it's flexibility an
 - Comes with a flexible and granular authorization mechanism
 - Guarantees resources immutability, keeping track of a history of changes.
 
-### Is there a cloud deployment of Blue Brain Nexus?
-
-There is a sandbox for you to try Nexus, it has limited resources and it is regularly wiped out. At the following @ref:[page](fusion/index.md) is explained how to interact with Blue Brain Nexus Web interface. It is possible to deploy Nexus on Amazon's AWS infrastructure. Instructions for how to do so will be made available shortly.
-
 ### Is there a limit on the number of resources Blue Brain Nexus can store?
 
 Blue Brain Nexus leverages scalable open source technologies, therefore limitations and performance depends heavily on the deployment setup where Nexus is running.
@@ -42,19 +38,9 @@ To get an idea about the ingestion capabilities, we have run @ref:[Benchmarks](d
 
 ### What is a Knowledge Graph?
 
-A Knowledge Graph is a modern approach to enabling the interlinked representations of entities (real-world objects, activities or concepts). Knowledge Graphs combine properties of databases (enabling structured queries), graphs (finding and analysing data via entity relationships) and knowledge bases (that enable navigating knowledge and inferring facts).
+A Knowledge Graph is a modern approach to enabling the interlinked representations of entities (real-world objects, activities or concepts). In order to find more information about Knowledge Graphs, please visit the section @ref:["Understanding the Knowledge Graph"](getting-started/understanding-knowledge-graphs.md)
 
 Blue Brain Nexus employs a Knowledge Graph to enable validation, search, analysis and integration of data.
-
-As you can see in 'Understanding the Knowledge Graph' @ref:[page](getting-started/understanding-knowledge-graphs.md), at the heart of Blue Brain Nexus platform lies a Knowledge Graph, that provides knowledge representation to enable data integration and FAIR principles at Blue Brain and across the neuroscience community.
-
-Indeed, Nexus allow scientists to:
-
-- Register and manage relevant entity types
-
-- Submit data to the platform and describe their provenance using the W3C PROV model
-
-- Search, discover, reuse and derive data generated within and outside the platform for the purpose of driving their own scientific endeavours.
 
 ### How do I report a bug? Which support Blue Brain Nexus team provide?
 
@@ -73,11 +59,11 @@ On macOS and Windows, Docker effectively runs containers inside a VM created by 
 
 ### What is JSON-LD?
 
-JSON-LD is a JavaScript Object Notation for Linked Data. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph.
+JSON-LD is a JavaScript Object Notation for Linked Data. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph. In order to find more information about Json-LD, please visit this page, please visit the section @ref:[this page](getting-started/understanding-knowledge-graphs.md#json-ld)
 
 ### How can I represent lists on JSON-LD?
 
-Using JSON-LD, arrays are interpreted as Sets by default. If you want an array to be interpreted as a list, you'll have to add the proper context for it. If the field containing the array is called `myfield`, then the context to be added is
+Using JSON-LD, arrays are interpreted as Sets by default. If you want an array to be interpreted as a list, you'll have to add the proper context for it. For example, if the field containing the array is called `myfield`, then the context to be added would be:
 
 ```json
 {
@@ -93,11 +79,11 @@ You can find more information about Sets and Lists in Json-LD on the [Json-LD 1.
 
 ### What is RDF?
 
-The Resource Description Framework (RDF) is a graph-based data model used for representing information in the Web. The basic structure of any expression in RDF is in triples, an extremely easy segmentation of any kind of knowledge in subject-predicate-object. It is a family of W3C specifications, and was originally designed as a metadata model.
+The Resource Description Framework (RDF) is a graph-based data model used for representing information in the Web. The basic structure of any expression in RDF is in triples, an extremely easy segmentation of any kind of knowledge in subject-predicate-object. It is a family of W3C specifications, and was originally designed as a metadata model. In order to find more information about Json-LD, please visit this page, please visit the section @ref:[this page](getting-started/understanding-knowledge-graphs.md#rdf)
 
 ### What is Elasticsearch?
 
-Elasticsearch is a document oriented search engine with an HTTP web interface and schema-free JSON document. It is able to aggregate data based on specific queries enabling the exploration of trends and patterns.
+Elasticsearch is a document oriented search engine with an HTTP endpoint and schema-free JSON document. It is able to aggregate data based on specific queries enabling the exploration of trends and patterns.
 
 ### What is a SHACL schema?
 
@@ -105,23 +91,24 @@ SHACL (Shapes Constraint Language) is a language for validating RDF graphs again
 
 ### Do I need to define SHACL schemas to bring data in?
 
-No. SHACL schemas provide an extra layer of quality control for the data that is ingested into Nexus. However we acknowledge the complexity of defining schemas. That's why clients can decide whether to use schemas to constrain their data or not, depending on their use case and their available resources.
+No. SHACL schemas provide an extra layer of quality control for the data that is ingested into Nexus. However, we acknowledge the complexity of defining schemas. That's why clients can decide whether to use schemas to constrain their data or not, depending on their use case and their available resources.
 
 ### Where can I find SHACL shapes I can reuse (point to resources, like schema.org)?
 
-Datashapes.org provides an automated conversion of schema.org as SHACL entities. A neuroscience community effort and INCF Special Interest Group - Neuroshapes [page on github](https://github.com/INCF/neuroshapes), provides open schemas for neuroscience data based on common use cases.
+Datashapes.org provides an automated conversion of schema.org as SHACL entities. A neuroscience community effort and INCF Special Interest Group - [Neuroshapes](https://github.com/INCF/neuroshapes), provides open schemas for neuroscience data based on common use cases.
 
 ### Why are RDF and JSON-LD important for Blue Brain Nexus?
 
-RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is fully compatible with the RDF data model, and it is the main format we use for messages exchange. It is also the preferred format for message exchanges for APIs. The choice of JSON-LD is due to the fact that is as plain JSON but with some special [keywords](https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords).
+RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is an RDF concrete syntax, and it is the main format we use for messages exchange. The choice of JSON-LD is due to the fact that is plain JSON but with some special [keywords](https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords) and JSON is a broadly adopted API exchange format.
 
 ### Can I connect any SPARQL client to Nexus’ SPARQL endpoint?
 
-Yes. As long as the client supports the ability to provide a `Authentication` HTTP Header (for authentication purposes) on the request, any SPARQL client should work.
+Yes. As long as the client supports the ability to provide a `Authentication` HTTP Header (for authentication purposes) on the HTTP request, any SPARQL client should work.
 
-### How can I create an Organizations as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
+### How can I create an organization as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
 
-The permissions for anonymous are pre-set in the @ref:[ACLs](delta/api/current/iam-permissions-api.md) and should be replaced by the standard authentication. More details @ref:[here](delta/api/current/iam-permissions-api.md).
+By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM property [app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/master/delta/src/main/resources/app.conf#L213).
+In order to change that behaviour, please create some ACLs for the path `/`. For more details about ACLs creation, visit the @ref:[ACLs page](delta/api/current/iam-acls-api.md#create-acls).
 
 ### Can I use Blue Brain Nexus from Jupyter Notebooks?
 
