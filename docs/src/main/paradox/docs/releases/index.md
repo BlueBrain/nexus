@@ -28,7 +28,7 @@ Summary of the significant changes:
 - Listings API now shows - besides resources metadata - the following predicates, when present: sko:prefLabel, schema:name, rdfs:label;
 - Nexus Web has evolved into Nexus Fusion, supporting multiple subapps and making the different sections clear for our users;
 - Greatly improved design for the way Nexus Fusion manages plugins;
-- Introduction of Nexus Forge in the ecosystem.
+- Introduction of Nexus Forge in the ecosystem. Nexus Forge is currently at version 0.3.3.
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.4-release-notes.md).
 
