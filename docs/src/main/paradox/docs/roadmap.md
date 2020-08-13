@@ -19,7 +19,7 @@ Fusion is the web interface that helps scientists with their day-to-day data-dri
 
 ### Nexus Forge
 
-> todo
+Coming soon!
 
 ### Nexus Delta
 
