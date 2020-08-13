@@ -248,6 +248,7 @@ That's it! You can check your project in the web interface to see the newly crea
 ### Query Resources with Nexus Forge from Nexus Delta
 
 As the resources are being indexed in the elasticsearch and blazegraph indices, that means that we can soon query those resources using a SPARQL query.
+If you are new to SPARQL, that's ok, you can watch this [introduction video](https://www.youtube.com/watch?v=FvGndkpa4K0) before moving further.
 
 Let's list thought provoking movies. First we write the query:
 
