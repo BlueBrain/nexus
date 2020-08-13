@@ -14,7 +14,7 @@ In the @ref:[second step](try-nexus.md#working-with-data-in-nexus-forge), you'll
 - configure your project,
 - transform your data,
 - loading the data into Nexus,
-- writing a SARQL query.
+- writing a SPARQL query.
 
 In the @ref:[third step](try-nexus.md#exploring-the-graph-in-nexus-fusion), you'll learn:
 
