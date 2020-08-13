@@ -133,7 +133,7 @@ The `Dashboard`, once configured, will present the results of your SPARQL query 
 ### Studio Creation
 
 To create a new `Studio`, go to the Admin space, and select an organization and a project.
-In the Project View, you will see a list of Studios with the `Manage Studios for this project` button.
+In the Project View, you will see the `Manage Studios for this project` button. It will bring you to the list of `Studios`.
 
 Click the `Create Studio` button.
 
