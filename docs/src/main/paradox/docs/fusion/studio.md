@@ -209,7 +209,7 @@ After your forms have been edited, simple click `Save` to submit your changes.
 
 #### Removing a Workspace
 
-You can remove a `Workspace` by deprecating it from the `Resource View`
+You can remove a `Workspace` by deprecating it from the `Resource View`.
 
 ### Dashboard Creation
 
@@ -326,5 +326,5 @@ In our example it would be:
 
 `STUDIO_VIEW=webapps/nexus-fusion/nxv:studioList`
 
-Every time when you create a new Studio, the `AggregateElasticSearchView` needs to be updated.
+Every time when you create a new `Studio`, the `AggregateElasticSearchView` needs to be updated.
 @@@
