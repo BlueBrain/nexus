@@ -6,7 +6,7 @@ const size = 2
 const linewidth = 2
 
 const geometries = [
-  new THREE.BoxBufferGeometry(size, size, size),
+  new THREE.BoxBufferGeometry(size / 1.5, size / 1.5, size / 1.5),
   new THREE.ConeBufferGeometry(size / 2, size, 4, 0),
   new THREE.IcosahedronBufferGeometry(1, 0),
 ]
