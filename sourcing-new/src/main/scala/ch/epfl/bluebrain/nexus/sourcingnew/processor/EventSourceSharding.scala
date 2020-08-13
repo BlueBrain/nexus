@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcingnew.eventsource
+package ch.epfl.bluebrain.nexus.sourcingnew.processor
 
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
@@ -46,7 +46,7 @@ class EventSourceSharding[
                       (implicit F: Effect[F], as: ActorSystem[Nothing])
     extends EventSourceHandler[F, String, State, Command, Event, Rejection] {
 
-  implicit private[eventsource] val contextShift: ContextShift[IO]        = IO.contextShift(as.executionContext)
+  implicit private[processor] val contextShift: ContextShift[IO]        = IO.contextShift(as.executionContext)
   implicit private val timeout: Timeout                            = askTimeout
 
   import retryStrategy._
@@ -176,7 +176,7 @@ object EventSourceSharding {
                           (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
-      entityContext => new eventsource.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
+      entityContext => new processor.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
         entityContext.entityId,
         definition,
         stopStrategy,
@@ -217,7 +217,7 @@ object EventSourceSharding {
                          (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
-      entityContext => new eventsource.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](
+      entityContext => new processor.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](
         entityContext.entityId,
         definition,
         stopStrategy,
