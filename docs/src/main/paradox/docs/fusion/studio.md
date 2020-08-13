@@ -133,7 +133,7 @@ The `Dashboard`, once configured, will present the results of your SPARQL query 
 ### Studio Creation
 
 To create a new `Studio`, go to the Admin space, and select an organization and a project.
-In the Project View, you will see a list of Studios with the `Create Studio` button.
+In the Project View, you will see a list of Studios with the `Manage Studios for this project` button.
 
 Click the `Create Studio` button.
 
@@ -282,7 +282,7 @@ LIMIT 20
 
 ## Configuring the Studios index page
 
-The Studios space lists all the Studios you have permissions to view or edit.
+The Studios space lists all the `Studios` you have permissions to view or edit.
 
 @@@ div { .half .center }
 ![Studios Index Page](../assets/fusion-studio-index-page.png)
@@ -292,7 +292,7 @@ To enable this feature, the following should be done:
 
 1. If you don't have a project to store the application data, create one.
 
-2. Create an Aggregated Elastic Search View inside this project, and add all of the projects that contain Studio resources to the list. For example:
+2. Create an `Aggregated Elastic Search View` inside this project, and add all of the projects that contain Studio resources to the list. For example:
 
 ```json
 {
