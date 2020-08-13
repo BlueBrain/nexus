@@ -1,6 +1,7 @@
 @@@ index
 
 * [Indexing data in other systems](projections.md)
+* [MovieLens Tutorial using the Nexus Python CLI](nexus-python-cli.md)
 
 @@@
 
