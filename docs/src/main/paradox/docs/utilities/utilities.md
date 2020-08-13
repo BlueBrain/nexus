@@ -1,6 +1,7 @@
 @@@ index
 
-- [Indexing data in other systems](projections.md)
+* [Indexing data in other systems](projections.md)
+* [MovieLens Tutorial using the Nexus Python CLI](nexus-python-cli.md)
 
 @@@
 
@@ -53,7 +54,7 @@ A command line interface (CLI) to perform basic operations on a Nexus deployment
 
 A Python wrapper for the Blue Brain Nexus REST API.
 
-#### How to install
+#### How to install the Nexus Python SDK
 
 `pip install nexus-sdk`
 
@@ -76,7 +77,7 @@ The [Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js) provides many fe
 
 ![Nexus JS logo](../assets/nexus-js-logo.png)
 
-#### How to install
+#### How to install Nexus.js
 
 `npm install @bbp/nexus-sdk`
 

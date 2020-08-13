@@ -4,7 +4,7 @@
 
 ### What is Blue Brain Nexus?
 
-Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools. You can find out more high level information on our [product home page](https://bluebrainnexus.io/).
+Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. You can find out more information on our [product home page](https://bluebrainnexus.io/).
 
 ### Is Blue Brain Nexus free to use?
 
@@ -59,11 +59,11 @@ On macOS and Windows, Docker effectively runs containers inside a VM created by 
 
 ### What is JSON-LD?
 
-JSON-LD is a JavaScript Object Notation for Linked Data. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph. In order to find more information about Json-LD, please visit this page, please visit the section @ref:[this page](getting-started/understanding-knowledge-graphs.md#json-ld)
+JSON-LD is a JavaScript Object Notation for Linked Data. A JSON-LD payload is then converted to an RDF Graph for validation purposes and for ingestion in the Knowledge Graph. In order to find more information about JSON-LD, please visit this page, please visit the section @ref:[this page](getting-started/understanding-knowledge-graphs.md#json-ld)
 
 ### How can I represent lists on JSON-LD?
 
-Using JSON-LD, arrays are interpreted as Sets by default. If you want an array to be interpreted as a list, you'll have to add the proper context for it. For example, if the field containing the array is called `myfield`, then the context to be added would be:
+Using JSON-LD, arrays are interpreted as Sets by default. If you want an array to be interpreted as a list, you will have to add the proper context for it. For example, if the field containing the array is called `myfield`, then the context to be added would be:
 
 ```json
 {
@@ -75,27 +75,27 @@ Using JSON-LD, arrays are interpreted as Sets by default. If you want an array t
 }
 ```
 
-You can find more information about Sets and Lists in Json-LD on the [Json-LD 1.0 specification](https://www.w3.org/TR/json-ld/#sets-and-lists)
+You can find more information about Sets and Lists in JSON-LD on the [Json-LD 1.0 specification](https://www.w3.org/TR/json-ld/#sets-and-lists)
 
 ### What is RDF?
 
-The Resource Description Framework (RDF) is a graph-based data model used for representing information in the Web. The basic structure of any expression in RDF is in triples, an extremely easy segmentation of any kind of knowledge in subject-predicate-object. It is a family of W3C specifications, and was originally designed as a metadata model. In order to find more information about Json-LD, please visit this page, please visit the section @ref:[this page](getting-started/understanding-knowledge-graphs.md#rdf)
+The Resource Description Framework (RDF) is a graph-based data model used for representing information in the Web. The basic structure of any expression in RDF is in triples, an extremely easy segmentation of any kind of knowledge in subject-predicate-object. It is a family of W3C specifications, and was originally designed as a metadata model. In order to find more information about RDF and JSON-LD, please visit this page, please visit the section @ref:[this page](getting-started/understanding-knowledge-graphs.md#rdf)
 
 ### What is Elasticsearch?
 
-Elasticsearch is a document oriented search engine with an HTTP endpoint and schema-free JSON document. It is able to aggregate data based on specific queries enabling the exploration of trends and patterns.
+[Elasticsearch](https://www.elastic.co/elastic-stack) is a document oriented search engine with an HTTP endpoint and schema-free JSON document. It is able to aggregate data based on specific queries enabling the exploration of trends and patterns.
 
 ### What is a SHACL schema?
 
-SHACL (Shapes Constraint Language) is a language for validating RDF graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form of an RDF graph. SHACL is used in Blue Brain Nexus to constrain and control the payload that can be pushed into Nexus.
+[SHACL](https://www.w3.org/TR/shacl/) (Shapes Constraint Language) is a language for validating RDF graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form of an RDF graph. SHACL is used in Blue Brain Nexus to constrain and control the payload that can be pushed into Nexus. You can use the [SHACL Playground](https://shacl.org/playground/) to test your schemas.
 
 ### Do I need to define SHACL schemas to bring data in?
 
-No. SHACL schemas provide an extra layer of quality control for the data that is ingested into Nexus. However, we acknowledge the complexity of defining schemas. That's why clients can decide whether to use schemas to constrain their data or not, depending on their use case and their available resources.
+No. [SHACL](https://www.w3.org/TR/shacl/) schemas provide an extra layer of quality control for the data that is ingested into Nexus. However, we acknowledge the complexity of defining schemas. That's why clients can decide whether to use schemas to constrain their data or not, depending on their use case and their available resources.
 
 ### Where can I find SHACL shapes I can reuse (point to resources, like schema.org)?
 
-Datashapes.org provides an automated conversion of schema.org as SHACL entities. A neuroscience community effort and INCF Special Interest Group - [Neuroshapes](https://github.com/INCF/neuroshapes), provides open schemas for neuroscience data based on common use cases.
+[Datashapes.org](http://datashapes.org/) provides an automated conversion of [schema.org](https://schema.org/) as SHACL entities. A neuroscience community effort and INCF Special Interest Group - [Neuroshapes](https://github.com/INCF/neuroshapes), provides open schemas for neuroscience data based on common use cases.
 
 ### Why are RDF and JSON-LD important for Blue Brain Nexus?
 
@@ -112,4 +112,6 @@ In order to change that behaviour, please create some ACLs for the path `/`. For
 
 ### Can I use Blue Brain Nexus from Jupyter Notebooks?
 
-Blue Brain Nexus can be used from Jupyter Notebooks using [Nexus Python SDK](https://github.com/BlueBrain/nexus-python-sdk/). Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook. Few examples are provided in the folder [Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks) or in the [page](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb) dedicated to create a recommendation engine using Blue Brain Nexus.
+Blue Brain Nexus can be used from Jupyter Notebooks using [Nexus Forge](https://github.com/blueBrain/nexus-forge) or [Nexus Python SDK](https://github.com/BlueBrain/nexus-python-sdk/). Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook.
+Please consider looking at our @ref:[tutorial](getting-started/try-nexus.md) to learn how to user Nexus Forge on the Sandbox.
+Other examples are provided in the folder [Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks) or in the [page](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb) dedicated to create a recommendation engine using Blue Brain Nexus.
