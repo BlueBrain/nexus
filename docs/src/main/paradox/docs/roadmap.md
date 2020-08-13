@@ -1,6 +1,8 @@
 # Roadmap
 
-> **Disclaimer:** The roadmap is subject to change at any time and is given for information only.
+@@@ note
+The roadmap is subject to change at any time and is given for information only.
+@@@
 
 ## Release 1.5 (scheduled for Q4, 2020)
 

@@ -2,13 +2,17 @@
 
 Studios space allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with javascript, data curators can format the presentation of the query results any way they like.
 
-> To configure the Studios space index for your Nexus instance, see at the @ref:[bottom of the page](studio.md#configuring-the-studios-index-page).
+@@@ note
+To configure the Studios space index for your Nexus instance, see at the @ref:[bottom of the page](studio.md#configuring-the-studios-index-page).
+@@@
 
 ## What is a Studio
 
-> Want to @ref:[configure a studio](studio.md#how-to-configure-a-studio) straightaway?
-
 A `Studio` is a collection of persistent queries organized in a table layout for users to quickly access relevant data in a customizable way. `Studio` authors can create a studio to match a specific topic, and create organization schemes called @ref:[Workspaces](studio.md#workspaces) and @ref:[Dashboards](studio.md#dashboards) to access various aspects of that data.
+
+@@@ note
+Want to @ref:[configure a studio](studio.md#how-to-configure-a-studio) straightaway?
+@@@
 
 For example, a `Studio` might cover all datasets from the Neocortex, with a workspace called Physiology and a dashboard called Morphology Pipeline.
 
@@ -26,7 +30,9 @@ In essence, a `Studio` is a UI layer that performs queries according to a config
 }
 ```
 
-> Note: A `Studio` will be given a URI for navigation or sharing.
+@@@ note
+A `Studio` will be given a URI for navigation or sharing.
+@@@
 
 ### About the Studio Context
 
@@ -132,9 +138,7 @@ In the Project View, you will see a list of Studios with the `Create Studio` but
 Click the `Create Studio` button.
 
 @@@ div { .half .center }
-
 ![Create a studio](../assets/fusion-studio-create-studio-pane.png)
-
 @@@
 
 Fill in a form providing the following:
@@ -143,17 +147,13 @@ Fill in a form providing the following:
 - `Description` for your Studio
 
 @@@ div { .half .center }
-
 ![Create a studio form](../assets/fusion-studio-create-studio-form.png)
-
 @@@
 
 - Click `Save` and you will be navigated to the Studio View.
 
 @@@ div { .center }
-
 ![Empty Studio Example](../assets/fusion-studio-empty-studio.png)
-
 @@@
 
 That's it! Your new Studio is empty for now, but don't worry!
@@ -179,17 +179,13 @@ Fill in a form providing the following:
 - `Description` for your `Workspace`
 
 @@@ div { .half .center }
-
 ![Create a new Workspace form](../assets/fusion-studio-create-workspace-form.png)
-
 @@@
 
 Click `Save` and you will be navigated to the new workspace section of your `Studio View`, which is given a navigable URI.
 
 @@@ div { .center }
-
 ![Empty Workspace Example](../assets/fusion-studio-empty-workspace.png)
-
 @@@
 
 Your `Workspace` is created, but it will need to have at least one `Dashboard`/`View` association for anything to show there.
@@ -206,9 +202,7 @@ Inside any `Studio`, under a `Workspace` tab label, click on the Edit link. Then
 - `Description` for your `Workspace`.
 
 @@@ div { .half .center }
-
 ![Workspace Updating Form](../assets/fusion-studio-edit-workspace-form.png)
-
 @@@
 
 After your forms have been edited, simple click save to update the changes.
@@ -228,9 +222,7 @@ Fill in a form providing the following:
 - `Sparql Query`: a valid [SPARQL](https://www.w3.org/TR/rdf-sparql-query/) query that conforms to the `dataQuery` field in the configuration.
 
 @@@ div { .half .center }
-
 ![Create Dashboard form](../assets/fusion-studio-create-dashboard-form.png)
-
 @@@
 
 > You can click on the "view query in Sparql Editor" to open the `Sparql Editor` in a new tab to work on your query while querying it against a `Sparql View` in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.
@@ -293,9 +285,7 @@ LIMIT 20
 The Studios space lists all the studios you have permissions to view or edit.
 
 @@@ div { .half .center }
-
 ![Studios Index Page](../assets/fusion-studio-index-page.png)
-
 @@@
 
 To enable this feature, the following should be done:
@@ -326,7 +316,9 @@ To enable this feature, the following should be done:
 }
 ```
 
-3. Ask a developer to add an ENV variable with the location of the 'AggregateElasticSearchView' as following:
+@@@ note
+
+Ask a developer to add an ENV variable with the location of the 'AggregateElasticSearchView' as following:
 
 `STUDIO_VIEW=[yourOrgLabel]/[yourProjectLabel]/[viewId]`
 
@@ -334,4 +326,6 @@ In our example it would be:
 
 `STUDIO_VIEW=webapps/nexus-fusion/nxv:studioList`
 
-> Note: Every time when you create a new Studio, the `AggregateElasticSearchView` needs to be updated.
+
+Every time when you create a new Studio, the `AggregateElasticSearchView` needs to be updated.
+@@@
