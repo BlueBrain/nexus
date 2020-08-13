@@ -10,16 +10,16 @@ In the @ref:[first step](try-nexus.md#configuring-your-project-in-nexus-fusion),
 
 In the @ref:[second step](try-nexus.md#working-with-data-in-nexus-forge), you'll learn:
 
-- to install Nexus forge,
-- configure your project,
-- transform your data,
-- loading the data into Nexus,
-- writing a SPARQL query.
+- install Nexus Forge,
+- configure a Knowledge Graph forge,
+- transform data,
+- load the transformed data into the project,
+- search for data using a SPARQL query.
 
 In the @ref:[third step](try-nexus.md#exploring-the-graph-in-nexus-fusion), you'll learn:
 
-- to create a Studio in Nexus Fusion,
-- to visualize resources.
+- create a Studio in Nexus Fusion,
+- visualize and filter loaded data.
 
 Finally, check our @ref:[Learn More](try-nexus.md#learn-more) section for more advanced tutorials based on the same datasets.
 
@@ -85,13 +85,11 @@ We're all set! We now have a project to host our ressources and datasets. Let's 
 
 ## Working with Data in Nexus Forge
 
-We'll load the [MovieLens](http://files.grouplens.org/datasets/movielens/) dataset into Nexus Delta using [Nexus Forge](https://nexus-forge.readthedocs.io/en/latest/).
+We’ll load the [MovieLens](http://files.grouplens.org/datasets/movielens/) dataset into the created project within Nexus Delta using the python framework [Nexus Forge](https://nexus-forge.readthedocs.io/en/latest/).
 
-Nexus Forge being a Python library. You will need [Python 3](https://www.python.org/downloads/) installed.
+A [jupyter](https://mybinder.org/v2/gh/BlueBrain/nexus/master?filepath=docs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2Fbuilding_a_kg.ipynb) notebook is available for this part of the tutorial and can be spawn easily using Binder.
 
-We have made a [jupyter](https://jupyter.org/) notebook available for this part of the tutorial, but feel free to run the code anywhere.
-
-The first step after [installing Nexus Forge](https://nexus-forge.readthedocs.io/en/latest/#installation), is to import all the required libraries.
+For local execution, Nexus Forge can be installed using these [instructions](https://nexus-forge.readthedocs.io/en/latest/#installation). Make sure that the jupyter notebook|lab is launched in the same virtual environment where Nexus Forge is installed. Alternatively, set up a specialized [kernel](https://ipython.readthedocs.io/en/stable/install/kernel_install.html).
 
 ### Libraries
 
