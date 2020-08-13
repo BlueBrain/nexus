@@ -2,13 +2,13 @@
 
 ## Subapps
 
-You can add your own SubApp by cloning the [Nexus Fusion repo](https://github.com/BlueBrain/nexus-web) and adding your react app to the src.
+You can add your own SubApp by cloning the [Nexus Fusion repo](https://github.com/BlueBrain/nexus-web) and adding your React app to the src.
 
 You must build your application from source, in order to use your SubApp. As of version 1.4, there is no way to add a SubApp using the provided Dockerhub distribution.
 
 ### Development
 
-SubApps are essentially a configuration hosting a routing list of react components. These react components will have access to the entire app `Redux` store, the `Nexus Client`, as well as `ConnectedRouter` Providers for use in React hooks and consumers.
+SubApps are essentially a configuration hosting a routing list of React components. These React components will have access to the entire app `Redux` store, the `Nexus Client`, as well as `ConnectedRouter` Providers for use in React hooks and consumers.
 
 Your subapp should be a function that returns an object equating to this type signature:
 
