@@ -282,6 +282,7 @@ movie._store_metadata
 ```
 
 If you want to try some other examples of Nexus Forge, you can use these [notebooks](https://mybinder.org/v2/gh/BlueBrain/nexus-forge/master?filepath=examples%2Fnotebooks%2Fgetting-started).
+
 The next step is to use this query to create a Studio view in Nexus Fusion.
 
 ## Exploring the Graph in Nexus Fusion
