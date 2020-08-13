@@ -1,6 +1,6 @@
 # Add your own App
 
-## Subapps
+## SubApps
 
 You can add your own SubApp by cloning the [Nexus Fusion repo](https://github.com/BlueBrain/nexus-web) and adding your React app to the src.
 
@@ -10,7 +10,7 @@ You must build your application from source, in order to use your SubApp. As of 
 
 SubApps are essentially a configuration hosting a routing list of React components. These React components will have access to the entire app `Redux` store, the `Nexus Client`, as well as `ConnectedRouter` Providers for use in React hooks and consumers.
 
-Your subapp should be a function that returns an object equating to this type signature:
+Your SubApp should be a function that returns an object equating to this type signature:
 
 ```typescript
 {
@@ -43,7 +43,7 @@ routes: [
 
 ```
 
-Then you can add your subapp to the `src/subapps/index.ts` barrell file, which hosts the SubApp set consumed by Nexus Forge.
+Then you can add your SubApp to the `src/subapps/index.ts` barrell file, which hosts the SubApp set consumed by Nexus Fusion.
 
 ```typescript
 const SubApps: Map<string, SubApp> = new Map();

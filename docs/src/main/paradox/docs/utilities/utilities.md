@@ -92,17 +92,17 @@ Documentation:
 
 - [nexus-sdk](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-sdk/README.md#readme)
 
-### Other Javascript Packages
+### Other JavaScript Packages
 
 #### React-Nexus
 
-This package contains some utility components to easily integrate the Nexus SDK as React hooks or contexts
+This package contains some utility components to easily integrate the Nexus SDK as React hooks or contexts.
 
 - [react-nexus](https://github.com/BlueBrain/nexus-js/blob/master/packages/react-nexus/README.md#readme)
 
 #### Nexus-Link
 
-Another utility packages was written to facility chained calling behavior, which can be used independantly of Nexus.js for other projects.
+Another utility packages was written to facilitate chained calling behavior, which can be used independently of Nexus.js for other projects.
 
 - [nexus-link](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-link/README.md#readme)
 
