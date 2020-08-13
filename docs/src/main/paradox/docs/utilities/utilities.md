@@ -1,6 +1,6 @@
 @@@ index
 
-* [Indexing data in other systems](projections.md)
+- [Indexing data in other systems](projections.md)
 
 @@@
 
@@ -58,6 +58,7 @@ A Python wrapper for the Blue Brain Nexus REST API.
 `pip install nexus-sdk`
 
 #### Usage
+
 ```
 import nexussdk as nexus
 
@@ -85,13 +86,24 @@ The SDK is written in Typescript, so type declarations for all operations are in
 
 You can generate documentation using `npm run documentation` or with `docker` by running `make documentation`. More information can be found [here](https://github.com/BlueBrain/nexus-sdk-js#development).
 
-
 [Source Code](https://github.com/BlueBrain/nexus-sdk-js)
 
 Documentation:
 
 - [nexus-sdk](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-sdk/README.md#readme)
+
+### Other Javascript Packages
+
+#### React-Nexus
+
+This package contains some utility components to easily integrate the Nexus SDK as React hooks or contexts
+
 - [react-nexus](https://github.com/BlueBrain/nexus-js/blob/master/packages/react-nexus/README.md#readme)
+
+#### Nexus-Link
+
+Another utility packages was written to facility chained calling behavior, which can be used independantly of Nexus.js for other projects.
+
 - [nexus-link](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-link/README.md#readme)
 
 ### Indexing data in other systems
