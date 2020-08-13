@@ -48,7 +48,7 @@ class CassandraProjectionSpec extends ProjectionSpec {
           host: CassandraHostConfig =>
             val config = ConfigFactory
               .parseString(s"""datastax-java-driver.basic.contact-points = ["${host.host}:${host.port}"]""")
-              .withFallback(ConfigFactory.parseResources("cassandra.conf"))
+              .withFallback(ConfigFactory.parseResources("cassandra-test.conf"))
               .withFallback(ConfigFactory.load())
               .resolve()
             Resource.make(
