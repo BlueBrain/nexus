@@ -51,8 +51,7 @@ body {
 }
 
 section .container {
-  padding-top: 2em;
-  padding-bottom: 2em;
+  padding: 2em;
 }
 
 h1 {
@@ -301,9 +300,6 @@ ul.list li {
 }
 
 @media (max-width: 600px) {
-  .container {
-    padding: 2em;
-  }
   .columns {
     margin-left: 0;
     margin-right: 0;

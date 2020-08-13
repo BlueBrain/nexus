@@ -41,14 +41,14 @@ export default function PoweredByNexus() {
               </a>
             </div>
 
-            <div className="column">
+            {/* <div className="column">
               <a href="https://conp.ca/">
                 <img src={conpLogo} alt="Canadian Open Neuroscience Platform" />
                 <p className="text-centered">
                   Canadian Open Neuroscience Platform
                 </p>
               </a>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
