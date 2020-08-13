@@ -45,8 +45,6 @@ routes: [
 
 Then you can add your subapp to the `src/subapps/index.ts` barrell file, which hosts the SubApp set consumed by Nexus Forge.
 
-###
-
 ```typescript
 const SubApps: Map<string, SubApp> = new Map();
 
