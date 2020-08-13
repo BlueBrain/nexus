@@ -1,6 +1,6 @@
 # Studios
 
-Studios space allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with javascript, data curators can format the presentation of the query results any way they like.
+Studios space allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with JavaScript, data curators can format the presentation of the query results any way they like.
 
 @@@ note
 To configure the Studios space index for your Nexus instance, see at the @ref:[bottom of the page](studio.md#configuring-the-studios-index-page).
@@ -14,11 +14,11 @@ A `Studio` is a collection of persistent queries organized in a table layout for
 Want to @ref:[configure a studio](studio.md#how-to-configure-a-studio) straightaway?
 @@@
 
-For example, a `Studio` might cover all datasets from the Neocortex, with a workspace called Physiology and a dashboard called Morphology Pipeline.
+For example, a `Studio` might cover all datasets from the Neocortex, with a `Workspace` called Physiology and a `Dashboard` called Morphology Pipeline.
 
 In essence, a `Studio` is a UI layer that performs queries according to a configuration that lives in a Nexus instance as a `Resource`. It has a label for a meaningful title and a description field to convey to the users what sort of data they can expect to find there. Most importantly, a `Studio` configuration has a `Workspace` collection.
 
- ```json
+```json
 {
   "@context": "https://bluebrainnexus.io/studio/context",
   "@type": "https://bluebrainnexus.io/studio/vocabulary/Studio",
@@ -36,11 +36,11 @@ A `Studio` will be given a URI for navigation or sharing.
 
 ### About the Studio Context
 
-In order for the studio to work as intended with the UI, a context must be in the project. It's purpose is to direct the knowledge graph to understand how studio-specific properties behave, such as that `Workspaces` should be set (an unordered collection without duplicates).
+In order for the `Studio` to work as intended with the UI, a context must be in the project. Its purpose is to direct the knowledge graph to understand how studio-specific properties behave, such as that `Workspaces` should be set (an unordered collection without duplicates).
 
-If you create a studio using the UI in Nexus Fusion, this resource will be created for you, if it doesn't exist already. If you plan on bootstrapping your own projects programmatically, such as through the API, then you might need to take care to include it.
+If you create a `Studio` using the UI in Nexus Fusion, this resource will be created for you, if it doesn't exist already. If you plan on bootstrapping your own projects programmatically, such as through the API, then you might need to take care to include it.
 
-Every `Studio` resource that is created should reference this context resource as the `@context` property. For an example, see the `Studio` resource mentioned above. The default studio context `@id` for all our examples will be `https://bluebrainnexus.io/studio/context`, and it's what Nexus Fusion will use.
+Every `Studio` resource that is created should reference this context resource as the `@context` property. For an example, see the `Studio` resource mentioned above. The default Studio context `@id` for all our examples will be `https://bluebrainnexus.io/studio/context`, and it's what Nexus Fusion will use.
 
 Here's what the context should look like:
 
@@ -111,7 +111,7 @@ You can label a `Workspace` and add a description to help users understand what 
 
 ### Dashboards
 
-A `Dashboard` is simply a query with a description and label. This will be used by the `Workspace` to query against the view paired with it inside the `Workspace` configuration. This way, you can write one query, and re-use it against multiple potential views.
+A `Dashboard` is simply a query with a description and a label. This will be used by the `Workspace` to query against the view paired with it inside the `Workspace` configuration. This way, you can write one query, and re-use it against multiple potential views.
 
 An example `Dashboard` resource looks like this:
 
@@ -126,13 +126,13 @@ An example `Dashboard` resource looks like this:
 }
 ```
 
-The `Dashboard`, once configured, will present the results of your sparql query in a table. Each item in the row will be clickable and lead to a details page showing the `Resource`, in this case, a list of scientists that have contributed data to the project.
+The `Dashboard`, once configured, will present the results of your SPARQL query in a table. Each item in the row will be clickable and lead to a details page showing the `Resource`, in this case, a list of scientists that have contributed data to the project.
 
 ## How to Configure a Studio
 
 ### Studio Creation
 
-To create a new studio, go to the Admin space, and select an organization and a project.
+To create a new `Studio`, go to the Admin space, and select an organization and a project.
 In the Project View, you will see a list of Studios with the `Create Studio` button.
 
 Click the `Create Studio` button.
@@ -156,18 +156,18 @@ Fill in a form providing the following:
 ![Empty Studio Example](../assets/fusion-studio-empty-studio.png)
 @@@
 
-That's it! Your new Studio is empty for now, but don't worry!
+That's it! Your new `Studio` is empty for now, but don't worry!
 We will add Workspaces and Dashboards later.
 
 You can also find your Studios in the Resource List (for example, filter by type `Studio`, or Search by id) and view it in the Resource View.
 
 #### Updating a Studio
 
-Once created, the label and the description of a Studio can be changed. Just click `Edit Studio` button and update the `Label` and the `Description` fields.
+Once created, the label and the description of a `Studio` can be changed. Just click `Edit Studio` button and update the `Label` and the `Description` fields.
 
 #### Removing a Studio
 
-To remove an unwanted Studio, deprecate it in the Resource View of your project in the Admin space.
+To remove an unwanted `Studio`, deprecate it in the Resource View of your project in the Admin space.
 
 ### Workspace Creation
 
@@ -194,10 +194,10 @@ You can also find your `Workspaces` as raw `JSON` configurations in the `Resourc
 
 #### Updating a Workspace
 
-Inside any `Studio`, under a `Workspace` tab label, click on the Edit link. Then you'll be provided with a dialogue where you can review and edit the `Workspace` configuration.
+Inside any `Studio`, under a `Workspace` tab label, click on the `Edit` link. Then you'll be provided with a dialogue where you can review and edit the `Workspace` configuration.
 
-- `Select View`: The view of which to pair with _each `Dashboard` inside the follow transfer list_. The `Dashboard` queries will be ran against the `View` listed inside this box. For now, using this edit form, you can only pair one `View` for all `Dashboards`. If you were to create the configurations manually, you can pair each `Dashboard` with a different `View`.
-- `Add or Remove Dashboards`: Add or remove a `Dashboard` to the collection in your workspace configuration. The `Dashboards` listed are all the available non-deprecated ones in the project.
+- `Select View`: The view of which to pair with _each `Dashboard` inside the follow transfer list_. The `Dashboard` queries will be run against the `View` listed inside this box. For now, using this Edit form, you can only pair one `View` for all `Dashboards`. If you were to create the configurations manually, you can pair each `Dashboard` with a different `View`.
+- `Add or Remove Dashboards`: Add or remove a `Dashboard` to the collection in your `Workspace` configuration. The `Dashboards` listed are all the available non-deprecated ones in the project.
 - `Name`: the name of your new `Workspace` (required field).
 - `Description` for your `Workspace`.
 
@@ -205,11 +205,11 @@ Inside any `Studio`, under a `Workspace` tab label, click on the Edit link. Then
 ![Workspace Updating Form](../assets/fusion-studio-edit-workspace-form.png)
 @@@
 
-After your forms have been edited, simple click save to update the changes.
+After your forms have been edited, simple click `Save` to submit your changes.
 
 #### Removing a Workspace
 
-You can remove a workspace by deprecating it from the `Resource View`
+You can remove a `Workspace` by deprecating it from the `Resource View`
 
 ### Dashboard Creation
 
@@ -225,7 +225,7 @@ Fill in a form providing the following:
 ![Create Dashboard form](../assets/fusion-studio-create-dashboard-form.png)
 @@@
 
-> You can click on the "view query in Sparql Editor" to open the `Sparql Editor` in a new tab to work on your query while querying it against a `Sparql View` in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.
+> You can click on the `View query in Sparql Editor` to open the `Sparql Editor` in a new tab to work on your query while querying it against a `Sparql View` in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.
 
 > To understand more about the SPARQL queries requirements, @ref:[check below](studio.md#sparql-query-requirements).
 
@@ -235,21 +235,21 @@ You can now also add this `Dashboard` to other `Workspaces` across the project.
 
 #### Updating a Dashboard
 
-You'll find the edit `Dashboard` under the dashboard label. After your form has been edited, simple click `Save` to update the changes.
+You'll find the edit `Dashboard` under the dashboard label. After your form has been edited, simple click `Save` to submit your changes.
 
 #### Removing a Dashboard
 
-You can remove a workspace by deprecating it from the `Resource View`
+You can remove a `Dashboard` by deprecating it from the `Resource View`.
 
 ### Sparql Query Requirements
 
 #### The `?self` variable
 
-In order for the UI to function as intended, you must provide a unique ID variable inside your Sparql statement, labeled as `?self`. This will be used to generate the table and fetch resources when navigating to the details page of a row item. Ideally, this `?self` variable should correspond with the `_self` of a target `Resource` of which to center your query against as a subject. The `?self` variable will never be shown in the table, so you need some other variable in addition to view the results properly, or you'll end up with a table without any rows.
+In order for the UI to function as intended, you must provide a unique ID variable inside your SPARQL statement, labeled as `?self`. This will be used to generate the table and fetch resources when navigating to the details page of a row item. Ideally, this `?self` variable should correspond with the `_self` of a target `Resource` of which to center your query against as a subject. The `?self` variable will never be shown in the table, so you need some other variable in addition to view the results properly, or you'll end up with a table without any rows.
 
 #### Making queries visible
 
-In addition to the `?self` variable, you need to have at minimum one other one defined, which will be displayed on each row. The variable name will label the header of the table column, capitalized.
+In addition to the `?self` variable, you need to have at minimum one other variable defined, which will be displayed on each row. The variable name will label the header of the table column, capitalized.
 
 #### The minimum functioning query with the `?self` variable defined:
 
@@ -263,7 +263,7 @@ WHERE {
 LIMIT 20
 ```
 
-### Example Sparql Queries
+### Example SPARQL Queries
 
 Here's an example of fetching unique Persons using `https://schema.org` properties.
 
@@ -282,7 +282,7 @@ LIMIT 20
 
 ## Configuring the Studios index page
 
-The Studios space lists all the studios you have permissions to view or edit.
+The Studios space lists all the Studios you have permissions to view or edit.
 
 @@@ div { .half .center }
 ![Studios Index Page](../assets/fusion-studio-index-page.png)
@@ -311,7 +311,7 @@ To enable this feature, the following should be done:
     {
       "project": "a7d693345-8d1d-rtrt-111a-90b6b6ab94ee",
       "viewId": "nxv:defaultElasticSearchIndex"
-    },
+    }
   ]
 }
 ```
@@ -325,7 +325,6 @@ Ask a developer to add an ENV variable with the location of the 'AggregateElasti
 In our example it would be:
 
 `STUDIO_VIEW=webapps/nexus-fusion/nxv:studioList`
-
 
 Every time when you create a new Studio, the `AggregateElasticSearchView` needs to be updated.
 @@@
