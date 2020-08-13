@@ -18,14 +18,14 @@ export default function PoweredByNexus() {
                   src={epflLogo}
                   alt="École Polytechnique Fédérale de Lausanne"
                 />
-                <p>Blue Brain Project</p>
+                <p className="text-centered">Blue Brain Project</p>
               </a>
             </div>
 
             <div className="column">
               <a href="https://kg.ebrains.eu/">
                 <img src={ebrainsLogo} alt="EBRAINS" width="80px" />
-                <p>EBRAINS</p>
+                <p className="text-centered">EBRAINS</p>
               </a>
             </div>
 
@@ -35,14 +35,18 @@ export default function PoweredByNexus() {
                   src={camhLogo}
                   alt="The Centre for Addiction and Mental Health"
                 />
-                <p>Krembil Centre for Neuroinformatics</p>
+                <p className="text-centered">
+                  Krembil Centre for Neuroinformatics
+                </p>
               </a>
             </div>
 
             <div className="column">
               <a href="https://conp.ca/">
                 <img src={conpLogo} alt="Canadian Open Neuroscience Platform" />
-                <p>Canadian Open Neuroscience Platform</p>
+                <p className="text-centered">
+                  Canadian Open Neuroscience Platform
+                </p>
               </a>
             </div>
           </div>

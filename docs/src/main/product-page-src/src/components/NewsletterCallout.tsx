@@ -65,13 +65,10 @@ const NewsletterCallout: React.FC<{
                     <div className="control has-icons-left">
                       <input
                         type="email"
-                        placeholder="Enter your email address"
+                        placeholder="Enter your email"
                         name="email"
                         className="input"
-                      ></input>
-                      <span className="icon is-small is-left">
-                        <i className="fas fa-envelope"></i>
-                      </span>
+                      />
                     </div>
                     <div className="control">
                       <button type="submit" className="button">

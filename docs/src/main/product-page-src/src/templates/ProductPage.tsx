@@ -7,6 +7,7 @@ import Features from "../components/Features"
 import ProductDiagram from "../components/ProductDiagram"
 import Fun from "../components/Fun"
 import svgify from "../libs/svgify"
+import { isSmall } from "../libs/browser"
 
 export type Product = {
   name: string
@@ -52,7 +53,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
       <section className="hero is-fullheight">
         <div className="full-height">
           <div className="gradient subtraction" />
-          <Fun object={object} />
+          {!isSmall() && <Fun object={object} />}
         </div>
         <div className="hero-body">
           <div

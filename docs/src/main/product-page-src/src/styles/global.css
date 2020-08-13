@@ -169,6 +169,10 @@ h3 {
   opacity: 0.2;
 }
 
+.text-centered {
+  text-align: center;
+}
+
 @media (max-width: 800px) {
   .page-title {
     margin: 2em 0 1em;
@@ -300,6 +304,9 @@ a:hover .subtle {
     padding-right: 0;
   }
   .column .button {
+    width: 100%;
+  }
+  .text-centered {
     width: 100%;
   }
 }

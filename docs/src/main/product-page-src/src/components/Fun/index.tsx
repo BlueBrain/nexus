@@ -3,7 +3,6 @@ import useRaf from "@rooks/use-raf"
 import World, { WorldObj } from "./World"
 import useResize from "../../hooks/useResize"
 import objects from "./objects"
-import { isSmall } from "../../libs/browser"
 
 const Fun: React.FC<{ object: string }> = ({ object }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
@@ -49,7 +48,4 @@ const Fun: React.FC<{ object: string }> = ({ object }) => {
   return <canvas className="fun" ref={canvasRef} />
 }
 
-export const WithIsNotMobile = (wrappedCompenent: React.FC<any>) =>
-  !isSmall() ? wrappedCompenent : () => null
-
-export default WithIsNotMobile(Fun)
+export default Fun
