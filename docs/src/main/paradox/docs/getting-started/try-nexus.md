@@ -105,10 +105,11 @@ from kgforge.core import KnowledgeGraphForge
 ### Setup
 
 Then you need to define the Nexus Sandbox API endpoint, as well as the organization and project configured in the first part of the tutorial.
+Please remember to change to the appropriate organization and project in the code below.
 
 ```python
 ORGANIZATION = "tutorialnexus"
-PROJECT = "aleoenordnblj" # Provide your project label here
+PROJECT = "mytutorial" # Provide your project label here
 DEPLOYMENT = "https://sandbox.bluebrainnexus.io/v1" # Using version 1 of the Nexus Delta API
 ```
 
