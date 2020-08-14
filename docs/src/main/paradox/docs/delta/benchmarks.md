@@ -118,17 +118,17 @@ fact that the system is CPU bound while performing heavy operations. The the val
 that there's a higher deviation in the values for this operation. This is explained by nodes processing different
 number of validations depending on how requests are distributed between the members of the cluster.
 
-![Read - Throughput (requests / second) for varied number of nodes](assets/read-throughput.png)
+![Read - Throughput (requests / second) for varied number of nodes](assets/benchmarks-read-throughput.png)
 
-![Read - Latency (ms) for varied number of nodes](assets/read-latency.png)
+![Read - Latency (ms) for varied number of nodes](assets/benchmarks-read-latency.png)
 
-![Write no validation - Throughput (requests / second) for varied number of nodes](assets/write-novalidation-throughput.png)
+![Write no validation - Throughput (requests / second) for varied number of nodes](assets/benchmarks-write-novalidation-throughput.png)
 
-![Write no validation - Latency (ms) for varied number of nodes](assets/write-novalidation-latency.png)
+![Write no validation - Latency (ms) for varied number of nodes](assets/benchmarks-write-novalidation-latency.png)
 
-![Write - Throughput (requests / second) for varied number of nodes](assets/write-throughput.png)
+![Write - Throughput (requests / second) for varied number of nodes](assets/benchmarks-write-throughput.png)
 
-![Write - Latency (ms) for varied number of nodes](assets/write-latency.png)
+![Write - Latency (ms) for varied number of nodes](assets/benchmarks-write-latency.png)
 
 ## Raw results
 

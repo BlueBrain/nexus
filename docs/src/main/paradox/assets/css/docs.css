@@ -20,6 +20,10 @@ a.md-logo {
     width: 50%;
 }
 
+.three-quarters {
+    width: 75%;
+}
+
 .center {
     margin: 0 auto;
 }
