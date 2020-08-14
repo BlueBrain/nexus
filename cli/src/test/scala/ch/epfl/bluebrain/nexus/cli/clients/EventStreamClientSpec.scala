@@ -52,10 +52,10 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         val token   = cfg.env.token
         val httpApp = HttpApp[IO] {
           // global events with offset
-          case GET -> `v1` / "events" optbearer `token` lastEventId offset                                         =>
+          case GET -> `v1` / "resources" / "events" optbearer `token` lastEventId offset                           =>
             Response[IO](Status.Ok).withEntity(streamFor(Some(offset))).pure[IO]
           // global events
-          case GET -> `v1` / "events" optbearer `token`                                                            =>
+          case GET -> `v1` / "resources" / "events" optbearer `token`                                              =>
             Response[IO](Status.Ok).withEntity(streamFor(None)).pure[IO]
           // org events with offset
           case GET -> `v1` / "resources" / OrgLabelVar(`orgLabel`) / "events" optbearer `token` lastEventId offset =>
