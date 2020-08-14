@@ -54,7 +54,7 @@ final case class EnvConfig(
     * Computes the events endpoint.
     */
   def eventsUri: Uri =
-    endpoint / "events"
+    endpoint / "resources" / "events"
 
   /**
     * Computes the events endpoint from the arguments.
