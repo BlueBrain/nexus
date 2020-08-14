@@ -1,4 +1,4 @@
-name: Continuous Integration Docs
+name: Continuous Integration Product Page
 on:
   push:
     branches:
@@ -29,7 +29,7 @@ jobs:
       with:
         java-version: adopt@1.11
     - name: Review
-      run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox makeProductPage
+      run: sbt "project docs" clean makeProductPage
 
   publish:
     if: github.event_name == 'push'
