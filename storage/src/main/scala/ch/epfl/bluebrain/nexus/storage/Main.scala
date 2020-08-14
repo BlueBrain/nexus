@@ -55,12 +55,12 @@ object Main {
 
     implicit val appConfig: AppConfig = Settings(config).appConfig
 
-    implicit val as: ActorSystem                          = ActorSystem(appConfig.description.fullName, config)
-    implicit val ec: ExecutionContext                     = as.dispatcher
-    implicit val eff: Effect[Task]                        = Task.catsEffect(Scheduler.global)
-    implicit val iamIdentities: IamIdentitiesClient[Task] = new IamIdentitiesClient[Task](appConfig.iam)
-    implicit val timeout                                  = Timeout(1.minute)
-    implicit val clock                                    = Clock.systemUTC
+    implicit val as: ActorSystem                              = ActorSystem(appConfig.description.fullName, config)
+    implicit val ec: ExecutionContext                         = as.dispatcher
+    implicit val eff: Effect[Task]                            = Task.catsEffect(Scheduler.global)
+    implicit val deltaIdentities: DeltaIdentitiesClient[Task] = new DeltaIdentitiesClient[Task](appConfig.delta)
+    implicit val timeout                                      = Timeout(1.minute)
+    implicit val clock                                        = Clock.systemUTC
 
     val storages: Storages[Task, AkkaSource] =
       new DiskStorage(appConfig.storage, appConfig.digest, AttributesCache[Task, AkkaSource])

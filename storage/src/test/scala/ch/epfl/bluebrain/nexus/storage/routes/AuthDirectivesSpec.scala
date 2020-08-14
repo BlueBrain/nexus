@@ -4,9 +4,9 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.storage.{IamIdentitiesClient, IamIdentitiesClientError}
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient.{AccessToken, Caller}
+import ch.epfl.bluebrain.nexus.storage.{DeltaIdentitiesClient, DeltaIdentitiesClientError}
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.{AccessToken, Caller}
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.storage.config.Settings
 import ch.epfl.bluebrain.nexus.storage.routes.AuthDirectives._
@@ -30,10 +30,10 @@ class AuthDirectivesSpec
 
   implicit private val hc: HttpConfig = Settings(system).appConfig.http
 
-  implicit private val iamIdentities: IamIdentitiesClient[Task] = mock[IamIdentitiesClient[Task]]
+  implicit private val deltaIdentities: DeltaIdentitiesClient[Task] = mock[DeltaIdentitiesClient[Task]]
 
   before {
-    Mockito.reset(iamIdentities)
+    Mockito.reset(deltaIdentities)
   }
 
   "The AuthDirectives" should {
@@ -61,7 +61,7 @@ class AuthDirectivesSpec
 
     "extract the caller" in {
       implicit val token: Option[AccessToken] = None
-      iamIdentities()(any[Option[AccessToken]]) shouldReturn Task(Caller(Anonymous, Set.empty))
+      deltaIdentities()(any[Option[AccessToken]]) shouldReturn Task(Caller(Anonymous, Set.empty))
       val route                               = Routes.wrap(extractCaller.apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.OK
@@ -72,8 +72,8 @@ class AuthDirectivesSpec
 
       "the client throws an error for caller" in {
         implicit val token: Option[AccessToken] = None
-        iamIdentities()(any[Option[AccessToken]]) shouldReturn
-          Task.raiseError(IamIdentitiesClientError.IdentitiesServerStatusError(StatusCodes.InternalServerError, ""))
+        deltaIdentities()(any[Option[AccessToken]]) shouldReturn
+          Task.raiseError(DeltaIdentitiesClientError.IdentitiesServerStatusError(StatusCodes.InternalServerError, ""))
         val route                               = Routes.wrap(extractCaller.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.InternalServerError
@@ -81,8 +81,8 @@ class AuthDirectivesSpec
       }
       "the client returns Unauthorized for caller" in {
         implicit val token: Option[AccessToken] = None
-        iamIdentities()(any[Option[AccessToken]]) shouldReturn
-          Task.raiseError(IamIdentitiesClientError.IdentitiesClientStatusError(StatusCodes.Unauthorized, ""))
+        deltaIdentities()(any[Option[AccessToken]]) shouldReturn
+          Task.raiseError(DeltaIdentitiesClientError.IdentitiesClientStatusError(StatusCodes.Unauthorized, ""))
         val route                               = Routes.wrap(extractCaller.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.Unauthorized
@@ -90,8 +90,8 @@ class AuthDirectivesSpec
       }
       "the client returns Forbidden for caller" in {
         implicit val token: Option[AccessToken] = None
-        iamIdentities()(any[Option[AccessToken]]) shouldReturn
-          Task.raiseError(IamIdentitiesClientError.IdentitiesClientStatusError(StatusCodes.Forbidden, ""))
+        deltaIdentities()(any[Option[AccessToken]]) shouldReturn
+          Task.raiseError(DeltaIdentitiesClientError.IdentitiesClientStatusError(StatusCodes.Forbidden, ""))
         val route                               = Routes.wrap(extractCaller.apply(_ => complete("")))
         Get("/") ~> route ~> check {
           status shouldEqual StatusCodes.Forbidden

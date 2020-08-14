@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.storage.config
 import java.nio.file.Path
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient.Identity.{Anonymous, Subject, User}
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.storage.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 
@@ -16,7 +16,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param http        http interface configuration
   * @param storage     storages configuration
   * @param subject     allowed subject to perform calls to this service
-  * @param iam         iam client configuration
+  * @param delta       delta client configuration
   * @param digest      the digest configuration
   */
 final case class AppConfig(
@@ -24,7 +24,7 @@ final case class AppConfig(
     http: HttpConfig,
     storage: StorageConfig,
     subject: SubjectConfig,
-    iam: IamClientConfig,
+    delta: DeltaClientConfig,
     digest: DigestConfig
 )
 
@@ -115,10 +115,10 @@ object AppConfig {
       retriggerAfter: FiniteDuration
   )
 
-  implicit def toStorage(implicit config: AppConfig): StorageConfig = config.storage
-  implicit def toHttp(implicit config: AppConfig): HttpConfig       = config.http
-  implicit def toIam(implicit config: AppConfig): IamClientConfig   = config.iam
-  implicit def toDigest(implicit config: AppConfig): DigestConfig   = config.digest
+  implicit def toStorage(implicit config: AppConfig): StorageConfig   = config.storage
+  implicit def toHttp(implicit config: AppConfig): HttpConfig         = config.http
+  implicit def toDelta(implicit config: AppConfig): DeltaClientConfig = config.delta
+  implicit def toDigest(implicit config: AppConfig): DigestConfig     = config.digest
 
   val orderedKeys: OrderedKeys = OrderedKeys(
     List(

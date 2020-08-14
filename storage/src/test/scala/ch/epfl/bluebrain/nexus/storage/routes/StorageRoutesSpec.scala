@@ -18,8 +18,8 @@ import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient.Caller
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Caller
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.storage.Rejection.PathNotFound
 import ch.epfl.bluebrain.nexus.storage.StorageError.InternalError
 import ch.epfl.bluebrain.nexus.storage.Storages.BucketExistence.{BucketDoesNotExist, BucketExists}
@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.storage.Storages.PathExistence.{PathDoesNotExist,
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.{Randomness, Resources}
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, IamIdentitiesClient, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, DeltaIdentitiesClient, Storages}
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
@@ -51,12 +51,12 @@ class StorageRoutesSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(3.second, 15.milliseconds)
 
-  implicit val appConfig: AppConfig                     = Settings(system).appConfig
-  implicit val iamIdentities: IamIdentitiesClient[Task] = mock[IamIdentitiesClient[Task]]
-  val storages: Storages[Task, AkkaSource]              = mock[Storages[Task, AkkaSource]]
-  val route: Route                                      = Routes(storages)
+  implicit val appConfig: AppConfig                         = Settings(system).appConfig
+  implicit val deltaIdentities: DeltaIdentitiesClient[Task] = mock[DeltaIdentitiesClient[Task]]
+  val storages: Storages[Task, AkkaSource]                  = mock[Storages[Task, AkkaSource]]
+  val route: Route                                          = Routes(storages)
 
-  iamIdentities()(None) shouldReturn Task(Caller(Anonymous, Set.empty))
+  deltaIdentities()(None) shouldReturn Task(Caller(Anonymous, Set.empty))
 
   trait Ctx {
     val name                     = genString()

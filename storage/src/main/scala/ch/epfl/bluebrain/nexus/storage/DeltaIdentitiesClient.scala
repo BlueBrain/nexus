@@ -10,17 +10,17 @@ import akka.util.ByteString
 import cats.effect.{ContextShift, Effect, IO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient.Identity._
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient._
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClientError.IdentitiesSerializationError
-import ch.epfl.bluebrain.nexus.storage.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity._
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient._
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClientError.IdentitiesSerializationError
+import ch.epfl.bluebrain.nexus.storage.config.DeltaClientConfig
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport.{DecodingFailures => AccDecodingFailures}
 import io.circe.Decoder.Result
 import io.circe.{Decoder, DecodingFailure, HCursor}
 
 import scala.concurrent.ExecutionContext
 
-class IamIdentitiesClient[F[_]](config: IamClientConfig)(implicit F: Effect[F], as: ActorSystem)
+class DeltaIdentitiesClient[F[_]](config: DeltaClientConfig)(implicit F: Effect[F], as: ActorSystem)
     extends JsonLdCirceSupport {
 
   private val um: FromEntityUnmarshaller[Caller]      = unmarshaller[Caller]
@@ -43,13 +43,13 @@ class IamIdentitiesClient[F[_]](config: IamClientConfig)(implicit F: Effect[F], 
       else
         IO.fromFuture(IO(resp.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)))
           .to[F]
-          .flatMap { err => F.raiseError(IamIdentitiesClientError.unsafe(resp.status, err)) }
+          .flatMap { err => F.raiseError(DeltaIdentitiesClientError.unsafe(resp.status, err)) }
     }
   }
 
 }
 
-object IamIdentitiesClient {
+object DeltaIdentitiesClient {
 
   /**
     * The client caller. It contains the subject and the list of identities (which contains the subject again)
