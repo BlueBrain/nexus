@@ -34,7 +34,7 @@ import scala.reflect.ClassTag
   * @tparam Event
   * @tparam Rejection
   */
-class EventSourceSharding[
+class ShardedAggregate[
   F[_]: Timer,
   State: ClassTag,
   Command: ClassTag,
@@ -44,7 +44,7 @@ class EventSourceSharding[
                        retryStrategy: RetryStrategy[F],
                        askTimeout: Timeout)
                       (implicit F: Effect[F], as: ActorSystem[Nothing])
-    extends EventSourceHandler[F, String, State, Command, Event, Rejection] {
+    extends Aggregate[F, String, State, Command, Event, Rejection] {
 
   implicit private[processor] val contextShift: ContextShift[IO]        = IO.contextShift(as.executionContext)
   implicit private val timeout: Timeout                            = askTimeout
@@ -106,7 +106,7 @@ class EventSourceSharding[
   }
 }
 
-object EventSourceSharding {
+object ShardedAggregate {
 
   private def sharded[
     F[_]: Effect: Timer,
@@ -118,7 +118,7 @@ object EventSourceSharding {
                          retryStrategy: RetryStrategy[F],
                          askTimeout: Timeout,
                          shardingSettings: Option[ClusterShardingSettings])
-                        (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] = {
+                        (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] = {
     val F                                = implicitly[Effect[F]]
     F.delay {
       val clusterSharding = ClusterSharding(as)
@@ -130,7 +130,7 @@ object EventSourceSharding {
         }.withSettings(settings)
       )
 
-      new EventSourceSharding[F, State, EvaluateCommand, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
+      new ShardedAggregate[F, State, EvaluateCommand, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
     }
   }
 
@@ -147,7 +147,7 @@ object EventSourceSharding {
     }
 
   /**
-    * Creates an [[EventSourceSharding]] that makes use of persistent actors to perform its functions. The actors
+    * Creates an [[ShardedAggregate]] that makes use of persistent actors to perform its functions. The actors
     * are automatically spread across all nodes of the cluster.
     *
     * @param definition
@@ -173,7 +173,7 @@ object EventSourceSharding {
                          retryStrategy: RetryStrategy[F],
                          stopStrategy: PersistentStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)
-                          (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] =
+                          (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext => new processor.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
@@ -189,8 +189,9 @@ object EventSourceSharding {
     )
 
   /**
-    * Creates an [[EventSourceSharding]] that makes use of transient actors to perform its functions. The actors
+    * Creates an [[ShardedAggregate]] that makes use of transient actors to perform its functions. The actors
     * are automatically spread across all nodes of the cluster.
+ *
     * @param definition
     * @param config
     * @param retryStrategy
@@ -214,7 +215,7 @@ object EventSourceSharding {
                          retryStrategy: RetryStrategy[F],
                          stopStrategy: TransientStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)
-                         (implicit as: ActorSystem[Nothing]): F[EventSourceHandler[F, String, State, EvaluateCommand, Event, Rejection]] =
+                         (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext => new processor.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](

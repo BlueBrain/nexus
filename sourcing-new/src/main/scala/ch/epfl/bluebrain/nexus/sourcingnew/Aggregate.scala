@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.sourcingnew
 import ch.epfl.bluebrain.nexus.sourcingnew.processor.{DryRunResult, EvaluationResult}
 
 /**
-  * A stateful handler based on event sourcing that can be controlled through commands;
+  * An aggregate based on event sourcing that can be controlled through commands;
   *
   * Successful commands result in state transitions.
   * If we use a persistent implementation, new events are also appended to the event log.
@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.sourcingnew.processor.{DryRunResult, EvaluationRe
   * @tparam Event
   * @tparam Rejection
   */
-trait EventSourceHandler[F[_], Id, State, Command, Event, Rejection] {
+trait Aggregate[F[_], Id, State, Command, Event, Rejection] {
 
   /**
     * Get the current state for the entity with the given __id__

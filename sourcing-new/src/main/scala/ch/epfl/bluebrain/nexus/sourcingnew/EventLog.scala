@@ -7,6 +7,12 @@ import izumi.distage.model.definition.With
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
+/**
+  * A log of ordered events for uniquely identifiable entities.
+  *
+  * @tparam F[_]       the event log effect type
+  * @tparam Event      the event type
+  */
 trait EventLog[F[_], Event] {
   def currentPersistenceIds: Stream[F, String]
   def persistenceIds: Stream[F, String]
@@ -33,6 +39,18 @@ object EventLog {
   import cats.implicits._
   import cats.effect.{Async, ContextShift}
   import streamz.converter._
+
+  /**
+    * Implementation of [[EventLog]] based on Akka Persistence
+    * @param readJournal
+    * @param contextShift$F$0
+    * @param async$F$1
+    * @param classTag$Event$0
+    * @param as
+    * @tparam F[_]       the event log effect type
+    * @tparam RJ         the underlying journal typr (Cassandra / JDBC / ...)
+    * @tparam Event      the event type
+    */
   class AkkaEventLog[
     F[_]: ContextShift: Async,
     RJ <: ReadJournal with PersistenceIdsQuery

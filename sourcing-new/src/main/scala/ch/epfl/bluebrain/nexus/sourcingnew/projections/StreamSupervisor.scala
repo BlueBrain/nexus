@@ -11,6 +11,9 @@ import fs2.concurrent.SignallingRef
 import retry.CatsEffect._
 import retry.syntax.all._
 
+/**
+  * Allows to supervise a stream through an actor
+  */
 object StreamSupervisor {
 
   sealed trait SupervisorCommand

@@ -11,6 +11,15 @@ import doobie.util.transactor.Transactor
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 
+/**
+  * Jdbc implementation of [[Projection]]
+  * @param host
+  * @param port
+  * @param database
+  * @param username
+  * @param password
+  * @param driver
+  */
 final case class JdbcConfig(host: String,
                             port: Int,
                             database: String,
