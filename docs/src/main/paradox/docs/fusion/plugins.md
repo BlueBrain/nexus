@@ -1,15 +1,15 @@
 # Plugins
-A resource returned by nexus delta API is usually a JSON-LD document. By default Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.
+A resource returned by the Nexus Delta API is usually a JSON-LD document. By default Nexus Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.
 
-Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electro physiology, a set of files to download, a set of images and so on. So a user may want to  extend Fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.
+Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electro physiology, a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.
 
 ## What are Plugins
-A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Web. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.
+A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Fusion. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.
 
-Plugins are developed using javascript and are loaded into the Nexus Fusion instance from in the /plugins folder.
+Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from in the /plugins folder.
 
 ## Plugin examples
-Below you can find the screen shots from some plugins that can be integrated into Fusion. They extend the Fusion presentation layer.
+Below you can find the screenshots from some plugins that can be integrated into Nexus Fusion. They extend the Nexus Fusion presentation layer.
 
 Neuron Electro physiology viewer
 ![](../assets/fusion-ephys-plugin.png)
@@ -39,9 +39,9 @@ You have to transpile and bundle your code using SystemJS as output:
 - with [rollup](https://rollupjs.org/guide/en/#outputformat): use `system` as output format
 - with [webpack](https://webpack.js.org/configuration/output/#outputlibrarytarget): use `system` as `outputTarget`
 
-### Configuring Nexus to run your plugins
+### Configuring Nexus Fusion to run your plugins
 
-Once you have your javascript bundled into a single file, you can place it in the `./plugins` folder at the root of your Nexus Web instance.
+Once you have your Javascript bundled into a single file, you can place it in the `./plugins` folder at the root of your Nexus Web instance.
 
 Plugins should follow this folder naming convention:
 
