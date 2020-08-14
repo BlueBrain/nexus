@@ -295,6 +295,7 @@ lazy val storage = project
       catsEffect,
       circeCore,
       circeGenericExtras,
+      logback,
       monixEval,
       pureconfig,
       scalaLogging,
