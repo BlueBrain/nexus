@@ -4,6 +4,14 @@ import cats.effect.{IO, LiftIO}
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.SchemaMigration
 import org.flywaydb.core.Flyway
 
+/**
+  * Apply the migration scripts on a SQL compliant database
+  *
+  * Relies on https://flywaydb.org/
+  *
+  * @param jdbcConfig
+  * @tparam F
+  */
 class JdbcSchemaMigration[F[_]: LiftIO](jdbcConfig: JdbcConfig)
   extends SchemaMigration[F] {
 

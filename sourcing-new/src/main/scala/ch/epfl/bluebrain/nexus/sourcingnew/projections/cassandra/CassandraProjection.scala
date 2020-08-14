@@ -15,6 +15,15 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import streamz.converter._
 
+/**
+  * Implementation of [[Projection]] for Cassandra
+  *
+  * @param session
+  * @param projectionConfig
+  * @param as
+  * @tparam F
+  * @tparam A
+  */
 class CassandraProjection [F[_]: ContextShift,
                            A: Encoder: Decoder](session: CassandraSession,
                                                 projectionConfig: ProjectionConfig,

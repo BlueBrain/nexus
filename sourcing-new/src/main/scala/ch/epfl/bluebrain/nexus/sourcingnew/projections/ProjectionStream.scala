@@ -51,6 +51,13 @@ object ProjectionStream {
         }
   }
 
+  /**
+    * Provides extensions methods for fs2.Stream[Message[A]] to implement projections
+    * @param stream
+    * @param projectionId
+    * @tparam F
+    * @tparam A
+    */
   implicit class SimpleStreamOps[F[_]: Timer, A: Encoder]
     (val stream: Stream[F, Message[A]])(implicit override val projectionId: ProjectionId,
                                         override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {
@@ -145,6 +152,14 @@ object ProjectionStream {
         }
   }
 
+  /**
+    * Provides extensions methods for fs2.Stream[Chunk[Message[A]]] to implement projections
+    *
+    * @param stream
+    * @param projectionId
+    * @tparam F
+    * @tparam A
+    */
   implicit class ChunckStreamOps[F[_]: Timer, A: Encoder]
     (val stream: Stream[F, Chunk[Message[A]]])(implicit override val projectionId: ProjectionId,
                                                override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {

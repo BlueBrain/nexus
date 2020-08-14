@@ -23,6 +23,14 @@ object CassandraStatements {
        |WITH CLUSTERING ORDER BY (offset ASC)""".stripMargin
 }
 
+/**
+  * Apply migration scripts on Cassandra
+  * @param session
+  * @param schemaConfig
+  * @param as
+  * @param F
+  * @tparam F
+  */
 class CassandraSchemaMigration[F[_]](session: CassandraSession,
                                      schemaConfig: CassandraConfig,
                                      as: ActorSystem[Nothing])
