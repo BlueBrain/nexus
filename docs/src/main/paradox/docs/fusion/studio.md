@@ -36,11 +36,11 @@ A `Studio` will be given a URI for navigation or sharing.
 
 ### About the Studio Context
 
-In order for the `Studio` to work as intended with the UI, a context must be in the project. Its purpose is to direct the knowledge graph to understand how studio-specific properties behave, such as that `Workspaces` should be set (an unordered collection without duplicates).
+In order for the `Studio` to work as intended with the UI, a context must be in the project. Its purpose is to direct the Knowledge Graph to understand how studio-specific properties behave, such as that `Workspaces` should be set (an unordered collection without duplicates).
 
 If you create a `Studio` using the UI in Nexus Fusion, this resource will be created for you, if it doesn't exist already. If you plan on bootstrapping your own projects programmatically, such as through the API, then you might need to take care to include it.
 
-Every `Studio` resource that is created should reference this context resource as the `@context` property. For an example, see the `Studio` resource mentioned above. The default Studio context `@id` for all our examples will be `https://bluebrainnexus.io/studio/context`, and it's what Nexus Fusion will use.
+Every `Studio` resource that is created should reference this context resource as the `@context` property. For an example, see the `Studio` resource mentioned above. The default Studio context `@id` for all our examples will be `https://bluebrainnexus.io/studio/context`, and it is what Nexus Fusion will use.
 
 Here's what the context should look like:
 
@@ -194,7 +194,7 @@ You can also find your `Workspaces` as raw `JSON` configurations in the `Resourc
 
 #### Updating a Workspace
 
-Inside any `Studio`, under a `Workspace` tab label, click on the `Edit` link. Then you'll be provided with a dialogue where you can review and edit the `Workspace` configuration.
+Inside any `Studio`, under a `Workspace` tab label, click on the `Edit` link. Then you'll be provided with a dialog where you can review and edit the `Workspace` configuration.
 
 - `Select View`: The view of which to pair with _each `Dashboard` inside the follow transfer list_. The `Dashboard` queries will be run against the `View` listed inside this box. For now, using this Edit form, you can only pair one `View` for all `Dashboards`. If you were to create the configurations manually, you can pair each `Dashboard` with a different `View`.
 - `Add or Remove Dashboards`: Add or remove a `Dashboard` to the collection in your `Workspace` configuration. The `Dashboards` listed are all the available non-deprecated ones in the project.
@@ -258,7 +258,7 @@ In addition to the `?self` variable, you need to have at minimum one other varia
 prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 SELECT DISTINCT ?subject ?self
 WHERE {
-?subject nxv:self ?self ;
+   ?subject nxv:self ?self ;
 }
 LIMIT 20
 ```
@@ -272,7 +272,7 @@ prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
 prefix s: <http://schema.org/>
 SELECT DISTINCT ?self ?familyName ?givenName
 WHERE {
-?s nxv:constrainedBy <https://neuroshapes.org/dash/person> ;
+  ?s nxv:constrainedBy <https://neuroshapes.org/dash/person> ;
   nxv:self ?self ;
   s:familyName ?familyName ;
   s:givenName ?givenName
