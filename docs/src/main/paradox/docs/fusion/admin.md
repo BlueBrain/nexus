@@ -3,12 +3,12 @@
 The Nexus Fusion admin app allows you to manage your Nexus Delta instance. In particular, you can:
 
 * list, create, edit and deprecate organizations,
-* list, create, edit and deprecate projects within an organization
-* check permissions on your projects and organizations
-* create, view, edit, and deprecate ressources within your projects
-* query your knowledge graph with SPARQL and elasticsearch views
-* create new Studios (or edit or deprecate them, as Studios are ressources)
-* check the indexing status of your projects
+* list, create, edit and deprecate projects within an organization,
+* check permissions on your projects and organizations,
+* create, view, edit, and deprecate resources within your projects,
+* query your Knowledge Graph with SPARQL and Elasticsearch views,
+* create new Studios (or edit or deprecate them, as Studios are resources),
+* check the indexing status of your projects.
 
 > Note: Some organizations in Nexus Delta are created to support Nexus Fusion internals, such as the `webapps` organization. Be careful when deleting those.
 
@@ -18,7 +18,7 @@ When creating a project, you can use  "Advanced Settings" to set Base, Vocab and
 
 Base is an IRI used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) for generating '@id' of this child resources of the project.
 
-Vocab is an IRI used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) prefix for all unqualified predicates in child resources of the project. Json object - provides a convenient way to deal with URIs when performing operations on a sub-resource. This field is optional.
+Vocab is an IRI used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) prefix for all unqualified predicates in child resources of the project. JSON object - provides a convenient way to deal with URIs when performing operations on a sub-resource. This field is optional.
 
 More info can be found @ref:[here](../delta/api/current/admin-projects-api.md#api-mappings) regarding API Mappings.
 
@@ -49,10 +49,10 @@ The project view in your admin app is the center stage to manage a project.
 @@@
 
 * On the left hand side, you will find the `Default Query`. You can filter and search resources, order them, as well as share that query with your peers. You can create as many queries as you like by clicking `+ Add another resource list`.
-* On the right hand side, you find the `Project Tools`. You'll find the SPARQL and elasticsearch query editors, and check the project permissions. You can also @ref:[create a new resource](admin.md#creating-a-new-resource) and upload files.
+* On the right hand side, you find the `Project Tools`. You'll find the SPARQL and Elasticsearch query editors, and check the project permissions. You can also @ref:[create a new resource](admin.md#creating-a-new-resource) and upload files.
 * "Manage studios for this project", will take you to the studio sub application. There you can create/edit/update studios for this project.
 
-In the header, the breadcrumb menu shows the organization and project your are in. You can also check the indexing status of your project.
+In the header, the breadcrumbs menu shows the organization and project your are in. You can also check the indexing status of your project.
 
 ### Creating a New Resource
 
