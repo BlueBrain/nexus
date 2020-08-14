@@ -6,7 +6,6 @@ import { scrollIntoView } from "../libs/scroll"
 import Features from "../components/Features"
 import ProductDiagram from "../components/ProductDiagram"
 import Fun from "../components/Fun"
-import svgify from "../libs/svgify"
 import { isSmall } from "../libs/browser"
 
 export type Product = {
@@ -39,10 +38,6 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   } = product
 
   const { pathname } = useLocation()
-
-  React.useEffect(() => {
-    svgify()
-  }, [])
 
   const object =
     slug === "nexus-fusion" ? "Ico" : slug === "nexus-forge" ? "Box" : "Pyramid"

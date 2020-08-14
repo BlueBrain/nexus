@@ -3,6 +3,7 @@ import * as React from "react"
 import sandbox from "../../static/img/icons/sandbox.svg"
 import py from "../../static/img/icons/py.svg"
 import notebook from "../../static/img/icons/notebook.svg"
+import SVG from "./SVG"
 
 const getStartedLinks = [
   {
@@ -34,7 +35,7 @@ const GetStartedLink: React.FC<{
         <div className="get-started center-flex">
           <h4 className="title">{title}</h4>
           <div className="figure image is-64x64">
-            <img src={image} alt={title} className="svgify primary subtle" />
+            <SVG src={image} alt={title} className="svgify primary subtle" />
           </div>
         </div>
       </a>

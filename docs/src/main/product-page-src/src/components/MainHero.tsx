@@ -1,14 +1,9 @@
 import * as React from "react"
 import { useLocation } from "@reach/router"
 import { scrollIntoView } from "../libs/scroll"
-import svgify from "../libs/svgify"
 
 export default function MainHero() {
   const { pathname } = useLocation()
-
-  React.useEffect(() => {
-    svgify()
-  }, [])
 
   return (
     <section className="hero is-fullheight">

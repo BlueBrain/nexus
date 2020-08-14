@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import getIcon from "./featureIcon"
+import SVG from "./SVG"
 
 const ValuePropoisition: React.FC<{
   title: string
@@ -13,13 +14,13 @@ const ValuePropoisition: React.FC<{
         <div className="value-prop center-flex">
           <div className="figure image is-64x64">
             {image ? (
-              <img
+              <SVG
                 src={image}
                 alt={title}
                 className="svgify secondary subtle"
               />
             ) : (
-              <img
+              <SVG
                 src={getIcon(title)}
                 alt="placeholder"
                 className="svgify secondary subtle"

@@ -248,7 +248,8 @@ section .container.with-room {
 
 a.box:hover,
 a.box:focus {
-  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1), 0 0 0 1px var(--link);
+  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1),
+    0 0 0 1px var(--primary-light);
 }
 
 svg.replaced-svg {
@@ -262,8 +263,8 @@ svg.secondary {
 }
 
 svg.primary {
-  fill: var(--link);
-  stroke: var(--link);
+  fill: var(--primary-light);
+  stroke: var(--primary-light);
 }
 
 .subtle {
