@@ -59,9 +59,9 @@ Plugins should follow this folder naming convention:
 
 ## Plugin Manifest
 
-The plugin manifest should be available at the same remote endpoint as the plugins. This is so Nexus can find the plugins and apply them dynamically.
+The plugin manifest should be available at the same remote endpoint as the plugins. This is so Nexus Fusion can find the plugins and apply them dynamically.
 
-The plugin manifest is a json object with keys that correspond to the plugin name with a value that corresponds to a descriptive payload of where to find the manifest, as well as some information about it's development. It's similar to a package.json file.
+The plugin manifest is a JSON object with keys that correspond to the plugin name with a value that corresponds to a descriptive payload of where to find the manifest, as well as some information about it's development. It's similar to a package.json file.
 
 ```json
 {
@@ -80,11 +80,11 @@ The plugin manifest is a json object with keys that correspond to the plugin nam
 
 Plugin Config
 
-The plugin config should be available as an object under the `mapping` key of the plugin manifest. This tells nexus when a plugin should be displayed, by matching a resource to a shape.
+The plugin config should be available as an object under the `mapping` key of the plugin manifest. This tells Nexus Fusion when a plugin should be displayed, by matching a resource to a shape.
 
 ### Matching all resources
 
-The following will show `nexus-plugin-test` for _every_ resource inside Nexus Web.
+The following will show `nexus-plugin-test` for _every_ resource in Nexus Fusion.
 
 ```json
 {
