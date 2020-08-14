@@ -10,12 +10,6 @@ We produce a docker image that is able to serve the compiled assets directly, wh
 
 Although the application is served by a Node.js server, the client communicates directly to @ref:[Nexus Delta](../delta/index.md) using @ref:[Nexus.js](../utilities/utilities.md#nexus-js)
 
-## Goals
-
-Nexus Fusion aims to be an extensible web application that can serve generic needs of data visualization, governance and administration, while simultaneously serving domain specific needs of users. In order to facilitate this, we are adapting a plugin model where developers can adapt Nexus Fusion for their user's situation. This began in previous releases by introducing Plugins, and we will continue developing this direction with Subapps.
-
-Nexus Fusion aims to be a frame, upon which many extension are hung.
-
 ## SubApps
 
 Nexus Fusion is divided into sections called SubApps. SubApps are separate workspaces that attempt to contain the concerns of disparate users and activities, and provide different access rights for each.
