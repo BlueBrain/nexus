@@ -33,7 +33,7 @@ const features = [
     title: "Rich Ecosystem",
     image: allInOne,
     description:
-      "By being open-source, our users can access the full suite of libraries, packages, and products that support our ecosystem. OR In addition to our core products, check out our Javascript libraries, Python SDK, and CLI.",
+      "By being open-source, our users can access the full suite of libraries, packages, and products that support our ecosystem. In addition to our core products, check out our Javascript libraries, Python SDK, and CLI.",
   },
   {
     title: "Versatile",

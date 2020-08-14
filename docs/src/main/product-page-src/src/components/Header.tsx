@@ -11,9 +11,11 @@ export default function Header() {
     <header className="header">
       <div className="container">
         <div className="content stretch">
-          <div className="epfl-logo">
-            <img src={epflLogo} alt="EPFL logo" />
-          </div>
+          <a href="https://www.epfl.ch/" target="_blank">
+            <div className="epfl-logo">
+              <img src={epflLogo} alt="EPFL logo" />
+            </div>
+          </a>
           <Link to="/">
             <div className="logo">
               <img src={nexusLogo} alt={"Nexus Logo"} />

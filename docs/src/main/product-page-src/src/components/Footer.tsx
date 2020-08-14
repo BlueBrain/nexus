@@ -49,6 +49,7 @@ export default function Footer() {
                 </a>
               </div>
               <div className="contacts">
+                <p>EPFL Blue Brain Project</p>
                 <p>Campus Biotech</p>
                 <p>Chemin des Mines 9</p>
                 <p>1202 Geneva</p>
