@@ -4,14 +4,10 @@ on:
     branches:
       - master
     paths:
-      - 'docs/src/main/paradox/**'
-      - 'build.sbt'
-      - 'project/**'
+      - 'docs/src/main/product-page-src/**'
   pull_request:
     paths:
-      - 'docs/src/main/paradox/**'
-      - 'build.sbt'
-      - 'project/**'
+      - 'docs/src/main/product-page-src/**'
 
 jobs:
   review:
@@ -33,7 +29,7 @@ jobs:
       with:
         java-version: adopt@1.11
     - name: Review
-      run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox
+      run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox makeProductPage
 
   publish:
     if: github.event_name == 'push'
