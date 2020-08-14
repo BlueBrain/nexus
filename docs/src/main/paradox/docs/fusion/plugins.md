@@ -6,7 +6,7 @@ Resources can represent a wide variety of scientific artifacts. It can be a neur
 ## What are Plugins
 A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Fusion. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.
 
-Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from in the /plugins folder.
+Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from the [/plugins](https://github.com/BlueBrain/nexus-web/tree/master/plugins) folder.
 
 ## Plugin examples
 Below you can find the screenshots from some plugins that can be integrated into Nexus Fusion. They extend the Nexus Fusion presentation layer.
