@@ -579,5 +579,5 @@ inThisBuild(
 
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
-addCommandAlias("build-ghpages", ";docs/clean;docs/makeSite;docs/makeProductPage")
+addCommandAlias("build-ghpages", ";docs/clean;docs/makeProductPage;docs/makeSite")
 addCommandAlias("build-product-page", ";docs/clean;docs/makeProductPage")
