@@ -8,14 +8,14 @@ const products = [
     slug: "nexus-fusion",
     subtitle: "Enabling Collaborative Data and Knowledge Discovery",
     description:
-      "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.",
+      "Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge Python framework.",
   },
   {
     title: "Nexus Forge",
     slug: "nexus-forge",
     subtitle: "Building and Using Knowledge Graphs Made Easy",
     description:
-      "Knowledge Graphs are often built from heterogeneous data and knowledge (i.e. data models such as ontologies, schemas) coming from different sources and often with different formats (ie. structured, unstructured). Nexus Forge enables data scientists, data and knowledge engineers to address these challenges by uniquely combining under a consistent and generic Python Framework all necessary components to build and search a knowledge graph.",
+      "Knowledge Graphs are often built from heterogeneous data and knowledge (i.e. data models such as ontologies, schemas) coming from different sources and often with different formats (ie. structured, unstructured). Nexus Forge enables data scientists, data and knowledge engineers to address these challenges by uniquely combining under a consistent and generic Python Framework all necessary components to build and search a Knowledge Graph.",
   },
   {
     title: "Nexus Delta",
@@ -59,7 +59,7 @@ export default function WhatIsNexus() {
     <section id="what">
       <div className="container with-room">
         <div className="content centered" style={{ marginBottom: "4em" }}>
-          <h2>What is Nexus?</h2>
+          <h2>What is Blue Brain Nexus?</h2>
           <p className="subtitle">
             Blue Brain Nexus is an ecosystem that allows you to organize and
             better leverage your data through the use of a Knowledge Graph. In

@@ -63,11 +63,11 @@ export default function Home() {
       <WeAreOpenSource />
       <Features
         id="why"
-        title="Why Nexus?"
+        title="Why Blue Brain Nexus?"
         subtitle="Nexus was born out of a need for better data management in the
-            simulation neuroscience field, but built with genericity in mind.
+            simulation neuroscience field, but built to cover any use case.
             The data management needs of scientists is something that we value
-            and aim at making as easy as possible."
+            and aim to make as easy as possible."
         features={features}
       />
       <PoweredByNexus />

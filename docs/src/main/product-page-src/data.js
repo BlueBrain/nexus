@@ -31,18 +31,18 @@ module.exports = {
         },
       ],
       overviewText:
-        "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs by making it easy to:",
+        "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage Knowledge Graphs by making it easy to:",
       overviewItems: [
         "Discover and reuse available knowledge resources such as ontologies and schemas to shape, constraint, link and add semantics to datasets.",
-        "Build knowledge graphs from datasets generated from heterogeneous sources and formats. Defining, executing and sharing data mappers to transform data from a source format to a target one conformant to schemas and ontologies.",
-        "Interface with various stores offering knowledge graph storage, management and scaling capabilities, for example Nexus Delta store or an In-memory store.",
+        "Build Knowledge Graphs from datasets generated from heterogeneous sources and formats. Defining, executing and sharing data mappers to transform data from a source format to a target one conformant to schemas and ontologies.",
+        "Interface with various stores offering Knowledge Graph storage, management and scaling capabilities, for example Nexus Delta store or an In-memory store.",
         "Validate and register data and metadata.",
-        "Search and download data and metadata from a knowledge graph.",
+        "Search and download data and metadata from a Knowledge Graph.",
       ],
       featureText: "Forge offers a rich set of features to manage your data.",
       tagLine: "Building and Using Knowledge Graphs Made Easy",
       description:
-        "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs.",
+        "Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage Knowledge Graphs.",
       docsLink: "https://nexus-forge.readthedocs.io/en/latest/",
     },
     {
@@ -64,7 +64,7 @@ module.exports = {
         {
           title: "Extensible",
           description:
-            "Extend Fusion with your own apps and plugins thanks to our modular architecture. Easily adapt the interface to your domain and needs",
+            "Extend Fusion with your own apps and plugins thanks to our modular architecture. Easily adapt the interface to your domain and needs.",
         },
         {
           title: "Search",

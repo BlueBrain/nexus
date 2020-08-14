@@ -73,14 +73,6 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
             <div className="columns">
               <div className="column">
                 <a
-                  href="#overview"
-                  onClick={scrollIntoView(pathname, "overview")}
-                >
-                  <button className="button">Overview</button>
-                </a>
-              </div>
-              <div className="column">
-                <a
                   href="#features"
                   onClick={scrollIntoView(pathname, "features")}
                 >
@@ -96,6 +88,8 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
           </div>
         </div>
       </section>
+      <Features title="Features" subtitle={featureText} features={features} />
+      <EmailCatch />
       <section id="overview">
         <div className="container">
           <div className={`content ${!hasOverviewItems && "centered"}`}>
@@ -129,8 +123,6 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
           </div>
         </div>
       </section>
-      <EmailCatch />
-      <Features title="Features" subtitle={featureText} features={features} />
     </MainLayout>
   )
 }

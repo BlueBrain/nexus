@@ -49,7 +49,7 @@ export default function GetStartedWithNexus() {
         <div className="content centered">
           <h2>Get Started</h2>
           <p className="subtitle">
-            From playing with our sandbox web interface, exploring python
+            From playing with our sandbox web interface, exploring Python
             notebooks, or reading more about technical aspects in the docs,
             you’re covered. You can also visit our code base on Github or
             contact us directly.
