@@ -64,10 +64,27 @@
 }
 
 .logo img {
-  margin-right: 0.3em;
+  margin-right: 0.7em;
   margin-bottom: 0;
   width: 30px;
   height: 30px;
+}
+
+.epfl-logo img {
+  min-width: 70px;
+  height: 35px;
+}
+
+.epfl-logo {
+  margin-right: 1em;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  .epfl-logo {
+    display: none;
+  }
 }
 
 .menu-button-mobile {
