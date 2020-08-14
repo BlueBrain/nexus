@@ -1,0 +1,276 @@
+/* 
+  Header
+*/
+
+.header {
+  background-color: transparent;
+  color: #fff;
+  display: flex;
+  padding: 0.7em;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.header a:hover {
+  color: var(--font);
+}
+
+.header > .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100vw;
+}
+
+.header > .container > a {
+  color: white;
+}
+
+@media (min-width: 1281px) {
+  .header > .container {
+    width: 1344px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .header > .container {
+    padding: 0.5em;
+  }
+}
+
+.header > .container .logo {
+  font-family: "Nunito Sans", sans-serif;
+  display: flex;
+  align-items: center;
+  font-size: 1.5em;
+  color: white;
+  transition: all 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.header > .container .logo span {
+  transition: all 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.header > .container .logo:hover span {
+  opacity: 0.5;
+}
+
+.header .logo {
+  min-width: 250px;
+}
+
+.logo img {
+  margin-right: 0.7em;
+  margin-bottom: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.epfl-logo img {
+  min-width: 70px;
+  height: 35px;
+}
+
+.epfl-logo {
+  margin-right: 1em;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  .epfl-logo {
+    display: none;
+  }
+}
+
+.menu-button-mobile {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .menu-button-mobile {
+    display: block;
+    width: 2.5em;
+  }
+}
+
+#menu-container {
+  display: none;
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: grey;
+  padding: 1.5em 1em;
+  font-weight: 400;
+  font-size: 18px;
+}
+
+#menu-close-button {
+  position: absolute;
+  right: 1.5em;
+  top: 1.5em;
+}
+
+.menu-item {
+  list-style-type: none;
+  margin-bottom: 1em;
+  color: #fff;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px;
+}
+
+.menu-item-button {
+  color: #fff;
+  font-size: 18px;
+}
+
+.navigation {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-weight: 400;
+  width: 55%;
+}
+
+.nav-link {
+  text-decoration: none;
+}
+
+.nav-button,
+.nav-link {
+  color: #fff;
+  padding: 0;
+  font-size: 16px;
+  margin: 0 20px;
+}
+
+@media (max-width: 860px) {
+  .nav-button,
+  .nav-link {
+    margin: 0 10px;
+  }
+}
+
+@media (max-width: 800px) {
+  .navigation {
+    display: none;
+  }
+}
+
+.nav-dropdown-item {
+  position: relative;
+}
+
+#products-dropdown,
+#use-cases-dropdown,
+#getting-started-dropdown,
+#dev-dropdown {
+  display: none;
+  position: absolute;
+  color: #000;
+  border-radius: 8px;
+  background-color: #fff;
+  top: 40px;
+  font-size: 16px;
+  line-height: 27px;
+  padding: 15px 20px;
+}
+
+#products-dropdown {
+  left: -75px;
+  width: 260px;
+}
+
+#getting-started-dropdown {
+  left: -95px;
+  width: 340px;
+}
+
+#dev-dropdown {
+  left: -85px;
+  width: 300px;
+  padding-right: 30px;
+}
+
+#products-submenu,
+#use-cases-submenu,
+#getting-started-submenu,
+#dev-submenu {
+  display: none;
+  padding: 0 15px;
+}
+
+.desktop {
+  padding-top: 1em;
+}
+
+.submenu > li {
+  margin: 0.5em 0;
+}
+
+.desktop-subtitle,
+.mobile-subtitle {
+  font-family: "Roboto", sans-serif;
+  opacity: 0.8;
+}
+
+.desktop-subtitle {
+  text-transform: uppercase;
+  padding-top: 0.5em;
+}
+
+.desktop-link,
+.desktop-link > div {
+  color: #000;
+  opacity: 0.7;
+}
+
+.desktop-link:hover,
+.desktop-link > div:hover {
+  color: #000;
+  opacity: 1;
+}
+
+.item-with-icon {
+  display: flex;
+  align-items: center;
+}
+
+.submenu-icon {
+  margin-right: 1em;
+}
+
+.dev-list.desktop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.clear {
+  -webkit-box-shadow: 0px 0px 3px 0px rgb(231, 231, 231);
+  -moz-box-shadow: 0px 0px 3px 0px rgba(231, 231, 231);
+  box-shadow: 0px 0px 3px 0px rgb(231, 231, 231);
+  color: var(--font);
+}
+
+.clear .nav-dropdown-item > button {
+  color: var(--font);
+}
+
+.clear .dropdown {
+  border: 1px solid rgb(231, 231, 231);
+}
+
+.submenu-title {
+  margin-top: 1em;
+}

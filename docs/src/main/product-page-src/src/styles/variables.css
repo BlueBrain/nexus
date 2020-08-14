@@ -1,0 +1,10 @@
+:root {
+  --link: #0070c9;
+  --link-hover: #fff;
+  --primary: #a51aa5;
+  --primary-light: #b647b6;
+  --secondary: #44c7f4;
+  --font: #4a4a4a;
+  --hover-transition: 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+  --background-color: #f6f9fc;
+}
