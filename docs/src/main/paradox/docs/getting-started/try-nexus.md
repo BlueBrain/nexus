@@ -140,7 +140,7 @@ You now have one Workspace configured. Click the button to `Add Dashboard`.
 ![](../assets/try-nexus-sandbox-studio-view-one-workspace.png)
 @@@
 
-In order to query the grqph in a Studio Dashboard, a small modification of the previous query is necessary. You can find more information about it in the @ref:[Studio docs](../fusion/studio.md#sparql-query-requirements).
+In order to query the graph in a Studio Dashboard, a small modification of the previous query is necessary. You can find more information about it in the @ref:[Studio docs](../fusion/studio.md#sparql-query-requirements).
 
 ```sparql
 PREFIX vocab: <https://sandbox.bluebrainnexus.io/v1/vocabs/>
@@ -161,7 +161,7 @@ Choose a name for your Dashboard, copy the query. Click `Save`.
 ![](../assets/try-nexus-sandbox-dashboard-form.png)
 @@@
 
-And there are the result:
+And there are the results:
 
 @@@ div { .half .center }
 ![](../assets/try-nexus-sandbox-studio-results.png)
