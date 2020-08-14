@@ -15,8 +15,8 @@ It is a central piece of the Nexus ecosystem of software components as it offers
 the other components (@ref:[Nexus Fusion] and @ref:[Nexus Forge]) around data and
 metadata storage, management, validation and consumption in a secure setting.
 
-It is developed [in the open] with a permissive licence ([Apache License, version 2.0]) using open standards and
-interoperable semantic web technologies like [OpenID Connect], [OAuth 2.0], [RDF], [JSON-LD], [SHACL],
+Nexus Delta is developed [in the open] with a permissive licence ([Apache License, version 2.0]) using open standards
+and interoperable semantic web technologies like [OpenID Connect], [OAuth 2.0], [RDF], [JSON-LD], [SHACL],
 [Server-Sent Events].
 
 It is quite versatile as it is able to handle very small to very large amounts of data on-premise or in the cloud and

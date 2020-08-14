@@ -6,31 +6,29 @@ Blue Brain but its genericity allows for its use in arbitrary contexts.
 
 This document focuses on the characteristics of the Nexus Delta and its design choices.
 
-## Components
+## Ecosystem
 
 Nexus Delta is a low latency, scalable and secure service that realizes a range of functions to support data management
-and knowledge graph lifecycles. It is a central piece of the Blue Brain Nexus ecosystem of software components as it
-offers a set of foundational capabilities to the other components. It uses [Apache Cassandra] as a primary store
-(source of truth for all the information in the system), [ElasticSearch] for full text search and [BlazeGraph] for graph
-based data access.
+and knowledge graph lifecycles. It uses [Apache Cassandra] as a primary store (source of truth for all the information
+in the system), [ElasticSearch] for full text search and [BlazeGraph] for graph based data access.
 
-An overview of the Blue Brain Nexus components is presented in the figure below:
+An overview of the Blue Brain Nexus ecosystem is presented in the figure below:
 
 @@@ div { .half .center }
 
-![Components](assets/architecture-components.png)
+![Ecosystem](assets/architecture-ecosystem.png)
 
 @@@
 
-Nexus Fusion is a web interface that helps scientists with their day-to-day data-driven activities but also facilitates
-the system administrative tasks. It uses the Nexus JavaScript SDK that provides as set of primitives for building
-web applications for Nexus Delta.
+@ref:[Nexus Fusion] is a web interface that helps scientists with their day-to-day data-driven activities but also
+facilitates the system administrative tasks. It uses the Nexus.js (a javascript SDK) that provides as set of primitives
+for building web applications for Nexus Delta.
 
-Nexus CLI is a command line interface for scripting and automating the system administrative tasks. It also provides
-the ability to execute off process data projections to stores that are not directly supported by Nexus Delta.
+@ref:[Nexus CLI] is a command line interface for scripting and automating the system administrative tasks. It also
+provides the ability to execute off-process data projections to stores that are not directly supported by Nexus Delta.
 
-Nexus Forge is a domain-agnostic, generic and extensible Python framework that enables non-expert users to create and
-manage knowledge graphs using the Python programming language.
+@ref:[Nexus Forge] is a domain-agnostic, generic and extensible Python framework that enables non-expert users to create
+and manage knowledge graphs using the Python programming language.
 
 ## Clustering
 
@@ -60,15 +58,15 @@ or solutions that would coordinate multiple BlazeGraph nodes.
 Nexus Delta was built following the Command Query Responsibility Segregation ([CQRS]) pattern where there's a clear
 separation between the read and write models. Intent to change the application state is represented by commands that
 are validated for access and consistency before being evaluated. Successful evaluations of commands emit events that are
-persisted to global event log.
+persisted to the global event log.
 
 Asynchronous processes (projections) replay the event log and process the information for efficient consumption. The
 information in the recorded events is transformed into documents (in the case of ElasticSearch) and named graphs (in
 the case of BlazeGraph) and persisted in the respective stores. The projections persist their progress such that
 they can be resumed in case of a crash.
 
-Sources of events for projections are both the primary store and other (remote) Nexus Delta deployments. This allows
-for data aggregation when building indices.
+Sources of events for projections are both the primary store and other (remote) Nexus Delta deployments through the
+[Server Sent Events] W3C recommendation. This allows for data aggregation when building indices.
 
 Native interfaces are offered as part of the read (query) model for querying ElasticSearch and BlazeGraph.
 
@@ -135,8 +133,24 @@ In order to avoid limitations in URL lengths and for convenience, resource ident
 
 ## Authentication and Authorization
 
-TBD
+The system supports [OpenID Connect], [OAuth 2.0] and [JSON Web Tokens] (JWTs) standards and can be configured to use
+identity providers that support these standards. Proof of identity can be provided by passing a Bearer JWT in the
+Authorization header of the HTTP requests when consuming the RESTful API.
 
+Nexus Delta can use [LDAP] as an identity management system through several off-the-shelf products that implement these
+protocols on top of LDAP, like for example [Keycloak].
+
+The authorization flow is as follows:
+
+*   the provided JWT is validated against the configured identity providers
+*   the subject and group claims are used to generate the set of [identities] of the caller (when no Bearer JWT is
+    provided, the assumed identity is Anonymous)
+*   access to perform the intent is verified by comparing the collection of caller identities with the configured list
+    of @ref:[ACLs] for the target resource(s)
+
+[Nexus Fusion]: ../fusion/index.md
+[Nexus CLI]: ../utilities/nexus-python-cli.md
+[Nexus Forge]: ../forge.md
 [Apache Cassandra]: https://cassandra.apache.org/
 [ElasticSearch]: https://www.elastic.co/elasticsearch/
 [BlazeGraph]: https://blazegraph.com/
@@ -144,7 +158,15 @@ TBD
 [Gossip Protocol]: https://en.wikipedia.org/wiki/Gossip_protocol
 [Akka Remoting]: https://doc.akka.io/docs/akka/current/remoting-artery.html
 [CQRS]: https://martinfowler.com/bliki/CQRS.html
+[Server Sent Events]: https://www.w3.org/TR/eventsource/
 [REST]: https://en.wikipedia.org/wiki/Representational_state_transfer
 [API Reference]: ./api/current/index.md
 [IRI]: https://tools.ietf.org/html/rfc3987
 [CURIE]: https://www.w3.org/TR/curie/
+[LDAP]: https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol
+[OpenID Connect]: https://openid.net/connect/
+[OAuth 2.0]: https://tools.ietf.org/html/rfc6749
+[JSON Web Tokens]: https://tools.ietf.org/html/rfc7519
+[Keycloak]: https://www.keycloak.org/
+[identities]: ./api/current/iam-identities.md
+[ACLs]: ./api/current/iam-acls-api.md
