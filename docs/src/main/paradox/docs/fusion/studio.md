@@ -251,7 +251,7 @@ In order for the UI to function as intended, you must provide a unique ID variab
 
 In addition to the `?self` variable, you need to have at minimum one other variable defined, which will be displayed on each row. The variable name will label the header of the table column, capitalized.
 
-#### The minimum functioning query with the `?self` variable defined:
+#### The minimum functioning query with the `?self` variable defined
 
 ```sparql
 # This is the minimum functioning query for Studio

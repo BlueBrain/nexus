@@ -87,7 +87,11 @@ We're all set! We now have a project to host our ressources and datasets. Let's 
 
 We’ll load the [MovieLens](http://files.grouplens.org/datasets/movielens/) dataset into the created project within Nexus Delta using the python framework [Nexus Forge](https://nexus-forge.readthedocs.io/en/latest/).
 
-A [jupyter](https://mybinder.org/v2/gh/BlueBrain/nexus/master?filepath=docs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2Fbuilding_a_kg.ipynb) notebook is available for this part of the tutorial and can be spawn easily using Binder.
+A [jupyter](https://jupyter.org/) notebook is available for this part of the tutorial and can be spawn easily using Google Colab, binder, or locally:
+
+- [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb)
+- [binder](https://mybinder.org/v2/gh/BlueBrain/nexus/master?filepath=docs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2Fbuilding_a_kg.ipynb)
+- [Github](todo)
 
 For local execution, Nexus Forge can be installed using these [instructions](https://nexus-forge.readthedocs.io/en/latest/#installation). Make sure that the jupyter notebook|lab is launched in the same virtual environment where Nexus Forge is installed. Alternatively, set up a specialized [kernel](https://ipython.readthedocs.io/en/stable/install/kernel_install.html).
 
@@ -96,6 +100,74 @@ If you want to try some other examples of Nexus Forge, you can use these [notebo
 The next step is to use this query to create a Studio view in Nexus Fusion.
 
 ## Exploring the Graph in Nexus Fusion
+
+Login the Sandbox and navigate your your previously created project.
+
+Click on the `Manage Studios for this project` button on the top right corner of the project.
+
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-project-view.png)
+@@@
+
+Studios are listed here. Click on `Create Studio`.
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-project-studios.png)
+@@@
+
+Give a name to your Studio and click `Save`.
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-studio-form.png)
+@@@
+
+Here's your empty Studio. Click the button to `Add Workspace`.
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-studio-view.png)
+@@@
+
+Give a name to your Workspace and click `Save`.
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-workspace-form.png)
+@@@
+
+You now have one Workspace configured. Click the button to `Add Dashboard`.
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-studio-view-one-workspace.png)
+@@@
+
+In order to query the grqph in a Studio Dashboard, a small modification of the previous query is necessary. You can find more information about it in the @ref:[Studio docs](../fusion/studio.md#sparql-query-requirements).
+
+```sparql
+PREFIX vocab: <https://sandbox.bluebrainnexus.io/v1/vocabs/>
+PREFIX nxv: <https://bluebrain.github.io/nexus/vocabulary/>
+SELECT DISTINCT ?self ?title
+WHERE {
+?id nxv:self ?self ;
+    nxv:deprecated false ;
+    vocab:title ?title ;
+    ^vocab:movieId / vocab:tag "thought-provoking" .
+}
+LIMIT 20
+```
+
+Choose a name for your Dashboard, copy the query. Click `Save`.
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-dashboard-form.png)
+@@@
+
+And there are the result:
+
+@@@ div { .half .center }
+![](../assets/try-nexus-sandbox-studio-results.png)
+@@@
+
+Good job! You just finished the introductory course to Nexus using our Sandbox. You can now install Nexus locally or continue with the tutorials below.
 
 ## Learn More
 
