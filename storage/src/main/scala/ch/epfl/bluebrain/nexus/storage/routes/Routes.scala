@@ -3,14 +3,14 @@ package ch.epfl.bluebrain.nexus.storage.routes
 import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import ch.epfl.bluebrain.nexus.storage.IamIdentitiesClient.Caller
+import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Caller
 import ch.epfl.bluebrain.nexus.storage.StorageError._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig._
 import ch.epfl.bluebrain.nexus.storage.routes.AuthDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, IamIdentitiesClient, Rejection, StorageError, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, DeltaIdentitiesClient, Rejection, StorageError, Storages}
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 
@@ -81,7 +81,7 @@ object Routes {
     */
   def apply(
       storages: Storages[Task, AkkaSource]
-  )(implicit config: AppConfig, identities: IamIdentitiesClient[Task]): Route =
+  )(implicit config: AppConfig, identities: DeltaIdentitiesClient[Task]): Route =
     //TODO: Fetch Bearer token and verify identity
     wrap {
       concat(

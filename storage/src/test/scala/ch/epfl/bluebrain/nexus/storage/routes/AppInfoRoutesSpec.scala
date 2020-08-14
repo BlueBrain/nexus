@@ -8,7 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.storage.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.storage.routes.instances._
 import ch.epfl.bluebrain.nexus.storage.utils.Resources
-import ch.epfl.bluebrain.nexus.storage.{AkkaSource, IamIdentitiesClient, Storages}
+import ch.epfl.bluebrain.nexus.storage.{AkkaSource, DeltaIdentitiesClient, Storages}
 import io.circe.Json
 import monix.eval.Task
 import org.mockito.IdiomaticMockito
@@ -24,9 +24,9 @@ class AppInfoRoutesSpec
 
   "the app info routes" should {
 
-    implicit val config: AppConfig                        = Settings(system).appConfig
-    implicit val iamIdentities: IamIdentitiesClient[Task] = mock[IamIdentitiesClient[Task]]
-    val route: Route                                      = Routes(mock[Storages[Task, AkkaSource]])
+    implicit val config: AppConfig                            = Settings(system).appConfig
+    implicit val deltaIdentities: DeltaIdentitiesClient[Task] = mock[DeltaIdentitiesClient[Task]]
+    val route: Route                                          = Routes(mock[Storages[Task, AkkaSource]])
 
     "return application information" in {
       Get("/") ~> route ~> check {
