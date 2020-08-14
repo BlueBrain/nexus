@@ -39,12 +39,12 @@
 
 .social-icons {
   display: flex;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   flex-wrap: wrap;
 }
 
 .social-icons > a {
-  margin: 0.3em;
+  margin: 1em 1.5em 2.5em 0;
 }
 
 .social-icons > a > img {
@@ -57,6 +57,15 @@
 
 .footer .submenu-title {
   color: white;
+}
+
+.content .contacts > p,
+.content .legal > p {
+  margin: 0;
+}
+
+.legal {
+  text-align: center;
 }
 
 /* 
