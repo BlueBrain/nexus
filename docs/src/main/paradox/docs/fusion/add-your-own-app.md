@@ -43,7 +43,7 @@ routes: [
 
 ```
 
-Then you can add your SubApp to the `src/subapps/index.ts` barrell file, which hosts the SubApp set consumed by Nexus Fusion.
+Then you can add your SubApp to the [`src/subapps/index.ts`](https://github.com/BlueBrain/nexus-web/blob/master/src/subapps/index.ts) barrell file, which hosts the SubApp set consumed by Nexus Fusion.
 
 ```typescript
 const SubApps: Map<string, SubApp> = new Map();
