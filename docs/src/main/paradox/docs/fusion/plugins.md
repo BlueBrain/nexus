@@ -41,7 +41,7 @@ You have to transpile and bundle your code using SystemJS as output:
 
 ### Configuring Nexus Fusion to run your plugins
 
-Once you have your Javascript bundled into a single file, you can place it in the `./plugins` folder at the root of your Nexus Web instance.
+Once you have your Javascript bundled into a single file, you can place it in the `./plugins` folder at the root of your Nexus Fusion instance.
 
 Plugins should follow this folder naming convention:
 
