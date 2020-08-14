@@ -25,16 +25,15 @@ Hero
   width: 100vw;
 }
 .hero .gradient {
-  height: 100%;
+  height: 120%;
   width: 100%;
   position: absolute;
   top: 0;
-  background: transparent
-    linear-gradient(349deg, #0a1e55 0%, #2e2e67 27%, #5f1359 62%, #010101 100%)
-    0% 0% no-repeat padding-box;
-
-  background-blend-mode: screen;
-  clip-path: polygon(0 0, 100% 0, 100% 80%, 0 100%);
+  background: transparent;
+  background-image: url("../../static/img/hero.png");
+  clip-path: none;
+  background-size: cover;
+  background-position-y: 100%;
 }
 
 .hero .button {
@@ -47,13 +46,6 @@ Hero
 
 canvas {
   position: relative;
-}
-
-.hero .gradient.subtraction {
-  background-image: url("../../static/img/subtraction.png");
-  clip-path: none;
-  background-size: cover;
-  background-position-y: 100%;
 }
 
 @media (max-width: 600px) {
