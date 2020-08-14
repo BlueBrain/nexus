@@ -14,7 +14,7 @@ Nexus Fusion is the web interface of Blue Brain Nexus, powered by @ref:[Nexus De
 
 ## Extensibility
 
-Nexus Fusion aims to be an extensible web application that can serve generic needs of data visualization, governance and administration, while simultaneously serving domain specific needs of users. In order to facilitate this, we are adapting a plugin model where developers can adapt Nexus Fusion for their user's situation. This began in previous releases by introducing Plugins, and we will continue developing this direction with Subapps.
+Nexus Fusion aims to be an extensible web application that can serve generic needs of data visualization, governance and administration, while simultaneously serving domain specific needs of users. In order to facilitate this, we are adapting a plugin model where developers can adapt Nexus Fusion for their user's situation. This began in previous releases by introducing Plugins, and we will continue developing this direction with SubApps.
 
 Nexus Fusion aims to be a frame, upon which many extension are hung.
 
