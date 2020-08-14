@@ -1,4 +1,4 @@
-name: Continuous Integration Service
+name: Continuous Integration Delta
 on:
   push:
     branches:
@@ -67,40 +67,6 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" docker:publishLocal
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-delta:latest
-      - name: RecordCoverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean coverage test coverageReport coverageAggregate
-      - uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-  release:
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-    env:
-      CI: true
-      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-    steps:
-      - uses: actions/checkout@v2.1.0
-      - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
-        with:
-          java-version: adopt@1.11
-      - name: SetVersion
-        run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
-      - name: PublishToBintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" releaseEarly
-      - name: PublishToDockerHub
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" ";set Docker/version := \"${{ env.VERSION }}\"; docker:publishLocal"
-          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-          docker push bluebrain/nexus-delta:${{ env.VERSION }}
       - name: RecordCoverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean coverage test coverageReport coverageAggregate
       - uses: codecov/codecov-action@v1
