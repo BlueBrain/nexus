@@ -128,6 +128,8 @@ val javaSpecificationVersion = SettingKey[String](
   "The java specification version to be used for source and target compatibility."
 )
 
+lazy val makeProductPage = taskKey[Unit]("Crete product page")
+
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
@@ -152,8 +154,8 @@ lazy val docs = project
         )
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
-            |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
-            |""".stripMargin)
+                         |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+                         |""".stripMargin)
     },
     paradoxNavigationDepth in Paradox := 4,
     paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
@@ -161,7 +163,25 @@ lazy val docs = project
     // gh pages settings
     git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll                   := true,
-    ghpagesBranch                     := "gh-pages"
+    ghpagesBranch                     := "gh-pages",
+    makeProductPage                   := {
+      import scala.sys.process._
+      import java.nio.file.Files
+      val log     = streams.value.log
+      if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
+      val install = Process(Seq("make", "install"), baseDirectory.value / "src" / "main" / "product-page-src")
+      val build   = Process(Seq("make", "build"), baseDirectory.value / "src" / "main" / "product-page-src")
+      if ((install #&& build !) == 0) {
+        log.success("Product page built.")
+      } else {
+        log.error("Product page built failed.")
+        throw new RuntimeException
+      }
+    },
+    cleanFiles                       ++= Seq(
+      baseDirectory.value / "src" / "main" / "product-page-src" / ".cache" / "**",
+      baseDirectory.value / "src" / "main" / "product-page-src" / ".cache"
+    )
   )
 
 lazy val cli = project
@@ -324,12 +344,12 @@ lazy val delta = project
   .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, coverage, release, servicePackaging)
   .settings(
-    name             := "delta",
-    moduleName       := "delta",
-    coverageMinimum  := 75d,
-    buildInfoKeys    := Seq[BuildInfoKey](version),
-    Docker / packageName     := "nexus-delta",
-    buildInfoPackage := "ch.epfl.bluebrain.nexus.delta.config"
+    name                 := "delta",
+    moduleName           := "delta",
+    coverageMinimum      := 75d,
+    buildInfoKeys        := Seq[BuildInfoKey](version),
+    Docker / packageName := "nexus-delta",
+    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config"
   )
   .settings(kamonSettings)
   .settings(
@@ -559,3 +579,5 @@ inThisBuild(
 
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
+addCommandAlias("build-ghpages", ";docs/clean;docs/makeSite;docs/makeProductPage")
+addCommandAlias("build-product-page", ";docs/clean;docs/makeProductPage")
