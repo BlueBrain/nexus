@@ -1,0 +1,48 @@
+nav.mobile-menu {
+  display: none;
+}
+nav.mobile-menu h2 {
+  font-size: 1em;
+}
+.menu-item-button {
+  color: #5c5252;
+  cursor: pointer;
+}
+.menu .close-button {
+  position: absolute;
+  right: 1.5em;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  /* portrait tablets, portrait iPad, e-readers (Nook/Kindle), landscape 800x480 phones (Android) */
+  nav.mobile-menu {
+    display: block;
+  }
+  nav.mobile-menu .menu {
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: -11.2px;
+    margin: 1em;
+    padding: 1em;
+    width: calc(100vw - 2em);
+    transition: all 300ms cubic-bezier(0.6, -0.28, 0.735, 0.045);
+    transform-style: preserve-3d;
+    transform: perspective(1000px) rotate3D(1, 0, 0, -45deg);
+    opacity: 0;
+  }
+  nav.mobile-menu .menu.opened {
+    pointer-events: all;
+    transform: perspective(1000px) rotate3D(1, 0, 0, 0deg);
+    opacity: 1;
+  }
+
+  nav.mobile-menu > button {
+    min-width: 45px;
+  }
+
+  nav.mobile-menu > button > img {
+    width: 25px;
+  }
+}
