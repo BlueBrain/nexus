@@ -1,51 +1,109 @@
-[Documentation](#documentation) |
-[Development](#development) |
-[License](#license)
+<!-- AUTO-GENERATED-CONTENT:START (STARTER) -->
+<p align="center">
+  <a href="https://www.gatsbyjs.org">
+    <img alt="Gatsby" src="https://www.gatsbyjs.org/monogram.svg" width="60" />
+  </a>
+</p>
+<h1 align="center">
+  Gatsby's hello-world starter
+</h1>
 
-# [BlueBrainNexus.io](https://bluebrainnexus.io/)
+Kick off your project with this hello-world boilerplate. This starter ships with the main Gatsby configuration files you might need to get up and running blazing fast with the blazing fast app generator for React.
 
-A landing page to get an overview of the technology behind Nexus.
+_Have another more specific idea? You may want to check out our vibrant collection of [official and community-created starters](https://www.gatsbyjs.org/docs/gatsby-starters/)._
 
-## Development
+## 🚀 Quick start
 
-Anyone can edit this page without needing node or js configured, all you need is docker.
-You want to change some text or add an image? just clone me and make your changes using the steps below!
+1.  **Create a Gatsby site.**
 
-### With Docker
+    Use the Gatsby CLI to create a new site, specifying the hello-world starter.
 
-Make sure you have already installed both [Docker Engine](https://docs.docker.com/install/) and [Docker Compose](https://docs.docker.com/compose/install/).
+    ```shell
+    # create a new Gatsby site using the hello-world starter
+    gatsby new my-hello-world-starter https://github.com/gatsbyjs/gatsby-starter-hello-world
+    ```
 
-Warning! If you do not have root access, you won't be able to use docker. Use `npm` instead.
+1.  **Start developing.**
 
-> The instructions assume GNU Make, or you can use BSD make port `gmake` instead.
+    Navigate into your new site’s directory and start it up.
 
-- Install: `make install` (installs necessary packages)
-- Dev Mode: `make start` (starts serving the page in dev mode at [localhost:8000](http://localhost:8000))
+    ```shell
+    cd my-hello-world-starter/
+    gatsby develop
+    ```
 
-You can also run other helpful commands
+1.  **Open the source code and start editing!**
 
-- Test: `make test`
-- Lint: `make lint`
+    Your site is now running at `http://localhost:8000`!
 
-## Distribution
+    _Note: You'll also see a second link: _`http://localhost:8000/___graphql`_. This is a tool you can use to experiment with querying your data. Learn more about using this tool in the [Gatsby tutorial](https://www.gatsbyjs.org/tutorial/part-five/#introducing-graphiql)._
 
-This section shows how to build output files and verify that everything's okay to be delivered by github pages.
+    Open the `my-hello-world-starter` directory in your code editor of choice and edit `src/pages/index.js`. Save your changes and the browser will update in real time!
 
-Run the build command, which will:
+## 🧐 What's inside?
 
-- clean previous assets found in `src/main/paradox/public`.
-- compile the assets and put them in `src/main/paradox/public`.
-- Move the `index.html` to the root of `src/main/paradox/`
-- open your browser to the resulting things
+A quick look at the top-level files and directories you'll see in a Gatsby project.
 
-Make sure to make a PR having saved the changes to `src/main/paradox`. After a merge, this folder will be served with github pages.
+    .
+    ├── node_modules
+    ├── src
+    ├── .gitignore
+    ├── .prettierrc
+    ├── gatsby-browser.js
+    ├── gatsby-config.js
+    ├── gatsby-node.js
+    ├── gatsby-ssr.js
+    ├── LICENSE
+    ├── package-lock.json
+    ├── package.json
+    └── README.md
 
-Build: `make build`
+1.  **`/node_modules`**: This directory contains all of the modules of code that your project depends on (npm packages) are automatically installed.
 
-This will cause your browser to open to view the resulting website, or you can call open manually with the `Open` command
+2.  **`/src`**: This directory will contain all of the code related to what you will see on the front-end of your site (what you see in the browser) such as your site header or a page template. `src` is a convention for “source code”.
 
-Open: `make open`
+3.  **`.gitignore`**: This file tells git which files it should not track / not maintain a version history for.
 
-## License
+4.  **`.prettierrc`**: This is a configuration file for [Prettier](https://prettier.io/). Prettier is a tool to help keep the formatting of your code consistent.
 
-- [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+5.  **`gatsby-browser.js`**: This file is where Gatsby expects to find any usage of the [Gatsby browser APIs](https://www.gatsbyjs.org/docs/browser-apis/) (if any). These allow customization/extension of default Gatsby settings affecting the browser.
+
+6.  **`gatsby-config.js`**: This is the main configuration file for a Gatsby site. This is where you can specify information about your site (metadata) like the site title and description, which Gatsby plugins you’d like to include, etc. (Check out the [config docs](https://www.gatsbyjs.org/docs/gatsby-config/) for more detail).
+
+7.  **`gatsby-node.js`**: This file is where Gatsby expects to find any usage of the [Gatsby Node APIs](https://www.gatsbyjs.org/docs/node-apis/) (if any). These allow customization/extension of default Gatsby settings affecting pieces of the site build process.
+
+8.  **`gatsby-ssr.js`**: This file is where Gatsby expects to find any usage of the [Gatsby server-side rendering APIs](https://www.gatsbyjs.org/docs/ssr-apis/) (if any). These allow customization of default Gatsby settings affecting server-side rendering.
+
+9.  **`LICENSE`**: This Gatsby starter is licensed under the 0BSD license. This means that you can see this file as a placeholder and replace it with your own license.
+
+10. **`package-lock.json`** (See `package.json` below, first). This is an automatically generated file based on the exact versions of your npm dependencies that were installed for your project. **(You won’t change this file directly).**
+
+11. **`package.json`**: A manifest file for Node.js projects, which includes things like metadata (the project’s name, author, etc). This manifest is how npm knows which packages to install for your project.
+
+12. **`README.md`**: A text file containing useful reference information about your project.
+
+## 🎓 Learning Gatsby
+
+Looking for more guidance? Full documentation for Gatsby lives [on the website](https://www.gatsbyjs.org/). Here are some places to start:
+
+- **For most developers, we recommend starting with our [in-depth tutorial for creating a site with Gatsby](https://www.gatsbyjs.org/tutorial/).** It starts with zero assumptions about your level of ability and walks through every step of the process.
+
+- **To dive straight into code samples, head [to our documentation](https://www.gatsbyjs.org/docs/).** In particular, check out the _Guides_, _API Reference_, and _Advanced Tutorials_ sections in the sidebar.
+
+## 💫 Deploy
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/gatsbyjs/gatsby-starter-hello-world)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/import/project?template=https://github.com/gatsbyjs/gatsby-starter-hello-world)
+
+<!-- AUTO-GENERATED-CONTENT:END -->
+
+### Special thanks for icons
+
+Icons made by <a href="https://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+
+Icons made by <a href="https://www.flaticon.com/authors/smashicons" title="Smashicons">Smashicons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+
+Icons made by <a href="https://www.flaticon.com/authors/prettycons" title="prettycons">prettycons</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>
+
+Icons made by <a href="https://www.flaticon.com/free-icon/research_3063493" title="ultimatearm">ultimatearm</a> from <a href="https://www.flaticon.com/" title="Flaticon"> www.flaticon.com</a>

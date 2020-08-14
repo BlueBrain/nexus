@@ -1,0 +1,65 @@
+name: Continuous Integration Product Page
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'docs/src/main/product-page-src/**'
+  pull_request:
+    paths:
+      - 'docs/src/main/product-page-src/**'
+
+jobs:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.1.0
+    - name: Cache Coursier
+      uses: actions/cache@v1.1.2
+      with:
+        path: ~/.cache/coursier
+        key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+        restore-keys: ${{ runner.os }}-coursier-scala-
+    - name: Setup Scala
+      uses: olafurpg/setup-scala@v5
+      with:
+        java-version: adopt@1.11
+    - name: Review
+      run: sbt "project docs" clean makeProductPage
+
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    env:
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
+      BUILD_BOT_SSH_PRIVATE_KEY: ${{ secrets.BUILD_BOT_SSH_PRIVATE_KEY }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.1.0
+    - name: Cache Coursier
+      uses: actions/cache@v1.1.2
+      with:
+        path: ~/.cache/coursier
+        key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+        restore-keys: ${{ runner.os }}-coursier-scala-
+    - name: Setup Scala
+      uses: olafurpg/setup-scala@v5
+      with:
+        java-version: adopt@1.11
+    - name: Publish
+      run: |
+        git config --global user.email "noreply@epfl.ch"
+        git config --global user.name "BBP Nexus Build Bot"
+        mkdir "$HOME/.ssh"
+        chmod 700 "$HOME/.ssh"
+        echo "$BUILD_BOT_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_rsa"
+        chmod 400 "$HOME/.ssh/id_rsa"
+        ssh-keyscan -t rsa github.com >> "$HOME/.ssh/known_hosts"
+        sbt "project docs" clean makeProductPage makeSite ghpagesPushSite

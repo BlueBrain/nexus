@@ -15,17 +15,20 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.3.0** released on **25.02.2020**.
+The latest stable release is **v1.4.0** released on **14.08.2020**.
 
-## v1.4.0 (24.07.2020)
+## v1.4.0 (14.08.2020)
 
 The release is backwards compatible with v1.x.y releases in terms of API. If you're upgrading from v1.3.x please visit
 the @ref:[migration instructions](v1.3-to-v1.4-migration.md).
 
 Summary of the significant changes:
 
-- Merged iam, admin and kg services into a single service, called delta;
-- listings API now shows - besides resources metadata - the following predicates, when present: sko:prefLabel, schema:name, rdfs:label;
+- Merged iam, admin and kg services into a single service, called `delta`;
+- Listings API now shows - besides resources metadata - the following predicates, when present: sko:prefLabel, schema:name, rdfs:label;
+- Nexus Web has evolved into Nexus Fusion, supporting multiple subapps and making the different sections clear for our users;
+- Greatly improved design for the way Nexus Fusion manages plugins;
+- Introduction of Nexus Forge in the ecosystem. Nexus Forge is currently at version 0.3.3.
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.4-release-notes.md).
 
@@ -36,7 +39,7 @@ the @ref:[migration instructions](v1.2-to-v1.3-migration.md).
 
 Summary of the significant changes:
 
-- Introduced a @ref:[new type of view](../api/current/kg/views/composite-view-api.md) (_CompositeView_, currently as a
+- Introduced a @ref:[new type of view](../delta/api/current/views/composite-view-api.md) (_CompositeView_, currently as a
   Beta feature) that expands on the indexing capabilities of the system through the ability to consume multiple sources
   (multiple projects in the same Nexus deployment and projects in different Nexus deployments);
 - Added the ability to generate tabular views on the data available to a specific project (using any SparqlView defined
@@ -50,7 +53,7 @@ Summary of the significant changes:
   can be switched for descending by prefixing the `-` character to the field name.
 - New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new
   configuration yields better full text search results.
-- _Nexus Web_ - Adds the ability to have persistent customisable queries and data visualizations for your data via the new @ref:[Studios feature](../nexus-web/studio/index.md)
+- _Nexus Web_ - Adds the ability to have persistent customisable queries and data visualizations for your data via the new @ref:[Studios feature](../fusion/studio.md)
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.3-release-notes.md).
 
@@ -80,8 +83,8 @@ Storage service related updates:
 
 KG updates:
 
-- Added @ref:[archives resources](../api/current/kg/kg-archives-api.md).
-- Added [/source](../api/current/kg/kg-resources-api.html#fetch-a-resource-original-payload) sub-resource.
+- Added @ref:[archives resources](../delta/api/current/kg-archives-api.md).
+- Added [/source](../delta/api/current/kg/kg-resources-api.html#fetch-a-resource-original-payload) sub-resource.
 - [Fixed issue](https://github.com/BlueBrain/nexus/issues/750) with resource retrieval when linked context changes.
 - Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
 
