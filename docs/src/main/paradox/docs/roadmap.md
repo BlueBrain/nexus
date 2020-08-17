@@ -12,7 +12,7 @@ Check our [Github milestone](https://github.com/BlueBrain/nexus/milestone/9) for
 
 Fusion is the web interface that helps scientists with their day-to-day data-driven activities. This release will bring the following features:
 
-* definition data workflows
+* definition of data workflows
 * re-use of predefined workflow templates
 * improved data visualizations
 * jupyter notebooks integration
