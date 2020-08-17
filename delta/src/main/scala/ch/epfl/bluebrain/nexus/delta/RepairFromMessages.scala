@@ -18,6 +18,8 @@ object RepairFromMessages {
 
   private val log = Logger[RepairFromMessages.type]
 
+  private val parallelism = sys.env.getOrElse("REPAIR_FROM_MESSAGES_PARALLELISM", "1").toIntOption.getOrElse(1)
+
   def repair(implicit config: AppConfig, as: ActorSystem, sc: Scheduler, pm: CanBlock): Unit = {
     log.info("Repairing dependent tables from messages.")
     val pq             = PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
@@ -26,7 +28,7 @@ object RepairFromMessages {
       Task
         .deferFuture {
           pq.currentPersistenceIds()
-            .mapAsync(1)(reconciliation.rebuildTagViewForPersistenceIds)
+            .mapAsync(parallelism)(reconciliation.rebuildTagViewForPersistenceIds)
             .runFold(0L) {
               case (acc, _) =>
                 if (acc % config.migration.logInterval.toLong == 0L) log.info(s"Processed '$acc' persistence_ids.")
