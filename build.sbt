@@ -208,6 +208,7 @@ lazy val cli = project
     name                 := "cli",
     moduleName           := "cli",
     Docker / packageName := "nexus-cli",
+    coverageMinimum      := 70d,
     run / fork           := true,
     libraryDependencies ++= Seq(
       catsCore,
