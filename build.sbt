@@ -151,12 +151,12 @@ lazy val productPage = project
         throw new RuntimeException
       }
     },
+    includeFilter in makeSite         := "*.*",
     makeSite                          := makeSite.dependsOn(makeProductPage).value,
     excludeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
     cleanFiles                       ++= Seq(
-      baseDirectory.value / "src" / "product-page-src" / ".cache" / "**",
       baseDirectory.value / "src" / "product-page-src" / ".cache",
-      siteSourceDirectory.value / "**"
+      siteSourceDirectory.value
     )
   )
 
@@ -297,7 +297,7 @@ lazy val rdf      = project
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val docsFiles =
-  Set("_template", "assets", "contexts", "docs", "lib", "CNAME", "paradox.json", "partials", "public", "schemas", "search", "project")
+  Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")
 
 def docsFilesFilter(repo: File) =
   new FileFilter {
