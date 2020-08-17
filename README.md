@@ -15,7 +15,7 @@ The Blue Brain Nexus ecosystem encompasses a broad range of capabilities that ar
 
 Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.
 
-@ref:[Read more about Fusion](https://bluebrainnexus.io/docs/fusion/index.html)
+[Read more about Fusion](https://bluebrainnexus.io/docs/fusion/index.html) | [Source Code](https://github.com/BlueBrain/nexus-web)
 
 ### Nexus Forge
 
@@ -23,7 +23,7 @@ Fusion is our extensible web application. It hosts different apps to accommodate
 
 Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs.
 
-@ref:[Read more about Forge](https://bluebrainnexus.io/docs/forge.html)
+[Read more about Forge](https://bluebrainnexus.io/docs/forge.html) | [Source Code](https://github.com/BlueBrain/nexus-forge)
 
 
 ### Nexus Delta
@@ -32,7 +32,7 @@ Nexus Forge is a domain-agnostic, generic and extensible Python framework enabli
 
 A scalable and secure service to store and leverage all your data, neatly organised in a Knowledge Graph. It offers an API to perform all your data management operations, this way it can easily integrate with your software stack. Its advanced indexing capabilities automatically build views from your metadata.
 
-@ref:[Read more about Delta](https://bluebrainnexus.io/docs/delta/index.html)
+[Read more about Delta](https://bluebrainnexus.io/docs/delta/index.html)
 
 ### Utilities
 
