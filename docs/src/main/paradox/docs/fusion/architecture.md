@@ -8,7 +8,7 @@ The build step produces a server artifact to be ran on a Node.js server, and cli
 
 We produce a docker image that is able to serve the compiled assets directly, which is available on [Dockerhub](https://hub.docker.com/repository/docker/bluebrain/nexus-web).
 
-Although the application is served by a Node.js server, the client communicates directly to @ref:[Nexus Delta](../delta/index.md) using @ref:[Nexus.js](../utilities/utilities.md#nexus-js)
+Although the application is served by a Node.js server, the client communicates directly to @ref:[Nexus Delta](../delta/index.md) using @ref:[Nexus.js](../utilities/index.md#nexus-js)
 
 ## SubApps
 

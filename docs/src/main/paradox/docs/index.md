@@ -6,7 +6,7 @@
 - [Nexus Fusion](fusion/index.md)
 - [Nexus Forge](forge.md)
 - [Nexus Delta](delta/index.md)
-- [Utilities](utilities/utilities.md)
+- [Utilities](utilities/index.md)
 - [FAQ](faq.md)
 
 @@@
@@ -48,7 +48,7 @@ A scalable and secure service to store and leverage all your data, neatly organi
 
 The Nexus ecosystem leverages a set of smaller open-source utilities.
 
-@ref:[Discover the utilities](utilities/utilities.md)
+@ref:[Discover the utilities](utilities/index.md)
 
 ## Quick Start Guide
 
