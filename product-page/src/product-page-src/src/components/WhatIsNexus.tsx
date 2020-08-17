@@ -15,7 +15,7 @@ const products = [
     slug: "nexus-forge",
     subtitle: "Building and Using Knowledge Graphs Made Easy",
     description:
-      "Knowledge Graphs are often built from heterogeneous data and knowledge (i.e. data models such as ontologies, schemas) coming from different sources and often with different formats (ie. structured, unstructured). Nexus Forge enables data scientists, data and knowledge engineers to address these challenges by uniquely combining under a consistent and generic Python Framework all necessary components to build and search a Knowledge Graph.",
+      "Knowledge Graphs are often built from heterogeneous data and knowledge (i.e. data models such as ontologies, schemas) coming from different sources and often with different formats (i.e. structured, unstructured). Nexus Forge enables data scientists, data and knowledge engineers to address these challenges by uniquely combining under a consistent and generic Python Framework all necessary components to build and search a Knowledge Graph.",
   },
   {
     title: "Nexus Delta",

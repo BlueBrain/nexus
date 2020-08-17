@@ -44,7 +44,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
 
   const docsLink = doc
     ? doc
-    : `https://bluebrainnexus.io/docs/${slug.replace("nexus-", "")}.html`
+    : `https://bluebrainnexus.io/docs/${slug.replace("nexus-", "")}`
 
   const hasOverviewItems = !!overviewItems && overviewItems.length
 

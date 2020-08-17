@@ -91,7 +91,7 @@ A [jupyter](https://jupyter.org/) notebook is available for this part of the tut
 
 - [Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb)
 - [binder](https://mybinder.org/v2/gh/BlueBrain/nexus/master?filepath=docs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2Fbuilding_a_kg.ipynb)
-- [Github](todo)
+- [Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb)
 
 For local execution, Nexus Forge can be installed using these [instructions](https://nexus-forge.readthedocs.io/en/latest/#installation). Make sure that the jupyter notebook|lab is launched in the same virtual environment where Nexus Forge is installed. Alternatively, set up a specialized [kernel](https://ipython.readthedocs.io/en/stable/install/kernel_install.html).
 
@@ -105,38 +105,37 @@ Login the Sandbox and navigate your your previously created project.
 
 Click on the `Manage Studios for this project` button on the top right corner of the project.
 
-
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-project-view.png)
 @@@
 
 Studios are listed here. Click on `Create Studio`.
 
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-project-studios.png)
 @@@
 
 Give a name to your Studio and click `Save`.
 
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-studio-form.png)
 @@@
 
 Here's your empty Studio. Click the button to `Add Workspace`.
 
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-studio-view.png)
 @@@
 
 Give a name to your Workspace and click `Save`.
 
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-workspace-form.png)
 @@@
 
 You now have one Workspace configured. Click the button to `Add Dashboard`.
 
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-studio-view-one-workspace.png)
 @@@
 
@@ -157,13 +156,13 @@ LIMIT 20
 
 Choose a name for your Dashboard, copy the query. Click `Save`.
 
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-dashboard-form.png)
 @@@
 
 And there are the results:
 
-@@@ div { .half .center }
+@@@ div { .center }
 ![](../assets/try-nexus-sandbox-studio-results.png)
 @@@
 

@@ -65,7 +65,7 @@ export default function Home() {
         id="why"
         title="Why Blue Brain Nexus?"
         subtitle="Nexus was born out of a need for better data management in the
-            simulation neuroscience field, but built to cover any use case.
+            simulation neuroscience field, but built to cover any use cases.
             The data management needs of scientists is something that we value
             and aim to make as easy as possible."
         features={features}
