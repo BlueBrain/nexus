@@ -153,6 +153,7 @@ lazy val productPage = project
     },
     includeFilter in makeSite         := "*.*",
     makeSite                          := makeSite.dependsOn(makeProductPage).value,
+    previewFixedPort                  := Some(4000),
     excludeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
     cleanFiles                       ++= Seq(
       baseDirectory.value / "src" / ".cache",
@@ -190,6 +191,8 @@ lazy val docs = project
     paradoxNavigationDepth in Paradox := 4,
     paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
     paradoxRoots                      := List("docs/index.html"),
+    previewPath                       := "docs/index.html",
+    previewFixedPort                  := Some(4001),
     // gh pages settings
     includeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
     git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
@@ -205,7 +208,6 @@ lazy val cli = project
     name                 := "cli",
     moduleName           := "cli",
     Docker / packageName := "nexus-cli",
-    coverageMinimum      := 70d,
     run / fork           := true,
     libraryDependencies ++= Seq(
       catsCore,
@@ -598,4 +600,6 @@ inThisBuild(
 
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
+addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
 addCommandAlias("build-product-page", ";productPage/clean;productPage/makeSite")
+addCommandAlias("preview-product-page", ";productPage/clean;productPage/previewSite")
