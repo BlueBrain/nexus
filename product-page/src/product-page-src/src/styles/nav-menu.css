@@ -23,7 +23,7 @@ nav.dropdown-nav {
   left: 0;
   top: 1em;
   box-sizing: content-box;
-  min-width: 250px;
+  min-width: max-content;
 }
 .dropdown-nav .dropdown.opened {
   pointer-events: all;
