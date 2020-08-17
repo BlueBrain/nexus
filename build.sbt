@@ -142,8 +142,8 @@ lazy val productPage = project
       import java.nio.file.Files
       val log     = streams.value.log
       if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
-      val install = Process(Seq("make", "install"), baseDirectory.value / "src" / "product-page-src")
-      val build   = Process(Seq("make", "build"), baseDirectory.value / "src" / "product-page-src")
+      val install = Process(Seq("make", "install"), baseDirectory.value / "src")
+      val build   = Process(Seq("make", "build"), baseDirectory.value / "src")
       if ((install #&& build !) == 0) {
         log.success("Product page built.")
       } else {
@@ -155,7 +155,7 @@ lazy val productPage = project
     makeSite                          := makeSite.dependsOn(makeProductPage).value,
     excludeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
     cleanFiles                       ++= Seq(
-      baseDirectory.value / "src" / "product-page-src" / ".cache",
+      baseDirectory.value / "src" / ".cache",
       siteSourceDirectory.value
     )
   )
