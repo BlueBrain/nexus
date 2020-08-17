@@ -40,7 +40,7 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
     s"""INSERT INTO ${config.description.name}.messages (persistence_id, partition_nr, sequence_nr, timestamp, timebucket, writer_uuid, ser_id, ser_manifest, event_manifest, event, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
   private def insertAllPersIdsStmt: String =
-    s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
+    s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?)"""
 
   private def skipNonExisting(projects: Set[String]): Flow[Message, Message, NotUsed] =
     Flow[Message].filter { m =>
