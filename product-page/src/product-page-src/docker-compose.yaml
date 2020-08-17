@@ -7,7 +7,7 @@ services:
     tty: true
     volumes:
       - .:/app
-      - ../../../target/site:/app/public
+      - ../site:/app/public
     entrypoint: npm
     ports:
       - "8000:8000"

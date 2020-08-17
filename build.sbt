@@ -126,6 +126,40 @@ lazy val checkJavaVersion = taskKey[Unit]("Verifies the current Java version is 
 
 lazy val makeProductPage = taskKey[Unit]("Crete product page")
 
+lazy val productPage = project
+  .in(file("product-page"))
+  .enablePlugins(GhpagesPlugin)
+  .settings(shared, compilation)
+  .settings(
+    name                              := "product-page",
+    moduleName                        := "product-page",
+    // gh pages settings
+    git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
+    ghpagesNoJekyll                   := true,
+    ghpagesBranch                     := "gh-pages",
+    makeProductPage                   := {
+      import scala.sys.process._
+      import java.nio.file.Files
+      val log     = streams.value.log
+      if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
+      val install = Process(Seq("make", "install"), baseDirectory.value / "src" / "product-page-src")
+      val build   = Process(Seq("make", "build"), baseDirectory.value / "src" / "product-page-src")
+      if ((install #&& build !) == 0) {
+        log.success("Product page built.")
+      } else {
+        log.error("Product page built failed.")
+        throw new RuntimeException
+      }
+    },
+    makeSite                          := makeSite.dependsOn(makeProductPage).value,
+    excludeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
+    cleanFiles                       ++= Seq(
+      baseDirectory.value / "src" / "product-page-src" / ".cache" / "**",
+      baseDirectory.value / "src" / "product-page-src" / ".cache",
+      siteSourceDirectory.value / "**"
+    )
+  )
+
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
@@ -157,27 +191,10 @@ lazy val docs = project
     paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
     paradoxRoots                      := List("docs/index.html"),
     // gh pages settings
+    includeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
     git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll                   := true,
-    ghpagesBranch                     := "gh-pages",
-    makeProductPage                   := {
-      import scala.sys.process._
-      import java.nio.file.Files
-      val log     = streams.value.log
-      if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
-      val install = Process(Seq("make", "install"), baseDirectory.value / "src" / "main" / "product-page-src")
-      val build   = Process(Seq("make", "build"), baseDirectory.value / "src" / "main" / "product-page-src")
-      if ((install #&& build !) == 0) {
-        log.success("Product page built.")
-      } else {
-        log.error("Product page built failed.")
-        throw new RuntimeException
-      }
-    },
-    cleanFiles                       ++= Seq(
-      baseDirectory.value / "src" / "main" / "product-page-src" / ".cache" / "**",
-      baseDirectory.value / "src" / "main" / "product-page-src" / ".cache"
-    )
+    ghpagesBranch                     := "gh-pages"
   )
 
 lazy val cli = project
@@ -278,6 +295,14 @@ lazy val rdf      = project
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+
+lazy val docsFiles =
+  Set("_template", "assets", "contexts", "docs", "lib", "CNAME", "paradox.json", "partials", "public", "schemas", "search", "project")
+
+def docsFilesFilter(repo: File) =
+  new FileFilter {
+    def accept(repoFile: File) = docsFiles.exists(file => repoFile.getCanonicalPath.startsWith((repo / file).getCanonicalPath))
+  }
 
 lazy val storage = project
   .in(file("storage"))
@@ -573,5 +598,4 @@ inThisBuild(
 
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
-addCommandAlias("build-ghpages", ";docs/clean;docs/makeProductPage;docs/makeSite")
-addCommandAlias("build-product-page", ";docs/clean;docs/makeProductPage")
+addCommandAlias("build-product-page", ";productPage/clean;productPage/makeSite")
