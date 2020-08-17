@@ -169,7 +169,7 @@ object ShardedAggregate {
     EvaluateCommand: ClassTag,
     Event: ClassTag,
     Rejection: ClassTag](definition: PersistentEventDefinition[F, State, EvaluateCommand, Event, Rejection],
-                         config: EventSourceConfig,
+                         config: AggregateConfig,
                          retryStrategy: RetryStrategy[F],
                          stopStrategy: PersistentStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)
@@ -211,7 +211,7 @@ object ShardedAggregate {
     EvaluateCommand: ClassTag,
     Event: ClassTag,
     Rejection: ClassTag](definition: TransientEventDefinition[F, State, EvaluateCommand, Event, Rejection],
-                         config: EventSourceConfig,
+                         config: AggregateConfig,
                          retryStrategy: RetryStrategy[F],
                          stopStrategy: TransientStopStrategy,
                          shardingSettings: Option[ClusterShardingSettings] = None)

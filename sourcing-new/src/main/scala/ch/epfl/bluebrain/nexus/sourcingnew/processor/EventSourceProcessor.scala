@@ -38,7 +38,7 @@ private [processor] abstract class EventSourceProcessor[
   Event: ClassTag,
   Rejection: ClassTag](entityId: String,
                        stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-                       config: EventSourceConfig) {
+                       config: AggregateConfig) {
 
   /**
     * Defines the behavior to adopt for the given events
@@ -208,7 +208,7 @@ object EventSourceProcessor {
                          override val definition: PersistentEventDefinition[F, State, EvaluateCommand, Event, Rejection],
                          override val stopStrategy: PersistentStopStrategy,
                          stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-                         config: EventSourceConfig)
+                         config: AggregateConfig)
         extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityId, stopAfterInactivity, config) {
 
           import definition._
@@ -308,7 +308,7 @@ object EventSourceProcessor {
                          override val definition: TransientEventDefinition[F, State, EvaluateCommand, Event, Rejection],
                          override val stopStrategy: TransientStopStrategy,
                          stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-                         config: EventSourceConfig)
+                         config: AggregateConfig)
     extends EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection](entityId, stopAfterInactivity, config) {
 
     import definition._
