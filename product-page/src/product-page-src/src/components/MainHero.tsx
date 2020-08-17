@@ -14,8 +14,7 @@ export default function MainHero() {
             Better data management starts here. <br /> And we're open source.
           </h1>
           <h2 className="subtitle">
-            Quickly build, manage and leverage Knowledge Graphs using our Python
-            framework, web application and services.
+            Quickly build, manage, and leverage Knowledge Graphs using our web application, Python framework, and web services.
           </h2>
           <div className="columns">
             <div className="column">

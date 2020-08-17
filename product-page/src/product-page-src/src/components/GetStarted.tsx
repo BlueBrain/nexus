@@ -9,7 +9,7 @@ const getStartedLinks = [
   {
     title: "Try Nexus",
     image: sandbox,
-    href: "https://sandbox.bluebrainnexus.io/",
+    href: "https://bluebrainnexus.io/docs/getting-started/try-nexus.html",
   },
   {
     title: "Explore Python Notebooks",

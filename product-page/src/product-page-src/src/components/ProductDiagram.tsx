@@ -1,8 +1,8 @@
 import * as React from "react"
 
-import fusion from "../../static/img/fusion.png"
-import delta from "../../static/img/delta.png"
-import forge from "../../static/img/forge.png"
+import fusion from "../../static/img/fusion.webp"
+import delta from "../../static/img/delta.webp"
+import forge from "../../static/img/forge.webp"
 
 const ProductDiagram: React.FC<{ name: string }> = ({ name }) => {
   let diagram
