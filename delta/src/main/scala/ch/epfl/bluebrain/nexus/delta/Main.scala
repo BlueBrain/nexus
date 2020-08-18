@@ -316,7 +316,7 @@ object Main {
       val httpBinding = {
         Http().bindAndHandle(
           RouteResult.route2HandlerFlow(
-            infoRoutes ~ Routes.wrap(globalEventRoutes ~ iamRoutes ~ adminRoutes ~ kgRoutes)
+            Routes.wrap(infoRoutes ~ globalEventRoutes ~ iamRoutes ~ adminRoutes ~ kgRoutes)
           ),
           cfg.http.interface,
           cfg.http.port

@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.kg.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
-import ch.epfl.bluebrain.nexus.kg.routes.KgRoutes.{exceptionHandler, rejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.routes.Routes.{exceptionHandler, rejectionHandler}
 import ch.epfl.bluebrain.nexus.kg.routes.OutputFormat._
 import ch.epfl.bluebrain.nexus.kg.routes.{OutputFormat, SearchParams}
 import ch.epfl.bluebrain.nexus.kg.storage.Storage
