@@ -476,7 +476,7 @@ lazy val storageAssemblySettings = Seq(
     case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
     case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
     case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
-    case "META-INF/versions/9/module-info.class"                         => MergeStrategy.discard
+    case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
     case x                                                               =>
       val oldStrategy = (assemblyMergeStrategy in assembly).value
       oldStrategy(x)
