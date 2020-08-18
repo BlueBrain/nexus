@@ -47,7 +47,7 @@ import scala.concurrent.ExecutionContext
   * @tparam F    the effect type
   */
 class Projects[F[_]: Timer](
-    agg: Agg[F],
+    val agg: Agg[F],
     private val index: ProjectCache[F],
     organizations: Organizations[F],
     aclsApi: Acls[F],
