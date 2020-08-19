@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, 
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.kg.TestHelper
+import ch.epfl.bluebrain.nexus.kg.{TestHelper, urlEncode}
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.cache._
@@ -33,6 +33,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.Settings
 import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
 import io.circe.Json
@@ -243,6 +244,13 @@ class ResourceRoutesSpec
 
     "fetch latest revision of a resource" in new Context {
       resources.fetch(id, unconstrainedRef) shouldReturn EitherT.rightT[Task, Rejection](resourceV)
+
+      val schemaRef   = Latest(url"http://example.com/base/my-schema")
+      val resourceS     =
+        ResourceF.simpleV(id, resourceValue, created = user, updated = user, schema = schemaRef)
+      resources.fetch(id, schemaRef) shouldReturn EitherT.rightT[Task, Rejection](resourceS)
+      val schemaEncodedId        = urlEncode(schemaRef.iri)
+
       val expected =
         resourceValue.graph
           .toJson(Json.obj("@context" -> defaultCtxValue).appendContextOf(resourceCtx))
@@ -251,8 +259,10 @@ class ResourceRoutesSpec
 
       val endpoints = List(
         s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId",
+        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/$schemaEncodedId/$urlEncodedId",
         s"/v1/resources/$organization/$project/resource/$urlEncodedId",
-        s"/v1/resources/$organization/$project/_/$urlEncodedId"
+        s"/v1/resources/$organization/$project/_/$urlEncodedId",
+        s"/v1/resources/$organization/$project/$schemaEncodedId/$urlEncodedId"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> addCredentials(oauthToken) ~> Accept(MediaRanges.`*/*`) ~> routes ~> check {
