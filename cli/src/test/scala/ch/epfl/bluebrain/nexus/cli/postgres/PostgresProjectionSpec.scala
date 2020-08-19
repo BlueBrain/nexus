@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.cli.postgres
 
+import java.nio.file.Files
 import java.time.OffsetDateTime
 
 import cats.effect.{Blocker, IO}
@@ -10,9 +11,10 @@ import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresProjection.TimeMeta.
 import ch.epfl.bluebrain.nexus.cli.sse.Offset
 import doobie.util.transactor.Transactor
 import fs2.io
+import org.scalatest.concurrent.Eventually
 
 //noinspection SqlNoDataSourceInspection
-class PostgresProjectionSpec extends AbstractPostgresSpec {
+class PostgresProjectionSpec extends AbstractPostgresSpec with Eventually {
 
   "A PostgresProjection" should {
     "project all schemas" in {
@@ -44,6 +46,7 @@ class PostgresProjectionSpec extends AbstractPostgresSpec {
         _      <- proj.run
         exists <- io.file.exists[IO](blocker, cfg.postgres.offsetFile)
         _       = exists shouldEqual true
+        _       = eventually(Files.readString(cfg.postgres.offsetFile).nonEmpty shouldEqual true)
         offset <- Offset.load(cfg.postgres.offsetFile)
         _       = offset.nonEmpty shouldEqual true
       } yield ()

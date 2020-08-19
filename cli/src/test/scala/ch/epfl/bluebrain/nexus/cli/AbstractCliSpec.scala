@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.cli.dummies.TestCliModule
 import ch.epfl.bluebrain.nexus.cli.modules.config.ConfigModule
 import ch.epfl.bluebrain.nexus.cli.modules.influx.InfluxModule
 import ch.epfl.bluebrain.nexus.cli.modules.postgres.PostgresModule
-import ch.epfl.bluebrain.nexus.cli.sse.{Event, OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
+import ch.epfl.bluebrain.nexus.cli.sse.{Event, Offset, OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
 import ch.epfl.bluebrain.nexus.cli.utils.{Randomness, Resources, ShouldMatchers}
 import doobie.util.transactor.Transactor
 import io.circe.Json
@@ -40,8 +40,10 @@ abstract class AbstractCliSpec
   protected val orgLabel: OrgLabel         = OrgLabel(genString())
   protected val projectLabel: ProjectLabel = ProjectLabel(genString())
 
-  protected val eventsJson: Json    = jsonContentOf("/events.json")
-  protected val events: List[Event] = eventsJson.as[List[Event]].toOption.value
+  protected val eventsJson: Json                    = jsonContentOf("/events.json")
+  protected val events: List[Event]                 = eventsJson.as[List[Event]].toOption.value
+  protected val eventsOffset: List[(Event, Offset)] =
+    events.map(ev => (ev, Offset(new UUID(ev.instant.toEpochMilli, 0))))
 
   protected val notFoundJson: Json      = jsonContentOf("/templates/not-found.json")
   protected val authFailedJson: Json    = jsonContentOf("/templates/auth-failed.json")
@@ -55,12 +57,9 @@ abstract class AbstractCliSpec
   )
 
   protected def defaultModules: Module = {
-    TestCliModule[IO](events) ++
-      EffectModule[IO] ++
-      ConfigModule[IO] ++
-      PostgresModule[IO] ++
-      InfluxModule[IO] ++
-      testModule
+    TestCliModule[IO](events) ++ EffectModule[IO] ++ ConfigModule[IO] ++ PostgresModule[IO] ++ InfluxModule[
+      IO
+    ] ++ testModule
   }
 
   def overrides: ModuleDef =
@@ -84,32 +83,40 @@ abstract class AbstractCliSpec
       configBaseName = "cli-test"
     )
 
-  def copyConfigs: IO[(Path, Path, Path)] =
+  def copyConfigs: IO[(Path, Path, Path, Path)] =
     IO {
-      val parent       = Files.createTempDirectory(".nexus")
-      val envFile      = parent.resolve("env.conf")
-      val postgresFile = parent.resolve("postgres.conf")
-      val influxFile   = parent.resolve("influx.conf")
+      val parent         = Files.createTempDirectory(".nexus")
+      val envFile        = parent.resolve("env.conf")
+      val postgresFile   = parent.resolve("postgres.conf")
+      val influxFile     = parent.resolve("influx.conf")
+      val literatureFile = parent.resolve("literature.conf")
       Files.copy(getClass.getClassLoader.getResourceAsStream("env.conf"), envFile)
       Files.copy(getClass.getClassLoader.getResourceAsStream("postgres.conf"), postgresFile)
       Files.copy(getClass.getClassLoader.getResourceAsStream("influx.conf"), influxFile)
-      (envFile, postgresFile, influxFile)
+      Files.copy(getClass.getClassLoader.getResourceAsStream("literature.conf"), literatureFile)
+      (envFile, postgresFile, influxFile, literatureFile)
     }
 
   def testModule: ModuleDef =
     new ModuleDef {
       make[AppConfig].fromEffect {
         copyConfigs.flatMap {
-          case (envFile, postgresFile, influxFile) =>
-            val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
-            val influxOffsetFile   = influxFile.getParent.resolve("influx.offset")
-            AppConfig.load[IO](Some(envFile), Some(postgresFile), Some(influxFile)).flatMap {
+          case (envFile, postgresFile, influxFile, literatureFile) =>
+            val postgresOffsetFile   = postgresFile.getParent.resolve("postgres.offset")
+            val postgresErrorFile    = postgresFile.getParent.resolve("postgres-errors.log")
+            val influxOffsetFile     = influxFile.getParent.resolve("influx.offset")
+            val influxErrorFile      = influxFile.getParent.resolve("influx-errors.log")
+            val literatureOffsetFile = literatureFile.getParent.resolve("literature.offset")
+            val literatureErrorFile  = literatureFile.getParent.resolve("literature-errors.log")
+            AppConfig.load[IO](Some(envFile), Some(postgresFile), Some(influxFile), Some(literatureFile)).flatMap {
               case Left(value)  => IO.raiseError(value)
               case Right(value) =>
                 IO.pure(
                   value.copy(
-                    postgres = value.postgres.copy(offsetFile = postgresOffsetFile),
-                    influx = value.influx.copy(offsetFile = influxOffsetFile)
+                    postgres = value.postgres.copy(offsetFile = postgresOffsetFile, errorFile = postgresErrorFile),
+                    influx = value.influx.copy(offsetFile = influxOffsetFile, errorFile = influxErrorFile),
+                    literature =
+                      value.literature.copy(offsetFile = literatureOffsetFile, errorFile = literatureErrorFile)
                   )
                 )
             }

@@ -1,0 +1,209 @@
+{
+  "settings": {
+    "index.mapping.total_fields.limit": 3000
+  },
+  "mappings": {
+    "dynamic": true,
+    "_source": {
+      "enabled": "true"
+    },
+    "properties": {
+      "@type": {
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        },
+        "type": "text"
+      },
+      "author": {
+        "properties": {
+          "@type": {
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            },
+            "type": "text"
+          },
+          "affiliation": {
+            "properties": {
+              "@type": {
+                "fields": {
+                  "keyword": {
+                    "type": "keyword"
+                  }
+                },
+                "type": "text"
+              },
+              "location": {
+                "properties": {
+                  "@type": {
+                    "fields": {
+                      "keyword": {
+                        "type": "keyword"
+                      }
+                    },
+                    "type": "text"
+                  },
+                  "address": {
+                    "properties": {
+                      "@type": {
+                        "fields": {
+                          "keyword": {
+                            "type": "keyword"
+                          }
+                        },
+                        "type": "text"
+                      },
+                      "addressCountry": {
+                        "fields": {
+                          "keyword": {
+                            "type": "keyword"
+                          }
+                        },
+                        "type": "text"
+                      },
+                      "addressRegion": {
+                        "fields": {
+                          "keyword": {
+                            "type": "keyword"
+                          }
+                        },
+                        "type": "text"
+                      }
+                    },
+                    "type": "nested"
+                  },
+                  "latitude": {
+                    "fields": {
+                      "keyword": {
+                        "type": "keyword"
+                      }
+                    },
+                    "type": "float"
+                  },
+                  "longitude": {
+                    "fields": {
+                      "keyword": {
+                        "type": "keyword"
+                      }
+                    },
+                    "type": "float"
+                  }
+                },
+                "type": "nested"
+              },
+              "name": {
+                "fields": {
+                  "keyword": {
+                    "type": "keyword"
+                  }
+                },
+                "type": "text"
+              }
+            },
+            "type": "nested"
+          },
+          "familyName": {
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            },
+            "type": "text"
+          },
+          "givenName": {
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            },
+            "type": "text"
+          },
+          "name": {
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            },
+            "type": "text"
+          }
+        },
+        "type": "nested"
+      },
+      "datePublished": {
+        "type": "date"
+      },
+      "identifier": {
+        "properties": {
+          "property": {
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            },
+            "type": "text"
+          },
+          "value": {
+            "type": "text"
+          }
+        },
+        "type": "nested"
+      },
+      "isPartOf": {
+        "properties": {
+          "@type": {
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            },
+            "type": "text"
+          },
+          "name": {
+            "fields": {
+              "keyword": {
+                "type": "keyword"
+              }
+            },
+            "type": "text"
+          }
+        },
+        "type": "nested"
+      },
+      "title": {
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        },
+        "type": "text"
+      },
+      "abstract": {
+        "type": "text"
+      },
+      "articleBody": {
+        "type": "text"
+      },
+      "sentences": {
+        "type": "nested",
+        "properties": {
+          "text": {
+            "type": "text"
+          },
+          "embedding": {
+            "type": "dense_vector",
+            "dims": {model_dims}
+          },
+          "section": {
+            "type": "keyword"
+          },
+          "index": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

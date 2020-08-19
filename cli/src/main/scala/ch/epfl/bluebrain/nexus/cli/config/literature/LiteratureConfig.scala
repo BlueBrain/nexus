@@ -1,46 +1,42 @@
-package ch.epfl.bluebrain.nexus.cli.config.influx
+package ch.epfl.bluebrain.nexus.cli.config.literature
 
 import java.nio.file.Path
 
 import ch.epfl.bluebrain.nexus.cli.config.PrintConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, ProjectLabel}
-import ch.epfl.bluebrain.nexus.cli.utils.Codecs._
-import org.http4s.Uri
+import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
 import pureconfig.configurable.{genericMapReader, genericMapWriter}
 import pureconfig.error.CannotConvert
-import pureconfig.generic.semiauto._
-import pureconfig.{ConfigConvert, ConfigReader, ConfigWriter}
+import pureconfig.generic.semiauto.deriveConvert
 
 import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
 /**
-  * influxDB connectivity information along with the projection configuration.
+  * Literature extraction configuration
   *
- * @param endpoint           the influxDB v1.x API endpoint
-  * @param database           the database to be used
-  * @param dbCreationCommand  the command used to create an influxDB database
-  * @param offsetFile         the location where the influxDB projection offset should be read / stored
+ * @param offsetFile         the location where to store the literature of the projection
   * @param errorFile          the location where to store the errors of the projection
-  * @param offsetSaveInterval how frequent to save the stream offset into the offset file
+  * @param offsetSaveInterval the how frequent to save the current offset to a file
+  * @param blueBrainSearch    the Blue Brain Search configuration, used for calculating vector embeddings
+  * @param elasticSearch      the ElasticSearch configuration, used to project data
   * @param print              the configuration for printing output to the client
-  * @param projects           the project to config mapping
+  * @param projects           the projects configuration, used to consume projects from SSE
   */
-final case class InfluxConfig(
-    endpoint: Uri,
-    database: String,
-    dbCreationCommand: String,
+final case class LiteratureConfig(
     offsetFile: Path,
     errorFile: Path,
     offsetSaveInterval: FiniteDuration,
+    blueBrainSearch: BlueBrainSearchConfig,
+    elasticSearch: ElasticSearchLiteratureConfig,
     print: PrintConfig,
     projects: Map[(OrgLabel, ProjectLabel), ProjectConfig]
 )
 
-object InfluxConfig {
+object LiteratureConfig {
 
   @nowarn("cat=unused")
-  implicit final val influxConfigConvert: ConfigConvert[InfluxConfig] = {
+  implicit final val literatureConfigConvert: ConfigConvert[LiteratureConfig] = {
     implicit val labelTupleMapReader: ConfigReader[Map[(OrgLabel, ProjectLabel), ProjectConfig]] =
       genericMapReader[(OrgLabel, ProjectLabel), ProjectConfig] { key =>
         key.split('/') match {
@@ -50,6 +46,7 @@ object InfluxConfig {
       }
     implicit val labelTupleMapWriter: ConfigWriter[Map[(OrgLabel, ProjectLabel), ProjectConfig]] =
       genericMapWriter { case (OrgLabel(org), ProjectLabel(proj)) => s"$org/$proj" }
-    deriveConvert[InfluxConfig]
+
+    deriveConvert[LiteratureConfig]
   }
 }

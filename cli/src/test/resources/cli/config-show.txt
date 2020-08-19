@@ -16,6 +16,7 @@ influx {
     database=influxdb
     db-creation-command="CREATE DATABASE \"influxdb\" WITH DURATION 1000d REPLICATION 1 SHARD DURATION 1h NAME \"influxdb\""
     endpoint="http://localhost:8086"
+    error-file="{influx-error-file}"
     offset-file="{influx-offset-file}"
     offset-save-interval="1s"
     print {
@@ -23,8 +24,60 @@ influx {
     }
     projects {}
 }
+literature {
+    blue-brain-search {
+        endpoint="http://localhost:32797/v1"
+        model-types=[
+            {
+                dimensions=512
+                name=USE
+            },
+            {
+                dimensions=768
+                name=SBIOBERT
+            },
+            {
+                dimensions=768
+                name=SBERT
+            },
+            {
+                dimensions=700
+                name=BSV
+            }
+        ]
+    }
+    elastic-search {
+        endpoint="http://localhost:9200"
+        model-indices=[
+            {
+                index="my_index_use"
+                name=USE
+            },
+            {
+                index="my_index_sbiobert"
+                name=SBIOBERT
+            },
+            {
+                index="my_index_sbert"
+                name=SBERT
+            },
+            {
+                index="my_index_bsv"
+                name=BSV
+            }
+        ]
+    }
+    error-file="{literature-error-file}"
+    offset-file="{literature-offset-file}"
+    offset-save-interval="1m"
+    print {
+        progress-interval=100
+    }
+    projects {}
+}
 postgres {
     database=postgres
+    error-file="{postgres-error-file}"
     host="127.0.0.1"
     offset-file="{postgres-offset-file}"
     offset-save-interval="1s"

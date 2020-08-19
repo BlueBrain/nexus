@@ -84,8 +84,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       for {
         eventStream <- ec.apply(None)
         stream      <- eventStream.value
-        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _            = eventList shouldEqual events
+        eventList   <- stream.collect { case Right((event, off, _, _)) => (event, off) }.compile.toList
+        _            = eventList shouldEqual eventsOffset
       } yield ()
     }
     "return all events from offset" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -93,8 +93,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       for {
         eventStream <- ec.apply(offset)
         stream      <- eventStream.value
-        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _            = eventList shouldEqual events.drop(3)
+        eventList   <- stream.collect { case Right((event, off, _, _)) => (event, off) }.compile.toList
+        _            = eventList shouldEqual eventsOffset.drop(3)
       } yield ()
     }
     "return all org events" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -102,8 +102,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       for {
         eventStream <- ec.apply(orgLabel, None)
         stream      <- eventStream.value
-        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _            = eventList shouldEqual events
+        eventList   <- stream.collect { case Right((event, off, _, _)) => (event, off) }.compile.toList
+        _            = eventList shouldEqual eventsOffset
       } yield ()
     }
     "return all org events from offset" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -111,8 +111,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       for {
         eventStream <- ec.apply(orgLabel, offset)
         stream      <- eventStream.value
-        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _            = eventList shouldEqual events.drop(3)
+        eventList   <- stream.collect { case Right((event, off, _, _)) => (event, off) }.compile.toList
+        _            = eventList shouldEqual eventsOffset.drop(3)
       } yield ()
     }
     "return all proj events" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -120,8 +120,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       for {
         eventStream <- ec.apply(orgLabel, projectLabel, None)
         stream      <- eventStream.value
-        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _            = eventList shouldEqual events
+        eventList   <- stream.collect { case Right((event, off, _, _)) => (event, off) }.compile.toList
+        _            = eventList shouldEqual eventsOffset
       } yield ()
     }
     "return all proj events from offset" in { (client: Client[IO], pc: ProjectClient[IO], env: EnvConfig) =>
@@ -129,8 +129,8 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
       for {
         eventStream <- ec.apply(orgLabel, projectLabel, offset)
         stream      <- eventStream.value
-        eventList   <- stream.collect { case Right((event, _, _)) => event }.compile.toList
-        _            = eventList shouldEqual events.drop(3)
+        eventList   <- stream.collect { case Right((event, off, _, _)) => (event, off) }.compile.toList
+        _            = eventList shouldEqual eventsOffset.drop(3)
       } yield ()
     }
   }

@@ -3,7 +3,14 @@ package ch.epfl.bluebrain.nexus.cli
 import cats.effect.concurrent.Ref
 import cats.effect.{ConcurrentEffect, Timer}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.cli.clients._
+import ch.epfl.bluebrain.nexus.cli.clients.{
+  BlueBrainSearchClient,
+  ElasticSearchClient,
+  EventStreamClient,
+  InfluxClient,
+  ProjectClient,
+  SparqlClient
+}
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
 import ch.epfl.bluebrain.nexus.cli.sse.{OrgLabel, OrgUuid, ProjectLabel, ProjectUuid}
 import distage.{ModuleDef, TagK}
@@ -34,6 +41,14 @@ final class CliModule[F[_]: ConcurrentEffect: Timer: TagK] extends ModuleDef {
 
   make[EventStreamClient[F]].tagged(Repo.Prod).from { (cfg: AppConfig, client: Client[F], pc: ProjectClient[F]) =>
     EventStreamClient(client, pc, cfg.env)
+  }
+
+  make[ElasticSearchClient[F]].tagged(Repo.Prod).from { (cfg: AppConfig, client: Client[F], console: Console[F]) =>
+    ElasticSearchClient(client, cfg, console)
+  }
+
+  make[BlueBrainSearchClient[F]].tagged(Repo.Prod).from { (cfg: AppConfig, client: Client[F], console: Console[F]) =>
+    BlueBrainSearchClient(client, cfg, console)
   }
 
   make[InfluxClient[F]].tagged(Repo.Prod).from { (cfg: AppConfig, client: Client[F], console: Console[F]) =>

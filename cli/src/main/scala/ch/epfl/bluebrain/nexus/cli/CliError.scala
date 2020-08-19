@@ -5,11 +5,13 @@ import java.nio.file.Path
 import cats.Show
 import cats.effect.Sync
 import cats.implicits._
+import io.circe.Json
 import org.http4s.{Response, Status}
 import pureconfig.error.ConfigReaderFailures
 
 import scala.Console._
 import scala.util.Try
+import io.circe.parser.parse
 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed trait CliError extends Exception {
@@ -33,7 +35,10 @@ object CliError {
     * Enumeration of possible Client errors.
     */
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-  sealed trait ClientError extends CliError
+  sealed trait ClientError extends CliError {
+    def message: String
+    def jsonMessage: Option[Json] = parse(message).toOption
+  }
 
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   object ClientError {
@@ -179,6 +184,13 @@ object CliError {
     // $COVERAGE-ON$
 
     implicit val clientErrorShow: Show[ConfigError] = Show[CliError].narrow
+
+  }
+
+  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+  final case class JsonTransformationError(message: String) extends CliError {
+    val reason: String      = "the transformation of a Json object failed"
+    val lines: List[String] = List(message)
 
   }
 
