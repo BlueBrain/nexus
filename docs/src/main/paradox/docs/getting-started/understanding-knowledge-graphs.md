@@ -229,3 +229,11 @@ Published: 23.04.2020, Youtube.com
     Document Overview (Second Edition)](https://www.w3.org/TR/owl2-overview/)   
    Author: W3C Working Group  
    Published: 11.12.2012
+ 
+1. [Linked Data Patterns](https://patterns.dataincubator.org/book/)  
+   Authors: Leigh Dodds, Ian Davis  
+   Published: 31.05.2012 
+   
+1. [Validating RDF Data](https://book.validatingrdf.com/)  
+   Authors: Jose Emilio labra Gayo, Eric Prud’hommeaux, Iovka Boneva, Dimitris Kontokostas  
+   Published: 2012 
