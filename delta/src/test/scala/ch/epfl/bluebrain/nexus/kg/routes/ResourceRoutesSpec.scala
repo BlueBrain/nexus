@@ -14,11 +14,12 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.search._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.config.Settings
+import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, AccessControlLists, Acls}
 import ch.epfl.bluebrain.nexus.iam.realms.Realms
 import ch.epfl.bluebrain.nexus.iam.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.types.Permission
-import ch.epfl.bluebrain.nexus.kg.TestHelper
 import ch.epfl.bluebrain.nexus.kg.archives.ArchiveCache
 import ch.epfl.bluebrain.nexus.kg.async._
 import ch.epfl.bluebrain.nexus.kg.cache._
@@ -27,12 +28,12 @@ import ch.epfl.bluebrain.nexus.kg.config.Schemas._
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink
 import ch.epfl.bluebrain.nexus.kg.indexing.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
+import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
+import ch.epfl.bluebrain.nexus.kg.{TestHelper, urlEncode}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.config.Settings
-import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
 import ch.epfl.bluebrain.nexus.util.{CirceEq, EitherValues, Resources => TestResources}
 import io.circe.Json
@@ -242,18 +243,42 @@ class ResourceRoutesSpec
     }
 
     "fetch latest revision of a resource" in new Context {
-      resources.fetch(id, unconstrainedRef) shouldReturn EitherT.rightT[Task, Rejection](resourceV)
+      val plainId = Id(projectRef, url"http://example.com/" + genUuid.toString)
+
+      val schemaRef   = Latest(url"http://example.com/my-schema")
+
+      // A resource with a prefixed uuid or a plain one should return a resource constrained by a schema or not
+      List(id, plainId).foreach { i =>
+        resources.fetchSchema(i) shouldReturn EitherT.rightT[Task, Rejection](schemaRef)
+        resources.fetch(i, schemaRef) shouldReturn EitherT.rightT[Task, Rejection](
+          ResourceF.simpleV(i, resourceValue, created = user, updated = user, schema = schemaRef)
+        )
+        resources.fetch(i, unconstrainedRef) shouldReturn EitherT.rightT[Task, Rejection](resourceV)
+      }
+
+      // Possible combinations for the two segments
+      val crossProduct =
+        for {
+          resourceSegment <- List(genUuid, s"nxv:$genUuid", urlEncodedId)
+          schemaSegment   <- List("_", "my-schema", urlEncode(schemaRef.iri))
+        } yield {
+          (resourceSegment, schemaSegment)
+        }
+
       val expected =
         resourceValue.graph
           .toJson(Json.obj("@context" -> defaultCtxValue).appendContextOf(resourceCtx))
           .rightValue
           .removeNestedKeys("@context")
 
-      val endpoints = List(
-        s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/_/$urlEncodedId",
-        s"/v1/resources/$organization/$project/resource/$urlEncodedId",
-        s"/v1/resources/$organization/$project/_/$urlEncodedId"
-      )
+      val endpoints = crossProduct.flatMap { case (resourceSegment, schemaSegment) =>
+        List(
+          s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/$schemaSegment/$resourceSegment",
+          s"/v1/resources/$organization/$project/resource/$resourceSegment",
+          s"/v1/resources/$organization/$project/$schemaSegment/$resourceSegment"
+        )
+      }
+
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> addCredentials(oauthToken) ~> Accept(MediaRanges.`*/*`) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
