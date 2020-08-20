@@ -53,7 +53,14 @@ export default function Footer() {
                 <p>Campus Biotech</p>
                 <p>Chemin des Mines 9</p>
                 <p>1202 Geneva</p>
-                <p>+41 21 69 37 660</p>
+                <p>
+                  <a href="mailto:hello@bluebrainnexus.io ">
+                    hello@bluebrainnexus.io
+                  </a>
+                </p>
+                <p>
+                  <a href="tel:+41 21 69 37 660">+41 21 69 37 660</a>
+                </p>
               </div>
             </div>
           </div>
