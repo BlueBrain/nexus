@@ -1,6 +1,9 @@
 module.exports = {
   products: [
     {
+      ogTitle: "Nexus Forge: Building and Using Knowledge Graphs Made Easy",
+      ogDescription:
+        "Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs.",
       name: "Nexus Forge",
       slug: "nexus-forge",
       features: [
@@ -46,6 +49,9 @@ module.exports = {
       docsLink: "https://nexus-forge.readthedocs.io/en/latest/",
     },
     {
+      ogTitle: "Nexus Fusion: Enabling Data and Knowledge Discovery",
+      ogDescription:
+        "Fusion is your portal into your data and research knowledge graph. Query, edit, visualize, and manage your data easily.",
       name: "Nexus Fusion",
       slug: "nexus-fusion",
       overviewText:
@@ -84,6 +90,9 @@ module.exports = {
       ],
     },
     {
+      ogTitle: "Nexus Delta: Managing Data and Knowledge Graph Lifecycles",
+      ogDescription:
+        "A secure and scalable service that allows you to organize your data into a Knowledge Graph. Its API enables you to store your data, describe them with metadata, enforce format using schemas combined with automatic validation, capture provenance, and access revisions.",
       name: "Nexus Delta",
       slug: "nexus-delta",
       features: [
