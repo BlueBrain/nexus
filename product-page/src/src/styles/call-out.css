@@ -1,0 +1,41 @@
+.call-out {
+  color: white;
+  font-size: 1.5em;
+}
+.call-out.gradient {
+  background: transparent linear-gradient(180deg, #0d1a4d 0%, #03050f 100%) 0%
+    0% no-repeat padding-box;
+}
+.call-out#we-are-open-source .content {
+  display: flex;
+  justify-content: center;
+}
+.call-out p {
+  align-self: flex-end;
+}
+
+.call-out img[alt="GitHub"] {
+  width: 4em;
+  margin-right: 1em;
+}
+
+.call-out#powered-by-nexus a {
+  display: flex;
+  height: 100%;
+}
+
+.call-out#powered-by-nexus img {
+  max-width: 80px;
+}
+.call-out#powered-by-nexus a {
+  color: #fff;
+}
+.call-out#powered-by-nexus p:not(.title) {
+  align-self: center;
+  margin-left: 1em;
+  font-size: 0.8em;
+}
+
+.call-out .title {
+  color: #fff;
+}

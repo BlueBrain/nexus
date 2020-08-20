@@ -9,10 +9,11 @@ import pureconfig.generic.semiauto.deriveConvert
 /**
   * Blue Brain search API connectivity information.
   *
-  * @param endpoint   the API endpoint
+ * @param endpoint   the API endpoint
+  * @param maxWords   maximum number of words per request
   * @param modelTypes a set of model types with its dimensions
   */
-final case class BlueBrainSearchConfig(endpoint: Uri, modelTypes: List[ModelType])
+final case class BlueBrainSearchConfig(endpoint: Uri, maxWords: Int, modelTypes: List[ModelType])
 
 object BlueBrainSearchConfig extends Codecs {
 

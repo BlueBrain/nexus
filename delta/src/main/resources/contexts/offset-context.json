@@ -1,0 +1,11 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+  },
+  "projectionId": {
+    "@type": "@id"
+  },
+  "sourceId": {
+    "@type": "@id"
+  }
+}

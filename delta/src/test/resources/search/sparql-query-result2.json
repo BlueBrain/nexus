@@ -1,0 +1,44 @@
+{
+  "head": {
+    "vars": [
+      "x",
+      "hpage",
+      "name",
+      "mbox",
+      "age",
+      "blurb",
+      "friend"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "x": {
+          "type": "bnode",
+          "value": "r3"
+        },
+        "hpage": {
+          "type": "uri",
+          "value": "http://work.example.org/dmontero/"
+        },
+        "name": {
+          "type": "literal",
+          "value": "Didac"
+        },
+        "mbox": {
+          "type": "literal",
+          "value": ""
+        },
+        "blurb": {
+          "datatype": "http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral",
+          "type": "literal",
+          "value": "The name is"
+        },
+        "friend": {
+          "type": "bnode",
+          "value": "r4"
+        }
+      }
+    ]
+  }
+}

@@ -1,40 +1,63 @@
 @@@ index
 
-- [Getting Started](getting-started/index.md)
-- [Tutorials](tutorial/index.md)
-- [API Reference](api/current/index.md)
-- [Nexus Web](nexus-web/index.md)
+- [Quick Start Guide](getting-started/index.md)
 - [Releases](releases/index.md)
-- [Frequently asked questions](faq.md)
-- [Additional Information](additional-info/index.md)
+- [Roadmap](roadmap.md)
+- [Nexus Fusion](fusion/index.md)
+- [Nexus Forge](forge.md)
+- [Nexus Delta](delta/index.md)
+- [Utilities](utilities/index.md)
+- [FAQ](faq.md)
 
 @@@
 
 # Blue Brain Nexus
 
-The BlueBrain Nexus is a provenance based, semantic enabled data management platform enabling the definition of an
-arbitrary domain of application for which there is a need to create and manage entities as well as their relations
-(e.g. provenance). For example, the domain of application managed by the Nexus platform deployed at Blue Brain is to
-digitally reconstruct and simulate the brain.
+Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
 
-At the heart of the BlueBrain Nexus platform lies the Knowledge Graph; at BlueBrain, it will allow scientists to:
+## Products
 
-1. Register and manage neuroscience relevant entity types through schemas that can reuse or extend community defined
-   schemas (e.g. schema.org, bioschema.org, W3C-PROV) and ontologies (e.g. brain parcellation schemes, cell types,
-   taxonomy).
+The Blue Brain Nexus ecosystem encompasses a broad range of capabilities that are brought to you across three complementary products and a suite of utilities.
 
-2. Submit data to the platform and describe their provenance using the W3C PROV model. Provenance is about how data or
-   things are generated (e.g. protocols, methods used...), when (e.g. timeline) and by whom (e.g. people, software...).
-   Provenance supports the data reliability and quality assessment as well as enables workflow reproducibility. Platform
-   users can submit data either through web forms or programmatic interfaces.
+### Nexus Fusion
 
-3. Search, discover, reuse and derive high-quality neuroscience data generated within and outside the platform for the
-   purpose of driving their own scientific endeavours.
-   Data can be examined by species, contributing laboratory, methodology, brain region, and data type, thereby allowing
-   functionality not currently available elsewhere. The data are predominantly organized into atlases (e.g. Allen CCF,
-   Waxholm) and linked to the KnowledgeSpace – a collaborative community-based encyclopedia linking brain research concepts
-   to the latest data, models and literature.
+*Enabling Collaborative Data and Knowledge Discovery*
 
-It is to be noted that many other scientific fields (Astronomy, Agriculture, Bioinformatics, Pharmaceutical Industry,
-...) are in need of such a technology. Consequently, BlueBrain Nexus core technology is being developed to be
-**agnostic of the domain** it might be applied to.
+Fusion is our extensible web application. It hosts different apps to accommodate various use cases. It comes by default with Studios (where you work with data), Admin (for managing the Nexus instance), and will soon support Workflows to organise your data activities. It runs on top of the Delta web services, and integrates neatly with our Forge python framework.
+
+@ref:[Read more about Fusion](fusion/index.md)
+
+### Nexus Forge
+
+*Building and Using Knowledge Graphs Made Easy*
+
+Nexus Forge is a domain-agnostic, generic and extensible Python framework enabling non-expert users to create and manage knowledge graphs.
+
+@ref:[Read more about Forge](forge.md)
+
+
+### Nexus Delta
+
+*Managing the Data and Knowledge Graph Lifecycle*
+
+A scalable and secure service to store and leverage all your data, neatly organised in a Knowledge Graph. It offers an API to perform all your data management operations, this way it can easily integrate with your software stack. Its advanced indexing capabilities automatically build views from your metadata.
+
+@ref:[Read more about Delta](delta/index.md)
+
+### Utilities
+
+The Nexus ecosystem leverages a set of smaller open-source utilities.
+
+@ref:[Discover the utilities](utilities/index.md)
+
+## Quick Start Guide
+
+Do you know know what a knowledge graph is? Or want to deepen your understanding? Follow our @ref:[introduction](getting-started/understanding-knowledge-graphs.md).
+
+Want to get started with Nexus right away? We provide a @ref:[tutorial](getting-started/try-nexus.md) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
+
+Ready to deploy your own instance of Nexus? Follow our @ref:[guide](getting-started/running-nexus.md).
+
+## Roadmap
+
+Curious about our upcoming features? Read our @ref[open Roadmap](roadmap.md) to find out more.

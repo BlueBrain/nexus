@@ -1,0 +1,17 @@
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "parsing_exception",
+        "reason": "no [query] registered for [error]",
+        "line": 3,
+        "col": 15
+      }
+    ],
+    "type": "parsing_exception",
+    "reason": "no [query] registered for [error]",
+    "line": 3,
+    "col": 15
+  },
+  "status": 400
+}

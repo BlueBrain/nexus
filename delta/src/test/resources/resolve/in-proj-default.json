@@ -1,0 +1,12 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/resolver.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id" : "nxv:defaultInProject",
+  "@type" : [
+    "Resolver",
+    "InProject"
+  ],
+  "priority" : 1
+}

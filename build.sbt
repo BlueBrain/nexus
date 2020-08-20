@@ -13,117 +13,159 @@ scalafmt: {
 }
  */
 
-val javaSpecificationVersion = "11"
-val scalacScapegoatVersion   = "1.4.4"
-val scalaCompilerVersion     = "2.13.2"
+val scalacScapegoatVersion = "1.4.4"
+val scalaCompilerVersion   = "2.13.2"
 
 val akkaHttpVersion                 = "10.1.12"
-val akkaHttpCirceVersion            = "1.32.0"
+val akkaHttpCirceVersion            = "1.33.0"
 val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaVersion                     = "2.6.6"
+val alpakkaVersion                  = "2.0.1"
+val apacheCompressVersion           = "1.20"
 val asmVersion                      = "7.3.1"
-val byteBuddyAgentVersion           = "1.10.10"
-val blazegraphVersion               = "2.1.5"
+val byteBuddyAgentVersion           = "1.10.13"
 val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.1.1"
 val circeVersion                    = "0.13.0"
 val declineVersion                  = "1.2.0"
-val distageVersion                  = "0.10.12"
+val distageVersion                  = "0.10.16"
 val doobieVersion                   = "0.9.0"
-val elasticSearchVersion            = "7.5.1"
-val fs2Version                      = "2.3.0"
-val http4sVersion                   = "0.21.4"
+val fs2Version                      = "2.4.2"
+val guavaVersion                    = "29.0-jre"
+val http4sVersion                   = "0.21.6"
 val iamVersion                      = "1.3.0"
-val jacksonVersion                  = "2.10.2"
-val jacksonBindVersion              = "2.10.2"
 val jenaVersion                     = "3.15.0"
-val kamonVersion                    = "2.1.0"
-val kanelaAgentVersion              = "1.0.5"
+val jsonldjavaVersion               = "0.13.0"
+val kamonVersion                    = "2.1.2"
+val kanelaAgentVersion              = "1.0.6"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
 val log4jVersion                    = "2.13.3"
 val magnoliaVersion                 = "0.16.0"
-val mockitoVersion                  = "1.14.4"
+val mockitoVersion                  = "1.14.8"
 val monixVersion                    = "3.2.2"
 val nimbusJoseJwtVersion            = "8.19"
 val parboiledVersion                = "2.2.0"
-val pureconfigVersion               = "0.12.3"
+val pureconfigVersion               = "0.13.0"
 val scalaLoggingVersion             = "3.9.2"
-val scalaTestVersion                = "3.1.2"
+val scalaTestVersion                = "3.2.0"
 val topBraidVersion                 = "1.3.2"
 
-lazy val akkaActor                = "com.typesafe.akka"                %% "akka-actor"                          % akkaVersion
-lazy val akkaCluster              = "com.typesafe.akka"                %% "akka-cluster"                        % akkaVersion
-lazy val akkaClusterSharding      = "com.typesafe.akka"                %% "akka-cluster-sharding"               % akkaVersion
-lazy val akkaHttp                 = "com.typesafe.akka"                %% "akka-http"                           % akkaHttpVersion
-lazy val akkaHttpCors             = "ch.megard"                        %% "akka-http-cors"                      % akkaCorsVersion
-lazy val akkaHttpCirce            = "de.heikoseeberger"                %% "akka-http-circe"                     % akkaHttpCirceVersion
-lazy val akkaHttpTestKit          = "com.typesafe.akka"                %% "akka-http-testkit"                   % akkaHttpVersion
-lazy val akkaPersistence          = "com.typesafe.akka"                %% "akka-persistence"                    % akkaVersion
-lazy val akkaPersistenceCassandra = "com.typesafe.akka"                %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceInMem     = "com.github.dnvriend"              %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
-lazy val akkaPersistenceLauncher  = "com.typesafe.akka"                %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceQuery     = "com.typesafe.akka"                %% "akka-persistence-query"              % akkaVersion
-lazy val akkaSlf4j                = "com.typesafe.akka"                %% "akka-slf4j"                          % akkaVersion
-lazy val akkaTestKit              = "com.typesafe.akka"                %% "akka-testkit"                        % akkaVersion
-lazy val alleycatsCore            = "org.typelevel"                    %% "alleycats-core"                      % catsVersion
-lazy val asm                      = "org.ow2.asm"                       % "asm"                                 % asmVersion
-lazy val blazegraph               = "com.blazegraph"                    % "blazegraph-jar"                      % blazegraphVersion
-lazy val byteBuddyAgent           = "net.bytebuddy"                     % "byte-buddy-agent"                    % byteBuddyAgentVersion
-lazy val catsCore                 = "org.typelevel"                    %% "cats-core"                           % catsVersion
-lazy val catsEffect               = "org.typelevel"                    %% "cats-effect"                         % catsEffectVersion
-lazy val catsEffectRetry          = "com.github.cb372"                 %% "cats-retry-cats-effect"              % catsRetryVersion
-lazy val catsRetry                = "com.github.cb372"                 %% "cats-retry-core"                     % catsRetryVersion
-lazy val circeCore                = "io.circe"                         %% "circe-core"                          % circeVersion
-lazy val circeGeneric             = "io.circe"                         %% "circe-generic"                       % circeVersion
-lazy val circeGenericExtras       = "io.circe"                         %% "circe-generic-extras"                % circeVersion
-lazy val circeLiteral             = "io.circe"                         %% "circe-literal"                       % circeVersion
-lazy val circeParser              = "io.circe"                         %% "circe-parser"                        % circeVersion
-lazy val decline                  = "com.monovore"                     %% "decline"                             % declineVersion
-lazy val distageCore              = "io.7mind.izumi"                   %% "distage-core"                        % distageVersion
-lazy val distageDocker            = "io.7mind.izumi"                   %% "distage-framework-docker"            % distageVersion
-lazy val distageTestkit           = "io.7mind.izumi"                   %% "distage-testkit-scalatest"           % distageVersion
-lazy val doobiePostgres           = "org.tpolecat"                     %% "doobie-postgres"                     % doobieVersion
-lazy val esCore                   = "org.elasticsearch"                 % "elasticsearch"                       % elasticSearchVersion
-lazy val esPainless               = "org.codelibs.elasticsearch.module" % "lang-painless"                       % elasticSearchVersion
-lazy val esReindex                = "org.codelibs.elasticsearch.module" % "reindex"                             % elasticSearchVersion
-lazy val esRestClient             = "org.elasticsearch.client"          % "elasticsearch-rest-client"           % elasticSearchVersion
-lazy val esTransportClient        = "org.elasticsearch.plugin"          % "transport-netty4-client"             % elasticSearchVersion
-lazy val fs2                      = "co.fs2"                           %% "fs2-core"                            % fs2Version
-lazy val http4sCirce              = "org.http4s"                       %% "http4s-circe"                        % http4sVersion
-lazy val http4sClient             = "org.http4s"                       %% "http4s-blaze-client"                 % http4sVersion
-lazy val http4sDsl                = "org.http4s"                       %% "http4s-dsl"                          % http4sVersion
-lazy val iamClient                = "ch.epfl.bluebrain.nexus"          %% "iam-client"                          % iamVersion
-lazy val jacksonAnnotations       = "com.fasterxml.jackson.core"        % "jackson-annotations"                 % jacksonVersion
-lazy val jacksonCore              = "com.fasterxml.jackson.core"        % "jackson-core"                        % jacksonVersion
-lazy val jacksonDatabind          = "com.fasterxml.jackson.core"        % "jackson-databind"                    % jacksonBindVersion
-lazy val jenaArq                  = "org.apache.jena"                   % "jena-arq"                            % jenaVersion
-lazy val kanelaAgent              = "io.kamon"                          % "kanela-agent"                        % kanelaAgentVersion
-lazy val kindProjector            = "org.typelevel"                    %% "kind-projector"                      % kindProjectorVersion
-lazy val kryo                     = "io.altoo"                         %% "akka-kryo-serialization"             % kryoVersion
-lazy val logback                  = "ch.qos.logback"                    % "logback-classic"                     % logbackVersion
-lazy val log4jCore                = "org.apache.logging.log4j"          % "log4j-core"                          % log4jVersion
-lazy val log4jApi                 = "org.apache.logging.log4j"          % "log4j-api"                           % log4jVersion
-lazy val magnolia                 = "com.propensive"                   %% "magnolia"                            % magnoliaVersion
-lazy val mockito                  = "org.mockito"                      %% "mockito-scala"                       % mockitoVersion
-lazy val monixEval                = "io.monix"                         %% "monix-eval"                          % monixVersion
-lazy val nimbusJoseJwt            = "com.nimbusds"                      % "nimbus-jose-jwt"                     % nimbusJoseJwtVersion
-lazy val parboiled2               = "org.parboiled"                    %% "parboiled"                           % parboiledVersion
-lazy val pureconfig               = "com.github.pureconfig"            %% "pureconfig"                          % pureconfigVersion
-lazy val scalaLogging             = "com.typesafe.scala-logging"       %% "scala-logging"                       % scalaLoggingVersion
-lazy val scalaTest                = "org.scalatest"                    %% "scalatest"                           % scalaTestVersion
-lazy val scalaReflect             = "org.scala-lang"                    % "scala-reflect"                       % scalaCompilerVersion
-lazy val topBraidShacl            = "org.topbraid"                      % "shacl"                               % topBraidVersion
+lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
+lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
+lazy val akkaClusterSharding      = "com.typesafe.akka"          %% "akka-cluster-sharding"               % akkaVersion
+lazy val akkaHttp                 = "com.typesafe.akka"          %% "akka-http"                           % akkaHttpVersion
+lazy val akkaHttpXml              = "com.typesafe.akka"          %% "akka-http-xml"                       % akkaHttpVersion
+lazy val akkaHttpCors             = "ch.megard"                  %% "akka-http-cors"                      % akkaCorsVersion
+lazy val akkaHttpCirce            = "de.heikoseeberger"          %% "akka-http-circe"                     % akkaHttpCirceVersion
+lazy val akkaHttpTestKit          = "com.typesafe.akka"          %% "akka-http-testkit"                   % akkaHttpVersion
+lazy val akkaPersistence          = "com.typesafe.akka"          %% "akka-persistence"                    % akkaVersion
+lazy val akkaPersistenceCassandra = "com.typesafe.akka"          %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceInMem     = "com.github.dnvriend"        %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
+lazy val akkaPersistenceLauncher  = "com.typesafe.akka"          %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceQuery     = "com.typesafe.akka"          %% "akka-persistence-query"              % akkaVersion
+lazy val akkaSlf4j                = "com.typesafe.akka"          %% "akka-slf4j"                          % akkaVersion
+lazy val akkaStream               = "com.typesafe.akka"          %% "akka-stream"                         % akkaVersion
+lazy val akkaTestKit              = "com.typesafe.akka"          %% "akka-testkit"                        % akkaVersion
+lazy val alleycatsCore            = "org.typelevel"              %% "alleycats-core"                      % catsVersion
+lazy val alpakkaFiles             = "com.lightbend.akka"         %% "akka-stream-alpakka-file"            % alpakkaVersion
+lazy val alpakkaSse               = "com.lightbend.akka"         %% "akka-stream-alpakka-sse"             % alpakkaVersion
+lazy val alpakkaS3                = "com.lightbend.akka"         %% "akka-stream-alpakka-s3"              % alpakkaVersion
+lazy val apacheCompress           = "org.apache.commons"          % "commons-compress"                    % apacheCompressVersion
+lazy val asm                      = "org.ow2.asm"                 % "asm"                                 % asmVersion
+lazy val byteBuddyAgent           = "net.bytebuddy"               % "byte-buddy-agent"                    % byteBuddyAgentVersion
+lazy val catsCore                 = "org.typelevel"              %% "cats-core"                           % catsVersion
+lazy val catsEffect               = "org.typelevel"              %% "cats-effect"                         % catsEffectVersion
+lazy val catsEffectRetry          = "com.github.cb372"           %% "cats-retry-cats-effect"              % catsRetryVersion
+lazy val catsRetry                = "com.github.cb372"           %% "cats-retry-core"                     % catsRetryVersion
+lazy val circeCore                = "io.circe"                   %% "circe-core"                          % circeVersion
+lazy val circeGeneric             = "io.circe"                   %% "circe-generic"                       % circeVersion
+lazy val circeGenericExtras       = "io.circe"                   %% "circe-generic-extras"                % circeVersion
+lazy val circeLiteral             = "io.circe"                   %% "circe-literal"                       % circeVersion
+lazy val circeParser              = "io.circe"                   %% "circe-parser"                        % circeVersion
+lazy val decline                  = "com.monovore"               %% "decline"                             % declineVersion
+lazy val distageCore              = "io.7mind.izumi"             %% "distage-core"                        % distageVersion
+lazy val distageDocker            = "io.7mind.izumi"             %% "distage-framework-docker"            % distageVersion
+lazy val distageTestkit           = "io.7mind.izumi"             %% "distage-testkit-scalatest"           % distageVersion
+lazy val doobiePostgres           = "org.tpolecat"               %% "doobie-postgres"                     % doobieVersion
+lazy val fs2                      = "co.fs2"                     %% "fs2-core"                            % fs2Version
+lazy val http4sCirce              = "org.http4s"                 %% "http4s-circe"                        % http4sVersion
+lazy val http4sClient             = "org.http4s"                 %% "http4s-blaze-client"                 % http4sVersion
+lazy val http4sDsl                = "org.http4s"                 %% "http4s-dsl"                          % http4sVersion
+lazy val guava                    = "com.google.guava"            % "guava"                               % guavaVersion
+lazy val iamClient                = "ch.epfl.bluebrain.nexus"    %% "iam-client"                          % iamVersion
+lazy val jenaArq                  = "org.apache.jena"             % "jena-arq"                            % jenaVersion
+lazy val jsonldjava               = "com.github.jsonld-java"      % "jsonld-java"                         % jsonldjavaVersion
+lazy val kanelaAgent              = "io.kamon"                    % "kanela-agent"                        % kanelaAgentVersion
+lazy val kindProjector            = "org.typelevel"              %% "kind-projector"                      % kindProjectorVersion
+lazy val kryo                     = "io.altoo"                   %% "akka-kryo-serialization"             % kryoVersion
+lazy val logback                  = "ch.qos.logback"              % "logback-classic"                     % logbackVersion
+lazy val log4jCore                = "org.apache.logging.log4j"    % "log4j-core"                          % log4jVersion
+lazy val log4jApi                 = "org.apache.logging.log4j"    % "log4j-api"                           % log4jVersion
+lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
+lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
+lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
+lazy val nimbusJoseJwt            = "com.nimbusds"                % "nimbus-jose-jwt"                     % nimbusJoseJwtVersion
+lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
+lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"                          % pureconfigVersion
+lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
+lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
+lazy val scalaReflect             = "org.scala-lang"              % "scala-reflect"                       % scalaCompilerVersion
+lazy val topBraidShacl            = "org.topbraid"                % "shacl"                               % topBraidVersion
+
+val javaSpecificationVersion = SettingKey[String](
+  "java-specification-version",
+  "The java specification version to be used for source and target compatibility."
+)
+
+lazy val checkJavaVersion = taskKey[Unit]("Verifies the current Java version is compatible with the code java version")
+
+lazy val makeProductPage = taskKey[Unit]("Crete product page")
+
+lazy val productPage = project
+  .in(file("product-page"))
+  .enablePlugins(GhpagesPlugin)
+  .settings(shared, compilation)
+  .settings(
+    name                              := "product-page",
+    moduleName                        := "product-page",
+    // gh pages settings
+    git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
+    ghpagesNoJekyll                   := true,
+    ghpagesBranch                     := "gh-pages",
+    makeProductPage                   := {
+      import scala.sys.process._
+      import java.nio.file.Files
+      val log     = streams.value.log
+      if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
+      val install = Process(Seq("make", "install"), baseDirectory.value / "src")
+      val build   = Process(Seq("make", "build"), baseDirectory.value / "src")
+      if ((install #&& build !) == 0) {
+        log.success("Product page built.")
+      } else {
+        log.error("Product page built failed.")
+        throw new RuntimeException
+      }
+    },
+    includeFilter in makeSite         := "*.*",
+    makeSite                          := makeSite.dependsOn(makeProductPage).value,
+    previewFixedPort                  := Some(4000),
+    excludeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
+    cleanFiles                       ++= Seq(
+      baseDirectory.value / "src" / ".cache",
+      siteSourceDirectory.value
+    )
+  )
 
 lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
   .disablePlugins(ScapegoatSbtPlugin)
-  .settings(shared, compilation)
+  .settings(shared, compilation, assertJavaVersion)
   .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
   .settings(
     name                              := "docs",
@@ -143,13 +185,16 @@ lazy val docs = project
         )
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
-            |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
-            |""".stripMargin)
+                         |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+                         |""".stripMargin)
     },
     paradoxNavigationDepth in Paradox := 4,
     paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
     paradoxRoots                      := List("docs/index.html"),
+    previewPath                       := "docs/index.html",
+    previewFixedPort                  := Some(4001),
     // gh pages settings
+    includeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
     git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll                   := true,
     ghpagesBranch                     := "gh-pages"
@@ -158,7 +203,7 @@ lazy val docs = project
 lazy val cli = project
   .in(file("cli"))
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
-  .settings(shared, compilation, coverage, release, servicePackaging)
+  .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
     name                 := "cli",
     moduleName           := "cli",
@@ -175,7 +220,6 @@ lazy val cli = project
       decline,
       distageCore,
       doobiePostgres,
-      distageCore,
       http4sCirce,
       http4sClient,
       fs2,
@@ -193,7 +237,7 @@ lazy val cli = project
 lazy val sourcing = project
   .in(file("sourcing"))
   .settings(name := "sourcing", moduleName := "sourcing")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
       akkaActor,
@@ -208,18 +252,19 @@ lazy val sourcing = project
       circeCore,
       circeGenericExtras,
       circeParser,
-      scalaLogging,
       pureconfig,
-      akkaPersistenceInMem    % Test,
-      akkaPersistenceLauncher % Test,
-      akkaSlf4j               % Test,
-      akkaTestKit             % Test,
-      akkaHttpTestKit         % Test,
-      kryo                    % Test,
-      logback                 % Test,
-      scalaTest               % Test,
-      mockito                 % Test,
-      pureconfig              % Test
+      scalaLogging,
+      akkaPersistenceInMem % Test,
+      akkaSlf4j            % Test,
+      akkaTestKit          % Test,
+      akkaHttpTestKit      % Test,
+      distageDocker        % Test,
+      distageTestkit       % Test,
+      kryo                 % Test,
+      logback              % Test,
+      scalaTest            % Test,
+      mockito              % Test,
+      pureconfig           % Test
     ),
     Test / fork          := true
   )
@@ -234,6 +279,7 @@ lazy val rdf      = project
     libraryDependencies ++= Seq(
       akkaHttp,
       akkaHttpCirce,
+      akkaHttpXml,
       alleycatsCore,
       catsCore,
       jenaArq,
@@ -251,15 +297,84 @@ lazy val rdf      = project
     Test / fork          := true
   )
 
-lazy val service = project
-  .in(file("service"))
-  .dependsOn(sourcing, rdf)
-  .settings(shared, compilation, coverage, release)
-  .enablePlugins(JmhPlugin)
+lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+
+lazy val docsFiles =
+  Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")
+
+def docsFilesFilter(repo: File) =
+  new FileFilter {
+    def accept(repoFile: File) = docsFiles.exists(file => repoFile.getCanonicalPath.startsWith((repo / file).getCanonicalPath))
+  }
+
+lazy val storage = project
+  .in(file("storage"))
+  .dependsOn(rdf)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .settings(cargo := {
+    import scala.sys.process._
+
+    val log = streams.value.log
+    val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
+    if ((cmd !) == 0) {
+      log.success("Cargo build successful.")
+      (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
+    } else {
+      log.error("Cargo build failed.")
+      throw new RuntimeException
+    }
+  })
   .settings(
-    name            := "service",
-    moduleName      := "service",
-    coverageMinimum := 20d
+    name                     := "storage",
+    moduleName               := "storage",
+    coverageFailOnMinimum    := true,
+    buildInfoKeys            := Seq[BuildInfoKey](version),
+    buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
+    Docker / packageName     := "nexus-storage",
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
+      apacheCompress,
+      akkaHttp,
+      akkaStream,
+      akkaSlf4j,
+      alpakkaFiles,
+      catsCore,
+      catsEffect,
+      circeCore,
+      circeGenericExtras,
+      logback,
+      monixEval,
+      pureconfig,
+      scalaLogging,
+      akkaHttpTestKit % Test,
+      akkaTestKit     % Test,
+      mockito         % Test,
+      scalaTest       % Test
+    ),
+    cleanFiles              ++= Seq(
+      baseDirectory.value / "permissions-fixer" / "target" / "**",
+      baseDirectory.value / "nexus-storage.jar"
+    ),
+    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    Test / parallelExecution := false,
+    mappings in Universal    := {
+      (mappings in Universal).value :+ cargo.value
+    }
+  )
+
+lazy val delta = project
+  .in(file("delta"))
+  .dependsOn(sourcing, rdf)
+  .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
+  .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
+  .settings(
+    name                 := "delta",
+    moduleName           := "delta",
+    coverageMinimum      := 75d,
+    buildInfoKeys        := Seq[BuildInfoKey](version),
+    Docker / packageName := "nexus-delta",
+    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config"
   )
   .settings(kamonSettings)
   .settings(
@@ -273,10 +388,14 @@ lazy val service = project
       akkaPersistenceQuery,
       akkaSlf4j,
       alleycatsCore,
+      alpakkaS3,
+      alpakkaSse,
       catsCore,
       catsEffectRetry,
       catsEffect,
+      guava,
       jenaArq,
+      jsonldjava,
       kryo,
       logback,
       magnolia,
@@ -289,15 +408,10 @@ lazy val service = project
       akkaPersistenceLauncher % Test,
       akkaTestKit             % Test,
       asm                     % Test,
-      blazegraph              % Test,
       circeLiteral            % Test,
-      esCore                  % Test,
-      esPainless              % Test,
-      esReindex               % Test,
-      esTransportClient       % Test,
-      jacksonAnnotations      % Test,
-      jacksonCore             % Test,
-      jacksonDatabind         % Test,
+      distageDocker           % Test,
+      distageTestkit          % Test,
+      jsonldjava              % Test,
       log4jCore               % Test,
       log4jApi                % Test,
       mockito                 % Test,
@@ -315,9 +429,19 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, rdf, service)
+  .aggregate(docs, cli, sourcing, rdf, storage, delta)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
+
+lazy val assertJavaVersion =
+  Seq(
+    checkJavaVersion   := {
+      val current  = VersionNumber(sys.props("java.specification.version"))
+      val required = VersionNumber(javaSpecificationVersion.value)
+      assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
+    },
+    compile in Compile := (compile in Compile).dependsOn(checkJavaVersion).value
+  )
 
 lazy val shared = Seq(
   organization := "ch.epfl.bluebrain.nexus",
@@ -345,33 +469,44 @@ lazy val kamonSettings = Seq(
   )
 )
 
-lazy val compilation = Seq(
-  scalaVersion                     := scalaCompilerVersion,
-  scalacOptions                    ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
-  javacOptions                    ++= Seq(
-    "-source",
-    javaSpecificationVersion,
-    "-target",
-    javaSpecificationVersion,
-    "-Xlint"
-  ),
-  scalacOptions in (Compile, doc) ++= Seq("-no-link-warnings"),
-  javacOptions in (Compile, doc)   := Seq("-source", javaSpecificationVersion),
-  autoAPIMappings                  := true,
-  apiMappings                      += {
-    val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
-    ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
-  },
-  // fail the build initialization if the JDK currently used is not ${javaSpecificationVersion} or higher
-  initialize                       := {
-    // runs the previous initialization
-    initialize.value
-    // runs the java compatibility check
-    val current  = VersionNumber(sys.props("java.specification.version"))
-    val required = VersionNumber(javaSpecificationVersion)
-    assert(CompatibleJavaVersion(current, required), s"Java '$required' or above required; current '$current'")
+lazy val storageAssemblySettings = Seq(
+  test in assembly                  := {},
+  assemblyOutputPath in assembly    := baseDirectory.value / "nexus-storage.jar",
+  assemblyMergeStrategy in assembly := {
+    case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
+    case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
+    case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
+    case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
+    case x                                                               =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
   }
 )
+
+lazy val compilation = {
+  import sbt.Keys._
+  import sbt._
+
+  Seq(
+    scalaVersion                     := scalaCompilerVersion,
+    scalacOptions                    ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    javaSpecificationVersion         := "11",
+    javacOptions                    ++= Seq(
+      "-source",
+      javaSpecificationVersion.value,
+      "-target",
+      javaSpecificationVersion.value,
+      "-Xlint"
+    ),
+    scalacOptions in (Compile, doc) ++= Seq("-no-link-warnings"),
+    javacOptions in (Compile, doc)   := Seq("-source", javaSpecificationVersion.value),
+    autoAPIMappings                  := true,
+    apiMappings                      += {
+      val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
+      ApiMappings.apiMappingFor((fullClasspath in Compile).value)("scala-library", scalaDocUrl)
+    }
+  )
+}
 
 lazy val coverage = Seq(
   coverageMinimum       := 80,
@@ -466,3 +601,6 @@ inThisBuild(
 
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
+addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
+addCommandAlias("build-product-page", ";productPage/clean;productPage/makeSite")
+addCommandAlias("preview-product-page", ";productPage/clean;productPage/previewSite")

@@ -1,0 +1,59 @@
+{
+  "@id": "http://example.com/id",
+  "@type": [
+    "View",
+    "CompositeView"
+  ],
+  "_uuid": "247d223b-1d38-4c6e-8fed-f9a8c2ccb4a1",
+  "sources": [
+    {
+      "@id": "{source1_id}",
+      "@type": "ProjectEventStream",
+      "resourceTypes": ["nxv:MyType", "nxv:MyType2"],
+      "resourceSchemas": ["nxv:Resource", "nxv:Schema"],
+      "resourceTag": "one",
+      "includeDeprecated": true,
+      "includeMetadata": true
+    },
+    {
+      "@id": "{source2_id}",
+      "@type": "CrossProjectEventStream",
+      "includeDeprecated": true,
+      "includeMetadata": false,
+      "project": "account1/project1",
+      "identities": [
+        {
+          "@type": "Anonymous"
+        }
+      ]
+    }
+  ],
+  "projections": [
+    {
+      "@id": "{projection1_id}",
+      "@type": "ElasticSearchProjection",
+      "mapping": "{\"properties\":{\"@type\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"@id\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"prefLabel\":{\"type\":\"text\",\"fields\":{\"raw\":{\"type\":\"keyword\"}},\"copy_to\":\"_all_fields\"},\"label\":{\"type\":\"text\",\"fields\":{\"raw\":{\"type\":\"keyword\"}},\"copy_to\":\"_all_fields\"},\"name\":{\"type\":\"text\",\"fields\":{\"raw\":{\"type\":\"keyword\"}},\"copy_to\":\"_all_fields\"},\"_rev\":{\"type\":\"long\",\"copy_to\":\"_all_fields\"},\"_deprecated\":{\"type\":\"boolean\",\"copy_to\":\"_all_fields\"},\"_createdAt\":{\"type\":\"date\",\"copy_to\":\"_all_fields\"},\"_updatedAt\":{\"type\":\"date\",\"copy_to\":\"_all_fields\"},\"_createdBy\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_updatedBy\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_constrainedBy\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_project\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_self\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_incoming\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_outgoing\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_original_source\":{\"type\":\"text\",\"analyzer\":\"nexus\",\"copy_to\":\"_all_fields\"},\"_bytes\":{\"type\":\"long\",\"copy_to\":\"_all_fields\"},\"_mediaType\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_location\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_filename\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_digest\":{\"type\":\"nested\",\"properties\":{\"_algorithm\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"},\"_value\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"}}},\"_storage\":{\"type\":\"nested\",\"properties\":{\"_rev\":{\"type\":\"long\",\"copy_to\":\"_all_fields\"},\"@id\":{\"type\":\"keyword\",\"copy_to\":\"_all_fields\"}}},\"_all_fields\":{\"type\":\"text\",\"analyzer\":\"nexus\"}},\"dynamic\":false}",
+      "query": "CONSTRUCT {{resource_id} ?p ?o} WHERE {?s ?p ?o}",
+      "context": "{\"@base\": \"http://example.com/base/\", \"@vocab\": \"http://example.com/vocab/\"}",
+      "resourceTypes": ["nxv:MyType"],
+      "resourceSchemas": ["nxv:Schema"],
+      "resourceTag": "two",
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "sourceAsText": true,
+      "_uuid": "247d223b-1d38-4c6e-8fed-f9a8c2ccb4a2"
+    },
+    {
+      "@id": "{projection2_id}",
+      "@type": "SparqlProjection",
+      "query": "CONSTRUCT {{resource_id} ?p ?o} WHERE {?ss ?pp ?oo}",
+      "includeDeprecated": true,
+      "includeMetadata": true,
+      "_uuid": "247d223b-1d38-4c6e-8fed-f9a8c2ccb4a3"
+    }
+  ],
+  "rebuildStrategy": {
+    "@type": "Interval",
+    "value": "20 minutes"
+  }
+}

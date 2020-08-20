@@ -1,0 +1,25 @@
+{
+  "@context":"https://bluebrain.github.io/nexus/contexts/resolver.json",
+  "@id": "http://example.com/id",
+  "@type": ["Resolver", "CrossProject"],
+  "resourceTypes": ["nxv:Schema"],
+  "projects": [
+    "{uuid1}",
+    "{uuid2}"
+  ],
+  "identities": [
+    {
+      "@id": "{base}/v1/realms/ldap2/groups/bbp-ou-neuroinformatics",
+      "@type": "Group",
+      "realm": "ldap2",
+      "group": "bbp-ou-neuroinformatics"
+    },
+    {
+      "@id": "{base}/v1/realms/ldap/users/dmontero",
+      "@type": "User",
+      "realm": "ldap",
+      "subject": "dmontero"
+    }
+  ],
+  "priority": {priority}
+}

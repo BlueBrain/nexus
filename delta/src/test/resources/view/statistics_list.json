@@ -1,0 +1,19 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/statistics.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total" : 1,
+  "_results" : [
+    {
+      "@type" : "ViewStatistics",
+      "projectionId": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "totalEvents" : 12,
+      "processedEvents" : 10,
+      "evaluatedEvents" : 7,
+      "remainingEvents" : 2,
+      "discardedEvents" : 1,
+      "failedEvents" : 2
+    }
+  ]
+}

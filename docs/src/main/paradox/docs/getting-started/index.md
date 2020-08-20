@@ -1,16 +1,15 @@
 @@@ index
 
-- [Nexus concepts](nexus-concepts.md)
-- [Running Nexus](running-nexus/index.md)
+- [Understanding Knowledge Graphs](understanding-knowledge-graphs.md)
+- [Try Nexus](try-nexus.md)
+- [Running Nexus](running-nexus.md)
 
 @@@
 
 # Getting Started
 
-## Overview
+The Nexus ecosystem is a data catalog with several technologies and techniques used to get insight and explore the data within the ecosystem. 
 
-Blue Brain Nexus is an open source, data and knowledge management platform designed to enable open data-driven science by enabling the [FAIR principles](https://www.go-fair.org/fair-principles/), tracking data provenance and supporting data longevity in a secure and scalable manner.
+One of the powerful ways to query data is through the Knowledge Graph built in Nexus. For that reason we encourage you to get familiar with these concepts reading @ref:[Understanding Knowledge Graphs](understanding-knowledge-graphs.md).
 
-A key component of the platform is the **Knowledge Graph**, which acts as a **data repository** and **metadata catalog**. The data ingested in the Knowledge Graph is structured in a semantically meaningful way and can be linked to other data. This allows users to assess the quality of data, and consequently enables them to build trust.
-
-![Nexus platform](./assets/nexus-infographics.png "Nexus platform")
+The next steps would be to either try Nexus using the @ref:[Sandbox](try-nexus.md) deployment or @ref:[run Nexus locally](running-nexus.md).

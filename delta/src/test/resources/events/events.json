@@ -1,0 +1,112 @@
+[
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "http://example.com/base/Created",
+    "_source": {
+      "@type": "created"
+    },
+    "_types": [
+      "http://example.com/base/type"
+    ],
+    "_constrainedBy": "http://example.com/base/schema",
+    "_projectUuid": "7f8039a0-3141-11e9-b210-d663bd873d93",
+    "_organizationUuid": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Updated",
+    "_resourceId": "http://example.com/base/created",
+    "_source": {
+      "@type": "Updated"
+    },
+    "_types": [
+      "http://example.com/base/type"
+    ],
+    "_projectUuid": "7f8039a0-3141-11e9-b210-d663bd873d93",
+    "_organizationUuid": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+    "_rev": 2,
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Deprecated",
+    "_resourceId": "http://example.com/base/created",
+    "_types": [
+      "http://example.com/base/type"
+    ],
+    "_projectUuid": "7f8039a0-3141-11e9-b210-d663bd873d93",
+    "_organizationUuid": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+    "_rev": 3,
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "TagAdded",
+    "_resourceId": "http://example.com/base/created",
+    "tag": "v1.0.0",
+    "targetRev": 2,
+    "_projectUuid": "7f8039a0-3141-11e9-b210-d663bd873d93",
+    "_organizationUuid": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+    "_rev": 4,
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "FileCreated",
+    "_resourceId": "http://example.com/base/file",
+    "_attributes": {
+      "_bytes": 47,
+      "_digest": {
+        "_value": "00ff4b34e3f3695c3abcdec61cba72c2238ed172ef34ae1196bfad6a4ec23dda",
+        "_algorithm": "SHA-256"
+      },
+      "_filename": "attachment.json",
+      "_location": "/some/location/path",
+      "_mediaType": "application/json",
+      "_uuid": "a733d99e-6075-45df-b6c3-52c8071df4fb",
+      "_path": "path"
+    },
+    "_storage": {
+      "@type":"DiskStorageReference",
+      "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "_rev": 1
+    },
+    "_projectUuid": "7f8039a0-3141-11e9-b210-d663bd873d93",
+    "_organizationUuid": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "FileUpdated",
+    "_resourceId": "http://example.com/base/file",
+    "_attributes": {
+      "_bytes": 47,
+      "_digest": {
+        "_value": "00ff4b34e3f3695c3abcdec61cba72c2238ed172ef34ae1196bfad6a4ec23dda",
+        "_algorithm": "SHA-256"
+      },
+      "_filename": "attachment.json",
+      "_location": "/some/location/path",
+      "_mediaType": "text/plain; charset=UTF-8",
+      "_uuid": "a733d99e-6075-45df-b6c3-52c8071df4fb",
+      "_path": "path2"
+    },
+    "_storage": {
+      "@type":"S3StorageReference",
+      "_resourceId": "http://example.com/base/storages/s3",
+      "_rev": 1
+    },
+    "_projectUuid": "7f8039a0-3141-11e9-b210-d663bd873d93",
+    "_organizationUuid": "17a62c6a-4dc4-4eaa-b418-42d0634695a1",
+    "_rev": 2,
+    "_instant": "1970-01-01T00:00:00Z",
+    "_subject": "http://127.0.0.1:8080/v1/realms/myrealm/users/uuid"
+  }
+]

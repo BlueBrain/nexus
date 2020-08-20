@@ -1,0 +1,23 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/statistics.json",
+  "@type": "CompositeViewStatistics",
+  "totalEvents": 12,
+  "processedEvents": 10,
+  "evaluatedEvents": 7,
+  "remainingEvents": 2,
+  "discardedEvents": 1,
+  "failedEvents": 2,
+  "values": [
+    {
+      "@type" : "ViewStatistics",
+      "sourceId" : "{sourceId}",
+      "projectionId" : "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "totalEvents" : 12,
+      "processedEvents" : 10,
+      "evaluatedEvents" : 7,
+      "remainingEvents" : 2,
+      "discardedEvents" : 1,
+      "failedEvents" : 2
+    }
+  ]
+}

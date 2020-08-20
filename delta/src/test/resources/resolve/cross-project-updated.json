@@ -1,0 +1,17 @@
+{
+  "@id": "http://example.com/id2",
+  "@type": ["Resolver", "CrossProject"],
+  "resourceTypes": ["nxv:Schema"],
+  "projects": [
+    "70eab995-fc68-4abf-8493-8d5248ba1b18",
+    "bd024b643-84e0-4188-aa62-898aa84387d0"
+  ],
+  "identities": [
+    {
+      "@type": "User",
+      "realm": "ldap",
+      "subject": "dmontero"
+    }
+  ],
+  "priority": 100
+}

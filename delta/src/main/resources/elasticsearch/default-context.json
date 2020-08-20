@@ -1,0 +1,51 @@
+{
+  "@context": {
+    "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
+    "_createdAt": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
+    "_updatedAt": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
+    "_project": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/project",
+      "@type": "@id"
+    },
+    "_self": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/self",
+      "@type": "@id"
+    },
+    "_incoming": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/incoming",
+      "@type": "@id"
+    },
+    "_outgoing": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/outgoing",
+      "@type": "@id"
+    },
+    "_updatedBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedBy",
+      "@type": "@id"
+    },
+    "_createdBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdBy",
+      "@type": "@id"
+    },
+    "_storage": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/storage",
+      "@type": "@id"
+    },
+    "_constrainedBy": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/constrainedBy",
+      "@type": "@id"
+    },
+    "prefLabel": "http://www.w3.org/2004/02/skos/core#prefLabel",
+    "name": "http://schema.org/name",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
+    "_original_source": "https://bluebrain.github.io/nexus/vocabulary/original_source",
+    "_digest": "https://bluebrain.github.io/nexus/vocabulary/digest",
+    "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
+    "_value": "https://bluebrain.github.io/nexus/vocabulary/value",
+    "_mediaType": "https://bluebrain.github.io/nexus/vocabulary/mediaType",
+    "_location": "https://bluebrain.github.io/nexus/vocabulary/location",
+    "_filename": "https://bluebrain.github.io/nexus/vocabulary/filename",
+    "_bytes": "https://bluebrain.github.io/nexus/vocabulary/bytes"
+  }
+}

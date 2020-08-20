@@ -67,4 +67,3 @@ jobs:
         chmod 400 "$HOME/.ssh/id_rsa"
         ssh-keyscan -t rsa github.com >> "$HOME/.ssh/known_hosts"
         sbt "project docs" clean makeSite ghpagesPushSite
-

@@ -1,0 +1,146 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "this": "https://bluebrain.github.io/nexus/schemas/archive/shapes/",
+      "nxva": "https://bluebrain.github.io/nexus/vocabulary/archive/"
+    }
+  ],
+  "@id": "https://bluebrain.github.io/nexus/schemas/archive.json",
+  "@type": "nxv:Schema",
+  "shapes": [
+    {
+      "@id": "this:ArchiveShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": "nxv:Archive",
+      "property": [
+        {
+          "path": "nxv:resources",
+          "name": "resources collection",
+          "description": "The resources collection to be archived.",
+          "minCount": 1,
+          "or": [
+            {
+              "node": "this:File"
+            },
+            {
+              "node": "this:Resource"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@id": "this:File",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF type File",
+          "description": "The File RDF type.",
+          "nodeKind": "sh:IRI",
+          "sh:hasValue": {
+            "@id": "nxv:File"
+          }
+        },
+        {
+          "path": "nxv:resourceId",
+          "name": "resource id",
+          "description": "The unique identifier of the resource in a given project.",
+          "nodeKind": "sh:IRI",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxva:project",
+          "name": "project",
+          "description": "The project where the resource belongs.",
+          "datatype": "xsd:string",
+          "maxCount": 1
+        },
+        {
+          "path": "nxva:rev",
+          "name": "rev",
+          "description": "The optional revision of the resource.",
+          "datatype": "xsd:long",
+          "maxCount": 1
+        },
+        {
+          "path": "nxva:tag",
+          "name": "tag",
+          "description": "The optional tag of the resource.",
+          "datatype": "xsd:string",
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:path",
+          "name": "path",
+          "description": "The optional relative path on the tar bundle for the targeted resource.",
+          "datatype": "xsd:string",
+          "maxCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:Resource",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "sh:closed": true,
+      "property": [
+        {
+          "path": "rdf:type",
+          "name": "RDF type Resource",
+          "description": "The Resource RDF type.",
+          "nodeKind": "sh:IRI",
+          "sh:hasValue": {
+            "@id": "nxv:Resource"
+          }
+        },
+        {
+          "path": "nxv:resourceId",
+          "name": "resource id",
+          "description": "The unique identifier of the resource in a given project.",
+          "nodeKind": "sh:IRI",
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "nxva:project",
+          "name": "project",
+          "description": "The project where the resource belongs.",
+          "datatype": "xsd:string",
+          "maxCount": 1
+        },
+        {
+          "path": "nxva:rev",
+          "name": "rev",
+          "description": "The optional revision of the resource.",
+          "datatype": "xsd:long",
+          "maxCount": 1
+        },
+        {
+          "path": "nxva:tag",
+          "name": "tag",
+          "description": "The optional tag of the resource.",
+          "datatype": "xsd:string",
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:path",
+          "name": "path",
+          "description": "The optional relative path on the tar bundle for the targeted resource.",
+          "datatype": "xsd:string",
+          "maxCount": 1
+        },
+        {
+          "path": "nxv:originalSource",
+          "name": "originalSource",
+          "description": "A flag to decide whether the original payload or the payload with metadata and JSON-LD context are going to be fetched. De",
+          "datatype": "xsd:boolean",
+          "maxCount": 1
+        }
+      ]
+    }
+  ]
+}

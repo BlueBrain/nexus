@@ -1,0 +1,69 @@
+{
+  "@context": [
+    {
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "Person": {
+        "@id": "http://schema.org/Person"
+      },
+      "Other": {
+        "@id": "http://schema.org/Other"
+      },
+      "birthDate": {
+        "@id": "http://schema.org/birthDate",
+        "@type": "xsd:dateTime"
+      },
+      "birthYear": {
+        "@id": "http://schema.org/birthYear",
+        "@type": "xsd:long"
+      },
+      "birthHour": {
+        "@id": "http://schema.org/birthHour"
+      },
+      "height": {
+        "@id": "http://schema.org/height"
+      },
+      "deprecated": {
+        "@id": "http://schema.org/deprecated",
+        "@type": "xsd:boolean"
+      },
+      "sibling": {
+        "@id": "http://example.com/sibling",
+        "@type": "@id"
+      },
+      "name": {
+        "@id": "http://schema.org/name"
+      },
+      "sp": {
+        "@id": "http://example.com/stringProperty"
+      },
+      "knows": {
+        "@id": "http://schema.org/knows",
+        "@type": "@id"
+      }
+    },
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "nxv:me",
+  "@type": "Person",
+  "name": "John Doe",
+  "birthDate": "1999-04-09T20:00Z",
+  "sp": "Some property",
+  "deprecated": false,
+  "sibling": {
+    "@id": "http://nexus.example.com/other",
+    "@type": "Other",
+    "birthDate": "2000-04-12T20:00Z",
+    "birthYear": 1999,
+    "birthHour": 9,
+    "height": 9.223
+  },
+  "_self": "http://127.0.0.1:8080/v1/resources/{org}/{proj}/_/nxv:me",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+  "_project": "http://localhost:8080/v1/projects/{org}/{proj}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "1970-01-01T01:00:00Z",
+  "_createdBy": "http://localhost:8080/v1/realms/realm/users/dmontero",
+  "_updatedAt": "1970-01-01T01:00:00Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/realm/users/dmontero"
+}

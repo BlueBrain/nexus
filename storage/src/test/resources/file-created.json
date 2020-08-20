@@ -1,0 +1,10 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "_location" : "{location}",
+  "_mediaType" : "{mediaType}",
+  "_bytes" : {bytes},
+  "_digest" : {
+    "_algorithm" : "{algorithm}",
+    "_value" : "{value}"
+  }
+}

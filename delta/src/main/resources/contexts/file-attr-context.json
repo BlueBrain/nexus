@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "value": "nxv:value",
+    "algorithm": "nxv:algorithm",
+    "location": "nxv:location",
+    "mediaType": "nxv:mediaType",
+    "bytes": "nxv:bytes",
+    "digest": "nxv:digest"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/file-attr.json"
+}

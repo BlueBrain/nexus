@@ -1,0 +1,20 @@
+<https://bluebrain.github.io/nexus/vocabulary/me> <http://example.com/sibling> <http://nexus.example.com/other> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <http://schema.org/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <http://schema.org/birthDate> "1999-04-09T20:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <http://example.com/stringProperty> "Some property" .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/rev> "1"^^<http://www.w3.org/2001/XMLSchema#long> .
+<http://nexus.example.com/other> <http://schema.org/birthDate> "2000-04-12T20:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://nexus.example.com/other> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Other> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/updatedBy> <http://localhost:8080/v1/realms/realm/users/dmontero> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/constrainedBy> <https://bluebrain.github.io/nexus/schemas/unconstrained.json> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <http://schema.org/name> "John Doe" .
+<http://nexus.example.com/other> <http://schema.org/birthYear> "1999"^^<http://www.w3.org/2001/XMLSchema#long> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/createdAt> "1970-01-01T01:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://nexus.example.com/other> <http://schema.org/birthHour> "9"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/self> "http://127.0.0.1:8080/v1/resources/{org}/{proj}/_/nxv:me" .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/createdBy> <http://localhost:8080/v1/realms/realm/users/dmontero> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/updatedAt> "1970-01-01T01:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <https://bluebrain.github.io/nexus/vocabulary/project> <http://localhost:8080/v1/projects/{org}/{proj}> .
+<http://nexus.example.com/other> <http://schema.org/height> "9.223E0"^^<http://www.w3.org/2001/XMLSchema#double> .
+<https://bluebrain.github.io/nexus/vocabulary/me> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .

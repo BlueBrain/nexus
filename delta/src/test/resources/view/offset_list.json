@@ -1,0 +1,16 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/offset.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total" : 1,
+  "_results" : [
+    {
+      "@type" : "{type}",
+      "projectionId" : "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "sourceId" : "{sourceId}",
+      "value" : {value},
+      "instant": "{instant}"
+    }
+  ]
+}

@@ -126,9 +126,9 @@ object CliError {
 
     def errorOr[F[_]: Sync, A](successF: Response[F] => F[ClientErrOr[A]]): Response[F] => F[ClientErrOr[A]] = {
       case Status.Successful(r)  => successF(r)
-      case Status.ClientError(r) => r.bodyAsText.compile.string.map(s => Left(ClientStatusError(r.status, s)))
-      case Status.ServerError(r) => r.bodyAsText.compile.string.map(s => Left(ServerStatusError(r.status, s)))
-      case r                     => r.bodyAsText.compile.string.map(s => Left(UnexpectedStatusError(r.status, s)))
+      case Status.ClientError(r) => r.bodyText.compile.string.map(s => Left(ClientStatusError(r.status, s)))
+      case Status.ServerError(r) => r.bodyText.compile.string.map(s => Left(ServerStatusError(r.status, s)))
+      case r                     => r.bodyText.compile.string.map(s => Left(UnexpectedStatusError(r.status, s)))
     }
 
     implicit val clientErrorShow: Show[ClientError] = Show[CliError].narrow
@@ -147,9 +147,9 @@ object CliError {
       val reason: String      = "the application configuration failed to be loaded into a configuration object"
       val lines: List[String] =
         failures.toList.flatMap { f =>
-          f.location match {
-            case Some(loc) => f.description :: s"  file: ${loc.url.toString}" :: s"  line: ${loc.lineNumber}" :: Nil
-            case None      => f.description :: Nil
+          f.origin match {
+            case Some(o) => f.description :: s"  file: ${o.url.toString}" :: s"  line: ${o.lineNumber}" :: Nil
+            case None    => f.description :: Nil
           }
         }
     }

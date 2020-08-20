@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.sourcing.projections
 import java.util.UUID
 
 import akka.persistence.query.{Offset, Sequence, TimeBasedUUID}
+import ch.epfl.bluebrain.nexus.sourcing.SourcingSpec
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress._
 import ch.epfl.bluebrain.nexus.sourcing.projections.implicits._
 import io.circe.Encoder
@@ -10,7 +11,13 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{EitherValues, Inspectors}
 
-class ProjectionProgressSpec extends AnyWordSpecLike with Matchers with Inspectors with TestHelpers with EitherValues {
+class ProjectionProgressSpec
+    extends AnyWordSpecLike
+    with SourcingSpec
+    with Matchers
+    with Inspectors
+    with TestHelpers
+    with EitherValues {
 
   "A ProjectionProgress" should {
     val mapping = Map(

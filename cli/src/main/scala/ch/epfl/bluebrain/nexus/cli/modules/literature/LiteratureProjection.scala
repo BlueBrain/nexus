@@ -166,6 +166,32 @@ class LiteratureProjection[F[_]: ContextShift](
           .map(section -> _)
       }
 
+  private def splitIntoWords(sentence: String, maxWords: Int): Seq[String] = {
+    val iterator: BreakIterator = BreakIterator.getWordInstance(Locale.US)
+    iterator.setText(sentence)
+
+    @tailrec
+    def inner(
+        start: Int,
+        end: Int,
+        currentSentenceOpt: Option[String] = None,
+        currentWordsCount: Int = 0,
+        sentences: Seq[String] = Vector.empty
+    ): Seq[String] = {
+      if (end == BreakIterator.DONE) {
+        currentSentenceOpt.fold(sentences)(sentences :+ _)
+      } else {
+        val currentWord     = sentence.substring(start, end)
+        val currentSentence = currentSentenceOpt.fold(currentWord)(c => s"$c$currentWord")
+        val currentCount    = if (currentWord == " ") currentWordsCount else currentWordsCount + 1
+        if (currentCount < maxWords) inner(end, iterator.next, Some(currentSentence), currentCount, sentences)
+        else inner(end, iterator.next, sentences = sentences :+ currentSentence)
+      }
+    }
+
+    inner(iterator.first, iterator.next)
+  }
+
   private def splitIntoSentences(text: String): Seq[String] = {
 
     val iterator: BreakIterator = BreakIterator.getSentenceInstance(Locale.US)
@@ -174,7 +200,8 @@ class LiteratureProjection[F[_]: ContextShift](
     @tailrec
     def inner(start: Int, end: Int, acc: Seq[String] = Vector.empty): Seq[String] =
       if (end == BreakIterator.DONE) acc
-      else inner(end, iterator.next, acc :+ text.substring(start, end))
+      else inner(end, iterator.next, acc ++ splitIntoWords(text.substring(start, end), lc.blueBrainSearch.maxWords))
+
     inner(iterator.first, iterator.next)
   }
 
