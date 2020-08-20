@@ -172,12 +172,12 @@ class LiteratureProjection[F[_]: ContextShift](
 
     @tailrec
     def inner(
-               start: Int,
-               end: Int,
-               currentSentenceOpt: Option[String] = None,
-               currentWordsCount: Int = 0,
-               sentences: Seq[String] = Vector.empty
-             ): Seq[String] = {
+        start: Int,
+        end: Int,
+        currentSentenceOpt: Option[String] = None,
+        currentWordsCount: Int = 0,
+        sentences: Seq[String] = Vector.empty
+    ): Seq[String] = {
       if (end == BreakIterator.DONE) {
         currentSentenceOpt.fold(sentences)(sentences :+ _)
       } else {
