@@ -27,6 +27,7 @@ influx {
 literature {
     blue-brain-search {
         endpoint="http://localhost:32797/v1"
+        max-words=256
         model-types=[
             {
                 dimensions=512
