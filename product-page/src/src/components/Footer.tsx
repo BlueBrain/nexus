@@ -54,7 +54,7 @@ export default function Footer() {
                 <p>Chemin des Mines 9</p>
                 <p>1202 Geneva</p>
                 <p>
-                  <a href="mailto:hello@bluebrainnexus.io ">
+                  <a href="mailto:hello@bluebrainnexus.io">
                     hello@bluebrainnexus.io
                   </a>
                 </p>
