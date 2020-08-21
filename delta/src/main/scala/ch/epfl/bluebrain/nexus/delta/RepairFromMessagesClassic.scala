@@ -36,8 +36,6 @@ object RepairFromMessagesClassic {
 
   private val log = Logger[RepairFromMessagesClassic.type]
 
-  private val parallelism = sys.env.getOrElse("REPAIR_FROM_MESSAGES_PARALLELISM", "1").toIntOption.getOrElse(1)
-
   implicit private val retryPolicy: RetryPolicy[Task] = exponentialBackoff[Task](100.millis) join limitRetries[Task](10)
 
   private def logError(message: String)(th: Throwable, details: RetryDetails): Task[Unit] =
@@ -61,7 +59,7 @@ object RepairFromMessagesClassic {
     Task
       .fromFuture {
         pq.currentPersistenceIds()
-          .mapAsync(parallelism) { pid =>
+          .mapAsync(config.repair.parallelism) { pid =>
             implicit val logFn: (Throwable, RetryDetails) => Task[Unit] =
               logError(s"Unable to rebuild tag_views for persistence id '$pid'")
 

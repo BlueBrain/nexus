@@ -25,6 +25,9 @@ import javax.crypto.SecretKey
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+  * The global application configuration.
+  */
 final case class AppConfig(
     description: Description,
     cluster: ClusterConfig,
@@ -48,9 +51,10 @@ final case class AppConfig(
     archives: ArchivesConfig,
     defaultAskTimeout: FiniteDuration,
     serviceAccountCaller: Option[Caller],
-    migration: Migration
+    migration: MigrationConfig,
+    repair: RepairFromMessagesConfig
 ) {
-  val saCaller = serviceAccountCaller.getOrElse(Caller.anonymous)
+  val saCaller: Caller = serviceAccountCaller.getOrElse(Caller.anonymous)
 }
 
 object AppConfig {
@@ -393,16 +397,29 @@ object AppConfig {
   /**
     * Migration configuration used to repair tag views table and perform migrations to single service
     *
-   * @param kgKeyspace    the kg keyspace
+    * @param kgKeyspace    the kg keyspace
     * @param adminKeyspace the admin keyspace
     * @param iamKeyspace   the iam keyspace
     * @param logInterval   the number of events between log messages
+    * @param parallelism   the level of concurrency used when performing the migration
     */
-  final case class Migration(
+  final case class MigrationConfig(
       kgKeyspace: String,
       adminKeyspace: String,
       iamKeyspace: String,
-      logInterval: Int
+      logInterval: Int,
+      parallelism: Int
+  )
+
+  /**
+   * Repair of tag_views table from messages table configuration.
+   *
+   * @param useClassicRepair repair the tag views by materializing the resource instead of using the reconciliation tool
+   * @param parallelism      the level of concurrency used when performing the migration
+   */
+  final case class RepairFromMessagesConfig(
+      useClassicRepair: Boolean,
+      parallelism: Int
   )
 
   val orderedKeys: OrderedKeys = OrderedKeys(

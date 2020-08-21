@@ -25,8 +25,6 @@ import scala.util.matching.Regex
 // $COVERAGE-OFF$
 class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as: ActorSystem) {
 
-  private val parallelism = sys.env.getOrElse("MIGRATE_V13_TO_V14_PARALLELISM", "1").toIntOption.getOrElse(1)
-
   private def truncateMessagesTable: String =
     s"TRUNCATE ${config.description.name}.messages"
 
@@ -40,7 +38,10 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
     s"""INSERT INTO ${config.description.name}.messages (persistence_id, partition_nr, sequence_nr, timestamp, timebucket, writer_uuid, ser_id, ser_manifest, event_manifest, event, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
   private def insertAllPersIdsStmt: String =
-    s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?)"""
+    if (config.migration.parallelism == 1)
+      s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
+    else
+      s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?)"""
 
   private def skipNonExisting(projects: Set[String]): Flow[Message, Message, NotUsed] =
     Flow[Message].filter { m =>
@@ -87,7 +88,7 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
       .lazyFutureFlow { () =>
         val prepare = session.prepare(cqlStatement)
         prepare.map { preparedStatement =>
-          Flow[T].mapAsync(parallelism) { element =>
+          Flow[T].mapAsync(config.migration.parallelism) { element =>
             session
               .executeWrite(statementBinder(element, preparedStatement))
               .recover {
