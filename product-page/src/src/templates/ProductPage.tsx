@@ -11,6 +11,8 @@ import { isSmall } from "../libs/browser"
 export type Product = {
   name: string
   slug: string
+  ogTitle: string
+  ogDescription: string
   features: { title: string; description: string }[]
   overviewText: string
   overviewItems?: string[]
@@ -27,6 +29,8 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   const {
     name,
     slug,
+    ogTitle,
+    ogDescription,
     tagLine,
     description,
     overviewText,
@@ -49,7 +53,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
   const hasOverviewItems = !!overviewItems && overviewItems.length
 
   return (
-    <MainLayout>
+    <MainLayout {...{ title: ogTitle, description: ogDescription }}>
       <section className="hero is-fullheight">
         <div className="full-height">
           <div className="gradient subtraction" />
