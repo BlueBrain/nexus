@@ -35,6 +35,8 @@ jobs:
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
+      - name: Assembly
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" assembly
   review-permission-fixer:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

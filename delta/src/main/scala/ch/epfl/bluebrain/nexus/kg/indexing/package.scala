@@ -39,12 +39,12 @@ package object indexing {
     val g     = Kamon
       .gauge("kg_indexer_gauge")
       .withTag("type", "eventCount")
-      .withTag("project", project.value.show)
+      .withTag("project", project.show)
       .withTag("organization", project.organization)
     val c     = Kamon
       .counter("kg_indexer_counter")
       .withTag("type", "eventCount")
-      .withTag("project", project.value.show)
+      .withTag("project", project.show)
       .withTag("organization", project.organization)
     val count = AtomicLong(0L)
     Flow[ProjectionProgress]
