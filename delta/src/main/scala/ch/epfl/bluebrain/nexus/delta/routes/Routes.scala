@@ -70,7 +70,7 @@ object Routes {
     */
   final def wrap(route: Route)(implicit hc: HttpConfig): Route = {
     val corsSettings = CorsSettings.defaultSettings
-      .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
+      .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
     cors(corsSettings) {
       handleExceptions(exceptionHandler) {

@@ -41,7 +41,7 @@ import scala.concurrent.ExecutionContext
   * Organizations operations bundle
   */
 class Organizations[F[_]: Timer](
-    agg: Agg[F],
+    val agg: Agg[F],
     private val index: OrganizationCache[F],
     aclsApi: Acls[F],
     saCaller: Caller
