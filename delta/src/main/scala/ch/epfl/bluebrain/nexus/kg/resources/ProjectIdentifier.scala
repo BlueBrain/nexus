@@ -5,10 +5,10 @@ import java.util.UUID
 import cats.data.{EitherT, OptionT}
 import cats.implicits._
 import cats.{Applicative, Show}
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Identity, Permission}
-import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.Rejection.{InvalidIdentity, ProjectLabelNotFound, ProjectRefNotFound}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
@@ -120,7 +120,7 @@ object ProjectIdentifier {
 
     def toLabel[F[_]: Applicative](implicit cache: ProjectCache[F]): EitherT[F, Rejection, ProjectLabel] =
       OptionT(cache.getBy(this))
-        .map(projRes => ProjectLabel(projRes.value.organizationLabel, projRes.value.label))
+        .map(projRes => projRes.value.projectLabel)
         .toRight(ProjectLabelNotFound(this))
 
     def toRef[F[_]: Applicative](implicit cache: ProjectCache[F]): EitherT[F, Rejection, ProjectRef] =
