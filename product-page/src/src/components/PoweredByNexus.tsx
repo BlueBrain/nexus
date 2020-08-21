@@ -4,6 +4,7 @@ import camhLogo from "../../static/img/logos/camh.svg"
 import ebrainsLogo from "../../static/img/logos/ebrains.svg"
 import epflLogo from "../../static/img/logos/epfl.svg"
 import conpLogo from "../../static/img/logos/conp-pcno-logo.png"
+import switchLogo from "../../static/img/logos/switch-logo.png"
 
 export default function PoweredByNexus() {
   return (
@@ -41,14 +42,21 @@ export default function PoweredByNexus() {
               </a>
             </div>
 
-            {/* <div className="column">
+            <div className="column">
               <a href="https://conp.ca/">
                 <img src={conpLogo} alt="Canadian Open Neuroscience Platform" />
                 <p className="text-centered">
                   Canadian Open Neuroscience Platform
                 </p>
               </a>
-            </div> */}
+            </div>
+
+            <div className="column">
+              <a href="https://www.switch.ch/">
+                <img src={switchLogo} alt="switch" height="30px" />
+                <p className="text-centered">SWITCH</p>
+              </a>
+            </div>
           </div>
         </div>
       </div>
