@@ -412,11 +412,11 @@ object AppConfig {
   )
 
   /**
-   * Repair of tag_views table from messages table configuration.
-   *
+    * Repair of tag_views table from messages table configuration.
+    *
    * @param useClassicRepair repair the tag views by materializing the resource instead of using the reconciliation tool
-   * @param parallelism      the level of concurrency used when performing the migration
-   */
+    * @param parallelism      the level of concurrency used when performing the migration
+    */
   final case class RepairFromMessagesConfig(
       useClassicRepair: Boolean,
       parallelism: Int
