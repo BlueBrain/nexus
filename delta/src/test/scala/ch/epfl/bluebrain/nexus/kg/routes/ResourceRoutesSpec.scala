@@ -124,8 +124,8 @@ class ResourceRoutesSpec
       "@vocab" -> Json.fromString("http://example.com/voc/")
     )
 
-    val jsonWithCtx = json deepMerge Json.obj("@context" -> defaultCtxValue)
-    val resource =
+    val jsonWithCtx   = json deepMerge Json.obj("@context" -> defaultCtxValue)
+    val resource      =
       ResourceF.simpleF(id, jsonWithCtx, created = user, updated = user, schema = unconstrainedRef)
     // format: off
     val resourceValue = Value(jsonWithCtx, defaultCtxValue, jsonWithCtx.deepMerge(Json.obj("@id" -> Json.fromString(id.value.asString))).toGraph(id.value).rightValue)
