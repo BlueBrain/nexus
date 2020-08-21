@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.kg.marshallers.instances._
 import ch.epfl.bluebrain.nexus.kg.resources.Ref.Latest
 import ch.epfl.bluebrain.nexus.kg.resources.ResourceF.Value
 import ch.epfl.bluebrain.nexus.kg.resources._
-import ch.epfl.bluebrain.nexus.kg.{TestHelper, urlEncode}
+import ch.epfl.bluebrain.nexus.kg.{urlEncode, TestHelper}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.storage.client.StorageClient
@@ -125,6 +125,13 @@ class ResourceRoutesSpec
     )
 
     val jsonWithCtx = json deepMerge Json.obj("@context" -> defaultCtxValue)
+    val resource =
+      ResourceF.simpleF(id, jsonWithCtx, created = user, updated = user, schema = unconstrainedRef)
+    // format: off
+    val resourceValue = Value(jsonWithCtx, defaultCtxValue, jsonWithCtx.deepMerge(Json.obj("@id" -> Json.fromString(id.value.asString))).toGraph(id.value).rightValue)
+    // format: on
+    val resourceV     =
+      ResourceF.simpleV(id, resourceValue, created = user, updated = user, schema = unconstrainedRef)
 
     def resourceResponse(): Json =
       response(unconstrainedRef) deepMerge Json.obj(
@@ -136,15 +143,6 @@ class ResourceRoutesSpec
           s"http://127.0.0.1:8080/v1/resources/$organization/$project/_/nxv:$genUuid/outgoing"
         )
       )
-
-    val resource =
-      ResourceF.simpleF(id, jsonWithCtx, created = user, updated = user, schema = unconstrainedRef)
-
-    // format: off
-    val resourceValue = Value(jsonWithCtx, defaultCtxValue, jsonWithCtx.deepMerge(Json.obj("@id" -> Json.fromString(id.value.asString))).toGraph(id.value).rightValue)
-    // format: on
-    val resourceV     =
-      ResourceF.simpleV(id, resourceValue, created = user, updated = user, schema = unconstrainedRef)
 
     resources.fetchSchema(id) shouldReturn EitherT.rightT[Task, Rejection](unconstrainedRef)
     aclsApi.hasPermission(organization / project, resourcesWrite)(caller) shouldReturn Task.pure(true)
@@ -245,7 +243,7 @@ class ResourceRoutesSpec
     "fetch latest revision of a resource" in new Context {
       val plainId = Id(projectRef, url"http://example.com/" + genUuid.toString)
 
-      val schemaRef   = Latest(url"http://example.com/my-schema")
+      val schemaRef = Latest(url"http://example.com/my-schema")
 
       // A resource with a prefixed uuid or a plain one should return a resource constrained by a schema or not
       List(id, plainId).foreach { i =>
@@ -271,12 +269,13 @@ class ResourceRoutesSpec
           .rightValue
           .removeNestedKeys("@context")
 
-      val endpoints = crossProduct.flatMap { case (resourceSegment, schemaSegment) =>
-        List(
-          s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/$schemaSegment/$resourceSegment",
-          s"/v1/resources/$organization/$project/resource/$resourceSegment",
-          s"/v1/resources/$organization/$project/$schemaSegment/$resourceSegment"
-        )
+      val endpoints = crossProduct.flatMap {
+        case (resourceSegment, schemaSegment) =>
+          List(
+            s"/v1/resources/${projectMeta.value.organizationUuid}/${projectMeta.uuid}/$schemaSegment/$resourceSegment",
+            s"/v1/resources/$organization/$project/resource/$resourceSegment",
+            s"/v1/resources/$organization/$project/$schemaSegment/$resourceSegment"
+          )
       }
 
       forAll(endpoints) { endpoint =>
