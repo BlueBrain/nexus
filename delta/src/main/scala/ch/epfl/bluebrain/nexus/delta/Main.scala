@@ -283,7 +283,14 @@ object Main {
       }
 
       if (sys.env.getOrElse("REPAIR_FROM_MESSAGES", "false").toBoolean) {
-        RepairFromMessages.repair(cfg, as, Scheduler.global, pm)
+        if (cfg.repair.useClassicRepair) {
+          RepairFromMessagesClassic.repair(resources.repo, acls, perms, realms, orgs, projects)(
+            cfg,
+            as,
+            Scheduler.global,
+            pm
+          )
+        } else RepairFromMessages.repair(cfg, as, Scheduler.global, pm)
       }
 
       val projectViewCoordinator =
@@ -310,7 +317,7 @@ object Main {
       val httpBinding = {
         Http().bindAndHandle(
           RouteResult.route2HandlerFlow(
-            infoRoutes ~ Routes.wrap(globalEventRoutes ~ iamRoutes ~ adminRoutes ~ kgRoutes)
+            Routes.wrap(infoRoutes ~ globalEventRoutes ~ iamRoutes ~ adminRoutes ~ kgRoutes)
           ),
           cfg.http.interface,
           cfg.http.port
