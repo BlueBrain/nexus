@@ -10,10 +10,11 @@ import cats.effect.Effect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig.orderedKeys
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.{Caller, Permission}
 import ch.epfl.bluebrain.nexus.kg.archives.Archive.{File, Resource, ResourceDescription}
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.file.File.FileAttributes
 import ch.epfl.bluebrain.nexus.kg.resources.{Files, Id, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.JsonLDOutputFormat
@@ -22,7 +23,6 @@ import ch.epfl.bluebrain.nexus.kg.routes.ResourceEncoder.json
 import ch.epfl.bluebrain.nexus.kg.storage.{AkkaSource, Storage}
 import ch.epfl.bluebrain.nexus.kg.{urlEncode, KgError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig.orderedKeys
 import io.circe.{Json, Printer}
 
 trait FetchResource[F[_], A] {
@@ -48,7 +48,7 @@ object FetchResource {
           perm: Permission,
           project: ProjectResource
       )(implicit acls: AccessControlLists, caller: Caller): Boolean =
-        acls.exists(caller.identities, ProjectLabel(project.value.organizationLabel, project.value.label), perm)
+        acls.exists(caller.identities, project.value.projectLabel, perm)
 
       private val printer: Printer                          = Printer.spaces2.copy(dropNullValues = true)
       implicit private val outputFormat: JsonLDOutputFormat = Compacted

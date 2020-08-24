@@ -18,24 +18,24 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChange._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
 import ch.epfl.bluebrain.nexus.commons.cache.OnKeyValueStoreChange
+import ch.epfl.bluebrain.nexus.delta.client.{DeltaClient, DeltaClientConfig}
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, Acls}
 import ch.epfl.bluebrain.nexus.iam.types.Caller
 import ch.epfl.bluebrain.nexus.kg.IdStats
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.Msg._
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor._
 import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
-import ch.epfl.bluebrain.nexus.delta.client.{DeltaClient, DeltaClientConfig}
 import ch.epfl.bluebrain.nexus.kg.indexing.Statistics.ViewStatistics
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProjectEventStream, RemoteProjectEventStream}
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Source => CompositeSource}
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
 import ch.epfl.bluebrain.nexus.kg.indexing._
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, ProjectIdentifier, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{NoProgress, SingleProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections._
@@ -163,7 +163,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
         .eventsByTag(s"project=${project.uuid}", initial.minProgress.offset)
         .map[PairMsg[Any]](e => Right(Message(e, progressId)))
         .via(projectStreamFlow(initial))
-        .via(kamonProjectMetricsFlow(ProjectLabel(project.value.organizationLabel, project.value.label)))
+        .via(kamonProjectMetricsFlow(metricsPrefix, project.value.projectLabel))
 
     }
     val coordinator                                  = ViewCoordinator(StreamSupervisor.start(sourceF, progressId, context.actorOf))
@@ -185,7 +185,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
       val source = client
         .events(remoteSource.project, initial.minProgress.offset)(remoteSource.token)
         .map[PairMsg[Any]](e => Right(Message(e, progressId)))
-      source.via(projectStreamFlow(initial)).via(kamonProjectMetricsFlow(remoteSource.project))
+      source.via(projectStreamFlow(initial)).via(kamonProjectMetricsFlow(metricsPrefix, remoteSource.project))
     }
     val coordinator                                  = ViewCoordinator(StreamSupervisor.start(sourceF, progressId, context.actorOf))
     projectsStream += remoteSource.project -> coordinator
@@ -384,6 +384,8 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
 }
 
 object ProjectViewCoordinatorActor {
+
+  val metricsPrefix = "kg_indexer"
 
   final case class ViewCoordinator(
       value: StreamSupervisor[Task, ProjectionProgress],
