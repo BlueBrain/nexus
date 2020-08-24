@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import camhLogo from "../../static/img/logos/camh.svg"
+import krembilLogo from "../../static/img/logos/krembil-logo.png"
 import ebrainsLogo from "../../static/img/logos/ebrains.svg"
 import epflLogo from "../../static/img/logos/epfl.svg"
 import conpLogo from "../../static/img/logos/conp-pcno-logo.png"
@@ -33,12 +33,10 @@ export default function PoweredByNexus() {
             <div className="column">
               <a href="https://www.camh.ca/en/science-and-research/institutes-and-centres/krembil-centre-for-neuroinformatics">
                 <img
-                  src={camhLogo}
-                  alt="The Centre for Addiction and Mental Health"
+                  src={krembilLogo}
+                  alt="Krembil Centre for Neuroinformatics"
+                  className="full"
                 />
-                <p className="text-centered">
-                  Krembil Centre for Neuroinformatics
-                </p>
               </a>
             </div>
 
@@ -53,8 +51,7 @@ export default function PoweredByNexus() {
 
             <div className="column">
               <a href="https://www.switch.ch/">
-                <img src={switchLogo} alt="switch" height="30px" />
-                <p className="text-centered">SWITCH</p>
+                <img src={switchLogo} alt="switch" className="full" />
               </a>
             </div>
           </div>

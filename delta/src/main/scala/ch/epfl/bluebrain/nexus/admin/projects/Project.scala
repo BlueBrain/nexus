@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.util.UUID
 
 import cats.Show
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectLabel
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.Iri.{AbsoluteIri, Path}
 import io.circe.generic.semiauto.deriveDecoder
@@ -30,9 +32,9 @@ final case class Project(
 ) {
 
   /**
-    * @return full label for the project (including organization).
+    * @return label for the project (including organization).
     */
-  def fullLabel: String = s"$organizationLabel/$label"
+  def projectLabel: ProjectLabel = ProjectLabel(organizationLabel, label)
 
   /**
     * @return the project path
@@ -42,7 +44,7 @@ final case class Project(
 
 object Project {
 
-  implicit val projectShow: Show[Project] = Show.show(project => s"${project.organizationLabel}/${project.label}")
+  implicit val projectShow: Show[Project] = Show.show(project => project.projectLabel.show)
 
   implicit val projectEncoder: Encoder[Project] = Encoder.encodeJson.contramap { p =>
     Json

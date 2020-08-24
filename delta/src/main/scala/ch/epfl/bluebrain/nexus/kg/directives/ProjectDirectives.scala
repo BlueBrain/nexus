@@ -4,15 +4,14 @@ import java.util.UUID
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Directive1}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationResource
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectResource
+import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.kg.KgError.{OrganizationNotFound, ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.kg.config.Schemas
 import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.delta.config.Vocabulary.nxv
 import monix.eval.Task
 import monix.execution.Scheduler
 
@@ -94,7 +93,7 @@ object ProjectDirectives {
     */
   def projectNotDeprecated(implicit project: ProjectResource): Directive0 =
     if (project.deprecated)
-      failWith(ProjectIsDeprecated(ProjectLabel(project.value.organizationLabel, project.value.label)))
+      failWith(ProjectIsDeprecated(project.value.projectLabel))
     else
       pass
 }

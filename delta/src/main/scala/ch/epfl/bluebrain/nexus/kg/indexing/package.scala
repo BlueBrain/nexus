@@ -35,14 +35,17 @@ package object indexing {
     * @param project  the project to create the metrics for
     * @return         the flow which will create the Kamon metrics
     */
-  def kamonProjectMetricsFlow(project: ProjectLabel): Flow[ProjectionProgress, ProjectionProgress, NotUsed] = {
+  def kamonProjectMetricsFlow(
+      metricsPrefix: String,
+      project: ProjectLabel
+  ): Flow[ProjectionProgress, ProjectionProgress, NotUsed] = {
     val g     = Kamon
-      .gauge("kg_indexer_gauge")
+      .gauge(s"${metricsPrefix}_gauge")
       .withTag("type", "eventCount")
       .withTag("project", project.show)
       .withTag("organization", project.organization)
     val c     = Kamon
-      .counter("kg_indexer_counter")
+      .counter(s"${metricsPrefix}_counter")
       .withTag("type", "eventCount")
       .withTag("project", project.show)
       .withTag("organization", project.organization)

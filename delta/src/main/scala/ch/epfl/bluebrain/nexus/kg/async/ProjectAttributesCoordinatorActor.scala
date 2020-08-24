@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections._
+import ch.epfl.bluebrain.nexus.kg.indexing._
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import retry.CatsEffect._
@@ -62,6 +63,8 @@ abstract private class ProjectAttributesCoordinatorActor(implicit val config: Ap
 }
 
 object ProjectAttributesCoordinatorActor {
+
+  val metricsPrefix = "digest_computation"
 
   def progressName(uuid: UUID): String = s"attributes-computation-$uuid"
 
@@ -158,7 +161,9 @@ object ProjectAttributesCoordinatorActor {
               .eventsByTag(s"project=${project.uuid}", initial.minProgress.offset)
               .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
 
-            source.via(flow)
+            source
+              .via(flow)
+              .via(kamonProjectMetricsFlow(metricsPrefix, project.value.projectLabel))
         }
         StreamSupervisor.start(sourceF, projectionId, context.actorOf)
       }

@@ -5,22 +5,26 @@ import java.util.{UUID, Set => JSet}
 
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.alpakka.cassandra.CassandraSessionSettings
 import akka.stream.alpakka.cassandra.scaladsl._
-import akka.stream.alpakka.cassandra.{CassandraSessionSettings, CassandraWriteSettings}
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import ch.epfl.bluebrain.nexus.delta.MigrateV13ToV14._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.Projections.cassandraDefaultConfigPath
+import com.datastax.oss.driver.api.core.cql.{BoundStatement, PreparedStatement}
 import com.typesafe.scalalogging.Logger
 import monix.eval.Task
 import monix.execution.Scheduler
 import monix.execution.schedulers.CanBlock
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
+import scala.util.matching.Regex
 
 // $COVERAGE-OFF$
 class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as: ActorSystem) {
+
   private def truncateMessagesTable: String =
     s"TRUNCATE ${config.description.name}.messages"
 
@@ -34,7 +38,10 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
     s"""INSERT INTO ${config.description.name}.messages (persistence_id, partition_nr, sequence_nr, timestamp, timebucket, writer_uuid, ser_id, ser_manifest, event_manifest, event, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
 
   private def insertAllPersIdsStmt: String =
-    s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
+    if (config.migration.parallelism == 1)
+      s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?) IF NOT EXISTS"""
+    else
+      s"""INSERT INTO ${config.description.name}.all_persistence_ids (persistence_id) VALUES (?)"""
 
   private def skipNonExisting(projects: Set[String]): Flow[Message, Message, NotUsed] =
     Flow[Message].filter { m =>
@@ -70,10 +77,33 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
     )
   }
 
+  // adapted from akka.stream.alpakka.cassandra.scaladsl.CassandraFlow.create
+  // logs and skips errors in statement execution
+  // uses a custom parallelism setting
+  private def createCassandraFlow[T](
+      cqlStatement: String,
+      statementBinder: (T, PreparedStatement) => BoundStatement
+  )(implicit session: CassandraSession): Flow[T, T, NotUsed] = {
+    Flow
+      .lazyFutureFlow { () =>
+        val prepare = session.prepare(cqlStatement)
+        prepare.map { preparedStatement =>
+          Flow[T].mapAsync(config.migration.parallelism) { element =>
+            session
+              .executeWrite(statementBinder(element, preparedStatement))
+              .recover {
+                case NonFatal(th) => log.error(s"Failed to execute insert statement for message '$element'", th)
+              }(ExecutionContext.parasitic)
+              .map(_ => element)(ExecutionContext.parasitic)
+          }
+        }(as.dispatcher)
+      }
+      .mapMaterializedValue(_ => NotUsed)
+  }
+
   private def write: Sink[Message, Future[Long]] = {
-    val flowInsertMessages       = CassandraFlow
-      .create(
-        CassandraWriteSettings.defaults,
+    val flowInsertMessages =
+      createCassandraFlow(
         insertMessagesStmt,
         (m: Message, stmt) =>
           stmt
@@ -89,15 +119,13 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
             .setString("event_manifest", m.event_manifest)
             .setByteBuffer("event", m.event)
             .setSet("tags", m.tags, classOf[String])
-      )
-      .log("error inserting into messages table")
-    val flowInsertPersistenceIds = CassandraFlow
-      .create(
-        CassandraWriteSettings.defaults,
+      ).log("error inserting into messages table")
+
+    val flowInsertPersistenceIds =
+      createCassandraFlow(
         insertAllPersIdsStmt,
         (m: Message, stmt) => stmt.bind().setString("persistence_id", m.persistence_id)
-      )
-      .log("error")
+      ).log("error inserting persistence id")
     flowInsertMessages
       .via(flowInsertPersistenceIds)
       .toMat {
@@ -132,9 +160,9 @@ class MigrateV13ToV14(implicit config: AppConfig, session: CassandraSession, as:
 
 object MigrateV13ToV14 {
 
-  val resourceRegex =
+  val resourceRegex: Regex =
     "^resources\\-([0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12})\\-(.+)$".r
-  val log: Logger   = Logger[MigrateV13ToV14.type]
+  val log: Logger          = Logger[MigrateV13ToV14.type]
 
   final def migrate(implicit config: AppConfig, as: ActorSystem, sc: Scheduler, pm: CanBlock): Unit =
     (for {

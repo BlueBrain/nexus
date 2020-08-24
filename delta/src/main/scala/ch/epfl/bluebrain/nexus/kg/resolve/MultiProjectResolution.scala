@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.kg.resolve
 
 import cats.Monad
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.iam.acls.AccessControlLists
 import ch.epfl.bluebrain.nexus.iam.types.{Identity, Permission}
-import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
 import ch.epfl.bluebrain.nexus.kg.resources._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 
@@ -53,7 +53,7 @@ class MultiProjectResolution[F[_]](
       case None          =>
         false
       case Some(projRes) =>
-        acls.exists(identities, ProjectLabel(projRes.value.organizationLabel, projRes.value.label), read)
+        acls.exists(identities, projRes.value.projectLabel, read)
     }
 }
 
