@@ -50,6 +50,7 @@ val log4jVersion                    = "2.13.3"
 val magnoliaVersion                 = "0.16.0"
 val mockitoVersion                  = "1.14.8"
 val monixVersion                    = "3.2.2"
+val monixBioVersion                 = "1.0.0"
 val nimbusJoseJwtVersion            = "8.19"
 val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.13.0"
@@ -130,6 +131,7 @@ lazy val log4jCore                = "org.apache.logging.log4j"    % "log4j-core"
 lazy val log4jApi                 = "org.apache.logging.log4j"    % "log4j-api"                           % log4jVersion
 lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
+lazy val monixBio                 = "io.monix"                   %% "monix-bio"                           % monixBioVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
 lazy val nimbusJoseJwt            = "com.nimbusds"                % "nimbus-jose-jwt"                     % nimbusJoseJwtVersion
 lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
@@ -327,6 +329,7 @@ lazy val sourcingNew = project
       doobiePostgres,
       fs2,
       flyway,
+      monixBio,
       scalaLogging,
       streamz,
       akkaActorTyped          % Test,
