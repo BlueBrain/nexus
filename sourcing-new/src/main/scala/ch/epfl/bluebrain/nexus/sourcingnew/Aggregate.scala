@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
-import ch.epfl.bluebrain.nexus.sourcingnew.processor.{DryRunResult, EvaluationResult}
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.EvaluationIO
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.ProcessorCommand.DryRunResult
+import monix.bio.Task
 
 /**
   * An aggregate based on event sourcing that can be controlled through commands;
@@ -8,42 +10,28 @@ import ch.epfl.bluebrain.nexus.sourcingnew.processor.{DryRunResult, EvaluationRe
   * Successful commands result in state transitions.
   * If we use a persistent implementation, new events are also appended to the event log.
   *
-  * Unsuccessful commands result in rejections returned to the caller in an __F__
+  * Unsuccessful commands result in rejections returned to the caller
   * context without any events being generated or state transitions applied.
   *
-  * @tparam F
-  * @tparam Id
-  * @tparam State
-  * @tparam Command
-  * @tparam Event
-  * @tparam Rejection
   */
-trait Aggregate[F[_], Id, State, Command, Event, Rejection] {
+trait Aggregate[Id, State, Command, Event, Rejection] {
 
   /**
     * Get the current state for the entity with the given __id__
-    * @param id
+    * @param id the entity identifier
     * @return
     */
-  def state(id: Id): F[State]
-
-  /**
-    * Given the state for the __id__ at the given __seq____
-    * @param id
-    * @param seq
-    * @return
-    */
-  def state(id: Id, seq: Long): F[State]
+  def state(id: Id): Task[State]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
     *
     * @param id      the entity identifier
     * @param command the command to evaluate
-    * @return the newly generated state and appended event in __F__ if the command was evaluated successfully, or the
-    *         rejection of the __command__ in __F__ otherwise
+    * @return the newly generated state and appended event if the command was evaluated successfully, or the
+    *         rejection of the __command__ otherwise
     */
-  def evaluate(id: Id, command: Command): F[EvaluationResult]
+  def evaluate(id: Id, command: Command): EvaluationIO[Rejection, Event, State]
 
   /**
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any
@@ -51,9 +39,9 @@ trait Aggregate[F[_], Id, State, Command, Event, Rejection] {
     *
     * @param id      the entity identifier
     * @param command the command to evaluate
-    * @return the state and event that would be generated in __F__ if the command was tested for evaluation
-    *         successfully, or the rejection of the __command__ in __F__ otherwise
+    * @return the state and event that would be generated in if the command was tested for evaluation
+    *         successfully, or the rejection of the __command__ in otherwise
     */
-  def dryRun(id: Id, command: Command): F[DryRunResult]
+  def dryRun(id: Id, command: Command): Task[DryRunResult]
 
 }

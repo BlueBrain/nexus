@@ -4,60 +4,55 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import akka.stream.Materializer
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
-import cats.effect.{Async, ContextShift, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.sourcingnew.projections.Projection._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
+import ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra.Cassandra.CassandraConfig
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.instances._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.{FailureMessage, Projection, ProjectionId, ProjectionProgress}
 import fs2.Stream
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
+import monix.bio.Task
 import streamz.converter._
 
 /**
   * Implementation of [[Projection]] for Cassandra
-  *
-  * @param session
-  * @param projectionConfig
-  * @param as
-  * @tparam F
-  * @tparam A
   */
-class CassandraProjection [F[_]: ContextShift,
-                           A: Encoder: Decoder](session: CassandraSession,
-                                                projectionConfig: ProjectionConfig,
-                                                as: ActorSystem[Nothing])(implicit F: Async[F])
-  extends Projection[F, A] {
-  implicit val cs: ContextShift[IO] = IO.contextShift(as.executionContext)
-  implicit val materializer: Materializer = Materializer.createMaterializer(as)
+class CassandraProjection[A: Encoder: Decoder](
+    session: CassandraSession,
+    config: CassandraConfig,
+    as: ActorSystem[Nothing]
+) extends Projection[A] {
 
-  import projectionConfig._
+  implicit private val materializer: Materializer = Materializer.createMaterializer(as)
 
   val recordProgressQuery: String =
-    s"UPDATE $keyspace.$progressTable SET offset = ?, processed = ?, discarded = ?, failed = ? WHERE projection_id = ?"
+    s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, processed = ?, discarded = ?, failed = ? WHERE projection_id = ?"
 
   val progressQuery: String =
-    s"SELECT offset, processed, discarded, failed FROM $keyspace.$progressTable WHERE projection_id = ?"
+    s"SELECT offset, processed, discarded, failed FROM ${config.keyspace}.projections_progress WHERE projection_id = ?"
 
   val recordFailureQuery: String =
-    s"""INSERT INTO $keyspace.$failuresTable (projection_id, offset, persistence_id, sequence_nr, value, error_type, error)
+    s"""INSERT INTO ${config.keyspace}.projections_failures (projection_id, offset, persistence_id, sequence_nr, value, error_type, error)
        |VALUES (?, ?, ?, ?, ?, ?, ?) IF NOT EXISTS""".stripMargin
 
   val failuresQuery: String =
-    s"SELECT offset, value, error_type from $keyspace.$failuresTable WHERE projection_id = ? ALLOW FILTERING"
+    s"SELECT offset, value, error_type from ${config.keyspace}.projections_failures WHERE projection_id = ? ALLOW FILTERING"
 
-  override def recordProgress(id: ProjectionId, progress: ProjectionProgress): F[Unit] =
-    wrapFuture(session.executeWrite(recordProgressQuery,
-      progress.offset.asJson.noSpaces,
-      progress.processed : java.lang.Long,
-      progress.discarded : java.lang.Long,
-      progress.failed : java.lang.Long,
-      id.value
-    )) >> F.unit
+  override def recordProgress(id: ProjectionId, progress: ProjectionProgress): Task[Unit] =
+    Task.deferFuture(
+      session.executeWrite(
+        recordProgressQuery,
+        progress.offset.asJson.noSpaces,
+        progress.processed: java.lang.Long,
+        progress.discarded: java.lang.Long,
+        progress.failed: java.lang.Long,
+        id.value
+      )
+    ) >> Task.unit
 
-  override def progress(id: ProjectionId): F[ProjectionProgress] =
-    wrapFuture(session.selectOne(progressQuery, id.value)).map {
+  override def progress(id: ProjectionId): Task[ProjectionProgress] =
+    Task.deferFuture(session.selectOne(progressQuery, id.value)).map {
       _.fold(NoProgress) { row =>
         ProjectionProgress.fromTuple(
           (
@@ -70,8 +65,12 @@ class CassandraProjection [F[_]: ContextShift,
       }
     }
 
-  override def recordFailure(id: ProjectionId, failureMessage: FailureMessage[A], f: Throwable => String = Projection.stackTraceAsString): F[Unit] =
-    wrapFuture(
+  override def recordFailure(
+      id: ProjectionId,
+      failureMessage: FailureMessage[A],
+      f: Throwable => String = Projection.stackTraceAsString
+  ): Task[Unit] =
+    Task.deferFuture(
       session.executeWrite(
         recordFailureQuery,
         id.value,
@@ -82,11 +81,12 @@ class CassandraProjection [F[_]: ContextShift,
         failureMessage.throwable.getClass.getSimpleName,
         f(failureMessage.throwable)
       )
-    ) >> F.unit
+    ) >> Task.unit
 
-  override def failures(id: ProjectionId): Stream[F, (A, Offset, String)] =
+  override def failures(id: ProjectionId): Stream[Task, (A, Offset, String)] =
     session
-      .select(failuresQuery, id.value).toStream[F]( _ => ())
+      .select(failuresQuery, id.value)
+      .toStream[Task](_ => ())
       .mapFilter { row =>
         Projection.decodeError[A, Offset](
           (row.getString("value"), row.getString("offset"), row.getString("error_type"))

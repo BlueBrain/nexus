@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.cli.postgres
 import cats.effect.IO
 import ch.epfl.bluebrain.nexus.cli.AbstractCliSpec
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresHostConfig
+import ch.epfl.bluebrain.nexus.cli.postgres.PostgresDocker.PostgresHostConfig
 import doobie.util.transactor.Transactor
 import izumi.distage.model.definition.{Module, ModuleDef}
 
@@ -38,7 +37,7 @@ class AbstractPostgresSpec extends AbstractCliSpec {
         }
       }
       make[Transactor[IO]].fromEffect { (_: PostgresDocker.Container, cfg: AppConfig) =>
-        IO.pure {
+        IO {
           Transactor.fromDriverManager[IO](
             "org.postgresql.Driver",
             cfg.postgres.jdbcUrl,

@@ -1,24 +1,33 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra
 
+import akka.actor.typed.ActorSystem
+import akka.stream.alpakka.cassandra.CassandraSessionSettings
+import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
 import com.typesafe.config.{Config, ConfigValueType}
+import monix.bio.Task
 
-final case class ProjectionConfig(keyspace: String,
-                                  progressTable: String,
-                                  failuresTable: String)
+object Cassandra {
 
-final case class CassandraConfig(keyspaceAutoCreate: Boolean,
-                                 tablesAutoCreate: Boolean,
-                                 replicationStrategy: String,
-                                 projectionConfig: ProjectionConfig)
-
-object CassandraConfig {
+  final case class CassandraConfig(
+      keyspace: String,
+      keyspaceAutoCreate: Boolean,
+      tablesAutoCreate: Boolean,
+      replicationStrategy: String
+  )
 
   import scala.jdk.CollectionConverters._
 
   val defaultPath = "akka.persistence.cassandra"
 
+  def session(as: ActorSystem[Nothing]): Task[CassandraSession] =
+    Task.delay {
+      CassandraSessionRegistry
+        .get(as)
+        .sessionFor(CassandraSessionSettings(defaultPath))
+    }
+
   def from(journalCfg: Config): CassandraConfig = {
-    val keyspace: String            = journalCfg.getString("keyspace")
+    val keyspace: String = journalCfg.getString("keyspace")
 
     val keyspaceAutoCreate: Boolean = journalCfg.getBoolean("keyspace-autocreate")
     val tablesAutoCreate: Boolean   = journalCfg.getBoolean("tables-autocreate")
@@ -29,16 +38,11 @@ object CassandraConfig {
       getListFromConfig(journalCfg, "data-center-replication-factors")
     )
 
-    val progressTable: String       = journalCfg.getString("projection-progress-table")
-    val failuresTable: String       = journalCfg.getString("projection-failures-table")
-
-    val projectionConfig = ProjectionConfig(keyspace, progressTable, failuresTable)
-
     CassandraConfig(
+      keyspace,
       keyspaceAutoCreate,
       tablesAutoCreate,
-      replicationStrategy,
-      projectionConfig
+      replicationStrategy
     )
   }
 
@@ -47,9 +51,11 @@ object CassandraConfig {
     *
     * @see [[akka.persistence.cassandra.PluginSettings.getReplicationStrategy]]
     */
-  private def getReplicationStrategy(strategy: String,
-                                     replicationFactor: Int,
-                                     dataCenterReplicationFactors: Seq[String]): String = {
+  private def getReplicationStrategy(
+      strategy: String,
+      replicationFactor: Int,
+      dataCenterReplicationFactors: Seq[String]
+  ): String = {
 
     def getDataCenterReplicationFactorList(dcrfList: Seq[String]): String = {
       val result: Seq[String] = dcrfList match {

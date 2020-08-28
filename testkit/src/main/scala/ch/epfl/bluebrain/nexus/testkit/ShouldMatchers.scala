@@ -6,8 +6,8 @@ import org.scalatest.matchers.should.Matchers
 trait ShouldMatchers {
 
   implicit def convertToAnyShouldWrapper[T](
-                                             o: T
-                                           )(implicit pos: source.Position, prettifier: Prettifier): Matchers.AnyShouldWrapper[T] =
+      o: T
+  )(implicit pos: source.Position, prettifier: Prettifier): Matchers.AnyShouldWrapper[T] =
     new Matchers.AnyShouldWrapper(o, pos, prettifier)
 
 }

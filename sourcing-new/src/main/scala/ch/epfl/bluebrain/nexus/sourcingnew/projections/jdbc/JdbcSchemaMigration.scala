@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections.jdbc
 
-import cats.effect.{IO, LiftIO}
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.SchemaMigration
+import monix.bio.Task
 import org.flywaydb.core.Flyway
 
 /**
@@ -9,26 +9,20 @@ import org.flywaydb.core.Flyway
   *
   * Relies on https://flywaydb.org/
   *
-  * @param jdbcConfig
-  * @tparam F
+  * @param jdbcConfig the config to connect to the database
   */
-class JdbcSchemaMigration[F[_]: LiftIO](jdbcConfig: JdbcConfig)
-  extends SchemaMigration[F] {
+class JdbcSchemaMigration(jdbcConfig: JdbcConfig) extends SchemaMigration {
 
-  def migrate(): F[Unit] = {
-    val migration = for {
-      flyway <- IO {
-        Flyway.configure()
-          .dataSource(
-            jdbcConfig.url,
-            jdbcConfig.username,
-            jdbcConfig.password)
-          .locations("classpath:scripts/postgres")
-          .load()
-      }
-      _ <- IO(flyway.migrate())
+  def migrate(): Task[Unit] = {
+    for {
+      flyway <- Task {
+                  Flyway
+                    .configure()
+                    .dataSource(jdbcConfig.url, jdbcConfig.username, jdbcConfig.password)
+                    .locations("classpath:scripts/postgres")
+                    .load()
+                }
+      _      <- Task(flyway.migrate())
     } yield ()
-    migration.to[F]
   }
-
 }

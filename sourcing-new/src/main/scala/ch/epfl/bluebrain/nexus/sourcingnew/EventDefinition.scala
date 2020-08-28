@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.StopStrategy
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
+import monix.bio.Task
+
 /**
   * Description of an event source based entity
-  * @tparam F         the effect type
-  * @tparam State     the state type
-  * @tparam Command   the command type
-  * @tparam Event     the event type
-  * @tparam Rejection the rejection type
   */
-sealed trait EventDefinition[F[_], State, Command, Event, Rejection] {
+sealed trait EventDefinition[State, Command, Event, Rejection] {
 
   /**
     * The entity type
@@ -37,7 +36,13 @@ sealed trait EventDefinition[F[_], State, Command, Event, Rejection] {
     *
     * @return
     */
-  def evaluate: (State, Command) => F[Either[Rejection, Event]]
+  def evaluate: (State, Command) => Task[Either[Rejection, Event]]
+
+  /**
+    * Strategy to stop the actor responsible for running this definition
+    * @return
+    */
+  def stopStrategy: StopStrategy
 }
 
 /**
@@ -45,27 +50,30 @@ sealed trait EventDefinition[F[_], State, Command, Event, Rejection] {
   * relying on akka-persistence
   * @param tagger            the tags to apply to the event
   * @param snapshotStrategy  the snapshot strategy to apply
+  * @param stopStrategy      the stop strategy to apply
   */
-final case class PersistentEventDefinition[F[_], State, Command, Event, Rejection]
-  (
+final case class PersistentEventDefinition[State, Command, Event, Rejection](
     entityType: String,
     initialState: State,
     next: (State, Event) => State,
-    evaluate: (State, Command) => F[Either[Rejection, Event]],
+    evaluate: (State, Command) => Task[Either[Rejection, Event]],
     tagger: Event => Set[String],
     // TODO: Default snapshot strategy ?
-    snapshotStrategy: SnapshotStrategy = SnapshotStrategy.NoSnapshot
-  ) extends EventDefinition[F, State, Command, Event, Rejection]
+    snapshotStrategy: SnapshotStrategy = SnapshotStrategy.NoSnapshot,
+    stopStrategy: PersistentStopStrategy = PersistentStopStrategy.never
+) extends EventDefinition[State, Command, Event, Rejection]
 
 /**
   * A transient implementation of an [[EventDefinition]]
   *
   * In case of restart or crash, the state will be lost
+  *
+  *  @param stopStrategy      the stop strategy to apply
   */
-final case class TransientEventDefinition[F[_], State, Command, Event, Rejection]
-(
-  entityType: String,
-  initialState: State,
-  next: (State, Event) => State,
-  evaluate: (State, Command) => F[Either[Rejection, Event]],
-) extends EventDefinition[F, State, Command, Event, Rejection]
+final case class TransientEventDefinition[State, Command, Event, Rejection](
+    entityType: String,
+    initialState: State,
+    next: (State, Event) => State,
+    evaluate: (State, Command) => Task[Either[Rejection, Event]],
+    stopStrategy: TransientStopStrategy = TransientStopStrategy.never
+) extends EventDefinition[State, Command, Event, Rejection]

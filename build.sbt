@@ -33,6 +33,7 @@ val catsVersion                     = "2.1.1"
 val circeVersion                    = "0.13.0"
 val declineVersion                  = "1.2.0"
 val distageVersion                  = "0.10.16"
+val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.9.0"
 val flywayVersion                   = "6.5.2"
 val fs2Version                      = "2.4.2"
@@ -114,6 +115,12 @@ lazy val distageCore              = "io.7mind.izumi"             %% "distage-cor
 lazy val distageDocker            = "io.7mind.izumi"             %% "distage-framework-docker"            % distageVersion
 lazy val distageTestkit           = "io.7mind.izumi"             %% "distage-testkit-scalatest"           % distageVersion
 lazy val doobiePostgres           = "org.tpolecat"               %% "doobie-postgres"                     % doobieVersion
+
+lazy val dockerTestKit            = Seq(
+  "com.whisk" %% "docker-testkit-scalatest"    % dockerTestKitVersion,
+  "com.whisk" %% "docker-testkit-impl-spotify" % dockerTestKitVersion
+)
+
 lazy val fs2                      = "co.fs2"                     %% "fs2-core"                            % fs2Version
 lazy val flyway                   = "org.flywaydb"                      % "flyway-core"                         % flywayVersion
 lazy val http4sCirce              = "org.http4s"                 %% "http4s-circe"                        % http4sVersion
@@ -222,6 +229,7 @@ lazy val docs = project
     includeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
     git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
     ghpagesNoJekyll                   := true,
+    ghpagesBranch                     := "gh-pages"
   )
 
 lazy val testkit = project
@@ -235,7 +243,7 @@ lazy val testkit = project
       distageDocker,
       distageTestkit,
       scalaTest
-    )
+    ) ++ dockerTestKit
   )
 
 lazy val cli = project

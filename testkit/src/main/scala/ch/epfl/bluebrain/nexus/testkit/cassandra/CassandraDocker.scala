@@ -1,56 +1,42 @@
 package ch.epfl.bluebrain.nexus.testkit.cassandra
 
-import cats.effect.{ConcurrentEffect, ContextShift, IO}
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport
-import distage.TagK
-import izumi.distage.docker.Docker.DockerPort
-import izumi.distage.docker.modules.DockerSupportModule
-import izumi.distage.docker.{ContainerDef, Docker}
-import izumi.distage.model.definition.ModuleDef
+import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.CassandraHostConfig
+import com.whisk.docker.impl.spotify.DockerKitSpotify
+import com.whisk.docker.scalatest.DockerTestKit
+import com.whisk.docker.{DockerContainer, DockerReadyChecker}
+import org.scalatest.wordspec.AnyWordSpecLike
 
-object CassandraDocker extends ContainerDef {
-  val primaryPort: DockerPort = DockerPort.TCP(9042)
+trait CassandraDocker extends DockerKitSpotify {
 
-  override def config: Config = {
-    Config(
-      image = "cassandra:3.11.6",
-      ports = Seq(primaryPort),
-      reuse = true,
-      env = Map(
-        "JVM_OPTS"      -> "-Xms1g -Xmx1g",
-        "MAX_HEAP_SIZE" -> "1g",
-        "HEAP_NEWSIZE"  -> "100m"
-      )
+  val DefaultCqlPort = 9042
+
+  lazy val cassandraHostConfig: CassandraHostConfig =
+    CassandraHostConfig(
+      dockerExecutor.host,
+      DefaultCqlPort
     )
-  }
 
-  class Module[F[_]: ConcurrentEffect: ContextShift: TagK] extends ModuleDef {
-    make[CassandraDocker.Container].fromResource {
-      CassandraDocker.make[F]
-    }
+  val cassandraContainer: DockerContainer = DockerContainer("cassandra:3.11.6")
+    .withPorts(DefaultCqlPort -> Some(DefaultCqlPort))
+    .withEnv(
+      "JVM_OPTS=-Xms1g -Xmx1g -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0",
+      "MAX_HEAP_SIZE=1g",
+      "HEAP_NEWSIZE=100m"
+    )
+    .withNetworkMode("bridge")
+    .withReadyChecker(
+      DockerReadyChecker.LogLineContains("Starting listening for CQL clients on")
+    )
+  // Uncomment to have the container logs
+  //.withLogLineReceiver(LogLineReceiver(withErr = true, println))
 
-    make[CassandraHostConfig].from { docker: CassandraDocker.Container =>
-      val knownAddress = docker.availablePorts.availablePorts(primaryPort).head
-      CassandraHostConfig(knownAddress.hostV4, knownAddress.port)
-    }
+  override def dockerContainers: List[DockerContainer] =
+    cassandraContainer :: super.dockerContainers
+}
 
-    // add docker dependencies and override default configuration
-    include(new DockerSupportModule[IO] overridenBy new ModuleDef {
-      make[Docker.ClientConfig].from {
-        DockerSupport.clientConfig
-      }
-    })
-  }
+object CassandraDocker {
 
   final case class CassandraHostConfig(host: String, port: Int)
-}
 
-class CassandraDockerModule[F[_]: TagK] extends ModuleDef {
-  make[CassandraDocker.Container].fromResource {
-    CassandraDocker.make[F]
-  }
-}
-
-object CassandraDockerModule {
-  def apply[F[_]: TagK]: CassandraDockerModule[F] = new CassandraDockerModule[F]
+  trait CassandraSpec extends AnyWordSpecLike with CassandraDocker with DockerTestKit
 }

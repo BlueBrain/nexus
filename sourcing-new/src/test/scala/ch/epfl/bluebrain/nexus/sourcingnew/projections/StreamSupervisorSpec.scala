@@ -1,43 +1,42 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import cats.effect.{ContextShift, IO, Timer}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.StreamSupervisor.Stop
 import fs2.Stream
+import monix.bio.Task
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Eventually {
 
-  implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val timer: Timer[IO]      = IO.timer(ExecutionContext.global)
+  import monix.execution.Scheduler.Implicits.global
 
   "Start and stop the StreamSupervisor and its stream" should {
 
     "work fine if we send a stop message" in {
-      var list = List.empty[Long]
+      var list             = List.empty[Long]
       var finalizeHappened = false
 
-      val stream = Stream.repeatEval {
-          IO {
+      val stream = Stream
+        .repeatEval {
+          Task {
             list = list.appended(System.currentTimeMillis)
           }
-        }.metered(20.millis)
+        }
+        .metered(20.millis)
 
       val supervisor = testKit.spawn(
         StreamSupervisor.behavior(
-          IO { stream },
-          RetryStrategy.alwaysGiveUp[IO],
-          Some(IO { finalizeHappened = true })
+          Task { stream },
+          RetryStrategy.alwaysGiveUp,
+          Some(Task { finalizeHappened = true })
         )
       )
 
-      (IO.sleep(60.millis) >> IO.delay { supervisor ! Stop }).unsafeRunAsyncAndForget()
+      (Task.sleep(100.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
 
       eventually {
         list should not be empty
@@ -46,24 +45,26 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
     }
 
     "work fine if the actor gets stopped " in {
-      var list = List.empty[Long]
+      var list             = List.empty[Long]
       var finalizeHappened = false
 
-      val stream = Stream.repeatEval {
-        IO { list = list.appended(System.currentTimeMillis) }
-      }.metered(20.millis)
+      val stream = Stream
+        .repeatEval {
+          Task { list = list.appended(System.currentTimeMillis) }
+        }
+        .metered(20.millis)
 
-      val finalize = IO { finalizeHappened = true }
+      val finalize = Task { finalizeHappened = true }
 
       val supervisor = testKit.spawn(
         StreamSupervisor.behavior(
-          IO { stream },
-          RetryStrategy.alwaysGiveUp[IO],
+          Task { stream },
+          RetryStrategy.alwaysGiveUp,
           Some(finalize)
         )
       )
 
-      (IO.sleep(60.millis) >> IO.delay { testKit.stop(supervisor) }).unsafeRunAsyncAndForget()
+      (Task.sleep(60.millis) >> Task.delay { testKit.stop(supervisor) }).runSyncUnsafe()
 
       eventually {
         list should not be empty
@@ -74,19 +75,17 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
 
   "Retry policy" should {
     "stop the stream if the stream fails and the retry policy doesn't apply" in {
-      var list = List.empty[Long]
+      var list             = List.empty[Long]
       var finalizeHappened = false
 
-      val stream = Stream(1L,2L,3L).evalMap {
-        l => IO { list = list.appended(l) }
-      } ++ Stream.raiseError[IO] {
+      val stream = Stream(1L, 2L, 3L).evalMap { l =>
+        Task { list = list.appended(l) }
+      } ++ Stream.raiseError[Task] {
         new Exception("Oops, something went wrong")
       }
 
-      testKit.spawn(StreamSupervisor.behavior(
-        IO { stream },
-        RetryStrategy.alwaysGiveUp[IO],
-        Some(IO { finalizeHappened = true }))
+      testKit.spawn(
+        StreamSupervisor.behavior(Task { stream }, RetryStrategy.alwaysGiveUp, Some(Task { finalizeHappened = true }))
       )
 
       eventually {
@@ -96,19 +95,21 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
     }
 
     "restart the stream if the stream fails as long as the maxRetries in the retry policy doesn't apply" in {
-      var list = List.empty[Long]
+      var list            = List.empty[Long]
       var numberOfRetries = 0
 
-      val stream = Stream(1L,2L,3L).evalMap {
-        l => IO { list = list.appended(l) }
-      } ++ Stream.raiseError[IO] {
+      val stream = Stream(1L, 2L, 3L).evalMap { l =>
+        Task { list = list.appended(l) }
+      } ++ Stream.raiseError[Task] {
         new Exception("Oops, something went wrong")
       }
 
-      testKit.spawn(StreamSupervisor.behavior(
-        IO { stream },
-        RetryStrategy.constant[IO](20.millis, 3, _ => true),
-        Some(IO { numberOfRetries += 1 }))
+      testKit.spawn(
+        StreamSupervisor.behavior(
+          Task { stream },
+          RetryStrategy.constant(20.millis, 3, _ => true),
+          Some(Task { numberOfRetries += 1 })
+        )
       )
 
       eventually {
@@ -118,30 +119,29 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
     }
 
     "stop the stream if the error doesn't satisfy the predicate for a retry" in {
-      var list = List.empty[Long]
+      var list            = List.empty[Long]
       var numberOfRetries = 0
 
-      val stream = Stream(1L,2L,3L).evalMap {
-        l => IO { list = list.appended(l) }
-      } ++ Stream.raiseError[IO] {
+      val stream = Stream(1L, 2L, 3L).evalMap { l =>
+        Task { list = list.appended(l) }
+      } ++ Stream.raiseError[Task] {
         numberOfRetries match {
           case 0 => new IllegalArgumentException("Fail")
           case _ => new NullPointerException("Fail")
         }
       }
 
-      def retryWhen(t: Throwable): Boolean = t match {
-        case _: IllegalArgumentException => true
-        case _ => false
-      }
+      def retryWhen(t: Throwable): Boolean =
+        t match {
+          case _: IllegalArgumentException => true
+          case _                           => false
+        }
 
-      testKit.spawn(StreamSupervisor.behavior(
-        IO { stream },
-        RetryStrategy.constant[IO](
-          20.millis,
-          3,
-          retryWhen),
-          Some(IO { numberOfRetries += 1 })
+      testKit.spawn(
+        StreamSupervisor.behavior(
+          Task { stream },
+          RetryStrategy.constant(20.millis, 3, retryWhen),
+          Some(Task { numberOfRetries += 1 })
         )
       )
 

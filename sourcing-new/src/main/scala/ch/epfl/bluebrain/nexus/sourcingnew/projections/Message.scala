@@ -8,8 +8,6 @@ import scala.reflect.ClassTag
 
 /**
   * Message going though a projection
-  *
-  * @tparam A
   */
 sealed trait Message[+A] {
   def offset: Offset
@@ -26,58 +24,45 @@ sealed trait ErrorMessage extends SkippedMessage
   * After the failure, it keeps untouched
   * until the end of the processing
   *
-  * @param offset
-  * @param persistenceId
-  * @param sequenceNr
-  * @param value
-  * @param throwable
+  * @param value the value of the message
+  * @param throwable the exception which has been raised during the processing
   */
-final case class FailureMessage[A](offset: Offset,
-                                persistenceId: String,
-                                sequenceNr: Long,
-                                value: A,
-                                throwable: Throwable) extends ErrorMessage
+final case class FailureMessage[A](
+    offset: Offset,
+    persistenceId: String,
+    sequenceNr: Long,
+    value: A,
+    throwable: Throwable
+) extends ErrorMessage
 
 /**
   * Message when it suffers a ClassCastException when parsing the event in
   * the akka-persistence enveloppe
   *
-  * @param offset
-  * @param persistenceId
-  * @param sequenceNr
-  * @param expectedClassname
-  * @param encounteredClassName
+  * @param expectedClassname the expected classname for the value
+  * @param encounteredClassName the classname we got for the value
   */
-final case class CastFailedMessage(offset: Offset,
-                                   persistenceId: String,
-                                   sequenceNr: Long,
-                                   expectedClassname: String,
-                                   encounteredClassName: String) extends ErrorMessage
+final case class CastFailedMessage(
+    offset: Offset,
+    persistenceId: String,
+    sequenceNr: Long,
+    expectedClassname: String,
+    encounteredClassName: String
+) extends ErrorMessage
 
 /**
   * Message when it has been filtered out during the projection process
-  * @param offset
-  * @param persistenceId
-  * @param sequenceNr
   */
-final case class DiscardedMessage(offset: Offset,
-                                  persistenceId: String,
-                                  sequenceNr: Long) extends SkippedMessage
+final case class DiscardedMessage(offset: Offset, persistenceId: String, sequenceNr: Long) extends SkippedMessage
 
 /**
   * Message which hasn't been filtered out nor been victim of a failure
   * during the projection process
   *
-  * @param offset
-  * @param persistenceId
-  * @param sequenceNr
-  * @param value
-  * @tparam A
+  * @param value the value of the message
   */
-final case class SuccessMessage[A](offset: Offset,
-                                   persistenceId: String,
-                                   sequenceNr: Long,
-                                   value: A) extends Message[A] {
+final case class SuccessMessage[A](offset: Offset, persistenceId: String, sequenceNr: Long, value: A)
+    extends Message[A] {
 
   def discarded: DiscardedMessage = DiscardedMessage(offset, persistenceId, sequenceNr)
 
@@ -91,7 +76,6 @@ object Message {
   /**
     * Parse an akka-persistence in a message
     * @param envelope the envelope to parse
-    * @tparam A the expected type for the event
     * @return a success message if it is fine or a castfailed message if the event value is not of type A
     */
   def apply[A: ClassTag](envelope: EventEnvelope): Message[A] = {
@@ -99,11 +83,14 @@ object Message {
     envelope.event match {
       case Value(value) =>
         SuccessMessage(envelope.offset, envelope.persistenceId, envelope.sequenceNr, value)
-      case v            => CastFailedMessage(envelope.offset,
-                                             envelope.persistenceId,
-                                             envelope.sequenceNr,
-                                             Value.runtimeClass.getTypeName,
-                                             v.getClass.getName)
+      case v            =>
+        CastFailedMessage(
+          envelope.offset,
+          envelope.persistenceId,
+          envelope.sequenceNr,
+          Value.runtimeClass.getTypeName,
+          v.getClass.getName
+        )
     }
   }
 
@@ -118,5 +105,5 @@ object Message {
   def always[A]: Message[A] => Boolean = (_: Message[A]) => true
 
   def filterOffset[A](offset: Offset): Message[A] => Boolean =
-      (m: Message[A]) => m.offset.gt(offset)
+    (m: Message[A]) => m.offset.gt(offset)
 }

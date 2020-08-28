@@ -5,9 +5,9 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
-import cats.effect.{ContextShift, Effect, IO, Timer}
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.sourcingnew._
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.ProcessorCommand._
+import monix.bio.{IO, Task}
 import retry.CatsEffect._
 import retry.syntax.all._
 
@@ -17,68 +17,48 @@ import scala.reflect.ClassTag
   * Relies on cluster sharding to distribute the work for the given
   * (State, Command, Event, Rejection)
   *
-  * @param entityTypeKey
-  * @param clusterSharding
-  * @param retryStrategy
-  * @param askTimeout
-  * @param timer$F$0
-  * @param classTag$State$0
-  * @param classTag$Command$0
-  * @param classTag$Event$0
-  * @param classTag$Rejection$0
-  * @param F
-  * @param as
-  * @tparam F
-  * @tparam State
-  * @tparam Command
-  * @tparam Event
-  * @tparam Rejection
+  * @param entityTypeKey the key of an entity type, unique
+  * @param clusterSharding the sharding for this aggregate
+  * @param retryStrategy the retry strategy to adopt
+  * @param askTimeout the ask timeout
   */
-class ShardedAggregate[
-  F[_]: Timer,
-  State: ClassTag,
-  Command: ClassTag,
-  Event: ClassTag,
-  Rejection: ClassTag](entityTypeKey: EntityTypeKey[ProcessorCommand],
-                       clusterSharding: ClusterSharding,
-                       retryStrategy: RetryStrategy[F],
-                       askTimeout: Timeout)
-                      (implicit F: Effect[F], as: ActorSystem[Nothing])
-    extends Aggregate[F, String, State, Command, Event, Rejection] {
+final class ShardedAggregate[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+    entityTypeKey: EntityTypeKey[ProcessorCommand],
+    clusterSharding: ClusterSharding,
+    retryStrategy: RetryStrategy,
+    askTimeout: Timeout
+) extends Aggregate[String, State, Command, Event, Rejection] {
 
-  implicit private[processor] val contextShift: ContextShift[IO]        = IO.contextShift(as.executionContext)
-  implicit private val timeout: Timeout                            = askTimeout
+  implicit private val timeout: Timeout = askTimeout
 
   import retryStrategy._
 
   /**
     * Get the current state for the entity with the given __id__
     *
-    * @param id
+    * @param id the entity identifier
     * @return
     */
-  override def state(id: String): F[State] =
+  override def state(id: String): Task[State] =
     send(id, { askTo: ActorRef[State] => RequestState(id, askTo) })
-
-  /**
-    *
-    * Given the state for the __id__ at the given __seq____
-    * @param id
-    * @param seq
-    * @return
-    */
-  override def state(id: String, seq: Long): F[State] = ???
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
     *
     * @param id      the entity identifier
     * @param command the command to evaluate
-    * @return the newly generated state and appended event in __F__ if the command was evaluated successfully, or the
-    *         rejection of the __command__ in __F__ otherwise
+    * @return the newly generated state and appended event if the command was evaluated successfully, or the
+    *         rejection of the __command__ in a task otherwise
     */
-  override def evaluate(id: String, command: Command): F[EvaluationResult] =
-    send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) })
+  override def evaluate(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
+    send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) }).hideErrors.flatMap {
+      case r: EvaluationRejection[Rejection]  => IO.raiseError(r)
+      case s: EvaluationSuccess[Event, State] => IO.pure(s)
+      case e: EvaluationError                 =>
+        // Should not append as they have been dealed with in send
+        // and raised in the internal channel via hideErrors
+        IO.terminate(e)
+    }
 
   /**
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any
@@ -86,43 +66,37 @@ class ShardedAggregate[
     *
     * @param id      the entity identifier
     * @param command the command to evaluate
-    * @return the state and event that would be generated in __F__ if the command was tested for evaluation
-    *         successfully, or the rejection of the __command__ in __F__ otherwise
+    * @return the state and event that would be generated the command was tested for evaluation
+    *         successfully, or the rejection of the __command__ otherwise
     */
-  override def dryRun(id: String, command: Command): F[DryRunResult] =
+  override def dryRun(id: String, command: Command): Task[DryRunResult] =
     send(id, { askTo: ActorRef[DryRunResult] => DryRun(id, command, askTo) })
 
-  private def send[A](entityId: String, askTo: ActorRef[A] => ProcessorCommand): F[A] = {
+  private def send[A](entityId: String, askTo: ActorRef[A] => ProcessorCommand): Task[A] = {
     val ref = clusterSharding.entityRefFor(entityTypeKey, entityId)
 
-    val future = IO(ref ? askTo)
-    val fa     = IO.fromFuture(future).to[F]
-
-    fa.flatMap[A] {
-        case ect: EvaluationCommandTimeout[_] => F.raiseError(ect)
-        case ece: EvaluationCommandError[_]   => F.raiseError(ece)
-        case value                          => F.pure(value)
-      }.retryingOnSomeErrors(retryWhen)
+    Task
+      .deferFuture(ref ? askTo)
+      .flatMap {
+        case e: EvaluationError => Task.raiseError[A](e)
+        case value              => Task.pure(value)
+      }
+      .retryingOnSomeErrors(retryWhen)
   }
 }
 
 object ShardedAggregate {
 
-  private def sharded[
-    F[_]: Effect: Timer,
-    State: ClassTag,
-    EvaluateCommand: ClassTag,
-    Event: ClassTag,
-    Rejection: ClassTag](entityTypeKey: EntityTypeKey[ProcessorCommand],
-                         eventSourceProcessor: EntityContext[ProcessorCommand] => EventSourceProcessor[F, State, EvaluateCommand, Event, Rejection],
-                         retryStrategy: RetryStrategy[F],
-                         askTimeout: Timeout,
-                         shardingSettings: Option[ClusterShardingSettings])
-                        (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] = {
-    val F                                = implicitly[Effect[F]]
-    F.delay {
+  private def sharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+      entityTypeKey: EntityTypeKey[ProcessorCommand],
+      eventSourceProcessor: EntityContext[ProcessorCommand] => EventSourceProcessor[State, Command, Event, Rejection],
+      retryStrategy: RetryStrategy,
+      askTimeout: Timeout,
+      shardingSettings: Option[ClusterShardingSettings]
+  )(implicit as: ActorSystem[Nothing]): Task[Aggregate[String, State, Command, Event, Rejection]] = {
+    Task.delay {
       val clusterSharding = ClusterSharding(as)
-      val settings = shardingSettings.getOrElse(ClusterShardingSettings(as))
+      val settings        = shardingSettings.getOrElse(ClusterShardingSettings(as))
 
       clusterSharding.init(
         Entity(entityTypeKey) {
@@ -130,7 +104,7 @@ object ShardedAggregate {
         }.withSettings(settings)
       )
 
-      new ShardedAggregate[F, State, EvaluateCommand, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
+      new ShardedAggregate[State, Command, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
     }
   }
 
@@ -138,9 +112,11 @@ object ShardedAggregate {
     * When the actor is sharded, we have to properly gracefully stopped with passivation
     * so as not to lose messages
     * @param shard the shard responsible for the actor to be passivated
-    * @return
+    * @return the behavior to adopt when we passivate in a sharded context
     */
-  private def passivateAfterInactivity(shard: ActorRef[ClusterSharding.ShardCommand]): ActorRef[ProcessorCommand] => Behavior[ProcessorCommand] =
+  private def passivateAfterInactivity(
+      shard: ActorRef[ClusterSharding.ShardCommand]
+  ): ActorRef[ProcessorCommand] => Behavior[ProcessorCommand] =
     (actor: ActorRef[ProcessorCommand]) => {
       shard ! ClusterSharding.Passivate(actor)
       Behaviors.same
@@ -150,39 +126,28 @@ object ShardedAggregate {
     * Creates an [[ShardedAggregate]] that makes use of persistent actors to perform its functions. The actors
     * are automatically spread across all nodes of the cluster.
     *
-    * @param definition
-    * @param config
-    * @param retryStrategy
-    * @param stopStrategy
-    * @param shardingSettings
-    * @param as
-    * @tparam F
-    * @tparam State
-    * @tparam EvaluateCommand
-    * @tparam Event
-    * @tparam Rejection
+    * @param definition       the event definition
+    * @param config           the config
+    * @param retryStrategy    the retry strategy to adopt
+    * @param shardingSettings the sharding settings
+    * @param as               the actor system
     * @return
     */
-  def persistentSharded[
-    F[_]: Effect: Timer,
-    State: ClassTag,
-    EvaluateCommand: ClassTag,
-    Event: ClassTag,
-    Rejection: ClassTag](definition: PersistentEventDefinition[F, State, EvaluateCommand, Event, Rejection],
-                         config: AggregateConfig,
-                         retryStrategy: RetryStrategy[F],
-                         stopStrategy: PersistentStopStrategy,
-                         shardingSettings: Option[ClusterShardingSettings] = None)
-                          (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
+  def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+      definition: PersistentEventDefinition[State, Command, Event, Rejection],
+      config: AggregateConfig,
+      retryStrategy: RetryStrategy,
+      shardingSettings: Option[ClusterShardingSettings] = None
+  )(implicit as: ActorSystem[Nothing]): Task[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
-      entityContext => new processor.EventSourceProcessor.PersistentEventProcessor[F, State, EvaluateCommand, Event, Rejection](
-        entityContext.entityId,
-        definition,
-        stopStrategy,
-        passivateAfterInactivity(entityContext.shard),
-        config
-      ),
+      entityContext =>
+        EventSourceProcessor.persistent[State, Command, Event, Rejection](
+          entityContext.entityId,
+          definition,
+          passivateAfterInactivity(entityContext.shard),
+          config
+        ),
       retryStrategy,
       config.askTimeout,
       shardingSettings
@@ -191,40 +156,30 @@ object ShardedAggregate {
   /**
     * Creates an [[ShardedAggregate]] that makes use of transient actors to perform its functions. The actors
     * are automatically spread across all nodes of the cluster.
- *
-    * @param definition
-    * @param config
-    * @param retryStrategy
-    * @param stopStrategy
-    * @param shardingSettings
-    * @param as
-    * @tparam F
-    * @tparam State
-    * @tparam EvaluateCommand
-    * @tparam Event
-    * @tparam Rejection
+    *
+    * @param definition       the event definition
+    * @param config           the config
+    * @param retryStrategy    the retry strategy to adopt
+    * @param shardingSettings the sharding settings
+    * @param as               the actor system
+    *
     * @return
     */
-  def transientSharded[
-    F[_]: Effect: Timer,
-    State: ClassTag,
-    EvaluateCommand: ClassTag,
-    Event: ClassTag,
-    Rejection: ClassTag](definition: TransientEventDefinition[F, State, EvaluateCommand, Event, Rejection],
-                         config: AggregateConfig,
-                         retryStrategy: RetryStrategy[F],
-                         stopStrategy: TransientStopStrategy,
-                         shardingSettings: Option[ClusterShardingSettings] = None)
-                         (implicit as: ActorSystem[Nothing]): F[Aggregate[F, String, State, EvaluateCommand, Event, Rejection]] =
+  def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+      definition: TransientEventDefinition[State, Command, Event, Rejection],
+      config: AggregateConfig,
+      retryStrategy: RetryStrategy,
+      shardingSettings: Option[ClusterShardingSettings] = None
+  )(implicit as: ActorSystem[Nothing]): Task[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType),
-      entityContext => new processor.EventSourceProcessor.TransientEventProcessor[F, State, EvaluateCommand, Event, Rejection](
-        entityContext.entityId,
-        definition,
-        stopStrategy,
-        passivateAfterInactivity(entityContext.shard),
-        config
-      ),
+      entityContext =>
+        EventSourceProcessor.transient[State, Command, Event, Rejection](
+          entityContext.entityId,
+          definition,
+          passivateAfterInactivity(entityContext.shard),
+          config
+        ),
       retryStrategy,
       config.askTimeout,
       shardingSettings

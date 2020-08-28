@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
 import akka.persistence.query.Offset
-import cats.effect.{ConcurrentEffect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcingnew.projections.config.PersistProgressConfig
@@ -9,6 +8,9 @@ import ch.epfl.bluebrain.nexus.sourcingnew.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
 import io.circe.Encoder
+import monix.bio.Task
+import monix.catnap.SchedulerEffect
+import monix.execution.Scheduler
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -19,87 +21,88 @@ object ProjectionStream {
 
   private val log = Logger("ProjectionStream")
 
-  trait StreamOps[F[_], A] {
-
-    implicit def F: ConcurrentEffect[F]
+  trait StreamOps[A] {
 
     implicit def projectionId: ProjectionId
 
     //TODO: Properly handle errors
-    protected def onError[B](s: SuccessMessage[A]): PartialFunction[Throwable, F[Message[B]]] = {
+    protected def onError[B](s: SuccessMessage[A]): PartialFunction[Throwable, Task[Message[B]]] = {
       case NonFatal(err) =>
         val msg = s"Exception caught while running for message '${s.value}' for projection $projectionId"
         log.error(msg, err)
         // Mark the message as failed
-        F.pure(s.failed(err))
+        Task.pure(s.failed(err))
     }
 
-    protected def toResource[B, R](fetchResource: A => F[Option[R]], collect: R => Option[B]): Message[A] => F[Message[B]] =
-      (message: Message[A]) =>
-        message match {
-          case s: SuccessMessage[A] =>
-            fetchResource(s.value)
-              .map {
-                _.flatMap(collect) match {
-                  case Some(value) =>
-                    message.map(_ => value)
-                  case _              => s.discarded
-                }
-              }
-              .recoverWith(onError(s))
-          case e: SkippedMessage      => F.pure(e)
-        }
+    protected def toResource[B, R](
+        fetchResource: A => Task[Option[R]],
+        collect: R => Option[B]
+    ): Message[A] => Task[Message[B]] = {
+      case message @ (s: SuccessMessage[A]) =>
+        fetchResource(s.value)
+          .map {
+            _.flatMap(collect) match {
+              case Some(value) =>
+                message.asInstanceOf[Message[A]].map(_ => value)
+              case _           => s.discarded
+            }
+          }
+          .recoverWith(onError(s))
+      case e: SkippedMessage                => Task.pure(e)
+    }
   }
 
   /**
-    * Provides extensions methods for fs2.Stream[Message[A]] to implement projections
-    * @param stream
-    * @param projectionId
-    * @tparam F
-    * @tparam A
+    * Provides extensions methods for fs2.Stream[Message] to implement projections
+    * @param stream the stream to run
+    * @param projectionId the id of the given projection
     */
-  implicit class SimpleStreamOps[F[_]: Timer, A: Encoder]
-    (val stream: Stream[F, Message[A]])(implicit override val projectionId: ProjectionId,
-                                        override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {
+  implicit class SimpleStreamOps[A: Encoder](val stream: Stream[Task, Message[A]])(implicit
+      override val projectionId: ProjectionId,
+      scheduler: Scheduler
+  ) extends StreamOps[A] {
 
-    type O[_] = Message[_]
+    import cats.effect._
 
-    def resource[B, R](fetchResource: A => F[Option[R]], collect: R => Option[B]): Stream[F, Message[B]] =
+    implicit val timer: Timer[Task] = SchedulerEffect.timer[Task](scheduler)
+
+    def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Message[B]] =
       stream.evalMap(toResource(fetchResource, collect))
 
     /**
       * Fetch a resource without transformation
       *
-      * @param fetchResource
-      * @tparam R
+      * @param fetchResource how to get the resource
       * @return
       */
-    def resourceIdentity[R](fetchResource: A => F[Option[R]]): Stream[F, Message[R]] =
+    def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Message[R]] =
       resource(fetchResource, (r: R) => Option(r))
 
     /**
       * Fetch a resource and maps and filter thanks to a partial function
       *
-      * @param fetchResource
-      * @param collect
-      * @tparam B
-      * @tparam R
+      * @param fetchResource how to get the resource
+      * @param collect       how to filter and map the resource
       * @return
       */
-    def resourceCollect[B, R](fetchResource: A => F[Option[R]], collect: PartialFunction[R, B]): Stream[F, O[B]] =
+    def resourceCollect[B, R](
+        fetchResource: A => Task[Option[R]],
+        collect: PartialFunction[R, B]
+    ): Stream[Task, Message[B]] =
       resource(fetchResource, collect.lift)
 
     /**
       * On replay, skip all messages with a offset lower than the
       * starting offset
       *
-      * @param offset
+      * @param offset the offset to discard from
       * @return
       */
-    def discardOnReplay(offset: Offset): Stream[F, Message[A]] = stream.map {
-      case s: SuccessMessage[A] if !s.offset.gt(offset) => s.discarded
-      case other                                        => other
-    }
+    def discardOnReplay(offset: Offset): Stream[Task, Message[A]] =
+      stream.map {
+        case s: SuccessMessage[A] if !s.offset.gt(offset) => s.discarded
+        case other                                        => other
+      }
 
     /**
       * Apply the given function for every success message
@@ -108,76 +111,76 @@ object ProjectionStream {
       * It will remain unmodified otherwise
       *
       * @param f the function to apply to each success message
-      * @param predicate to apply f only to the messages matching this predicate  (for example, based on the offset during a replay)
+      * @param predicate to apply f only to the messages matching this predicate
+      *                  (for example, based on the offset during a replay)
       * @return
       */
-    def runAsync(f: A => F[Unit], predicate: Message[A] => Boolean = Message.always): Stream[F, Message[A]] =
-      stream.evalMap { message: Message[A] =>
-        message match {
-          case s: SuccessMessage[A] if predicate(s) =>
-            (f(s.value) >> F.pure[Message[A]](s))
-              .recoverWith(onError(s))
-          case v => F.pure(v)
-        }
+    def runAsync(f: A => Task[Unit], predicate: Message[A] => Boolean = Message.always): Stream[Task, Message[A]] =
+      stream.evalMap {
+        case s: SuccessMessage[A] if predicate(s) =>
+          (f(s.value) >> Task.pure[Message[A]](s))
+            .recoverWith(onError(s))
+        case v                                    => Task.pure(v)
       }
 
     /**
       * Map over the stream of messages
-      * @param initial
-      * @param persistErrors
-      * @param persistProgress
-      * @param config
+      * @param initial where we started
+      * @param persistErrors how we persist errors
+      * @param persistProgress how we persist progress
+      * @param config the config
       * @return
       */
-    def persistProgress(initial: ProjectionProgress = NoProgress,
-                        persistProgress: (ProjectionId, ProjectionProgress) => F[Unit],
-                        persistErrors: (ProjectionId, ErrorMessage) => F[Unit],
-                        config: PersistProgressConfig): Stream[F, Unit] =
-      stream.evalMap { message =>
-        message match {
-          case e: ErrorMessage => persistErrors(projectionId, e) >> F.pure(message)
-          case _: Message[A] => F.pure(message)
+    def persistProgress(
+        initial: ProjectionProgress = NoProgress,
+        persistProgress: (ProjectionId, ProjectionProgress) => Task[Unit],
+        persistErrors: (ProjectionId, ErrorMessage) => Task[Unit],
+        config: PersistProgressConfig
+    ): Stream[Task, Unit] =
+      stream
+        .evalMap {
+          case message @ (e: ErrorMessage) => persistErrors(projectionId, e) >> Task.pure(message)
+          case message @ (_: Message[A])   => Task.pure(message)
         }
-      }.scan(initial) { (acc, m) =>
-        m match {
-          case m if m.offset.gt(initial.offset) => acc + m
-          case _ => acc
+        .scan(initial) { (acc, m) =>
+          m match {
+            case m if m.offset.gt(initial.offset) => acc + m
+            case _                                => acc
+          }
         }
-      }.groupWithin(config.maxBatchSize, config.maxTimeWindow)
+        .groupWithin(config.maxBatchSize, config.maxTimeWindow)
         .filter(_.nonEmpty)
         .evalMap { p =>
-          p.last.fold(F.unit) {
+          p.last.fold(Task.unit) {
             persistProgress(projectionId, _)
           }
         }
   }
 
   /**
-    * Provides extensions methods for fs2.Stream[Chunk[Message[A]]] to implement projections
+    * Provides extensions methods for fs2.Stream[Chunk] of messages to implement projections
     *
-    * @param stream
-    * @param projectionId
-    * @tparam F
-    * @tparam A
+    * @param stream the stream to run
+    * @param projectionId the id of the projection
     */
-  implicit class ChunckStreamOps[F[_]: Timer, A: Encoder]
-    (val stream: Stream[F, Chunk[Message[A]]])(implicit override val projectionId: ProjectionId,
-                                               override val F: ConcurrentEffect[F]) extends StreamOps[F, A] {
-
-    type O[_] = Chunk[Message[_]]
+  implicit class ChunckStreamOps[A: Encoder](val stream: Stream[Task, Chunk[Message[A]]])(implicit
+      override val projectionId: ProjectionId
+  ) extends StreamOps[A] {
 
     private def discardDuplicates(chunk: Chunk[Message[A]]): List[Message[A]] = {
-      chunk.toList.foldRight((Set.empty[String], List.empty[Message[A]])) {
-        // If we have seen the id before, we discard
-        case (current: SuccessMessage[A], (seen, result)) if seen.contains(current.persistenceId) =>
-          (seen, current.discarded :: result)
-        // New persistence id, we add it to the seeen list and we keep it
-        case (current: SuccessMessage[A], (seen, result)) =>
-          (seen + current.persistenceId, current :: result)
+      chunk.toList
+        .foldRight((Set.empty[String], List.empty[Message[A]])) {
+          // If we have seen the id before, we discard
+          case (current: SuccessMessage[A], (seen, result)) if seen.contains(current.persistenceId) =>
+            (seen, current.discarded :: result)
+          // New persistence id, we add it to the seeen list and we keep it
+          case (current: SuccessMessage[A], (seen, result))                                         =>
+            (seen + current.persistenceId, current :: result)
           // Discarded or error message, we keep them that way
-        case (current, (seen, result)) =>
-          (seen, current :: result)
-      }._2
+          case (current, (seen, result))                                                            =>
+            (seen, current :: result)
+        }
+        ._2
     }
 
     /**
@@ -186,9 +189,10 @@ object ProjectionStream {
       *
       * @return
       */
-    def discardDuplicates(): Stream[F, Chunk[Message[A]]] = stream.map { c =>
-      Chunk.seq(discardDuplicates(c))
-    }
+    def discardDuplicates(): Stream[Task, Chunk[Message[A]]] =
+      stream.map { c =>
+        Chunk.seq(discardDuplicates(c))
+      }
 
     /**
       * Detects duplicates with same persistenceId, discard them and flatten chunks
@@ -196,41 +200,40 @@ object ProjectionStream {
       *
       * @return
       */
-    def discardDuplicatesAndFlatten(): Stream[F, Message[A]] = stream.flatMap { c =>
-      Stream.emits(discardDuplicates(c))
-    }
+    def discardDuplicatesAndFlatten(): Stream[Task, Message[A]] =
+      stream.flatMap { c =>
+        Stream.emits(discardDuplicates(c))
+      }
 
     /**
       * Fetch then filter and maps them
-      * @param fetchResource
-      * @param filterMap
-      * @tparam B
-      * @tparam R
+      * @param fetchResource how to fetch the resource
+      * @param collect       how to filter and map it
       * @return
       */
-    def resource[B, R](fetchResource: A => F[Option[R]], filterMap: R => Option[B]): Stream[F, Chunk[Message[B]]] =
+    def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Chunk[Message[B]]] =
       stream.evalMap { chunk =>
-        chunk.map(toResource(fetchResource, filterMap)).sequence
+        chunk.map(toResource(fetchResource, collect)).sequence
       }
 
     /**
       * Fetch a resource without transformation
-      * @param fetchResource
-      * @tparam R
+      * @param fetchResource how to fetch the resource
       * @return
       */
-    def resourceIdentity[R](fetchResource: A => F[Option[R]]): Stream[F, Chunk[Message[R]]] =
-      resource(fetchResource, (r:R) => Option(r))
+    def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Chunk[Message[R]]] =
+      resource(fetchResource, (r: R) => Option(r))
 
     /**
       * Fetch a resource and maps and filter thanks to a partial function
-      * @param fetchResource
-      * @param collect
-      * @tparam B
-      * @tparam R
+      * @param fetchResource how to fetch the resource
+      * @param collect       how to filter and map it
       * @return
       */
-    def resourceCollect[B, R](fetchResource: A => F[Option[R]], collect: PartialFunction[R, B]): Stream[F, Chunk[Message[B]]] =
+    def resourceCollect[B, R](
+        fetchResource: A => Task[Option[R]],
+        collect: PartialFunction[R, B]
+    ): Stream[Task, Chunk[Message[B]]] =
       resource(fetchResource, collect.lift)
 
     /**
@@ -243,26 +246,33 @@ object ProjectionStream {
       * @param predicate to apply f only to the messages matching this predicate  (for example, based on the offset during a replay)
       * @return
       */
-    def runAsync(f: List[A] => F[Unit], predicate: Message[A] => Boolean = Message.always): Stream[F, Chunk[Message[A]]] = stream.evalMap {
-      chunk =>
+    def runAsync(
+        f: List[A] => Task[Unit],
+        predicate: Message[A] => Boolean = Message.always
+    ): Stream[Task, Chunk[Message[A]]] =
+      stream.evalMap { chunk =>
         val successMessages: List[SuccessMessage[A]] = chunk.toList.collect {
           case s: SuccessMessage[A] if predicate(s) => s
         }
-        if(successMessages.isEmpty) {
-          F.pure(chunk)
+        if (successMessages.isEmpty) {
+          Task.pure(chunk)
         } else {
-          (f(successMessages.map(_.value)) >> F.pure(chunk))
-            .recoverWith { case NonFatal(err) =>
-              log.error(s"An exception occurred while running 'runAsync' on elements $successMessages for projection $projectionId", err)
-              F.pure(
-                chunk.map {
-                  case s: SuccessMessage[A] => s.failed(err)
-                  case m => m
-                }
-              )
+          (f(successMessages.map(_.value)) >> Task.pure(chunk))
+            .recoverWith {
+              case NonFatal(err) =>
+                log.error(
+                  s"An exception occurred while running 'runAsync' on elements $successMessages for projection $projectionId",
+                  err
+                )
+                Task.pure(
+                  chunk.map {
+                    case s: SuccessMessage[A] => s.failed(err)
+                    case m                    => m
+                  }
+                )
             }
         }
-    }
+      }
   }
 
 }

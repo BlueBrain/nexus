@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
-import cats.{Applicative, Monad}
+import monix.bio.Task
 import retry.RetryPolicies._
 import retry.{RetryDetails, RetryPolicy}
 
@@ -11,55 +11,52 @@ import scala.concurrent.duration.FiniteDuration
   * @param config the config which allows to define a cats-retry policy
   * @param retryWhen to decide whether a given error is worth retrying
   * @param onError an error handler
-  * @tparam F the effect type
   */
-final case class RetryStrategy[F[_]: Applicative](config: RetryStrategyConfig,
-                               retryWhen: Throwable => Boolean,
-                               onError: (Throwable, RetryDetails) => F[Unit]) {
-  implicit val policy: RetryPolicy[F] = config.toPolicy[F]
-  implicit def errorHandler: (Throwable, RetryDetails) => F[Unit] = onError
+final case class RetryStrategy(
+    config: RetryStrategyConfig,
+    retryWhen: Throwable => Boolean,
+    onError: (Throwable, RetryDetails) => Task[Unit]
+) {
+  implicit val policy: RetryPolicy[Task]                             = config.toPolicy
+  implicit def errorHandler: (Throwable, RetryDetails) => Task[Unit] = onError
 }
 
 object RetryStrategy {
 
-  def alwaysGiveUp[F[_]: Applicative: Monad]: RetryStrategy[F] =
-    RetryStrategy(AlwaysGiveUp, _ => false, retry.noop[F, Throwable])
+  def alwaysGiveUp: RetryStrategy =
+    RetryStrategy(AlwaysGiveUp, _ => false, retry.noop[Task, Throwable])
 
-  def constant[F[_]: Applicative: Monad](constant: FiniteDuration,
-                                         maxRetries: Int,
-                                         retryWhen: Throwable => Boolean): RetryStrategy[F] =
+  def constant(constant: FiniteDuration, maxRetries: Int, retryWhen: Throwable => Boolean): RetryStrategy =
     RetryStrategy(
       ConstantStrategyConfig(constant, maxRetries),
       retryWhen,
-      retry.noop[F, Throwable]
+      retry.noop[Task, Throwable]
     )
 
 }
 
 sealed trait RetryStrategyConfig {
 
-  def toPolicy[F[_]: Applicative]: RetryPolicy[F]
+  def toPolicy: RetryPolicy[Task]
 
 }
 
 case object AlwaysGiveUp extends RetryStrategyConfig {
-  override def toPolicy[F[_]: Applicative]: RetryPolicy[F] = alwaysGiveUp
+  override def toPolicy: RetryPolicy[Task] = alwaysGiveUp[Task]
 }
 
-final case class ConstantStrategyConfig(constant: FiniteDuration,
-                                        maxRetries: Int) extends RetryStrategyConfig {
-  override def toPolicy[F[_]: Applicative]: RetryPolicy[F] =
-    constantDelay[F](constant) join limitRetries[F](maxRetries)
+final case class ConstantStrategyConfig(constant: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
+  override def toPolicy: RetryPolicy[Task] =
+    constantDelay[Task](constant) join limitRetries(maxRetries)
 }
 
 final case class OnceStrategyConfig(constant: FiniteDuration) extends RetryStrategyConfig {
-  override def toPolicy[F[_]: Applicative]: RetryPolicy[F] =
-    constantDelay[F](constant) join limitRetries[F](1)
+  override def toPolicy: RetryPolicy[Task] =
+    constantDelay[Task](constant) join limitRetries(1)
 }
 
-final case class ExponentialStrategyConfig(initialDelay: FiniteDuration,
-                                           maxDelay: FiniteDuration,
-                                           maxRetries: Int) extends RetryStrategyConfig {
-  override def toPolicy[F[_]: Applicative]: RetryPolicy[F] =
-    capDelay[F](maxDelay, fullJitter[F](initialDelay)) join limitRetries[F](maxRetries)
+final case class ExponentialStrategyConfig(initialDelay: FiniteDuration, maxDelay: FiniteDuration, maxRetries: Int)
+    extends RetryStrategyConfig {
+  override def toPolicy: RetryPolicy[Task] =
+    capDelay[Task](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
 }

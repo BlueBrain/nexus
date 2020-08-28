@@ -1,49 +1,60 @@
 package ch.epfl.bluebrain.nexus.testkit.postgres
 
-import cats.effect.{ConcurrentEffect, ContextShift, IO}
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport
-import distage.TagK
-import izumi.distage.docker.Docker.{ContainerConfig, DockerPort}
-import izumi.distage.docker.healthcheck.ContainerHealthCheck
-import izumi.distage.docker.modules.DockerSupportModule
-import izumi.distage.docker.{ContainerDef, Docker}
-import izumi.distage.model.definition.ModuleDef
+import java.sql.DriverManager
 
-object PostgresDocker extends ContainerDef {
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresHostConfig
+import com.whisk.docker.impl.spotify.DockerKitSpotify
+import com.whisk.docker.scalatest.DockerTestKit
+import com.whisk.docker.{DockerCommandExecutor, DockerContainer, DockerContainerState, DockerReadyChecker}
+import org.scalatest.wordspec.AnyWordSpecLike
 
-  val primaryPort: DockerPort = DockerPort.TCP(5432)
-  val password: String        = "postgres"
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
-  override def config: PostgresDocker.Config =
-    ContainerConfig(
-      image = "library/postgres:12.2",
-      ports = Seq(primaryPort),
-      env = Map("POSTGRES_PASSWORD" -> password),
-      reuse = true,
-      healthCheck = ContainerHealthCheck.postgreSqlProtocolCheck(
-        primaryPort,
-        "postgres",
-        "postgres"
-      )
+trait PostgresDocker extends DockerKitSpotify {
+  import scala.concurrent.duration._
+
+  val PostgresAdvertisedPort = 5432
+  val PostgresExposedPort    = 44444
+  val PostgresUser           = "postgres"
+  val PostgresPassword       = "postgres"
+
+  val postgresHostConfig: PostgresHostConfig =
+    PostgresHostConfig(
+      dockerExecutor.host,
+      PostgresExposedPort
     )
 
-  class Module[F[_]: ConcurrentEffect: ContextShift: TagK] extends ModuleDef {
-    make[PostgresDocker.Container].fromResource {
-        PostgresDocker.make[F]
-    }
+  val postgresContainer: DockerContainer = DockerContainer("library/postgres:12.2")
+    .withPorts((PostgresAdvertisedPort, Some(PostgresExposedPort)))
+    .withEnv(s"POSTGRES_USER=$PostgresUser", s"POSTGRES_PASSWORD=$PostgresPassword")
+    .withReadyChecker(
+      new PostgresReadyChecker(PostgresUser, PostgresPassword, postgresHostConfig)
+        .looped(15, 1.second)
+    )
 
-    make[PostgresHostConfig].from { docker: PostgresDocker.Container =>
-      val knownAddress = docker.availablePorts.availablePorts(primaryPort).head
-      PostgresHostConfig(knownAddress.hostV4, knownAddress.port)
-    }
+  abstract override def dockerContainers: List[DockerContainer] =
+    postgresContainer :: super.dockerContainers
+}
 
-    // add docker dependencies and override default configuration
-    include(new DockerSupportModule[IO] overridenBy new ModuleDef {
-      make[Docker.ClientConfig].from {
-        DockerSupport.clientConfig
-      }
-    })
-  }
+class PostgresReadyChecker(user: String, password: String, config: PostgresHostConfig) extends DockerReadyChecker {
+
+  override def apply(
+      container: DockerContainerState
+  )(implicit docker: DockerCommandExecutor, ec: ExecutionContext): Future[Boolean] =
+    Future {
+      Try {
+        Class.forName("org.postgresql.Driver")
+        val url = s"jdbc:postgresql://${config.host}:${config.port}/"
+        Option(DriverManager.getConnection(url, user, password)).map(_.close).isDefined
+      }.getOrElse(false)
+    }
+}
+
+object PostgresDocker {
 
   final case class PostgresHostConfig(host: String, port: Int)
+
+  trait PostgresSpec extends AnyWordSpecLike with DockerTestKit with PostgresDocker
+
 }
