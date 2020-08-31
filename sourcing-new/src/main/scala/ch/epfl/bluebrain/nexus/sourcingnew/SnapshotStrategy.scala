@@ -1,12 +1,10 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
-import akka.persistence.typed.scaladsl.{EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
-
 /**
   * Snapshot strategy to apply to a persistent [[ch.epfl.bluebrain.nexus.sourcingnew.processor.EventSourceProcessor]]
   * See <https://doc.akka.io/docs/akka/current/typed/persistence-snapshot.html>
   */
-sealed trait SnapshotStrategy
+sealed trait SnapshotStrategy extends Product with Serializable
 
 object SnapshotStrategy {
 
@@ -32,17 +30,7 @@ object SnapshotStrategy {
     * @param deleteEventsOnSnapshot if we need to delete old events
     */
   final case class SnapshotEvery(numberOfEvents: Int, keepNSnapshots: Int, deleteEventsOnSnapshot: Boolean = false)
-      extends SnapshotStrategy {
-
-    def toSnapshotCriteria: SnapshotCountRetentionCriteria = {
-      val criteria = RetentionCriteria.snapshotEvery(numberOfEvents, keepNSnapshots)
-      if (deleteEventsOnSnapshot)
-        criteria.withDeleteEventsOnSnapshot
-      else
-        criteria
-    }
-
-  }
+      extends SnapshotStrategy
 
   /**
     * Combine the [[SnapshotPredicate]] and the [[SnapshotEvery]] strategies
@@ -53,22 +41,4 @@ object SnapshotStrategy {
       predicate: SnapshotPredicate[State, Event],
       snapshotEvery: SnapshotEvery
   ) extends SnapshotStrategy
-
-  implicit class EventSourcedBehaviorOps[C, E, State](val eventSourcedBehavior: EventSourcedBehavior[C, E, State])
-      extends AnyVal {
-
-    def snapshotStrategy(strategy: SnapshotStrategy): EventSourcedBehavior[C, E, State] =
-      strategy match {
-        case NoSnapshot                     => eventSourcedBehavior
-        case s: SnapshotPredicate[State, E] =>
-          eventSourcedBehavior.snapshotWhen(s.predicate)
-        case s: SnapshotEvery               =>
-          eventSourcedBehavior.withRetention(s.toSnapshotCriteria)
-        case s: SnapshotCombined[State, E]  =>
-          eventSourcedBehavior
-            .snapshotWhen(s.predicate.predicate)
-            .withRetention(s.snapshotEvery.toSnapshotCriteria)
-      }
-  }
-
 }

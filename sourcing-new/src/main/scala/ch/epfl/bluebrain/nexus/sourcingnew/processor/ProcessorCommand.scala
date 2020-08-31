@@ -105,7 +105,7 @@ object ProcessorCommand {
 }
 
 // Replies
-sealed trait AggregateReply
+sealed trait AggregateReply extends Product with Serializable
 
 object AggregateReply {
   final case class GetLastSeqNr(value: Long) extends AggregateReply

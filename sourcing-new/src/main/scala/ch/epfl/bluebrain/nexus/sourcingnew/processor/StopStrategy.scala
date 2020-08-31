@@ -5,7 +5,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Strategy to stop an actor
   */
-sealed trait StopStrategy {
+sealed trait StopStrategy extends Product with Serializable {
 
   /**
     * @return Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval;
@@ -25,6 +25,10 @@ object StopStrategy {
   final case class TransientStopStrategy(lapsedSinceLastInteraction: Option[FiniteDuration]) extends StopStrategy
 
   object TransientStopStrategy {
+
+    /**
+     * The actor will never be asked to stop
+     */
     def never: TransientStopStrategy = TransientStopStrategy(None)
   }
 
@@ -42,6 +46,10 @@ object StopStrategy {
   ) extends StopStrategy
 
   object PersistentStopStrategy {
+
+    /**
+     * The actor will never be asked to stop
+     */
     def never: PersistentStopStrategy = PersistentStopStrategy(None, None)
   }
 

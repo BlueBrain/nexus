@@ -18,7 +18,7 @@ import streamz.converter._
 /**
   * Implementation of [[Projection]] for Cassandra
   */
-class CassandraProjection[A: Encoder: Decoder](
+private[projections] class CassandraProjection[A: Encoder: Decoder](
     session: CassandraSession,
     config: CassandraConfig,
     as: ActorSystem[Nothing]

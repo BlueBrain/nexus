@@ -12,10 +12,7 @@ import monix.bio.Task
 import monix.catnap.SchedulerEffect
 import monix.execution.Scheduler
 
-import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-
-final case class IndexingConfig(batch: Int, batchTimeout: FiniteDuration)
 
 object ProjectionStream {
 
@@ -73,7 +70,6 @@ object ProjectionStream {
       * Fetch a resource without transformation
       *
       * @param fetchResource how to get the resource
-      * @return
       */
     def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Message[R]] =
       resource(fetchResource, (r: R) => Option(r))
@@ -83,7 +79,6 @@ object ProjectionStream {
       *
       * @param fetchResource how to get the resource
       * @param collect       how to filter and map the resource
-      * @return
       */
     def resourceCollect[B, R](
         fetchResource: A => Task[Option[R]],
@@ -96,7 +91,6 @@ object ProjectionStream {
       * starting offset
       *
       * @param offset the offset to discard from
-      * @return
       */
     def discardOnReplay(offset: Offset): Stream[Task, Message[A]] =
       stream.map {
@@ -113,7 +107,6 @@ object ProjectionStream {
       * @param f the function to apply to each success message
       * @param predicate to apply f only to the messages matching this predicate
       *                  (for example, based on the offset during a replay)
-      * @return
       */
     def runAsync(f: A => Task[Unit], predicate: Message[A] => Boolean = Message.always): Stream[Task, Message[A]] =
       stream.evalMap {
@@ -129,7 +122,6 @@ object ProjectionStream {
       * @param persistErrors how we persist errors
       * @param persistProgress how we persist progress
       * @param config the config
-      * @return
       */
     def persistProgress(
         initial: ProjectionProgress = NoProgress,
@@ -186,8 +178,6 @@ object ProjectionStream {
     /**
       * Detects duplicates with same persistenceId and discard them
       * Keeps the last occurence for a given persistenceId
-      *
-      * @return
       */
     def discardDuplicates(): Stream[Task, Chunk[Message[A]]] =
       stream.map { c =>
@@ -197,8 +187,6 @@ object ProjectionStream {
     /**
       * Detects duplicates with same persistenceId, discard them and flatten chunks
       * Keeps the last occurence for a given persistenceId
-      *
-      * @return
       */
     def discardDuplicatesAndFlatten(): Stream[Task, Message[A]] =
       stream.flatMap { c =>
@@ -209,7 +197,6 @@ object ProjectionStream {
       * Fetch then filter and maps them
       * @param fetchResource how to fetch the resource
       * @param collect       how to filter and map it
-      * @return
       */
     def resource[B, R](fetchResource: A => Task[Option[R]], collect: R => Option[B]): Stream[Task, Chunk[Message[B]]] =
       stream.evalMap { chunk =>
@@ -219,7 +206,6 @@ object ProjectionStream {
     /**
       * Fetch a resource without transformation
       * @param fetchResource how to fetch the resource
-      * @return
       */
     def resourceIdentity[R](fetchResource: A => Task[Option[R]]): Stream[Task, Chunk[Message[R]]] =
       resource(fetchResource, (r: R) => Option(r))
@@ -228,7 +214,6 @@ object ProjectionStream {
       * Fetch a resource and maps and filter thanks to a partial function
       * @param fetchResource how to fetch the resource
       * @param collect       how to filter and map it
-      * @return
       */
     def resourceCollect[B, R](
         fetchResource: A => Task[Option[R]],
@@ -244,7 +229,6 @@ object ProjectionStream {
       *
       * @param f the function to apply to each success message of the chunk
       * @param predicate to apply f only to the messages matching this predicate  (for example, based on the offset during a replay)
-      * @return
       */
     def runAsync(
         f: List[A] => Task[Unit],

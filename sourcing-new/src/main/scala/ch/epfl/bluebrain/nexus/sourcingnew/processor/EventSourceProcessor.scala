@@ -5,16 +5,13 @@ import java.net.URLEncoder
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed._
-import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior}
+import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcingnew.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
 import ch.epfl.bluebrain.nexus.sourcingnew.processor.AggregateReply.GetLastSeqNr
+import ch.epfl.bluebrain.nexus.sourcingnew.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcingnew.processor.ProcessorCommand._
-import ch.epfl.bluebrain.nexus.sourcingnew.{
-  EventDefinition,
-  PersistentEventDefinition,
-  SnapshotStrategy,
-  TransientEventDefinition
-}
+import ch.epfl.bluebrain.nexus.sourcingnew.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
 import monix.bio.IO
 import monix.execution.Scheduler
 
@@ -42,8 +39,96 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
   protected val id = s"${definition.entityType}-${URLEncoder.encode(entityId, "UTF-8")}"
 
   /**
+   * The behavior of the underlying state actor when we opted for persisting the events
+   */
+  private def persistentBehavior(persistentEventDefinition: PersistentEventDefinition[State, Command, Event, Rejection],
+                                 parent: ActorRef[ProcessorCommand]) = {
+    import persistentEventDefinition._
+    val persistenceId = PersistenceId.ofUniqueId(id)
+
+    Behaviors.setup[EventSourceCommand] { context =>
+      context.log.info2("Starting event source processor for type {} and id {}", entityType, entityId)
+      EventSourcedBehavior[EventSourceCommand, Event, State](
+        persistenceId,
+        emptyState = initialState,
+        // Command handler
+        { (state, command) =>
+          command match {
+            case RequestState(_, replyTo: ActorRef[State])            =>
+              Effect.reply(replyTo)(state)
+            case RequestLastSeqNr(_, replyTo: ActorRef[GetLastSeqNr]) =>
+              Effect.reply(replyTo)(
+                GetLastSeqNr(EventSourcedBehavior.lastSequenceNumber(context))
+              )
+            case Append(_, event: Event)                              => Effect.persist(event)
+          }
+        },
+        // Event handler
+        next
+      ).withTagger(tagger)
+        .snapshotStrategy(snapshotStrategy)
+        .receiveSignal {
+          case (state, RecoveryCompleted)                                              =>
+            // The actor will be stopped/passivated after a fix period after recovery
+            stopStrategy.lapsedSinceRecoveryCompleted.foreach { duration =>
+              context.scheduleOnce(duration, parent, Idle)
+            }
+            context.log.debugN("Entity {} has been successfully recovered at state {}", persistenceId, state)
+          case (state, RecoveryFailed(failure))                                        =>
+            context.log.error(s"Entity $persistenceId couldn't be recovered at state $state", failure)
+          case (state, SnapshotCompleted(metadata: SnapshotMetadata))                  =>
+            context.log.debugN(
+              "Entity {} has been successfully snapshotted at state {} with metadata {}",
+              persistenceId,
+              state,
+              metadata
+            )
+          case (state, SnapshotFailed(metadata: SnapshotMetadata, failure: Throwable)) =>
+            context.log.error(
+              s"Entity $persistenceId couldn't be snapshotted at state $state with metadata $metadata",
+              failure
+            )
+          case (_, DeleteSnapshotsCompleted(target: DeletionTarget))                   =>
+            context.log.debugN(
+              "Snapshots for Entity {} have been successfully deleted with target {}",
+              persistenceId,
+              target
+            )
+          case (_, DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwable))  =>
+            context.log.error(s"Snapshots for Entity {} couldn't be deleted with target $target", failure)
+          case (_, DeleteEventsCompleted(toSequenceNr: Long))                          =>
+            context.log.debugN(
+              "Events for Entity {} have been successfully deleted until sequence {}",
+              persistenceId,
+              toSequenceNr
+            )
+          case (_, DeleteEventsFailed(toSequenceNr: Long, failure: Throwable))         =>
+            context.log.error(s"Snapshots for Entity {} couldn't be deleted until sequence $toSequenceNr", failure)
+        }
+    }
+  }
+
+  /**
+   * The behavior of the underlying state actor when we opted for NOT persisting the events
+   */
+  private def transientBehavior(t: TransientEventDefinition[State, Command, Event, Rejection]): Behavior[EventSourceCommand] = {
+    def behavior(state: State): Behaviors.Receive[EventSourceCommand] = Behaviors.receive[EventSourceCommand] { (_, cmd) =>
+      cmd match {
+        case RequestState(_, replyTo: ActorRef[State]) =>
+          replyTo ! state
+          Behaviors.same
+        case _: RequestLastSeqNr =>
+          Behaviors.same
+        case Append(_, event: Event) =>
+          behavior(t.next(state, event))
+      }
+    }
+    behavior(t.initialState)
+  }
+
+
+  /**
     * Behavior of the actor responsible for handling commands and events
-    * @return
     */
   def behavior(): Behavior[ProcessorCommand] =
     Behaviors.setup[ProcessorCommand] { context =>
@@ -51,12 +136,11 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
       Behaviors.withStash(config.stashSize) { buffer =>
         // We create a child actor to apply (and maybe persist) events
         // according to the definition that has been provided
-        import EventSourceProcessor._
         val behavior   = definition match {
           case p: PersistentEventDefinition[State, Command, Event, Rejection] =>
-            p.stateBehavior(id, entityId, context.self)
+            persistentBehavior(p, context.self)
           case t: TransientEventDefinition[State, Command, Event, Rejection]  =>
-            t.stateBehavior(definition.initialState)
+            transientBehavior(t)
         }
         val stateActor = context.spawn(
           behavior,
@@ -64,7 +148,7 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
         )
 
         // Make sure that the message has been correctly routed to the appropriated actor
-        def onCommand(
+        def checkEntityId(
             onSuccess: (ActorContext[ProcessorCommand], ProcessorCommand) => Behavior[ProcessorCommand]
         ): Behavior[ProcessorCommand] =
           Behaviors.receive { (context, command) =>
@@ -82,7 +166,7 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
 
         // The actor is not currently evaluating anything
         def active(state: State): Behavior[ProcessorCommand] =
-          onCommand { (c, cmd) =>
+          checkEntityId { (c, cmd) =>
             cmd match {
               case ese: EventSourceCommand                                               =>
                 stateActor ! ese
@@ -104,7 +188,7 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
         // The actor is evaluating a command so we stash commands
         // until we get a result for the current evaluation
         def stash(state: State, replyTo: ActorRef[RunResult]): Behavior[ProcessorCommand] =
-          onCommand { (_, cmd) =>
+          checkEntityId { (_, cmd) =>
             cmd match {
               case ro: ReadonlyCommand                                     =>
                 stateActor ! ro
@@ -188,83 +272,32 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
 
 object EventSourceProcessor {
 
-  implicit class PersistentEventDefinitionOps[State, Command, Event: ClassTag, Rejection](
-      definition: PersistentEventDefinition[State, Command, Event, Rejection]
-  ) {
+  /**
+   * To add our Snapshot strategy to an EventSourcedBehavior in a more concise way
+   */
+  private[processor] implicit class EventSourcedBehaviorOps[C, E, State](val eventSourcedBehavior: EventSourcedBehavior[C, E, State])
+    extends AnyVal {
 
-    import definition._
-
-    private def commandHandler(
-        actorContext: ActorContext[EventSourceCommand]
-    ): (State, EventSourceCommand) => Effect[Event, State] = { (state, command) =>
-      command match {
-        case RequestState(_, replyTo: ActorRef[State])            =>
-          Effect.reply(replyTo)(state)
-        case RequestLastSeqNr(_, replyTo: ActorRef[GetLastSeqNr]) =>
-          Effect.reply(replyTo)(
-            GetLastSeqNr(EventSourcedBehavior.lastSequenceNumber(actorContext))
-          )
-        case Append(_, event: Event)                              => Effect.persist(event)
-      }
+    private def toSnapshotCriteria(snapshotEvery: SnapshotEvery): SnapshotCountRetentionCriteria = {
+      val criteria = RetentionCriteria.snapshotEvery(snapshotEvery.numberOfEvents, snapshotEvery.keepNSnapshots)
+      if (snapshotEvery.deleteEventsOnSnapshot)
+        criteria.withDeleteEventsOnSnapshot
+      else
+        criteria
     }
 
-    def stateBehavior(
-        id: String,
-        entityId: String,
-        parent: ActorRef[ProcessorCommand]
-    ): Behavior[EventSourceCommand] = {
-      import SnapshotStrategy._
-      val persistenceId = PersistenceId.ofUniqueId(id)
-      Behaviors.setup { context =>
-        context.log.info2("Starting event source processor for type {} and id {}", entityType, entityId)
-        EventSourcedBehavior[EventSourceCommand, Event, State](
-          persistenceId,
-          emptyState = initialState,
-          commandHandler(context),
-          next
-        ).withTagger(tagger)
-          .snapshotStrategy(snapshotStrategy)
-          .receiveSignal {
-            case (state, RecoveryCompleted)                                              =>
-              // The actor will be stopped/passivated after a fix period after recovery
-              stopStrategy.lapsedSinceRecoveryCompleted.foreach { duration =>
-                context.scheduleOnce(duration, parent, Idle)
-              }
-              context.log.debugN("Entity {} has been successfully recovered at state {}", persistenceId, state)
-            case (state, RecoveryFailed(failure))                                        =>
-              context.log.error(s"Entity $persistenceId couldn't be recovered at state $state", failure)
-            case (state, SnapshotCompleted(metadata: SnapshotMetadata))                  =>
-              context.log.debugN(
-                "Entity {} has been successfully snapshotted at state {} with metadata {}",
-                persistenceId,
-                state,
-                metadata
-              )
-            case (state, SnapshotFailed(metadata: SnapshotMetadata, failure: Throwable)) =>
-              context.log.error(
-                s"Entity $persistenceId couldn't be snapshotted at state $state with metadata $metadata",
-                failure
-              )
-            case (_, DeleteSnapshotsCompleted(target: DeletionTarget))                   =>
-              context.log.debugN(
-                "Snapshots for Entity {} have been successfully deleted with target {}",
-                persistenceId,
-                target
-              )
-            case (_, DeleteSnapshotsFailed(target: DeletionTarget, failure: Throwable))  =>
-              context.log.error(s"Snapshots for Entity {} couldn't be deleted with target $target", failure)
-            case (_, DeleteEventsCompleted(toSequenceNr: Long))                          =>
-              context.log.debugN(
-                "Events for Entity {} have been successfully deleted until sequence {}",
-                persistenceId,
-                toSequenceNr
-              )
-            case (_, DeleteEventsFailed(toSequenceNr: Long, failure: Throwable))         =>
-              context.log.error(s"Snapshots for Entity {} couldn't be deleted until sequence $toSequenceNr", failure)
-          }
+    def snapshotStrategy(strategy: SnapshotStrategy): EventSourcedBehavior[C, E, State] =
+      strategy match {
+        case NoSnapshot                     => eventSourcedBehavior
+        case s: SnapshotPredicate[State, E] =>
+          eventSourcedBehavior.snapshotWhen(s.predicate)
+        case s: SnapshotEvery               =>
+          eventSourcedBehavior.withRetention(toSnapshotCriteria(s))
+        case s: SnapshotCombined[State, E]  =>
+          eventSourcedBehavior
+            .snapshotWhen(s.predicate.predicate)
+            .withRetention(toSnapshotCriteria(s.snapshotEvery))
       }
-    }
-
   }
 
   /**
@@ -274,7 +307,6 @@ object EventSourceProcessor {
     * @param definition the event definition
     * @param stopAfterInactivity the behavior to adopt when we stop the actor
     * @param config the config
-    * @return
     */
   def persistent[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityId: String,
@@ -289,31 +321,12 @@ object EventSourceProcessor {
       config
     )
 
-  implicit class TransientEventDefinitionOps[State, Command, Event: ClassTag, Rejection](
-      definition: TransientEventDefinition[State, Command, Event, Rejection]
-  ) {
-
-    def stateBehavior(state: State): Behavior[EventSourceCommand] =
-      Behaviors.receive { (_, cmd) =>
-        cmd match {
-          case RequestState(_, replyTo: ActorRef[State]) =>
-            replyTo ! state
-            Behaviors.same
-          case _: RequestLastSeqNr                       =>
-            Behaviors.same
-          case Append(_, event: Event)                   =>
-            stateBehavior(definition.next(state, event))
-        }
-      }
-  }
-
   /**
     * Event source processor without persistence: if the processor is lost, so is its state
     * @param entityId the entity identifier
     * @param definition the event definition
     * @param stopAfterInactivity the behavior to adopt when we stop the actor
     * @param config the config
-    * @return
     */
   def transient[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityId: String,

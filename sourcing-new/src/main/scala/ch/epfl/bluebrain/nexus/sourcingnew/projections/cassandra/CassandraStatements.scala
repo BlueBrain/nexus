@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections.cassandra
 
-trait CassandraStatements
-
-object CassandraStatements extends CassandraStatements {
+trait CassandraStatements {
 
   def createKeyspace(keyspace: String, replicationStrategy: String): String =
     s"""CREATE KEYSPACE IF NOT EXISTS $keyspace
@@ -17,4 +15,7 @@ object CassandraStatements extends CassandraStatements {
        |projection_id varchar, offset text, persistence_id text, sequence_nr bigint, value text, error_type varchar, error text,
        |PRIMARY KEY (projection_id, offset, persistence_id, sequence_nr))
        |WITH CLUSTERING ORDER BY (offset ASC)""".stripMargin
+
 }
+
+object CassandraStatements extends CassandraStatements

@@ -16,7 +16,10 @@ import retry.syntax.all._
   */
 object StreamSupervisor {
 
-  sealed trait SupervisorCommand
+  /**
+   * Command that can be sent to the stream supervisor
+   */
+  sealed trait SupervisorCommand extends Product with Serializable
 
   /**
     * Stops the stream handled by the supervisor
@@ -28,7 +31,6 @@ object StreamSupervisor {
     * @param streamTask the embedded stream
     * @param retryStrategy the strategy when the stream fails
     * @param onTerminate Additional action when we stop the stream
-    * @return
     */
   def behavior[A](
       streamTask: Task[Stream[Task, A]],

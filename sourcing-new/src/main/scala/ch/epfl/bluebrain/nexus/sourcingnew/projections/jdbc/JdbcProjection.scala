@@ -14,7 +14,7 @@ import monix.bio.Task
 /**
   * Jdbc implementation of [[Projection]]
   */
-class JdbcProjection[A: Encoder: Decoder](xa: Transactor[Task]) extends Projection[A] {
+private[projections] class JdbcProjection[A: Encoder: Decoder](xa: Transactor[Task]) extends Projection[A] {
 
   /**
     * Records progress against a projection identifier.

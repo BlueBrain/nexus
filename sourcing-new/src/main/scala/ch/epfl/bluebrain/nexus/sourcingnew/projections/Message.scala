@@ -9,14 +9,23 @@ import scala.reflect.ClassTag
 /**
   * Message going though a projection
   */
-sealed trait Message[+A] {
+sealed trait Message[+A] extends Product with Serializable {
   def offset: Offset
   def persistenceId: String
   def sequenceNr: Long
 }
 
+/**
+ * Message that has been filtered out or raised an error during the projection
+ * process
+ */
 sealed trait SkippedMessage extends Message[Nothing]
 
+/**
+ * Message when its processing failed at a point of the projection
+ * See [[FailureMessage]] and [[CastFailedMessage]]
+ *
+ */
 sealed trait ErrorMessage extends SkippedMessage
 
 /**

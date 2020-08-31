@@ -8,7 +8,7 @@ import monix.bio.Task
 /**
   * Apply migration scripts on Cassandra
   */
-class CassandraSchemaMigration(session: CassandraSession, config: CassandraConfig) extends SchemaMigration {
+private[projections] class CassandraSchemaMigration(session: CassandraSession, config: CassandraConfig) extends SchemaMigration {
   import config._
 
   override def migrate(): Task[Unit] = {

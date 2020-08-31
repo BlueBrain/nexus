@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew
 
 import ch.epfl.bluebrain.nexus.sourcingnew.processor.EvaluationIO
-import ch.epfl.bluebrain.nexus.sourcingnew.processor.ProcessorCommand.DryRunResult
 import monix.bio.Task
 
 /**
@@ -19,7 +18,6 @@ trait Aggregate[Id, State, Command, Event, Rejection] {
   /**
     * Get the current state for the entity with the given __id__
     * @param id the entity identifier
-    * @return
     */
   def state(id: Id): Task[State]
 
@@ -42,6 +40,6 @@ trait Aggregate[Id, State, Command, Event, Rejection] {
     * @return the state and event that would be generated in if the command was tested for evaluation
     *         successfully, or the rejection of the __command__ in otherwise
     */
-  def dryRun(id: Id, command: Command): Task[DryRunResult]
+  def dryRun(id: Id, command: Command): EvaluationIO[Rejection, Event, State]
 
 }

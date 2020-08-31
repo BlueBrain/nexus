@@ -11,7 +11,7 @@ import org.flywaydb.core.Flyway
   *
   * @param jdbcConfig the config to connect to the database
   */
-class JdbcSchemaMigration(jdbcConfig: JdbcConfig) extends SchemaMigration {
+private[projections] class JdbcSchemaMigration(jdbcConfig: JdbcConfig) extends SchemaMigration {
 
   def migrate(): Task[Unit] = {
     for {

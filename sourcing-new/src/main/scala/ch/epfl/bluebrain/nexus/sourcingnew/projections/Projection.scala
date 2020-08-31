@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.sourcingnew.projections.jdbc.{JdbcConfig, JdbcPro
 import fs2.Stream
 import io.circe.parser.decode
 import io.circe.{Decoder, Encoder}
-import monix.bio.{IO, Task}
+import monix.bio.Task
 
 /**
   * A Projection represents the process to transforming an event stream into a format that's efficient for consumption.
@@ -63,12 +63,6 @@ trait Projection[A] {
 
 object Projection {
 
-  private[projections] def decodeOption[A: Decoder](input: Option[String], defaultValue: A): Task[A] =
-    input match {
-      case Some(value) => IO.fromTry(decode[A](value).toTry)
-      case None        => IO.pure(defaultValue)
-    }
-
   private[projections] def decodeError[A: Decoder, B: Decoder](
       input: (String, String, String)
   ): Option[(A, B, String)] = {
@@ -86,6 +80,9 @@ object Projection {
     sw.toString
   }
 
+  /**
+   * Create a projection for Cassandra
+   */
   def cassandra[A: Encoder: Decoder](config: CassandraConfig)(implicit as: ActorSystem[Nothing]): Task[Projection[A]] =
     Cassandra.session(as).map {
       new CassandraProjection[A](
@@ -95,6 +92,9 @@ object Projection {
       )
     }
 
+  /**
+   * Create a projection for PostgreSQL
+   */
   def jdbc[A: Encoder: Decoder](jdbcConfig: JdbcConfig): Task[Projection[A]] =
     Task.delay {
       new JdbcProjection[A](jdbcConfig.transactor)

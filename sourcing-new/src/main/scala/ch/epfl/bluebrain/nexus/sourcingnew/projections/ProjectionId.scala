@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcingnew.projections
 
-sealed trait ProjectionId {
+sealed trait ProjectionId extends Product with Serializable {
   def value: String
 }
 

@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
   * @param retryStrategy the retry strategy to adopt
   * @param askTimeout the ask timeout
   */
-final class ShardedAggregate[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+private[processor] class ShardedAggregate[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
     entityTypeKey: EntityTypeKey[ProcessorCommand],
     clusterSharding: ClusterSharding,
     retryStrategy: RetryStrategy,
@@ -37,10 +37,20 @@ final class ShardedAggregate[State: ClassTag, Command: ClassTag, Event: ClassTag
     * Get the current state for the entity with the given __id__
     *
     * @param id the entity identifier
-    * @return
+    * @return the state for the given id
     */
   override def state(id: String): Task[State] =
     send(id, { askTo: ActorRef[State] => RequestState(id, askTo) })
+
+  private def toEvaluationIO(result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
+    result.hideErrors.flatMap {
+      case r: EvaluationRejection[Rejection]  => IO.raiseError(r)
+      case s: EvaluationSuccess[Event, State] => IO.pure(s)
+      case e: EvaluationError                 =>
+        // Should not append as they have been dealt with in send
+        // and raised in the internal channel via hideErrors
+        IO.terminate(e)
+    }
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
@@ -51,14 +61,9 @@ final class ShardedAggregate[State: ClassTag, Command: ClassTag, Event: ClassTag
     *         rejection of the __command__ in a task otherwise
     */
   override def evaluate(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
-    send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) }).hideErrors.flatMap {
-      case r: EvaluationRejection[Rejection]  => IO.raiseError(r)
-      case s: EvaluationSuccess[Event, State] => IO.pure(s)
-      case e: EvaluationError                 =>
-        // Should not append as they have been dealed with in send
-        // and raised in the internal channel via hideErrors
-        IO.terminate(e)
-    }
+    toEvaluationIO(
+      send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) })
+    )
 
   /**
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any
@@ -69,8 +74,10 @@ final class ShardedAggregate[State: ClassTag, Command: ClassTag, Event: ClassTag
     * @return the state and event that would be generated the command was tested for evaluation
     *         successfully, or the rejection of the __command__ otherwise
     */
-  override def dryRun(id: String, command: Command): Task[DryRunResult] =
-    send(id, { askTo: ActorRef[DryRunResult] => DryRun(id, command, askTo) })
+  override def dryRun(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
+    toEvaluationIO(
+      send(id, { askTo: ActorRef[DryRunResult] => DryRun(id, command, askTo) }).map(_.result)
+    )
 
   private def send[A](entityId: String, askTo: ActorRef[A] => ProcessorCommand): Task[A] = {
     val ref = clusterSharding.entityRefFor(entityTypeKey, entityId)
@@ -131,7 +138,6 @@ object ShardedAggregate {
     * @param retryStrategy    the retry strategy to adopt
     * @param shardingSettings the sharding settings
     * @param as               the actor system
-    * @return
     */
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
