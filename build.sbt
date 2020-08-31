@@ -233,7 +233,7 @@ lazy val docs = project
   )
 
 lazy val testkit = project
-  .in(file("testkit"))
+  .in(file("delta/testkit"))
   .settings(name := "testkit", moduleName := "testkit")
   .settings(shared, compilation, coverage, release)
   .settings(
@@ -315,7 +315,7 @@ lazy val sourcing = project
   )
 
 lazy val sourcingNew = project
-  .in(file("sourcing-new"))
+  .in(file("delta/sourcing"))
   .dependsOn(testkit % "test->compile")
   .settings(name := "sourcing-new", moduleName := "sourcing-new")
   .settings(shared, compilation, coverage, release)
