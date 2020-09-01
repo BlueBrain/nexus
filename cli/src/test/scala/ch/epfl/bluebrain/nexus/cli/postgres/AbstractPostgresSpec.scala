@@ -37,27 +37,14 @@ class AbstractPostgresSpec extends AbstractCliSpec {
         }
       }
       make[Transactor[IO]].fromEffect { (_: PostgresDocker.Container, cfg: AppConfig) =>
-        val xa = Transactor.fromDriverManager[IO](
-          "org.postgresql.Driver",
-          cfg.postgres.jdbcUrl,
-          cfg.postgres.username,
-          cfg.postgres.password
-        )
-        waitForPostgresReady(xa).as(xa)
+        IO {
+          Transactor.fromDriverManager[IO](
+            "org.postgresql.Driver",
+            cfg.postgres.jdbcUrl,
+            cfg.postgres.username,
+            cfg.postgres.password
+          )
+        }
       }
     }
-
-  private def waitForPostgresReady(xa: Transactor[IO], maxDelay: FiniteDuration = 30.seconds): IO[Unit] = {
-    import doobie.implicits._
-    import retry.CatsEffect._
-    import retry.RetryPolicies._
-    import retry._
-    val policy = limitRetriesByCumulativeDelay[IO](maxDelay, constantDelay(1.second))
-    retryingOnAllErrors(
-      policy = policy,
-      onError = (_: Throwable, _) => IO.delay(println("Postgres Container not ready, retrying..."))
-    ) {
-      sql"select 1;".query[Int].unique.transact(xa)
-    } *> IO.unit
-  }
 }

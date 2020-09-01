@@ -6,6 +6,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcing.{CassandraDocker, CassandraDockerModule}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.{NoProgress, OffsetProgress}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionsSpec.SomeEvent
 import com.typesafe.config.ConfigFactory
