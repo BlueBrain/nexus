@@ -1,0 +1,16 @@
+{
+  "@context": {
+    "@vocab": "http://example.com/",
+    "@base": "http://nexus.example.com/"
+  },
+  "@graph": [
+    {
+      "@id": "http://nexus.example.com/john-doé",
+      "friends": "http://example.com/robin"
+    },
+    {
+      "@id": "http://example.com/batman",
+      "name": "Batman"
+    }
+  ]
+}
