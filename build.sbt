@@ -48,6 +48,7 @@ val log4jVersion                    = "2.13.3"
 val magnoliaVersion                 = "0.16.0"
 val mockitoVersion                  = "1.14.8"
 val monixVersion                    = "3.2.2"
+val monixBioVersion                 = "1.0.0"
 val nimbusJoseJwtVersion            = "8.19"
 val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.13.0"
@@ -108,6 +109,7 @@ lazy val log4jCore                = "org.apache.logging.log4j"    % "log4j-core"
 lazy val log4jApi                 = "org.apache.logging.log4j"    % "log4j-api"                           % log4jVersion
 lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
+lazy val monixBio                 = "io.monix"                   %% "monix-bio"                           % monixBioVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
 lazy val nimbusJoseJwt            = "com.nimbusds"                % "nimbus-jose-jwt"                     % nimbusJoseJwtVersion
 lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
@@ -268,12 +270,41 @@ lazy val sourcing = project
     ),
     Test / fork          := true
   )
-lazy val rdf      = project
-  .in(file("rdf"))
+
+lazy val rdf = project
+  .in(file("delta/rdf"))
   .settings(shared, compilation, coverage, release)
   .settings(
     name       := "rdf",
     moduleName := "rdf"
+  )
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaHttp,
+      akkaHttpCirce,
+      akkaHttpXml,
+      alleycatsCore,
+      catsCore,
+      circeGeneric,
+      jenaArq,
+      monixBio,
+      scalaReflect,
+      topBraidShacl,
+      akkaSlf4j    % Test,
+      akkaTestKit  % Test,
+      circeLiteral % Test,
+      logback      % Test,
+      scalaTest    % Test
+    ),
+    Test / fork          := true
+  )
+
+lazy val rdfOld = project
+  .in(file("rdf"))
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    name       := "rdf-old",
+    moduleName := "rdf-old"
   )
   .settings(
     libraryDependencies ++= Seq(
@@ -309,7 +340,7 @@ def docsFilesFilter(repo: File) =
 
 lazy val storage = project
   .in(file("storage"))
-  .dependsOn(rdf)
+  .dependsOn(rdfOld)
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
   .settings(cargo := {
@@ -365,7 +396,7 @@ lazy val storage = project
 
 lazy val delta = project
   .in(file("delta"))
-  .dependsOn(sourcing, rdf)
+  .dependsOn(sourcing, rdfOld)
   .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
@@ -429,7 +460,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, rdf, storage, delta)
+  .aggregate(docs, cli, sourcing, rdfOld, storage, delta)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
