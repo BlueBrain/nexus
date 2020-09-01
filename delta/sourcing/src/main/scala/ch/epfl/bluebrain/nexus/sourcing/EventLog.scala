@@ -15,36 +15,36 @@ import scala.concurrent.ExecutionContext
 trait EventLog[M] {
 
   /**
-   * [[akka.persistence.query.scaladsl.PersistenceIdsQuery#currentPersistenceIds]] in a fs2 stream
-   */
+    * [[akka.persistence.query.scaladsl.PersistenceIdsQuery#currentPersistenceIds]] in a fs2 stream
+    */
   def persistenceIds: Stream[Task, String]
 
   /**
-   * [[akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery#currentPersistenceIds]] in a fs2 stream
-   */
+    * [[akka.persistence.query.scaladsl.CurrentPersistenceIdsQuery#currentPersistenceIds]] in a fs2 stream
+    */
   def currentPersistenceIds: Stream[Task, String]
 
   /**
-   * [[akka.persistence.query.scaladsl.EventsByPersistenceIdQuery#eventsByPersistenceId]] in a fs2 stream
-   */
+    * [[akka.persistence.query.scaladsl.EventsByPersistenceIdQuery#eventsByPersistenceId]] in a fs2 stream
+    */
   def eventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Stream[Task, M]
 
   /**
-   * [[akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery#currentEventsByPersistenceId]] in a fs2 stream
-   */
+    * [[akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery#currentEventsByPersistenceId]] in a fs2 stream
+    */
   def currentEventsByPersistenceId(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long): Stream[Task, M]
 
   /**
-   * [[akka.persistence.query.scaladsl.EventsByTagQuery#eventsByTag]] in a fs2 stream
-   */
+    * [[akka.persistence.query.scaladsl.EventsByTagQuery#eventsByTag]] in a fs2 stream
+    */
   def eventsByTag(tag: String, offset: Offset): Stream[Task, M]
 
   /**
-   * [[akka.persistence.query.scaladsl.CurrentEventsByTagQuery#currentEventsByTag]] in a fs2 stream
-   */
+    * [[akka.persistence.query.scaladsl.CurrentEventsByTagQuery#currentEventsByTag]] in a fs2 stream
+    */
   def currentEventsByTag(tag: String, offset: Offset): Stream[Task, M]
 }
-object EventLog   {
+object EventLog {
   import akka.actor.typed.ActorSystem
   import akka.persistence.query.Offset
   import akka.persistence.query.scaladsl.{ReadJournal, _}
@@ -98,9 +98,9 @@ object EventLog   {
   }
 
   /**
-   * Create an event log relying on akka-persistence-cassandra
-   * @param f the transformation we want to apply to the [[EventEnvelope]]
-   */
+    * Create an event log relying on akka-persistence-cassandra
+    * @param f the transformation we want to apply to the [[EventEnvelope]]
+    */
   def cassandraEventLog[M](f: EventEnvelope => M)(implicit as: ActorSystem[Nothing]): EventLog[M] =
     new AkkaEventLog[CassandraReadJournal, M](
       PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier),
@@ -108,9 +108,9 @@ object EventLog   {
     )
 
   /**
-   * Create an event log relying on akka-persistence-jdbc
-   * @param f the transformation we want to apply to the [[EventEnvelope]]
-   */
+    * Create an event log relying on akka-persistence-jdbc
+    * @param f the transformation we want to apply to the [[EventEnvelope]]
+    */
   def jdbcEventLog[M](f: EventEnvelope => M)(implicit as: ActorSystem[Nothing]): EventLog[M] =
     new AkkaEventLog[JdbcReadJournal, M](
       PersistenceQuery(as).readJournalFor[JdbcReadJournal](JdbcReadJournal.Identifier),

@@ -17,8 +17,8 @@ import retry.syntax.all._
 object StreamSupervisor {
 
   /**
-   * Command that can be sent to the stream supervisor
-   */
+    * Command that can be sent to the stream supervisor
+    */
   sealed trait SupervisorCommand extends Product with Serializable
 
   /**

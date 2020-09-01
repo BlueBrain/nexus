@@ -27,8 +27,8 @@ object StopStrategy {
   object TransientStopStrategy {
 
     /**
-     * The actor will never be asked to stop
-     */
+      * The actor will never be asked to stop
+      */
     def never: TransientStopStrategy = TransientStopStrategy(None)
   }
 
@@ -48,8 +48,8 @@ object StopStrategy {
   object PersistentStopStrategy {
 
     /**
-     * The actor will never be asked to stop
-     */
+      * The actor will never be asked to stop
+      */
     def never: PersistentStopStrategy = PersistentStopStrategy(None, None)
   }
 

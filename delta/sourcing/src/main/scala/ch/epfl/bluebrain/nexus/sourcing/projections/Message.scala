@@ -16,15 +16,15 @@ sealed trait Message[+A] extends Product with Serializable {
 }
 
 /**
- * Message that has been filtered out or raised an error during the projection
- * process
- */
+  * Message that has been filtered out or raised an error during the projection
+  * process
+  */
 sealed trait SkippedMessage extends Message[Nothing]
 
 /**
- * Message when its processing failed at a point of the projection
- * See [[FailureMessage]] and [[CastFailedMessage]]
- *
+  * Message when its processing failed at a point of the projection
+  * See [[FailureMessage]] and [[CastFailedMessage]]
+  *
  */
 sealed trait ErrorMessage extends SkippedMessage
 

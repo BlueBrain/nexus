@@ -5,8 +5,8 @@ import doobie.util.transactor.Transactor.Aux
 import monix.bio.Task
 
 /**
- * Configuration when using PostgreSQL to persist data
- */
+  * Configuration when using PostgreSQL to persist data
+  */
 final case class JdbcConfig(
     host: String,
     port: Int,
@@ -17,13 +17,13 @@ final case class JdbcConfig(
 ) {
 
   /**
-   * Connection url
-   */
+    * Connection url
+    */
   def url: String = s"jdbc:postgresql://$host:$port/$database?stringtype=unspecified"
 
   /**
-   * A doobie transactor
-   */
+    * A doobie transactor
+    */
   def transactor: Aux[Task, Unit] =
     Transactor.fromDriverManager[Task](
       driver,

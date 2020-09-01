@@ -65,7 +65,7 @@ final case class PersistentEventDefinition[State, Command, Event, Rejection](
   *
   *  @param stopStrategy      the stop strategy to apply
   */
-final case class TransientEventDefinition[State, Command, Event:   ClassTag, Rejection](
+final case class TransientEventDefinition[State, Command, Event: ClassTag, Rejection](
     entityType: String,
     initialState: State,
     next: (State, Event) => State,

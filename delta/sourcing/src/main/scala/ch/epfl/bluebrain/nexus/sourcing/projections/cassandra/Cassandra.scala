@@ -9,13 +9,13 @@ import monix.bio.Task
 object Cassandra {
 
   /**
-   * Configuration when using Cassandra to persist data
-   *
+    * Configuration when using Cassandra to persist data
+    *
    * @param keyspace keyspace containing the tables
-   * @param keyspaceAutoCreate if we want to create the keyspace if it doesn't exist yet
-   * @param tablesAutoCreate if we want to create the tables if it doesn't exist yet
-   * @param replicationStrategy the expected replication strategy for the keyspace
-   */
+    * @param keyspaceAutoCreate if we want to create the keyspace if it doesn't exist yet
+    * @param tablesAutoCreate if we want to create the tables if it doesn't exist yet
+    * @param replicationStrategy the expected replication strategy for the keyspace
+    */
   final case class CassandraConfig(
       keyspace: String,
       keyspaceAutoCreate: Boolean,

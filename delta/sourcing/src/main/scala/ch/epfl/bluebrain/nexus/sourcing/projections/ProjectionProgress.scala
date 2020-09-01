@@ -1,7 +1,11 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.persistence.query.{NoOffset, Offset}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.{
+  CompositeViewProjectionId,
+  SourceProjectionId,
+  ViewProjectionId
+}
 import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
 import io.circe.parser.decode
 
@@ -15,8 +19,8 @@ import io.circe.parser.decode
 final case class ProjectionProgress(offset: Offset, processed: Long, discarded: Long, failed: Long) {
 
   /**
-   * Takes a new message in account for the progress
-   */
+    * Takes a new message in account for the progress
+    */
   def +(message: Message[_]): ProjectionProgress =
     message match {
       case _: DiscardedMessage => copy(offset = message.offset, processed = processed + 1, discarded = discarded + 1)
@@ -26,11 +30,11 @@ final case class ProjectionProgress(offset: Offset, processed: Long, discarded: 
 }
 
 /**
- * Projection for a composite view
- * @param id id
- * @param sourceProgress progress for the different sources
- * @param viewProgress progress for the different views
- */
+  * Projection for a composite view
+  * @param id id
+  * @param sourceProgress progress for the different sources
+  * @param viewProgress progress for the different views
+  */
 final case class CompositeProjectionProgress(
     id: ViewProjectionId,
     sourceProgress: Map[SourceProjectionId, ProjectionProgress],
@@ -40,8 +44,8 @@ final case class CompositeProjectionProgress(
 object ProjectionProgress {
 
   /**
-   * When no progress has been done yet
-   */
+    * When no progress has been done yet
+    */
   val NoProgress: ProjectionProgress = ProjectionProgress(NoOffset, 0L, 0L, 0L)
 
   def fromTuple(input: (String, Long, Long, Long)): ProjectionProgress =

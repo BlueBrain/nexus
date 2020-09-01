@@ -22,8 +22,8 @@ trait SchemaMigration {
 object SchemaMigration {
 
   /**
-   * Create a Schema migration for Cassandra
-   */
+    * Create a Schema migration for Cassandra
+    */
   def cassandra(config: CassandraConfig)(implicit as: ActorSystem[Nothing]): Task[SchemaMigration] =
     Cassandra.session(as).map {
       new CassandraSchemaMigration(
@@ -33,8 +33,8 @@ object SchemaMigration {
     }
 
   /**
-   * Create a schema migration for PostgresSQL
-   */
+    * Create a schema migration for PostgresSQL
+    */
   def jdbc(jdbcConfig: JdbcConfig): Task[SchemaMigration] =
     Task.delay {
       new JdbcSchemaMigration(jdbcConfig)

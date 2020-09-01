@@ -7,11 +7,21 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
+import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{
+  NoSnapshot,
+  SnapshotCombined,
+  SnapshotEvery,
+  SnapshotPredicate
+}
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.GetLastSeqNr
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
-import ch.epfl.bluebrain.nexus.sourcing.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
+import ch.epfl.bluebrain.nexus.sourcing.{
+  EventDefinition,
+  PersistentEventDefinition,
+  SnapshotStrategy,
+  TransientEventDefinition
+}
 import monix.bio.IO
 import monix.execution.Scheduler
 
@@ -39,10 +49,12 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
   protected val id = s"${definition.entityType}-${URLEncoder.encode(entityId, "UTF-8")}"
 
   /**
-   * The behavior of the underlying state actor when we opted for persisting the events
-   */
-  private def persistentBehavior(persistentEventDefinition: PersistentEventDefinition[State, Command, Event, Rejection],
-                                 parent: ActorRef[ProcessorCommand]) = {
+    * The behavior of the underlying state actor when we opted for persisting the events
+    */
+  private def persistentBehavior(
+      persistentEventDefinition: PersistentEventDefinition[State, Command, Event, Rejection],
+      parent: ActorRef[ProcessorCommand]
+  ) = {
     import persistentEventDefinition._
     val persistenceId = PersistenceId.ofUniqueId(id)
 
@@ -109,23 +121,25 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
   }
 
   /**
-   * The behavior of the underlying state actor when we opted for NOT persisting the events
-   */
-  private def transientBehavior(t: TransientEventDefinition[State, Command, Event, Rejection]): Behavior[EventSourceCommand] = {
-    def behavior(state: State): Behaviors.Receive[EventSourceCommand] = Behaviors.receive[EventSourceCommand] { (_, cmd) =>
-      cmd match {
-        case RequestState(_, replyTo: ActorRef[State]) =>
-          replyTo ! state
-          Behaviors.same
-        case _: RequestLastSeqNr =>
-          Behaviors.same
-        case Append(_, event: Event) =>
-          behavior(t.next(state, event))
+    * The behavior of the underlying state actor when we opted for NOT persisting the events
+    */
+  private def transientBehavior(
+      t: TransientEventDefinition[State, Command, Event, Rejection]
+  ): Behavior[EventSourceCommand] = {
+    def behavior(state: State): Behaviors.Receive[EventSourceCommand] =
+      Behaviors.receive[EventSourceCommand] { (_, cmd) =>
+        cmd match {
+          case RequestState(_, replyTo: ActorRef[State]) =>
+            replyTo ! state
+            Behaviors.same
+          case _: RequestLastSeqNr                       =>
+            Behaviors.same
+          case Append(_, event: Event)                   =>
+            behavior(t.next(state, event))
+        }
       }
-    }
     behavior(t.initialState)
   }
-
 
   /**
     * Behavior of the actor responsible for handling commands and events
@@ -273,10 +287,11 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
 object EventSourceProcessor {
 
   /**
-   * To add our Snapshot strategy to an EventSourcedBehavior in a more concise way
-   */
-  private[processor] implicit class EventSourcedBehaviorOps[C, E, State](val eventSourcedBehavior: EventSourcedBehavior[C, E, State])
-    extends AnyVal {
+    * To add our Snapshot strategy to an EventSourcedBehavior in a more concise way
+    */
+  implicit private[processor] class EventSourcedBehaviorOps[C, E, State](
+      val eventSourcedBehavior: EventSourcedBehavior[C, E, State]
+  ) extends AnyVal {
 
     private def toSnapshotCriteria(snapshotEvery: SnapshotEvery): SnapshotCountRetentionCriteria = {
       val criteria = RetentionCriteria.snapshotEvery(snapshotEvery.numberOfEvents, snapshotEvery.keepNSnapshots)

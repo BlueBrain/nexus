@@ -24,17 +24,17 @@ final case class RetryStrategy(
 object RetryStrategy {
 
   /**
-   * Fail without retry
-   */
+    * Fail without retry
+    */
   def alwaysGiveUp: RetryStrategy =
     RetryStrategy(AlwaysGiveUp, _ => false, retry.noop[Task, Throwable])
 
   /**
-   * Retry at a constant interval
-   * @param constant the interval before a retry will be attempted
-   * @param maxRetries the maximum number of retries
-   * @param retryWhen the errors we are willing to retry for
-   */
+    * Retry at a constant interval
+    * @param constant the interval before a retry will be attempted
+    * @param maxRetries the maximum number of retries
+    * @param retryWhen the errors we are willing to retry for
+    */
   def constant(constant: FiniteDuration, maxRetries: Int, retryWhen: Throwable => Boolean): RetryStrategy =
     RetryStrategy(
       ConstantStrategyConfig(constant, maxRetries),
@@ -45,45 +45,45 @@ object RetryStrategy {
 }
 
 /**
- * Configuration for a [[RetryStrategy]]
- */
-sealed trait RetryStrategyConfig extends Product with Serializable  {
+  * Configuration for a [[RetryStrategy]]
+  */
+sealed trait RetryStrategyConfig extends Product with Serializable {
   def toPolicy: RetryPolicy[Task]
 
 }
 
 /**
- * Fails without retry
- */
+  * Fails without retry
+  */
 case object AlwaysGiveUp extends RetryStrategyConfig {
   override def toPolicy: RetryPolicy[Task] = alwaysGiveUp[Task]
 }
 
 /**
- * Retry at a constant interval
- * @param constant the interval before a retry will be attempted
- * @param maxRetries the maximum number of retries
- */
+  * Retry at a constant interval
+  * @param constant the interval before a retry will be attempted
+  * @param maxRetries the maximum number of retries
+  */
 final case class ConstantStrategyConfig(constant: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
   override def toPolicy: RetryPolicy[Task] =
     constantDelay[Task](constant) join limitRetries(maxRetries)
 }
 
 /**
- * Retry exactly once
- * @param constant the interval before the retry will be attempted
- */
+  * Retry exactly once
+  * @param constant the interval before the retry will be attempted
+  */
 final case class OnceStrategyConfig(constant: FiniteDuration) extends RetryStrategyConfig {
   override def toPolicy: RetryPolicy[Task] =
     constantDelay[Task](constant) join limitRetries(1)
 }
 
 /**
- * Retry with an exponential delay after a failure
- * @param initialDelay the initial delay after the first failure
- * @param maxDelay     the maximum delay to not exceed
- * @param maxRetries   the maximum number of retries
- */
+  * Retry with an exponential delay after a failure
+  * @param initialDelay the initial delay after the first failure
+  * @param maxDelay     the maximum delay to not exceed
+  * @param maxRetries   the maximum number of retries
+  */
 final case class ExponentialStrategyConfig(initialDelay: FiniteDuration, maxDelay: FiniteDuration, maxRetries: Int)
     extends RetryStrategyConfig {
   override def toPolicy: RetryPolicy[Task] =
