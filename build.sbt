@@ -21,6 +21,7 @@ val akkaHttpCirceVersion            = "1.33.0"
 val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
+val akkaPersistenceJdbcVersion      = "4.0.0"
 val akkaVersion                     = "2.6.6"
 val alpakkaVersion                  = "2.0.1"
 val apacheCompressVersion           = "1.20"
@@ -32,7 +33,9 @@ val catsVersion                     = "2.1.1"
 val circeVersion                    = "0.13.0"
 val declineVersion                  = "1.2.0"
 val distageVersion                  = "0.10.16"
+val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.9.0"
+val flywayVersion                   = "6.5.2"
 val fs2Version                      = "2.4.2"
 val guavaVersion                    = "29.0-jre"
 val http4sVersion                   = "0.21.6"
@@ -48,24 +51,44 @@ val log4jVersion                    = "2.13.3"
 val magnoliaVersion                 = "0.16.0"
 val mockitoVersion                  = "1.14.8"
 val monixVersion                    = "3.2.2"
+val monixBioVersion                 = "1.0.0"
 val nimbusJoseJwtVersion            = "8.19"
 val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.13.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalaTestVersion                = "3.2.0"
+val slickVersion                    = "3.3.2"
+val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2"
 
-lazy val akkaActor                = "com.typesafe.akka"          %% "akka-actor"                          % akkaVersion
-lazy val akkaCluster              = "com.typesafe.akka"          %% "akka-cluster"                        % akkaVersion
-lazy val akkaClusterSharding      = "com.typesafe.akka"          %% "akka-cluster-sharding"               % akkaVersion
-lazy val akkaHttp                 = "com.typesafe.akka"          %% "akka-http"                           % akkaHttpVersion
-lazy val akkaHttpXml              = "com.typesafe.akka"          %% "akka-http-xml"                       % akkaHttpVersion
-lazy val akkaHttpCors             = "ch.megard"                  %% "akka-http-cors"                      % akkaCorsVersion
-lazy val akkaHttpCirce            = "de.heikoseeberger"          %% "akka-http-circe"                     % akkaHttpCirceVersion
-lazy val akkaHttpTestKit          = "com.typesafe.akka"          %% "akka-http-testkit"                   % akkaHttpVersion
-lazy val akkaPersistence          = "com.typesafe.akka"          %% "akka-persistence"                    % akkaVersion
-lazy val akkaPersistenceCassandra = "com.typesafe.akka"          %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceInMem     = "com.github.dnvriend"        %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
+lazy val akkaActor                = "com.typesafe.akka"                %% "akka-actor"                          % akkaVersion
+lazy val akkaCluster              = "com.typesafe.akka"                %% "akka-cluster"                        % akkaVersion
+lazy val akkaClusterSharding      = "com.typesafe.akka"                %% "akka-cluster-sharding"               % akkaVersion
+
+lazy val akkaActorTyped           = "com.typesafe.akka"                %% "akka-actor-typed"                    % akkaVersion
+lazy val akkaClusterTyped         = "com.typesafe.akka"                %% "akka-cluster-typed"                  % akkaVersion
+lazy val akkaClusterShardingTyped = "com.typesafe.akka"                %% "akka-cluster-sharding-typed"         % akkaVersion
+
+lazy val akkaHttp                 = "com.typesafe.akka"                %% "akka-http"                           % akkaHttpVersion
+lazy val akkaHttpXml              = "com.typesafe.akka"                %% "akka-http-xml"                       % akkaHttpVersion
+lazy val akkaHttpCors             = "ch.megard"                        %% "akka-http-cors"                      % akkaCorsVersion
+lazy val akkaHttpCirce            = "de.heikoseeberger"                %% "akka-http-circe"                     % akkaHttpCirceVersion
+lazy val akkaHttpTestKit          = "com.typesafe.akka"                %% "akka-http-testkit"                   % akkaHttpVersion
+
+lazy val akkaPersistence          = "com.typesafe.akka"                %% "akka-persistence"                    % akkaVersion
+
+lazy val akkaPersistenceTyped     = "com.typesafe.akka"                %% "akka-persistence-typed"              % akkaVersion
+lazy val akkaPersistenceTestKit   ="com.typesafe.akka"                 %% "akka-persistence-testkit"            % akkaVersion
+
+lazy val akkaPersistenceCassandra = "com.typesafe.akka"                %% "akka-persistence-cassandra"          % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceInMem     = "com.github.dnvriend"              %% "akka-persistence-inmemory"           % akkaPersistenceInMemVersion
+
+lazy val akkaPersistenceJdbc      = Seq(
+  "com.lightbend.akka" %% "akka-persistence-jdbc" % akkaPersistenceJdbcVersion,
+  "com.typesafe.slick" %% "slick" % slickVersion,
+  "com.typesafe.slick" %% "slick-hikaricp" % slickVersion
+)
+
 lazy val akkaPersistenceLauncher  = "com.typesafe.akka"          %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
 lazy val akkaPersistenceQuery     = "com.typesafe.akka"          %% "akka-persistence-query"              % akkaVersion
 lazy val akkaSlf4j                = "com.typesafe.akka"          %% "akka-slf4j"                          % akkaVersion
@@ -92,7 +115,14 @@ lazy val distageCore              = "io.7mind.izumi"             %% "distage-cor
 lazy val distageDocker            = "io.7mind.izumi"             %% "distage-framework-docker"            % distageVersion
 lazy val distageTestkit           = "io.7mind.izumi"             %% "distage-testkit-scalatest"           % distageVersion
 lazy val doobiePostgres           = "org.tpolecat"               %% "doobie-postgres"                     % doobieVersion
+
+lazy val dockerTestKit            = Seq(
+  "com.whisk" %% "docker-testkit-scalatest"    % dockerTestKitVersion,
+  "com.whisk" %% "docker-testkit-impl-spotify" % dockerTestKitVersion
+)
+
 lazy val fs2                      = "co.fs2"                     %% "fs2-core"                            % fs2Version
+lazy val flyway                   = "org.flywaydb"                      % "flyway-core"                         % flywayVersion
 lazy val http4sCirce              = "org.http4s"                 %% "http4s-circe"                        % http4sVersion
 lazy val http4sClient             = "org.http4s"                 %% "http4s-blaze-client"                 % http4sVersion
 lazy val http4sDsl                = "org.http4s"                 %% "http4s-dsl"                          % http4sVersion
@@ -108,6 +138,7 @@ lazy val log4jCore                = "org.apache.logging.log4j"    % "log4j-core"
 lazy val log4jApi                 = "org.apache.logging.log4j"    % "log4j-api"                           % log4jVersion
 lazy val magnolia                 = "com.propensive"             %% "magnolia"                            % magnoliaVersion
 lazy val mockito                  = "org.mockito"                %% "mockito-scala"                       % mockitoVersion
+lazy val monixBio                 = "io.monix"                   %% "monix-bio"                           % monixBioVersion
 lazy val monixEval                = "io.monix"                   %% "monix-eval"                          % monixVersion
 lazy val nimbusJoseJwt            = "com.nimbusds"                % "nimbus-jose-jwt"                     % nimbusJoseJwtVersion
 lazy val parboiled2               = "org.parboiled"              %% "parboiled"                           % parboiledVersion
@@ -115,6 +146,7 @@ lazy val pureconfig               = "com.github.pureconfig"      %% "pureconfig"
 lazy val scalaLogging             = "com.typesafe.scala-logging" %% "scala-logging"                       % scalaLoggingVersion
 lazy val scalaTest                = "org.scalatest"              %% "scalatest"                           % scalaTestVersion
 lazy val scalaReflect             = "org.scala-lang"              % "scala-reflect"                       % scalaCompilerVersion
+lazy val streamz                  = "com.github.krasserm"              %% "streamz-converter"             % streamzVersion
 lazy val topBraidShacl            = "org.topbraid"                % "shacl"                               % topBraidVersion
 
 val javaSpecificationVersion = SettingKey[String](
@@ -200,8 +232,23 @@ lazy val docs = project
     ghpagesBranch                     := "gh-pages"
   )
 
+lazy val testkit = project
+  .in(file("delta/testkit"))
+  .settings(name := "testkit", moduleName := "testkit")
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      catsEffectRetry,
+      doobiePostgres,
+      distageDocker,
+      distageTestkit,
+      scalaTest
+    ) ++ dockerTestKit
+  )
+
 lazy val cli = project
   .in(file("cli"))
+  .dependsOn(testkit % "test->compile")
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
@@ -226,16 +273,14 @@ lazy val cli = project
       monixEval,
       pureconfig,
       circeLiteral   % Test,
-      distageDocker  % Test,
-      distageTestkit % Test,
       http4sDsl      % Test,
-      jenaArq        % Test,
-      scalaTest      % Test
+      jenaArq        % Test
     )
   )
 
 lazy val sourcing = project
   .in(file("sourcing"))
+  .dependsOn(testkit % "test->compile")
   .settings(name := "sourcing", moduleName := "sourcing")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
@@ -268,6 +313,42 @@ lazy val sourcing = project
     ),
     Test / fork          := true
   )
+
+lazy val sourcingNew = project
+  .in(file("delta/sourcing"))
+  .dependsOn(testkit % "test->compile")
+  .settings(name := "sourcing-new", moduleName := "sourcing-new")
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaActorTyped,
+      akkaClusterTyped,
+      akkaClusterShardingTyped,
+      akkaPersistenceTyped,
+      akkaPersistenceCassandra,
+      akkaPersistenceQuery,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
+      circeCore,
+      circeGenericExtras,
+      circeParser,
+      distageCore,
+      doobiePostgres,
+      fs2,
+      flyway,
+      monixBio,
+      scalaLogging,
+      streamz,
+      akkaActorTyped          % Test,
+      akkaPersistenceTestKit  % Test,
+      akkaSlf4j               % Test,
+      kryo                    % Test,
+      logback                 % Test
+    ) ++ akkaPersistenceJdbc,
+    Test / fork          := true
+  )
+
 lazy val rdf      = project
   .in(file("rdf"))
   .settings(shared, compilation, coverage, release)
@@ -447,7 +528,8 @@ lazy val shared = Seq(
   organization := "ch.epfl.bluebrain.nexus",
   resolvers   ++= Seq(
     Resolver.bintrayRepo("bbp", "nexus-releases"),
-    Resolver.bintrayRepo("bbp", "nexus-snapshots")
+    Resolver.bintrayRepo("bbp", "nexus-snapshots"),
+    Resolver.bintrayRepo("streamz", "maven")
   )
 )
 
