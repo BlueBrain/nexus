@@ -4,10 +4,12 @@ import io.circe.Json
 import io.circe.parser.parse
 
 import scala.annotation.tailrec
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.Random
 
 trait TestHelpers {
+
+  private val codec: Codec = Codec.UTF8
 
   /**
     * Generates an arbitrary string. Ported from nexus-commons
@@ -39,7 +41,7 @@ trait TestHelpers {
     val is                   = (fromClass orElse fromClassLoader).getOrElse(
       throw new IllegalArgumentException(s"Unable to load resource '$resourcePath' from classpath.")
     )
-    Source.fromInputStream(is).mkString
+    Source.fromInputStream(is)(codec).mkString
   }
 
   /**
