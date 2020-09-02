@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError
+import org.apache.jena.iri.IRI
 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class JsonLdError(reason: String) extends Exception {
@@ -38,6 +39,12 @@ object JsonLdError {
     * Invalid Iri inside a JSON-LD document
     */
   final case class InvalidIri(iri: String) extends JsonLdError(s"The value '$iri' is not an Iri")
+
+  /**
+    * Unexpected IRI value
+    */
+  final case class UnexpectedIri(expected: IRI, found: IRI)
+      extends JsonLdError(s"Unexpected IRI value. Expected '$expected', found '$found'")
 
   /**
     * The JSON-LD document does not have an @id value

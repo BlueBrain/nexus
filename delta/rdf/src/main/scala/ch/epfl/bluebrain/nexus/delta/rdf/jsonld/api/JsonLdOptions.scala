@@ -26,3 +26,7 @@ final case class JsonLdOptions(
     requiredAll: Boolean = false,
     pruneBlankNodeIdentifiers: Boolean = true
 )
+
+object JsonLdOptions {
+  val empty: JsonLdOptions = JsonLdOptions()
+}

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import io.circe.{Json, parser}
+import io.circe.{parser, Json}
 
 trait CirceLiteral {
   implicit final def circeLiteralSyntax(sc: StringContext): CirceLiterelOps = new CirceLiterelOps(sc)

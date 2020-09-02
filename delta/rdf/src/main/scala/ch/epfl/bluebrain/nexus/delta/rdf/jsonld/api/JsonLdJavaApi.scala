@@ -98,7 +98,7 @@ object JsonLdJavaApi extends JsonLdApi {
     val cxtValue = value.topContextValueOrEmpty
     f match {
 
-      case ContextFields.Skip => IO.fromEither(Right(RawJsonLdContext(cxtValue)))
+      case ContextFields.Skip => IO.now(RawJsonLdContext(cxtValue))
 
       case ContextFields.Include =>
         IO.fromTry(Try(new Context(options).parse(JsonUtils.fromString(cxtValue.noSpaces))))

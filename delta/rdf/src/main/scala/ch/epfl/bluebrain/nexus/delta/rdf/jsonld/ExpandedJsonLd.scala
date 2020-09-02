@@ -3,16 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RemoteContextResolution}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
+import monix.bio.IO
 import org.apache.jena.iri.IRI
 
 /**
   * Json-LD Expanded Document. This specific implementation is entity centric, having always only one root @id.
   */
-final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) extends JsonLd {
+final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) extends JsonLd { self =>
 
   type This                = ExpandedJsonLd
   protected type Predicate = IRI
@@ -68,6 +71,20 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) e
     */
   def types: List[IRI] =
     hc.get[List[IRI]](keywords.tpe).getOrElse(List.empty)
+
+  def toCompacted[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
+      opts: JsonLdOptions,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IOErrorOr[CompactedJsonLd[Ctx]] =
+    JsonLd.compact(json, context, rootId, f)
+
+  override def toExpanded(implicit
+      opts: JsonLdOptions,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IOErrorOr[ExpandedJsonLd] =
+    IO.now(self)
 
   private def add(key: IRI, value: Json): This = {
     val keyString = if (key == rdf.tpe) keywords.tpe else key.toString

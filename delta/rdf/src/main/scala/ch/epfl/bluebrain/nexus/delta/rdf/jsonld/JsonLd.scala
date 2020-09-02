@@ -63,8 +63,38 @@ trait JsonLd extends Product with Serializable {
     * Adds a ''key'' with its ''literal'' boolean.
     */
   def add(key: Predicate, literal: Boolean): This
+
+  /**
+    * Converts the current JsonLd into a [[CompactedJsonLd]]
+    *
+   * @param context the context to use in order toc ompact the current JsonLd
+    */
+  def toCompacted[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
+      opts: JsonLdOptions = JsonLdOptions.empty,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IOErrorOr[CompactedJsonLd[Ctx]]
+
+  def toExpanded(implicit
+      opts: JsonLdOptions = JsonLdOptions.empty,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IOErrorOr[ExpandedJsonLd]
 }
 object JsonLd {
+
+  /**
+    * Creates an [[ExpandedJsonLd]] unsafely.
+    *
+   * @param expanded an already expanded Json-LD document. It must be a Json array with a single Json Object inside
+    * @param rootId   the top @id value
+    * @throws IllegalArgumentException when the provided ''expanded'' json does not match the expected value
+    */
+  final def expandedUnsafe(expanded: Json, rootId: IRI): ExpandedJsonLd =
+    arrayToSingleObject(expanded) match {
+      case Right(obj)  => ExpandedJsonLd(obj, rootId)
+      case Left(value) => throw new IllegalArgumentException(value.getMessage)
+    }
 
   /**
     * Create an expanded ExpandedJsonLd document using the passed ''input''.
@@ -81,20 +111,15 @@ object JsonLd {
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
-      opts: JsonLdOptions = JsonLdOptions()
+      opts: JsonLdOptions = JsonLdOptions.empty
   ): IOErrorOr[ExpandedJsonLd] =
     for {
       expanded <- api.expand(input)
-      obj      <- IO.fromEither(
-                    expanded.asArray
-                      .flatMap(arr => if (arr.isEmpty) Some(Json.obj()) else headOnlyOption(arr))
-                      .flatMap(_.asObject)
-                      .toRight(UnexpectedJsonLd("Expected a Json Array with a single Json Object on expanded JSON-LD"))
-                  )
+      obj      <- IO.fromEither(arrayToSingleObject(expanded))
       id       <- (obj(keywords.id), defaultId) match {
                     case (Some(jsonIri), _) => IO.fromEither(jsonIri.as[IRI]).leftMap(_ => InvalidIri(jsonIri.noSpaces))
-                    case (_, Some(default)) => IO.fromEither(Right(default))
-                    case _                  => IO.fromEither(Left(IdNotFound))
+                    case (_, Some(default)) => IO.now(default)
+                    case _                  => IO.raiseError(IdNotFound)
                   }
     } yield ExpandedJsonLd(obj.add(keywords.id, id.asJson), id)
 
@@ -113,7 +138,7 @@ object JsonLd {
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
-      opts: JsonLdOptions = JsonLdOptions()
+      opts: JsonLdOptions = JsonLdOptions.empty
   ): IOErrorOr[CompactedJsonLd[Ctx]] = {
     val jsonId = Json.obj(keywords.id -> rootId.asJson)
     val frame  = context.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
@@ -121,6 +146,13 @@ object JsonLd {
       compactedWithCtx <- api.frame(input, frame, f)
       (compacted, ctx)  = compactedWithCtx
       obj              <- IO.fromEither(compacted.asObject.toRight(UnexpectedJsonLd("Expected a Json Object on compacted JSON-LD")))
-    } yield CompactedJsonLd(obj, ctx, rootId)
+    } yield CompactedJsonLd(obj, ctx, rootId, f)
   }
+
+  private def arrayToSingleObject(expanded: Json) =
+    expanded.asArray
+      .flatMap(arr => if (arr.isEmpty) Some(Json.obj()) else headOnlyOption(arr))
+      .flatMap(_.asObject)
+      .toRight(UnexpectedJsonLd("Expected a Json Array with a single Json Object on expanded JSON-LD"))
+
 }

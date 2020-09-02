@@ -19,32 +19,31 @@ class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fix
 
     "resolve" in {
       val expected = remoteContexts.map { case (k, v) => k -> v.topContextValueOrEmpty }
-      remoteResolution(input).runSyncUnsafe() shouldEqual expected
+      remoteResolution(input).accepted shouldEqual expected
     }
 
     "fail to resolve when there are circular dependencies" in {
       // format: off
       val contexts: Map[Uri, Json] =
         Map(
-          Uri("http://example.com/context/0") -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""",
-          Uri("http://example.com/context/1") -> json"""{"@context": ["http://example.com/context/11", "http://example.com/context/12"] }""",
-          Uri("http://example.com/context/11") -> json"""{"@context": [{"birthDate": "http://schema.org/birthDate"}, "http://example.com/context/1"] }""",
-          Uri("http://example.com/context/12") -> json"""{"@context": {"Other": "http://schema.org/Other"} }""",
-          Uri("http://example.com/context/2") -> json"""{"@context": {"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"} }""",
-          Uri("http://example.com/context/3") -> json"""{"@context": {"customid": {"@type": "@id"} } }"""
+          uri"http://example.com/context/0" -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""",
+          uri"http://example.com/context/1" -> json"""{"@context": ["http://example.com/context/11", "http://example.com/context/12"] }""",
+          uri"http://example.com/context/11" -> json"""{"@context": [{"birthDate": "http://schema.org/birthDate"}, "http://example.com/context/1"] }""",
+          uri"http://example.com/context/12" -> json"""{"@context": {"Other": "http://schema.org/Other"} }""",
+          uri"http://example.com/context/2" -> json"""{"@context": {"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"} }""",
+          uri"http://example.com/context/3" -> json"""{"@context": {"customid": {"@type": "@id"} } }"""
         )
       // format: on
 
       val remoteResolution = resolution(contexts)
-      remoteResolution(input).attempt.runSyncUnsafe().leftValue shouldEqual
-        RemoteContextCircularDependency("http://example.com/context/1")
+      remoteResolution(input).rejected shouldEqual RemoteContextCircularDependency("http://example.com/context/1")
     }
 
     "fail to resolve when some context does not exist" in {
       val excluded                 = "http://example.com/context/3"
       val contexts: Map[Uri, Json] = remoteContexts - excluded
       val remoteResolution         = resolution(contexts)
-      remoteResolution(input).attempt.runSyncUnsafe().leftValue shouldEqual RemoteContextNotFound(excluded)
+      remoteResolution(input).rejected shouldEqual RemoteContextNotFound(excluded)
     }
   }
 

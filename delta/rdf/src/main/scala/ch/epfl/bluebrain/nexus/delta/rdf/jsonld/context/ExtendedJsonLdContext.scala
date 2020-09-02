@@ -31,8 +31,8 @@ final case class ExtendedJsonLdContext(
     copy(value = add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))
 
   protected def addAlias(prefix: String, iri: IRI, dataType: Option[String] = None): This =
-    dataType match {
-      case Some(dt) => copy(value = add(prefix, expandedTermDefinition(dt, iri)), aliases = aliases + (prefix -> iri))
-      case None     => copy(value = add(prefix, iri.asJson), aliases = aliases + (prefix -> iri))
-    }
+    copy(
+      value = add(prefix, dataType.fold(iri.asJson)(dt => expandedTermDefinition(dt, iri))),
+      aliases = aliases + (prefix -> iri)
+    )
 }

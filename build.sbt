@@ -242,6 +242,7 @@ lazy val testkit = project
       doobiePostgres,
       distageDocker,
       distageTestkit,
+      monixBio,
       scalaTest
     ) ++ dockerTestKit
   )

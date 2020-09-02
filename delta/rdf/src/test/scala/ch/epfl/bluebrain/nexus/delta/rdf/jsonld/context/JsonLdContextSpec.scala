@@ -12,19 +12,19 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
   "A Json-LD context" should {
-    val context = jsonContentOf(s"/jsonld/context/context.json")
+    val context = jsonContentOf("context.json")
     val api     = implicitly[JsonLdApi]
 
     "be constructed successfully skipping fields inspection" in {
-      api.context(context, ContextFields.Skip).runSyncUnsafe() shouldBe a[RawJsonLdContext]
+      api.context(context, ContextFields.Skip).accepted shouldBe a[RawJsonLdContext]
     }
 
     "be constructed successfully including fields inspection" in {
-      api.context(context, ContextFields.Include).runSyncUnsafe() shouldBe a[ExtendedJsonLdContext]
+      api.context(context, ContextFields.Include).accepted shouldBe a[ExtendedJsonLdContext]
     }
 
     "get fields" in {
-      val result = api.context(context, ContextFields.Include).runSyncUnsafe()
+      val result = api.context(context, ContextFields.Include).accepted
       result.value shouldEqual context.topContextValueOrEmpty
       result.base.value shouldEqual base.value
       result.vocab.value shouldEqual vocab.value
@@ -39,7 +39,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "add simple alias with ContextFields.Include" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Include).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Include).accepted
       result.addAlias("age", schema.age) shouldEqual ExtendedJsonLdContext(
         value = json"""{"@base": "${base.value}", "age": "${schema.age}"}""",
         base = Some(base.value),
@@ -49,14 +49,14 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "add simple alias with ContextFields.Skip" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Skip).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Skip).accepted
       result.addAlias("age", schema.age) shouldEqual
         RawJsonLdContext(json"""{"@base": "${base.value}", "age": "${schema.age}"}""")
     }
 
     "add alias with dataType and ContextFields.Include" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Include).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Include).accepted
       result.addAlias("age", schema.age, xsd.integer) shouldEqual ExtendedJsonLdContext(
         value = json"""{"@base": "${base.value}", "age": {"@type": "${xsd.integer}", "@id": "${schema.age}"}}""",
         base = Some(base.value),
@@ -66,7 +66,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "add alias with dataType and ContextFields.Skip" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Skip).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Skip).accepted
       result.addAlias("age", schema.age, xsd.integer) shouldEqual
         RawJsonLdContext(
           json"""{"@base": "${base.value}", "age": {"@type": "${xsd.integer}", "@id": "${schema.age}"}}"""
@@ -75,7 +75,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "add alias with @type @id and ContextFields.Include" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Include).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Include).accepted
       result.addAliasIdType("unit", schema.unitText) shouldEqual ExtendedJsonLdContext(
         value = json"""{"@base": "${base.value}", "unit": {"@type": "@id", "@id": "${schema.unitText}"}}""",
         base = Some(base.value),
@@ -85,14 +85,14 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "add alias with @type @id and ContextFields.Skip" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Skip).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Skip).accepted
       result.addAliasIdType("unit", schema.unitText) shouldEqual
         RawJsonLdContext(json"""{"@base": "${base.value}", "unit": {"@type": "@id", "@id": "${schema.unitText}"}}""")
     }
 
     "add prefixMapping with ContextFields.Include" in {
       val context = json"""{"@context": [{"@base": "${base.value}"}] }"""
-      val result  = api.context(context, ContextFields.Include).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Include).accepted
       result.addPrefix("xsd", xsd.base) shouldEqual ExtendedJsonLdContext(
         value = json"""[{"@base": "${base.value}"}, {"xsd": "${xsd.base}"}]""",
         base = Some(base.value),
@@ -102,7 +102,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "add prefixMapping with ContextFields.Skip" in {
       val context = json"""{"@context": [{"@base": "${base.value}"}] }"""
-      val result  = api.context(context, ContextFields.Skip).runSyncUnsafe()
+      val result  = api.context(context, ContextFields.Skip).accepted
       result.addPrefix("xsd", xsd.base) shouldEqual
         RawJsonLdContext(json"""[{"@base": "${base.value}"}, {"xsd": "${xsd.base}"}]""")
     }
