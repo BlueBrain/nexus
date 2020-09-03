@@ -1,0 +1,16 @@
+{
+  "@context": [
+    {
+      "foaf": "http://xmlns.com/foaf/0.1/",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "foaf:page": {
+        "@type": "xsd:float"
+      }
+    },
+    {
+      "foaf:other": {
+        "@type": "@id"
+      }
+    }
+  ]
+}

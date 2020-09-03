@@ -1,0 +1,19 @@
+{
+  "@context": {
+    "id": "@id",
+    "@vocab": "http://example.com/",
+    "@base": "http://nexus.example.com/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "xsd2": "http://www.w3.org/2001/XMLSchema#",
+    "Person": "http://schema.org/Person",
+    "Person2": "http://schema.org/Person",
+    "schema": "http://schema.org/",
+    "deprecated": {
+      "@id": "http://schema.org/deprecated",
+      "@type": "xsd:boolean"
+    },
+    "customid": {
+      "@type": "@id"
+    }
+  }
+}

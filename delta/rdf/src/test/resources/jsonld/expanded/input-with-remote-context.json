@@ -1,0 +1,42 @@
+{
+  "@context": [
+    {
+      "id": "@id",
+      "@vocab": "http://example.com/",
+      "@base": "http://nexus.example.com/",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "Person": "http://schema.org/Person",
+      "schema": "http://schema.org/"
+    },
+    "http://example.com/cöntéxt/0"
+  ],
+  "id": "john-doé",
+  "@type": "Person",
+  "schema:name": "John Doe",
+  "schema:birthDate": "1999-04-09T20:00Z",
+  "deprecated": false,
+  "http://example.org/stringProperty": "Some \"property",
+  "http://example.com/otherProperty": {
+    "@value": "value",
+    "@type": "xsd:other"
+  },
+  "sibling": {
+    "@id": "another",
+    "@context": "http://example.com/cöntéxt/1",
+    "@type": "Other",
+    "birthDate": "2000-04-12T20:00Z",
+    "schema:birthHour": {
+      "@context": "http://example.com/cöntéxt/2",
+      "@value": 9,
+      "type": "integerAlias"
+    },
+    "schema:height": 9.223,
+    "schema:birthYear": 1999
+  },
+  "address": {
+    "@context": "http://example.com/cöntéxt/3",
+    "customid": "myid",
+    "street": "my street",
+    "number": 2
+  }
+}

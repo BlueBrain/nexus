@@ -4,10 +4,12 @@ import io.circe.Json
 import io.circe.parser.parse
 
 import scala.annotation.tailrec
-import scala.io.Source
+import scala.io.{Codec, Source}
 import scala.util.Random
 
 trait TestHelpers {
+
+  private val codec: Codec = Codec.UTF8
 
   /**
     * Generates an arbitrary string. Ported from nexus-commons
@@ -33,8 +35,14 @@ trait TestHelpers {
     * @param resourcePath the path of a resource available on the classpath
     * @return the content of the referenced resource as a string
     */
-  final def contentOf(resourcePath: String): String =
-    Source.fromInputStream(getClass.getResourceAsStream(resourcePath)).mkString
+  final def contentOf(resourcePath: String): String = {
+    lazy val fromClass       = Option(getClass.getResourceAsStream(resourcePath))
+    lazy val fromClassLoader = Option(getClass.getClassLoader.getResourceAsStream(resourcePath))
+    val is                   = (fromClass orElse fromClassLoader).getOrElse(
+      throw new IllegalArgumentException(s"Unable to load resource '$resourcePath' from classpath.")
+    )
+    Source.fromInputStream(is)(codec).mkString
+  }
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of

@@ -1,0 +1,14 @@
+{
+  "@context": [
+    {
+      "id": "@id",
+      "@vocab": "http://example.com/",
+      "@base": "http://nexus.example.com/",
+      "xsd": "http://www.w3.org/2001/XMLSchema#",
+      "Person": "http://schema.org/Person",
+      "schema": "http://schema.org/"
+    },
+    "http://example.com/cöntéxt/0",
+    "http://example.com/cöntéxt/3"
+  ]
+}

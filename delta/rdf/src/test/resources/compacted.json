@@ -1,0 +1,43 @@
+{
+  "@context": {
+    "id": "@id",
+    "@vocab": "http://example.com/",
+    "@base": "http://nexus.example.com/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "Person": "http://schema.org/Person",
+    "schema": "http://schema.org/",
+    "deprecated": {
+      "@id": "http://schema.org/deprecated",
+      "@type": "xsd:boolean"
+    },
+    "customid": {
+      "@type": "@id"
+    }
+  },
+  "id": "john-doé",
+  "@type": "Person",
+  "address": {
+    "customid": "myid",
+    "number": 2,
+    "street": "my street"
+  },
+  "otherProperty": {
+    "@type": "xsd:other",
+    "@value": "value"
+  },
+  "sibling": {
+    "id": "another",
+    "@type": "schema:Other",
+    "schema:birthDate": "2000-04-12T20:00Z",
+    "schema:birthHour": {
+      "@type": "xsd:integer",
+      "@value": 9
+    },
+    "schema:birthYear": 1999,
+    "schema:height": 9.223
+  },
+  "http://example.org/stringProperty": "Some \"property",
+  "schema:birthDate": "1999-04-09T20:00Z",
+  "deprecated": false,
+  "schema:name": "John Doe"
+}
