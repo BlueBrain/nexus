@@ -52,11 +52,11 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "fetch root @type" in {
       val compacted = json"""{"@id": "$iri", "@type": "Person"}""".addContext(context)
       val expanded  = JsonLd.expand(compacted).accepted
-      expanded.types shouldEqual List(schema + "Person")
+      expanded.types shouldEqual List(schema.Person)
 
       val compactedMultipleTypes = json"""{"@id": "$iri", "@type": ["Person", "Hero"]}""".addContext(context)
       val resultMultiple         = JsonLd.expand(compactedMultipleTypes).accepted
-      resultMultiple.types shouldEqual List(schema + "Person", vocab + "Hero")
+      resultMultiple.types shouldEqual List(schema.Person, vocab + "Hero")
     }
 
     "fetch @id values" in {

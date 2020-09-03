@@ -71,9 +71,7 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
       resolution: RemoteContextResolution
   ): IOErrorOr[CompactedJsonLd[C]] = {
     lazy val ctxValue = context.topContextValueOrEmpty
-    if (f == self.ctxFields && ctxValue == ctx.value)
-      IO.now(self.asInstanceOf[CompactedJsonLd[C]])
-    else if (ctxValue == ctx.value) {
+    if (ctxValue == ctx.value) {
       if (f == self.ctxFields)
         IO.now(self.asInstanceOf[CompactedJsonLd[C]])
       else if (ctxFields == ContextFields.Include && f == ContextFields.Skip)

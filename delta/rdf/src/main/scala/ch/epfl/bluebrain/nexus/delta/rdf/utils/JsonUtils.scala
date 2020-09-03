@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import io.circe.{Json, JsonObject}
 
-// $COVERAGE-OFF$
 trait JsonUtils {
 
   /**
@@ -55,6 +54,5 @@ trait JsonUtils {
     )
   }
 }
-// $COVERAGE-ON$
 
 object JsonUtils extends JsonUtils

@@ -56,11 +56,12 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       compacted.vocab.value shouldEqual vocab.value
       compacted.aliases shouldEqual
         Map(
-          "Person"     -> (schema + "Person"),
+          "Person"     -> schema.Person,
+          "Person2"    -> schema.Person,
           "deprecated" -> (schema + "deprecated"),
           "customid"   -> (vocab + "customid")
         )
-      compacted.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base)
+      compacted.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base, "xsd2" -> xsd.base)
     }
 
     "return self when attempted to convert again to compacted form with same values" in {

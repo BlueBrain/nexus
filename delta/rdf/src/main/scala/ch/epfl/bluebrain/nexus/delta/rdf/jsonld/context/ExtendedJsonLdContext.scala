@@ -23,9 +23,22 @@ final case class ExtendedJsonLdContext(
 ) extends JsonLdContext {
   type This = ExtendedJsonLdContext
 
-  lazy val aliasesInv: Map[IRI, String] = aliases.map { case (prefix, iri) => iri -> prefix }
+  private def min(a: String, b: String): String =
+    if (a.compareTo(b) > 0) b else a
 
-  lazy val prefixMappingsInv: Map[IRI, String] = prefixMappings.map { case (prefix, iri) => iri -> prefix }
+  /**
+    * The inverse of the aliases. When a same IRI has multiple prefixes, the first alphabetically is chosen
+    */
+  lazy val aliasesInv: Map[IRI, String] = aliases.foldLeft(Map.empty[IRI, String]) {
+    case (acc, (prefix, iri)) => acc.updatedWith(iri)(_.fold(Some(prefix))(cur => Some(min(cur, prefix))))
+  }
+
+  /**
+    * The inverse of the prefix mappings. When a same IRI has multiple prefixes, the first alphabetically is chosen
+    */
+  lazy val prefixMappingsInv: Map[IRI, String] = prefixMappings.foldLeft(Map.empty[IRI, String]) {
+    case (acc, (prefix, iri)) => acc.updatedWith(iri)(_.fold(Some(prefix))(cur => Some(min(cur, prefix))))
+  }
 
   override def addPrefix(prefix: String, iri: IRI): This                                  =
     copy(value = add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))

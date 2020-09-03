@@ -30,11 +30,19 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
       result.vocab.value shouldEqual vocab.value
       result.aliases shouldEqual
         Map(
-          "Person"     -> (schema + "Person"),
+          "Person"     -> schema.Person,
+          "Person2"    -> schema.Person,
           "deprecated" -> (schema + "deprecated"),
           "customid"   -> (vocab + "customid")
         )
-      result.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base)
+      result.aliasesInv shouldEqual
+        Map(
+          schema.Person           -> "Person",
+          (schema + "deprecated") -> "deprecated",
+          (vocab + "customid")    -> "customid"
+        )
+      result.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base, "xsd2" -> xsd.base)
+      result.prefixMappingsInv shouldEqual Map(schema.base -> "schema", xsd.base -> "xsd")
     }
 
     "add simple alias with ContextFields.Include" in {
