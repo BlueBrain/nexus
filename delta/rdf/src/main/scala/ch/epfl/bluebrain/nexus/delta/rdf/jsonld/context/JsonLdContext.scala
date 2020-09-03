@@ -74,7 +74,7 @@ object JsonLdContext {
   }
 
   /**
-    * @return the inner Json with the top @context key or None when not found
+    * @return the value of the top @context key when found, None otherwise
     */
   def topContextValue(json: Json): Option[Json] =
     json.arrayOrObject(
@@ -84,16 +84,16 @@ object JsonLdContext {
     )
 
   /**
+    * @return the value of the top @context key when found, an empty Json otherwise
+    */
+  def topContextValueOr(json: Json, default: => Json = Json.obj()): Json =
+    topContextValue(json).getOrElse(default)
+
+  /**
     * @return the all the values with key @context
     */
   def contextValues(json: Json): Set[Json] =
     json.extractValuesFrom(keywords.context)
-
-  /**
-    * @return the inner Json with the top @context key or and empty Json
-    */
-  def topContextValueOr(json: Json, default: => Json = Json.obj()): Json =
-    topContextValue(json).getOrElse(default)
 
   /**
     * Merges the values of the key @context in both passed ''json'' and ''that'' Json documents.
@@ -107,7 +107,7 @@ object JsonLdContext {
     json deepMerge Json.obj(keywords.context -> merge(topContextValueOr(json), topContextValueOr(that)))
 
   /**
-    * Adds a context IRI to an existing JSON object.
+    * Adds a context IRI to an existing @context, or creates an @context with the IRI as a value.
     */
   def addContext(json: Json, contextIri: IRI): Json = {
     val jUriString = Json.fromString(contextIri.toString)

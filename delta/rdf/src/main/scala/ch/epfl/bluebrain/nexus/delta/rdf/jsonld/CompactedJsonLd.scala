@@ -4,13 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdError.UnexpectedIri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{
-  ContextFields,
-  ExtendedJsonLdContext,
-  JsonLdContext,
-  RawJsonLdContext,
-  RemoteContextResolution
-}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -69,7 +63,7 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IOErrorOr[CompactedJsonLd[C]] = {
+  ): IO[JsonLdError, CompactedJsonLd[C]] = {
     lazy val ctxValue = context.topContextValueOrEmpty
     if (ctxValue == ctx.value) {
       if (f == self.ctxFields)
@@ -86,7 +80,7 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IOErrorOr[ExpandedJsonLd] =
+  ): IO[JsonLdError, ExpandedJsonLd] =
     JsonLd.expand(json).flatMap {
       case expanded if expanded.rootId != rootId => IO.raiseError(UnexpectedIri(rootId, expanded.rootId))
       case expanded                              => IO.now(expanded)

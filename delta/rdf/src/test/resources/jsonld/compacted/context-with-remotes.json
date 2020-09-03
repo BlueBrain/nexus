@@ -8,7 +8,7 @@
       "Person": "http://schema.org/Person",
       "schema": "http://schema.org/"
     },
-    "http://example.com/context/0",
-    "http://example.com/context/3"
+    "http://example.com/cöntéxt/0",
+    "http://example.com/cöntéxt/3"
   ]
 }

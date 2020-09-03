@@ -9,9 +9,17 @@ trait IriSyntax {
 }
 
 final class IriStringContextOps(private val sc: StringContext) extends AnyVal {
+
+  /**
+    * Construct an IRI without checking the validity of the format.
+    */
   def iri(args: Any*): IRI = iriUnsafe(sc.s(args: _*))
 }
 
 final class IriStringOps(private val string: String) extends AnyVal {
+
+  /**
+    * Attempts to construct an IRI, returning a Left when it does not have the correct IRI format.
+    */
   def toIri: Either[String, IRI] = iri(string)
 }

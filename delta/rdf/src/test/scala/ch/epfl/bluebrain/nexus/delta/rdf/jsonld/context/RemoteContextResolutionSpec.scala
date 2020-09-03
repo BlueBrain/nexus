@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{
@@ -8,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionE
   RemoteContextNotFound
 }
 import io.circe.Json
+import org.apache.jena.iri.IRI
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -24,24 +24,24 @@ class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fix
 
     "fail to resolve when there are circular dependencies" in {
       // format: off
-      val contexts: Map[Uri, Json] =
+      val contexts: Map[IRI, Json] =
         Map(
-          uri"http://example.com/context/0" -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""",
-          uri"http://example.com/context/1" -> json"""{"@context": ["http://example.com/context/11", "http://example.com/context/12"] }""",
-          uri"http://example.com/context/11" -> json"""{"@context": [{"birthDate": "http://schema.org/birthDate"}, "http://example.com/context/1"] }""",
-          uri"http://example.com/context/12" -> json"""{"@context": {"Other": "http://schema.org/Other"} }""",
-          uri"http://example.com/context/2" -> json"""{"@context": {"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"} }""",
-          uri"http://example.com/context/3" -> json"""{"@context": {"customid": {"@type": "@id"} } }"""
+          iri"http://example.com/cöntéxt/0" -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""",
+          iri"http://example.com/cöntéxt/1" -> json"""{"@context": ["http://example.com/cöntéxt/11", "http://example.com/cöntéxt/12"] }""",
+          iri"http://example.com/cöntéxt/11" -> json"""{"@context": [{"birthDate": "http://schema.org/birthDate"}, "http://example.com/cöntéxt/1"] }""",
+          iri"http://example.com/cöntéxt/12" -> json"""{"@context": {"Other": "http://schema.org/Other"} }""",
+          iri"http://example.com/cöntéxt/2" -> json"""{"@context": {"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"} }""",
+          iri"http://example.com/cöntéxt/3" -> json"""{"@context": {"customid": {"@type": "@id"} } }"""
         )
       // format: on
 
       val remoteResolution = resolution(contexts)
-      remoteResolution(input).rejected shouldEqual RemoteContextCircularDependency("http://example.com/context/1")
+      remoteResolution(input).rejected shouldEqual RemoteContextCircularDependency(iri"http://example.com/cöntéxt/1")
     }
 
     "fail to resolve when some context does not exist" in {
-      val excluded                 = "http://example.com/context/3"
-      val contexts: Map[Uri, Json] = remoteContexts - excluded
+      val excluded                 = iri"http://example.com/cöntéxt/3"
+      val contexts: Map[IRI, Json] = remoteContexts - excluded
       val remoteResolution         = resolution(contexts)
       remoteResolution(input).rejected shouldEqual RemoteContextNotFound(excluded)
     }

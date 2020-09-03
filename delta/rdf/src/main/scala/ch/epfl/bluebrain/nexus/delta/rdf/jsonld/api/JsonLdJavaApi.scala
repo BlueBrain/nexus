@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
-import akka.http.scaladsl.model.Uri
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.IOErrorOr
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdError._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
@@ -29,7 +28,7 @@ object JsonLdJavaApi extends JsonLdApi {
   override def compact[Ctx <: JsonLdContext](input: Json, ctx: Json, f: ContextFields[Ctx])(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
-  ): IOErrorOr[(Json, Ctx)] =
+  ): IO[JsonLdError, (Json, Ctx)] =
     for {
       obj           <- catchTryErr(JsonUtils.fromString(input.noSpaces), "building input")
       ctxObj        <- catchTryErr(JsonUtils.fromString(ctx.noSpaces), "building context")
@@ -42,7 +41,7 @@ object JsonLdJavaApi extends JsonLdApi {
 
   override def expand(
       input: Json
-  )(implicit options: JsonLdOptions, resolution: RemoteContextResolution): IOErrorOr[Json] =
+  )(implicit options: JsonLdOptions, resolution: RemoteContextResolution): IO[JsonLdError, Json] =
     for {
       obj          <- catchTryErr(JsonUtils.fromString(input.noSpaces), "building input")
       options      <- remoteContextLoader(input).map(toOpts)
@@ -53,7 +52,7 @@ object JsonLdJavaApi extends JsonLdApi {
   override def frame[Ctx <: JsonLdContext](input: Json, frame: Json, f: ContextFields[Ctx])(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
-  ): IOErrorOr[(Json, Ctx)] =
+  ): IO[JsonLdError, (Json, Ctx)] =
     for {
       obj        <- catchTryErr(JsonUtils.fromString(input.noSpaces), "building input")
       ff         <- catchTryErr(JsonUtils.fromString(frame.noSpaces), "building frame")
@@ -67,14 +66,14 @@ object JsonLdJavaApi extends JsonLdApi {
   // TODO: create the DocumentLoader and pass it to Jena: https://issues.apache.org/jira/browse/JENA-1959
   override def toRdf(
       input: Json
-  )(implicit opts: JsonLdOptions, resolution: RemoteContextResolution): IOErrorOr[Model] = {
+  )(implicit opts: JsonLdOptions, resolution: RemoteContextResolution): IO[JsonLdError, Model] = {
     val model       = ModelFactory.createDefaultModel()
     val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD)
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
     catchTryErr(builder.parse(StreamRDFLib.graph(model.getGraph)), "toRdf").as(model)
   }
 
-  override def fromRdf(input: Model)(implicit options: JsonLdOptions): IOErrorOr[Json] =
+  override def fromRdf(input: Model)(implicit options: JsonLdOptions): IO[JsonLdError, Json] =
     for {
       expanded     <- catchTryErr(RDFWriter.create.lang(Lang.JSONLD).source(input).asString(), "fromRdf")
       expandedJson <- IO.fromEither(parser.parse(expanded)).leftMap(err => UnexpectedJsonLd(err.getMessage()))
@@ -84,7 +83,7 @@ object JsonLdJavaApi extends JsonLdApi {
   override def context[Ctx <: JsonLdContext](value: Json, f: ContextFields[Ctx])(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
-  ): IOErrorOr[Ctx] =
+  ): IO[JsonLdError, Ctx] =
     f match {
       case ContextFields.Skip    => context(value, f, toOpts())
       case ContextFields.Include => remoteContextLoader(value).flatMap(dl => context(value, f, toOpts(dl)))
@@ -94,7 +93,7 @@ object JsonLdJavaApi extends JsonLdApi {
       value: Json,
       f: ContextFields[Ctx],
       options: JsonLdJavaOptions
-  ): IOErrorOr[Ctx] = {
+  ): IO[JsonLdError, Ctx] = {
     val cxtValue = value.topContextValueOrEmpty
     f match {
 
@@ -114,12 +113,12 @@ object JsonLdJavaApi extends JsonLdApi {
 
   private def remoteContextLoader(
       jsons: Json*
-  )(implicit resolution: RemoteContextResolution): IOErrorOr[DocumentLoader] =
+  )(implicit resolution: RemoteContextResolution): IO[JsonLdError, DocumentLoader] =
     IO.parTraverseUnordered(jsons)(resolution(_))
       .leftMap(RemoteContextError)
       .map {
-        _.foldLeft(Map.empty[Uri, Json])(_ ++ _).foldLeft(new DocumentLoader()) {
-          case (dl, (uri, cxt)) => dl.addInjectedDoc(uri.toString(), Json.obj(keywords.context -> cxt).noSpaces)
+        _.foldLeft(Map.empty[IRI, Json])(_ ++ _).foldLeft(new DocumentLoader()) {
+          case (dl, (iri, cxt)) => dl.addInjectedDoc(iri.toString, Json.obj(keywords.context -> cxt).noSpaces)
         }
       }
 
@@ -141,7 +140,7 @@ object JsonLdJavaApi extends JsonLdApi {
     opts.setDocumentLoader(dl)
     opts
   }
-  private def catchTryErr[A](value: => A, stage: String): IOErrorOr[A]       =
+  private def catchTryErr[A](value: => A, stage: String): IO[JsonLdError, A]       =
     IO.fromTry(Try(value)).leftMap(err => JsonLdApiError(err.getMessage, stage))
 
   private def getIri(ctx: Context, key: String): Option[IRI] =

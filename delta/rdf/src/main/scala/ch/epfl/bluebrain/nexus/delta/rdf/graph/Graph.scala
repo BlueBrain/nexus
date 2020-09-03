@@ -6,8 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, IOErrorOr}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, JsonLdError}
 import io.circe.Json
+import monix.bio.IO
 import org.apache.jena.iri.IRI
 import org.apache.jena.rdf.model.ResourceFactory.createStatement
 import org.apache.jena.rdf.model._
@@ -100,7 +101,7 @@ object Graph {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       options: JsonLdOptions = JsonLdOptions.empty
-  ): IOErrorOr[Graph] =
+  ): IO[JsonLdError, Graph] =
     api.toRdf(input).map(m => Graph(iri, m))
 
   /**
@@ -110,7 +111,7 @@ object Graph {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       options: JsonLdOptions = JsonLdOptions.empty
-  ): IOErrorOr[Graph] =
+  ): IO[JsonLdError, Graph] =
     apply(expanded.rootId, expanded.json)
 
 }

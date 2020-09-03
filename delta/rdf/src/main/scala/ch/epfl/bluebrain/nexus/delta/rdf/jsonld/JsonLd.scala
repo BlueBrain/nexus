@@ -73,13 +73,13 @@ trait JsonLd extends Product with Serializable {
       opts: JsonLdOptions = JsonLdOptions.empty,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IOErrorOr[CompactedJsonLd[Ctx]]
+  ): IO[JsonLdError, CompactedJsonLd[Ctx]]
 
   def toExpanded(implicit
       opts: JsonLdOptions = JsonLdOptions.empty,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IOErrorOr[ExpandedJsonLd]
+  ): IO[JsonLdError, ExpandedJsonLd]
 }
 object JsonLd {
 
@@ -112,7 +112,7 @@ object JsonLd {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions = JsonLdOptions.empty
-  ): IOErrorOr[ExpandedJsonLd] =
+  ): IO[JsonLdError, ExpandedJsonLd] =
     for {
       expanded <- api.expand(input)
       obj      <- IO.fromEither(arrayToSingleObject(expanded))
@@ -139,7 +139,7 @@ object JsonLd {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions = JsonLdOptions.empty
-  ): IOErrorOr[CompactedJsonLd[Ctx]] = {
+  ): IO[JsonLdError, CompactedJsonLd[Ctx]] = {
     val jsonId = Json.obj(keywords.id -> rootId.asJson)
     val frame  = context.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
     for {

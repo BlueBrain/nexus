@@ -76,14 +76,14 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) e
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IOErrorOr[CompactedJsonLd[Ctx]] =
+  ): IO[JsonLdError, CompactedJsonLd[Ctx]] =
     JsonLd.compact(json, context, rootId, f)
 
   override def toExpanded(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IOErrorOr[ExpandedJsonLd] =
+  ): IO[JsonLdError, ExpandedJsonLd] =
     IO.now(self)
 
   private def add(key: IRI, value: Json): This = {

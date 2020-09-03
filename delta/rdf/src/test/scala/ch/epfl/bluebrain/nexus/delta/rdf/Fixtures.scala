@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -18,14 +17,14 @@ trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with IOVa
   val iri = iri"http://nexus.example.com/john-doé"
 
   // format: off
-  val remoteContexts: Map[Uri, Json] =
+  val remoteContexts: Map[IRI, Json] =
     Map(
-      uri"http://example.com/context/0"  -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""",
-      uri"http://example.com/context/1"  -> json"""{"@context": ["http://example.com/context/11", "http://example.com/context/12"] }""",
-      uri"http://example.com/context/11" -> json"""{"@context": {"birthDate": "http://schema.org/birthDate"} }""",
-      uri"http://example.com/context/12" -> json"""{"@context": {"Other": "http://schema.org/Other"} }""",
-      uri"http://example.com/context/2"  -> json"""{"@context": {"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"} }""",
-      uri"http://example.com/context/3"  -> json"""{"@context": {"customid": {"@type": "@id"} } }"""
+      iri"http://example.com/cöntéxt/0"  -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""",
+      iri"http://example.com/cöntéxt/1"  -> json"""{"@context": ["http://example.com/cöntéxt/11", "http://example.com/cöntéxt/12"] }""",
+      iri"http://example.com/cöntéxt/11" -> json"""{"@context": {"birthDate": "http://schema.org/birthDate"} }""",
+      iri"http://example.com/cöntéxt/12" -> json"""{"@context": {"Other": "http://schema.org/Other"} }""",
+      iri"http://example.com/cöntéxt/2"  -> json"""{"@context": {"integerAlias": "http://www.w3.org/2001/XMLSchema#integer", "type": "@type"} }""",
+      iri"http://example.com/cöntéxt/3"  -> json"""{"@context": {"customid": {"@type": "@id"} } }"""
     )
   // format: on
 
@@ -44,8 +43,8 @@ trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with IOVa
     def +(string: String): IRI = iri"$value$string"
   }
 
-  def resolution(contexts: Map[Uri, Json]): RemoteContextResolution =
-    RemoteContextResolution((uri: Uri) => IO.fromEither(contexts.get(uri).toRight(RemoteContextNotFound(uri))))
+  def resolution(contexts: Map[IRI, Json]): RemoteContextResolution =
+    RemoteContextResolution((iri: IRI) => IO.fromEither(contexts.get(iri).toRight(RemoteContextNotFound(iri))))
 
 }
 
