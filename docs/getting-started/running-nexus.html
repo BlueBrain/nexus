@@ -263,7 +263,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> fa2f24fd
+<i class="md-icon" title="Version">label_outline</i> fdc327fb
 </label>
 </li>
 </ul>
@@ -396,8 +396,8 @@ To add a worker to this swarm, run the following command:
 To add a manager to this swarm, run &#39;docker swarm join-token manager&#39; and follow the instructions.
 </code></pre>
 <h4><a href="#deployment" name="deployment" class="anchor"><span class="anchor-link"></span></a>Deployment</h4>
-<p>Download the <a href="./docker-swarm/docker-compose.yaml">Docker Compose template</a> into a directory of your choice, for instance <code>~/docker/nexus/</code>.</p>
-<p>Download the <a href="./docker-swarm/nginx.conf">http proxy configuration</a> to the same directory.</p>
+<p>Download the <a href="running-nexus/docker-swarm/docker-compose.yaml" title="Docker Compose template" target="_blank" rel="noopener noreferrer">Docker Compose template</a> into a directory of your choice, for instance <code>~/docker/nexus/</code>.</p>
+<p>Download the <a href="running-nexus/docker-swarm/nginx.conf" title="http proxy configuration" target="_blank" rel="noopener noreferrer">http proxy configuration</a> to the same directory.</p>
 <h4><a href="#starting-nexus" name="starting-nexus" class="anchor"><span class="anchor-link"></span></a>Starting Nexus</h4>
 <p>Create a <em>nexus</em> deployment with Docker Stacks:</p>
 <p>Command :</p>
@@ -700,7 +700,7 @@ $
     <ul>
       <li>prefer local storage over network storage for lower latency when doing IO,</li>
       <li>prefer SSD over HDDs because random access speed is more important than sequential access,</li>
-      <li>one exception is the file storage (<a href="../../delta/api/current/kg/index.html">attachments to resources</a> which are stored as binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access speed; this assumes that accessing attachments is not the at the top in the usage profile</li>
+      <li>one exception is the file storage (<a href="../delta/api/current/kg-files-api.html">file resources</a> which are stored as binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access speed; this assumes that accessing attachments is not the at the top in the usage profile</li>
     </ul>
   </li>
   <li>All of Nexus services and most of the &ldquo;off the shelf&rdquo; products are built to run on top of the JVM which usually require more memory over computing power. A rough ratio of 2 CPU cores per 8GB of RAM is probably a good one (this of course depends on the CPU specification).</li>
@@ -710,7 +710,7 @@ $
 <p>Nexus uses <a href="http://cassandra.apache.org/">Cassandra</a> as its <em>primary store</em> as it scales well in terms of reads with the number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be available in case of node failures or network partitions.</p>
 <p>Since this is the <em>primary store</em> it is the most important system to be <a href="https://docs.datastax.com/en/cassandra/3.0/cassandra/operations/opsBackupRestore.html">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as mere indexing systems.</p>
 <p>Please have a look at the <a href="https://docs.datastax.com/en/dse-planning/doc/">Planning and Testing</a> section in the DataStax documentation as it contains recommendations in terms of hardware and capacity.</p>
-<p>As described in the <a href="../../additional-info/architecture/index.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
+<p>As described in the <a href="../delta/architecture.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
 <p>A formula for computing the required disk space:</p>
 <pre><code>total = (resource_size + nexus_metadata_size) * count * number_updates * replication_factor * 2 (compaction requirement)
 </code></pre>
@@ -774,7 +774,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-fa2f24fd
+fdc327fb
 </span>
 </div>
 </article>
