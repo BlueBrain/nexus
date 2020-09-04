@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotFound
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -12,7 +12,7 @@ import monix.execution.schedulers.CanBlock
 import org.apache.jena.iri.IRI
 import org.scalatest.OptionValues
 
-trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with IOValues {
+trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with IOValues with EitherValuable {
 
   val iri = iri"http://nexus.example.com/john-doé"
 

@@ -4,9 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionE
 import org.apache.jena.iri.IRI
 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-sealed abstract class JsonLdError(reason: String) extends Exception {
+sealed abstract class JsonLdError(reason: String, details: Option[String] = None) extends Exception {
   override def fillInStackTrace(): JsonLdError = this
-  override def getMessage: String              = s"Reason: '$reason'"
+  override def getMessage: String              = details.fold(reason)(d => s"$reason\nDetails: $d")
+  private[rdf] def getReason: String           = reason
+  private[rdf] def getDetails: Option[String]  = details
 }
 
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
@@ -15,14 +17,13 @@ object JsonLdError {
   /**
     * An unexpected JSON-LD document
     */
-  final case class UnexpectedJsonLd(reason: String)
-      extends JsonLdError(s"Unexpected JSON-LD document. Details: $reason")
+  final case class UnexpectedJsonLd(details: String) extends JsonLdError("Unexpected JSON-LD document.", Some(details))
 
   /**
     * An unexpected JSON-LD @context document
     */
-  final case class UnexpectedJsonLdContext(reason: String)
-      extends JsonLdError(s"Unexpected JSON-LD @context document. Details: $reason")
+  final case class UnexpectedJsonLdContext(details: String)
+      extends JsonLdError("Unexpected JSON-LD @context document.", Some(details))
 
   /**
     * An error while resolving remote @context
@@ -32,8 +33,8 @@ object JsonLdError {
   /**
     * An unexpected error on JsonLdApi
     */
-  final case class JsonLdApiError(reason: String, stage: String)
-      extends JsonLdError(s"Error when calling the JsonApi on the conversion stage '$stage'. Details: $reason")
+  final case class JsonLdApiError(details: String, stage: String)
+      extends JsonLdError(s"Error when calling the JsonApi on the conversion stage '$stage'", Some(details))
 
   /**
     * Invalid Iri inside a JSON-LD document

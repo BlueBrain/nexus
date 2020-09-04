@@ -4,14 +4,19 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.testkit.TestMatchers
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
+class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures with TestMatchers {
 
   "A Graph" should {
     val expanded   = jsonContentOf("expanded.json")
     val graph      = Graph(iri, expanded).accepted
+    val bnode      = graph
+      .find { case (s, p, _) => s == graph.rootResource && p == predicate(vocab + "address") }
+      .map(_._3.asNode().getBlankNodeLabel)
+      .value
     val iriSubject = subject(iri)
 
     "return a filtered graph" in {
@@ -50,6 +55,21 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "return a new Graph with added triples" in {
       graph.add(schema.age, 30).triples shouldEqual graph.triples + ((iriSubject, schema.age, 30))
     }
-  }
 
+    "convert graph to NTriples" in {
+      val expected = contentOf("graph/ntriples.nt", "{bnode}" -> s"_:B$bnode")
+      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+    }
+
+    "convert graph to DOT without context" in {
+      val expected = contentOf("graph/dot-expanded.dot", "{bnode}" -> s"_:B$bnode")
+      graph.toDot.rightValue.toString should equalLinesUnordered(expected)
+    }
+
+    "convert graph to dot with context" in {
+      val expected = contentOf("graph/dot-compacted.dot", "{bnode}" -> s"_:B$bnode")
+      val context  = jsonContentOf("context.json")
+      graph.toDot(context).accepted.toString should equalLinesUnordered(expected)
+    }
+  }
 }
