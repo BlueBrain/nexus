@@ -86,10 +86,10 @@ To add a manager to this swarm, run 'docker swarm join-token manager' and follow
 
 #### Deployment
 
-Download the [Docker Compose template](./docker-swarm/docker-compose.yaml) into a directory of your choice, for instance
+Download the @link:[Docker Compose template](running-nexus/docker-swarm/docker-compose.yaml){ open=new } into a directory of your choice, for instance
 `~/docker/nexus/`.
 
-Download the [http proxy configuration](./docker-swarm/nginx.conf) to the same directory.
+Download the @link:[http proxy configuration](running-nexus/docker-swarm/nginx.conf){ open=new } to the same directory.
 
 #### Starting Nexus
 
@@ -608,7 +608,7 @@ should narrow the scope:
     depend performance wise to the underlying disk access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
     *   prefer SSD over HDDs because random access speed is more important than sequential access,
-    *   one exception is the file storage ([attachments to resources](../../delta/api/current/kg/index.html) which are stored as
+    *   one exception is the file storage (@ref:[file resources](../delta/api/current/kg-files-api.md) which are stored as
         binary blobs on the filesystem) where the network disks should not be a cause for concern, nor random access
         speed; this assumes that accessing attachments is not the at the top in the usage profile
 2.  All of Nexus services and most of the "off the shelf" products are built to run on top of the JVM which usually
@@ -637,7 +637,7 @@ mere indexing systems.
 Please have a look at the [Planning and Testing](https://docs.datastax.com/en/dse-planning/doc/) section in the
 DataStax documentation as it contains recommendations in terms of hardware and capacity.
 
-As described in the [architecture section](../../additional-info/architecture/index.html) the generally adopted
+As described in the @ref:[architecture section](../delta/architecture.md) the generally adopted
 persistence model is an EventSourced model in which the data store is used as an _append only_ store. This has
 implications to the total amount of disk used by the primary store.
 
