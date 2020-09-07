@@ -10,7 +10,7 @@ an apple can be connected to a tree (to show that it grows on trees) or in anoth
 (to show that it is part of a recipe). It is a formalized knowledge that enables programmatical reasoning
 about concepts in the world around us.
 
-In [this introduction to knowledge graphs](https://doi.org/10.1007/978-3-030-37439-6_1) the authors conclude that there is
+In [this introduction to knowledge graphs](https://link.springer.com/chapter/10.1007%2F978-3-030-37439-6_1) the authors conclude that there is
 no clear definition of what a knowledge graph is. The term itself was coined in 2012 by Google
 as they [introduced their Knowledge Graph](https://googleblog.blogspot.com/2012/05/introducing-knowledge-graph-things-not.html) as a mean of finding more relevant related search results by linking connected
 data on the web. As an idea, knowledge graphs are similar to [semantic networks](https://en.wikipedia.org/wiki/Semantic_network) which date back to the 60's and 70's.
@@ -73,7 +73,7 @@ and directly get **Toy Story**'s voices cast without having to navigate through 
 
 In reality inferring knowledge is a complex topic. [This video lecture](https://www.youtube.com/watch?v=AUtk6NBqEFY) shows some
 real-world examples of algorithms and rules for inference engines. E.g. [reasoning about a persons creditworthiness based on what
-their home address is](https://youtu.be/AUtk6NBqEFY?t=3867) or [trying to spot fake papers that have been submitted to a journal](https://youtu.be/AUtk6NBqEFY?t=1690).
+their home address is](https://www.youtube.com/watch?v=AUtk6NBqEFY&feature=youtu.be&t=3867) or [trying to spot fake papers that have been submitted to a journal](https://www.youtube.com/watch?v=AUtk6NBqEFY&feature=youtu.be&t=1690).
 
 ### Growing a knowledge graph
 
@@ -142,7 +142,7 @@ There is clearly a lack of context resulting in an ambiguity. JSON-LD allows to 
 This is achieved by adding an **@context** object where every key is associated with an identifier.
 
 If we extend the JSON example with the payload below, then both a machine and a human can look up the context to find out that the JSON refers to recipes.
-I.e. [Floating island](https://en.wikipedia.org/wiki/Floating_island_%28dessert%29), [Apple balloon](https://www.businessinsider.com/edible-balloon-alinea-restaurant-chicago-three-michelin-stars-2016-5)
+I.e. [Floating island](https://en.wikipedia.org/wiki/Floating_island_%28dessert%29), [Apple balloon](https://www.businessinsider.com/edible-balloon-alinea-restaurant-chicago-three-michelin-stars-2016-5?r=US&IR=T)
 and [Opera](https://en.wikipedia.org/wiki/Opera_cake).
 
 ```json
@@ -194,7 +194,7 @@ SubClassOf( :Woman :Person )
 ### References and resources:
 The sections below contain references and resources that can be used to learn more about knowledge graphs.
 
-1. [Introduction: What Is a Knowledge Graph?](https://doi.org/10.1007/978-3-030-37439-6_1) in Knowledge Graphs: Methodology, Tools and Selected Use Cases  
+1. [Introduction: What Is a Knowledge Graph?](https://link.springer.com/chapter/10.1007%2F978-3-030-37439-6_1) in Knowledge Graphs: Methodology, Tools and Selected Use Cases  
 Author: Fensel, Dieter et al  
 Published: Springer International Publishing, 2020  
 DOI: 10.1007/978-3-030-37439-6_1
@@ -202,7 +202,7 @@ DOI: 10.1007/978-3-030-37439-6_1
 1. [What are some knowledge graph inference algorithms?](https://www.youtube.com/watch?v=AUtk6NBqEFY)  
 Published: 23.04.2020, Youtube.com
 
-1. [What is the role of knowledge graphs in machine learning? - Challenges for explainable AI](https://youtu.be/VRe5yOjmuEY?t=3669)  
+1. [What is the role of knowledge graphs in machine learning? - Challenges for explainable AI](https://www.youtube.com/watch?v=VRe5yOjmuEY&feature=youtu.be&t=3669)  
 Published: 20.05.2020, Youtube.com
 
 1. [Programming the Semantic Web](https://www.oreilly.com/library/view/programming-the-semantic/9780596802141/)  

@@ -40,7 +40,7 @@ When  reading projects, the caller must have `projects/read` permissions on the 
 where...
  
 - `{description}`: String - an optional description for this project.
-- `{base}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a [resource is created](../kg/kg-resources-api.html#create-a-resource-using-post) and no `@id` is present in the payload, the platform will generate an @id which will look like `http://example.com/{UUID}`. This field is optional and will default to `{{base}}/v1/resources/{org_label}/{project_label}/_/`.
+- `{base}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a @ref:[resource is created](kg-resources-api.md#create-a-resource-using-post) and no `@id` is present in the payload, the platform will generate an @id which will look like `http://example.com/{UUID}`. This field is optional and will default to `{{base}}/v1/resources/{org_label}/{project_label}/_/`.
 - `{vocab}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) prefix for all unqualified predicates in children resources. E.g. if the vocab is set to `https://schema.org/`, when a field a resource is created and a field `name` is present in the payload, it will be expanded to `http://schema.org/name` by the system during indexing and fetch operations. This field is optional and will default to `{{base}}/v1/vocabs/{org_label}/{project_label}/`.
 - `{apiMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.
 
@@ -84,7 +84,7 @@ Let's see an example:
  }
  ```
 
-The previous payload allows us to [create a schema](../kg/kg-schemas-api.html##create-a-schema-using-put) using the following endpoints:
+The previous payload allows us to @ref:[create a schema](kg-schemas-api.md#create-a-schema-using-put) using the following endpoints:
 
 - `/v1/schemas/{org_label}/{project_label}/person`. The `@id` of the resulting schema will be `http://example.com/some/person`
 - `/v1/schemas/{org_label}/{project_label}/schema:other`. The `@id` of the resulting schema will be `https://bluebrainnexus.io/schemas/other`

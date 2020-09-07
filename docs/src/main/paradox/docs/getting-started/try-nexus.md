@@ -4,7 +4,7 @@ In this tutorial, you will use the core features of the Nexus ecosystem through 
 
 In the @ref:[first step](try-nexus.md#configuring-your-project-in-nexus-fusion), you'll learn:
 
-- to login into our [Nexus Sandbox](https://sandbox.bluebrainnexus.io/),
+- to login into our [Nexus Sandbox](https://sandbox.bluebrainnexus.io/web/),
 - create an organization and project,
 - get your personal token.
 
@@ -25,7 +25,7 @@ Finally, check our @ref:[Learn More](try-nexus.md#learn-more) section for more a
 
 ## Configuring your Project in Nexus Fusion
 
-The [Nexus Sandbox](https://sandbox.bluebrainnexus.io/) is a deployment of Nexus Delta and Fusion publicly available to anybody.
+The [Nexus Sandbox](https://sandbox.bluebrainnexus.io/web/) is a deployment of Nexus Delta and Fusion publicly available to anybody.
 
 Nexus Fusion is the web interface that you will use in order to interact with Nexus Delta (the web services that manages the underlying knowledge graph).
 

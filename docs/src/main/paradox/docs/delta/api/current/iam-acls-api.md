@@ -33,11 +33,11 @@ Each block is identified by a path that contains a list of permissions for a cer
 There is a special set of permissions which restrict the use of the ACLs API:
 
 - **acls/read** - an auth. token containing an identity with this permission is allowed to fetch a collection of ACL from any other identity.
-- **acls/write** - an auth. token containing an identity with this permission is allowed to perform the call to the following endpoints: [create ACLs](#create-acls), [replace ACLs](#replace-acls), [subtract ACLs](#subtract-acls), [append ACLs](#append-acls) and [delete ACLs](#delete-acls).
+- **acls/write** - an auth. token containing an identity with this permission is allowed to perform the call to the following endpoints: @ref:[create ACLs](#create-acls), @ref:[replace ACLs](#replace-acls), @ref:[subtract ACLs](#subtract-acls), @ref:[append ACLs](#append-acls) and @ref:[delete ACLs](#delete-acls).
 
 Those permissions need to be present in the current `{path}` where the API interaction occurs or in any parent path. In other words, they are inherited.
 
-Let's clarify this concept with an example from the previous diagram. `identity 1` could call the [create ACLs](#create-acls) endpoint on any `{path}` while `identity 2` could only call the same endpoint for any path child of `/myorg` (like `/myorg/myproj`). At the same time, `identity 3` could not perform any of the write operations.
+Let's clarify this concept with an example from the previous diagram. `identity 1` could call the @ref:[create ACLs](#create-acls) endpoint on any `{path}` while `identity 2` could only call the same endpoint for any path child of `/myorg` (like `/myorg/myproj`). At the same time, `identity 3` could not perform any of the write operations.
 
 ## Create ACLs
 
@@ -174,7 +174,7 @@ GET /v1/acls/{path}?rev={rev}&self={self}
 - `{rev}`: Number - the revision of the ACL to be retrieved. This parameter is optional and it defaults to the current revision.
 - `{self}`: Boolean - if `true`, only the ACLs containing the identities found on the auth. token are included in the response. If `false` all the ACLs on the current `{path}` are included. This parameter is optional and it defaults to `true`.
 
-The ability to use the query parameter `self=false` depends on whether or not any of the identities found on the auth. token contains the `acls:read` permission on the provided `{path}` or its ancestors. For further details, check [ACLs hierarchy](#acls-hierarchy).
+The ability to use the query parameter `self=false` depends on whether or not any of the identities found on the auth. token contains the `acls:read` permission on the provided `{path}` or its ancestors. For further details, check @ref:[ACLs hierarchy](#acls-hierarchy).
 
 Request
 :   @@snip [acls-get.sh](assets/acls/acls-get.sh)
@@ -195,13 +195,13 @@ GET /v1/acls/{path}?ancestors={ancestors}&self={self}
 - `{ancestors}`: Boolean - if `true`, the ACLs of the parent `{path}` are included in the response. If `false` only the ACLs on the current `{path}` are included. This parameter is optional and it defaults to `false`.
 - `{self}`: Boolean - if `true`, only the ACLs containing the identities found on the auth. token are included in the response. If `false` all the ACLs on the current `{path}` are included. This parameter is optional and it defaults to `true`.
 
-The ability to use the query parameter `self=false` and `ancestors=true` depends on whether or not any of the identities found on the auth. token contains the `acls:read` permission on the provided `{path}` or its parents. For further details, check [ACLs hierarchy](#acls-hierarchy).
+The ability to use the query parameter `self=false` and `ancestors=true` depends on whether or not any of the identities found on the auth. token contains the `acls:read` permission on the provided `{path}` or its parents. For further details, check @ref:[ACLs hierarchy](#acls-hierarchy).
 
 The `{path}` can contain the special character `*` which can be read as `any`. 
 
-Let's imagine we have the ACLs from the [following diagram in place](#acls-hierarchy). If we query this endpoint with the path `/myorg/*`, we are selecting the ACLs defined in `/myorg/myproj` and `myorg/myproj2`. Likewise If we use the path `/*`, we are selecting the ACLs defined in `/myorg` and `myorg2`.
+Let's imagine we have the ACLs from the @ref:[following diagram in place](#acls-hierarchy). If we query this endpoint with the path `/myorg/*`, we are selecting the ACLs defined in `/myorg/myproj` and `myorg/myproj2`. Likewise If we use the path `/*`, we are selecting the ACLs defined in `/myorg` and `myorg2`.
 
-The following examples illustrate listings from the diagram on the section [ACLs hierarchy](#acls-hierarchy) with the following considerations:
+The following examples illustrate listings from the diagram on the section @ref:[ACLs hierarchy](#acls-hierarchy) with the following considerations:
 
 - identity 1: Is a group called `one`
 - identity 2: Is a group called `two`

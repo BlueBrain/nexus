@@ -133,7 +133,7 @@ In order to avoid limitations in URL lengths and for convenience, resource ident
 
 ## Authentication and Authorization
 
-The system supports [OpenID Connect], [OAuth 2.0] and [JSON Web Tokens] (JWTs) standards and can be configured to use
+The system supports [OpenID Connect], [OAuth 2.0] and [JSON Web Tokens](https://tools.ietf.org/html/rfc7519) (JWTs) standards and can be configured to use
 identity providers that support these standards. Proof of identity can be provided by passing a Bearer JWT in the
 Authorization header of the HTTP requests when consuming the RESTful API.
 
@@ -143,7 +143,7 @@ protocols on top of LDAP, like for example [Keycloak].
 The authorization flow is as follows:
 
 *   the provided JWT is validated against the configured identity providers
-*   the subject and group claims are used to generate the set of [identities] of the caller (when no Bearer JWT is
+*   the subject and group claims are used to generate the set of @ref:[identities] of the caller (when no Bearer JWT is
     provided, the assumed identity is Anonymous)
 *   access to perform the intent is verified by comparing the collection of caller identities with the configured list
     of @ref:[ACLs] for the target resource(s)
@@ -166,7 +166,6 @@ The authorization flow is as follows:
 [LDAP]: https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol
 [OpenID Connect]: https://openid.net/connect/
 [OAuth 2.0]: https://tools.ietf.org/html/rfc6749
-[JSON Web Tokens]: https://tools.ietf.org/html/rfc7519
 [Keycloak]: https://www.keycloak.org/
 [identities]: ./api/current/iam-identities.md
 [ACLs]: ./api/current/iam-acls-api.md
