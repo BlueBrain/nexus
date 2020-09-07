@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdError.{IdNotFound, UnexpectedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RootIriNotFound, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextFields
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.Json
@@ -40,7 +40,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "fail to be constructed when no root @id is present nor provided" in {
       val compactedNoId = compacted.removeKeys("id")
-      JsonLd.expand(compactedNoId).rejected shouldEqual IdNotFound
+      JsonLd.expand(compactedNoId).rejected shouldEqual RootIriNotFound
     }
 
     "fail to be constructed when there are multiple root objects" in {

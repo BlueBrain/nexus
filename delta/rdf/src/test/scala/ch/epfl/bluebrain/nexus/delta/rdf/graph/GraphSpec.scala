@@ -58,12 +58,12 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures with TestMat
 
     "convert graph to NTriples" in {
       val expected = contentOf("graph/ntriples.nt", "{bnode}" -> s"_:B$bnode")
-      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
+      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "convert graph to DOT without context" in {
       val expected = contentOf("graph/dot-expanded.dot", "{bnode}" -> s"_:B$bnode")
-      graph.toDot.rightValue.toString should equalLinesUnordered(expected)
+      graph.toDot.accepted.toString should equalLinesUnordered(expected)
     }
 
     "convert graph to dot with context" in {

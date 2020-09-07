@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
@@ -76,14 +77,14 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) e
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, CompactedJsonLd[Ctx]] =
+  ): IO[RdfError, CompactedJsonLd[Ctx]] =
     JsonLd.compact(json, context, rootId, f)
 
   override def toExpanded(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, ExpandedJsonLd] =
+  ): IO[RdfError, ExpandedJsonLd] =
     IO.now(self)
 
   private def add(key: IRI, value: Json): This = {

@@ -1,16 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.GraphError.{ConversionError, JsonLdErrorWrapper}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, JsonLdError}
+import ch.epfl.bluebrain.nexus.delta.rdf.{tryToConversionErr, RdfError, Triple}
 import io.circe.Json
 import monix.bio.IO
 import org.apache.jena.iri.IRI
@@ -20,7 +17,6 @@ import org.apache.jena.riot.{Lang, RDFWriter}
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
-import scala.util.Try
 
 /**
   * A rooted Graph representation backed up by a Jena Model
@@ -104,16 +100,15 @@ final case class Graph private (root: IRI, model: Model) { self =>
     * Attempts to convert the current Graph to the N-Triples format: https://www.w3.org/TR/n-triples/
     * @return
     */
-  def toNTriples: Either[GraphError, NTriples] =
-    Try {
-      RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString()
-    }.toEither.map(NTriples(_, root)).leftMap(err => ConversionError(Lang.NTRIPLES.getName, err.getMessage))
+  def toNTriples: IO[RdfError, NTriples] =
+    tryToConversionErr(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
+      .map(NTriples(_, root))
 
   /**
     * Attempts to convert the current Graph to the DOT format: https://graphviz.org/doc/info/lang.html
     * The output will be in expanded form.
     */
-  def toDot: Either[GraphError, Dot] =
+  def toDot: IO[RdfError, Dot] =
     toDot(ExtendedJsonLdContext.empty)
 
   /**
@@ -122,26 +117,18 @@ final case class Graph private (root: IRI, model: Model) { self =>
     */
   def toDot(
       context: Json
-  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[GraphError, Dot] =
-    api.context(context, ContextFields.Include).leftMap(JsonLdErrorWrapper).flatMap(ctx => IO.fromEither(toDot(ctx)))
-
-  /**
-    * Attempts to convert the current Graph with the passed ''context'' as Json to the DOT format: https://graphviz.org/doc/info/lang.html
-    * The context will be inspected to populate its fields and then the conversion will be performed.
-    */
-  def toDot(
-      context: RawJsonLdContext
-  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[GraphError, Dot] =
-    toDot(Json.obj(keywords.context -> context.value))
+  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, Dot] =
+    api.context(context, ContextFields.Include).flatMap(ctx => toDot(ctx))
 
   /**
     * Attempts to convert the current Graph with the passed ''context'' as Json to the DOT format: https://graphviz.org/doc/info/lang.html
     * If the context is empty the DOT output will have the expanded form
     */
-  def toDot(context: ExtendedJsonLdContext): Either[GraphError, Dot]                                        =
-    Try {
-      RDFWriter.create().lang(DOT).source(model).set(ROOT_ID, rootResource).set(JSONLD_CONTEXT, context).asString()
-    }.toEither.map(Dot(_, root)).leftMap(err => ConversionError(DOT.getName, err.getMessage))
+  def toDot(context: ExtendedJsonLdContext): IO[RdfError, Dot] =
+    tryToConversionErr(
+      RDFWriter.create().lang(DOT).source(model).set(ROOT_ID, rootResource).set(JSONLD_CONTEXT, context).asString(),
+      DOT.getName
+    ).map(Dot(_, root))
 
   private def copy(model: Model): Model =
     ModelFactory.createDefaultModel().add(model)
@@ -159,7 +146,7 @@ object Graph {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       options: JsonLdOptions = JsonLdOptions.empty
-  ): IO[JsonLdError, Graph] =
+  ): IO[RdfError, Graph] =
     api.toRdf(input).map(m => Graph(iri, m))
 
   /**
@@ -169,7 +156,7 @@ object Graph {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       options: JsonLdOptions = JsonLdOptions.empty
-  ): IO[JsonLdError, Graph] =
+  ): IO[RdfError, Graph] =
     apply(expanded.rootId, expanded.json)
 
 }

@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedIri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdError.UnexpectedIri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
@@ -63,7 +64,7 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, CompactedJsonLd[C]] = {
+  ): IO[RdfError, CompactedJsonLd[C]] = {
     lazy val ctxValue = context.topContextValueOrEmpty
     if (ctxValue == ctx.value) {
       if (f == self.ctxFields)
@@ -80,7 +81,7 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, ExpandedJsonLd] =
+  ): IO[RdfError, ExpandedJsonLd] =
     JsonLd.expand(json).flatMap {
       case expanded if expanded.rootId != rootId => IO.raiseError(UnexpectedIri(rootId, expanded.rootId))
       case expanded                              => IO.now(expanded)

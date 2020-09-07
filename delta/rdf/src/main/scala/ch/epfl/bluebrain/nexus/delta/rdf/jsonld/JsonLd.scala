@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, RootIriNotFound, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdError.{IdNotFound, InvalidIri, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RemoteContextResolution}
@@ -73,13 +74,13 @@ trait JsonLd extends Product with Serializable {
       opts: JsonLdOptions = JsonLdOptions.empty,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, CompactedJsonLd[Ctx]]
+  ): IO[RdfError, CompactedJsonLd[Ctx]]
 
   def toExpanded(implicit
       opts: JsonLdOptions = JsonLdOptions.empty,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, ExpandedJsonLd]
+  ): IO[RdfError, ExpandedJsonLd]
 }
 object JsonLd {
 
@@ -112,14 +113,14 @@ object JsonLd {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions = JsonLdOptions.empty
-  ): IO[JsonLdError, ExpandedJsonLd] =
+  ): IO[RdfError, ExpandedJsonLd] =
     for {
       expanded <- api.expand(input)
       obj      <- IO.fromEither(arrayToSingleObject(expanded))
       id       <- (obj(keywords.id), defaultId) match {
                     case (Some(jsonIri), _) => IO.fromEither(jsonIri.as[IRI]).leftMap(_ => InvalidIri(jsonIri.noSpaces))
                     case (_, Some(default)) => IO.now(default)
-                    case _                  => IO.raiseError(IdNotFound)
+                    case _                  => IO.raiseError(RootIriNotFound)
                   }
     } yield ExpandedJsonLd(obj.add(keywords.id, id.asJson), id)
 
@@ -139,7 +140,7 @@ object JsonLd {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions = JsonLdOptions.empty
-  ): IO[JsonLdError, CompactedJsonLd[Ctx]] = {
+  ): IO[RdfError, CompactedJsonLd[Ctx]] = {
     val jsonId = Json.obj(keywords.id -> rootId.asJson)
     val frame  = context.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
     for {
