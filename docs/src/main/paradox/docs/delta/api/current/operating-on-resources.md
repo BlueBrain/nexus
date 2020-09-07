@@ -1,6 +1,9 @@
 # Operating on resources
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
+a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
+to retrieve an access token.
 
 All resources in the system share a base set of operations. Assuming a nexus deployment at
 `http(s)://nexus.example.com` resource address of `/v1/{address}` the following operations should apply to most (all)
@@ -105,7 +108,8 @@ PUT /v1/{address}/tags?rev={previous_rev}
 
 ### Deprecate a resource
 
-Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying results.
+Locks the resource, so no further operations can be performed. It also deletes the resource from listing/querying 
+results.
 
 Deprecating a resource is considered to be an update as well. 
 
@@ -133,16 +137,19 @@ GET /v1/{collection_address}?from={from}&size={size}&{deprecated}&rev={rev}&type
 
 ... where all of the query parameters are individually optional.
 
-- `{collection_address}` Path - the selected collection to list, filter or search; for example: `/v1/projects/`, `/v1/schemas/{org_label}/{project}`,
+- `{collection_address}` Path - the selected collection to list, filter or search; for example: `/v1/projects/`, 
+  `/v1/schemas/{org_label}/{project}`,
 - `{from}`: Number - the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
-- `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
 
-- **Note**: Some endpoints might not support some of the above query parameters. Please check the specific section of the documentation related tot he endpoint you want to consume for more details.
+- **Note**: Some endpoints might not support some of the above query parameters. Please check the specific section of 
+  the documentation related tot he endpoint you want to consume for more details.
 
 ### List response format
 
@@ -172,4 +179,5 @@ The response to any search requests follows the described format:
 
 The relationship `_next` at the top level offer discovery of more resources, in terms of navigation/pagination. 
 
-The fields `{maxScore}` and `{score_id}` are optional fields and will only be present whenever a `q` query parameter is provided on the request.
+The fields `{maxScore}` and `{score_id}` are optional fields and will only be present whenever a `q` query parameter is 
+provided on the request.

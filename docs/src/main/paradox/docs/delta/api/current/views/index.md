@@ -1,33 +1,36 @@
 @@@ index
 
-* [Elastic search view](elasticsearch-view-api.md)
-* [Sparql view](sparql-view-api.md)
-* [Composite view](composite-view-api.md)
-* [Aggregated Elastic search view](aggregated-es-view-api.md)
-* [Aggregated Sparql view](aggregated-sparql-view-api.md)
+* @ref:[Elastic search view](elasticsearch-view-api.md)
+* @ref:[Sparql view](sparql-view-api.md)
+* @ref:[Composite view](composite-view-api.md)
+* @ref:[Aggregated Elastic search view](aggregated-es-view-api.md)
+* @ref:[Aggregated Sparql view](aggregated-sparql-view-api.md)
 
 @@@
 
 # Views
 
-Views are rooted in the `/v1/views/{org_label}/{project_label}` collection and are used to index the selected resources into a bucket. 
-
+Views are rooted in the `/v1/views/{org_label}/{project_label}` collection and are used to index the selected resources 
+into a bucket. 
 
 Each view... 
 
 - belongs to a `project` identifier by the label `{project_label}` 
 - inside an `organization` identifier by the label `{org_label}` 
-- it is validated against the [view schema](https://bluebrainnexus.io/schemas/view.json).
+- it is validated against the @link:[view schema](https://bluebrainnexus.io/schemas/view.json){ open=new }.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
+a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](../authentication.md) to learn more about 
+how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
-When  modifying views, the caller must have `views/write` permissions on the current path of the project or the ancestor paths.
+When modifying views, the caller must have `views/write` permissions on the current path of the project or the ancestor paths.
 
-When  querying views, the caller must have `views/query` permissions on the current path of the project or the ancestor paths.
+When querying views, the caller must have `views/query` permissions on the current path of the project or the ancestor paths.
 
-When  reading views, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
+When reading views, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
 
 @@@
 
@@ -41,7 +44,8 @@ There are several types of views, which relies on different technology to perfor
 
 ### SparqlView
 
-A view that creates a Sparql namespace. which converts the targeted Json resources intro RDF triples and stores them in a Sparql store.
+A view that creates a Sparql namespace. which converts the targeted Json resources intro RDF triples and stores them in 
+a Sparql store.
 
 The triples created on each view are isolated from triples created on another view.
 
@@ -51,7 +55,8 @@ The triples created on each view are isolated from triples created on another vi
 
 A view which stores the targeted Json resources into an ElasticSearch Document.
 
-The Documents created on each view are isolated from Documents created on other views by using different ElasticSearch indices.
+The Documents created on each view are isolated from Documents created on other views by using different ElasticSearch 
+indices.
 
 @ref:[More information](elasticsearch-view-api.md)
 
@@ -70,17 +75,21 @@ Afterwards, by defining multiple projections, the data can be adapted to the cli
 
 ### AggregateElasticSearchView
 
-This view describes an aggregation of multiple existing ElasticSearch views. This approach is useful for searching documents across multiple ElasticSearch views.
+This view describes an aggregation of multiple existing ElasticSearch views. This approach is useful for searching 
+documents across multiple ElasticSearch views.
 
-When querying an AggregateElasticSearchView, the query is performed on each of the described views and the results are aggregated by ElasticSearch.
+When querying an AggregateElasticSearchView, the query is performed on each of the described views and the results 
+are aggregated by ElasticSearch.
 
 @ref:[More information](aggregated-es-view-api.md)
 
 ### AggregateSparqlView
 
-This view describes an aggregation of multiple existing Sparql views. This approach is useful for searching triples across multiple Sparql views.
+This view describes an aggregation of multiple existing Sparql views. This approach is useful for searching triples 
+across multiple Sparql views.
 
-When querying an AggregateSparqlView, the query is performed on each of the described views. The Sparql store does not have means for aggregating the query and for that reason this approach is very limited.
+When querying an AggregateSparqlView, the query is performed on each of the described views. The Sparql store does 
+not have means for aggregating the query and for that reason this approach is very limited.
 
 @ref:[More information](aggregated-sparql-view-api.md)
 
@@ -100,12 +109,14 @@ POST /v1/view/{org_label}/{project_label}
 The json payload: 
 
 - If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the view's project (`{project_label}`).
+- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is 
+the `prefix` defined on the view's project (`{project_label}`).
 
 
 ### Create a view using PUT
 
-This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want 
+to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
 PUT /v1/views/{org_label}/{project_label}/{view_id}
   {...}
@@ -181,9 +192,11 @@ Response
 
 When fetching a view, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
 
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
-- **application/n-triples**: RDF n-triples response, as defined by the [w3](https://www.w3.org/TR/n-triples/).
-- **text/vnd.graphviz**: A [DOT response](https://www.graphviz.org/doc/info/lang.html).
+- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
+will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } 
+or the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
+- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
+- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
@@ -235,11 +248,14 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting views based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting views based on their revision value
-- `{type}`: Iri - can be used to filter the resulting views based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value
+- `{type}`: Iri - can be used to filter the resulting views based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value
 - `{createdBy}`: Iri - can be used to filter the resulting views based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting views based on the person which performed the last update
-- `{search}`: String - can be provided to select only the views in the collection that have attribute values matching (containing) the provided string
-- `{sort}`: String - can be used to sort views based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
+- `{search}`: String - can be provided to select only the views in the collection that have attribute values matching 
+  (containing) the provided string
+- `{sort}`: String - can be used to sort views based on a payloads' field. This parameter can appear multiple times to 
+  enable sorting by multiple fields
 
 
 **Example**

@@ -71,10 +71,12 @@ The events are offered to the projections stage.
 ```
 where...
 
-- `{sourceId}`: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri will be assigned.
+- `{sourceId}`: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri 
+  will be assigned.
 - `{project}`: String - the target project (in the format 'myorg/myproject').
 - `_identity_`: Json object - the identity against which to enforce ACLs during the resource retrieval process.
-- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.
+- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is 
+  optional.
 - `{resourceType}`: Iri - Select only resources of the provided type Iri. This field is optional.
 - `{tag}`: String - Selects only resources with the provided tag. This field is optional.
 
@@ -104,11 +106,14 @@ The events are offered to the projections stage.
 
 where...
 
-- `{sourceId}`: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri will be assigned.
+- `{sourceId}`: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri 
+  will be assigned.
 - `{project}`: String - the remote project (in the format 'myorg/myproject').
 - `{endpoint}`: Iri - the Nexus deployment endpoint.
-- `{token}`: String - the Nexus deployment token. This field is optional. When missing, the Nexus endpoint will be accessed without authentication.
-- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.
+- `{token}`: String - the Nexus deployment token. This field is optional. When missing, the Nexus endpoint will be 
+  accessed without authentication.
+- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is 
+  optional.
 - `{resourceType}`: Iri - Select only resources of the provided type Iri. This field is optional.
 - `{tag}`: String - Selects only resources with the provided tag. This field is optional.
 
@@ -118,7 +123,8 @@ After the events are gathered from each source, the following steps are executed
 
 1. Convert event into a resource.
 2. Discard undesired resources.
-3. Store the RDF triple representation of a resource in an intermediate Sparql space. This space will be used by the projections in the following pipeline steps.
+3. Store the RDF triple representation of a resource in an intermediate Sparql space. This space will be used by the 
+   projections in the following pipeline steps.
 
 ## Projections
 
@@ -157,14 +163,19 @@ This projection executes the following steps:
 
 where...
 
-- `{projectionId}`: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated Iri will be assigned.
-- `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the [ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping).
-- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri to perform the query. This field is optional.
+- `{projectionId}`: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated 
+  Iri will be assigned.
+- `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the 
+  @link:[ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping){ open=new }.
+- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri to perform the 
+  query. This field is optional.
 - `{resourceType}`: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.
 - `{tag}`: String - Selects only resources with the provided tag to perform the query. This field is optional.
-- `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
+- `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be 
+  stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
-- `{query}`: [Sparql Query](https://www.w3.org/TR/rdf-sparql-query/) - Defines the Sparql query to execute against the intermediate Sparql space for each target resource.
+- `{query}`: [Sparql Query](https://www.w3.org/TR/rdf-sparql-query/) - Defines the Sparql query to execute against the 
+  intermediate Sparql space for each target resource.
 - `_context_`: Json - the JSON-LD context value applied to the query results.
 
 ### SparqlProjection
@@ -195,13 +206,17 @@ This projection executes the following steps:
 
 where...
 
-- `{projectionId}`: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated Iri will be assigned.
-- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri to perform the query. This field is optional.
+- `{projectionId}`: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated 
+  Iri will be assigned.
+- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri to perform the 
+  query. This field is optional.
 - `{resourceType}`: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.
 - `{tag}`: String - Selects only resources with the provided tag to perform the query. This field is optional.
-- `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
+- `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be 
+  stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
-- `{query}`: [Sparql Query](https://www.w3.org/TR/rdf-sparql-query/) - Defines the Sparql query to execute against the intermediate Sparql space for each target resource.
+- `{query}`: @link:[Sparql Query](https://www.w3.org/TR/rdf-sparql-query/){ open=new } - Defines the Sparql query to 
+  execute against the intermediate Sparql space for each target resource.
 
 
 ## Payload
@@ -223,7 +238,8 @@ where...
 
 - `_source_`: Json - The source definition.
 - `_projection_`: Json - The projection definition.
-- `{interval_value}`: String - The maximum interval delay for a resource to be present in a projection, in a human readable format (e.g.: 10 minutes). 
+- `{interval_value}`: String - The maximum interval delay for a resource to be present in a projection, in a human 
+  readable format (e.g.: 10 minutes). 
 
 Note: The `rebuildStrategy` block is optional. If missing, the view won't be automatically restarted.
 
@@ -233,11 +249,14 @@ The following example creates a Composite view containing 3 sources and 2 projec
 
 The incoming data from each of the sources is stored as RDF triples in the intermediate Sparql space . 
 
-The ElasticSearch projection `http://music.com/bands` is only going to query the Sparql space with the provided query when the current resource in the pipeline has the type `http://music.com/Band`.
+The ElasticSearch projection `http://music.com/bands` is only going to query the Sparql space with the provided query 
+when the current resource in the pipeline has the type `http://music.com/Band`.
 
-The ElasticSearch projection `http://music.com/albums` is only going to query the Sparql space with the provided query when the current resource in the pipeline has the type `http://music.com/Album`.
+The ElasticSearch projection `http://music.com/albums` is only going to query the Sparql space with the provided query 
+when the current resource in the pipeline has the type `http://music.com/Album`.
 
-The view is going to be restarted every 10 minutes if there are new resources in any of the sources since the last time the view was restarted. This allows to deal with partial graph visibility issues.
+The view is going to be restarted every 10 minutes if there are new resources in any of the sources since the last time 
+the view was restarted. This allows to deal with partial graph visibility issues.
 
 ```json
 {
@@ -383,7 +402,7 @@ The view is going to be restarted every 10 minutes if there are new resources in
 
 The following sections describe the endpoints that are specific to a CompositeView.
 
-The general view endpoints are described on the [parent page](index.html#endpoints).
+The general view endpoints are described on the @ref:[parent page](index.md#endpoints).
 
 ### Search Documents in a projection
 
@@ -394,7 +413,8 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}
 
 where `{projection_id}` is the @id value of the target `ElasticSearch` projection. 
 
-The supported payload is defined on the [ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html)
+The supported payload is defined on the 
+@link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }
 
 
 **Example**
@@ -415,7 +435,8 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/_search
   {...}
 ```
 
-The supported payload is defined on the [ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html)
+The supported payload is defined on the 
+@link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }
 
 
 **Example**
@@ -441,7 +462,8 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}
 GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/sparql?query={query}
 ```
 
-In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+In both endpoints, `{query}` is defined by the 
+@link:[SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns){ open=new }
 
 where `{projection_id}` is the @id value of the target `Sparql` projection.
 
@@ -467,7 +489,8 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql
 GET /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql?query={query}
 ```
 
-In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+In both endpoints, `{query}` is defined by the 
+@link:[SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns){ open=new }
 
 The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
@@ -491,7 +514,8 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/sparql
 GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
 ```
 
-In both endpoints, `{query}` is defined by the [SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns)
+In both endpoints, `{query}` is defined by the 
+@link:[SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns){ open=new }
 
 The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
@@ -526,7 +550,8 @@ where:
 - `totalEvents` - sum of total number of events from each source
 - `processedEvents` - sum of number of events that have been considered by each source
 - `remainingEvents` - sum of number of events that remain to be considered by each source
-- `discardedEvents` - sum of number of events that have been discarded by each source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)
+- `discardedEvents` - sum of number of events that have been discarded by each source (were not evaluated due to 
+  filters, e.g. did not match schema, tag or type defined in the source)
 - `evaluatedEvents` - sum of number of events that have been used to update the intermediate Sparql space of each source
 - `lastEventDateTime` - timestamp of the last event in the sources
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the sources
@@ -557,7 +582,8 @@ where:
 - `totalEvents` - total number of events for the provided source
 - `processedEvents` - number of events that have been considered by the provided source
 - `remainingEvents` - number of events that remain to be considered by the provided source
-- `discardedEvents` - number of events that have been discarded by the provided source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)
+- `discardedEvents` - number of events that have been discarded by the provided source (were not evaluated due to 
+  filters, e.g. did not match schema, tag or type defined in the source)
 - `evaluatedEvents` - number of events that have been used to update the intermediate Sparql of the provided source
 - `lastEventDateTime` - timestamp of the last event from the provided source
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the provided source
@@ -585,7 +611,8 @@ where:
 - `totalEvents` - total number of events for the provided source
 - `processedEvents` - number of events that have been considered by the provided source
 - `remainingEvents` - number of events that remain to be considered by the provided source
-- `discardedEvents` - number of events that have been discarded by the provided source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)
+- `discardedEvents` - number of events that have been discarded by the provided source (were not evaluated due to 
+  filters, e.g. did not match schema, tag or type defined in the source)
 - `evaluatedEvents` - number of events that have been used to update the intermediate Sparql of the provided source
 - `lastEventDateTime` - timestamp of the last event from the provided source
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the provided source
@@ -595,7 +622,6 @@ where:
 ### Fetch projection statistics
 
 This endpoint displays statistical information about the provided projection.
-
  
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/statistics
@@ -619,7 +645,8 @@ where:
 - `totalEvents` - total number of events for the provided source
 - `processedEvents` - number of events that have been considered by the projection
 - `remainingEvents` - number of events that remain to be considered by the projection
-- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the projection)
+- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match 
+  schema, tag or type defined in the projection)
 - `evaluatedEvents` - number of events that have been used to update the projection index
 - `lastEventDateTime` - timestamp of the last event in the source
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the projection
@@ -648,7 +675,8 @@ where:
 - `totalEvents` - total number of events for the provided source
 - `processedEvents` - number of events that have been considered by the projection
 - `remainingEvents` - number of events that remain to be considered by the projection
-- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the projection)
+- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match 
+  schema, tag or type defined in the projection)
 - `evaluatedEvents` - number of events that have been used to update the projection index
 - `lastEventDateTime` - timestamp of the last event in the source
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the projection
@@ -656,7 +684,8 @@ where:
 
 ### Restart view
 
-This endpoint restarts the view indexing process. It does not delete the created indices/namespaces but it overrides the graphs/documents when going through the event log.
+This endpoint restarts the view indexing process. It does not delete the created indices/namespaces but it overrides 
+the graphs/documents when going through the event log.
  
 ```
 DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
@@ -673,7 +702,8 @@ Response
 
 ### Restart projection
 
-This endpoint restarts indexing process for the provided projection while keeping the sources (and the intermediate Sparql space) progress.
+This endpoint restarts indexing process for the provided projection while keeping the sources (and the intermediate 
+Sparql space) progress.
  
 ```
 DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/offset
@@ -692,7 +722,8 @@ Response
 
 ### Restart all projections
 
-This endpoint restarts indexing process for all projections while keeping the sources (and the intermediate Sparql space) progress.
+This endpoint restarts indexing process for all projections while keeping the sources (and the intermediate Sparql 
+space) progress.
  
 ```
 DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/_/offset

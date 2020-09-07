@@ -7,7 +7,7 @@ Composite views. These cover a wide range of requirements but may not suffice in
 capabilities can be added using external processes that subscribe to the global event log, enrich the information and
 project the result in arbitrary stores. 
 
-By exposing over HTTP(S) the event log using the [Server-Sent Events W3C recommendation](https://www.w3.org/TR/eventsource/),
+By exposing over HTTP(S) the event log using the @link:[Server-Sent Events W3C recommendation](https://www.w3.org/TR/eventsource/){ open=new },
 Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service
 communication for resource projections.
 
@@ -49,7 +49,7 @@ The additional environment variable `INFLUXDB_DATA_MAX_VALUES_PER_TAG` disables 
 measurements.
 
 We can now configure the projection using two config files (`env.conf` and `influx.conf` in the
-[HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) format) that will be mounted to the `nexus-cli`
+@link:[HOCON](https://github.com/lightbend/config/blob/master/HOCON.md){ open=new } format) that will be mounted to the `nexus-cli`
 container:
 
 ```
@@ -279,7 +279,7 @@ docker run -p 5432:5432 -d -e POSTGRES_PASSWORD=postgres --name postgres library
 ```
 
 We can now configure the projection using two config files (`env.conf` and `postgres.conf` in the
-[HOCON](https://github.com/lightbend/config/blob/master/HOCON.md) format) that will be mounted to the `nexus-cli`
+@link:[HOCON](https://github.com/lightbend/config/blob/master/HOCON.md){ open=new } format) that will be mounted to the `nexus-cli`
 container:
 
 ```

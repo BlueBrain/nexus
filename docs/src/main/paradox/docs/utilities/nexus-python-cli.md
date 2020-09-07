@@ -14,7 +14,7 @@ The goal is to go over some capabilities of Blue Brain Nexus enabling:
 This quick start tutorial tutorial makes use of:
 
 * an AWS deployment of Blue Brain Nexus available at https://sandbox.bluebrainnexus.io.
-* [Nexus Python CLI](https://github.com/BlueBrain/nexus-cli), a python Command Line Interface.
+* @link:[Nexus Python CLI](https://github.com/BlueBrain/nexus-cli){ open=new }, a python Command Line Interface.
 @@@
 
 Let's get started.
@@ -135,9 +135,6 @@ Command
 Output
 :   @@snip [fetch-create-json-out.sh](assets/fetch-create-json-out.sh)
 
-
-
-
 #### Ingest JSON from a file
 
 A JSON payload can be ingested from a file.
@@ -145,8 +142,6 @@ A JSON payload can be ingested from a file.
 ```shell
 nexus resources create --file /path/to/file.json
 ```
-
-
 
 A directory (/path/to/dir) of JSON files can be ingested by using the following looping command: 
 
@@ -160,19 +155,19 @@ Ingested resources can be listed using the following command:
 nexus resources list --size 10
 ```
 
-
 ### Ingest CSV files
 
-To illustrate how to load CSV files we will work with the small version of the [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip)
+To illustrate how to load CSV files we will work with the small version of the @link:[MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip){ open=new }
 containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
 An overview of this dataset can be found [here](https://grouplens.org/datasets/movielens/).
 
 #### Download the dataset
 
+The @link:[MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip){ open=new } can be 
+downloaded either directly on a browser or using a curl command as shown below.
 
-The [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip) can be downloaded either directly on a browser or using a curl command as shown below.
-
-The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded MovieLens dataset is made of four csv files as shown in the output tab.
+The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded 
+MovieLens dataset is made of four csv files as shown in the output tab.
 
 Command
 :   @@snip [downloadmovielens-cmd.sh](assets/downloadmovielens-cmd.sh)
@@ -250,8 +245,6 @@ Command
 Output
 :   @@snip [list-res-filter-out.sh](assets/list-res-filter-out.sh)
 
-
-
 @@@ note { .tip title="Listing with various filters using the CLI" }
 
 As an exercise try to filter by tag to only retrieve resources of type Tag.
@@ -264,8 +257,8 @@ Listing is usually not enough to select specific subset of data. Data ingested w
 
 View              | Description
 ------------------|---------------
-ElasticSearchView | Exposes data in [ElasticSearch](https://www.elastic.co/elasticsearch/) a document oriented search engine and provide access to it using the [ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
-SparqlView        | Exposes data as a @ref:[graph](../getting-started/understanding-knowledge-graphs.md#the-graph-structure) and allows to navigate and explore the data using the [W3C Sparql query language](https://www.w3.org/TR/sparql11-query/).
+ElasticSearchView | Exposes data in @link:[ElasticSearch](https://www.elastic.co/products/elasticsearch){ open=new } a document oriented search engine and provide access to it using the @link:[ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }.
+SparqlView        | Exposes data as a graph and allows to navigate and explore the data using the @link:[W3C SPARQL query language](https://www.w3.org/TR/sparql11-query/){ open=new }.
 
 
 @@@ note
@@ -277,7 +270,7 @@ Please copy each query and use a text editor to replace $PROJECTLABEL.
 
 #### Query data using the ElasticSearchView
 
-The ElasticSearchView URL is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].
+The ElasticSearchView URL is available at the address `https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search`.
 
 Select queries
 :   @@snip [select_elastic.sh](assets/select_elastic.sh)
@@ -287,7 +280,7 @@ Graph navigation queries
 
 #### Query data using the SparqlView
 
-The SparqlView is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql].
+The SparqlView is available at the address `https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql]`.
 The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.
 
 Select queries

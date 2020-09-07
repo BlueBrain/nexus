@@ -1,13 +1,13 @@
 @@@ index
 
-- [v1.4 Release Notes](v1.4-release-notes.md)
-- [v1.3 To v1.4 Migration](v1.3-to-v1.4-migration.md)
-- [v1.3 Release Notes](v1.3-release-notes.md)
-- [v1.2 To v1.3 Migration](v1.2-to-v1.3-migration.md)
-- [v1.2 Release Notes](v1.2-release-notes.md)
-- [v1.1 Release Notes](v1.1-release-notes.md)
-- [v1.0 To v1.1 Migration](v1.0-to-v1.1-migration.md)
-- [v1.0 Release Notes](v1.0-release-notes.md)
+- @ref:[v1.4 Release Notes](v1.4-release-notes.md)
+- @ref:[v1.3 To v1.4 Migration](v1.3-to-v1.4-migration.md)
+- @ref:[v1.3 Release Notes](v1.3-release-notes.md)
+- @ref:[v1.2 To v1.3 Migration](v1.2-to-v1.3-migration.md)
+- @ref:[v1.2 Release Notes](v1.2-release-notes.md)
+- @ref:[v1.1 Release Notes](v1.1-release-notes.md)
+- @ref:[v1.0 To v1.1 Migration](v1.0-to-v1.1-migration.md)
+- @ref:[v1.0 Release Notes](v1.0-release-notes.md)
 
 @@@
 
@@ -53,7 +53,8 @@ Summary of the significant changes:
   can be switched for descending by prefixing the `-` character to the field name.
 - New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new
   configuration yields better full text search results.
-- _Nexus Web_ - Adds the ability to have persistent customisable queries and data visualizations for your data via the new @ref:[Studios feature](../fusion/studio.md)
+- _Nexus Web_ - Adds the ability to have persistent customisable queries and data visualizations for your data via the 
+  new @ref:[Studios feature](../fusion/studio.md)
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.3-release-notes.md).
 
@@ -85,7 +86,7 @@ KG updates:
 
 - Added @ref:[archives resources](../delta/api/current/kg-archives-api.md).
 - Added @ref:[/source](../delta/api/current/kg-resources-api.md#fetch-a-resource-original-payload) sub-resource.
-- [Fixed issue](https://github.com/BlueBrain/nexus/issues/750) with resource retrieval when linked context changes.
+- @link:[Fixed issue](https://github.com/BlueBrain/nexus/issues/750){ open=new } with resource retrieval when linked context changes.
 - Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
 
 Dependency updates:
@@ -137,7 +138,7 @@ The release is backwards compatible with v1.0 in terms of API. If you're upgradi
 
 Summary of the significant changes:
 
-- Exposed the service event logs over a stable API via [Server Sent Events](https://www.w3.org/TR/eventsource/).
+- Exposed the service event logs over a stable API via @link:[Server Sent Events](https://www.w3.org/TR/eventsource/){ open=new }.
 - Introduced configurable storage backends for files with local, remote and S3 implementations.
 - ElasticSearchView | AggregateElasticSearchView have been promoted to stable.
 - Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and

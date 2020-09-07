@@ -1,33 +1,35 @@
 @@@ index
 
-* [Operating on resources](operating-on-resources.md)
-* [Realms](iam-realms-api.md)
-* [Authentication](authentication.md)
-* [Permissions](iam-permissions-api.md)
-* [ACLs](iam-acls-api.md)
-* [Identities](iam-identities.md)
-* [Organizations](admin-orgs-api.md)
-* [Projects](admin-projects-api.md)
-* [Schemas](kg-schemas-api.md)
-* [Resolvers](kg-resolvers-api.md)
-* [Views](views/index.md)
-* [Storages](kg-storages-api.md)
-* [Files](kg-files-api.md)
-* [Archives](kg-archives-api.md)
-* [Resources](kg-resources-api.md)
-* [Error Signaling](error-signaling.md)
+* @ref:[Operating on resources](operating-on-resources.md)
+* @ref:[Realms](iam-realms-api.md)
+* @ref:[Authentication](authentication.md)
+* @ref:[Permissions](iam-permissions-api.md)
+* @ref:[ACLs](iam-acls-api.md)
+* @ref:[Identities](iam-identities.md)
+* @ref:[Organizations](admin-orgs-api.md)
+* @ref:[Projects](admin-projects-api.md)
+* @ref:[Schemas](kg-schemas-api.md)
+* @ref:[Resolvers](kg-resolvers-api.md)
+* @ref:[Views](views/index.md)
+* @ref:[Storages](kg-storages-api.md)
+* @ref:[Files](kg-files-api.md)
+* @ref:[Archives](kg-archives-api.md)
+* @ref:[Resources](kg-resources-api.md)
+* @ref:[Error Signaling](error-signaling.md)
 
 @@@
 
 # API Reference
 
-Nexus Delta expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically [JSON-LD](https://json-ld.org/).
+Nexus Delta expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport 
+format is JSON based, specifically @link:[JSON-LD](https://json-ld.org/){ open=new }.
 
 The API provides access and management of several primary resource types.
 
 
 ## Realms 
-A realm provides with the necessary information to perform authentication against a certain [OIDC](https://en.wikipedia.org/wiki/OpenID_Connect) provider .  
+A realm provides with the necessary information to perform authentication against a certain 
+@link:[OIDC](https://en.wikipedia.org/wiki/OpenID_Connect){ open=new } provider .  
 
 @ref:[Operations on realms](iam-realms-api.md)
 
@@ -41,7 +43,8 @@ A permission is the basic unit to provide a way to limit applications' access to
 In order to restrict applications' access to data by placing restrictions on them, three parameters are important:
 
 - permission: the value used to limit a client (user, group) access to resources.
-- identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.
+- identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is 
+  authenticated to a certain realm.
 - path: the location where to apply the restrictions
 
 An ACL defines the set of **permissions** that certain **identities** have on a concrete **path**.
@@ -62,13 +65,14 @@ The top-level grouping resource in the platform, called organization
 
 ## Projects
 
-The 2nd level grouping resources in the platform, called project. Projects provide isolation of ACLs, resource resolution and indices (ElasticSearch index and Blazegraph namespace).
+The 2nd level grouping resources in the platform, called project. Projects provide isolation of ACLs, resource 
+resolution and indices (ElasticSearch index and Blazegraph namespace).
 
 @ref:[Operations on projects](admin-projects-api.md)
 
 ## Schemas
 
-A schema is a resource which defines a set of rules and constrains using [SHACL](https://www.w3.org/TR/shacl/). 
+A schema is a resource which defines a set of rules and constrains using @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new }. 
 
 @ref:[Operations on schemas](kg-schemas-api.md)
 
@@ -111,16 +115,21 @@ A resource is the most generic entity on the Knowledge Graph. Resources can be `
 
 ## Resource Lifecycle
 
-Nexus Delta is build using the [event sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) approach. This strategy captures all changes to an application state as a sequence of events.
+Nexus Delta is build using the @link:[event sourcing](https://martinfowler.com/eaaDev/EventSourcing.html){ open=new } 
+approach. This strategy captures all changes to an application state as a sequence of events.
 
-All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.
+All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every 
+interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.
 
 ![Resource Lifecycle](assets/resources/resource-lifecycle.png "Resource Lifecycle")
 
-Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the deprecation flag may have various semantics:
+Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the 
+deprecation flag may have various semantics:
 
-- **Organizations**: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this organization will not be considered during indexing and resolution processes.
-- **Projects**: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this project will not be considered during indexing and resolution processes.
+- **Organizations**: the resource itself and sub-resources cannot be updated. Views and resolvers contained within 
+  this organization will not be considered during indexing and resolution processes.
+- **Projects**: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this 
+  project will not be considered during indexing and resolution processes.
 - **Schemas**: the resource itself cannot be updated and new data conformant to it cannot be created
 - **Resolvers**: the resource itself will not be considered during the resolution process
 - **Views**: the resource itself will not be considered during the indexing process
@@ -128,7 +137,9 @@ Data is never removed from the system, but rather is marked as deprecated. Depen
 - **Files**: attachments cannot be added/deleted
 - **Data**: the resource itself cannot be updated
 
-`Archives` resources are an exception. Those resources are ephemeral. They will be automatically removed from the system after certain time. This time is configurable (config property `app.archives.cache-invalidate-after`) and it defaults to 5 hours.
+`Archives` resources are an exception. Those resources are ephemeral. They will be automatically removed from the 
+system after certain time. This time is configurable (config property `app.archives.cache-invalidate-after`) and it 
+defaults to 5 hours.
 
 Future policies may use this flag to determine if or when the deprecated data may be archived.
 

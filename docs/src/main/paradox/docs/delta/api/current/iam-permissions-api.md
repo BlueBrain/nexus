@@ -4,7 +4,10 @@ Permissions are rooted in the `/v1/permissions` collection.
 
 Each permission is the basic unit to provide a way to limit applications' access to sensitive information.  
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control 
+list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
+to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -16,7 +19,8 @@ When  reading permissions, the caller must have `permissions/read` permissions o
 
 ## Minimum permissions
 
-Delta is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are necessary for correct functioning of Nexus.
+Delta is configured to include minimum permissions, i.e. permissions that cannot be removed, because they are 
+necessary for correct functioning of Nexus.
 
 Currently the following permissions are required:
 
@@ -185,7 +189,8 @@ This endpoint allows clients to receive automatic updates from the permissions i
 GET /v1/permissions/events
 ```
 
-where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed permission event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed permission event. It can be used 
+for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of permission events, represented in the following way
 
@@ -198,7 +203,8 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current permission
-- `{type}`: String - is a type identifier for the current permission. Possible types are: PermissionsAppended, PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted
+- `{type}`: String - is a type identifier for the current permission. Possible types are: PermissionsAppended, 
+  PermissionsSubtracted, PermissionsReplaced and PermissionsDeleted
 - `{id}`: String - is the identifier of the permission event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**

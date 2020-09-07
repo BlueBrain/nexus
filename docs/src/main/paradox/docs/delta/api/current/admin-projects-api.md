@@ -5,18 +5,23 @@ The purposes of projects are:
 
 - Group and categorize sub-resources.
 - Define settings that apply for operations on all sub-resources. 
-- Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](kg-resolvers-api.md)
+- Provide isolation from resources inside other projects. This behavior can be changed by defining 
+  @ref:[resolvers](kg-resolvers-api.md)
 
-Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
+Access to resources in the system depends on the access control list set for them. A caller may need to prove its 
+identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
 Please visit @ref:[Authentication](authentication.md) to learn more about retrieving access tokens.
 
 @@@ note { .tip title="Authorization notes" }	
 
-When  creating projects, the caller must have `projects/create` permissions on the current path of the project or the ancestor paths.
+When  creating projects, the caller must have `projects/create` permissions on the current path of the project or the 
+ancestor paths.
 
-When  updating projects, the caller must have `projects/write` permissions on the current path of the project or the ancestor paths.
+When  updating projects, the caller must have `projects/write` permissions on the current path of the project or the 
+ancestor paths.
 
-When  reading projects, the caller must have `projects/read` permissions on the current path of the project or the ancestor paths.
+When  reading projects, the caller must have `projects/read` permissions on the current path of the project or the 
+ancestor paths.
 
 @@@
 
@@ -40,9 +45,18 @@ When  reading projects, the caller must have `projects/read` permissions on the 
 where...
  
 - `{description}`: String - an optional description for this project.
-- `{base}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a @ref:[resource is created](kg-resources-api.md#create-a-resource-using-post) and no `@id` is present in the payload, the platform will generate an @id which will look like `http://example.com/{UUID}`. This field is optional and will default to `{{base}}/v1/resources/{org_label}/{project_label}/_/`.
-- `{vocab}`: IRI - is going to be used as a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/) prefix for all unqualified predicates in children resources. E.g. if the vocab is set to `https://schema.org/`, when a field a resource is created and a field `name` is present in the payload, it will be expanded to `http://schema.org/name` by the system during indexing and fetch operations. This field is optional and will default to `{{base}}/v1/vocabs/{org_label}/{project_label}/`.
-- `{apiMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.
+- `{base}`: IRI - is going to be used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } 
+  in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a 
+  @ref:[resource is created](kg-resources-api.md#create-a-resource-using-post) and no `@id` is present in the 
+  payload, the platform will generate an @id which will look like `http://example.com/{UUID}`. This field is optional 
+  and will default to `{{base}}/v1/resources/{org_label}/{project_label}/_/`.
+- `{vocab}`: IRI - is going to be used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } 
+  prefix for all unqualified predicates in children resources. E.g. if the vocab is set to `https://schema.org/`, when 
+  a field a resource is created and a field `name` is present in the payload, it will be expanded to 
+  `http://schema.org/name` by the system during indexing and fetch operations. This field is optional and will default 
+  to `{{base}}/v1/vocabs/{org_label}/{project_label}/`.
+- `{apiMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a 
+  sub-resource. This field is optional.
 
 ### API Mappings
 The `apiMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
@@ -64,8 +78,10 @@ Having the following `apiMappings`:
 
 where...
 
-- `{prefix}`: String - the left hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName).
-- `{namespace}`: IRI - the right hand side of a [curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/). It has [certain constrains (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7).
+- `{prefix}`: String - the left hand side of a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new }. 
+  It has @link:[certain constraints](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName){ open=new }.
+- `{namespace}`: IRI - the right hand side of a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new }. 
+  It has @link:[certain constraints (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7){ open=new }.
 
 Let's see an example:
  
@@ -84,7 +100,8 @@ Let's see an example:
  }
  ```
 
-The previous payload allows us to @ref:[create a schema](kg-schemas-api.md#create-a-schema-using-put) using the following endpoints:
+The previous payload allows us to @ref:[create a schema](kg-schemas-api.md#create-a-schema-using-put) using the 
+following endpoints:
 
 - `/v1/schemas/{org_label}/{project_label}/person`. The `@id` of the resulting schema will be `http://example.com/some/person`
 - `/v1/schemas/{org_label}/{project_label}/schema:other`. The `@id` of the resulting schema will be `https://bluebrainnexus.io/schemas/other`
@@ -213,10 +230,12 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting projects based on their revision value
-- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can 
+  appear multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
-- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any project's label that contains the string `my`. `label='my'` will match any project where label is equal to `my`. 
+- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any 
+  project's label that contains the string `my`. `label='my'` will match any project where label is equal to `my`. 
 
 
 **Example**
@@ -240,10 +259,12 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting projects based on their revision value
-- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
-- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any project's label that contains the string `my`.
+- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any 
+  project's label that contains the string `my`.
 
 
 **Example**
@@ -263,7 +284,8 @@ This endpoint allows clients to receive automatic updates from the projects in a
 GET /v1/projects/events
 ```
 
-where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed project event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed project event. It can be used for 
+cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of project events, represented in the following way
 
@@ -276,7 +298,8 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current project
-- `{type}`: String - is a type identifier for the current project. Possible types are: ProjectCreated, ProjectUpdated and ProjectDeprecated
+- `{type}`: String - is a type identifier for the current project. Possible types are: ProjectCreated, ProjectUpdated 
+  and ProjectDeprecated
 - `{id}`: String - is the identifier of the project event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**

@@ -1,6 +1,7 @@
 # Identities
 
-The `/v1/identities` endpoint allows user to retrieve the identities that the user has in the platform. Calling the endpoint without a token will result in only one identity returned: `Anonymous`.
+The `/v1/identities` endpoint allows user to retrieve the identities that the user has in the platform. Calling the 
+endpoint without a token will result in only one identity returned: `Anonymous`.
 Calling it with token should return multiple identities. There are four different types of identities:
 
 - `Anonymous` - represents anonymous user

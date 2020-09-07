@@ -11,7 +11,8 @@ Each storage...
 
 Access to resources in the system depends on the access control list set for them. Depending on the access control list,
 a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header
-(`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn how to retrieve an access token.
+(`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn how to retrieve an 
+access token.
 
 @@@ note { .tip title="Authorization notes" }
 
@@ -45,7 +46,7 @@ This is particularly handy if your organization is running some kind of distribu
 Gluster, GPFS, Lustre, ...) that you don't want to mount directly on the system where Nexus runs.
 
 While there's no formal specification for this service, you can check out or deploy our own implementation:
-[Nexus remote storage service](https://github.com/BlueBrain/nexus-storage).
+@link:[Nexus remote storage service](https://github.com/BlueBrain/nexus-storage){ open=new }.
 
 ### Amazon S3 compatible storage
 
@@ -66,7 +67,7 @@ These tables summarize mandatory and optional fields for each storage type:
 
 | @type               | @id      | default   | folder    | endpoint | credentials | readPermission | writePermission | maxFileSize |
 |---------------------|----------|-----------|-----------|----------|-------------|----------------|-----------------|-------------|
-| RemoteDiskStorage | optional | mandatory | mandatory | optional | optional    | optional       | optional        | optional    |
+| RemoteDiskStorage   | optional | mandatory | mandatory | optional | optional    | optional       | optional        | optional    |
 
 | @type               | @id      | default   | bucket    | endpoint  | accessKey | secretKey | readPermission | writePermission | maxFileSize |
 |---------------------|----------|-----------|-----------|-----------|-----------|-----------|----------------|-----------------|-------------|
@@ -208,9 +209,11 @@ Response
 
 When fetching a storage, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
 
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
-- **application/n-triples**: RDF n-triples response, as defined by the [w3](https://www.w3.org/TR/n-triples/).
-- **text/vnd.graphviz**: A [DOT response](https://www.graphviz.org/doc/info/lang.html).
+- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
+  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } 
+  or the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
+- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
+- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
@@ -266,11 +269,14 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting storages based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting storages based on their revision value
-- `{type}`: Iri - can be used to filter the resulting storages based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting storages based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting storages based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting storages based on the person which performed the last update
-- `{search}`: String - can be provided to select only the storages in the collection that have attribute values matching (containing) the provided string
-- `{sort}`: String - can be used to sort storages based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
+- `{search}`: String - can be provided to select only the storages in the collection that have attribute values matching 
+  (containing) the provided string
+- `{sort}`: String - can be used to sort storages based on a payloads' field. This parameter can appear multiple times 
+  to enable sorting by multiple fields
 
 **Example**
 

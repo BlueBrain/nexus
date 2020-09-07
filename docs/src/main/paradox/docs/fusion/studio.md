@@ -219,7 +219,7 @@ Fill in a form providing the following:
 
 - `Label`: the name of your new `Dashboard` (required field)
 - `Description`: an optional description for your `Dashboard`
-- `Sparql Query`: a valid [SPARQL](https://www.w3.org/TR/rdf-sparql-query/) query that conforms to the `dataQuery` field in the configuration.
+- `Sparql Query`: a valid @link:[SPARQL](https://www.w3.org/TR/rdf-sparql-query/){ open=new } query that conforms to the `dataQuery` field in the configuration.
 
 @@@ div { .half .center }
 ![Create Dashboard form](../assets/fusion-studio-create-dashboard-form.png)
