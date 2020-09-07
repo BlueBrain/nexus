@@ -2,7 +2,7 @@
 
 ## Overview
 
-This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple [knowledge graph](../../knowledge-graph/thinking-in-graph.html).
+This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple @ref:[knowledge graph](../getting-started/understanding-knowledge-graphs.md).
 The goal is to go over some capabilities of Blue Brain Nexus enabling:
 
 * The creation of a project as a protected data space to work in
@@ -82,7 +82,7 @@ Command
 Output
 :   @@snip [create-project-out.sh](assets/create-project-out.sh)
 
-By default, created projects are private meaning that only the project creator (you) has read and write access to it. We'll [see below](#share-data) how to make a project public.
+By default, created projects are private meaning that only the project creator (you) has read and write access to it. We'll @ref:[see below](#share-data) how to make a project public.
 
 The output of the previous command shows the list of projects you have read access to. The project you just created should be the only one listed at this point. Let select it.
 
@@ -165,7 +165,7 @@ nexus resources list --size 10
 
 To illustrate how to load CSV files we will work with the small version of the [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip)
 containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
-An overview of this dataset can be found [here](../dataset/index.html).
+An overview of this dataset can be found [here](https://grouplens.org/datasets/movielens/).
 
 #### Download the dataset
 
@@ -240,7 +240,7 @@ Whenever a resource is created, Nexus injects some useful metadata. The table be
 | \_createdAt          | The resource creation date.                                                                                                          | DateTime   |
 | \_createdBy          | The resource creator.                                                                                                                | DateTime   |
 
-Note that Nexus uses [JSON-LD](../../knowledge-graph/understanding-jsonld.html) as data exchange format.
+Note that Nexus uses @ref:[JSON-LD](../getting-started/understanding-knowledge-graphs.md#json-ld) as data exchange format.
 
 Filters are available to list specific resources. For example a list of resources of type Rating can be retrieved by running the following command:
 
@@ -264,8 +264,8 @@ Listing is usually not enough to select specific subset of data. Data ingested w
 
 View              | Description
 ------------------|---------------
-ElasticSearchView | Exposes data in [ElasticSearch](https://www.elastic.co/products/elasticsearch) a document oriented search engine and provide access to it using the [ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
-SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the [W3C Sparql query language](https://www.w3.org/TR/sparql11-query/).
+ElasticSearchView | Exposes data in [ElasticSearch](https://www.elastic.co/elasticsearch/) a document oriented search engine and provide access to it using the [ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
+SparqlView        | Exposes data as a @ref:[graph](../getting-started/understanding-knowledge-graphs.md#the-graph-structure) and allows to navigate and explore the data using the [W3C Sparql query language](https://www.w3.org/TR/sparql11-query/).
 
 
 @@@ note
@@ -307,7 +307,7 @@ $ nexus acls make-public
 To check that the dataset is now public:
 
 * Ask the person next to you to list resources in your project.
-* Or create and select another profile named public-tutorial (following the instructions in the [Set up](#set-up).
+* Or create and select another profile named public-tutorial (following the instructions in the @ref:[Set up](#set-up).
 You should see the that the public-tutorial is selected and its corresponding token column is None.
 
 Output

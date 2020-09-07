@@ -46,10 +46,10 @@ Blue Brain Nexus employs a Knowledge Graph to enable validation, search, analysi
 
 There are several channels provided to address different issues:
 
-- **Bug report**: If you have found a bug while using the Nexus ecosystem, please create an issue [here](https://github.com/BlueBrain/nexus/issues/new?labels=bug).
+- **Bug report**: If you have found a bug while using the Nexus ecosystem, please create an issue [here](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dbug).
 - **Questions**: if you need support, we will be reachable through the [Nexus Gitter channel](https://gitter.im/BlueBrain/nexus)
-- **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found [here](https://bluebrain.github.io/nexus/docs)
-- **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the [list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature). In case there isn't already one, please [open a feature request](https://github.com/BlueBrain/nexus/issues/new?labels=feature) describing your feature with as much detail as possible.
+- **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found [here](https://bluebrainnexus.io/docs/)
+- **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the [list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature). In case there isn't already one, please [open a feature request](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dfeature) describing your feature with as much detail as possible.
 
 ## Technical FAQ  
 
@@ -99,7 +99,7 @@ No. [SHACL](https://www.w3.org/TR/shacl/) schemas provide an extra layer of qual
 
 ### Why are RDF and JSON-LD important for Blue Brain Nexus?
 
-RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is an RDF concrete syntax, and it is the main format we use for messages exchange. The choice of JSON-LD is due to the fact that is plain JSON but with some special [keywords](https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords) and JSON is a broadly adopted API exchange format.
+RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is an RDF concrete syntax, and it is the main format we use for messages exchange. The choice of JSON-LD is due to the fact that is plain JSON but with some special [keywords](https://www.w3.org/TR/json-ld11/#syntax-tokens-and-keywords) and JSON is a broadly adopted API exchange format.
 
 ### Can I connect any SPARQL client to Nexus’ SPARQL endpoint?
 
@@ -114,4 +114,3 @@ In order to change that behaviour, please create some ACLs for the path `/`. For
 
 Blue Brain Nexus can be used from Jupyter Notebooks using [Nexus Forge](https://github.com/blueBrain/nexus-forge) or [Nexus Python SDK](https://github.com/BlueBrain/nexus-python-sdk/). Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook.
 Please consider looking at our @ref:[tutorial](getting-started/try-nexus.md) to learn how to user Nexus Forge on the Sandbox.
-Other examples are provided in the folder [Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks) or in the [page](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb) dedicated to create a recommendation engine using Blue Brain Nexus.

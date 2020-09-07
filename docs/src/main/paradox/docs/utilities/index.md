@@ -16,7 +16,7 @@ Nexus provides some schemas which make building provenance based knowledge graph
 #### nexus-schemaorg
 
 [SHACL](https://www.w3.org/TR/shacl/) version of a subset of schemas defined by
-[schema.org](http://schema.org/docs/full.html) that are commonly used in Blue Brain Nexus.
+[schema.org](https://schema.org/docs/full.html) that are commonly used in Blue Brain Nexus.
 
 [Source Code](https://github.com/BlueBrain/nexus-schemaorg)
 
@@ -73,7 +73,7 @@ nexus.permissions.fetch()
 
 ### Nexus.js
 
-The [Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js) provides many features to help you build web applications that integrate with Blue Brain Nexus.
+The [Javascript SDK](https://github.com/BlueBrain/nexus-js) provides many features to help you build web applications that integrate with Blue Brain Nexus.
 
 ![Nexus JS logo](../assets/nexus-js-logo.png)
 
@@ -85,9 +85,9 @@ The [Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js) provides many fe
 
 The SDK is written in Typescript, so type declarations for all operations are included in the package.
 
-You can generate documentation using `npm run documentation` or with `docker` by running `make documentation`. More information can be found [here](https://github.com/BlueBrain/nexus-sdk-js#development).
+You can generate documentation using `npm run documentation` or with `docker` by running `make documentation`. More information can be found [here](https://github.com/BlueBrain/nexus-js).
 
-[Source Code](https://github.com/BlueBrain/nexus-sdk-js)
+[Source Code](https://github.com/BlueBrain/nexus-js)
 
 Documentation:
 

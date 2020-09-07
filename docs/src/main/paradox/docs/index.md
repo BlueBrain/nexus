@@ -54,10 +54,10 @@ The Nexus ecosystem leverages a set of smaller open-source utilities.
 
 Do you know know what a knowledge graph is? Or want to deepen your understanding? Follow our @ref:[introduction](getting-started/understanding-knowledge-graphs.md).
 
-Want to get started with Nexus right away? We provide a @ref:[tutorial](getting-started/try-nexus.md) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
+Want to get started with Nexus right away? We provide a @ref:[tutorial](getting-started/try-nexus.md) that uses our [sandbox](https://sandbox.bluebrainnexus.io/web) environment to let you try the functionalities.
 
 Ready to deploy your own instance of Nexus? Follow our @ref:[guide](getting-started/running-nexus.md).
 
 ## Roadmap
 
-Curious about our upcoming features? Read our @ref[open Roadmap](roadmap.md) to find out more.
+Curious about our upcoming features? Read our @ref:[open Roadmap](roadmap.md) to find out more.
