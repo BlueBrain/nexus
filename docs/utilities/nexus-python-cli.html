@@ -249,7 +249,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> fdc327fb
+<i class="md-icon" title="Version">label_outline</i> f69b1450
 </label>
 </li>
 </ul>
@@ -307,7 +307,7 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#movielens-tutorial-using-the-nexus-python-cli" name="movielens-tutorial-using-the-nexus-python-cli" class="anchor"><span class="anchor-link"></span></a>MovieLens Tutorial using the Nexus Python CLI</h1>
 <h2><a href="#overview" name="overview" class="anchor"><span class="anchor-link"></span></a>Overview</h2>
-<p>This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple <a href="../../knowledge-graph/thinking-in-graph.html">knowledge graph</a>. The goal is to go over some capabilities of Blue Brain Nexus enabling:</p>
+<p>This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple <a href="../getting-started/understanding-knowledge-graphs.html">knowledge graph</a>. The goal is to go over some capabilities of Blue Brain Nexus enabling:</p>
 <ul>
   <li>The creation of a project as a protected data space to work in</li>
   <li>An easy ingestion of a dataset within a given project</li>
@@ -386,7 +386,7 @@ organization selected.
 | $PROJECTLABEL |             | https://sandbox.bluebrainnexus.io/v1/projects/tutorialnexus/$PROJECTLABEL | False      |
 +---------------+-------------+------------------------------------------------------------------------+------------+</code></pre></dd>
 </dl>
-<p>By default, created projects are private meaning that only the project creator (you) has read and write access to it. We&rsquo;ll <a href="#share-data">see below</a> how to make a project public.</p>
+<p>By default, created projects are private meaning that only the project creator (you) has read and write access to it. We&rsquo;ll <a href="nexus-python-cli.html#share-data">see below</a> how to make a project public.</p>
 <p>The output of the previous command shows the list of projects you have read access to. The project you just created should be the only one listed at this point. Let select it.</p>
 <dl>
   <dt>Command</dt>
@@ -478,7 +478,7 @@ organization selected.
 <pre class="prettyprint"><code class="language-shell">nexus resources list --size 10
 </code></pre>
 <h3><a href="#ingest-csv-files" name="ingest-csv-files" class="anchor"><span class="anchor-link"></span></a>Ingest CSV files</h3>
-<p>To illustrate how to load CSV files we will work with the small version of the <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users. An overview of this dataset can be found <a href="../dataset/index.html">here</a>.</p>
+<p>To illustrate how to load CSV files we will work with the small version of the <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users. An overview of this dataset can be found <a href="https://grouplens.org/datasets/movielens/">here</a>.</p>
 <h4><a href="#download-the-dataset" name="download-the-dataset" class="anchor"><span class="anchor-link"></span></a>Download the dataset</h4>
 <p>The <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> can be downloaded either directly on a browser or using a curl command as shown below.</p>
 <p>The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded MovieLens dataset is made of four csv files as shown in the output tab.</p>
@@ -592,7 +592,7 @@ organization selected.
     </tr>
   </tbody>
 </table>
-<p>Note that Nexus uses <a href="../../knowledge-graph/understanding-jsonld.html">JSON-LD</a> as data exchange format.</p>
+<p>Note that Nexus uses <a href="../getting-started/understanding-knowledge-graphs.html#json-ld">JSON-LD</a> as data exchange format.</p>
 <p>Filters are available to list specific resources. For example a list of resources of type Rating can be retrieved by running the following command:</p>
 <dl>
   <dt>Command</dt>
@@ -623,11 +623,11 @@ organization selected.
   <tbody>
     <tr>
       <td>ElasticSearchView </td>
-      <td>Exposes data in <a href="https://www.elastic.co/products/elasticsearch">ElasticSearch</a> a document oriented search engine and provide access to it using the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch query language</a>.</td>
+      <td>Exposes data in <a href="https://www.elastic.co/elasticsearch/">ElasticSearch</a> a document oriented search engine and provide access to it using the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch query language</a>.</td>
     </tr>
     <tr>
       <td>SparqlView </td>
-      <td>Exposes data as a <a href="../../knowledge-graph/thinking-in-graph.html">graph</a> and allows to navigate and explore the data using the <a href="https://www.w3.org/TR/sparql11-query/">W3C Sparql query language</a>.</td>
+      <td>Exposes data as a <a href="../getting-started/understanding-knowledge-graphs.html#the-graph-structure">graph</a> and allows to navigate and explore the data using the <a href="https://www.w3.org/TR/sparql11-query/">W3C Sparql query language</a>.</td>
     </tr>
   </tbody>
 </table><div class="callout note "><div class="callout-title">Note</div>
@@ -717,7 +717,7 @@ Select (AVG(?ratingvalue) AS ?score)
 <p>To check that the dataset is now public:</p>
 <ul>
   <li>Ask the person next to you to list resources in your project.</li>
-  <li>Or create and select another profile named public-tutorial (following the instructions in the <a href="#set-up">Set up</a>. You should see the that the public-tutorial is selected and its corresponding token column is None.</li>
+  <li>Or create and select another profile named public-tutorial (following the instructions in the <a href="nexus-python-cli.html#set-up">Set up</a>. You should see the that the public-tutorial is selected and its corresponding token column is None.</li>
 </ul>
 <dl>
   <dt>Output</dt>
@@ -746,7 +746,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-fdc327fb
+f69b1450
 </span>
 </div>
 </article>

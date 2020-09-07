@@ -228,7 +228,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> fdc327fb
+<i class="md-icon" title="Version">label_outline</i> f69b1450
 </label>
 </li>
 </ul>
@@ -282,10 +282,10 @@ BlueBrain/nexus
 <p>There is a special set of permissions which restrict the use of the ACLs API:</p>
 <ul>
   <li><strong>acls/read</strong> - an auth. token containing an identity with this permission is allowed to fetch a collection of ACL from any other identity.</li>
-  <li><strong>acls/write</strong> - an auth. token containing an identity with this permission is allowed to perform the call to the following endpoints: <a href="#create-acls">create ACLs</a>, <a href="#replace-acls">replace ACLs</a>, <a href="#subtract-acls">subtract ACLs</a>, <a href="#append-acls">append ACLs</a> and <a href="#delete-acls">delete ACLs</a>.</li>
+  <li><strong>acls/write</strong> - an auth. token containing an identity with this permission is allowed to perform the call to the following endpoints: <a href="iam-acls-api.html#create-acls">create ACLs</a>, <a href="iam-acls-api.html#replace-acls">replace ACLs</a>, <a href="iam-acls-api.html#subtract-acls">subtract ACLs</a>, <a href="iam-acls-api.html#append-acls">append ACLs</a> and <a href="iam-acls-api.html#delete-acls">delete ACLs</a>.</li>
 </ul>
 <p>Those permissions need to be present in the current <code>{path}</code> where the API interaction occurs or in any parent path. In other words, they are inherited.</p>
-<p>Let&rsquo;s clarify this concept with an example from the previous diagram. <code>identity 1</code> could call the <a href="#create-acls">create ACLs</a> endpoint on any <code>{path}</code> while <code>identity 2</code> could only call the same endpoint for any path child of <code>/myorg</code> (like <code>/myorg/myproj</code>). At the same time, <code>identity 3</code> could not perform any of the write operations.</p>
+<p>Let&rsquo;s clarify this concept with an example from the previous diagram. <code>identity 1</code> could call the <a href="iam-acls-api.html#create-acls">create ACLs</a> endpoint on any <code>{path}</code> while <code>identity 2</code> could only call the same endpoint for any path child of <code>/myorg</code> (like <code>/myorg/myproj</code>). At the same time, <code>identity 3</code> could not perform any of the write operations.</p>
 <h2><a href="#create-acls" name="create-acls" class="anchor"><span class="anchor-link"></span></a>Create ACLs</h2>
 <p>This operation creates a collection of ACL on the provided path.</p>
 <pre><code>PUT /v1/acls/{path}
@@ -640,7 +640,7 @@ BlueBrain/nexus
   <li><code>{rev}</code>: Number - the revision of the ACL to be retrieved. This parameter is optional and it defaults to the current revision.</li>
   <li><code>{self}</code>: Boolean - if <code>true</code>, only the ACLs containing the identities found on the auth. token are included in the response. If <code>false</code> all the ACLs on the current <code>{path}</code> are included. This parameter is optional and it defaults to <code>true</code>.</li>
 </ul>
-<p>The ability to use the query parameter <code>self=false</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its ancestors. For further details, check <a href="#acls-hierarchy">ACLs hierarchy</a>.</p>
+<p>The ability to use the query parameter <code>self=false</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its ancestors. For further details, check <a href="iam-acls-api.html#acls-hierarchy">ACLs hierarchy</a>.</p>
 <dl>
   <dt>Request</dt>
   <dd>
@@ -708,10 +708,10 @@ BlueBrain/nexus
   <li><code>{ancestors}</code>: Boolean - if <code>true</code>, the ACLs of the parent <code>{path}</code> are included in the response. If <code>false</code> only the ACLs on the current <code>{path}</code> are included. This parameter is optional and it defaults to <code>false</code>.</li>
   <li><code>{self}</code>: Boolean - if <code>true</code>, only the ACLs containing the identities found on the auth. token are included in the response. If <code>false</code> all the ACLs on the current <code>{path}</code> are included. This parameter is optional and it defaults to <code>true</code>.</li>
 </ul>
-<p>The ability to use the query parameter <code>self=false</code> and <code>ancestors=true</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its parents. For further details, check <a href="#acls-hierarchy">ACLs hierarchy</a>.</p>
+<p>The ability to use the query parameter <code>self=false</code> and <code>ancestors=true</code> depends on whether or not any of the identities found on the auth. token contains the <code>acls:read</code> permission on the provided <code>{path}</code> or its parents. For further details, check <a href="iam-acls-api.html#acls-hierarchy">ACLs hierarchy</a>.</p>
 <p>The <code>{path}</code> can contain the special character <code>*</code> which can be read as <code>any</code>. </p>
-<p>Let&rsquo;s imagine we have the ACLs from the <a href="#acls-hierarchy">following diagram in place</a>. If we query this endpoint with the path <code>/myorg/*</code>, we are selecting the ACLs defined in <code>/myorg/myproj</code> and <code>myorg/myproj2</code>. Likewise If we use the path <code>/*</code>, we are selecting the ACLs defined in <code>/myorg</code> and <code>myorg2</code>.</p>
-<p>The following examples illustrate listings from the diagram on the section <a href="#acls-hierarchy">ACLs hierarchy</a> with the following considerations:</p>
+<p>Let&rsquo;s imagine we have the ACLs from the <a href="iam-acls-api.html#acls-hierarchy">following diagram in place</a>. If we query this endpoint with the path <code>/myorg/*</code>, we are selecting the ACLs defined in <code>/myorg/myproj</code> and <code>myorg/myproj2</code>. Likewise If we use the path <code>/*</code>, we are selecting the ACLs defined in <code>/myorg</code> and <code>myorg2</code>.</p>
+<p>The following examples illustrate listings from the diagram on the section <a href="iam-acls-api.html#acls-hierarchy">ACLs hierarchy</a> with the following considerations:</p>
 <ul>
   <li>identity 1: Is a group called <code>one</code></li>
   <li>identity 2: Is a group called <code>two</code></li>
@@ -911,7 +911,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-fdc327fb
+f69b1450
 </span>
 </div>
 </article>

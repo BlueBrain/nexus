@@ -230,7 +230,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> fdc327fb
+<i class="md-icon" title="Version">label_outline</i> f69b1450
 </label>
 </li>
 </ul>
@@ -295,7 +295,7 @@ BlueBrain/nexus
 <p>where&hellip;</p>
 <ul>
   <li><code>{description}</code>: String - an optional description for this project.</li>
-  <li><code>{base}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a <a href="../kg/kg-resources-api.html#create-a-resource-using-post">resource is created</a> and no <code>@id</code> is present in the payload, the platform will generate an @id which will look like <code>http://example.com/{UUID}</code>. This field is optional and will default to <code>{{base}}/v1/resources/{org_label}/{project_label}/_/</code>.</li>
+  <li><code>{base}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a <a href="kg-resources-api.html#create-a-resource-using-post">resource is created</a> and no <code>@id</code> is present in the payload, the platform will generate an @id which will look like <code>http://example.com/{UUID}</code>. This field is optional and will default to <code>{{base}}/v1/resources/{org_label}/{project_label}/_/</code>.</li>
   <li><code>{vocab}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> prefix for all unqualified predicates in children resources. E.g. if the vocab is set to <code>https://schema.org/</code>, when a field a resource is created and a field <code>name</code> is present in the payload, it will be expanded to <code>http://schema.org/name</code> by the system during indexing and fetch operations. This field is optional and will default to <code>{{base}}/v1/vocabs/{org_label}/{project_label}/</code>.</li>
   <li><code>{apiMappings}</code>: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.</li>
 </ul>
@@ -332,7 +332,7 @@ BlueBrain/nexus
    ]
  }
 </code></p>
-<p>The previous payload allows us to <a href="../kg/kg-schemas-api.html##create-a-schema-using-put">create a schema</a> using the following endpoints:</p>
+<p>The previous payload allows us to <a href="kg-schemas-api.html#create-a-schema-using-put">create a schema</a> using the following endpoints:</p>
 <ul>
   <li><code>/v1/schemas/{org_label}/{project_label}/person</code>. The <code>@id</code> of the resulting schema will be <code>http://example.com/some/person</code></li>
   <li><code>/v1/schemas/{org_label}/{project_label}/schema:other</code>. The <code>@id</code> of the resulting schema will be <code>https://bluebrainnexus.io/schemas/other</code></li>
@@ -760,7 +760,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-fdc327fb
+f69b1450
 </span>
 </div>
 </article>

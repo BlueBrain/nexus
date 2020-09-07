@@ -240,7 +240,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> fdc327fb
+<i class="md-icon" title="Version">label_outline</i> f69b1450
 </label>
 </li>
 </ul>
@@ -344,7 +344,7 @@ BlueBrain/nexus
 <p>Schema imports through the <code>owl:imports</code> clause works recursively as before, but it applies the resolution mechanism at each iteration. Context references work recursively as before applying the resolution mechanism at each iteration.</p>
 <p><em>Note:</em> Contexts are no longer handled differently, as special kind of resources. Any resource id can be used as a context reference; the system will resolve the referenced resource and apply <em>only</em> the <code>@context</code> value from its representation to the resource that references it.</p>
 <h4><a href="#improved-handling-of-binary-resources" name="improved-handling-of-binary-resources" class="anchor"><span class="anchor-link"></span></a>Improved handling of binary resources</h4>
-<p>The <code>v0.y.z</code> series handled binary resources as sub-resources, called <em>attachments</em>, following the model pioneered by <a href="http://docs.couchdb.org/en/stable/api/document/common.html#attachments">CouchDB</a>. While it provided a guarantee that every binary resource is properly described with metadata, the model did not work well in the following situations:</p>
+<p>The <code>v0.y.z</code> series handled binary resources as sub-resources, called <em>attachments</em>, following the model pioneered by <a href="https://docs.couchdb.org/en/stable/api/document/common.html#attachments">CouchDB</a>. While it provided a guarantee that every binary resource is properly described with metadata, the model did not work well in the following situations:</p>
 <ul>
   <li>uploading binaries for later organization: the parent resource required creation before a binary could be attached to it, which in the cases where users were just interested in storing binaries in Nexus it required two API calls instead of one.</li>
   <li>conflicting vocabulary definitions: a lot of the data modeling effort relied on the Nexus metadata for the uploaded binaries which forced the use of a certain vocabulary and metadata structure in Nexus</li>
@@ -414,12 +414,12 @@ BlueBrain/nexus
 <p>Access control lists are now restricted to either root (<code>/</code>), organization (<code>/{org}</code>) or project (<code>/{org}/{project}</code>) removing the need to index these definitions along with the data in their respective service boundaries.</p>
 <h4><a href="#introduced-javascript-sdk-for-nexus" name="introduced-javascript-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced Javascript SDK for Nexus</h4>
 <p><img src="assets/img/nexus-js-logo.png" alt="Logo of JS SDK for Nexus" /></p>
-<p>We released a <a href="https://github.com/BlueBrain/nexus-sdk-js">Javascript SDK for Nexus</a> that helps integrating with the Blue Brain Nexus API from Javascript and Typescript code. It aims at giving easy access to all the features offered by the API. It also offers Typescript declarations.</p>
+<p>We released a <a href="https://github.com/BlueBrain/nexus-js">Javascript SDK for Nexus</a> that helps integrating with the Blue Brain Nexus API from Javascript and Typescript code. It aims at giving easy access to all the features offered by the API. It also offers Typescript declarations.</p>
 <p>This is the library of top of which the Nexus Web interface is built, but it remains framework-agnostic.</p>
 <h4><a href="#introduced-python-sdk-for-nexus" name="introduced-python-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced Python SDK for Nexus</h4>
 <p>We released a <a href="https://github.com/BlueBrain/nexus-python-sdk">Python SDK for Nexus</a> that helps integrating with the Blue Brain Nexus API from Python. It aims at giving easy access to all the features offered by the API.</p>
 <h4><a href="#introduced-a-command-line-interface-cli-for-nexus" name="introduced-a-command-line-interface-cli-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced a Command Line Interface (CLI) for Nexus</h4>
-<p>We released a <a href="https://github.com/BlueBrain/nexus-cli">Nexus CLI</a> that helps interaction with Nexus from the command line. This tool is built on top of the <a href="https://github.com/BlueBrain/nexus-python-sdk">Python SDK for Nexus</a>. It aims at giving easy access to all the features offered by the API and faciliate your data management with Nexus. The use of the CLI is extensively demonstrated in our <a href="https://bluebrainnexus.io/docs/tutorial">Nexus Tutorial</a>.</p>
+<p>We released a <a href="https://github.com/BlueBrain/nexus-cli">Nexus CLI</a> that helps interaction with Nexus from the command line. This tool is built on top of the <a href="https://github.com/BlueBrain/nexus-python-sdk">Python SDK for Nexus</a>. It aims at giving easy access to all the features offered by the API and faciliate your data management with Nexus. The use of the CLI is extensively demonstrated in our <a href="../utilities/nexus-python-cli.html">Nexus Tutorial</a>.</p>
 <h4><a href="#migration-from-v0-y-z-series" name="migration-from-v0-y-z-series" class="anchor"><span class="anchor-link"></span></a>Migration from v0.y.z series</h4>
 <p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://gitter.im/BlueBrain/nexus">gitter</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
 <h4><a href="#removed-of-dependency-on-kafka" name="removed-of-dependency-on-kafka" class="anchor"><span class="anchor-link"></span></a>Removed of dependency on Kafka</h4>
@@ -435,7 +435,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-fdc327fb
+f69b1450
 </span>
 </div>
 </article>

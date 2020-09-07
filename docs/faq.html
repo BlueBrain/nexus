@@ -244,7 +244,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> fdc327fb
+<i class="md-icon" title="Version">label_outline</i> f69b1450
 </label>
 </li>
 </ul>
@@ -324,10 +324,10 @@ BlueBrain/nexus
 <h3><a href="#how-do-i-report-a-bug-which-support-blue-brain-nexus-team-provide-" name="how-do-i-report-a-bug-which-support-blue-brain-nexus-team-provide-" class="anchor"><span class="anchor-link"></span></a>How do I report a bug? Which support Blue Brain Nexus team provide?</h3>
 <p>There are several channels provided to address different issues:</p>
 <ul>
-  <li><strong>Bug report</strong>: If you have found a bug while using the Nexus ecosystem, please create an issue <a href="https://github.com/BlueBrain/nexus/issues/new?labels=bug">here</a>.</li>
+  <li><strong>Bug report</strong>: If you have found a bug while using the Nexus ecosystem, please create an issue <a href="https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dbug">here</a>.</li>
   <li><strong>Questions</strong>: if you need support, we will be reachable through the <a href="https://gitter.im/BlueBrain/nexus">Nexus Gitter channel</a></li>
-  <li><strong>Documentation</strong>: Technical documentation and &lsquo;Quick Start&rsquo; to Nexus related concepts can be found <a href="https://bluebrain.github.io/nexus/docs">here</a></li>
-  <li><strong>Feature request</strong>: If there is a feature you would like to see in Blue Brain Nexus, please first consult the <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature">list of open feature requests</a>. In case there isn&rsquo;t already one, please <a href="https://github.com/BlueBrain/nexus/issues/new?labels=feature">open a feature request</a> describing your feature with as much detail as possible.</li>
+  <li><strong>Documentation</strong>: Technical documentation and &lsquo;Quick Start&rsquo; to Nexus related concepts can be found <a href="https://bluebrainnexus.io/docs/">here</a></li>
+  <li><strong>Feature request</strong>: If there is a feature you would like to see in Blue Brain Nexus, please first consult the <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature">list of open feature requests</a>. In case there isn&rsquo;t already one, please <a href="https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dfeature">open a feature request</a> describing your feature with as much detail as possible.</li>
 </ul>
 <h2><a href="#technical-faq" name="technical-faq" class="anchor"><span class="anchor-link"></span></a>Technical FAQ</h2>
 <h3><a href="#what-are-the-clients-i-can-use-with-blue-brain-nexus-what-are-the-requirements-to-run-blue-brain-nexus-locally-" name="what-are-the-clients-i-can-use-with-blue-brain-nexus-what-are-the-requirements-to-run-blue-brain-nexus-locally-" class="anchor"><span class="anchor-link"></span></a>What are the clients I can use with Blue Brain Nexus? What are the requirements to run Blue Brain Nexus locally?</h3>
@@ -356,13 +356,13 @@ BlueBrain/nexus
 <h3><a href="#where-can-i-find-shacl-shapes-i-can-reuse-point-to-resources-like-schema-org-" name="where-can-i-find-shacl-shapes-i-can-reuse-point-to-resources-like-schema-org-" class="anchor"><span class="anchor-link"></span></a>Where can I find SHACL shapes I can reuse (point to resources, like schema.org)?</h3>
 <p><a href="http://datashapes.org/">Datashapes.org</a> provides an automated conversion of <a href="https://schema.org/">schema.org</a> as SHACL entities. A neuroscience community effort and INCF Special Interest Group - <a href="https://github.com/INCF/neuroshapes">Neuroshapes</a>, provides open schemas for neuroscience data based on common use cases.</p>
 <h3><a href="#why-are-rdf-and-json-ld-important-for-blue-brain-nexus-" name="why-are-rdf-and-json-ld-important-for-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>Why are RDF and JSON-LD important for Blue Brain Nexus?</h3>
-<p>RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is an RDF concrete syntax, and it is the main format we use for messages exchange. The choice of JSON-LD is due to the fact that is plain JSON but with some special <a href="https://json-ld.org/spec/latest/json-ld/#syntax-tokens-and-keywords">keywords</a> and JSON is a broadly adopted API exchange format.</p>
+<p>RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is an RDF concrete syntax, and it is the main format we use for messages exchange. The choice of JSON-LD is due to the fact that is plain JSON but with some special <a href="https://www.w3.org/TR/json-ld11/#syntax-tokens-and-keywords">keywords</a> and JSON is a broadly adopted API exchange format.</p>
 <h3><a href="#can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" name="can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" class="anchor"><span class="anchor-link"></span></a>Can I connect any SPARQL client to Nexus’ SPARQL endpoint?</h3>
 <p>Yes. As long as the client supports the ability to provide a <code>Authentication</code> HTTP Header (for authentication purposes) on the HTTP request, any SPARQL client should work.</p>
 <h3><a href="#how-can-i-create-an-organization-as-an-anonymous-user-in-the-docker-compose-file-what-needs-to-be-done-to-switch-to-mode-" name="how-can-i-create-an-organization-as-an-anonymous-user-in-the-docker-compose-file-what-needs-to-be-done-to-switch-to-mode-" class="anchor"><span class="anchor-link"></span></a>How can I create an organization as an anonymous user in the docker-compose file? What needs to be done to switch to &ldquo;authenticated&rdquo; mode?</h3>
 <p>By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM property <a href="https://github.com/BlueBrain/nexus/blob/master/delta/src/main/resources/app.conf#L213">app.permissions.minimum</a>. In order to change that behaviour, please create some ACLs for the path <code>/</code>. For more details about ACLs creation, visit the <a href="delta/api/current/iam-acls-api.html#create-acls">ACLs page</a>.</p>
 <h3><a href="#can-i-use-blue-brain-nexus-from-jupyter-notebooks-" name="can-i-use-blue-brain-nexus-from-jupyter-notebooks-" class="anchor"><span class="anchor-link"></span></a>Can I use Blue Brain Nexus from Jupyter Notebooks?</h3>
-<p>Blue Brain Nexus can be used from Jupyter Notebooks using <a href="https://github.com/blueBrain/nexus-forge">Nexus Forge</a> or <a href="https://github.com/BlueBrain/nexus-python-sdk/">Nexus Python SDK</a>. Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook. Please consider looking at our <a href="getting-started/try-nexus.html">tutorial</a> to learn how to user Nexus Forge on the Sandbox. Other examples are provided in the folder <a href="https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks">Notebooks</a> or in the <a href="https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb">page</a> dedicated to create a recommendation engine using Blue Brain Nexus.</p>
+<p>Blue Brain Nexus can be used from Jupyter Notebooks using <a href="https://github.com/blueBrain/nexus-forge">Nexus Forge</a> or <a href="https://github.com/BlueBrain/nexus-python-sdk/">Nexus Python SDK</a>. Alternatively, you can also use any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook. Please consider looking at our <a href="getting-started/try-nexus.html">tutorial</a> to learn how to user Nexus Forge on the Sandbox.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/faq.md" title="Edit this page" class="md-source-file md-edit">
@@ -371,7 +371,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-fdc327fb
+f69b1450
 </span>
 </div>
 </article>

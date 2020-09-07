@@ -223,7 +223,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> fdc327fb
+<i class="md-icon" title="Version">label_outline</i> f69b1450
 </label>
 </li>
 </ul>
@@ -294,12 +294,12 @@ BlueBrain/nexus
 <p>Resource identification is based on HTTP Internationalized Resource Identifiers (<a href="https://tools.ietf.org/html/rfc3987">IRI</a>s) and uniqueness is guaranteed within the scope of a project. This allows the system to be used in a multi-tenant configuration but at the same time it implies that project and organization identifiers are part of a resource addressing scheme.</p>
 <p>In order to avoid limitations in URL lengths and for convenience, resource identifiers can be aliased and compacted (<a href="https://www.w3.org/TR/curie/">CURIE</a>) using project level configurations.</p>
 <h2><a href="#authentication-and-authorization" name="authentication-and-authorization" class="anchor"><span class="anchor-link"></span></a>Authentication and Authorization</h2>
-<p>The system supports <a href="https://openid.net/connect/">OpenID Connect</a>, <a href="https://tools.ietf.org/html/rfc6749">OAuth 2.0</a> and <a href="JWTs">JSON Web Tokens</a> standards and can be configured to use identity providers that support these standards. Proof of identity can be provided by passing a Bearer JWT in the Authorization header of the HTTP requests when consuming the RESTful API.</p>
+<p>The system supports <a href="https://openid.net/connect/">OpenID Connect</a>, <a href="https://tools.ietf.org/html/rfc6749">OAuth 2.0</a> and <a href="https://tools.ietf.org/html/rfc7519">JSON Web Tokens</a> (JWTs) standards and can be configured to use identity providers that support these standards. Proof of identity can be provided by passing a Bearer JWT in the Authorization header of the HTTP requests when consuming the RESTful API.</p>
 <p>Nexus Delta can use <a href="https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol">LDAP</a> as an identity management system through several off-the-shelf products that implement these protocols on top of LDAP, like for example <a href="https://www.keycloak.org/">Keycloak</a>.</p>
 <p>The authorization flow is as follows:</p>
 <ul>
   <li>the provided JWT is validated against the configured identity providers</li>
-  <li>the subject and group claims are used to generate the set of <a href="./api/current/iam-identities.md">identities</a> of the caller (when no Bearer JWT is provided, the assumed identity is Anonymous)</li>
+  <li>the subject and group claims are used to generate the set of <a href="api/current/iam-identities.html">identities</a> of the caller (when no Bearer JWT is provided, the assumed identity is Anonymous)</li>
   <li>access to perform the intent is verified by comparing the collection of caller identities with the configured list of <a href="api/current/iam-acls-api.html">ACLs</a> for the target resource(s)</li>
 </ul>
 </div>
@@ -310,7 +310,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-fdc327fb
+f69b1450
 </span>
 </div>
 </article>
