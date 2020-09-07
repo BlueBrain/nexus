@@ -12,14 +12,9 @@ trait JsonSyntax {
 final class JsonOps(private val json: Json) extends AnyVal {
 
   /**
-    * @return the value of the top @context key when found, None otherwise
-    */
-  def topContextValue: Option[Json] = JsonLdContext.topContextValue(json)
-
-  /**
     * @return the value of the top @context key when found, an empty Json otherwise
     */
-  def topContextValueOrEmpty: Json = JsonLdContext.topContextValueOr(json, Json.obj())
+  def topContextValueOrEmpty: Json = JsonLdContext.topContextValueOrEmpty(json)
 
   /**
     * @return the all the values with key @context

@@ -7,15 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{
-  ContextFields,
-  JsonLdContext,
-  RawJsonLdContext,
-  RemoteContextResolution
-}
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOption
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOptionOr
 import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import org.apache.jena.iri.IRI
 
@@ -77,19 +72,19 @@ trait JsonLd extends Product with Serializable {
    * @param context the context to use in order toc ompact the current JsonLd
     */
   def toCompacted[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
-      opts: JsonLdOptions = JsonLdOptions.empty,
+      opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, CompactedJsonLd[Ctx]]
 
   def toExpanded(implicit
-      opts: JsonLdOptions = JsonLdOptions.empty,
+      opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, ExpandedJsonLd]
 
   def toGraph(implicit
-      opts: JsonLdOptions = JsonLdOptions.empty,
+      opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, Graph]
@@ -104,24 +99,9 @@ object JsonLd {
     * @throws IllegalArgumentException when the provided ''expanded'' json does not match the expected value
     */
   final def expandedUnsafe(expanded: Json, rootId: IRI): ExpandedJsonLd =
-    arraySingleObjOrError(expanded) match {
-      case Right(obj)  => ExpandedJsonLd(obj, rootId)
-      case Left(value) => throw new IllegalArgumentException(value.getMessage)
-    }
-
-  /**
-    * Creates a [[CompactedJson]] unsafely.
-    *
-   * @param compacted an already compacted Json-LD document. It must be a Json Object
-    * @param rootId    the top @id value
-    * @throws IllegalArgumentException when the provided ''compacted'' json does not match the expected value
-    */
-  final def compactedUnsafe(compacted: Json, rootId: IRI): CompactedJsonLd[RawJsonLdContext] =
-    jsonObjectOrErr(compacted) match {
-      case Right(obj)  =>
-        CompactedJsonLd(obj, RawJsonLdContext(compacted.topContextValueOrEmpty), rootId, ContextFields.Skip)
-      case Left(value) =>
-        throw new IllegalArgumentException(value.getMessage)
+    expanded.asArray.flatMap(headOnlyOptionOr(_)(Json.obj())).flatMap(_.asObject) match {
+      case Some(obj) => ExpandedJsonLd(obj, rootId)
+      case None      => throw new IllegalArgumentException("Expected a sequence of Json Objects with a single value")
     }
 
   /**
@@ -139,11 +119,14 @@ object JsonLd {
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
-      opts: JsonLdOptions = JsonLdOptions.empty
+      opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
     for {
       expanded <- api.expand(input)
-      obj      <- IO.fromEither(arraySingleObjOrError(expanded))
+      obj      <- IO.fromOption(
+                    headOnlyOptionOr(expanded)(JsonObject.empty),
+                    UnexpectedJsonLd("Expected a sequence of Json Objects with a single value")
+                  )
       id       <- (obj(keywords.id), defaultId) match {
                     case (Some(jsonIri), _) => IO.fromEither(jsonIri.as[IRI]).leftMap(_ => InvalidIri(jsonIri.noSpaces))
                     case (_, Some(default)) => IO.now(default)
@@ -166,24 +149,13 @@ object JsonLd {
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
-      opts: JsonLdOptions = JsonLdOptions.empty
+      opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd[Ctx]] = {
     val jsonId = Json.obj(keywords.id -> rootId.asJson)
     val frame  = context.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
     for {
       compactedWithCtx <- api.frame(input, frame, f)
       (compacted, ctx)  = compactedWithCtx
-      obj              <- IO.fromEither(jsonObjectOrErr(compacted))
-    } yield CompactedJsonLd(obj, ctx, rootId, f)
+    } yield CompactedJsonLd(compacted, ctx, rootId, f)
   }
-
-  private def jsonObjectOrErr(compacted: Json) =
-    compacted.asObject.toRight(UnexpectedJsonLd("Expected a Json Object on compacted JSON-LD"))
-
-  private def arraySingleObjOrError(expanded: Json) =
-    expanded.asArray
-      .flatMap(arr => if (arr.isEmpty) Some(Json.obj()) else headOnlyOption(arr))
-      .flatMap(_.asObject)
-      .toRight(UnexpectedJsonLd("Expected a Json Array with a single Json Object on expanded JSON-LD"))
-
 }
