@@ -1,0 +1,16 @@
+<http://nexus.example.com/another> <http://schema.org/birthDate> "2000-04-12T20:00Z" .
+<http://nexus.example.com/another> <http://schema.org/birthHour> "9"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://nexus.example.com/another> <http://schema.org/birthYear> "1999"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://nexus.example.com/another> <http://schema.org/height> "9.223E0"^^<http://www.w3.org/2001/XMLSchema#double> .
+<http://nexus.example.com/another> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Other> .
+<http://nexus.example.com/john-doé> <http://example.com/address> {bnode} .
+<http://nexus.example.com/john-doé> <http://example.com/otherProperty> "value"^^<http://www.w3.org/2001/XMLSchema#other> .
+<http://nexus.example.com/john-doé> <http://example.com/sibling> <http://nexus.example.com/another> .
+<http://nexus.example.com/john-doé> <http://example.org/stringProperty> "Some \"property" .
+<http://nexus.example.com/john-doé> <http://schema.org/birthDate> "1999-04-09T20:00Z" .
+<http://nexus.example.com/john-doé> <http://schema.org/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://nexus.example.com/john-doé> <http://schema.org/name> "John Doe" .
+<http://nexus.example.com/john-doé> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://schema.org/Person> .
+{bnode} <http://example.com/customid> <http://nexus.example.com/myid> .
+{bnode} <http://example.com/number> "2"^^<http://www.w3.org/2001/XMLSchema#integer> .
+{bnode} <http://example.com/street> "my street" .

@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -76,15 +78,22 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) e
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, CompactedJsonLd[Ctx]] =
+  ): IO[RdfError, CompactedJsonLd[Ctx]] =
     JsonLd.compact(json, context, rootId, f)
 
   override def toExpanded(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[JsonLdError, ExpandedJsonLd] =
+  ): IO[RdfError, ExpandedJsonLd] =
     IO.now(self)
+
+  override def toGraph(implicit
+      opts: JsonLdOptions,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IO[RdfError, Graph] =
+    api.toRdf(json).map(model => Graph(rootId, model))
 
   private def add(key: IRI, value: Json): This = {
     val keyString = if (key == rdf.tpe) keywords.tpe else key.toString
