@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.{tryOrConversionErr, RdfError, Triple}
 import io.circe.Json
+import io.circe.syntax._
 import monix.bio.IO
 import org.apache.jena.iri.IRI
 import org.apache.jena.rdf.model.ResourceFactory.createStatement
@@ -127,7 +128,7 @@ final case class Graph private (root: IRI, model: Model) { self =>
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd[Ctx]] =
-    api.fromRdf(model).flatMap(expanded => JsonLd.compact(expanded, context, root, f))
+    api.fromRdf(model).flatMap(expanded => JsonLd.compact(expanded.asJson, context, root, f))
 
   /**
     * Attempts to convert the current Graph to the JSON-LD expanded format:
@@ -156,7 +157,7 @@ object Graph {
   final def apply(iri: IRI, input: Json)(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
-      options: JsonLdOptions = JsonLdOptions.empty
+      options: JsonLdOptions
   ): IO[RdfError, Graph] =
     api.toRdf(input).map(m => Graph(iri, m))
 

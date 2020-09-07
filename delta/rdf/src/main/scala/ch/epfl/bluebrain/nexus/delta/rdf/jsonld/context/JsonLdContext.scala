@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOption
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOptionOr
 import io.circe.Json
 import io.circe.syntax._
 import org.apache.jena.iri.IRI
@@ -74,20 +74,16 @@ object JsonLdContext {
   }
 
   /**
-    * @return the value of the top @context key when found, None otherwise
-    */
-  def topContextValue(json: Json): Option[Json] =
-    json.arrayOrObject(
-      None,
-      arr => headOnlyOption(arr).flatMap(_.asObject).flatMap(_(keywords.context)),
-      obj => obj(keywords.context)
-    )
-
-  /**
     * @return the value of the top @context key when found, an empty Json otherwise
     */
-  def topContextValueOr(json: Json, default: => Json = Json.obj()): Json =
-    topContextValue(json).getOrElse(default)
+  def topContextValueOrEmpty(json: Json): Json =
+    json
+      .arrayOrObject(
+        None,
+        arr => headOnlyOptionOr(arr)(Json.obj()).flatMap(_.asObject).flatMap(_(keywords.context)),
+        obj => obj(keywords.context)
+      )
+      .getOrElse(Json.obj())
 
   /**
     * @return the all the values with key @context
@@ -104,7 +100,7 @@ object JsonLdContext {
     *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
   def addContext(json: Json, that: Json): Json =
-    json deepMerge Json.obj(keywords.context -> merge(topContextValueOr(json), topContextValueOr(that)))
+    json deepMerge Json.obj(keywords.context -> merge(topContextValueOrEmpty(json), topContextValueOrEmpty(that)))
 
   /**
     * Adds a context IRI to an existing @context, or creates an @context with the IRI as a value.
