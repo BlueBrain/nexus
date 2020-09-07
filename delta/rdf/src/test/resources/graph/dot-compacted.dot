@@ -1,0 +1,18 @@
+digraph "john-doé" {
+  "john-doé" -> "Person" [label = "type"]
+  "john-doé" -> "{bnode}" [label = "address"]
+  "{bnode}" -> "myid" [label = "customid"]
+  "{bnode}" -> 2 [label = "number"]
+  "{bnode}" -> "my street" [label = "street"]
+  "john-doé" -> false [label = "deprecated"]
+  "john-doé" -> "value" [label = "otherProperty"]
+  "john-doé" -> "Some \"property" [label = "http://example.org/stringProperty"]
+  "john-doé" -> "1999-04-09T20:00Z" [label = "schema:birthDate"]
+  "john-doé" -> "John Doe" [label = "schema:name"]
+  "john-doé" -> "another" [label = "sibling"]
+  "another" -> "schema:Other" [label = "type"]
+  "another" -> "2000-04-12T20:00Z" [label = "schema:birthDate"]
+  "another" -> 9 [label = "schema:birthHour"]
+  "another" -> 1999 [label = "schema:birthYear"]
+  "another" -> 9.223 [label = "schema:height"]
+}

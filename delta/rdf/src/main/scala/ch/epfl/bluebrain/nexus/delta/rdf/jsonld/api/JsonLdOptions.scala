@@ -17,7 +17,7 @@ final case class JsonLdOptions(
     processingMode: String = "json-ld-1.1",
     produceGeneralizedRdf: Boolean = true,
     rdfDirection: Option[String] = None,
-    useNativeTypes: Boolean = false,
+    useNativeTypes: Boolean = true,
     useRdfType: Boolean = false,
     embed: String = "@last",
     explicit: Boolean = false,

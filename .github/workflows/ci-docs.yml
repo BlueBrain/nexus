@@ -33,7 +33,7 @@ jobs:
       with:
         java-version: adopt@1.11
     - name: Review
-      run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox
+      run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateLinks
 
   publish:
     if: github.event_name == 'push'

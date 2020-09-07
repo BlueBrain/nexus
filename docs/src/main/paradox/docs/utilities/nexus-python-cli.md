@@ -2,7 +2,7 @@
 
 ## Overview
 
-This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple [knowledge graph](../../knowledge-graph/thinking-in-graph.html).
+This example-driven tutorial presents 5 steps to get started with Blue Brain Nexus to build and query a simple @ref:[knowledge graph](../getting-started/understanding-knowledge-graphs.md).
 The goal is to go over some capabilities of Blue Brain Nexus enabling:
 
 * The creation of a project as a protected data space to work in
@@ -135,9 +135,6 @@ Command
 Output
 :   @@snip [fetch-create-json-out.sh](assets/fetch-create-json-out.sh)
 
-
-
-
 #### Ingest JSON from a file
 
 A JSON payload can be ingested from a file.
@@ -145,8 +142,6 @@ A JSON payload can be ingested from a file.
 ```shell
 nexus resources create --file /path/to/file.json
 ```
-
-
 
 A directory (/path/to/dir) of JSON files can be ingested by using the following looping command: 
 
@@ -160,19 +155,19 @@ Ingested resources can be listed using the following command:
 nexus resources list --size 10
 ```
 
-
 ### Ingest CSV files
 
 To illustrate how to load CSV files we will work with the small version of the @link:[MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip){ open=new }
 containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
-An overview of this dataset can be found [here](../dataset/index.html).
+An overview of this dataset can be found [here](https://grouplens.org/datasets/movielens/).
 
 #### Download the dataset
 
+The @link:[MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip){ open=new } can be 
+downloaded either directly on a browser or using a curl command as shown below.
 
-The @link:[MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip){ open=new } can be downloaded either directly on a browser or using a curl command as shown below.
-
-The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded MovieLens dataset is made of four csv files as shown in the output tab.
+The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded 
+MovieLens dataset is made of four csv files as shown in the output tab.
 
 Command
 :   @@snip [downloadmovielens-cmd.sh](assets/downloadmovielens-cmd.sh)
@@ -240,7 +235,7 @@ Whenever a resource is created, Nexus injects some useful metadata. The table be
 | \_createdAt          | The resource creation date.                                                                                                          | DateTime   |
 | \_createdBy          | The resource creator.                                                                                                                | DateTime   |
 
-Note that Nexus uses [JSON-LD](../../knowledge-graph/understanding-jsonld.html) as data exchange format.
+Note that Nexus uses @ref:[JSON-LD](../getting-started/understanding-knowledge-graphs.md#json-ld) as data exchange format.
 
 Filters are available to list specific resources. For example a list of resources of type Rating can be retrieved by running the following command:
 
@@ -249,8 +244,6 @@ Command
 
 Output
 :   @@snip [list-res-filter-out.sh](assets/list-res-filter-out.sh)
-
-
 
 @@@ note { .tip title="Listing with various filters using the CLI" }
 
@@ -265,7 +258,7 @@ Listing is usually not enough to select specific subset of data. Data ingested w
 View              | Description
 ------------------|---------------
 ElasticSearchView | Exposes data in @link:[ElasticSearch](https://www.elastic.co/products/elasticsearch){ open=new } a document oriented search engine and provide access to it using the @link:[ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }.
-SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the @link:[W3C SPARQL query language](https://www.w3.org/TR/sparql11-query/){ open=new }.
+SparqlView        | Exposes data as a graph and allows to navigate and explore the data using the @link:[W3C SPARQL query language](https://www.w3.org/TR/sparql11-query/){ open=new }.
 
 
 @@@ note

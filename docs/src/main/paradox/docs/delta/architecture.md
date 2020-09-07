@@ -168,7 +168,7 @@ The authorization flow is as follows:
 [LDAP]: https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol
 [OpenID Connect]: https://openid.net/connect/
 [OAuth 2.0]: https://tools.ietf.org/html/rfc6749
-[JSON Web Tokens]: https://tools.ietf.org/html/rfc7519
+[JSON Web Tokens]: https://jwt.io/
 [Keycloak]: https://www.keycloak.org/
 [identities]: ./api/current/iam-identities.md
 [ACLs]: ./api/current/iam-acls-api.md

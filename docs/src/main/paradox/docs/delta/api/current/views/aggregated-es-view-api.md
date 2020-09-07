@@ -37,7 +37,7 @@ where...
 
 The following sections describe the endpoints that are specific to an AggregateElasticSearchView.
 
-The general view endpoints are described on the @link:[parent page](index.md#endpoints){ open=new }.
+The general view endpoints are described on the @ref:[parent page](index.md#endpoints).
 
 ### Search Documents
 

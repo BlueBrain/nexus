@@ -20,3 +20,7 @@ final case class RawJsonLdContext(value: Json) extends JsonLdContext {
       case None     => RawJsonLdContext(add(prefix, iri.asJson))
     }
 }
+
+object RawJsonLdContext {
+  val empty: RawJsonLdContext = RawJsonLdContext(Json.obj())
+}

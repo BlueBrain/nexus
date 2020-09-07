@@ -53,8 +53,18 @@ trait TestHelpers {
     */
   final def contentOf(resourcePath: String, replacements: Map[String, String]): String =
     replacements.foldLeft(contentOf(resourcePath)) {
-      case (value, (regex, replacement)) => value.replaceAll(regex, replacement)
+      case (value, (regex, replacement)) => value.replace(regex, replacement)
     }
+
+  /**
+   * Loads the content of the argument classpath resource as a string and replaces all the key matches of
+   * the ''replacements'' with their values.
+   *
+   * @param resourcePath the path of a resource available on the classpath
+   * @return the content of the referenced resource as a string
+   */
+  final def contentOf(resourcePath: String, replacements: (String, String)*): String =
+    contentOf(resourcePath, replacements.toMap)
 
   /**
     * Loads the content of the argument classpath resource as a json value.

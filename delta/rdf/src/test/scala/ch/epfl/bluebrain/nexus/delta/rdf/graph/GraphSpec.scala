@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextFields
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -12,6 +13,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
   "A Graph" should {
     val expanded   = jsonContentOf("expanded.json")
     val graph      = Graph(iri, expanded).accepted
+    val bnode      = bNode(graph)
     val iriSubject = subject(iri)
 
     "return a filtered graph" in {
@@ -50,6 +52,36 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "return a new Graph with added triples" in {
       graph.add(schema.age, 30).triples shouldEqual graph.triples + ((iriSubject, schema.age, 30))
     }
-  }
 
+    "be converted to NTriples" in {
+      val expected = contentOf("ntriples.nt", "{bnode}" -> s"_:B$bnode")
+      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
+    }
+
+    "be converted to dot without context" in {
+      val expected = contentOf("graph/dot-expanded.dot", "{bnode}" -> s"_:B$bnode")
+      graph.toDot().accepted.toString should equalLinesUnordered(expected)
+    }
+
+    "be converted to dot with context" in {
+      val expected = contentOf("graph/dot-compacted.dot", "{bnode}" -> s"_:B$bnode")
+      val context  = jsonContentOf("context.json")
+      graph.toDot(context).accepted.toString should equalLinesUnordered(expected)
+    }
+
+    // The returned json is not exactly the same as the original expanded json from where the Graph was created.
+    // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
+    "be converted to expanded JSON-LD" in {
+      val expanded = jsonContentOf("graph/expanded.json")
+      graph.toExpandedJsonLd.accepted.json shouldEqual expanded
+    }
+
+    // The returned json is not exactly the same as the original compacted json from where the Graph was created.
+    // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
+    "be converted to compacted JSON-LD" in {
+      val context   = jsonContentOf("context.json")
+      val compacted = jsonContentOf("graph/compacted.json")
+      graph.toCompactedJsonLd(context, ContextFields.Skip).accepted.json shouldEqual compacted
+    }
+  }
 }

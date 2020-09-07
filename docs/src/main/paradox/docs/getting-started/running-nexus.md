@@ -233,7 +233,7 @@ For better performance we recommended to select the `$DRIVER` corresponding to y
 _hyperkit_ on macOS, _hyperv_ on Windows and _kvm2_ on Linux.
 
 If the installation is successful you can run the following command to open the
-@link:[Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/){ open=new }:
+@link:[Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/){ open=new }:
 
 ```
 minikube dashboard
@@ -567,7 +567,7 @@ pod/nexus-web-0 condition met
 $
 ```
 
-You can now access the web interface at [http://$NEXUS](http://$NEXUS), `$NEXUS` being the public IP of your Minikube
+You can now access the web interface at `http://$NEXUS`, `$NEXUS` being the public IP of your Minikube
 cluster, as seen above.
 
 ## On premise / cloud deployment
@@ -605,7 +605,7 @@ take a look at the @ref:[benchmarks section](../delta/benchmarks.md) to get an i
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
-1.  Nexus uses a collection of data stores (@link:[Cassandra](http://cassandra.apache.org/){ open=new },
+1.  Nexus uses a collection of data stores (@link:[Cassandra](https://cassandra.apache.org/){ open=new },
     @link:[ElasticSearch](https://www.elastic.co/products/elasticsearch){ open=new }, 
     @link:[BlazeGraph](https://www.blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
     access, so:
@@ -621,19 +621,19 @@ should narrow the scope:
     characteristic of the deployment as frequent dropped packets or
     @link:[network partitions](https://en.wikipedia.org/wiki/Network_partition){ open=new } can seriously affect the 
     availability of the system. Clustered / distributed systems generally use some form of
-    @link:[consensus](https://en.wikipedia.org/wiki/Consensus_\(computer_science\)){ open=new } which is significantly affected by
+    @link:[consensus](https://en.wikipedia.org/wiki/Consensus_%28computer_science%29)){ open=new } which is significantly affected by
     the reliability of the network. If the reliability of the network is a concern within the target deployment then
     vertical scalability is desirable over horizontal scalability: fewer host nodes with better specifications is better
     over more commodity hardware host nodes.
 
 ### Cassandra
 
-Nexus uses @link:[Cassandra](http://cassandra.apache.org/){ open=new } as its _primary store_ as it scales well in terms of reads with the
+Nexus uses @link:[Cassandra](https://cassandra.apache.org/){ open=new } as its _primary store_ as it scales well in terms of reads with the
 number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be
 available in case of node failures or network partitions.
 
 Since this is the _primary store_ it is the most important system to be
-@link:[backed up](https://docs.datastax.com/en/cassandra/3.0/cassandra/operations/opsBackupRestore.html){ open=new }. All of the data
+@link:[backed up](http://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html){ open=new }. All of the data
 that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as
 mere indexing systems.
 

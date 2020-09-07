@@ -1,21 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, JsonLdError}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.{tryOrConversionErr, RdfError, Triple}
 import io.circe.Json
 import monix.bio.IO
 import org.apache.jena.iri.IRI
 import org.apache.jena.rdf.model.ResourceFactory.createStatement
 import org.apache.jena.rdf.model._
+import org.apache.jena.riot.{Lang, RDFWriter}
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 
+/**
+  * A rooted Graph representation backed up by a Jena Model
+  *
+ * @param root  the root node of the graph
+  * @param model the Jena model
+  */
 final case class Graph private (root: IRI, model: Model) { self =>
 
   lazy val rootResource: Resource = subject(root)
@@ -85,8 +93,56 @@ final case class Graph private (root: IRI, model: Model) { self =>
     */
   def add(triple: Set[Triple]): Graph = {
     val stmt = triple.foldLeft(Vector.empty[Statement]) { case (acc, (s, p, o)) => acc :+ createStatement(s, p, o) }
-    Graph(root, model.add(stmt.asJava))
+    Graph(root, copy(model).add(stmt.asJava))
   }
+
+  /**
+    * Attempts to convert the current Graph to the N-Triples format: https://www.w3.org/TR/n-triples/
+    * @return
+    */
+  def toNTriples: IO[RdfError, NTriples] =
+    tryOrConversionErr(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
+      .map(NTriples(_, root))
+
+  /**
+    * Attempts to convert the current Graph with the passed ''context'' as Json to the DOT format: https://graphviz.org/doc/info/lang.html
+    * The context will be inspected to populate its fields and then the conversion will be performed.
+    */
+  def toDot(
+      context: Json = Json.obj()
+  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, Dot] =
+    for {
+      resolvedCtx <- api.context(context, ContextFields.Include)
+      ctx          = dotContext(rootResource, resolvedCtx)
+      string      <- tryOrConversionErr(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
+    } yield Dot(string, root)
+
+  /**
+    * Attempts to convert the current Graph with the passed ''context'' as Json to the JSON-LD compacted format:
+    * https://www.w3.org/TR/json-ld11-api/#compaction-algorithms
+    * Note: This is done in two steps, first transforming the graph to JSON-LD expanded format and then compacting it.
+    */
+  def toCompactedJsonLd[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
+      api: JsonLdApi,
+      resolution: RemoteContextResolution,
+      opts: JsonLdOptions
+  ): IO[RdfError, CompactedJsonLd[Ctx]] =
+    api.fromRdf(model).flatMap(expanded => JsonLd.compact(expanded, context, root, f))
+
+  /**
+    * Attempts to convert the current Graph to the JSON-LD expanded format:
+    * https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
+    * Note: This is done in three steps, first transforming the graph to JSON-LD expanded format and then framing it (to have a single root) and then expanding it again.
+    */
+  def toExpandedJsonLd(implicit
+      api: JsonLdApi,
+      resolution: RemoteContextResolution,
+      opts: JsonLdOptions
+  ): IO[RdfError, ExpandedJsonLd] =
+    toCompactedJsonLd(Json.obj(), ContextFields.Skip).flatMap(_.toExpanded)
+
+  private def copy(model: Model): Model =
+    ModelFactory.createDefaultModel().add(model)
 }
 
 object Graph {
@@ -101,17 +157,7 @@ object Graph {
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       options: JsonLdOptions = JsonLdOptions.empty
-  ): IO[JsonLdError, Graph] =
+  ): IO[RdfError, Graph] =
     api.toRdf(input).map(m => Graph(iri, m))
-
-  /**
-    * Create a [[Graph]] from an expanded JSON-LD.
-    */
-  final def from(expanded: ExpandedJsonLd)(implicit
-      api: JsonLdApi,
-      resolution: RemoteContextResolution,
-      options: JsonLdOptions = JsonLdOptions.empty
-  ): IO[JsonLdError, Graph] =
-    apply(expanded.rootId, expanded.json)
 
 }

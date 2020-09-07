@@ -25,11 +25,14 @@ Finally, check our @ref:[Learn More](try-nexus.md#learn-more) section for more a
 
 ## Configuring your Project in Nexus Fusion
 
-The @link:[Nexus Sandbox](https://sandbox.bluebrainnexus.io/){ open=new } is a deployment of Nexus Delta and Fusion publicly available to anybody.
+The @link:[Nexus Sandbox](https://sandbox.bluebrainnexus.io/){ open=new } is a deployment of Nexus Delta and Fusion 
+publicly available to anybody.
 
-Nexus Fusion is the web interface that you will use in order to interact with Nexus Delta (the web services that manages the underlying knowledge graph).
+Nexus Fusion is the web interface that you will use in order to interact with Nexus Delta (the web services that manages 
+the underlying knowledge graph).
 
-Please bear in mind that the data stored in the Nexus Sandbox is being purged at regular intervals. We recommend you do not store any sensitive data in this environment since it is accessible to many other users.
+Please bear in mind that the data stored in the Nexus Sandbox is being purged at regular intervals. We recommend you do 
+not store any sensitive data in this environment since it is accessible to many other users.
 
 @@@ div { .center }
 ![sandbox-home](../assets/try-nexus-sandbox-home-not-logged-in.png)
@@ -41,15 +44,18 @@ The first step is to login, by clicking in the upper right corner of the screen.
 ![1-sandbox-login](../assets/try-nexus-sandbox-log-in-github-realm.png)
 @@@
 
-Once logged in, you can navigate to the @ref:[Admin](../fusion/admin.md) interface through the left navigation sidebar, in order to create the correct organizations and projects for your data to live.
+Once logged in, you can navigate to the @ref:[Admin](../fusion/admin.md) interface through the left navigation sidebar, 
+in order to create the correct organizations and projects for your data to live.
 
-For this tutorial, you can use an existing organization called `nexustutorial` (by clicking on the so-named organization), or you can create your own organization (by clicking the `Create Organization` button at the top).
+For this tutorial, you can use an existing organization called `nexustutorial` (by clicking on the so-named 
+organization), or you can create your own organization (by clicking the `Create Organization` button at the top).
 
 @@@ div { .center }
 ![2-sandbox-admin](../assets/try-nexus-sandbox-admin-logged-in.png)
 @@@
 
-In an organization, you will find the list of existing projects, and you can create your own. Projects (as well as organizations) support permissions, which means that you cannot edit any organizations or projects.
+In an organization, you will find the list of existing projects, and you can create your own. Projects (as well as 
+organizations) support permissions, which means that you cannot edit any organizations or projects.
 
 For this tutorial, you will need to create your own project.
 
@@ -57,7 +63,8 @@ For this tutorial, you will need to create your own project.
 ![](../assets/try-nexus-sandbox-admin-organization.png)
 @@@
 
-Choose a name and a description for your project. For more information about advanced settings, see @ref:[here](../fusion/admin.md#organizations-and-projects-indexes).
+Choose a name and a description for your project. For more information about advanced settings, see 
+@ref:[here](../fusion/admin.md#organizations-and-projects-indexes).
 
 @@@ div { .center }
 ![](../assets/try-nexus-sandbox-admin-create-project-form.png)
@@ -217,9 +224,11 @@ The tutorial code is available on:
 
 ### Linking data on the web
 
-In this tutorial, we demonstrate how to consume structured data published on the web according to the Linked data principles to extend and enrich a knowledge graph.
+In this tutorial, we demonstrate how to consume structured data published on the web according to the Linked data 
+principles to extend and enrich a knowledge graph.
 
-You'll build a simple pipeline to query entities managed within Blue Brain Nexus, connect them with entities available on the web as structured data and extend and enrich their metadata.
+You'll build a simple pipeline to query entities managed within Blue Brain Nexus, connect them with entities available 
+on the web as structured data and extend and enrich their metadata.
 
 You'll learn:
 

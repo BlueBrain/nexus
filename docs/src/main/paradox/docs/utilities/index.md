@@ -1,7 +1,7 @@
 @@@ index
 
-* @ref:[Indexing data in other systems](projections.md)
-* @ref:[MovieLens Tutorial using the Nexus Python CLI](nexus-python-cli.md)
+- @ref:[Indexing data in other systems](projections.md)
+- @ref:[MovieLens Tutorial using the Nexus Python CLI](nexus-python-cli.md)
 
 @@@
 
@@ -16,14 +16,14 @@ Nexus provides some schemas which make building provenance based knowledge graph
 #### nexus-schemaorg
 
 @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new } version of a subset of schemas defined by
-@link:[schema.org](http://schema.org/docs/full.html){ open=new } that are commonly used in Blue Brain Nexus.
+@link:[schema.org](https://schema.org/docs/full.html){ open=new } that are commonly used in Blue Brain Nexus.
 
 @link:[Source Code](https://github.com/BlueBrain/nexus-schemaorg){ open=new }
 
 #### nexus-prov
 
 Data management oriented @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new } version of
-@link:[W3C PROV-O](http://www.w3.org/ns/prov-o-20130430){ open=new }.
+@link:[W3C PROV-O](https://www.w3.org/ns/prov-o-20130430){ open=new }.
 
 @link:[Source Code](https://github.com/BlueBrain/nexus-prov){ open=new }
 
@@ -73,7 +73,8 @@ nexus.permissions.fetch()
 
 ### Nexus.js
 
-The @link:[Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js){ open=new } provides many features to help you build web applications that integrate with Blue Brain Nexus.
+The @link:[Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js){ open=new } provides many features to help you 
+build web applications that integrate with Blue Brain Nexus.
 
 ![Nexus JS logo](../assets/nexus-js-logo.png)
 
@@ -85,7 +86,8 @@ The @link:[Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js){ open=new 
 
 The SDK is written in Typescript, so type declarations for all operations are included in the package.
 
-You can generate documentation using `npm run documentation` or with `docker` by running `make documentation`. More information can be found [here](https://github.com/BlueBrain/nexus-sdk-js#development).
+You can generate documentation using `npm run documentation` or with `docker` by running `make documentation`. 
+More information can be found @link:[here](https://github.com/BlueBrain/nexus-js){ open=new }.
 
 @link:[Source Code](https://github.com/BlueBrain/nexus-sdk-js){ open=new }
 
@@ -105,7 +107,7 @@ This package contains some utility components to easily integrate the Nexus SDK 
 
 Another utility packages was written to facilitate chained calling behavior, which can be used independently of Nexus.js for other projects.
 
-- [nexus-link](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-link/README.md#readme)
+- @link:[nexus-link](https://github.com/BlueBrain/nexus-js/blob/master/packages/nexus-link/README.md#readme){ open=new }
 
 ### Indexing data in other systems
 
