@@ -6,15 +6,21 @@ Each resource...
 
 - belongs to a `project` identifier by the label `{project_label}`
 - inside an `organization` identifier by the label `{org_label}` 
-- it is validated against a `schema` with id `{schema_id}`. In case of using `_` for this segment, the schema segment reads as `irrelevant`.
+- it is validated against a `schema` with id `{schema_id}`. In case of using `_` for this segment, the schema segment 
+  reads as `irrelevant`.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
+a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
+to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
-When  modifying resources, the caller must have `resources/write` permissions on the current path of the project or the ancestor paths.
+When  modifying resources, the caller must have `resources/write` permissions on the current path of the project or the 
+ancestor paths.
 
-When  reading resources, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
+When  reading resources, the caller must have `resources/read` permissions on the current path of the project or the 
+ancestor paths.
 
 @@@
 
@@ -28,7 +34,8 @@ POST /v1/resources/{org_label}/{project_label}/{schema_id}
 The json payload: 
 
 - If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resource's project (`{project_label}`).
+- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the 
+  `prefix` defined on the resource's project (`{project_label}`).
 
 **Example**
 
@@ -44,7 +51,8 @@ Response
 
 ## Create a resource using PUT
 
-This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+This alternative endpoint to create a resource is useful in case the json payload does not contain an `@id` but you want 
+to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
 PUT /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}
   {...}
@@ -143,11 +151,14 @@ Response
 
 ## Fetch a resource
 
-When fetching a resource, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
+When fetching a resource, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
+header.
 
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
-- **application/n-triples**: RDF n-triples response, as defined by the [w3](https://www.w3.org/TR/n-triples/).
-- **text/vnd.graphviz**: A [DOT response](https://www.graphviz.org/doc/info/lang.html).
+- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
+  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } 
+  or the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
+- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
+- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
@@ -202,12 +213,15 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
-- `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
 - `{schema}`: Iri - can be used to filter the resulting resources based on the conformant schema
-- `{search}`: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided string
-- `{sort}`: String - can be used to sort resources based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
+- `{search}`: String - can be provided to select only the resources in the collection that have attribute values 
+  matching (containing) the provided string
+- `{sort}`: String - can be used to sort resources based on a payloads' field. This parameter can appear multiple times 
+  to enable sorting by multiple fields
 
 
 **Example**
@@ -231,7 +245,8 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resources based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting resources based on their revision value
-- `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting resources based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting resources based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resources based on the person which performed the last update
 
@@ -277,7 +292,8 @@ where...
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{includeExternalLinks}`: Boolean - flag to decide whether or not external links are to be included. External links are references to resources in other projects, or even resources external to Nexus; defaults to `true`
+- `{includeExternalLinks}`: Boolean - flag to decide whether or not external links are to be included. External links 
+  are references to resources in other projects, or even resources external to Nexus; defaults to `true`
 
 **Example**
 
@@ -302,7 +318,8 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current resource
-- `{type}`: String - is a type identifier for the current realm. Possible types are: Created, Updated, Deprecated, TagAdded, FileCreated, FileUpdated
+- `{type}`: String - is a type identifier for the current realm. Possible types are: Created, Updated, Deprecated, 
+  TagAdded, FileCreated, FileUpdated
 - `{id}`: String - is the identifier of the resource event. It can be used in the `Last-Event-Id` query parameter
 
 
@@ -313,7 +330,8 @@ where...
 GET /v1/resources/events
 ```
 
-where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed resource event. It can be used for 
+cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 **Example**
 
@@ -333,7 +351,8 @@ GET /v1/resources/{org_label}/events
 where 
 
 - `{org_label}`: String - the selected organization for which the events are going to be filtered
-- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for 
+  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 **Example**
 
@@ -353,7 +372,8 @@ where
 
 - `{org_label}`: String - the selected organization for which the events are going to be filtered
 - `{project_label}`: String - the selected project for which the events are going to be filtered
-- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for 
+  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 **Example**
 

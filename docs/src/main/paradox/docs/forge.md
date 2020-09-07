@@ -8,4 +8,4 @@ Blue Brain Nexus Forge is a domain-agnostic, generic and extensible Python frame
 * Validate and register data and metadata.
 * Search and download data and metadata from a knowledge graph.
 
-For more information about the Forge, please refer to <https://nexus-forge.readthedocs.io/en/latest/>.
+For more information about the Forge, please refer to the @link:[documentation](https://nexus-forge.readthedocs.io/en/latest/){ open=new }.

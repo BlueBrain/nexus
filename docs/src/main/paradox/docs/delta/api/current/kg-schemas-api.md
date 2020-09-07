@@ -1,20 +1,29 @@
 # Schemas
 
-Schemas are rooted in the `/v1/schemas/{org_label}/{project_label}` collection. They define a set of rules and constraints using [SHACL](https://www.w3.org/TR/shacl/). Once those schemas are present, other resources can be created against them. Those resources won't be successfully created unless they match the required constraints defined on the schema.
+Schemas are rooted in the `/v1/schemas/{org_label}/{project_label}` collection. They define a set of rules and 
+constraints using @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new }. Once those schemas are present, other 
+resources can be created against them. Those resources won't be successfully created unless they match the required 
+constraints defined on the schema.
 
 Each schema... 
 
 - belongs to a `project` identifier by the label `{project_label}` 
 - inside an `organization` identifier by the label `{org_label}` 
-- it is validated against the [shacl schema](https://bluebrainnexus.io/schemas/shacl-20170720.ttl) (version 20170720).
+- it is validated against the @link:[SHACL schema](https://bluebrainnexus.io/schemas/shacl-20170720.ttl){ open=new } 
+  (version 20170720).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
+a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
+to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
-When  modifying schemas, the caller must have `schemas/write` permissions on the current path of the project or the ancestor paths.
+When modifying schemas, the caller must have `schemas/write` permissions on the current path of the project or the 
+ancestor paths.
 
-When  reading schemas, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
+When reading schemas, the caller must have `resources/read` permissions on the current path of the project or the 
+ancestor paths.
 
 @@@
 
@@ -28,7 +37,8 @@ POST /v1/schemas/{org_label}/{project_label}
 The json payload: 
 
 - If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resource's project (`{project_label}`).
+- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the 
+  `prefix` defined on the resource's project (`{project_label}`).
 
 **Example**
 
@@ -44,7 +54,8 @@ Response
 
 ## Create a schema using PUT
 
-This alternative endpoint to create a schema is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+This alternative endpoint to create a schema is useful in case the json payload does not contain an `@id` but you want 
+to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
 PUT /v1/schemas/{org_label}/{project_label}/{schema_id}
   {...}
@@ -142,11 +153,14 @@ Response
 
 ## Fetch a schema
 
-When fetching a schema, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
+When fetching a schema, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
+header.
 
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
-- **application/n-triples**: RDF n-triples response, as defined by the [w3](https://www.w3.org/TR/n-triples/).
-- **text/vnd.graphviz**: A [DOT response](https://www.graphviz.org/doc/info/lang.html).
+- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
+  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or
+  the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
+- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
+- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
@@ -201,11 +215,14 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting schemas based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting schemas based on their revision value
-- `{type}`: Iri - can be used to filter the resulting schemas based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting schemas based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting schemas based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting schemas based on the person which performed the last update
-- `{search}`: String - can be provided to select only the schemas in the collection that have attribute values matching (containing) the provided string
-- `{sort}`: String - can be used to sort schemas based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
+- `{search}`: String - can be provided to select only the schemas in the collection that have attribute values matching 
+  (containing) the provided string
+- `{sort}`: String - can be used to sort schemas based on a payloads' field. This parameter can appear multiple times 
+  to enable sorting by multiple fields
 
 
 **Example**

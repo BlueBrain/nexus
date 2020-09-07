@@ -1,8 +1,8 @@
 @@@ index
 
-- [Understanding Knowledge Graphs](understanding-knowledge-graphs.md)
-- [Try Nexus](try-nexus.md)
-- [Running Nexus](running-nexus.md)
+- @ref:[Understanding Knowledge Graphs](understanding-knowledge-graphs.md)
+- @ref:[Try Nexus](try-nexus.md)
+- @ref:[Running Nexus](running-nexus.md)
 
 @@@
 

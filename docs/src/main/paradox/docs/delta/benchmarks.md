@@ -14,10 +14,10 @@ issues and / or bottlenecks. In particular, we are most interested in the follow
 *   **clustering** - what's the effect of changing from a single node to clustered deployment, as well as, what's the
     effect of adding more nodes to the cluster.
 
-The test scenarios and scripts can be found in the [nexus-benchmarks](https://github.com/BlueBrain/nexus-benchmarks)
+The test scenarios and scripts can be found in the @link:[nexus-benchmarks](https://github.com/BlueBrain/nexus-benchmarks){ open=new }
 repository.
 
-The tests were run against version 1.2.1 in October 2019 using [Gatling](https://gatling.io/) version 3.2.1.
+The tests were run against version 1.2.1 in October 2019 using @link:[Gatling](https://gatling.io/){ open=new } version 3.2.1.
 
 # Environment
 

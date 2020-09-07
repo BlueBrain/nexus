@@ -14,7 +14,7 @@ The goal is to go over some capabilities of Blue Brain Nexus enabling:
 This quick start tutorial tutorial makes use of:
 
 * an AWS deployment of Blue Brain Nexus available at https://sandbox.bluebrainnexus.io.
-* [Nexus Python CLI](https://github.com/BlueBrain/nexus-cli), a python Command Line Interface.
+* @link:[Nexus Python CLI](https://github.com/BlueBrain/nexus-cli){ open=new }, a python Command Line Interface.
 @@@
 
 Let's get started.
@@ -82,7 +82,7 @@ Command
 Output
 :   @@snip [create-project-out.sh](assets/create-project-out.sh)
 
-By default, created projects are private meaning that only the project creator (you) has read and write access to it. We'll [see below](#share-data) how to make a project public.
+By default, created projects are private meaning that only the project creator (you) has read and write access to it. We'll @ref:[see below](#share-data) how to make a project public.
 
 The output of the previous command shows the list of projects you have read access to. The project you just created should be the only one listed at this point. Let select it.
 
@@ -163,14 +163,14 @@ nexus resources list --size 10
 
 ### Ingest CSV files
 
-To illustrate how to load CSV files we will work with the small version of the [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip)
+To illustrate how to load CSV files we will work with the small version of the @link:[MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip){ open=new }
 containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users.
 An overview of this dataset can be found [here](../dataset/index.html).
 
 #### Download the dataset
 
 
-The [MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip) can be downloaded either directly on a browser or using a curl command as shown below.
+The @link:[MovieLens dataset](http://files.grouplens.org/datasets/movielens/ml-latest-small.zip){ open=new } can be downloaded either directly on a browser or using a curl command as shown below.
 
 The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded MovieLens dataset is made of four csv files as shown in the output tab.
 
@@ -264,8 +264,8 @@ Listing is usually not enough to select specific subset of data. Data ingested w
 
 View              | Description
 ------------------|---------------
-ElasticSearchView | Exposes data in [ElasticSearch](https://www.elastic.co/products/elasticsearch) a document oriented search engine and provide access to it using the [ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html).
-SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the [W3C Sparql query language](https://www.w3.org/TR/sparql11-query/).
+ElasticSearchView | Exposes data in @link:[ElasticSearch](https://www.elastic.co/products/elasticsearch){ open=new } a document oriented search engine and provide access to it using the @link:[ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }.
+SparqlView        | Exposes data as a [graph](../../knowledge-graph/thinking-in-graph.html) and allows to navigate and explore the data using the @link:[W3C SPARQL query language](https://www.w3.org/TR/sparql11-query/){ open=new }.
 
 
 @@@ note
@@ -277,7 +277,7 @@ Please copy each query and use a text editor to replace $PROJECTLABEL.
 
 #### Query data using the ElasticSearchView
 
-The ElasticSearchView URL is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].
+The ElasticSearchView URL is available at the address `https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search`.
 
 Select queries
 :   @@snip [select_elastic.sh](assets/select_elastic.sh)
@@ -287,7 +287,7 @@ Graph navigation queries
 
 #### Query data using the SparqlView
 
-The SparqlView is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql].
+The SparqlView is available at the address `https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql]`.
 The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.
 
 Select queries
@@ -307,7 +307,7 @@ $ nexus acls make-public
 To check that the dataset is now public:
 
 * Ask the person next to you to list resources in your project.
-* Or create and select another profile named public-tutorial (following the instructions in the [Set up](#set-up).
+* Or create and select another profile named public-tutorial (following the instructions in the @ref:[Set up](#set-up).
 You should see the that the public-tutorial is selected and its corresponding token column is None.
 
 Output

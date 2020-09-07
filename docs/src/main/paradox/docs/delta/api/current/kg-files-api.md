@@ -7,13 +7,18 @@ Each file...
 - belongs to a `project` identifier by the label `{project_label}`
 - inside an `organization` identifier by the label `{org_label}` 
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
+a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
+to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
-When modifying files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.
+When modifying files, the caller must have the permissions defined on the storage associated to the file on the current 
+path of the project or the ancestor paths.
 
-When  reading files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.
+When  reading files, the caller must have the permissions defined on the storage associated to the file on the current 
+path of the project or the ancestor paths.
 
 @@@
 
@@ -26,7 +31,8 @@ POST /v1/files/{org_label}/{project_label}
 The json payload:
 
 - If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resource's project (`{project_label}`).
+- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is 
+the `prefix` defined on the resource's project (`{project_label}`).
 
 **Example**
 
@@ -209,7 +215,10 @@ Response
 
 When fetching a file, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
 
-- **application/ld+json**: JSON-LD output response to retrieve the file metadata. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
+- **application/ld+json**: JSON-LD output response to retrieve the file metadata. Further specifying the query 
+  parameter `format=compacted|expanded` will provide with the JSON-LD 
+  @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or the 
+  @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
 - **\*/\***: retrieves the file content.
 - for any other Content-Type that matches the file Content-Type, the file content will be fetched as well.
 
@@ -247,11 +256,14 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting files based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting files based on their revision value
-- `{type}`: Iri - can be used to filter the resulting files based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting files based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting files based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting files based on the person which performed the last update
-- `{search}`: String - can be provided to select only the files in the collection that have attribute values matching (containing) the provided string
-- `{sort}`: String - can be used to sort files based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
+- `{search}`: String - can be provided to select only the files in the collection that have attribute values matching 
+  (containing) the provided string
+- `{sort}`: String - can be used to sort files based on a payloads' field. This parameter can appear multiple times to 
+  enable sorting by multiple fields
 
 **Example**
 

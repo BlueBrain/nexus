@@ -2,7 +2,8 @@
 
 Organizations are rooted in the `/v1/orgs` path and are used to group and categorize sub-resources.
 
-Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
+Access to resources in the system depends on the access control list set for them. A caller may need to prove its 
+identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
 Please visit @ref:[Authentication](authentication.md) to learn more about retrieving access tokens.
 
 
@@ -139,10 +140,13 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting organizations based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting organizations based on their revision value
-- `{type}`: Iri - can be used to filter the resulting organizations based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting organizations based on their `@type` value. This parameter can 
+  appear multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting organizations based on their creator
-- `{updatedBy}`: Iri - can be used to filter the resulting organizations based on the person which performed the last update
-- `{label}`: String - can be used to filter the resulting organizations based on its label. E.g.: `label=my` will match any organization's label that contains the string `my`. 
+- `{updatedBy}`: Iri - can be used to filter the resulting organizations based on the person which performed the last 
+  update
+- `{label}`: String - can be used to filter the resulting organizations based on its label. E.g.: `label=my` will match 
+  any organization's label that contains the string `my`. 
 
 **Example**
 
@@ -161,7 +165,8 @@ This endpoint allows clients to receive automatic updates from the organizations
 GET /v1/orgs/events
 ```
 
-where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed organization event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed organization event. It can be used 
+for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of organization events, represented in the following way
 
@@ -174,7 +179,8 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current organization
-- `{type}`: String - is a type identifier for the current organization. Possible types are: OrganizationCreated, OrganizationUpdated and OrganizationDeprecated
+- `{type}`: String - is a type identifier for the current organization. Possible types are: OrganizationCreated, 
+  OrganizationUpdated and OrganizationDeprecated
 - `{id}`: String - is the identifier of the organization event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**

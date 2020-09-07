@@ -1,8 +1,8 @@
 @@@ index
 
-- [Architecture](architecture.md)
-- [API Reference](api/current/index.md)
-- [Benchmarks](benchmarks.md)
+- @ref:[Architecture](architecture.md)
+- @ref:[API Reference](api/current/index.md)
+- @ref:[Benchmarks](benchmarks.md)
 
 @@@
 

@@ -1,9 +1,14 @@
 # Resolvers
 
-Resolvers are rooted in the `/v1/resolvers/{org_label}/{project_label}` collection and are used in the following scenarios:
+Resolvers are rooted in the `/v1/resolvers/{org_label}/{project_label}` collection and are used in the following 
+scenarios:
 
-- Bring the content of the `owl:imports` predicate for schema resources. The value is the `@id` of the resource. E.g.: You can define owl imports on a schema, as follows `"owl:imports": "http://example.com/myid"`. The resolver will try to find a resource with `"@id": "http://example.com/myid"` and if found, will bring the payload into the original resource. 
-- Bring the content of the `@context` links. The value is the `@id` of the resource. E.g.: A resource might define the context as follows: `"@context": "http://example.com/id"`. The resolver will try to find a resource with `"@id": "http://example.com/id"` and if found, will bring the payload into the original resource. 
+- Bring the content of the `owl:imports` predicate for schema resources. The value is the `@id` of the resource. E.g.: 
+You can define owl imports on a schema, as follows `"owl:imports": "http://example.com/myid"`. The resolver will try to 
+find a resource with `"@id": "http://example.com/myid"` and if found, will bring the payload into the original resource. 
+- Bring the content of the `@context` links. The value is the `@id` of the resource. E.g.: A resource might define the 
+context as follows: `"@context": "http://example.com/id"`. The resolver will try to find a resource with 
+`"@id": "http://example.com/id"` and if found, will bring the payload into the original resource. 
 
 Each resolver... 
 
@@ -11,13 +16,18 @@ Each resolver...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the [resolver schema](https://bluebrainnexus.io/schemas/resolver.json).
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control 
+list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
+to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
-When  modifying resolvers, the caller must have `resolvers/write` permissions on the current path of the project or the ancestor paths.
+When  modifying resolvers, the caller must have `resolvers/write` permissions on the current path of the project or the 
+ancestor paths.
 
-When  reading resolvers, the caller must have `resources/read` permissions on the current path of the project or the ancestor paths.
+When  reading resolvers, the caller must have `resources/read` permissions on the current path of the project or the 
+ancestor paths.
 
 @@@
 
@@ -29,8 +39,10 @@ There are several types of resolvers, which perform resolution in different scop
 
 The scope of the resolution is the current project where the resource resides. In other words:
 
-- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on the same project as schema `A`. 
-- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on the same project as resource `A`. 
+- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on the same project as 
+  schema `A`. 
+- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on the same 
+  project as resource `A`. 
 
 This resolver gets automatically created when the project is created and it cannot be modified.
 
@@ -44,14 +56,18 @@ This resolver gets automatically created when the project is created and it cann
 }
 ```
 
-where `{priority}` is a numeric value (from 1 - 100) which defines the resolution priority when attempting to find the resource with a particular @id.
+where `{priority}` is a numeric value (from 1 - 100) which defines the resolution priority when attempting to find the 
+resource with a particular @id.
 
 ### CrossProject resolver
 
-The scope of the resolution is the collections of projects `P` defined on the resolver. CrossProject resolution also defines a collection of identities `I` to enforce ACLs. In other words:
+The scope of the resolution is the collections of projects `P` defined on the resolver. CrossProject resolution also 
+defines a collection of identities `I` to enforce ACLs. In other words:
 
-- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on some of the projects from the collection `P` and as long `I` have `resources/read` permissions on the schema `B` project.
-- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on some of the projects from the collection `P` and as long as `I` have `resources/read` permissions on the schema `B` project.
+- Schema `A` can import schema `B` using the `owl:import` as long as schema `B` is located on some of the projects from 
+  the collection `P` and as long `I` have `resources/read` permissions on the schema `B` project.
+- Resource `A` can reference resource's context `B` (inside `@context`) as long as resource `B` is located on some of 
+  the projects from the collection `P` and as long as `I` have `resources/read` permissions on the schema `B` project.
 
 
 **CrossProject resolver payload**
@@ -70,8 +86,10 @@ The scope of the resolution is the collections of projects `P` defined on the re
 where...
 
 - `{resourceType}`: Iri - resolves only the resources with `@type` containing `{resourceType}`. This field is optional.
-- `{priority}`: Number - value (from 1 - 100) which defines the resolution priority when attempting to find the resource with a particular @id.
-- `{project}`: String - the user friendly reference to the project from where the resolution process will attempt to find the @id's. It follows the format `{organization}/{project}`.
+- `{priority}`: Number - value (from 1 - 100) which defines the resolution priority when attempting to find the resource 
+  with a particular @id.
+- `{project}`: String - the user friendly reference to the project from where the resolution process will attempt to 
+  find the @id's. It follows the format `{organization}/{project}`.
 - `_identity_`: Json object - the identity against which to enforce ACLs during resolution process.
 - `{someid}`: Iri - the @id value for this resolver.
 
@@ -96,7 +114,8 @@ POST /v1/resolvers/{org_label}/{project_label}
 The json payload: 
 
 - If the `@id` value is found on the payload, this @id will be used.
-- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is the `prefix` defined on the resolver's project (`{project_label}`).
+- If the `@id` value is not found on the payload, an @id will be generated as follows: `base:{UUID}`. The `base` is 
+  the `prefix` defined on the resolver's project (`{project_label}`).
 
 **Example**
 
@@ -111,7 +130,8 @@ Response
 
 
 ## Create a resolver using PUT
-This alternative endpoint to create a resolver is useful in case the json payload does not contain an `@id` but you want to specify one. The @id will be specified in the last segment of the endpoint URI.
+This alternative endpoint to create a resolver is useful in case the json payload does not contain an `@id` but you 
+want to specify one. The @id will be specified in the last segment of the endpoint URI.
 ```
 PUT /v1/resolvers/{org_label}/{project_label}/{resolver_id}
   {...}
@@ -213,9 +233,11 @@ Response
 
 When fetching a resolver, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP header.
 
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` will provide with the JSON-LD [compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form) or the [expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form).
-- **application/n-triples**: RDF n-triples response, as defined by the [w3](https://www.w3.org/TR/n-triples/).
-- **text/vnd.graphviz**: A [DOT response](https://www.graphviz.org/doc/info/lang.html).
+- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
+  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } 
+  or the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
+- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
+- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
 
 If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
 
@@ -271,11 +293,14 @@ where...
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
 - `{deprecated}`: Boolean - can be used to filter the resulting resolvers based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting resolvers based on their revision value
-- `{type}`: Iri - can be used to filter the resulting resolvers based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting resolvers based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting resolvers based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting resolvers based on the person which performed the last update
-- `{search}`: String - can be provided to select only the resolvers in the collection that have attribute values matching (containing) the provided string
-- `{sort}`: String - can be used to sort resolvers based on a payloads' field. This parameter can appear multiple times to enable sorting by multiple fields
+- `{search}`: String - can be provided to select only the resolvers in the collection that have attribute values 
+  matching (containing) the provided string
+- `{sort}`: String - can be used to sort resolvers based on a payloads' field. This parameter can appear multiple times 
+  to enable sorting by multiple fields
 
 
 **Example**
@@ -291,7 +316,8 @@ Response
 
 Fetches a resource using the provided resolver. 
 
-If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
+If the resolver segment (`{resolver_id}`) is `_` the resource is fetched from the first resolver in the requested 
+project (`{org_label}/{project_label}`). The resolvers are ordered by its priority field.
 
 ```
 GET /v1/resolvers/{org_label}/{project_label}/{resolver_id}/{resource_id}?rev={rev}&tag={tag}

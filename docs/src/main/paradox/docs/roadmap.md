@@ -6,7 +6,7 @@ The roadmap is subject to change at any time and is given for information only.
 
 ## Release 1.5 (scheduled for Q4, 2020)
 
-Check our [Github milestone](https://github.com/BlueBrain/nexus/milestone/9) for more details or start contributing today!
+Check our @link:[Github milestone](https://github.com/BlueBrain/nexus/milestone/9){ open=new } for more details or start contributing today!
 
 ### Nexus Fusion
 

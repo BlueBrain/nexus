@@ -5,7 +5,10 @@ Realms are rooted in `/v1/realms` collection.
 Each realm defines a specific authentication provider.
 Any of the authentication providers can be used to obtain access tokens that can be used with Nexus.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how to retrieve an access token.
+Access to resources in the system depends on the access control list set for them. Depending on the access control 
+list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
+header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about 
+how to retrieve an access token.
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -91,7 +94,8 @@ where...
 
 - `{deprecated}`: Boolean - can be used to filter the resulting realms based on their deprecation status
 - `{rev}`: Number - can be used to filter the resulting realms based on their revision value
-- `{type}`: Iri - can be used to filter the resulting realms based on their `@type` value. This parameter can appear multiple times, filtering further the `@type` value.
+- `{type}`: Iri - can be used to filter the resulting realms based on their `@type` value. This parameter can appear 
+  multiple times, filtering further the `@type` value.
 - `{createdBy}`: Iri - can be used to filter the resulting realms based on their creator
 - `{updatedBy}`: Iri - can be used to filter the resulting realms based on the person which performed the last update
 
@@ -140,7 +144,8 @@ This endpoint allows clients to receive automatic updates from the realms in a s
 GET /v1/realms/events
 ```
 
-where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed realm event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+where `Last-Event-Id` is an optional HTTP Header that identifies the last consumed realm event. It can be used for 
+cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
 
 The response contains a series of realm events, represented in the following way
 
@@ -153,7 +158,8 @@ id:{id}
 where...
 
 - `{payload}`: Json - is the actual payload of the current realm
-- `{type}`: String - is a type identifier for the current realm. Possible types are: RealmCreated, RealmUpdated and RealmDeprecated
+- `{type}`: String - is a type identifier for the current realm. Possible types are: RealmCreated, RealmUpdated and 
+  RealmDeprecated
 - `{id}`: String - is the identifier of the realm event. It can be used in the `Last-Event-Id` HTTP Header
 
 **Example**
