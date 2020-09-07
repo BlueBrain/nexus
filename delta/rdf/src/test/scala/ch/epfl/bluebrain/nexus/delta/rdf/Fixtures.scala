@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotFound
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers, TestMatchers}
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -12,7 +14,13 @@ import monix.execution.schedulers.CanBlock
 import org.apache.jena.iri.IRI
 import org.scalatest.OptionValues
 
-trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with IOValues with EitherValuable {
+trait Fixtures
+    extends TestHelpers
+    with CirceLiteral
+    with OptionValues
+    with IOValues
+    with EitherValuable
+    with TestMatchers {
 
   val iri = iri"http://nexus.example.com/john-doé"
 
@@ -45,6 +53,12 @@ trait Fixtures extends TestHelpers with CirceLiteral with OptionValues with IOVa
 
   def resolution(contexts: Map[IRI, Json]): RemoteContextResolution =
     RemoteContextResolution((iri: IRI) => IO.fromEither(contexts.get(iri).toRight(RemoteContextNotFound(iri))))
+
+  def bNode(graph: Graph) =
+    graph
+      .find { case (s, p, _) => s == graph.rootResource && p == predicate(vocab + "address") }
+      .map(_._3.asNode().getBlankNodeLabel)
+      .value
 
 }
 

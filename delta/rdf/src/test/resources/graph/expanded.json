@@ -1,0 +1,81 @@
+[
+  {
+    "@id": "http://nexus.example.com/john-doé",
+    "@type": [
+      "http://schema.org/Person"
+    ],
+    "http://example.com/address": [
+      {
+        "http://example.com/customid": [
+          {
+            "@id": "http://nexus.example.com/myid"
+          }
+        ],
+        "http://example.com/number": [
+          {
+            "@value": 2
+          }
+        ],
+        "http://example.com/street": [
+          {
+            "@value": "my street"
+          }
+        ]
+      }
+    ],
+    "http://schema.org/deprecated": [
+      {
+        "@value": false
+      }
+    ],
+    "http://example.com/otherProperty": [
+      {
+        "@type": "http://www.w3.org/2001/XMLSchema#other",
+        "@value": "value"
+      }
+    ],
+    "http://example.org/stringProperty": [
+      {
+        "@value": "Some \"property"
+      }
+    ],
+    "http://schema.org/birthDate": [
+      {
+        "@value": "1999-04-09T20:00Z"
+      }
+    ],
+    "http://schema.org/name": [
+      {
+        "@value": "John Doe"
+      }
+    ],
+    "http://example.com/sibling": [
+      {
+        "@id": "http://nexus.example.com/another",
+        "@type": [
+          "http://schema.org/Other"
+        ],
+        "http://schema.org/birthDate": [
+          {
+            "@value": "2000-04-12T20:00Z"
+          }
+        ],
+        "http://schema.org/birthHour": [
+          {
+            "@value": 9
+          }
+        ],
+        "http://schema.org/birthYear": [
+          {
+            "@value": 1999
+          }
+        ],
+        "http://schema.org/height": [
+          {
+            "@value": 9.223
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedIri
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -86,6 +87,13 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
       case expanded if expanded.rootId != rootId => IO.raiseError(UnexpectedIri(rootId, expanded.rootId))
       case expanded                              => IO.now(expanded)
     }
+
+  override def toGraph(implicit
+      opts: JsonLdOptions,
+      api: JsonLdApi,
+      resolution: RemoteContextResolution
+  ): IO[RdfError, Graph] =
+    toExpanded.flatMap(_.toGraph)
 
   private def add(key: String, value: Json): This = {
     val newObj = obj(key) match {

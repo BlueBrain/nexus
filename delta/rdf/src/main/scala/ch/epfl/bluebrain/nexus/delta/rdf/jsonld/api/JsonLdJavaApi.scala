@@ -4,15 +4,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RemoteContextError, Unexpecte
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import ch.epfl.bluebrain.nexus.delta.rdf.{tryToConversionErr, RdfError}
+import ch.epfl.bluebrain.nexus.delta.rdf.{tryOrConversionErr, RdfError}
 import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdProcessor, JsonLdOptions => JsonLdJavaOptions}
 import com.github.jsonldjava.utils.JsonUtils
 import io.circe.{parser, Json}
 import monix.bio.IO
 import org.apache.jena.iri.IRI
 import org.apache.jena.rdf.model.{Model, ModelFactory}
+import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
 import org.apache.jena.riot.system.StreamRDFLib
-import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
+import org.apache.jena.riot.{JsonLDWriteContext, Lang, RDFParser, RDFWriter}
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
@@ -30,10 +31,10 @@ object JsonLdJavaApi extends JsonLdApi {
       resolution: RemoteContextResolution
   ): IO[RdfError, (Json, Ctx)] =
     for {
-      obj           <- tryToConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
-      ctxObj        <- tryToConversionErr(JsonUtils.fromString(ctx.noSpaces), "building context")
+      obj           <- tryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
+      ctxObj        <- tryOrConversionErr(JsonUtils.fromString(ctx.noSpaces), "building context")
       options       <- remoteContextLoader(input, ctx).map(toOpts)
-      compacted     <- tryToConversionErr(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
+      compacted     <- tryOrConversionErr(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
       compactedJson <- IO.fromEither(parser.parse(compacted).leftMap(err => UnexpectedJsonLd(err.getMessage())))
       ctxValue      <- context(ctx, f, options)
     } yield (compactedJson, ctxValue)
@@ -43,9 +44,9 @@ object JsonLdJavaApi extends JsonLdApi {
       input: Json
   )(implicit options: JsonLdOptions, resolution: RemoteContextResolution): IO[RdfError, Json] =
     for {
-      obj          <- tryToConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
+      obj          <- tryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
       options      <- remoteContextLoader(input).map(toOpts)
-      expanded     <- tryToConversionErr(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
+      expanded     <- tryOrConversionErr(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
       expandedJson <- IO.fromEither(parser.parse(expanded).leftMap(err => UnexpectedJsonLd(err.getMessage())))
     } yield expandedJson
 
@@ -54,31 +55,33 @@ object JsonLdJavaApi extends JsonLdApi {
       resolution: RemoteContextResolution
   ): IO[RdfError, (Json, Ctx)] =
     for {
-      obj        <- tryToConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
-      ff         <- tryToConversionErr(JsonUtils.fromString(frame.noSpaces), "building frame")
+      obj        <- tryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
+      ff         <- tryOrConversionErr(JsonUtils.fromString(frame.noSpaces), "building frame")
       options    <- remoteContextLoader(input, frame).map(toOpts)
-      framed     <- tryToConversionErr(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
+      framed     <- tryOrConversionErr(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
       framedJson <- IO.fromEither(parser.parse(framed).leftMap(err => UnexpectedJsonLd(err.getMessage())))
       ctxValue   <- context(frame, f, options)
     } yield (framedJson, ctxValue)
 
-  // $COVERAGE-OFF$
-  // TODO: create the DocumentLoader and pass it to Jena: https://issues.apache.org/jira/browse/JENA-1959
+  // TODO: Right now this step has to be done from a JSON-LD expanded document,
+  // since the DocumentLoader cannot be passed to Jena yet: https://issues.apache.org/jira/browse/JENA-1959
   override def toRdf(
       input: Json
   )(implicit opts: JsonLdOptions, resolution: RemoteContextResolution): IO[RdfError, Model] = {
     val model       = ModelFactory.createDefaultModel()
     val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD)
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
-    tryToConversionErr(builder.parse(StreamRDFLib.graph(model.getGraph)), "toRdf").as(model)
+    tryOrConversionErr(builder.parse(StreamRDFLib.graph(model.getGraph)), "toRdf").as(model)
   }
 
-  override def fromRdf(input: Model)(implicit options: JsonLdOptions): IO[RdfError, Json] =
+  override def fromRdf(input: Model)(implicit options: JsonLdOptions): IO[RdfError, Json] = {
+    val c = new JsonLDWriteContext()
+    c.setOptions(toOpts())
     for {
-      expanded     <- tryToConversionErr(RDFWriter.create.lang(Lang.JSONLD).source(input).asString(), "fromRdf")
+      expanded     <- tryOrConversionErr(RDFWriter.create.format(EXPAND).source(input).context(c).asString(), "fromRdf")
       expandedJson <- IO.fromEither(parser.parse(expanded)).leftMap(err => UnexpectedJsonLd(err.getMessage()))
     } yield expandedJson
-  // $COVERAGE-ON$
+  }
 
   override def context[Ctx <: JsonLdContext](value: Json, f: ContextFields[Ctx])(implicit
       opts: JsonLdOptions,

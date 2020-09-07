@@ -70,13 +70,28 @@ private object DotWriterImpl extends WriterGraphRIOTBase {
 }
 
 object DotWriter {
-  private val dotNamespace         = "http://jena.apache.org/riot/dot#"
-  final val JSONLD_CONTEXT: Symbol = Symbol.create(s"${dotNamespace}JSONLD_CONTEXT")
-  final val ROOT_ID: Symbol        = Symbol.create(s"${dotNamespace}ROOT_ID")
-  final val DOT: Lang              = LangBuilder.create("DOT", `application/vnd.graphviz`.toString).addFileExtensions("dot").build
-  private val format: RDFFormat    = new RDFFormat(DOT)
+  final val DOT: Lang = LangBuilder.create("DOT", `application/vnd.graphviz`.toString).addFileExtensions("dot").build
+
+  private val dotNamespace                         = "http://jena.apache.org/riot/dot#"
+  final private[writer] val JSONLD_CONTEXT: Symbol = Symbol.create(s"${dotNamespace}JSONLD_CONTEXT")
+  final private[writer] val ROOT_ID: Symbol        = Symbol.create(s"${dotNamespace}ROOT_ID")
+  private val format: RDFFormat                    = new RDFFormat(DOT)
 
   RDFWriterRegistry.register(DotWriter.DOT, format)
   RDFWriterRegistry.register(format, (_: RDFFormat) => DotWriterImpl)
+
+  /**
+    * The Jena [[Context]] to be passed to the [[WriterGraphRIOT]]
+    *
+   * @param rootResource the top graph node
+    * @param context      the resolved context
+    * @return the Jena context
+    */
+  def dotContext(rootResource: Resource, context: ExtendedJsonLdContext): Context = {
+    val ctx = new Context()
+    ctx.set(ROOT_ID, rootResource)
+    ctx.set(JSONLD_CONTEXT, context)
+    ctx
+  }
 
 }
