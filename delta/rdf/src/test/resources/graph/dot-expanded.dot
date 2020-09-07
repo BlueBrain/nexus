@@ -1,0 +1,18 @@
+digraph "http://nexus.example.com/john-doé" {
+  "http://nexus.example.com/john-doé" -> "http://schema.org/Person" [label = "type"]
+  "http://nexus.example.com/john-doé" -> "{bnode}" [label = "http://example.com/address"]
+  "{bnode}" -> "http://nexus.example.com/myid" [label = "http://example.com/customid"]
+  "{bnode}" -> 2 [label = "http://example.com/number"]
+  "{bnode}" -> "my street" [label = "http://example.com/street"]
+  "http://nexus.example.com/john-doé" -> false [label = "http://schema.org/deprecated"]
+  "http://nexus.example.com/john-doé" -> "value" [label = "http://example.com/otherProperty"]
+  "http://nexus.example.com/john-doé" -> "Some \"property" [label = "http://example.org/stringProperty"]
+  "http://nexus.example.com/john-doé" -> "1999-04-09T20:00Z" [label = "http://schema.org/birthDate"]
+  "http://nexus.example.com/john-doé" -> "John Doe" [label = "http://schema.org/name"]
+  "http://nexus.example.com/john-doé" -> "http://nexus.example.com/another" [label = "http://example.com/sibling"]
+  "http://nexus.example.com/another" -> "http://schema.org/Other" [label = "type"]
+  "http://nexus.example.com/another" -> "2000-04-12T20:00Z" [label = "http://schema.org/birthDate"]
+  "http://nexus.example.com/another" -> 9 [label = "http://schema.org/birthHour"]
+  "http://nexus.example.com/another" -> 1999 [label = "http://schema.org/birthYear"]
+  "http://nexus.example.com/another" -> 9.223 [label = "http://schema.org/height"]
+}

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import io.circe.Json
@@ -43,6 +43,58 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
         )
       result.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base, "xsd2" -> xsd.base)
       result.prefixMappingsInv shouldEqual Map(schema.base -> "schema", xsd.base -> "xsd")
+    }
+
+    "compact an iri to its short form using an alias" in {
+      val result = api.context(context, ContextFields.Include).accepted
+      result.alias(schema.Person).value shouldEqual "Person"
+      result.alias(schema.age) shouldEqual None
+    }
+
+    "compact an iri to a CURIE using a prefix mappings" in {
+      val result = api.context(context, ContextFields.Include).accepted
+      result.curie(schema.age).value shouldEqual "schema:age"
+      result.curie(rdf.tpe) shouldEqual None
+    }
+
+    "compact an iri to its short form using the vocab" in {
+      val result = api.context(context, ContextFields.Include).accepted
+      result.compactVocab(vocab + "name").value shouldEqual "name"
+      result.compactVocab(schema.age) shouldEqual None
+    }
+
+    "compact an iri to its short form using the base" in {
+      val result = api.context(context, ContextFields.Include).accepted
+      result.compactBase(base + "name").value shouldEqual "name"
+      result.compactBase(schema.age) shouldEqual None
+    }
+
+    "compact an iri using aliases, vocab and prefix mappings" in {
+      val result = api.context(context, ContextFields.Include).accepted
+      val list   = List(
+        vocab + "name" -> "name",
+        schema.Person  -> "Person",
+        schema.age     -> "schema:age",
+        rdf.tpe        -> rdf.tpe.toString
+      )
+
+      forAll(list) {
+        case (iri, expected) => result.compact(iri, useVocab = true) shouldEqual expected
+      }
+    }
+
+    "compact an iri using aliases, base and prefix mappings" in {
+      val result = api.context(context, ContextFields.Include).accepted
+      val list   = List(
+        base + "name" -> "name",
+        schema.Person -> "Person",
+        schema.age    -> "schema:age",
+        rdf.tpe       -> rdf.tpe.toString
+      )
+
+      forAll(list) {
+        case (iri, expected) => result.compact(iri, useVocab = false) shouldEqual expected
+      }
     }
 
     "add simple alias with ContextFields.Include" in {

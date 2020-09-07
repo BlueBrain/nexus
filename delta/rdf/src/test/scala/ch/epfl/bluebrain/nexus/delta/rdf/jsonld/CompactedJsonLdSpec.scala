@@ -89,5 +89,13 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Skip).accepted
       compacted.toExpanded.accepted shouldEqual JsonLd.expandedUnsafe(expanded, iri)
     }
+
+    "be converted to graph" in {
+      val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Skip).accepted
+      val graph     = compacted.toGraph.accepted
+      val expected  = contentOf("ntriples.nt", "{bnode}" -> s"_:B${bNode(graph)}")
+      graph.root shouldEqual iri
+      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
+    }
   }
 }
