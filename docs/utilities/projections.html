@@ -221,7 +221,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -252,7 +252,7 @@ BlueBrain/nexus
 <h1><a href="#indexing-data-in-other-systems" name="indexing-data-in-other-systems" class="anchor"><span class="anchor-link"></span></a>Indexing data in other systems</h1>
 <h2><a href="#introduction" name="introduction" class="anchor"><span class="anchor-link"></span></a>Introduction</h2>
 <p>Blue Brain Nexus supports out of the box document and RDF graph based indices of the data through Elasticsearch, Sparql and Composite views. These cover a wide range of requirements but may not suffice in certain cases. New indexing capabilities can be added using external processes that subscribe to the global event log, enrich the information and project the result in arbitrary stores. </p>
-<p>By exposing over HTTP(S) the event log using the <a href="https://www.w3.org/TR/eventsource/">Server-Sent Events W3C recommendation</a>, Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service communication for resource projections.</p><div class="half center">
+<p>By exposing over HTTP(S) the event log using the <a href="https://www.w3.org/TR/eventsource/" title="Server-Sent Events W3C recommendation" target="_blank" rel="noopener noreferrer">Server-Sent Events W3C recommendation</a>, Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service communication for resource projections.</p><div class="half center">
 <p><img src="extending-nexus.png" alt="Extending Blue Brain Nexus" /></p></div>
 <p>An example of such a tool is the newly introduced docker image (<code>bluebrain/nexus-cli</code>) that supports projecting data to InfluxDB and PostgreSQL databases. The image is yet another software artifact in the Blue Brain Nexus ecosystem that complements the system to introduce new indexing capabilities that are not part of the core.</p>
 <p>It functions as described above following a simple streaming approach with the following stages:</p>
@@ -269,7 +269,7 @@ BlueBrain/nexus
 <pre><code>docker run -p 8086:8086 -d -e INFLUXDB_DATA_MAX_VALUES_PER_TAG=0 --name influx influxdb:1.8.0
 </code></pre>
 <p>The additional environment variable <code>INFLUXDB_DATA_MAX_VALUES_PER_TAG</code> disables the limit of maximum tag values for measurements.</p>
-<p>We can now configure the projection using two config files (<code>env.conf</code> and <code>influx.conf</code> in the <a href="https://github.com/lightbend/config/blob/master/HOCON.md">HOCON</a> format) that will be mounted to the <code>nexus-cli</code> container:</p>
+<p>We can now configure the projection using two config files (<code>env.conf</code> and <code>influx.conf</code> in the <a href="https://github.com/lightbend/config/blob/master/HOCON.md" title="HOCON" target="_blank" rel="noopener noreferrer">HOCON</a> format) that will be mounted to the <code>nexus-cli</code> container:</p>
 <pre><code>mkdir config
 
 echo &#39;
@@ -433,7 +433,7 @@ curl -XPOST -H&quot;Content-Type: application/json&quot; -s http://localhost:300
 <p>To start, let&rsquo;s set up a postgresql docker container running in the background:</p>
 <pre><code>docker run -p 5432:5432 -d -e POSTGRES_PASSWORD=postgres --name postgres library/postgres:12.2
 </code></pre>
-<p>We can now configure the projection using two config files (<code>env.conf</code> and <code>postgres.conf</code> in the <a href="https://github.com/lightbend/config/blob/master/HOCON.md">HOCON</a> format) that will be mounted to the <code>nexus-cli</code> container:</p>
+<p>We can now configure the projection using two config files (<code>env.conf</code> and <code>postgres.conf</code> in the <a href="https://github.com/lightbend/config/blob/master/HOCON.md" title="HOCON" target="_blank" rel="noopener noreferrer">HOCON</a> format) that will be mounted to the <code>nexus-cli</code> container:</p>
 <pre><code>mkdir config
 
 echo &#39;
@@ -692,7 +692,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

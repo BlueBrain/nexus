@@ -226,7 +226,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -283,7 +283,7 @@ BlueBrain/nexus
   <li>Exposed a new view subresource <code>.../offset</code> that presents the current view offset, or collection of offsets in case  of CompositeViews. The offset has the same value used with Server Sent Events as means of keeping track of the current  event replay progress. Deleting this resource with instruct the system to rebuild the indices of the selected view;</li>
   <li>Ordering results when doing listings can now be controlled with the repeated <code>sort</code> query param that accepts  ElasticSearch document field names (<code>...?sort=_createdAt&amp;sort=-_createdBy</code>). The ordering defaults to ascending, but  can be switched for descending by prefixing the <code>-</code> character to the field name.</li>
   <li>New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new  configuration yields better full text search results.</li>
-  <li><em>Nexus Web</em> - Adds the ability to have persistent customisable queries and data visualizations for your data via the new <a href="../fusion/studio.html">Studios feature</a></li>
+  <li><em>Nexus Web</em> - Adds the ability to have persistent customisable queries and data visualizations for your data via the  new <a href="../fusion/studio.html">Studios feature</a></li>
 </ul>
 <p>A detailed list of changes included in the release can be found in the <a href="v1.3-release-notes.html">release notes</a>.</p>
 <h2><a href="#v1-2-1-07-10-2019-" name="v1-2-1-07-10-2019-" class="anchor"><span class="anchor-link"></span></a>v1.2.1 (07.10.2019)</h2>
@@ -308,7 +308,7 @@ BlueBrain/nexus
 <ul>
   <li>Added <a href="../delta/api/current/kg-archives-api.html">archives resources</a>.</li>
   <li>Added <a href="../delta/api/current/kg-resources-api.html#fetch-a-resource-original-payload">/source</a> sub-resource.</li>
-  <li><a href="https://github.com/BlueBrain/nexus/issues/750">Fixed issue</a> with resource retrieval when linked context changes.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/issues/750" title="Fixed issue" target="_blank" rel="noopener noreferrer">Fixed issue</a> with resource retrieval when linked context changes.</li>
   <li>Updated <code>DigestViewCoordinator</code> to <code>AttributesViewCoordinator</code>. This async process now updates all the FileAttributes.</li>
 </ul>
 <p>Dependency updates:</p>
@@ -350,7 +350,7 @@ BlueBrain/nexus
 <p>The release is backwards compatible with v1.0 in terms of API. If you&rsquo;re upgrading from v1.0 please visit the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
 <p>Summary of the significant changes:</p>
 <ul>
-  <li>Exposed the service event logs over a stable API via <a href="https://www.w3.org/TR/eventsource/">Server Sent Events</a>.</li>
+  <li>Exposed the service event logs over a stable API via <a href="https://www.w3.org/TR/eventsource/" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a>.</li>
   <li>Introduced configurable storage backends for files with local, remote and S3 implementations.</li>
   <li>ElasticSearchView | AggregateElasticSearchView have been promoted to stable.</li>
   <li>Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and  aggregates the results.</li>
@@ -391,7 +391,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

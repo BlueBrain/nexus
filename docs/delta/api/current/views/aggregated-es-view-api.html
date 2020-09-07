@@ -223,7 +223,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -255,7 +255,7 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#aggregateelasticsearchview" name="aggregateelasticsearchview" class="anchor"><span class="anchor-link"></span></a>AggregateElasticSearchView</h1>
 <p>This view is an aggregate of ElasticSearchViews. The view itself does not create any index, but it references the already existing indices of the linked ElasticSearchViews.</p>
-<p>When performing queries on the <code>_search</code> endpoint, this view will make use of the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html">multi-index</a> query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.</p>
+<p>When performing queries on the <code>_search</code> endpoint, this view will make use of the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/multi-index.html" title="multi-index" target="_blank" rel="noopener noreferrer">multi-index</a> query capabilities of ElasticSearch in order to select the indices of every view present on this aggregate view.</p>
 <p>If the caller does not have the permission <code>views/query</code> on all the projects defined on the aggregated view, only a subset of indices (or none) will be selected, respecting the defined permissions.</p>
 <p><img src="../assets/views/aggregate-view.png" alt="Aggregate ElasticSearchView" title="Aggregate ElasticSearchView" /></p>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
@@ -284,7 +284,7 @@ BlueBrain/nexus
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/_search
   {...}
 </code></pre>
-<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch documentation</a></p>
+<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html" title="ElasticSearch documentation" target="_blank" rel="noopener noreferrer">ElasticSearch documentation</a></p>
 <p>The string <code>documents</code> is used as a prefix of the default ElasticSearch <code>view_id</code></p>
 <p><strong>Example</strong></p>
 <dl>
@@ -360,7 +360,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

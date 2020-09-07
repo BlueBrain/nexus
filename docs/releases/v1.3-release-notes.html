@@ -233,7 +233,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -280,7 +280,7 @@ BlueBrain/nexus
 <h2><a href="#highlights" name="highlights" class="anchor"><span class="anchor-link"></span></a>Highlights</h2>
 <p>The goal of this release is to expand on the benefits of using a fully managed data and knowledge graph system with new capabilities around data search, transformation and exchange.</p>
 <h3><a href="#studio" name="studio" class="anchor"><span class="anchor-link"></span></a>Studio</h3>
-<p>TODO: Fix the links to the appropiate section inside the studio page.</p>
+<p>TODO: Fix the links to the appropriate section inside the studio page.</p>
 <p><a href="../fusion/studio.html">Studio</a> (a new feature in Nexus Web) allows users to define a user interface to browse and view the data in Nexus’ knowledge graph. Multiple <a href="../fusion/studio.html">Workspaces</a> can be created within a <strong>Studio</strong> allowing for arbitrary grouping of datasets to be shown. A <strong>Workspace</strong> can be configured with multiple <a href="../fusion/studio.html">Dashboards</a>, each presenting data of possibly different types (and shapes within the graph).</p>
 <p>Each row in a <strong>Dashboard</strong> corresponds to a resource in the system, but the values shown can be collected from related resources. A very simple example of that would be showing a listing of <strong>Person</strong> names and the name of the <strong>Organizations</strong> that they are affiliated to (following <code>schema:affiliation</code>) where each Person and Organization are managed as independent resources in the system:</p>
 <pre><code>    +--------+               +--------------+
@@ -292,7 +292,7 @@ BlueBrain/nexus
 <p>Selecting an entry in a Dashboard will open a detailed view of the corresponding resource that can be fully customized by means of <a href="../fusion/plugins.html">plugins</a>.</p>
 <p>Please head over to the <a href="../fusion/studio.html">Studio</a> section of the documentation for more information.</p>
 <h4><a href="#graph-view" name="graph-view" class="anchor"><span class="anchor-link"></span></a>Graph View</h4>
-<p>In order to improve the user understanding of the linked entities of the knowledge graph, we have added Graph View. It presents the outgoing entities linked and enable users to graphically navigate to them.</p>
+<p>In order to improve the user understanding of the linked entities of the knowledge graph, we have added a <a href="https://bluebrainnexus.io/docs/nexus-web/resource-view/index.html#graph-view" title="Graph View" target="_blank" rel="noopener noreferrer">Graph View</a>. It presents the outgoing entities linked and enable users to graphically navigate to them.</p>
 <h3><a href="#data-aggregation-transformation-and-projection" name="data-aggregation-transformation-and-projection" class="anchor"><span class="anchor-link"></span></a>Data Aggregation, Transformation and Projection</h3>
 <p>One of the most important features of Nexus is to bridge the gap between the management of data and its consumption while not sacrificing on security. It does that by supporting customizable managed indices of the data (represented by <strong>View</strong> resources).</p>
 <p>Prior to this release, two main type of indices were made available ( <strong>ElasticSearchView</strong> and <strong>SparqlView</strong>) and their <strong>Aggregated*</strong> variants (for querying multiple indices at the same time). They enable fantastic search capabilities on the managed data. But while these types of indices are very powerful on their own, we found that bringing them closer together can raise the bar even further by taking advantage of their best use: an RDF graph is very powerful for data integration and exploration, while ElasticSearch is very powerful for full text and faceted search.</p>
@@ -368,7 +368,7 @@ BlueBrain/nexus
 <pre><code>GET /v1/resources/{org_label}/{project_label}?sort=_updatedBy&amp;sort=-_updatedAt
 </code></pre>
 <p>New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new index configuration yields better full text search results.</p>
-<p>Additional reported issues were <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+milestone%3Av1.3.0+is%3Aclosed+label%3Abug">fixed</a>.</p>
+<p>Additional reported issues were <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+milestone%3Av1.3.0+is%3Aclosed+label%3Abug" title="fixed" target="_blank" rel="noopener noreferrer">fixed</a>.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.3-release-notes.md" title="Edit this page" class="md-source-file md-edit">
@@ -377,7 +377,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

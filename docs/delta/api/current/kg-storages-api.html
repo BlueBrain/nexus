@@ -234,7 +234,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -294,7 +294,7 @@ BlueBrain/nexus
 <p>While typically not necessary, you can manage and create additional disk storages, provided you are aware of the local file-system structure and that Nexus has read and write access to the target folder.</p>
 <h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3>
 <p>This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system. This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph, Gluster, GPFS, Lustre, &hellip;) that you don&rsquo;t want to mount directly on the system where Nexus runs.</p>
-<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus-storage">Nexus remote storage service</a>.</p>
+<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus-storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
 <h3><a href="#amazon-s3-compatible-storage" name="amazon-s3-compatible-storage" class="anchor"><span class="anchor-link"></span></a>Amazon S3 compatible storage</h3>
 <p>This storage type allows the use of an internal or external blob-store that is compatible with the Amazon S3 API.</p>
 <h3><a href="#changing-the-default-storage" name="changing-the-default-storage" class="anchor"><span class="anchor-link"></span></a>Changing the default storage</h3>
@@ -631,9 +631,9 @@ BlueBrain/nexus
 <h2><a href="#fetch-a-storage" name="fetch-a-storage" class="anchor"><span class="anchor-link"></span></a>Fetch a storage</h2>
 <p>When fetching a storage, the response format can be chosen through HTTP content negotiation, using the <strong>Accept</strong> HTTP header.</p>
 <ul>
-  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code> will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form">compacted document form</a> or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form">expanded document form</a>.</li>
-  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/">w3</a>.</li>
-  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html">DOT response</a>.</li>
+  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code>  will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form" title="compacted document form" target="_blank" rel="noopener noreferrer">compacted document form</a>  or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form" title="expanded document form" target="_blank" rel="noopener noreferrer">expanded document form</a>.</li>
+  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/" title="w3" target="_blank" rel="noopener noreferrer">w3</a>.</li>
+  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html" title="DOT response" target="_blank" rel="noopener noreferrer">DOT response</a>.</li>
 </ul>
 <p>If <code>Accept: */*</code> HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.</p>
 <pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}?rev={rev}&amp;tag={tag}
@@ -725,11 +725,11 @@ BlueBrain/nexus
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting storages based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting storages based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting storages based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting storages based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting storages based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting storages based on the person which performed the last update</li>
-  <li><code>{search}</code>: String - can be provided to select only the storages in the collection that have attribute values matching (containing) the provided string</li>
-  <li><code>{sort}</code>: String - can be used to sort storages based on a payloads&rsquo; field. This parameter can appear multiple times to enable sorting by multiple fields</li>
+  <li><code>{search}</code>: String - can be provided to select only the storages in the collection that have attribute values matching  (containing) the provided string</li>
+  <li><code>{sort}</code>: String - can be used to sort storages based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -811,7 +811,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

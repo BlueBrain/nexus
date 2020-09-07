@@ -230,7 +230,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -272,7 +272,7 @@ BlueBrain/nexus
 <ul>
   <li>Group and categorize sub-resources.</li>
   <li>Define settings that apply for operations on all sub-resources.</li>
-  <li>Provide isolation from resources inside other projects. This behavior can be changed by defining <a href="kg-resolvers-api.html">resolvers</a></li>
+  <li>Provide isolation from resources inside other projects. This behavior can be changed by defining  <a href="kg-resolvers-api.html">resolvers</a></li>
 </ul>
 <p>Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an <strong>access token</strong> passed in the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about retrieving access tokens.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When creating projects, the caller must have <code>projects/create</code> permissions on the current path of the project or the ancestor paths.</p>
@@ -295,9 +295,9 @@ BlueBrain/nexus
 <p>where&hellip;</p>
 <ul>
   <li><code>{description}</code>: String - an optional description for this project.</li>
-  <li><code>{base}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a <a href="kg-resources-api.html#create-a-resource-using-post">resource is created</a> and no <code>@id</code> is present in the payload, the platform will generate an @id which will look like <code>http://example.com/{UUID}</code>. This field is optional and will default to <code>{{base}}/v1/resources/{org_label}/{project_label}/_/</code>.</li>
-  <li><code>{vocab}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a> prefix for all unqualified predicates in children resources. E.g. if the vocab is set to <code>https://schema.org/</code>, when a field a resource is created and a field <code>name</code> is present in the payload, it will be expanded to <code>http://schema.org/name</code> by the system during indexing and fetch operations. This field is optional and will default to <code>{{base}}/v1/vocabs/{org_label}/{project_label}/</code>.</li>
-  <li><code>{apiMappings}</code>: Json object - provides a convinient way to deal with URIs when performing operations on a sub-resource. This field is optional.</li>
+  <li><code>{base}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/" title="curie" target="_blank" rel="noopener noreferrer">curie</a>  in the generation of the <code>@id</code> children resources. E.g.: Let base be <code>http://example.com/</code>. When a  <a href="kg-resources-api.html#create-a-resource-using-post">resource is created</a> and no <code>@id</code> is present in the  payload, the platform will generate an @id which will look like <code>http://example.com/{UUID}</code>. This field is optional  and will default to <code>{{base}}/v1/resources/{org_label}/{project_label}/_/</code>.</li>
+  <li><code>{vocab}</code>: IRI - is going to be used as a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/" title="curie" target="_blank" rel="noopener noreferrer">curie</a>  prefix for all unqualified predicates in children resources. E.g. if the vocab is set to <code>https://schema.org/</code>, when  a field a resource is created and a field <code>name</code> is present in the payload, it will be expanded to  <code>http://schema.org/name</code> by the system during indexing and fetch operations. This field is optional and will default  to <code>{{base}}/v1/vocabs/{org_label}/{project_label}/</code>.</li>
+  <li><code>{apiMappings}</code>: Json object - provides a convinient way to deal with URIs when performing operations on a  sub-resource. This field is optional.</li>
 </ul>
 <h3><a href="#api-mappings" name="api-mappings" class="anchor"><span class="anchor-link"></span></a>API Mappings</h3>
 <p>The <code>apiMappings</code> Json object array maps each <code>prefix</code> to its <code>namespace</code> so that curies on children endpoints can be used.</p>
@@ -314,8 +314,8 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{prefix}</code>: String - the left hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName">certain constrains</a>.</li>
-  <li><code>{namespace}</code>: IRI - the right hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/">curie</a>. It has <a href="https://tools.ietf.org/html/rfc3987#page-7">certain constrains (irelative-ref)</a>.</li>
+  <li><code>{prefix}</code>: String - the left hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/" title="curie" target="_blank" rel="noopener noreferrer">curie</a>.  It has <a href="https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName" title="certain constraints" target="_blank" rel="noopener noreferrer">certain constraints</a>.</li>
+  <li><code>{namespace}</code>: IRI - the right hand side of a <a href="https://www.w3.org/TR/2010/NOTE-curie-20101216/" title="curie" target="_blank" rel="noopener noreferrer">curie</a>.  It has <a href="https://tools.ietf.org/html/rfc3987#page-7" title="certain constraints (irelative-ref)" target="_blank" rel="noopener noreferrer">certain constraints (irelative-ref)</a>.</li>
 </ul>
 <p>Let&rsquo;s see an example:</p>
 <p><code>json
@@ -614,10 +614,10 @@ BlueBrain/nexus
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting projects based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting projects based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting projects based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting projects based on their <code>@type</code> value. This parameter can  appear multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting projects based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting projects based on the person which performed the last update</li>
-  <li><code>{label}</code>: String - can be used to filter the resulting projects based on its label. E.g.: <code>label=my</code> will match any project&rsquo;s label that contains the string <code>my</code>. <code>label=&#39;my&#39;</code> will match any project where label is equal to <code>my</code>.</li>
+  <li><code>{label}</code>: String - can be used to filter the resulting projects based on its label. E.g.: <code>label=my</code> will match any  project&rsquo;s label that contains the string <code>my</code>. <code>label=&#39;my&#39;</code> will match any project where label is equal to <code>my</code>.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -668,10 +668,10 @@ BlueBrain/nexus
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting projects based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting projects based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting projects based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting projects based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting projects based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting projects based on the person which performed the last update</li>
-  <li><code>{label}</code>: String - can be used to filter the resulting projects based on its label. E.g.: <code>label=my</code> will match any project&rsquo;s label that contains the string <code>my</code>.</li>
+  <li><code>{label}</code>: String - can be used to filter the resulting projects based on its label. E.g.: <code>label=my</code> will match any  project&rsquo;s label that contains the string <code>my</code>.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -726,7 +726,7 @@ id:{id}
 <p>where&hellip;</p>
 <ul>
   <li><code>{payload}</code>: Json - is the actual payload of the current project</li>
-  <li><code>{type}</code>: String - is a type identifier for the current project. Possible types are: ProjectCreated, ProjectUpdated and ProjectDeprecated</li>
+  <li><code>{type}</code>: String - is a type identifier for the current project. Possible types are: ProjectCreated, ProjectUpdated  and ProjectDeprecated</li>
   <li><code>{id}</code>: String - is the identifier of the project event. It can be used in the <code>Last-Event-Id</code> HTTP Header</li>
 </ul>
 <p><strong>Example</strong></p>
@@ -760,7 +760,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

@@ -233,7 +233,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -275,10 +275,10 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#plugins" name="plugins" class="anchor"><span class="anchor-link"></span></a>Plugins</h1>
 <p>A resource returned by the Nexus Delta API is usually a JSON-LD document. By default Nexus Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.</p>
-<p>Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electro physiology, a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.</p>
+<p>Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electrophysiology, a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.</p>
 <h2><a href="#what-are-plugins" name="what-are-plugins" class="anchor"><span class="anchor-link"></span></a>What are Plugins</h2>
 <p>A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Fusion. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.</p>
-<p>Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from the <a href="https://github.com/BlueBrain/nexus-web/tree/master/plugins">/plugins</a> folder.</p>
+<p>Plugins are developed using Javascript and are loaded into the Nexus Fusion instance from the <a href="https://github.com/BlueBrain/nexus-web/tree/master/plugins" title="/plugins" target="_blank" rel="noopener noreferrer">/plugins</a> folder.</p>
 <h2><a href="#plugin-examples" name="plugin-examples" class="anchor"><span class="anchor-link"></span></a>Plugin examples</h2>
 <p>Below you can find the screenshots from some plugins that can be integrated into Nexus Fusion. They extend the Nexus Fusion presentation layer.</p>
 <p>Neuron Electro physiology viewer <img src="../assets/fusion-ephys-plugin.png" /></p>
@@ -292,11 +292,11 @@ BlueBrain/nexus
   };
 };
 </code></pre>
-<p>Nexus Plugins uses <a href="https://github.com/systemjs/systemjs">SystemJS</a>.</p>
+<p>Nexus Plugins uses <a href="https://github.com/systemjs/systemjs" title="SystemJS" target="_blank" rel="noopener noreferrer">SystemJS</a>.</p>
 <p>You have to transpile and bundle your code using SystemJS as output:</p>
 <ul>
-  <li>with <a href="https://rollupjs.org/guide/en/#outputformat">rollup</a>: use <code>system</code> as output format</li>
-  <li>with <a href="https://webpack.js.org/configuration/output/#outputlibrarytarget">webpack</a>: use <code>system</code> as <code>outputTarget</code></li>
+  <li>with <a href="https://rollupjs.org/guide/en/#outputformat" title="rollup" target="_blank" rel="noopener noreferrer">rollup</a>: use <code>system</code> as output format</li>
+  <li>with <a href="https://webpack.js.org/configuration/output/#outputlibrarytarget" title="webpack" target="_blank" rel="noopener noreferrer">webpack</a>: use <code>system</code> as <code>outputTarget</code></li>
 </ul>
 <h3><a href="#configuring-nexus-fusion-to-run-your-plugins" name="configuring-nexus-fusion-to-run-your-plugins" class="anchor"><span class="anchor-link"></span></a>Configuring Nexus Fusion to run your plugins</h3>
 <p>Once you have your Javascript bundled into a single file, you can place it in the <code>./plugins</code> folder at the root of your Nexus Fusion instance.</p>
@@ -357,9 +357,10 @@ BlueBrain/nexus
       &quot;license&quot;: &quot;&quot;,
       &quot;mapping&quot;: {
         &quot;@type&quot;: &quot;File&quot;,
-        &quot;distribution:&quot; {
+        &quot;distribution&quot;: {
             &quot;encodingFormat&quot;: &quot;application/swc&quot;
         }
+      }
     }
 }
 </code></pre>
@@ -375,7 +376,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

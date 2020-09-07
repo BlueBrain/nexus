@@ -226,7 +226,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -260,12 +260,12 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h1>
-<p>Schemas are rooted in the <code>/v1/schemas/{org_label}/{project_label}</code> collection. They define a set of rules and constraints using <a href="https://www.w3.org/TR/shacl/">SHACL</a>. Once those schemas are present, other resources can be created against them. Those resources won&rsquo;t be successfully created unless they match the required constraints defined on the schema.</p>
+<p>Schemas are rooted in the <code>/v1/schemas/{org_label}/{project_label}</code> collection. They define a set of rules and constraints using <a href="https://www.w3.org/TR/shacl/" title="SHACL" target="_blank" rel="noopener noreferrer">SHACL</a>. Once those schemas are present, other resources can be created against them. Those resources won&rsquo;t be successfully created unless they match the required constraints defined on the schema.</p>
 <p>Each schema&hellip; </p>
 <ul>
   <li>belongs to a <code>project</code> identifier by the label <code>{project_label}</code></li>
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
-  <li>it is validated against the <a href="https://bluebrainnexus.io/schemas/shacl-20170720.ttl">shacl schema</a> (version 20170720).</li>
+  <li>it is validated against the <a href="https://bluebrainnexus.io/schemas/shacl-20170720.ttl" title="SHACL schema" target="_blank" rel="noopener noreferrer">SHACL schema</a>  (version 20170720).</li>
 </ul>
 <p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When modifying schemas, the caller must have <code>schemas/write</code> permissions on the current path of the project or the ancestor paths.</p>
@@ -277,7 +277,7 @@ BlueBrain/nexus
 <p>The json payload: </p>
 <ul>
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
-  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
+  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the  <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -642,9 +642,9 @@ BlueBrain/nexus
 <h2><a href="#fetch-a-schema" name="fetch-a-schema" class="anchor"><span class="anchor-link"></span></a>Fetch a schema</h2>
 <p>When fetching a schema, the response format can be chosen through HTTP content negotiation, using the <strong>Accept</strong> HTTP header.</p>
 <ul>
-  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code> will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form">compacted document form</a> or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form">expanded document form</a>.</li>
-  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/">w3</a>.</li>
-  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html">DOT response</a>.</li>
+  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code>  will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form" title="compacted document form" target="_blank" rel="noopener noreferrer">compacted document form</a> or  the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form" title="expanded document form" target="_blank" rel="noopener noreferrer">expanded document form</a>.</li>
+  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/" title="w3" target="_blank" rel="noopener noreferrer">w3</a>.</li>
+  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html" title="DOT response" target="_blank" rel="noopener noreferrer">DOT response</a>.</li>
 </ul>
 <p>If <code>Accept: */*</code> HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.</p>
 <pre><code>GET /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={rev}&amp;tag={tag}
@@ -774,11 +774,11 @@ BlueBrain/nexus
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting schemas based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting schemas based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting schemas based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting schemas based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting schemas based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting schemas based on the person which performed the last update</li>
-  <li><code>{search}</code>: String - can be provided to select only the schemas in the collection that have attribute values matching (containing) the provided string</li>
-  <li><code>{sort}</code>: String - can be used to sort schemas based on a payloads&rsquo; field. This parameter can appear multiple times to enable sorting by multiple fields</li>
+  <li><code>{search}</code>: String - can be provided to select only the schemas in the collection that have attribute values matching  (containing) the provided string</li>
+  <li><code>{sort}</code>: String - can be used to sort schemas based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -821,7 +821,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

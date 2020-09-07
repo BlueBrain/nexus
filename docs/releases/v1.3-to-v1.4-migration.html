@@ -220,7 +220,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -248,13 +248,16 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#v1-3-to-v1-4-migration" name="v1-3-to-v1-4-migration" class="anchor"><span class="anchor-link"></span></a>v1.3 To v1.4 Migration</h1>
-<p>As part of the v1.4 release, cassandra schema has changed due to a <a href="https://doc.akka.io/docs/akka-persistence-cassandra/current/migrations.html">dependency update</a>. Additionally, the 3 existing keyspaces (iam, admin and kg) must be merged into a single keyspace (delta).</p>
+<p>As part of the v1.4 release, cassandra schema has changed due to a <a href="https://doc.akka.io/docs/akka-persistence-cassandra/current/migrations.html" title="dependency update" target="_blank" rel="noopener noreferrer">dependency update</a>. Additionally, the 3 existing keyspaces (iam, admin and kg) must be merged into a single keyspace (delta).</p>
 <h2><a href="#steps" name="steps" class="anchor"><span class="anchor-link"></span></a>Steps</h2>
 <p>The migration steps are as follows:</p>
 <ol>
-  <li>Stop the 3 services: iam, admin and kg.</li>
-  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html">Backup</a> the  cassandra store.</li>
-  <li>Delete all ElasticSearch indices:
+  <li>
+  <p>Stop the 3 services: iam, admin and kg.</p></li>
+  <li>
+  <p><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html" title="Backup" target="_blank" rel="noopener noreferrer">Backup</a>  the cassandra store.</p></li>
+  <li>
+    <p>Delete all ElasticSearch indices:</p>
     <pre><code>curl -XDELETE &#39;http://{elasticsearch_host}/kg_*&#39;
 </code></pre>
   </li>
@@ -266,8 +269,9 @@ done
 </code></pre>
   </li>
   <li>
-  <p>Make sure to allocate enough space to Cassandra, at least twice the space used by the keyspaces iam, admin and kg. The data migration involves copying the messages tables.</p></li>
-  <li>Create the delta keyspace and tables:
+  <p>Make sure to allocate enough space to Cassandra, at least twice the space used by the keyspaces iam, admin and kg.  The data migration involves copying the messages tables.</p></li>
+  <li>
+    <p>Create the delta keyspace and tables:</p>
     <pre><code>CREATE KEYSPACE IF NOT EXISTS delta WITH replication = {&#39;class&#39;: &#39;NetworkTopologyStrategy&#39;, &#39;&lt;your_dc_name&gt;&#39; : 3 };
 
 CREATE KEYSPACE IF NOT EXISTS delta_snapshot WITH replication = {&#39;class&#39;: &#39;NetworkTopologyStrategy&#39;, &#39;&lt;your_dc_name&gt;&#39; : 3 }; 
@@ -421,11 +425,11 @@ CREATE TABLE IF NOT EXISTS delta_snapshot.snapshots (
     };
 </code></pre>
   </li>
-  <li>Check and update the necessary configuration environment variables/JVM properties according to <a href="v1.3-to-v1.4-migration.html#configuration">configuration migration guide</a></li>
+  <li>Check and update the necessary configuration environment variables/JVM properties according to  <a href="v1.3-to-v1.4-migration.html#configuration">configuration migration guide</a></li>
   <li>
-  <p>Deploy the new service images (tag <code>1.4</code>) for <a href="https://hub.docker.com/r/bluebrain/nexus-delta">delta</a> and run it with the <code>MIGRATE_V13_TO_V14=true</code> and <code>REPAIR_FROM_MESSAGES=true</code> environment variables. This will instruct the service to copy all the messages table from iam, admin and kg into the delta keyspace. Afterwards the <code>tag_views</code> table and their related tables will be properly initialized. When populating the <code>tag_views</code> table consider increasing the <code>batch_size_fail_threshold_in_kb</code> in your cassandra.yaml configuration file if you see TagWriter error messages. Decreasing the value of the JVM property <code>akka.persistence.cassandra.events-by-tag.max-message-batch-size</code> and <code>akka.persistence.cassandra.journal.max-message-batch-size</code> to <code>1</code> can also help mitigate the issue.</p></li>
+  <p>Deploy the new service images (tag <code>1.4</code>) for <a href="https://hub.docker.com/r/bluebrain/nexus-delta">delta</a> and run it with  the <code>MIGRATE_V13_TO_V14=true</code> and <code>REPAIR_FROM_MESSAGES=true</code> environment variables.  This will instruct the service to copy all the messages table from iam, admin and kg into the delta keyspace.  Afterwards the <code>tag_views</code> table and their related tables will be properly initialized.  When populating the <code>tag_views</code> table consider increasing the <code>batch_size_fail_threshold_in_kb</code> in your  cassandra.yaml configuration file if you see TagWriter error messages. Decreasing the value of the JVM property  <code>akka.persistence.cassandra.events-by-tag.max-message-batch-size</code> and  <code>akka.persistence.cassandra.journal.max-message-batch-size</code> to <code>1</code> can also help mitigate the issue.</p></li>
   <li>
-    <p>Once the service is up and running, and you have verified the resources are accessible, you can proceed to delete the previous keyspaces:</p>
+    <p>Once the service is up and running, and you have verified the resources are accessible, you can proceed to delete  the previous keyspaces:</p>
     <pre><code>DROP KEYSPACE iam;
 DROP KEYSPACE admin;
 DROP KEYSPACE kg;
@@ -434,7 +438,7 @@ DROP KEYSPACE kg;
 </ol>
 <h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
 <p>This section provides a table with the equivalences in terms of configuration environment variables from 1.3 (and older versions) to 1.4. Only the most relevant environment configuration properties are described</p>
-<p>There are 2 ways to inject your own configuration: - Using JVM properties as arguments when running the service: -D<code>{property}</code>. For example: <code>-Dapp.instance.interface=&quot;127.0.0.1&quot;</code>. - Setting <a href="https://github.com/lightbend/config">FORCE_CONFIG_</a> style environment variables. In order to enable this style of configuration the JVM property <code>-Dconfig.override_with_env_vars=true</code> needs to be set. For example: <code>CONFIG_FORCE_app_instance_interface=&quot;127.0.0.1&quot;</code>.</p>
+<p>There are 2 ways to inject your own configuration: - Using JVM properties as arguments when running the service: -D<code>{property}</code>. For example: <code>-Dapp.instance.interface=&quot;127.0.0.1&quot;</code>. - Setting <a href="https://github.com/lightbend/config#optional-system-or-env-variable-overrides" title="FORCE_CONFIG_" target="_blank" rel="noopener noreferrer">FORCE_CONFIG_</a>  style environment variables. In order to enable this style of configuration the JVM property  <code>-Dconfig.override_with_env_vars=true</code> needs to be set. For example: <code>CONFIG_FORCE_app_instance_interface=&quot;127.0.0.1&quot;</code>.</p>
 <p>Note that there has been one important change which cannot be mapped using the following table: the service account token.</p>
 <p>In 1.4 release, the <code>IAM_SA_TOKEN</code> is not used. Instead, the JVM properties <code>app.service-account-caller.realm</code>, <code>app.service-account-caller.subject</code> and <code>app.service-account-caller.groups</code> should be set matching the identity of the service account. If these properties are not present, the service account identity will be set to anonymous.</p>
 <table>
@@ -835,7 +839,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

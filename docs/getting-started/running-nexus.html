@@ -263,7 +263,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -334,15 +334,15 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#running-nexus" name="running-nexus" class="anchor"><span class="anchor-link"></span></a>Running Nexus</h1>
-<p>If you wish to quickly try out Nexus, we provide a <a href="running-nexus.html#using-the-public-sandbox">public sandbox</a>. For a more in-depth test-drive of Nexus on your machine, we recommend the <a href="running-nexus.html#recommended-docker-swarm">Docker Swarm approach</a>. For a production deployment on your in-house or cloud infrastructure, please refer to our <a href="running-nexus.html#on-premise-cloud-deployment">deployment guide</a>.</p>
+<p>If you wish to quickly try out Nexus, we provide a <a href="running-nexus.html#using-the-public-sandbox">public sandbox</a>. For a more in-depth test-drive of Nexus on your machine, we recommend the <a href="#recommended-docker-swarm" title="Docker Swarm approach" target="_blank" rel="noopener noreferrer">Docker Swarm approach</a>. For a production deployment on your in-house or cloud infrastructure, please refer to our <a href="running-nexus.html#on-premise-cloud-deployment">deployment guide</a>.</p>
 <h2><a href="#using-the-public-sandbox" name="using-the-public-sandbox" class="anchor"><span class="anchor-link"></span></a>Using the public sandbox</h2>
-<p>A public instance of Nexus is running at <a href="https://sandbox.bluebrainnexus.io/web">https://sandbox.bluebrainnexus.io/web</a>. You can log in with a GitHub account. It&rsquo;s provided for evaluation purposes only, without any guarantees.</p>
-<p>The API root is <a href="https://sandbox.bluebrainnexus.io/v1">https://sandbox.bluebrainnexus.io/v1</a>.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>A public instance of Nexus is running at <a href="https://sandbox.bluebrainnexus.io/web" title="https://sandbox.bluebrainnexus.io/web" target="_blank" rel="noopener noreferrer">https://sandbox.bluebrainnexus.io/web</a>. You can log in with a GitHub account. It&rsquo;s provided for evaluation purposes only, without any guarantees.</p>
+<p>The API root is <a href="https://sandbox.bluebrainnexus.io/v1" title="https://sandbox.bluebrainnexus.io/v1" target="_blank" rel="noopener noreferrer">https://sandbox.bluebrainnexus.io/v1</a>.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>Do not ingest any proprietary or sensitive data. The environment will be wiped regularly, your data and credentials can disappear anytime.</p></div>
 <h2><a href="#run-nexus-locally-with-docker" name="run-nexus-locally-with-docker" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Docker</h2>
 <h3><a href="#requirements" name="requirements" class="anchor"><span class="anchor-link"></span></a>Requirements</h3>
 <h4><a href="#docker" name="docker" class="anchor"><span class="anchor-link"></span></a>Docker</h4>
-<p>Regardless of your OS, make sure to run a recent version of Docker (community edition). This was tested with versions <strong>18.03.1</strong> and above. You might need to get installation packages directly from the <a href="https://docs.docker.com/">official Docker website</a> if the one provided by your system package manager is outdated.</p>
+<p>Regardless of your OS, make sure to run a recent version of Docker (community edition). This was tested with versions <strong>18.03.1</strong> and above. You might need to get installation packages directly from the <a href="https://docs.docker.com/" title="official Docker website" target="_blank" rel="noopener noreferrer">official Docker website</a> if the one provided by your system package manager is outdated.</p>
 <p>Command :</p>
 <pre><code>docker --version
 </code></pre>
@@ -424,8 +424,8 @@ Creating service nexus_kg
 {&quot;name&quot;:&quot;kg&quot;,&quot;version&quot;:&quot;1.1.0&quot;}
 </code></pre>
 <h4><a href="#administration" name="administration" class="anchor"><span class="anchor-link"></span></a>Administration</h4>
-<p>To list running services or access logs, please refer to the official Docker <a href="https://docs.docker.com/engine/reference/commandline/stack/">documentation</a>.</p>
-<p>Alternatively you can deploy <a href="https://swarmpit.io/">Swarmpit</a> which provides a comprehensive UI to manage your Docker Swarm cluster.</p>
+<p>To list running services or access logs, please refer to the official Docker <a href="https://docs.docker.com/engine/reference/commandline/stack/" title="documentation" target="_blank" rel="noopener noreferrer">documentation</a>.</p>
+<p>Alternatively you can deploy <a href="https://swarmpit.io/" title="Swarmpit" target="_blank" rel="noopener noreferrer">Swarmpit</a> which provides a comprehensive UI to manage your Docker Swarm cluster.</p>
 <h4><a href="#stopping-nexus" name="stopping-nexus" class="anchor"><span class="anchor-link"></span></a>Stopping Nexus</h4>
 <p>You can stop and delete the entire deployment with:</p>
 <p>Command :</p>
@@ -442,7 +442,7 @@ Removing service nexus_kg
 Removing service nexus_router
 Removing network nexus_default
 </code></pre><div class="callout note "><div class="callout-title">Note</div>
-<p>As no data is persisted outside the containers, <strong>everything will be lost</strong> once you remove the Nexus deployment. If you&rsquo;d like help with creating persistent volumes, feel free to contact us on our <a href="https://gitter.im/BlueBrain/nexus">Gitter channel</a>.</p></div>
+<p>As no data is persisted outside the containers, <strong>everything will be lost</strong> once you remove the Nexus deployment. If you&rsquo;d like help with creating persistent volumes, feel free to contact us on our <a href="https://gitter.im/BlueBrain/nexus" title="Gitter channel" target="_blank" rel="noopener noreferrer">Gitter channel</a>.</p></div>
 <h3><a href="#endpoints" name="endpoints" class="anchor"><span class="anchor-link"></span></a>Endpoints</h3>
 <p>The provided reverse proxy (the <code>nginx</code> image) exposes several endpoints:</p>
 <ul>
@@ -454,21 +454,21 @@ Removing network nexus_default
 </ul>
 <p>If you&rsquo;d like to customize the listening port or remove unnecessary endpoints, you can simply modify the <code>nginx.conf</code> file.</p>
 <h2><a href="#run-nexus-locally-with-minikube" name="run-nexus-locally-with-minikube" class="anchor"><span class="anchor-link"></span></a>Run Nexus locally with Minikube</h2>
-<p><a href="https://github.com/kubernetes/minikube">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your machine for users looking to try out Kubernetes or develop with it day-to-day.</p><div class="callout note "><div class="callout-title">Note</div>
+<p><a href="https://github.com/kubernetes/minikube" title="Minikube" target="_blank" rel="noopener noreferrer">Minikube</a> is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your machine for users looking to try out Kubernetes or develop with it day-to-day.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>This section makes use of static assets hosted on this website; to remove the clutter please export the base of the documentation to <code>$MINI</code> env var:</p>
 <pre><code>export MINI=&quot;https://bluebrainnexus.io/docs/getting-started/running-nexus/minikube&quot;
 </code></pre></div><div class="callout note "><div class="callout-title">Note</div>
 <p>This page presents the necessary commands to deploy Nexus with Minikube but also examples the show the expected output.</p>
-<p>Some of the examples on this page make use of <a href="https://curl.haxx.se/">curl</a> and <a href="https://stedolan.github.io/jq/">jq</a> for formatting the json output when interacting with the services. Please install these command line tools if you&rsquo;d like to run the commands in the examples. They should be available through your usual package manager (Chocolatey, Homebrew, APT, YUM/DNF, &hellip;)</p></div>
+<p>Some of the examples on this page make use of <a href="https://curl.haxx.se/" title="curl" target="_blank" rel="noopener noreferrer">curl</a> and <a href="https://stedolan.github.io/jq/" title="jq" target="_blank" rel="noopener noreferrer">jq</a> for formatting the json output when interacting with the services. Please install these command line tools if you&rsquo;d like to run the commands in the examples. They should be available through your usual package manager (Chocolatey, Homebrew, APT, YUM/DNF, &hellip;)</p></div>
 <h3><a href="#minikube-set-up" name="minikube-set-up" class="anchor"><span class="anchor-link"></span></a>Minikube set-up</h3>
 <h4><a href="#installation" name="installation" class="anchor"><span class="anchor-link"></span></a>Installation</h4>
-<p>Follow the <a href="https://kubernetes.io/docs/tasks/tools/install-minikube/">installation instructions</a> from the official Kubernetes documentation.</p>
+<p>Follow the <a href="https://kubernetes.io/docs/tasks/tools/install-minikube/" title="installation instructions" target="_blank" rel="noopener noreferrer">installation instructions</a> from the official Kubernetes documentation.</p>
 <h4><a href="#run-minikube" name="run-minikube" class="anchor"><span class="anchor-link"></span></a>Run Minikube</h4>
 <p>To start Minikube run (notice the <em>cpu</em> and <em>memory</em> flags, the setup requires a minimum of <code>--cpus=2 --memory=8196</code>):</p>
 <pre><code>minikube start --cpus 6 --memory 10240 --vm-driver=$DRIVER
 </code></pre>
 <p>For better performance we recommended to select the <code>$DRIVER</code> corresponding to your OS native hypervisor, namely <em>hyperkit</em> on macOS, <em>hyperv</em> on Windows and <em>kvm2</em> on Linux.</p>
-<p>If the installation is successful you can run the following command to open the <a href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/">Kubernetes Dashboard</a>:</p>
+<p>If the installation is successful you can run the following command to open the <a href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/" title="Kubernetes Dashboard" target="_blank" rel="noopener noreferrer">Kubernetes Dashboard</a>:</p>
 <pre><code>minikube dashboard
 </code></pre>
 <p>To stop Minikube run:</p>
@@ -478,7 +478,7 @@ Removing network nexus_default
 <pre><code>minikube delete
 </code></pre></div>
 <h4><a href="#enable-the-ingress-addon" name="enable-the-ingress-addon" class="anchor"><span class="anchor-link"></span></a>Enable the ingress addon</h4>
-<p>Minikube comes with a collection of addons like the <a href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/">Kubernetes Dashboard</a> but not all are enabled by default. An important one is the <em>ingress</em> addon which enables routing http traffic from the host into the cluster.</p>
+<p>Minikube comes with a collection of addons like the <a href="http://kubernetes.io/docs/user-guide/ui/" title="Kubernetes Dashboard" target="_blank" rel="noopener noreferrer">Kubernetes Dashboard</a> but not all are enabled by default. An important one is the <em>ingress</em> addon which enables routing http traffic from the host into the cluster.</p>
 <p>To make sure the <em>ingress</em> addon is enabled run:</p>
 <p>Command :</p>
 <pre><code>minikube addons enable ingress
@@ -692,11 +692,11 @@ $
 </ul>
 <p>Each of the Nexus services and &ldquo;off the shelf&rdquo; products can be deployed as a single instance or as a cluster (with one exception at this point being BlazeGraph which doesn&rsquo;t come with a clustering option). The advantages for deploying clusters are generally higher availability, capacity and throughput at the cost of higher latency, consistency and having to potentially deal with network instability.</p>
 <p>The decision to go with single node deployments or clustered deployments can be revisited later on and mixed setups (some services single node while others clustered) are also possible.</p>
-<p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/">Kubernetes</a>, <a href="https://www.openshift.com/">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
+<p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>, <a href="https://www.openshift.com/" title="OpenShift" target="_blank" rel="noopener noreferrer">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/" title="Docker Swarm" target="_blank" rel="noopener noreferrer">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
 <h3><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h3>
 <p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../delta/benchmarks.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
 <ol>
-  <li>Nexus uses a collection of data stores (<a href="https://cassandra.apache.org/">Cassandra</a>, <a href="https://www.elastic.co/elasticsearch/">ElasticSearch</a>, <a href="https://blazegraph.com/">BlazeGraph</a>) which depend performance wise to the underlying disk access, so:
+  <li>Nexus uses a collection of data stores (<a href="https://cassandra.apache.org/" title="Cassandra" target="_blank" rel="noopener noreferrer">Cassandra</a>, <a href="https://www.elastic.co/products/elasticsearch" title="ElasticSearch" target="_blank" rel="noopener noreferrer">ElasticSearch</a>, <a href="https://www.blazegraph.com/" title="BlazeGraph" target="_blank" rel="noopener noreferrer">BlazeGraph</a>) which depend performance wise to the underlying disk access, so:
     <ul>
       <li>prefer local storage over network storage for lower latency when doing IO,</li>
       <li>prefer SSD over HDDs because random access speed is more important than sequential access,</li>
@@ -704,12 +704,12 @@ $
     </ul>
   </li>
   <li>All of Nexus services and most of the &ldquo;off the shelf&rdquo; products are built to run on top of the JVM which usually require more memory over computing power. A rough ratio of 2 CPU cores per 8GB of RAM is probably a good one (this of course depends on the CPU specification).</li>
-  <li>Due to the design for scalability of Nexus services and &ldquo;off the shelf&rdquo; products the network is a very important characteristic of the deployment as frequent dropped packets or <a href="https://en.wikipedia.org/wiki/Network_partition">network partitions</a> can seriously affect the availability of the system. Clustered / distributed systems generally use some form of <a href="https://en.wikipedia.org/wiki/Consensus_(computer_science)">consensus</a> which is significantly affected by the reliability of the network. If the reliability of the network is a concern within the target deployment then vertical scalability is desirable over horizontal scalability: fewer host nodes with better specifications is better over more commodity hardware host nodes.</li>
+  <li>Due to the design for scalability of Nexus services and &ldquo;off the shelf&rdquo; products the network is a very important characteristic of the deployment as frequent dropped packets or <a href="https://en.wikipedia.org/wiki/Network_partition" title="network partitions" target="_blank" rel="noopener noreferrer">network partitions</a> can seriously affect the availability of the system. Clustered / distributed systems generally use some form of <a href="https://en.wikipedia.org/wiki/Consensus_%28computer_science%29" title="consensus">consensus</a>){ open=new } which is significantly affected by the reliability of the network. If the reliability of the network is a concern within the target deployment then vertical scalability is desirable over horizontal scalability: fewer host nodes with better specifications is better over more commodity hardware host nodes.</li>
 </ol>
 <h3><a href="#cassandra" name="cassandra" class="anchor"><span class="anchor-link"></span></a>Cassandra</h3>
-<p>Nexus uses <a href="https://cassandra.apache.org/">Cassandra</a> as its <em>primary store</em> as it scales well in terms of reads with the number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be available in case of node failures or network partitions.</p>
-<p>Since this is the <em>primary store</em> it is the most important system to be <a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as mere indexing systems.</p>
-<p>Please have a look at the <a href="https://docs.datastax.com/en/dse-planning/doc/">Planning and Testing</a> section in the DataStax documentation as it contains recommendations in terms of hardware and capacity.</p>
+<p>Nexus uses <a href="https://cassandra.apache.org/" title="Cassandra" target="_blank" rel="noopener noreferrer">Cassandra</a> as its <em>primary store</em> as it scales well in terms of reads with the number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be available in case of node failures or network partitions.</p>
+<p>Since this is the <em>primary store</em> it is the most important system to be <a href="http://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html" title="backed up" target="_blank" rel="noopener noreferrer">backed up</a>. All of the data that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as mere indexing systems.</p>
+<p>Please have a look at the <a href="https://docs.datastax.com/en/dse-planning/doc/" title="Planning and Testing" target="_blank" rel="noopener noreferrer">Planning and Testing</a> section in the DataStax documentation as it contains recommendations in terms of hardware and capacity.</p>
 <p>As described in the <a href="../delta/architecture.html">architecture section</a> the generally adopted persistence model is an EventSourced model in which the data store is used as an <em>append only</em> store. This has implications to the total amount of disk used by the primary store.</p>
 <p>A formula for computing the required disk space:</p>
 <pre><code>total = (resource_size + nexus_metadata_size) * count * number_updates * replication_factor * 2 (compaction requirement)
@@ -727,8 +727,8 @@ $
 </code></pre>
 <p>The resulting size represents the total disk space of the cluster; a 5 node cluster with the data volume in the example above would have to be configured with 200GB disks per node.</p>
 <h3><a href="#elasticsearch" name="elasticsearch" class="anchor"><span class="anchor-link"></span></a>ElasticSearch</h3>
-<p>Nexus uses <a href="https://www.elastic.co/elasticsearch/">ElasticSearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
-<p>The ElasticSearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
+<p>Nexus uses <a href="https://www.elastic.co/products/elasticsearch" title="ElasticSearch" target="_blank" rel="noopener noreferrer">ElasticSearch</a> to host several <em>system</em> indices and <em>user defined</em> ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the <em>primary store</em>, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be configured to host a number of replicas for each shard it can tolerate a number of node failures.</p>
+<p>The ElasticSearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html" title="setup documentation" target="_blank" rel="noopener noreferrer">setup documentation</a> contains the necessary information on how to install and configure it, but recommendations on sizing the nodes and cluster are scarce because it depends on usage.</p>
 <p>A formula for computing the required disk space:</p>
 <pre><code>total = (resource_size * count * documents + lucene_index) * replication_factor
 </code></pre>
@@ -745,10 +745,10 @@ $
 </code></pre>
 <p>The resulting size represents the total disk space of the data nodes in the cluster; a 5 data node cluster with the data volume in the example above would have to be configured with 60GB disks per node.</p>
 <h3><a href="#blazegraph" name="blazegraph" class="anchor"><span class="anchor-link"></span></a>BlazeGraph</h3>
-<p>Nexus uses <a href="https://blazegraph.com/">BlazeGraph</a> as an RDF (triple) store to provide a advanced querying capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and ElasticSearch in case of failures, the system can be fully restored from the primary store. While the technology is advertised to support <a href="https://github.com/blazegraph/database/wiki/HAJournalServer">High Availability</a> and <a href="https://github.com/blazegraph/database/wiki/ClusterGuide">Scaleout</a> deployment configurations, we have yet to be able to setup a deployment in this fashion.</p>
-<p>We currently recommend deploying BlazeGraph using the prepackaged <em>tar.gz</em> distribution available to download from <a href="https://sourceforge.net/projects/bigdata/files/bigdata/2.1.4/">sourceforge</a>.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>Nexus uses <a href="https://www.blazegraph.com/" title="BlazeGraph" target="_blank" rel="noopener noreferrer">BlazeGraph</a> as an RDF (triple) store to provide a advanced querying capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and ElasticSearch in case of failures, the system can be fully restored from the primary store. While the technology is advertised to support <a href="https://wiki.blazegraph.com/wiki/index.php/HAJournalServer" title="High Availability" target="_blank" rel="noopener noreferrer">High Availability</a> and <a href="https://wiki.blazegraph.com/wiki/index.php/ClusterGuide" title="Scaleout" target="_blank" rel="noopener noreferrer">Scaleout</a> deployment configurations, we have yet to be able to setup a deployment in this fashion.</p>
+<p>We currently recommend deploying BlazeGraph using the prepackaged <em>tar.gz</em> distribution available to download from <a href="https://sourceforge.net/projects/bigdata/files/bigdata/2.1.4/" title="sourceforge" target="_blank" rel="noopener noreferrer">sourceforge</a>.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>We&rsquo;re looking at alternative technologies and possible application level (within Nexus) sharding and replicas.</p></div>
-<p>The <a href="https://github.com/blazegraph/database/wiki/Hardware_Configuration">Hardware Configuration</a> section in the documentation gives a couple of hints about the requirements to operate BlazeGraph and there are additional sections for optimizations in terms of <a href="https://github.com/blazegraph/database/wiki/PerformanceOptimization">Performance</a>, <a href="https://github.com/blazegraph/database/wiki/IOOptimization">IO</a> and <a href="https://github.com/blazegraph/database/wiki/QueryOptimization">Query</a>.</p>
+<p>The <a href="https://wiki.blazegraph.com/wiki/index.php/Hardware_Configuration" title="Hardware Configuration" target="_blank" rel="noopener noreferrer">Hardware Configuration</a> section in the documentation gives a couple of hints about the requirements to operate BlazeGraph and there are additional sections for optimizations in terms of <a href="https://wiki.blazegraph.com/wiki/index.php/PerformanceOptimization" title="Performance" target="_blank" rel="noopener noreferrer">Performance</a>, <a href="https://wiki.blazegraph.com/wiki/index.php/IOOptimization" title="IO" target="_blank" rel="noopener noreferrer">IO</a> and <a href="https://wiki.blazegraph.com/wiki/index.php/QueryOptimization" title="Query" target="_blank" rel="noopener noreferrer">Query</a>.</p>
 <p>BlazeGraph stores data in an append only journal which means updates will use additional disk space.</p>
 <p>A formula for computing the required disk space:</p>
 <pre><code>total = (resource_triples + nexus_triples) * count * number_updates * triple_size + lucene_index
@@ -765,7 +765,7 @@ $
 <p>&hellip; the total required disk size would be:</p>
 <pre><code>(100 + 20) * 1.000.000 * 10 * 200 / 1024 * 3 ~= 700.000.000KB ~= 670GB
 </code></pre>
-<p>Compactions can be applied to the journal using the <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java">CompactJournalUtility</a> to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.</p>
+<p>Compactions can be applied to the journal using the <a href="https://github.com/blazegraph/database/blob/master/bigdata-core/bigdata/src/java/com/bigdata/journal/CompactJournalUtility.java" title="CompactJournalUtility" target="_blank" rel="noopener noreferrer">CompactJournalUtility</a> to reduce the disk usage, but it takes quite a bit a time and requires taking the software offline during the process.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/running-nexus.md" title="Edit this page" class="md-source-file md-edit">
@@ -774,7 +774,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

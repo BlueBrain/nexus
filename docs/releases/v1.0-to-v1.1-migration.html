@@ -223,7 +223,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -263,7 +263,7 @@ BlueBrain/nexus
 <p>The migration steps are as follows:</p>
 <ol>
   <li>Stop the 3 services: iam, admin and kg.</li>
-  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html">Backup</a> the  cassandra store. This step is a safeguard against anything which could go wrong during migration scripts. It&rsquo;s also a  good practice to protect from hardware failures.</li>
+  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html" title="Backup" target="_blank" rel="noopener noreferrer">Backup</a> the  cassandra store. This step is a safeguard against anything which could go wrong during migration scripts. It&rsquo;s also a  good practice to protect from hardware failures.</li>
   <li>Delete all ElasticSearch indices
     <pre><code>curl -XDELETE &#39;http://{elasticsearch_host}/kg_*&#39;
 </code></pre>
@@ -277,7 +277,7 @@ done
   </li>
   <li>
   <p>Update Elasticsearch software from 6.x to 7.2 or above.</p></li>
-  <li>Deploy the new service images (tag <code>1.1</code>): <a href="https://hub.docker.com/r/bluebrain/nexus-iam">iam</a>,  <a href="https://hub.docker.com/r/bluebrain/nexus-admin">admin</a> and <a href="https://hub.docker.com/r/bluebrain/nexus-kg">kg</a>;  make sure to start the iam, admin and kg services one by one, in order and wait for the service to become available,  following the instructions:</li>
+  <li>Deploy the new service images (tag <code>1.1</code>):  <a href="https://hub.docker.com/r/bluebrain/nexus-iam" title="iam" target="_blank" rel="noopener noreferrer">iam</a>,  <a href="https://hub.docker.com/r/bluebrain/nexus-admin" title="admin" target="_blank" rel="noopener noreferrer">admin</a> and  <a href="https://hub.docker.com/r/bluebrain/nexus-kg" title="kg" target="_blank" rel="noopener noreferrer">kg</a>;  make sure to start the iam, admin and kg services one by one, in order and wait for the service to become available,  following the instructions:</li>
 </ol>
 <ul>
   <li>When running iam and admin services for the first time in v1.1, set the environment variable  <code>REPAIR_FROM_MESSAGES</code> to <code>true</code>. This environment variable should be removed in subsequent runs. It makes  services rebuild the cassandra database from the <code>messages</code> table and correcting any problems with the  <code>tag_views</code> table</li>
@@ -306,7 +306,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

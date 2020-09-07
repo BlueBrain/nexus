@@ -212,7 +212,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -227,7 +227,7 @@ BlueBrain/nexus
 <p>The migration steps are as follows:</p>
 <ol>
   <li>Stop the 3 services: iam, admin and kg.</li>
-  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html">Backup</a> the  cassandra store.</li>
+  <li><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html" title="Backup" target="_blank" rel="noopener noreferrer">Backup</a> the  cassandra store.</li>
   <li>Delete all ElasticSearch indices:
     <pre><code>curl -XDELETE &#39;http://{elasticsearch_host}/kg_*&#39;
 </code></pre>
@@ -246,9 +246,9 @@ drop table kg.projections_failures;
 </code></pre>
   </li>
   <li>
-  <p>Deploy the new service images (tag <code>1.3</code>) for <a href="https://hub.docker.com/r/bluebrain/nexus-iam">iam</a> and  <a href="https://hub.docker.com/r/bluebrain/nexus-admin">admin</a>.</p></li>
+  <p>Deploy the new service images (tag <code>1.3</code>) for <a href="https://hub.docker.com/r/bluebrain/nexus-iam" title="iam" target="_blank" rel="noopener noreferrer">iam</a> and  <a href="https://hub.docker.com/r/bluebrain/nexus-admin" title="admin" target="_blank" rel="noopener noreferrer">admin</a>.</p></li>
   <li>
-    <p>Deploy the new <a href="https://hub.docker.com/r/bluebrain/nexus-kg">kg</a> (tag <code>1.3</code>) image with the <code>MIGRATE_V12_TO_V13=true</code>  environment variable. This will instruct the service to automatically migrate the default views. The service can  be restarted without the migration environment variable after the following message is presented in the log:</p>
+    <p>Deploy the new <a href="https://hub.docker.com/r/bluebrain/nexus-kg" title="kg" target="_blank" rel="noopener noreferrer">kg</a> (tag <code>1.3</code>) image with the  <code>MIGRATE_V12_TO_V13=true</code> environment variable. This will instruct the service to automatically migrate the default  views. The service can be restarted without the migration environment variable after the following message is  presented in the log:</p>
     <pre><code>Finished migrating views mappings. 
 </code></pre>
   </li>
@@ -264,7 +264,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

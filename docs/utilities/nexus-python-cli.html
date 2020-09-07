@@ -249,7 +249,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -317,7 +317,7 @@ BlueBrain/nexus
 <p>This quick start tutorial tutorial makes use of:</p>
 <ul>
   <li>an AWS deployment of Blue Brain Nexus available at <a href="https://sandbox.bluebrainnexus.io">https://sandbox.bluebrainnexus.io</a>.</li>
-  <li><a href="https://github.com/BlueBrain/nexus-cli">Nexus Python CLI</a>, a python Command Line Interface.</li>
+  <li><a href="https://github.com/BlueBrain/nexus-cli" title="Nexus Python CLI" target="_blank" rel="noopener noreferrer">Nexus Python CLI</a>, a python Command Line Interface.</li>
 </ul></div>
 <p>Let&rsquo;s get started.</p>
 <h2><a href="#set-up" name="set-up" class="anchor"><span class="anchor-link"></span></a>Set up</h2>
@@ -478,9 +478,9 @@ organization selected.
 <pre class="prettyprint"><code class="language-shell">nexus resources list --size 10
 </code></pre>
 <h3><a href="#ingest-csv-files" name="ingest-csv-files" class="anchor"><span class="anchor-link"></span></a>Ingest CSV files</h3>
-<p>To illustrate how to load CSV files we will work with the small version of the <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users. An overview of this dataset can be found <a href="https://grouplens.org/datasets/movielens/">here</a>.</p>
+<p>To illustrate how to load CSV files we will work with the small version of the <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip" title="MovieLens dataset" target="_blank" rel="noopener noreferrer">MovieLens dataset</a> containing a set of movies (movies.csv) along with their ratings (ratings.csv) and tags (tags.csv) made by users. An overview of this dataset can be found <a href="https://grouplens.org/datasets/movielens/">here</a>.</p>
 <h4><a href="#download-the-dataset" name="download-the-dataset" class="anchor"><span class="anchor-link"></span></a>Download the dataset</h4>
-<p>The <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip">MovieLens dataset</a> can be downloaded either directly on a browser or using a curl command as shown below.</p>
+<p>The <a href="http://files.grouplens.org/datasets/movielens/ml-latest-small.zip" title="MovieLens dataset" target="_blank" rel="noopener noreferrer">MovieLens dataset</a> can be downloaded either directly on a browser or using a curl command as shown below.</p>
 <p>The following command download, unzip the dataset in the folder ~/ml-latest-small and list the files. The downloaded MovieLens dataset is made of four csv files as shown in the output tab.</p>
 <dl>
   <dt>Command</dt>
@@ -623,17 +623,17 @@ organization selected.
   <tbody>
     <tr>
       <td>ElasticSearchView </td>
-      <td>Exposes data in <a href="https://www.elastic.co/elasticsearch/">ElasticSearch</a> a document oriented search engine and provide access to it using the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch query language</a>.</td>
+      <td>Exposes data in <a href="https://www.elastic.co/products/elasticsearch" title="ElasticSearch" target="_blank" rel="noopener noreferrer">ElasticSearch</a> a document oriented search engine and provide access to it using the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html" title="ElasticSearch query language" target="_blank" rel="noopener noreferrer">ElasticSearch query language</a>.</td>
     </tr>
     <tr>
       <td>SparqlView </td>
-      <td>Exposes data as a <a href="../getting-started/understanding-knowledge-graphs.html#the-graph-structure">graph</a> and allows to navigate and explore the data using the <a href="https://www.w3.org/TR/sparql11-query/">W3C Sparql query language</a>.</td>
+      <td>Exposes data as a graph and allows to navigate and explore the data using the <a href="https://www.w3.org/TR/sparql11-query/" title="W3C SPARQL query language" target="_blank" rel="noopener noreferrer">W3C SPARQL query language</a>.</td>
     </tr>
   </tbody>
 </table><div class="callout note "><div class="callout-title">Note</div>
 <p>Note that the following queries (ElasticSearch and SPARQL) contain the variable $PROJECTLABEL. It should be replaced by the current project. Please copy each query and use a text editor to replace $PROJECTLABEL.</p></div>
 <h4><a href="#query-data-using-the-elasticsearchview" name="query-data-using-the-elasticsearchview" class="anchor"><span class="anchor-link"></span></a>Query data using the ElasticSearchView</h4>
-<p>The ElasticSearchView URL is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search].</p>
+<p>The ElasticSearchView URL is available at the address <code>https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/documents/_search</code>.</p>
 <dl>
   <dt>Select queries</dt>
   <dd>
@@ -659,7 +659,7 @@ nexus views query-es --data \
 </code></pre></dd>
 </dl>
 <h4><a href="#query-data-using-the-sparqlview" name="query-data-using-the-sparqlview" class="anchor"><span class="anchor-link"></span></a>Query data using the SparqlView</h4>
-<p>The SparqlView is available at the address [https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql]. The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.</p>
+<p>The SparqlView is available at the address <code>https://sandbox.bluebrainnexus.io/v1/views/tutorialnexus/$PROJECTLABEL/graph/sparql]</code>. The following diagram shows how the MovieLens data is structured in the default Nexus SparqlView. Note that the ratings, tags and movies are joined by the movieId property.</p>
 <dl>
   <dt>Select queries</dt>
   <dd>
@@ -746,7 +746,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

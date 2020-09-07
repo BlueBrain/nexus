@@ -249,7 +249,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -318,7 +318,7 @@ BlueBrain/nexus
 <h2><a href="#service-event-logs" name="service-event-logs" class="anchor"><span class="anchor-link"></span></a>Service event logs</h2>
 <p>Services now expose new API endpoints to replay their global event log or the virtual event logs specific to certain resource types or scope (organization, project). This new API allows building applications that integrate with Nexus to provide custom functionality for the data stored in the system. It allows applications to listen to events as they are emitted and react accordingly.</p>
 <p>An example application would be a custom index for data within a project where as new resources or updates are recorded in Nexus, the application is notified and updates the appropriate index.</p>
-<p>The implementation follows the <a href="https://www.w3.org/TR/eventsource/">Server Sent Events</a> specification and gives clients the responsibility of maintaining a cursor while replaying an event log. The event log is exposed over HTTP in a JSON-LD event representation.</p>
+<p>The implementation follows the <a href="https://www.w3.org/TR/eventsource/" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a> specification and gives clients the responsibility of maintaining a cursor while replaying an event log. The event log is exposed over HTTP in a JSON-LD event representation.</p>
 <p>The new endpoints require proof of identity by passing within the <code>Authorization</code> header a &lsquo;&lsquo;Bearer&rsquo;&rsquo; token. An <code>Anonymous</code> identity is assumed if the client does not pass a token.</p>
 <p>Example:</p>
 <pre class="prettyprint"><code class="language-bash">curl -s -H &quot;Authorization: Bearer $TOKEN&quot; &quot;http://localhost/v1/resources/myorg/myproj/events&quot;
@@ -379,8 +379,8 @@ data:
 <p>The following configuration options are available for this storage type:</p>
 <ul>
   <li><code>default</code>: boolean, mandatory, whether the storage resource is the default one for a project</li>
-  <li><code>endpoint</code>: string, optional, the base address of the remote disk storage integration service, defaults to the value  set in the <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf">environment variables of KG</a></li>
-  <li><code>credentials</code>: string, optional, the oauth2 bearer token to be used for authenticating to the remote disk storage  integration service, defaults to the value set in the  <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf">environment variables of KG</a></li>
+  <li><code>endpoint</code>: string, optional, the base address of the remote disk storage integration service, defaults to the value  set in the <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf" title="environment variables of KG" target="_blank" rel="noopener noreferrer">environment variables of KG</a></li>
+  <li><code>credentials</code>: string, optional, the oauth2 bearer token to be used for authenticating to the remote disk storage  integration service, defaults to the value set in the  <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf" title="environment variables of KG" target="_blank" rel="noopener noreferrer">environment variables of KG</a></li>
   <li><code>folder</code>: string, mandatory, the name of the folder where files are to be stored for this project</li>
   <li><code>maxFileSize</code>: int, optional, the maximum file size (in bytes) allowed for clients to upload</li>
   <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
@@ -394,7 +394,7 @@ data:
   <li><code>bucket</code>: string, mandatory, the name of the s3 bucket where files are to be stored</li>
   <li><code>endpoint</code>: string, optional, the s3 storage endpoint, defaulting to <code>s3.amazonaws.com</code></li>
   <li><code>accessKey</code>: string, optional, the access key to be used for authenticating to the service</li>
-  <li><code>secretKey</code>: string, optional, the secret key to be used for authenticating to the service,  defaults to the value set in the  <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf">environment variables of KG</a></li>
+  <li><code>secretKey</code>: string, optional, the secret key to be used for authenticating to the service,  defaults to the value set in the  <a href="https://github.com/BlueBrain/nexus-kg/blob/master/src/main/resources/app.conf" title="environment variables of KG" target="_blank" rel="noopener noreferrer">environment variables of KG</a></li>
   <li><code>maxFileSize</code>: int, optional, the maximum file size (in bytes) allowed for clients to upload</li>
   <li><code>readPermission</code>: string, optional, defaults to <code>resources/read</code>, the permission required for downloading files from  this storage medium</li>
   <li><code>writePermission</code>: string, optional, defaults to <code>files/write</code>, the permission required for uploading files to  this storage medium</li>
@@ -681,7 +681,7 @@ GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
 </code></pre>
 <p>See <a href="../delta/api/current/kg-resolvers-api.html">resolvers API</a> for more details.</p>
 <h3><a href="#paginate-beyond-10-000-results" name="paginate-beyond-10-000-results" class="anchor"><span class="anchor-link"></span></a>Paginate beyond 10,000 results</h3>
-<p>The KG service uses ElasticSearch with a default project view to power listing of resources within a project. Due to the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html#request-body-search-from-size">restriction</a> set by this store when using <code>from</code> and <code>size</code> resources could not be listed after reaching 10,000 with the applied additional filters.</p>
+<p>The KG service uses ElasticSearch with a default project view to power listing of resources within a project. Due to the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html#request-body-search-from-size" title="restriction" target="_blank" rel="noopener noreferrer">restriction</a> set by this store when using <code>from</code> and <code>size</code> resources could not be listed after reaching 10,000 with the applied additional filters.</p>
 <p>To address this issue, a new link (<code>_next</code>) has been added to all listing results such that following this link will continue the pagination over the imposed limit; the implementation relies on the searchAfter API which does not suffer from this restriction:</p>
 <pre class="prettyprint"><code class="language-bash">curl -s -H &quot;Authorization: Bearer $TOKEN&quot; &quot;http://localhost/v1/resources/myorg/myproj?size=2&quot; | jq
 
@@ -768,7 +768,7 @@ GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/outgoing
   <li>The http client in the Python SDK / CLI has been configured to use connection pooling which brings a 4x+ performance  boost due to removing the latency penalty for opening new connections.</li>
   <li>The CLI has been updated such that a user can login with username and password if the selected realm and provided  client id supports Direct Access Grants. By convention the CLI defaults to <code>nexus-public</code> client.</li>
   <li>ElasticSearch compatibility has been updated to 7.x, please see the  <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</li>
-  <li>Other <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+milestone%3AV1.1+label%3Abug+label%3Aservices">Bug Fixes</a>.</li>
+  <li>Other <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+milestone%3AV1.1+label%3Abug+label%3Aservices" title="Bug Fixes" target="_blank" rel="noopener noreferrer">Bug Fixes</a>.</li>
 </ul>
 </div>
 <div>
@@ -778,7 +778,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

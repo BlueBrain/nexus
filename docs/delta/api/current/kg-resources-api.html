@@ -235,7 +235,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -283,7 +283,7 @@ BlueBrain/nexus
 <ul>
   <li>belongs to a <code>project</code> identifier by the label <code>{project_label}</code></li>
   <li>inside an <code>organization</code> identifier by the label <code>{org_label}</code></li>
-  <li>it is validated against a <code>schema</code> with id <code>{schema_id}</code>. In case of using <code>_</code> for this segment, the schema segment reads as <code>irrelevant</code>.</li>
+  <li>it is validated against a <code>schema</code> with id <code>{schema_id}</code>. In case of using <code>_</code> for this segment, the schema segment  reads as <code>irrelevant</code>.</li>
 </ul>
 <p>Access to resources in the system depends on the access control list set for them. Depending on the access control list, a caller may need to prove its identity by means of an <strong>access token</strong> passed to the <code>Authorization</code> header (<code>Authorization: Bearer {token}</code>). Please visit <a href="authentication.html">Authentication</a> to learn more about how to retrieve an access token.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When modifying resources, the caller must have <code>resources/write</code> permissions on the current path of the project or the ancestor paths.</p>
@@ -295,7 +295,7 @@ BlueBrain/nexus
 <p>The json payload: </p>
 <ul>
   <li>If the <code>@id</code> value is found on the payload, this @id will be used.</li>
-  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
+  <li>If the <code>@id</code> value is not found on the payload, an @id will be generated as follows: <code>base:{UUID}</code>. The <code>base</code> is the  <code>prefix</code> defined on the resource&rsquo;s project (<code>{project_label}</code>).</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -530,9 +530,9 @@ BlueBrain/nexus
 <h2><a href="#fetch-a-resource" name="fetch-a-resource" class="anchor"><span class="anchor-link"></span></a>Fetch a resource</h2>
 <p>When fetching a resource, the response format can be chosen through HTTP content negotiation, using the <strong>Accept</strong> HTTP header.</p>
 <ul>
-  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code> will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form">compacted document form</a> or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form">expanded document form</a>.</li>
-  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/">w3</a>.</li>
-  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html">DOT response</a>.</li>
+  <li><strong>application/ld+json</strong>: JSON-LD output response. Further specifying the query parameter <code>format=compacted|expanded</code>  will provide with the JSON-LD <a href="https://www.w3.org/TR/json-ld11/#compacted-document-form" title="compacted document form" target="_blank" rel="noopener noreferrer">compacted document form</a>  or the <a href="https://www.w3.org/TR/json-ld11/#expanded-document-form" title="expanded document form" target="_blank" rel="noopener noreferrer">expanded document form</a>.</li>
+  <li><strong>application/n-triples</strong>: RDF n-triples response, as defined by the <a href="https://www.w3.org/TR/n-triples/" title="w3" target="_blank" rel="noopener noreferrer">w3</a>.</li>
+  <li><strong>text/vnd.graphviz</strong>: A <a href="https://www.graphviz.org/doc/info/lang.html" title="DOT response" target="_blank" rel="noopener noreferrer">DOT response</a>.</li>
 </ul>
 <p>If <code>Accept: */*</code> HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.</p>
 <pre><code>GET /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}?rev={rev}&amp;tag={tag}
@@ -616,12 +616,12 @@ BlueBrain/nexus
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
   <li><code>{schema}</code>: Iri - can be used to filter the resulting resources based on the conformant schema</li>
-  <li><code>{search}</code>: String - can be provided to select only the resources in the collection that have attribute values matching (containing) the provided string</li>
-  <li><code>{sort}</code>: String - can be used to sort resources based on a payloads&rsquo; field. This parameter can appear multiple times to enable sorting by multiple fields</li>
+  <li><code>{search}</code>: String - can be provided to select only the resources in the collection that have attribute values  matching (containing) the provided string</li>
+  <li><code>{sort}</code>: String - can be used to sort resources based on a payloads&rsquo; field. This parameter can appear multiple times  to enable sorting by multiple fields</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -665,7 +665,7 @@ BlueBrain/nexus
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
   <li><code>{deprecated}</code>: Boolean - can be used to filter the resulting resources based on their deprecation status</li>
   <li><code>{rev}</code>: Number - can be used to filter the resulting resources based on their revision value</li>
-  <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear multiple times, filtering further the <code>@type</code> value.</li>
+  <li><code>{type}</code>: Iri - can be used to filter the resulting resources based on their <code>@type</code> value. This parameter can appear  multiple times, filtering further the <code>@type</code> value.</li>
   <li><code>{createdBy}</code>: Iri - can be used to filter the resulting resources based on their creator</li>
   <li><code>{updatedBy}</code>: Iri - can be used to filter the resulting resources based on the person which performed the last update</li>
 </ul>
@@ -754,7 +754,7 @@ BlueBrain/nexus
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
-  <li><code>{includeExternalLinks}</code>: Boolean - flag to decide whether or not external links are to be included. External links are references to resources in other projects, or even resources external to Nexus; defaults to <code>true</code></li>
+  <li><code>{includeExternalLinks}</code>: Boolean - flag to decide whether or not external links are to be included. External links  are references to resources in other projects, or even resources external to Nexus; defaults to <code>true</code></li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -835,7 +835,7 @@ id:{id}
 <p>where&hellip;</p>
 <ul>
   <li><code>{payload}</code>: Json - is the actual payload of the current resource</li>
-  <li><code>{type}</code>: String - is a type identifier for the current realm. Possible types are: Created, Updated, Deprecated, TagAdded, FileCreated, FileUpdated</li>
+  <li><code>{type}</code>: String - is a type identifier for the current realm. Possible types are: Created, Updated, Deprecated,  TagAdded, FileCreated, FileUpdated</li>
   <li><code>{id}</code>: String - is the identifier of the resource event. It can be used in the <code>Last-Event-Id</code> query parameter</li>
 </ul>
 <h3><a href="#server-sent-events-all-resources" name="server-sent-events-all-resources" class="anchor"><span class="anchor-link"></span></a>Server Sent Events all resources</h3>
@@ -871,7 +871,7 @@ id:e024e5f0-9652-11e9-89a7-6d3c5701d287</code></pre></dd>
 <p>where </p>
 <ul>
   <li><code>{org_label}</code>: String - the selected organization for which the events are going to be filtered</li>
-  <li><code>Last-Event-Id</code>: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</li>
+  <li><code>Last-Event-Id</code>: String - optional HTTP Header that identifies the last consumed resource event. It can be used for  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -899,7 +899,7 @@ id:ce6549e0-9652-11e9-89a7-6d3c5701d287</code></pre></dd>
 <ul>
   <li><code>{org_label}</code>: String - the selected organization for which the events are going to be filtered</li>
   <li><code>{project_label}</code>: String - the selected project for which the events are going to be filtered</li>
-  <li><code>Last-Event-Id</code>: String - optional HTTP Header that identifies the last consumed resource event. It can be used for cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</li>
+  <li><code>Last-Event-Id</code>: String - optional HTTP Header that identifies the last consumed resource event. It can be used for  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.</li>
 </ul>
 <p><strong>Example</strong></p>
 <dl>
@@ -928,7 +928,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

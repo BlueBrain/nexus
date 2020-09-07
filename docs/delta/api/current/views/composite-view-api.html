@@ -251,7 +251,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -363,10 +363,10 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{sourceId}</code>: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri will be assigned.</li>
+  <li><code>{sourceId}</code>: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri  will be assigned.</li>
   <li><code>{project}</code>: String - the target project (in the format &lsquo;myorg/myproject&rsquo;).</li>
   <li><code>_identity_</code>: Json object - the identity against which to enforce ACLs during the resource retrieval process.</li>
-  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.</li>
+  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is  optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri. This field is optional.</li>
   <li><code>{tag}</code>: String - Selects only resources with the provided tag. This field is optional.</li>
 </ul>
@@ -391,11 +391,11 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{sourceId}</code>: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri will be assigned.</li>
+  <li><code>{sourceId}</code>: Iri - The identifier of the source. This field is optional. When missing, a randomly generated Iri  will be assigned.</li>
   <li><code>{project}</code>: String - the remote project (in the format &lsquo;myorg/myproject&rsquo;).</li>
   <li><code>{endpoint}</code>: Iri - the Nexus deployment endpoint.</li>
-  <li><code>{token}</code>: String - the Nexus deployment token. This field is optional. When missing, the Nexus endpoint will be accessed without authentication.</li>
-  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.</li>
+  <li><code>{token}</code>: String - the Nexus deployment token. This field is optional. When missing, the Nexus endpoint will be  accessed without authentication.</li>
+  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is  optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri. This field is optional.</li>
   <li><code>{tag}</code>: String - Selects only resources with the provided tag. This field is optional.</li>
 </ul>
@@ -404,7 +404,7 @@ BlueBrain/nexus
 <ol>
   <li>Convert event into a resource.</li>
   <li>Discard undesired resources.</li>
-  <li>Store the RDF triple representation of a resource in an intermediate Sparql space. This space will be used by the projections in the following pipeline steps.</li>
+  <li>Store the RDF triple representation of a resource in an intermediate Sparql space. This space will be used by the  projections in the following pipeline steps.</li>
 </ol>
 <h2><a href="#projections" name="projections" class="anchor"><span class="anchor-link"></span></a>Projections</h2>
 <p>A projection defines the type of indexing and a query to transform the data. It is the output of the pipeline.</p>
@@ -437,14 +437,14 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{projectionId}</code>: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated Iri will be assigned.</li>
-  <li><code>_elasticsearch mapping_</code>: Json object - Defines the value types for the Json keys, as stated at the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping">ElasticSearch mapping documentation</a>.</li>
-  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the query. This field is optional.</li>
+  <li><code>{projectionId}</code>: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated  Iri will be assigned.</li>
+  <li><code>_elasticsearch mapping_</code>: Json object - Defines the value types for the Json keys, as stated at the  <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping" title="ElasticSearch mapping documentation" target="_blank" rel="noopener noreferrer">ElasticSearch mapping documentation</a>.</li>
+  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the  query. This field is optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.</li>
   <li><code>{tag}</code>: String - Selects only resources with the provided tag to perform the query. This field is optional.</li>
-  <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
+  <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
   <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
-  <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/">Sparql Query</a> - Defines the Sparql query to execute against the intermediate Sparql space for each target resource.</li>
+  <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/">Sparql Query</a> - Defines the Sparql query to execute against the  intermediate Sparql space for each target resource.</li>
   <li><code>_context_</code>: Json - the JSON-LD context value applied to the query results.</li>
 </ul>
 <h3><a href="#sparqlprojection" name="sparqlprojection" class="anchor"><span class="anchor-link"></span></a>SparqlProjection</h3>
@@ -472,13 +472,13 @@ BlueBrain/nexus
 </code></pre>
 <p>where&hellip;</p>
 <ul>
-  <li><code>{projectionId}</code>: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated Iri will be assigned.</li>
-  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the query. This field is optional.</li>
+  <li><code>{projectionId}</code>: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated  Iri will be assigned.</li>
+  <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri to perform the  query. This field is optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.</li>
   <li><code>{tag}</code>: String - Selects only resources with the provided tag to perform the query. This field is optional.</li>
-  <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
+  <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
   <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
-  <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/">Sparql Query</a> - Defines the Sparql query to execute against the intermediate Sparql space for each target resource.</li>
+  <li><code>{query}</code>: <a href="https://www.w3.org/TR/rdf-sparql-query/" title="Sparql Query" target="_blank" rel="noopener noreferrer">Sparql Query</a> - Defines the Sparql query to  execute against the intermediate Sparql space for each target resource.</li>
 </ul>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
 <pre class="prettyprint"><code class="language-json">{
@@ -496,7 +496,7 @@ BlueBrain/nexus
 <ul>
   <li><code>_source_</code>: Json - The source definition.</li>
   <li><code>_projection_</code>: Json - The projection definition.</li>
-  <li><code>{interval_value}</code>: String - The maximum interval delay for a resource to be present in a projection, in a human readable format (e.g.: 10 minutes).</li>
+  <li><code>{interval_value}</code>: String - The maximum interval delay for a resource to be present in a projection, in a human  readable format (e.g.: 10 minutes).</li>
 </ul>
 <p>Note: The <code>rebuildStrategy</code> block is optional. If missing, the view won&rsquo;t be automatically restarted.</p>
 <h3><a href="#example" name="example" class="anchor"><span class="anchor-link"></span></a>Example</h3>
@@ -651,7 +651,7 @@ BlueBrain/nexus
   {...}
 </code></pre>
 <p>where <code>{projection_id}</code> is the @id value of the target <code>ElasticSearch</code> projection. </p>
-<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch documentation</a></p>
+<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html" title="ElasticSearch documentation" target="_blank" rel="noopener noreferrer">ElasticSearch documentation</a></p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -771,7 +771,7 @@ BlueBrain/nexus
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/_search
   {...}
 </code></pre>
-<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch documentation</a></p>
+<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html" title="ElasticSearch documentation" target="_blank" rel="noopener noreferrer">ElasticSearch documentation</a></p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
@@ -893,7 +893,7 @@ BlueBrain/nexus
 </code></pre>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/sparql?query={query}
 </code></pre>
-<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns">SPARQL documentation</a></p>
+<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns" title="SPARQL documentation" target="_blank" rel="noopener noreferrer">SPARQL documentation</a></p>
 <p>where <code>{projection_id}</code> is the @id value of the target <code>Sparql</code> projection.</p>
 <p>The <code>Content-Type</code> HTTP header for POST request is <code>application/sparql-query</code>.</p>
 <p><strong>Example</strong></p>
@@ -934,7 +934,7 @@ BlueBrain/nexus
 </code></pre>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql?query={query}
 </code></pre>
-<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns">SPARQL documentation</a></p>
+<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns" title="SPARQL documentation" target="_blank" rel="noopener noreferrer">SPARQL documentation</a></p>
 <p>The <code>Content-Type</code> HTTP header for POST request is <code>application/sparql-query</code>.</p>
 <p><strong>Example</strong></p>
 <dl>
@@ -974,7 +974,7 @@ BlueBrain/nexus
 </code></pre>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/sparql?query={query}
 </code></pre>
-<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns">SPARQL documentation</a></p>
+<p>In both endpoints, <code>{query}</code> is defined by the <a href="https://www.w3.org/TR/rdf-sparql-query/#basicpatterns" title="SPARQL documentation" target="_blank" rel="noopener noreferrer">SPARQL documentation</a></p>
 <p>The <code>Content-Type</code> HTTP header for POST request is <code>application/sparql-query</code>.</p>
 <p><strong>Example</strong></p>
 <dl>
@@ -1082,7 +1082,7 @@ BlueBrain/nexus
   <li><code>totalEvents</code> - sum of total number of events from each source</li>
   <li><code>processedEvents</code> - sum of number of events that have been considered by each source</li>
   <li><code>remainingEvents</code> - sum of number of events that remain to be considered by each source</li>
-  <li><code>discardedEvents</code> - sum of number of events that have been discarded by each source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)</li>
+  <li><code>discardedEvents</code> - sum of number of events that have been discarded by each source (were not evaluated due to  filters, e.g. did not match schema, tag or type defined in the source)</li>
   <li><code>evaluatedEvents</code> - sum of number of events that have been used to update the intermediate Sparql space of each source</li>
   <li><code>lastEventDateTime</code> - timestamp of the last event in the sources</li>
   <li><code>lastProcessedEventDateTime</code> - timestamp of the last event processed by the sources</li>
@@ -1120,7 +1120,7 @@ BlueBrain/nexus
   <li><code>totalEvents</code> - total number of events for the provided source</li>
   <li><code>processedEvents</code> - number of events that have been considered by the provided source</li>
   <li><code>remainingEvents</code> - number of events that remain to be considered by the provided source</li>
-  <li><code>discardedEvents</code> - number of events that have been discarded by the provided source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)</li>
+  <li><code>discardedEvents</code> - number of events that have been discarded by the provided source (were not evaluated due to  filters, e.g. did not match schema, tag or type defined in the source)</li>
   <li><code>evaluatedEvents</code> - number of events that have been used to update the intermediate Sparql of the provided source</li>
   <li><code>lastEventDateTime</code> - timestamp of the last event from the provided source</li>
   <li><code>lastProcessedEventDateTime</code> - timestamp of the last event processed by the provided source</li>
@@ -1192,7 +1192,7 @@ BlueBrain/nexus
   <li><code>totalEvents</code> - total number of events for the provided source</li>
   <li><code>processedEvents</code> - number of events that have been considered by the provided source</li>
   <li><code>remainingEvents</code> - number of events that remain to be considered by the provided source</li>
-  <li><code>discardedEvents</code> - number of events that have been discarded by the provided source (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the source)</li>
+  <li><code>discardedEvents</code> - number of events that have been discarded by the provided source (were not evaluated due to  filters, e.g. did not match schema, tag or type defined in the source)</li>
   <li><code>evaluatedEvents</code> - number of events that have been used to update the intermediate Sparql of the provided source</li>
   <li><code>lastEventDateTime</code> - timestamp of the last event from the provided source</li>
   <li><code>lastProcessedEventDateTime</code> - timestamp of the last event processed by the provided source</li>
@@ -1275,7 +1275,7 @@ BlueBrain/nexus
   <li><code>totalEvents</code> - total number of events for the provided source</li>
   <li><code>processedEvents</code> - number of events that have been considered by the projection</li>
   <li><code>remainingEvents</code> - number of events that remain to be considered by the projection</li>
-  <li><code>discardedEvents</code> - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the projection)</li>
+  <li><code>discardedEvents</code> - number of events that have been discarded (were not evaluated due to filters, e.g. did not match  schema, tag or type defined in the projection)</li>
   <li><code>evaluatedEvents</code> - number of events that have been used to update the projection index</li>
   <li><code>lastEventDateTime</code> - timestamp of the last event in the source</li>
   <li><code>lastProcessedEventDateTime</code> - timestamp of the last event processed by the projection</li>
@@ -1393,7 +1393,7 @@ BlueBrain/nexus
   <li><code>totalEvents</code> - total number of events for the provided source</li>
   <li><code>processedEvents</code> - number of events that have been considered by the projection</li>
   <li><code>remainingEvents</code> - number of events that remain to be considered by the projection</li>
-  <li><code>discardedEvents</code> - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the projection)</li>
+  <li><code>discardedEvents</code> - number of events that have been discarded (were not evaluated due to filters, e.g. did not match  schema, tag or type defined in the projection)</li>
   <li><code>evaluatedEvents</code> - number of events that have been used to update the projection index</li>
   <li><code>lastEventDateTime</code> - timestamp of the last event in the source</li>
   <li><code>lastProcessedEventDateTime</code> - timestamp of the last event processed by the projection</li>
@@ -1534,7 +1534,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

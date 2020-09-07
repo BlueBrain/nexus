@@ -229,7 +229,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -292,9 +292,9 @@ BlueBrain/nexus
   <li><code>{resourceSchema}</code>: Iri - Selects only resources that are validated against the provided schema Iri. This field is optional.</li>
   <li><code>{resourceType}</code>: Iri - Select only resources of the provided type Iri. This field is optional.</li>
   <li><code>{tag}</code>: String - Selects only resources with the provided tag. This field is optional.</li>
-  <li><code>_elasticsearch mapping_</code>: Json object - Defines the value types for the Json keys, as stated at the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping">ElasticSearch mapping documentation</a>.</li>
-  <li><code>{sourceAsText}</code>: Boolean - If true, the resource&rsquo;s payload will be stored in the ElasticSearch document as a single escaped string value of the key <code>_original_source</code>. If false, the resource&rsquo;s payload will be stored normally in the ElasticSearch document. The default value is <code>false</code>.</li>
-  <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
+  <li><code>_elasticsearch mapping_</code>: Json object - Defines the value types for the Json keys, as stated at the  <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping" title="ElasticSearch mapping documentation" target="_blank" rel="noopener noreferrer">ElasticSearch mapping documentation</a>.</li>
+  <li><code>{sourceAsText}</code>: Boolean - If true, the resource&rsquo;s payload will be stored in the ElasticSearch document as a single  escaped string value of the key <code>_original_source</code>. If false, the resource&rsquo;s payload will be stored normally in the ElasticSearch document. The default value is <code>false</code>.</li>
+  <li><code>{includeMetadata}</code>: Boolean - If true, the resource&rsquo;s nexus metadata (<code>_constrainedBy</code>, <code>_deprecated</code>, &hellip;) will be  stored in the ElasticSearch document. Otherwise it won&rsquo;t. The default value is <code>false</code>.</li>
   <li><code>{includeDeprecated}</code>: Boolean - If true, deprecated resources are also indexed. The default value is <code>false</code>.</li>
   <li><code>{someid}</code>: Iri - The @id value for this view.</li>
 </ul>
@@ -342,7 +342,7 @@ BlueBrain/nexus
 <pre><code>POST /v1/views/{org_label}/{project_label}/{view_id}/_search
   {...}
 </code></pre>
-<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html">ElasticSearch documentation</a></p>
+<p>The supported payload is defined on the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html" title="ElasticSearch documentation" target="_blank" rel="noopener noreferrer">ElasticSearch documentation</a></p>
 <p>The string <code>documents</code> is used as a prefix of the default ElasticSearch <code>view_id</code></p>
 <p><strong>Example</strong></p>
 <dl>
@@ -439,7 +439,7 @@ BlueBrain/nexus
   <li><code>totalEvents</code> - total number of events in the project</li>
   <li><code>processedEvents</code> - number of events that have been considered by the view</li>
   <li><code>remainingEvents</code> - number of events that remain to be considered by the view</li>
-  <li><code>discardedEvents</code> - number of events that have been discarded (were not evaluated due to filters, e.g. did not match schema, tag or type defined in the view)</li>
+  <li><code>discardedEvents</code> - number of events that have been discarded (were not evaluated due to filters, e.g. did not  match schema, tag or type defined in the view)</li>
   <li><code>evaluatedEvents</code> - number of events that have been used to update an index</li>
   <li><code>lastEventDateTime</code> - timestamp of the last event in the project</li>
   <li><code>lastProcessedEventDateTime</code> - timestamp of the last event processed by the view</li>
@@ -469,7 +469,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

@@ -232,7 +232,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -272,10 +272,10 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#api-reference" name="api-reference" class="anchor"><span class="anchor-link"></span></a>API Reference</h1>
-<p>Nexus Delta expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically <a href="https://json-ld.org/">JSON-LD</a>.</p>
+<p>Nexus Delta expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport format is JSON based, specifically <a href="https://json-ld.org/" title="JSON-LD" target="_blank" rel="noopener noreferrer">JSON-LD</a>.</p>
 <p>The API provides access and management of several primary resource types.</p>
 <h2><a href="#realms" name="realms" class="anchor"><span class="anchor-link"></span></a>Realms</h2>
-<p>A realm provides with the necessary information to perform authentication against a certain <a href="https://en.wikipedia.org/wiki/OpenID_Connect">OIDC</a> provider . </p>
+<p>A realm provides with the necessary information to perform authentication against a certain <a href="https://en.wikipedia.org/wiki/OpenID_Connect" title="OIDC" target="_blank" rel="noopener noreferrer">OIDC</a> provider . </p>
 <p><a href="iam-realms-api.html">Operations on realms</a></p>
 <h2><a href="#permissions" name="permissions" class="anchor"><span class="anchor-link"></span></a>Permissions</h2>
 <p>A permission is the basic unit to provide a way to limit applications&rsquo; access to sensitive information. </p>
@@ -284,7 +284,7 @@ BlueBrain/nexus
 <p>In order to restrict applications&rsquo; access to data by placing restrictions on them, three parameters are important:</p>
 <ul>
   <li>permission: the value used to limit a client (user, group) access to resources.</li>
-  <li>identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is authenticated to a certain realm.</li>
+  <li>identity: a client identity reference, e.g. a certain user, a group, an anonymous user or someone who is  authenticated to a certain realm.</li>
   <li>path: the location where to apply the restrictions</li>
 </ul>
 <p>An ACL defines the set of <strong>permissions</strong> that certain <strong>identities</strong> have on a concrete <strong>path</strong>.</p>
@@ -299,7 +299,7 @@ BlueBrain/nexus
 <p>The 2nd level grouping resources in the platform, called project. Projects provide isolation of ACLs, resource resolution and indices (ElasticSearch index and Blazegraph namespace).</p>
 <p><a href="admin-projects-api.html">Operations on projects</a></p>
 <h2><a href="#schemas" name="schemas" class="anchor"><span class="anchor-link"></span></a>Schemas</h2>
-<p>A schema is a resource which defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/">SHACL</a>. </p>
+<p>A schema is a resource which defines a set of rules and constrains using <a href="https://www.w3.org/TR/shacl/" title="SHACL" target="_blank" rel="noopener noreferrer">SHACL</a>. </p>
 <p><a href="kg-schemas-api.html">Operations on schemas</a></p>
 <h2><a href="#resolvers" name="resolvers" class="anchor"><span class="anchor-link"></span></a>Resolvers</h2>
 <p>A resolver is a resource which defines the way ids are retrieved inside a project.</p>
@@ -320,13 +320,13 @@ BlueBrain/nexus
 <p>A resource is the most generic entity on the Knowledge Graph. Resources can be <code>schemas</code>, <code>resolvers</code>, <code>views</code>, <code>storages</code>, <code>files</code> or <code>data</code>.</p>
 <p><a href="kg-resources-api.html">Operations on resources</a></p>
 <h2><a href="#resource-lifecycle" name="resource-lifecycle" class="anchor"><span class="anchor-link"></span></a>Resource Lifecycle</h2>
-<p>Nexus Delta is build using the <a href="https://martinfowler.com/eaaDev/EventSourcing.html">event sourcing</a> approach. This strategy captures all changes to an application state as a sequence of events.</p>
+<p>Nexus Delta is build using the <a href="https://martinfowler.com/eaaDev/EventSourcing.html" title="event sourcing" target="_blank" rel="noopener noreferrer">event sourcing</a> approach. This strategy captures all changes to an application state as a sequence of events.</p>
 <p>All resources in the system generally follow the very same lifecycle, as depicted in the diagram below. Every interaction with an API resource (creation, updates, state changes) is recorded into the system as revisions.</p>
 <p><img src="assets/resources/resource-lifecycle.png" alt="Resource Lifecycle" title="Resource Lifecycle" /></p>
 <p>Data is never removed from the system, but rather is marked as deprecated. Depending on the type of resource, the deprecation flag may have various semantics:</p>
 <ul>
-  <li><strong>Organizations</strong>: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this organization will not be considered during indexing and resolution processes.</li>
-  <li><strong>Projects</strong>: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this project will not be considered during indexing and resolution processes.</li>
+  <li><strong>Organizations</strong>: the resource itself and sub-resources cannot be updated. Views and resolvers contained within  this organization will not be considered during indexing and resolution processes.</li>
+  <li><strong>Projects</strong>: the resource itself and sub-resources cannot be updated. Views and resolvers contained within this  project will not be considered during indexing and resolution processes.</li>
   <li><strong>Schemas</strong>: the resource itself cannot be updated and new data conformant to it cannot be created</li>
   <li><strong>Resolvers</strong>: the resource itself will not be considered during the resolution process</li>
   <li><strong>Views</strong>: the resource itself will not be considered during the indexing process</li>
@@ -344,7 +344,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>

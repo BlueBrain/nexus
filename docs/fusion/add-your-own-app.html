@@ -222,7 +222,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> f69b1450
+<i class="md-icon" title="Version">label_outline</i> c4851f28
 </label>
 </li>
 </ul>
@@ -253,7 +253,7 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#add-your-own-app" name="add-your-own-app" class="anchor"><span class="anchor-link"></span></a>Add your own App</h1>
 <h2><a href="#subapps" name="subapps" class="anchor"><span class="anchor-link"></span></a>SubApps</h2>
-<p>You can add your own SubApp by cloning the <a href="https://github.com/BlueBrain/nexus-web">Nexus Fusion repo</a> and adding your React app to the src.</p>
+<p>You can add your own SubApp by cloning the <a href="https://github.com/BlueBrain/nexus-web" title="Nexus Fusion repo" target="_blank" rel="noopener noreferrer">Nexus Fusion repo</a> and adding your React app to the src.</p>
 <p>You must build your application from source, in order to use your SubApp. As of version 1.4, there is no way to add a SubApp using the provided Dockerhub distribution.</p>
 <h3><a href="#development" name="development" class="anchor"><span class="anchor-link"></span></a>Development</h3>
 <p>SubApps are essentially a configuration hosting a routing list of React components. These React components will have access to the entire app <code>Redux</code> store, the <code>Nexus Client</code>, as well as <code>ConnectedRouter</code> Providers for use in React hooks and consumers.</p>
@@ -283,7 +283,7 @@ routes: [
       },
 
 </code></pre>
-<p>Then you can add your SubApp to the <a href="https://github.com/BlueBrain/nexus-web/blob/master/src/subapps/index.ts"><code>src/subapps/index.ts</code></a> barrell file, which hosts the SubApp set consumed by Nexus Fusion.</p>
+<p>Then you can add your SubApp to the <a href="https://github.com/BlueBrain/nexus-web/blob/master/src/subapps/index.ts" title="`src/subapps/index.ts`" target="_blank" rel="noopener noreferrer"><code>src/subapps/index.ts</code></a> barrell file, which hosts the SubApp set consumed by Nexus Fusion.</p>
 <pre class="prettyprint"><code class="language-typescript">const SubApps: Map&lt;string, SubApp&gt; = new Map();
 
 SubApps.set(&quot;Admin&quot;, Admin);
@@ -300,7 +300,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-f69b1450
+c4851f28
 </span>
 </div>
 </article>
