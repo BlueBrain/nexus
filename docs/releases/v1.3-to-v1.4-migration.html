@@ -220,7 +220,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> c4851f28
+<i class="md-icon" title="Version">label_outline</i> 51dd5463
 </label>
 </li>
 </ul>
@@ -438,7 +438,7 @@ DROP KEYSPACE kg;
 </ol>
 <h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
 <p>This section provides a table with the equivalences in terms of configuration environment variables from 1.3 (and older versions) to 1.4. Only the most relevant environment configuration properties are described</p>
-<p>There are 2 ways to inject your own configuration: - Using JVM properties as arguments when running the service: -D<code>{property}</code>. For example: <code>-Dapp.instance.interface=&quot;127.0.0.1&quot;</code>. - Setting <a href="https://github.com/lightbend/config#optional-system-or-env-variable-overrides" title="FORCE_CONFIG_" target="_blank" rel="noopener noreferrer">FORCE_CONFIG_</a>  style environment variables. In order to enable this style of configuration the JVM property  <code>-Dconfig.override_with_env_vars=true</code> needs to be set. For example: <code>CONFIG_FORCE_app_instance_interface=&quot;127.0.0.1&quot;</code>.</p>
+<p>There are 2 ways to inject your own configuration: - Using JVM properties as arguments when running the service: -D<code>{property}</code>. For example: <code>-Dapp.instance.interface=&quot;127.0.0.1&quot;</code>. - Setting <a href="https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides" title="FORCE_CONFIG_" target="_blank" rel="noopener noreferrer">FORCE_CONFIG_</a>  style environment variables. In order to enable this style of configuration the JVM property  <code>-Dconfig.override_with_env_vars=true</code> needs to be set. For example: <code>CONFIG_FORCE_app_instance_interface=&quot;127.0.0.1&quot;</code>.</p>
 <p>Note that there has been one important change which cannot be mapped using the following table: the service account token.</p>
 <p>In 1.4 release, the <code>IAM_SA_TOKEN</code> is not used. Instead, the JVM properties <code>app.service-account-caller.realm</code>, <code>app.service-account-caller.subject</code> and <code>app.service-account-caller.groups</code> should be set matching the identity of the service account. If these properties are not present, the service account identity will be set to anonymous.</p>
 <table>
@@ -839,7 +839,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-c4851f28
+51dd5463
 </span>
 </div>
 </article>
