@@ -73,7 +73,7 @@ nexus.permissions.fetch()
 
 ### Nexus.js
 
-The @link:[Javascript SDK](https://github.com/BlueBrain/nexus-sdk-js){ open=new } provides many features to help you 
+The @link:[Javascript SDK](https://github.com/BlueBrain/nexus-js){ open=new } provides many features to help you 
 build web applications that integrate with Blue Brain Nexus.
 
 ![Nexus JS logo](../assets/nexus-js-logo.png)
@@ -89,7 +89,7 @@ The SDK is written in Typescript, so type declarations for all operations are in
 You can generate documentation using `npm run documentation` or with `docker` by running `make documentation`. 
 More information can be found @link:[here](https://github.com/BlueBrain/nexus-js){ open=new }.
 
-@link:[Source Code](https://github.com/BlueBrain/nexus-sdk-js){ open=new }
+@link:[Source Code](https://github.com/BlueBrain/nexus-js){ open=new }
 
 Documentation:
 
