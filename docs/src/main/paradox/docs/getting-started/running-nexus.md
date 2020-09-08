@@ -1,7 +1,7 @@
 # Running Nexus
 
 If you wish to quickly try out Nexus, we provide a @ref:[public sandbox](#using-the-public-sandbox). 
-For a more in-depth test-drive of Nexus on your machine, we recommend the @link:[Docker Swarm approach](#recommended-docker-swarm){ open=new }. 
+For a more in-depth test-drive of Nexus on your machine, we recommend the @ref:[Docker Swarm approach](#recommended-docker-swarm). 
 For a production deployment on your in-house or cloud infrastructure, please refer to our @ref:[deployment guide](#on-premise-cloud-deployment).
 
 ## Using the public sandbox
@@ -258,7 +258,7 @@ minikube delete
 
 #### Enable the ingress addon
 
-Minikube comes with a collection of addons like the @link:[Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/){ open=new } 
+Minikube comes with a collection of addons like the @link:[Kubernetes Dashboard](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/){ open=new } 
 but not all are enabled by default. An important one is the _ingress_ addon which enables routing http traffic from the
 host into the cluster.
 
@@ -606,8 +606,8 @@ of throughput with various hardware configurations. When the usage profiles are 
 should narrow the scope:
 
 1.  Nexus uses a collection of data stores (@link:[Cassandra](https://cassandra.apache.org/){ open=new },
-    @link:[ElasticSearch](https://www.elastic.co/products/elasticsearch){ open=new }, 
-    @link:[BlazeGraph](https://www.blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
+    @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new }, 
+    @link:[BlazeGraph](https://blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
     access, so:
     *   prefer local storage over network storage for lower latency when doing IO,
     *   prefer SSD over HDDs because random access speed is more important than sequential access,
@@ -633,7 +633,7 @@ number of nodes in the cluster. It offers data replication out of the box, which
 available in case of node failures or network partitions.
 
 Since this is the _primary store_ it is the most important system to be
-@link:[backed up](http://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html){ open=new }. All of the data
+@link:[backed up](https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html){ open=new }. All of the data
 that Nexus uses in other stores can be recomputed from the one stored in Cassandra as the other stores are used as
 mere indexing systems.
 
@@ -667,7 +667,7 @@ example above would have to be configured with 200GB disks per node.
 
 ### ElasticSearch
 
-Nexus uses @link:[ElasticSearch](https://www.elastic.co/products/elasticsearch){ open=new } to host several _system_ indices and _user
+Nexus uses @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new } to host several _system_ indices and _user
 defined_ ones. It offers sharding and replication out of the box. Deciding whether this system requires backup depends
 on the tolerated time for a restore. Nexus can be instructed to rebuild all indices using the data from the _primary
 store_, but being an incremental indexing process it can take longer than restoring from a backup. Since it can be
@@ -700,11 +700,11 @@ volume in the example above would have to be configured with 60GB disks per node
 
 ### BlazeGraph
 
-Nexus uses @link:[BlazeGraph](https://www.blazegraph.com/){ open=new } as an RDF (triple) store to provide a advanced querying
+Nexus uses @link:[BlazeGraph](https://blazegraph.com/){ open=new } as an RDF (triple) store to provide a advanced querying
 capabilities on the hosted data. This store is treated as a specialized index on the data so as with Kafka and
 ElasticSearch in case of failures, the system can be fully restored from the primary store. While the technology is
-advertised to support @link:[High Availability](https://wiki.blazegraph.com/wiki/index.php/HAJournalServer){ open=new } and
-@link:[Scaleout](https://wiki.blazegraph.com/wiki/index.php/ClusterGuide){ open=new } deployment configurations, we have yet to be able
+advertised to support @link:[High Availability](https://github.com/blazegraph/database/wiki/HAJournalServer){ open=new } and
+@link:[Scaleout](https://github.com/blazegraph/database/wiki/ClusterGuide){ open=new } deployment configurations, we have yet to be able
 to setup a deployment in this fashion.
 
 We currently recommend deploying BlazeGraph using the prepackaged _tar.gz_ distribution available to download from
@@ -716,11 +716,11 @@ We're looking at alternative technologies and possible application level (within
 
 @@@
 
-The @link:[Hardware Configuration](https://wiki.blazegraph.com/wiki/index.php/Hardware_Configuration){ open=new } section in the
+The @link:[Hardware Configuration](https://github.com/blazegraph/database/wiki/Hardware_Configuration){ open=new } section in the
 documentation gives a couple of hints about the requirements to operate BlazeGraph and there are additional sections
-for optimizations in terms of @link:[Performance](https://wiki.blazegraph.com/wiki/index.php/PerformanceOptimization){ open=new },
-@link:[IO](https://wiki.blazegraph.com/wiki/index.php/IOOptimization){ open=new } and
-@link:[Query](https://wiki.blazegraph.com/wiki/index.php/QueryOptimization){ open=new }.
+for optimizations in terms of @link:[Performance](https://github.com/blazegraph/database/wiki/PerformanceOptimization){ open=new },
+@link:[IO](https://github.com/blazegraph/database/wiki/IOOptimization){ open=new } and
+@link:[Query](https://github.com/blazegraph/database/wiki/QueryOptimization){ open=new }.
 
 BlazeGraph stores data in an append only journal which means updates will use additional disk space.
 

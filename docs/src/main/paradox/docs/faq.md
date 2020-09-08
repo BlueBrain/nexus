@@ -60,14 +60,14 @@ Blue Brain Nexus employs a Knowledge Graph to enable validation, search, analysi
 There are several channels provided to address different issues:
 
 - **Bug report**: If you have found a bug while using the Nexus ecosystem, please create an issue 
-  @link:[here](https://github.com/BlueBrain/nexus/issues/new?labels=bug){ open=new }.
+  @link:[here](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dbug){ open=new }.
 - **Questions**: if you need support, we will be reachable through the @link:[Nexus Gitter channel](https://gitter.im/BlueBrain/nexus){ open=new }
 - **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found 
   @link:[here](https://bluebrainnexus.io/docs/){ open=new }
 - **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the 
   @link:[list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature){ open=new }. 
   In case there isn't already one, please 
-  @link:[open a feature request](https://github.com/BlueBrain/nexus/issues/new?labels=feature){ open=new } describing 
+  @link:[open a feature request](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dfeature){ open=new } describing 
   your feature with as much detail as possible.
 
 ## Technical FAQ  
@@ -122,7 +122,7 @@ exploration of trends and patterns.
 @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new } (Shapes Constraint Language) is a language for validating RDF 
 graphs against a set of conditions. These conditions are provided as shapes and other constructs expressed in the form 
 of an RDF graph. SHACL is used in Blue Brain Nexus to constrain and control the payload that can be pushed into Nexus. 
-You can use the [SHACL Playground](https://shacl.org/playground/) to test your schemas.
+You can use the @link:[SHACL Playground](https://shacl.org/playground/){ open=new } to test your schemas.
 
 ### Do I need to define SHACL schemas to bring data in?
 
@@ -142,7 +142,7 @@ neuroscience data based on common use cases.
 RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. 
 JSON-LD is an RDF concrete syntax, and it is the main format we use for messages exchange. The choice of JSON-LD is due 
 to the fact that is plain JSON but with some special 
-@link:[keywords](https://w3c.github.io/json-ld-syntax/#syntax-tokens-and-keywords){ open=new } and JSON is a broadly 
+@link:[keywords](https://www.w3.org/TR/json-ld11/#syntax-tokens-and-keywords){ open=new } and JSON is a broadly 
 adopted API exchange format.
 
 ### Can I connect any SPARQL client to Nexus’ SPARQL endpoint?
@@ -153,7 +153,7 @@ on the HTTP request, any SPARQL client should work.
 ### How can I create an organization as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
 
 By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM 
-property @link:[app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/master/delta/src/main/resources/app.conf#L213){ open=new }.
+property @link:[app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/v1.4.1/delta/src/main/resources/app.conf#L213){ open=new }.
 In order to change that behaviour, please create some ACLs for the path `/`. For more details about ACLs creation, 
 visit the @ref:[ACLs page](delta/api/current/iam-acls-api.md#create-acls).
 
@@ -165,6 +165,4 @@ Blue Brain Nexus can be used from Jupyter Notebooks using
 any Python HTTP client and use Nexus REST API directly from the Jupyter Notebook.
 Please consider looking at our @ref:[tutorial](getting-started/try-nexus.md) to learn how to user Nexus Forge on the 
 Sandbox. Other examples are provided in the folder 
-@link:[Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks){ open=new } or in the 
-@link:[page](https://github.com/BlueBrain/nexus/blob/master/src/main/paradox/docs/tutorial/notebooks/Recommendation%20System%20via%20Nexus.ipynb){ open=new } 
-dedicated to create a recommendation engine using Blue Brain Nexus.
+@link:[Notebooks](https://github.com/BlueBrain/nexus-python-sdk/tree/master/notebooks){ open=new }.

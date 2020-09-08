@@ -257,7 +257,7 @@ Listing is usually not enough to select specific subset of data. Data ingested w
 
 View              | Description
 ------------------|---------------
-ElasticSearchView | Exposes data in @link:[ElasticSearch](https://www.elastic.co/products/elasticsearch){ open=new } a document oriented search engine and provide access to it using the @link:[ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }.
+ElasticSearchView | Exposes data in @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new } a document oriented search engine and provide access to it using the @link:[ElasticSearch query language](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }.
 SparqlView        | Exposes data as a graph and allows to navigate and explore the data using the @link:[W3C SPARQL query language](https://www.w3.org/TR/sparql11-query/){ open=new }.
 
 
