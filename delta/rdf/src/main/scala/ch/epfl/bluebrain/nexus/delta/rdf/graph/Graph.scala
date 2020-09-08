@@ -128,7 +128,7 @@ final case class Graph private (root: IRI, model: Model) { self =>
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd[Ctx]] =
-    api.fromRdf(model).flatMap(expanded => JsonLd.compact(expanded.asJson, context, root, f))
+    api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, context, root, f))
 
   /**
     * Attempts to convert the current Graph to the JSON-LD expanded format:

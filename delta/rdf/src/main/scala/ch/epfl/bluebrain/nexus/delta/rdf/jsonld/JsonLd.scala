@@ -139,9 +139,33 @@ object JsonLd {
     *
    * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
     *
-   * The ''rootId'' is enforced using a framing on it.
+   * This method does NOT verify the passed ''rootId'' is present in the compacted form. It just verifies the compacted
+    * form has the expected format (a Json Object without a top @graph only key)
     */
   final def compact[Ctx <: JsonLdContext](
+      input: Json,
+      context: Json,
+      rootId: IRI,
+      f: ContextFields[Ctx]
+  )(implicit
+      api: JsonLdApi,
+      resolution: RemoteContextResolution,
+      opts: JsonLdOptions
+  ): IO[RdfError, CompactedJsonLd[Ctx]] =
+    for {
+      compactedWithCtx <- api.compact(input, context, f)
+      (compacted, ctx)  = compactedWithCtx
+      _                <- topGraphErr(compacted)
+    } yield CompactedJsonLd(compacted, ctx, rootId, f)
+
+  /**
+    * Create compacted JSON-LD document using the passed ''input'' and ''context''.
+    *
+   * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
+    *
+   * The ''rootId'' is enforced using a framing on it.
+    */
+  final def frame[Ctx <: JsonLdContext](
       input: Json,
       context: Json,
       rootId: IRI,
@@ -156,6 +180,13 @@ object JsonLd {
     for {
       compactedWithCtx <- api.frame(input, frame, f)
       (compacted, ctx)  = compactedWithCtx
+      _                <- topGraphErr(compacted)
     } yield CompactedJsonLd(compacted, ctx, rootId, f)
   }
+
+  private def topGraphErr(obj: JsonObject): IO[RdfError, Unit] =
+    if (obj.nonEmpty && obj.remove(keywords.context).remove(keywords.graph).isEmpty)
+      IO.raiseError(UnexpectedJsonLd(s"Expected a Json Object without a single top '${keywords.graph}' field"))
+    else
+      IO.unit
 }

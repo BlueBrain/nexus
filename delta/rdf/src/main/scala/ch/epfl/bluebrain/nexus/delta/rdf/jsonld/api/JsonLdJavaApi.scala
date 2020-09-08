@@ -25,7 +25,6 @@ object JsonLdJavaApi extends JsonLdApi {
 
   System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
-  // $COVERAGE-OFF$
   override private[rdf] def compact[Ctx <: JsonLdContext](input: Json, ctx: Json, f: ContextFields[Ctx])(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
@@ -38,7 +37,6 @@ object JsonLdJavaApi extends JsonLdApi {
       compactedObj <- IO.fromEither(toJsonObjectOrErr(compacted))
       ctxValue     <- context(ctx, f, options)
     } yield (compactedObj, ctxValue)
-  // $COVERAGE-ON$
 
   override private[rdf] def expand(
       input: Json
