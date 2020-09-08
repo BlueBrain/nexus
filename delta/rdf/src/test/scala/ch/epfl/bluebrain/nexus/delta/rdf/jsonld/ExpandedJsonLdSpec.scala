@@ -45,7 +45,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "fail to be constructed when there are multiple root objects" in {
       val wrongInput = jsonContentOf("/jsonld/expanded/wrong-input-multiple-roots.json")
-      JsonLd.expand(wrongInput).rejected shouldBe a[UnexpectedJsonLd]
+      JsonLd.expand(wrongInput).rejectedWith[UnexpectedJsonLd]
     }
 
     "fetch root @type" in {

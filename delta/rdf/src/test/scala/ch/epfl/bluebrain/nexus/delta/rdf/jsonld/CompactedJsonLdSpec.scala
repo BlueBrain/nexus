@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -37,9 +38,14 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       }
     }
 
-    "be constructed successfully from a multi-root json" in {
+    "fail to find the root IRI from a multi-root json" in {
+      val input = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
+      JsonLd.compact(input, context, iri, ContextFields.Skip).rejectedWith[UnexpectedJsonLd]
+    }
+
+    "be constructed successfully from a multi-root json when using framing" in {
       val input     = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
-      val compacted = JsonLd.compact(input, context, iri, ContextFields.Skip).accepted
+      val compacted = JsonLd.frame(input, context, iri, ContextFields.Skip).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual json"""{"id": "john-doé", "@type": "Person"}"""
     }
 
