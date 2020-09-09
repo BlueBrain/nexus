@@ -498,6 +498,7 @@ lazy val storage = project
 lazy val delta = project
   .in(file("delta"))
   .dependsOn(sourcing, rdfOld)
+  .aggregate(sdk, rdf, sourcingNew)
   .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
@@ -561,7 +562,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, sourcingNew, rdf, rdfOld, testkit, storage, delta, sdk)
+  .aggregate(docs, cli, sourcing, rdfOld, testkit, storage, delta)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
