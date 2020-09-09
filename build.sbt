@@ -366,21 +366,16 @@ lazy val rdf = project
   )
   .settings(
     libraryDependencies ++= Seq(
-      akkaHttp,
-      akkaHttpCirce,
-      akkaHttpXml,
-      alleycatsCore,
+      akkaHttp, // Remove this dependency when moving RdfMediaTypes to the service module
       catsCore,
+      circeParser,
       circeGeneric,
       jenaArq,
       monixBio,
-      scalaReflect,
-      topBraidShacl,
-      akkaSlf4j    % Test,
-      akkaTestKit  % Test,
-      circeLiteral % Test,
-      logback      % Test,
-      scalaTest    % Test
+      akkaSlf4j   % Test,
+      akkaTestKit % Test,
+      logback     % Test,
+      scalaTest   % Test
     ),
     Test / fork          := true
   )

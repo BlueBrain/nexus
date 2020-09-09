@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.commons.sparql.client
 import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes.{ClientError, ServerError}
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class SparqlFailure(val message: String) extends Exception(message) {
 
   /**
@@ -13,7 +12,7 @@ sealed abstract class SparqlFailure(val message: String) extends Exception(messa
 }
 
 // $COVERAGE-OFF$
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
 object SparqlFailure {
 
   abstract class SparqlServerOrUnexpectedFailure(message: String) extends SparqlFailure(message)

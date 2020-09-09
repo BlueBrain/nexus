@@ -20,7 +20,7 @@ private[akka] object Msg {
     *
     * @param id the id
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class UnexpectedMsgId(id: String, receivedMsgId: String)
       extends Exception
       with Msg
@@ -35,7 +35,7 @@ private[akka] object Msg {
     * @param expected the expected message value type
     * @param received the received message value
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class TypeError(id: String, expected: String, received: Any)
       extends Exception
       with Msg
@@ -50,7 +50,7 @@ private[akka] object Msg {
     * @param command  the command that timed out
     * @tparam Command the type of the command
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class CommandEvaluationTimeout[Command](id: String, command: Command)
       extends Exception
       with Msg
@@ -66,7 +66,7 @@ private[akka] object Msg {
     * @param message  an optional message describing the cause of the error
     * @tparam Command the type of the command
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class CommandEvaluationError[Command](id: String, command: Command, message: Option[String])
       extends Exception
       with Msg

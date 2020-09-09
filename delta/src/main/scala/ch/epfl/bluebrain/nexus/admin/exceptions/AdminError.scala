@@ -16,10 +16,9 @@ import scala.annotation.nowarn
   *
   * @param msg the reason why the error occurred
   */
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
 sealed abstract class AdminError(msg: String) extends ServiceError(msg)
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object AdminError {
 
   /**

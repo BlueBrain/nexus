@@ -3,13 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError
 import org.apache.jena.iri.IRI
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class RdfError(reason: String, details: Option[String] = None) extends Exception {
   override def fillInStackTrace(): RdfError = this
   override def getMessage: String           = details.fold(reason)(d => s"$reason\nDetails: $d")
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object RdfError {
 
   /**

@@ -11,7 +11,6 @@ import pureconfig.error.ConfigReaderFailures
 import scala.Console._
 import scala.util.Try
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed trait CliError extends Exception {
   override def fillInStackTrace(): CliError = this
   override def getMessage: String           = s"Reason: '$reason'"
@@ -32,10 +31,9 @@ object CliError {
   /**
     * Enumeration of possible Client errors.
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   sealed trait ClientError extends CliError
 
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   object ClientError {
 
     /**
@@ -133,10 +131,9 @@ object CliError {
   /**
     * Enumeration of all ConfigError types
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   sealed trait ConfigError extends CliError
 
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   object ConfigError {
     final case class ReadConvertError(failures: ConfigReaderFailures) extends ConfigError {
       val reason: String      = "the application configuration failed to be loaded into a configuration object"
