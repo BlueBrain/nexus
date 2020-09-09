@@ -4,13 +4,11 @@ import akka.http.scaladsl.model.StatusCode
 
 import scala.reflect.ClassTag
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class DeltaClientError(val message: String) extends Exception {
   override def fillInStackTrace(): DeltaClientError = this
   override val getMessage: String                   = message
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object DeltaClientError {
 
   final case class UnmarshallingError[A](reason: String)(implicit A: ClassTag[A])

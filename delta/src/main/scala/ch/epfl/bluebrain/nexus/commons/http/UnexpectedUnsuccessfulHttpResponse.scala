@@ -7,6 +7,6 @@ import akka.http.scaladsl.model.HttpResponse
   *
   * @param response the underlying unexpected http response
   */
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
 final case class UnexpectedUnsuccessfulHttpResponse(response: HttpResponse, body: String)
     extends Exception("Received an unexpected http response while communicating with an external service")

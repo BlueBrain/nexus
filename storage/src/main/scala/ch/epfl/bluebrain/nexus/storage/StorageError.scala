@@ -14,13 +14,12 @@ import scala.annotation.nowarn
   *
   * @param msg a description of the error
   */
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
 sealed abstract class StorageError(val msg: String) extends Exception with Product with Serializable {
   override def fillInStackTrace(): StorageError = this
   override def getMessage: String               = msg
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object StorageError {
 
   /**

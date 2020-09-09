@@ -6,7 +6,6 @@ import cats.MonadError
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class ElasticSearchFailure(val message: String) extends Exception(message) {
 
   /**
@@ -15,7 +14,6 @@ sealed abstract class ElasticSearchFailure(val message: String) extends Exceptio
   def body: String
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object ElasticSearchFailure {
 
   abstract class ElasticSearchServerOrUnexpectedFailure(message: String) extends ElasticSearchFailure(message)

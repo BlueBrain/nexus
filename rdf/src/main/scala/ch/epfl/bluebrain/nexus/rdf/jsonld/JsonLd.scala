@@ -358,7 +358,7 @@ object JsonLd {
     * Exception signalling an error during context resolution.
     * @param msg error message
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   sealed abstract class ContextResolutionError(val msg: String) extends Exception with Product with Serializable {
     override def fillInStackTrace(): ContextResolutionError = this
     // $COVERAGE-OFF$
@@ -370,7 +370,7 @@ object JsonLd {
     * Exception signalling circular context dependency.
     * @param ids list of context dependencies
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class CircularContextDependency(ids: List[AbsoluteIri])
       extends ContextResolutionError(
         s"Context dependency graph '${ids.reverseIterator.map(_.show).to(List).mkString(" -> ")}' contains a cycle"
@@ -380,7 +380,7 @@ object JsonLd {
     * Exception signalling illegal context value.
     * @param context the illegal value
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class IllegalContextValue(context: String)
       extends ContextResolutionError(s"'$context' is not a valid @context value")
 
@@ -388,7 +388,7 @@ object JsonLd {
     * Exception signalling that a context could not be resolved.
     * @param id context ID
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class ContextNotFound(id: AbsoluteIri)
       extends ContextResolutionError(s"Context ${id.show} could not be resolved.")
 

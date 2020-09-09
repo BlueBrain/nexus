@@ -10,7 +10,6 @@ import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 abstract class ServiceError(val msg: String) extends Exception with Product with Serializable
 
 object ServiceError {
@@ -20,7 +19,7 @@ object ServiceError {
     *
     * @param reason the underlying error reason
     */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
   final case class InternalError(reason: String) extends ServiceError(reason)
 
   @nowarn("cat=unused")

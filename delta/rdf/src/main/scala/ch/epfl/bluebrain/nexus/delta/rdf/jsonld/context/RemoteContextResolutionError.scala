@@ -2,13 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import org.apache.jena.iri.IRI
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class RemoteContextResolutionError(reason: String) extends Exception {
   override def fillInStackTrace(): RemoteContextResolutionError = this
   override def getMessage: String                               = s"Reason: '$reason'"
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object RemoteContextResolutionError {
 
   /**

@@ -4,13 +4,11 @@ import akka.http.scaladsl.model.StatusCode
 
 import scala.reflect.ClassTag
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class StorageClientError(val message: String) extends Exception {
   override def fillInStackTrace(): StorageClientError = this
   override val getMessage: String                     = message
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object StorageClientError {
 
   final case class Unauthorized(entityAsString: String)

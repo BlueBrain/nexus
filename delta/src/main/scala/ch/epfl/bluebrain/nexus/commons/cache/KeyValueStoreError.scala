@@ -2,13 +2,11 @@ package ch.epfl.bluebrain.nexus.commons.cache
 
 import scala.concurrent.duration.FiniteDuration
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 sealed abstract class KeyValueStoreError(msg: String) extends Exception with Product with Serializable {
   override def fillInStackTrace(): Throwable = this
   override def getMessage: String            = msg
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object KeyValueStoreError {
 
   /**

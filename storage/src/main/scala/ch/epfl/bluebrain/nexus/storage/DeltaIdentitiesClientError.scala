@@ -5,13 +5,12 @@ import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 /**
   * Enumeration of possible Delta Client errors.
   */
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
 sealed abstract class DeltaIdentitiesClientError(val msg: String) extends Exception with Product with Serializable {
   override def fillInStackTrace(): DeltaIdentitiesClientError = this
   override def getMessage: String                             = msg
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object DeltaIdentitiesClientError {
 
   final def unsafe(status: StatusCode, body: String): DeltaIdentitiesClientError =

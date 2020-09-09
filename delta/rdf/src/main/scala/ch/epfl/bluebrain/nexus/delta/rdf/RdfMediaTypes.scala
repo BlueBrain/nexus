@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.MediaType
   * Collection of media types specific to RDF.
   */
 // $COVERAGE-OFF$
+// TODO: Move this to the service module, when available
 object RdfMediaTypes {
   final val `text/turtle`: MediaType.WithOpenCharset = MediaType.applicationWithOpenCharset("turtle", "ttl")
 

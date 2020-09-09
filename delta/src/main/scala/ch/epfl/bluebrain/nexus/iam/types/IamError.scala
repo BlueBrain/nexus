@@ -14,10 +14,9 @@ import io.circe.{Encoder, Json}
   *
   * @param msg the reason why the error occurred
   */
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
 sealed abstract class IamError(msg: String) extends ServiceError(msg)
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object IamError {
 
   /**

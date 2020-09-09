@@ -17,13 +17,12 @@ import io.circe.{Encoder, Json}
   *
   * @param msg a description of the error
   */
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+
 sealed abstract class KgError(val msg: String) extends Exception with Product with Serializable {
   override def fillInStackTrace(): KgError = this
   override def getMessage: String          = msg
 }
 
-@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
 object KgError {
 
   /**
