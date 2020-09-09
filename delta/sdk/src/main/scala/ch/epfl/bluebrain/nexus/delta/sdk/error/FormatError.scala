@@ -20,4 +20,11 @@ object FormatError {
   final case class IllegalLabelFormatError(details: Option[String] = None)
       extends FormatError("The provided string did not match the expected label format.", details)
 
+  /**
+    * Permission formatting error, returned in cases where a Permission could not be constructed from a String.
+    *
+   * @param details possible additional details that may be interesting to provide to the caller
+    */
+  final case class IllegalPermissionFormatError(details: Option[String] = None)
+      extends FormatError("The provided string did not match the expected permission format.", details)
 }

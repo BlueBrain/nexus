@@ -97,6 +97,17 @@ object Vocabulary {
     val base              = iri"https://bluebrain.github.io/nexus/vocabulary/"
     def +(suffix: String) = iri"$base$suffix"
 
+    val Permissions = nxv + "Permissions"
+  }
+
+  /**
+   * Nexus schemas
+   */
+  object schemas {
+    val base              = iri"https://bluebrain.github.io/nexus/schemas/"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val permissions = schemas + "permissions.json"
   }
 }
 // $COVERAGE-ON$
