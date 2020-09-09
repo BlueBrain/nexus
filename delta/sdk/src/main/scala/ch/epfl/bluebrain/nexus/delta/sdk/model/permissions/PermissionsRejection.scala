@@ -60,7 +60,7 @@ object PermissionsRejection {
     * Rejection returned when a subject intends to perform an operation on the current collection of permissions, but
     * either provided an incorrect revision or a concurrent update won over this attempt.
     *
-   * @param provided the provided revision
+    * @param provided the provided revision
     * @param expected the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
@@ -72,7 +72,7 @@ object PermissionsRejection {
     * Rejection returned when a subject intends to retrieve the collection of permissions at a specific revision, but
     * the provided revision does not exist.
     *
-   * @param provided the provided revision
+    * @param provided the provided revision
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)

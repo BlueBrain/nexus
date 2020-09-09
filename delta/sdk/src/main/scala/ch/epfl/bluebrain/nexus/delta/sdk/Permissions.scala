@@ -41,7 +41,7 @@ trait Permissions {
     *
     * @param permissions the permissions to set
     * @param rev         the last known revision of the resource
-    * @return the new resource metadata or a description of why the change was rejected
+    * @return the new resource or a description of why the change was rejected
     */
   def replace(permissions: Set[Permission], rev: Long): IO[PermissionsRejection, PermissionsResource]
 
@@ -50,7 +50,7 @@ trait Permissions {
     *
     * @param permissions the permissions to append
     * @param rev         the last known revision of the resource
-    * @return the new resource metadata or a description of why the change was rejected
+    * @return the new resource or a description of why the change was rejected
     */
   def append(permissions: Set[Permission], rev: Long): IO[PermissionsRejection, PermissionsResource]
 
@@ -59,7 +59,7 @@ trait Permissions {
     *
     * @param permissions the permissions to subtract
     * @param rev         the last known revision of the resource
-    * @return the new resource metadata or a description of why the change was rejected
+    * @return the new resource or a description of why the change was rejected
     */
   def subtract(permissions: Set[Permission], rev: Long): IO[PermissionsRejection, PermissionsResource]
 
@@ -67,7 +67,7 @@ trait Permissions {
     * Removes all but the minimum permissions from the collection of permissions.
     *
     * @param rev the last known revision of the resource
-    * @return the new resource metadata or a description of why the change was rejected
+    * @return the new resource or a description of why the change was rejected
     */
   def delete(rev: Long): IO[PermissionsRejection, PermissionsResource]
 }

@@ -45,7 +45,7 @@ final case class ResourceF[Id, A](
   /**
     * Drops the resource value.
     *
-   * @return a new resource with no value (just its metadata)
+    * @return a new resource with no value (just its metadata)
     */
   def unit: ResourceF[Id, Unit] =
     map(_ => ())
