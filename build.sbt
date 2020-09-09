@@ -326,6 +326,7 @@ lazy val sourcingNew = project
   .settings(name := "sourcing-new", moduleName := "sourcing-new")
   .settings(shared, compilation, coverage, release)
   .settings(
+    coverageMinimum      := 70,
     libraryDependencies ++= Seq(
       akkaActorTyped,
       akkaClusterTyped,
