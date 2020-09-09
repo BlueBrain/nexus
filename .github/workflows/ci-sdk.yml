@@ -1,19 +1,15 @@
-name: Continuous Integration Delta
+name: Continuous Integration Delta SDK
 on:
   push:
     branches:
       - master
     paths:
-      - 'sourcing/**'
-      - 'rdf/**'
-      - 'delta/src/**'
+      - 'delta/sdk/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
     paths:
-      - 'sourcing/**'
-      - 'rdf/**'
-      - 'delta/src/**'
+      - 'delta/sdk/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
@@ -34,12 +30,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: StaticAnalysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sdk" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: |
-          grep -qF 'bucket.my-domain.com' /etc/hosts || echo "127.0.0.1 bucket.my-domain.com" | sudo tee -a /etc/hosts
-          grep -qF 'bucket2.my-domain.com' /etc/hosts || echo "127.0.0.1 bucket2.my-domain.com" | sudo tee -a /etc/hosts
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sdk" clean coverage test coverageReport coverageAggregate
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -60,15 +53,10 @@ jobs:
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: PublishToBintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" releaseEarly
-      - name: PublishToDockerHub
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" docker:publishLocal
-          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-          docker push bluebrain/nexus-delta:latest
+      - name: Publish
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sdk" releaseEarly
       - name: RecordCoverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sdk" clean coverage test coverageReport coverageAggregate
       - uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
