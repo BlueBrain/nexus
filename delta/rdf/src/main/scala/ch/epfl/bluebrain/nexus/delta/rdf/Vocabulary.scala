@@ -101,8 +101,8 @@ object Vocabulary {
   }
 
   /**
-   * Nexus schemas
-   */
+    * Nexus schemas
+    */
   object schemas {
     val base              = iri"https://bluebrain.github.io/nexus/schemas/"
     def +(suffix: String) = iri"$base$suffix"
