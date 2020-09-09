@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
-import io.circe.Encoder
 import monix.bio.Task
 import monix.catnap.SchedulerEffect
 import monix.execution.Scheduler
@@ -54,7 +53,7 @@ object ProjectionStream {
     * @param stream the stream to run
     * @param projectionId the id of the given projection
     */
-  implicit class SimpleStreamOps[A: Encoder](val stream: Stream[Task, Message[A]])(implicit
+  implicit class SimpleStreamOps[A](val stream: Stream[Task, Message[A]])(implicit
       override val projectionId: ProjectionId,
       scheduler: Scheduler
   ) extends StreamOps[A] {
@@ -155,7 +154,7 @@ object ProjectionStream {
     * @param stream the stream to run
     * @param projectionId the id of the projection
     */
-  implicit class ChunckStreamOps[A: Encoder](val stream: Stream[Task, Chunk[Message[A]]])(implicit
+  implicit class ChunckStreamOps[A](val stream: Stream[Task, Chunk[Message[A]]])(implicit
       override val projectionId: ProjectionId
   ) extends StreamOps[A] {
 

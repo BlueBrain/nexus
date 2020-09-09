@@ -22,12 +22,13 @@ import scala.reflect.ClassTag
   * @param retryStrategy the retry strategy to adopt
   * @param askTimeout the ask timeout
   */
-private[processor] class ShardedAggregate[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     entityTypeKey: EntityTypeKey[ProcessorCommand],
     clusterSharding: ClusterSharding,
     retryStrategy: RetryStrategy,
     askTimeout: Timeout
-) extends Aggregate[String, State, Command, Event, Rejection] {
+)(implicit State: ClassTag[State], Event: ClassTag[Event], Rejection: ClassTag[Rejection])
+    extends Aggregate[String, State, Command, Event, Rejection] {
 
   implicit private val timeout: Timeout = askTimeout
 
@@ -44,9 +45,9 @@ private[processor] class ShardedAggregate[State: ClassTag, Command: ClassTag, Ev
 
   private def toEvaluationIO(result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
     result.hideErrors.flatMap {
-      case r: EvaluationRejection[Rejection]  => IO.raiseError(r)
-      case s: EvaluationSuccess[Event, State] => IO.pure(s)
-      case e: EvaluationError                 =>
+      case EvaluationRejection(Rejection(r))     => IO.raiseError(EvaluationRejection(r))
+      case EvaluationSuccess(Event(e), State(s)) => IO.pure(EvaluationSuccess(e, s))
+      case e: EvaluationError                    =>
         // Should not append as they have been dealt with in send
         // and raised in the internal channel via hideErrors
         IO.terminate(e)
@@ -94,7 +95,7 @@ private[processor] class ShardedAggregate[State: ClassTag, Command: ClassTag, Ev
 
 object ShardedAggregate {
 
-  private def sharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+  private def sharded[State: ClassTag, Command, Event: ClassTag, Rejection: ClassTag](
       entityTypeKey: EntityTypeKey[ProcessorCommand],
       eventSourceProcessor: EntityContext[ProcessorCommand] => EventSourceProcessor[State, Command, Event, Rejection],
       retryStrategy: RetryStrategy,

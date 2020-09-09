@@ -39,12 +39,12 @@ import scala.util.control.NonFatal
   * @param config              The configuration
   *
   */
-private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     entityId: String,
     definition: EventDefinition[State, Command, Event, Rejection],
     stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
     config: AggregateConfig
-) {
+)(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection]) {
 
   protected val id = s"${definition.entityType}-${URLEncoder.encode(entityId, "UTF-8")}"
 
@@ -185,10 +185,10 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
               case ese: EventSourceCommand                                               =>
                 stateActor ! ese
                 Behaviors.same
-              case Evaluate(_, subCommand: Command, replyTo: ActorRef[EvaluationResult]) =>
+              case Evaluate(_, Command(subCommand), replyTo: ActorRef[EvaluationResult]) =>
                 evaluateCommand(state, subCommand, c)
                 stash(state, replyTo.unsafeUpcast[RunResult])
-              case DryRun(_, subCommand: Command, replyTo: ActorRef[DryRunResult])       =>
+              case DryRun(_, Command(subCommand), replyTo: ActorRef[DryRunResult])       =>
                 evaluateCommand(state, subCommand, c, dryRun = true)
                 stash(state, replyTo.unsafeUpcast[RunResult])
               case _: EvaluationResult                                                   =>
@@ -207,11 +207,11 @@ private[processor] class EventSourceProcessor[State: ClassTag, Command: ClassTag
               case ro: ReadonlyCommand                                     =>
                 stateActor ! ro
                 Behaviors.same
-              case success @ EvaluationSuccess(event: Event, state: State) =>
+              case success @ EvaluationSuccess(Event(event), State(state)) =>
                 stateActor ! Append(entityId, event)
                 replyTo ! success
                 active(state)
-              case rejection: EvaluationRejection[Rejection]               =>
+              case rejection @ EvaluationRejection(Rejection(_))           =>
                 replyTo ! rejection
                 buffer.unstashAll(active(state))
               case error: EvaluationError                                  =>

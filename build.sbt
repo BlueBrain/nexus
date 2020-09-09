@@ -326,6 +326,7 @@ lazy val sourcingNew = project
   .settings(name := "sourcing-new", moduleName := "sourcing-new")
   .settings(shared, compilation, coverage, release)
   .settings(
+    coverageMinimum      := 70,
     libraryDependencies ++= Seq(
       akkaActorTyped,
       akkaClusterTyped,
@@ -413,6 +414,22 @@ lazy val rdfOld = project
     Test / fork          := true
   )
 
+lazy val sdk = project
+  .in(file("delta/sdk"))
+  .settings(
+    name       := "delta-sdk",
+    moduleName := "delta-sdk"
+  )
+  .dependsOn(rdf, testkit % "test->compile")
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    coverageMinimum      := 60,
+    libraryDependencies ++= Seq(
+      monixBio,
+      scalaTest % Test
+    )
+  )
+
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val docsFiles =
@@ -482,6 +499,7 @@ lazy val storage = project
 lazy val delta = project
   .in(file("delta"))
   .dependsOn(sourcing, rdfOld)
+  .aggregate(sdk, rdf, sourcingNew)
   .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
@@ -545,7 +563,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, sourcingNew, rdf, rdfOld, testkit, storage, delta)
+  .aggregate(docs, cli, sourcing, rdfOld, testkit, storage, delta)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -694,11 +712,12 @@ inThisBuild(
     scapegoatMaxErrors            := 0,
     scapegoatMaxInfos             := 0,
     scapegoatDisabledInspections  := Seq(
-      "RedundantFinalModifierOnCaseClass",
-      "RedundantFinalModifierOnMethod",
-      "ObjectNames",
       "AsInstanceOf",
       "ClassNames",
+      "IncorrectlyNamedExceptions",
+      "ObjectNames",
+      "RedundantFinalModifierOnCaseClass",
+      "RedundantFinalModifierOnMethod",
       "VariableShadowing"
     ),
     homepage                      := Some(url("https://github.com/BlueBrain/nexus-commons")),

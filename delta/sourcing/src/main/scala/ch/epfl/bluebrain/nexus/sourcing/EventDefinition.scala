@@ -4,8 +4,6 @@ import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy
 import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
 import monix.bio.Task
 
-import scala.reflect.ClassTag
-
 /**
   * Description of an event source based entity
   */
@@ -65,7 +63,7 @@ final case class PersistentEventDefinition[State, Command, Event, Rejection](
   *
   *  @param stopStrategy      the stop strategy to apply
   */
-final case class TransientEventDefinition[State, Command, Event: ClassTag, Rejection](
+final case class TransientEventDefinition[State, Command, Event, Rejection](
     entityType: String,
     initialState: State,
     next: (State, Event) => State,
