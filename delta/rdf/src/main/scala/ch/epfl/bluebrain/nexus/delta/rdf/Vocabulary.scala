@@ -98,6 +98,7 @@ object Vocabulary {
     def +(suffix: String) = iri"$base$suffix"
 
     val Permissions = nxv + "Permissions"
+    val Realm       = nxv + "Realm"
   }
 
   /**
@@ -108,6 +109,7 @@ object Vocabulary {
     def +(suffix: String) = iri"$base$suffix"
 
     val permissions = schemas + "permissions.json"
+    val realms      = schemas + "realms.json"
   }
 }
 // $COVERAGE-ON$
