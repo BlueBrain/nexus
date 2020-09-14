@@ -97,7 +97,7 @@ object Vocabulary {
     val base              = iri"https://bluebrain.github.io/nexus/vocabulary/"
     def +(suffix: String) = iri"$base$suffix"
 
-    val Permissions = nxv + "Permissions"
+    val Permissions       = nxv + "Permissions"
     val AccessControlList = nxv + "AccessControlList"
   }
 
@@ -109,7 +109,7 @@ object Vocabulary {
     def +(suffix: String) = iri"$base$suffix"
 
     val permissions = schemas + "permissions.json"
-    val acls = schemas + "acls.json"
+    val acls        = schemas + "acls.json"
   }
 }
 // $COVERAGE-ON$
