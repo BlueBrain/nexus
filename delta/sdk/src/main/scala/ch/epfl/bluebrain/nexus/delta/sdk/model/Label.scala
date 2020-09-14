@@ -10,7 +10,9 @@ import scala.util.matching.Regex
   *
   * @param value the string representation of the label
   */
-final case class Label private (value: String)
+final case class Label private (value: String) {
+  override def toString: String = value
+}
 
 object Label {
 

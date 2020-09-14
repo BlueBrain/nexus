@@ -29,7 +29,6 @@ sealed trait PermissionsState extends Product with Serializable {
     *
     * @param id      the resource identifier
     * @param minimum minimum set of permissions (static configuration)
-    * @return
     */
   def toResource(id: IRI, minimum: Set[Permission]): PermissionsResource
 }

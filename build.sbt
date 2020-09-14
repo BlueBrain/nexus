@@ -131,7 +131,7 @@ lazy val iamClient     = "ch.epfl.bluebrain.nexus"    %% "iam-client"           
 lazy val jenaArq       = "org.apache.jena"             % "jena-arq"                % jenaVersion
 lazy val jsonldjava    = "com.github.jsonld-java"      % "jsonld-java"             % jsonldjavaVersion
 lazy val kanelaAgent   = "io.kamon"                    % "kanela-agent"            % kanelaAgentVersion
-lazy val kindProjector = "org.typelevel"              %% "kind-projector"          % kindProjectorVersion
+lazy val kindProjector = "org.typelevel"              %% "kind-projector"          % kindProjectorVersion cross CrossVersion.full
 lazy val kryo          = "io.altoo"                   %% "akka-kryo-serialization" % kryoVersion
 lazy val logback       = "ch.qos.logback"              % "logback-classic"         % logbackVersion
 lazy val log4jCore     = "org.apache.logging.log4j"    % "log4j-core"              % log4jVersion
@@ -422,7 +422,8 @@ lazy val sdk = project
     libraryDependencies ++= Seq(
       monixBio,
       scalaTest % Test
-    )
+    ),
+    addCompilerPlugin(kindProjector)
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")

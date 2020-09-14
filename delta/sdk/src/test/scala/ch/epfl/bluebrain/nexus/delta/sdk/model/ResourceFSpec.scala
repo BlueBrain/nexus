@@ -36,20 +36,6 @@ class ResourceFSpec extends AnyWordSpecLike with Matchers {
         "1"
       )
     }
-    "discard its value" in {
-      resource.unit shouldEqual ResourceF(
-        1,
-        0L,
-        Set.empty,
-        deprecated = false,
-        Instant.EPOCH,
-        Identity.Anonymous,
-        Instant.EPOCH,
-        Identity.Anonymous,
-        Latest(schemas.permissions),
-        ()
-      )
-    }
   }
 
 }
