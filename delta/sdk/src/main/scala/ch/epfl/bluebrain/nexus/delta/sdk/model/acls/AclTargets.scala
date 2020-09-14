@@ -12,7 +12,7 @@ import scala.collection.immutable.SortedMap
   * where the keys are [[Target]] locations and the values are [[AclResource]].
   * It specifies which permissions are applied for which identities in which locations.
   */
-final case class AclTargets(value: SortedMap[Target, AclResource]) { self =>
+final case class AclTargets private (value: SortedMap[Target, AclResource]) { self =>
 
   /**
     * Adds the provided ''acls'' to the current ''value'' and returns a new [[AclTargets]] with the added ACLs.
@@ -21,7 +21,8 @@ final case class AclTargets(value: SortedMap[Target, AclResource]) { self =>
     */
   def ++(acls: AclTargets): AclTargets =
     AclTargets(acls.value.foldLeft(value) {
-      case (acc, (target, aclToAdd)) =>
+      case (acc, (target, aclToAdd)) if aclToAdd.id != target => acc // should not happen, ignore it
+      case (acc, (target, aclToAdd))                          =>
         acc.updatedWith(target)(acl => Some(acl.fold(aclToAdd)(_.map(_ ++ aclToAdd.value))))
     })
 
@@ -31,8 +32,8 @@ final case class AclTargets(value: SortedMap[Target, AclResource]) { self =>
     *
     * @param entry the key pair of [[Target]] and [[AclResource]] to be added
     */
-  def +(entry: (Target, AclResource)): AclTargets =
-    self ++ AclTargets(SortedMap(entry))
+  def +(entry: AclResource): AclTargets             =
+    self ++ AclTargets(SortedMap(entry.id -> entry))
 
   /**
     * Generates a new [[AclTargets]] only containing the provided ''identities''.
@@ -41,7 +42,7 @@ final case class AclTargets(value: SortedMap[Target, AclResource]) { self =>
     */
   def filter(identities: Set[Identity]): AclTargets =
     value.foldLeft(AclTargets.empty) {
-      case (acc, (target, aclResource)) => acc + (target -> aclResource.map(_.filter(identities)))
+      case (acc, (_, aclResource)) => acc + aclResource.map(_.filter(identities))
     }
 
   /**
@@ -80,9 +81,9 @@ object AclTargets {
   val empty: AclTargets = AclTargets(SortedMap.empty[Target, AclResource])
 
   /**
-    * Convenience factory method to build a [[AclTargets]] from var args of [[Target]] to [[AclResource]] tuples.
+    * Convenience factory method to build a [[AclTargets]] [[AclResource]]s.
     */
-  final def apply(tuple: (Target, AclResource)*): AclTargets =
-    AclTargets(SortedMap(tuple: _*))
+  final def apply(resources: AclResource*): AclTargets =
+    AclTargets(SortedMap(resources.map(res => res.id -> res): _*))
 
 }

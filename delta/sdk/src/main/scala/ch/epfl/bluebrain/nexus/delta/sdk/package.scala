@@ -15,11 +15,6 @@ package object sdk {
   /**
     * Type alias for a acl with its target location specific resource.
     */
-  type AclTargetResource = ResourceF[Target, Acl]
-
-  /**
-    * Type alias for a acl specific resource.
-    */
-  type AclResource = ResourceF[IRI, Acl]
+  type AclResource = ResourceF[Target, Acl]
 
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.AclTargetResource
+import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
@@ -39,7 +39,7 @@ sealed trait AclState extends Product with Serializable {
     *
     * @param id the resource identifier
     */
-  def toResource: AclTargetResource
+  def toResource: AclResource
 }
 
 object AclState {
@@ -55,7 +55,7 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    override val toResource: AclTargetResource =
+    override val toResource: AclResource =
       ResourceF(
         id = Target.Root,
         rev = rev,
@@ -90,7 +90,7 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override val toResource: AclTargetResource =
+    override val toResource: AclResource =
       ResourceF(
         id = target,
         rev = rev,
