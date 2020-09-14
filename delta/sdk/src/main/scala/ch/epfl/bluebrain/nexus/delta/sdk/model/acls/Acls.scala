@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.RevisionNotFound
 import monix.bio.{IO, Task}
 
 /**
@@ -23,7 +22,7 @@ trait Acls {
     * @param target the target location for the ACL
     * @param rev    the revision to fetch
     */
-  def fetchAt(target: Target, rev: Long): IO[RevisionNotFound, Option[AclResource]]
+  def fetchAt(target: Target, rev: Long): Task[Option[AclResource]]
 
   /**
     * Fetches the ACL resource for a ''target'' on the current revision.
@@ -41,7 +40,7 @@ trait Acls {
    * @param target the target location for the ACL
     * @param rev    the revision to fetch
     */
-  final def fetchSelfAt(target: Target, rev: Long)(implicit caller: Caller): IO[RevisionNotFound, Option[AclResource]] =
+  final def fetchSelfAt(target: Target, rev: Long)(implicit caller: Caller): Task[Option[AclResource]] =
     fetchAt(target, rev).map(filterSelf)
 
   /**

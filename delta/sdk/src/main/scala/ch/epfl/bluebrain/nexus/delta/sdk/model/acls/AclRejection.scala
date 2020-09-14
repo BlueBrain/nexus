@@ -42,15 +42,6 @@ object AclRejection {
       )
 
   /**
-    * Signals an attempt to retrieve the ACL at a specific revision when the provided revision does not exist.
-    *
-    * @param provided the provided revision
-    * @param current  the last known revision
-    */
-  final case class RevisionNotFound(provided: Long, current: Long)
-      extends AclRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
-
-  /**
     * Signals an attempt to create/replace/append/subtract ACL collection which contains void permissions.
     *
     * @param target the target location for the ACL
