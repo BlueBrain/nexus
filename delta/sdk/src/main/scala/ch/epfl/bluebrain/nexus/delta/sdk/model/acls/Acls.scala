@@ -27,36 +27,39 @@ trait Acls {
 
   /**
     * Fetches the ACL resource for a ''target'' on the current revision.
+    * The response only contains ACL with identities present in the provided ''caller''.
     *
     * @param target the target location for the ACL
-    * @param self   flag to decide whether or not ACL of other identities than the provided ones should be included in the response.
-    *               This is constrained by the current caller having ''acls/read'' permissions on the provided ''target'' or it's parents
     */
-  final def fetch(target: Target, self: Boolean)(implicit caller: Caller): Task[Option[AclResource]] =
-    if (self) fetch(target).map(filterSelf) else fetch(target)
+  final def fetchSelf(target: Target)(implicit caller: Caller): Task[Option[AclResource]] =
+    fetch(target).map(filterSelf)
 
   /**
     * Fetches the ACL resource for a ''target'' on the passed revision.
+    * The response only contains ACL with identities present in the provided ''caller''.
     *
-    * @param target the target location for the ACL
-    * @param self   flag to decide whether or not ACL of other identities than the provided ones should be included in the response.
-    *               This is constrained by the current caller having ''acls/read'' permissions on the provided ''target'' or it's parents
+   * @param target the target location for the ACL
     * @param rev    the revision to fetch
     */
-  final def fetchAt(target: Target, self: Boolean, rev: Long)(implicit
-      caller: Caller
-  ): IO[RevisionNotFound, Option[AclResource]] =
-    if (self) fetchAt(target, rev).map(filterSelf) else fetchAt(target, rev)
+  final def fetchSelfAt(target: Target, rev: Long)(implicit caller: Caller): IO[RevisionNotFound, Option[AclResource]] =
+    fetchAt(target, rev).map(filterSelf)
 
   /**
     * Fetches the ACL for a ''target''. If ACL does not exist, return an empty [[Acl]]
     *
     * @param target the target location for the ACL
-    * @param self   flag to decide whether or not ACL of other identities than the provided ones should be included in the response.
-    *               This is constrained by the current caller having ''acls/read'' permissions on the provided ''target'' or it's parents
     */
-  final def fetchAcl(target: Target, self: Boolean)(implicit caller: Caller): Task[Acl] =
-    fetch(target, self).map(_.fold(Acl.empty)(_.value))
+  final def fetchAcl(target: Target): Task[Acl] =
+    fetch(target).map(_.fold(Acl.empty)(_.value))
+
+  /**
+    * Fetches the ACL for a ''target''. If ACL does not exist, return an empty [[Acl]]
+    * The response only contains ACL with identities present in the provided ''caller''.
+    *
+   * @param target the target location for the ACL
+    */
+  final def fetchSelfAcl(target: Target)(implicit caller: Caller): Task[Acl] =
+    fetchSelf(target).map(_.fold(Acl.empty)(_.value))
 
   /**
     * Fetches the [[AclTargets]] of the provided ''target'' location with some filtering options.

@@ -39,7 +39,7 @@ sealed trait AclState extends Product with Serializable {
     *
     * @param id the resource identifier
     */
-  def toResource(id: IRI): AclTargetResource
+  def toResource: AclTargetResource
 }
 
 object AclState {
@@ -55,9 +55,9 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    override def toResource(id: IRI): AclTargetResource =
+    override val toResource: AclTargetResource =
       ResourceF(
-        id = id,
+        id = Target.Root,
         rev = rev,
         types = types,
         deprecated = deprecated,
@@ -66,7 +66,7 @@ object AclState {
         updatedAt = Instant.EPOCH,
         updatedBy = Identity.Anonymous,
         schema = schema,
-        value = Target.Root -> Acl.empty
+        value = Acl.empty
       )
   }
 
@@ -90,9 +90,9 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override def toResource(id: IRI): AclTargetResource =
+    override val toResource: AclTargetResource =
       ResourceF(
-        id = id,
+        id = target,
         rev = rev,
         types = types,
         deprecated = deprecated,
@@ -101,7 +101,7 @@ object AclState {
         updatedAt = updatedAt,
         updatedBy = updatedBy,
         schema = schema,
-        value = target -> acl
+        value = acl
       )
   }
 
