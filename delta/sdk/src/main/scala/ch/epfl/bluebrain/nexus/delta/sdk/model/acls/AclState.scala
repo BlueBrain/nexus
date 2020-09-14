@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclTargetResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
 /**
@@ -22,7 +22,17 @@ sealed trait AclState extends Product with Serializable {
   /**
     * @return the current deprecation status (always false for acls)
     */
-  def deprecated: Boolean = false
+  final def deprecated: Boolean = false
+
+  /**
+    * @return the schema reference that acls conforms to
+    */
+  final def schema: ResourceRef = Latest(schemas.acls)
+
+  /**
+    * @return the collection of known types of acls resources
+    */
+  final def types: Set[IRI] = Set(nxv.AccessControlList)
 
   /**
     * Converts the state into a resource representation.
@@ -49,13 +59,13 @@ object AclState {
       ResourceF(
         id = id,
         rev = rev,
-        types = Set(nxv.AccessControlList),
+        types = types,
         deprecated = deprecated,
         createdAt = Instant.EPOCH,
         createdBy = Identity.Anonymous,
         updatedAt = Instant.EPOCH,
         updatedBy = Identity.Anonymous,
-        schema = Latest(schemas.acls),
+        schema = schema,
         value = Target.Root -> Acl.empty
       )
   }
@@ -84,13 +94,13 @@ object AclState {
       ResourceF(
         id = id,
         rev = rev,
-        types = Set(nxv.AccessControlList),
+        types = types,
         deprecated = deprecated,
-        createdAt = Instant.EPOCH,
-        createdBy = Identity.Anonymous,
-        updatedAt = Instant.EPOCH,
-        updatedBy = Identity.Anonymous,
-        schema = Latest(schemas.acls),
+        createdAt = createdAt,
+        createdBy = createdBy,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy,
+        schema = schema,
         value = target -> acl
       )
   }

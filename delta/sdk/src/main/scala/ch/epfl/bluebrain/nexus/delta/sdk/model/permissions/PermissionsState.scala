@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
 /**
@@ -22,7 +22,17 @@ sealed trait PermissionsState extends Product with Serializable {
   /**
     * @return the current deprecation status (always false for permissions)
     */
-  def deprecated: Boolean = false
+  final def deprecated: Boolean = false
+
+  /**
+    * @return the schema reference that permissions conforms to
+    */
+  final def schema: ResourceRef = Latest(schemas.permissions)
+
+  /**
+    * @return the collection of known types of permissions resources
+    */
+  final def types: Set[IRI] = Set(nxv.Permissions)
 
   /**
     * Converts the state into a resource representation.
@@ -50,13 +60,13 @@ object PermissionsState {
       ResourceF(
         id = id,
         rev = rev,
-        types = Set(nxv.Permissions),
+        types = types,
         deprecated = deprecated,
         createdAt = Instant.EPOCH,
         createdBy = Identity.Anonymous,
         updatedAt = Instant.EPOCH,
         updatedBy = Identity.Anonymous,
-        schema = Latest(schemas.permissions),
+        schema = schema,
         value = minimum
       )
   }
@@ -84,13 +94,13 @@ object PermissionsState {
       ResourceF(
         id = id,
         rev = rev,
-        types = Set(nxv.Permissions),
+        types = types,
         deprecated = deprecated,
         createdAt = createdAt,
         createdBy = createdBy,
         updatedAt = updatedAt,
         updatedBy = updatedBy,
-        schema = Latest(schemas.permissions),
+        schema = schema,
         value = permissions ++ minimum
       )
   }
