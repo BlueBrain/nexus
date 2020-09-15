@@ -12,7 +12,7 @@ import cats.syntax.functor._
 sealed trait SearchResults[A] extends Product with Serializable {
   def total: Long
   def token: Option[String]
-  def results: List[ResultEntry[A]]
+  def results: Seq[ResultEntry[A]]
 
   /**
     * Constructs a new [[SearchResults]] with the provided ''results''
@@ -20,7 +20,7 @@ sealed trait SearchResults[A] extends Product with Serializable {
     * @param res the provided collection of results
     * @tparam B the generic type of the newly created [[SearchResults]]
     */
-  def copyWith[B](res: List[ResultEntry[B]]): SearchResults[B]
+  def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B]
 }
 
 object SearchResults {
@@ -36,12 +36,12 @@ object SearchResults {
   final case class ScoredSearchResults[A](
       total: Long,
       maxScore: Float,
-      results: List[ResultEntry[A]],
+      results: Seq[ResultEntry[A]],
       token: Option[String] = None
   ) extends SearchResults[A] {
 
-    override def copyWith[B](res: List[ResultEntry[B]]): SearchResults[B] =
-      ScoredSearchResults[B](total, maxScore, res)
+    override def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B] =
+      ScoredSearchResults[B](res.length.toLong, maxScore, res)
   }
 
   /**
@@ -51,11 +51,11 @@ object SearchResults {
     * @param results the collection of results
     * @param token   the optional token used to generate the next link
     */
-  final case class UnscoredSearchResults[A](total: Long, results: List[ResultEntry[A]], token: Option[String] = None)
+  final case class UnscoredSearchResults[A](total: Long, results: Seq[ResultEntry[A]], token: Option[String] = None)
       extends SearchResults[A] {
 
-    override def copyWith[B](res: List[ResultEntry[B]]): SearchResults[B] =
-      UnscoredSearchResults[B](total, res)
+    override def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B] =
+      UnscoredSearchResults[B](res.length.toLong, res)
 
   }
 
@@ -88,8 +88,8 @@ object SearchResults {
     * @param maxScore   the maximum score of the individual query results
     * @param results    the collection of results
     */
-  final def apply[A](total: Long, maxScore: Float, results: List[ResultEntry[A]]): SearchResults[A] =
-    new ScoredSearchResults[A](total, maxScore, results)
+  final def apply[A](total: Long, maxScore: Float, results: Seq[ResultEntry[A]]): SearchResults[A] =
+    ScoredSearchResults[A](total, maxScore, results)
 
   /**
     * Constructs an [[UnscoredSearchResults]]
@@ -97,6 +97,6 @@ object SearchResults {
     * @param total      the total number of results
     * @param results    the collection of results
     */
-  final def apply[A](total: Long, results: List[ResultEntry[A]]): SearchResults[A] =
-    new UnscoredSearchResults[A](total, results)
+  final def apply[A](total: Long, results: Seq[ResultEntry[A]]): SearchResults[A] =
+    UnscoredSearchResults[A](total, results)
 }

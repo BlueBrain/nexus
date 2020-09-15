@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, ResourceF, Resource
 import io.circe.Json
 import org.apache.jena.iri.IRI
 
+// $COVERAGE-OFF$
 /**
   * Enumeration of Permissions states.
   */
@@ -37,6 +38,7 @@ sealed trait RealmState extends Product with Serializable {
   def toResource: Option[RealmResource]
 
 }
+// $COVERAGE-ON$
 
 object RealmState {
 
@@ -103,6 +105,7 @@ object RealmState {
       updatedBy: Subject
   ) extends RealmState {
 
+    // $COVERAGE-OFF$
     /**
       * @return the realm information
       */
@@ -140,6 +143,7 @@ object RealmState {
           value = realm
         )
       )
+    // $COVERAGE-ON$
   }
 
 }

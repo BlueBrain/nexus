@@ -12,6 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 sealed trait OrganizationEvent extends Product with Serializable {
 
   /**
+    * @return the organization Label
+    */
+  def label: Label
+
+  /**
     * @return the organization UUID
     */
   def uuid: UUID
@@ -68,7 +73,7 @@ object OrganizationEvent {
     * @param subject      the subject which created this event
     */
   final case class OrganizationUpdated(
-      label: String,
+      label: Label,
       uuid: UUID,
       rev: Long,
       description: Option[String],

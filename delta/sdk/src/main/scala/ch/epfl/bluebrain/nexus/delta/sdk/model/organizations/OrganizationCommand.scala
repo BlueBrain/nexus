@@ -12,6 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 sealed trait OrganizationCommand extends Product with Serializable {
 
   /**
+    * @return the organization Label
+    */
+  def label: Label
+
+  /**
     * @return UUID of the organization
     */
   def uuid: UUID

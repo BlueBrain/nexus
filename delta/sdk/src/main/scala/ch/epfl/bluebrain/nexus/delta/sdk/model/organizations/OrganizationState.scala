@@ -10,15 +10,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
+// $COVERAGE-OFF$
 /**
   * Enumeration of organization states.
   */
+
 sealed trait OrganizationState extends Product with Serializable {
 
   /**
     * @return the current state revision
     */
   def rev: Long
+
+  /**
+    * @return the current deprecation status of the organization
+    */
+  def deprecated: Boolean
 
   /**
     * @return the schema reference that organizations conforms to
@@ -35,6 +42,7 @@ sealed trait OrganizationState extends Product with Serializable {
     */
   def toResource: Option[OrganizationResource]
 }
+// $COVERAGE-ON$
 
 object OrganizationState {
 
@@ -49,15 +57,17 @@ object OrganizationState {
   final case object Initial extends OrganizationState {
     override val rev: Long = 0L
 
+    override val deprecated: Boolean = false
+
     override val toResource: Option[OrganizationResource] = None
   }
 
   /**
     * Initial organization state.
     *
-   * @param uuid         the organization UUID
-    * @param rev          the organization revision
     * @param label        the organization label
+    * @param uuid         the organization UUID
+    * @param rev          the organization revision
     * @param description  an optional description of the organization
     * @param deprecated   the deprecation status of the organization
     * @param createdAt    the instant when the organization was created
@@ -66,9 +76,9 @@ object OrganizationState {
     * @param updatedBy    the identity that last updated the organization
     */
   final case class Current(
+      label: Label,
       uuid: UUID,
       rev: Long,
-      label: Label,
       description: Option[String],
       deprecated: Boolean,
       createdAt: Instant,
@@ -77,6 +87,7 @@ object OrganizationState {
       updatedBy: Subject
   ) extends OrganizationState {
 
+    // $COVERAGE-OFF$
     override val toResource: Option[OrganizationResource] =
       Some(
         ResourceF(
@@ -92,6 +103,7 @@ object OrganizationState {
           value = Organization(label, uuid, description)
         )
       )
+    // $COVERAGE-ON$
   }
 
 }
