@@ -9,12 +9,24 @@ import monix.bio.Task
 trait Plugin {
 
   /**
-    * Start the plugin.
-    *
-    * @param deps  plugin dependencies
-    * @return optional Akka Http [[Route]], if the plugin defines one.
+    * Plugin name.
     */
-  def start(deps: PluginDependencies): Task[Option[Route]]
+  def name: String
+
+  /**
+    * Plugin version.
+    */
+  def version: String
+
+  /**
+    * Plugin dependencies.
+    */
+  def dependencies: Set[PluginDef]
+
+  /**
+    * Optional routes provided by the plugin.
+    */
+  def route: Option[Route]
 
   /**
     * Stop the plugin. This should allow the plugin to terminate gracefully.
@@ -27,5 +39,4 @@ trait Plugin {
     * @return current status of the plugin
     */
   def status(): Task[PluginStatus]
-
 }
