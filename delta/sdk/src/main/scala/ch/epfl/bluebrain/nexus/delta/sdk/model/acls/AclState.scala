@@ -36,8 +36,6 @@ sealed trait AclState extends Product with Serializable {
 
   /**
     * Converts the state into a resource representation.
-    *
-    * @param id the resource identifier
     */
   def toResource: AclResource
 }
