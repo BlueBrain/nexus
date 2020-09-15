@@ -7,13 +7,29 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, Label, Name, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, ResourceF, ResourceRef}
 import io.circe.Json
+import org.apache.jena.iri.IRI
 
 /**
   * Enumeration of Permissions states.
   */
 sealed trait RealmState extends Product with Serializable {
+
+  /**
+    * @return the current deprecation status
+    */
+  def deprecated: Boolean
+
+  /**
+    * @return the schema reference that acls conforms to
+    */
+  final def schema: ResourceRef = Latest(schemas.realms)
+
+  /**
+    * @return the collection of known types of acls resources
+    */
+  final def types: Set[IRI] = Set(nxv.Realm)
 
   /**
     * Converts the state into a resource representation.
@@ -35,6 +51,11 @@ object RealmState {
   final case object Initial extends RealmState {
 
     /**
+      * @return the current deprecation status
+      */
+    override val deprecated: Boolean = false
+
+    /**
       * Converts the state into a resource representation.
       */
     override val toResource: Option[RealmResource] = None
@@ -43,7 +64,7 @@ object RealmState {
   /**
     * A realm active state; a realm in an active state can be used to authorize a subject through a token.
     *
-    * @param id                    the realm label
+    * @param label                 the realm label
     * @param rev                   the current state revision
     * @param deprecated            the current state deprecation status
     * @param openIdConfig          the openid configuration address
@@ -62,7 +83,7 @@ object RealmState {
     * @param updatedBy             the subject that last updated the resource
     */
   final case class Current(
-      id: Label,
+      label: Label,
       rev: Long,
       deprecated: Boolean,
       name: Name,
@@ -83,34 +104,40 @@ object RealmState {
   ) extends RealmState {
 
     /**
-      * Converts the state into a resource representation.
+      * @return the realm information
+      */
+    def realm: Realm =
+      Realm(
+        label = label,
+        name = name,
+        openIdConfig = openIdConfig,
+        issuer = issuer,
+        grantTypes = grantTypes,
+        logo = logo,
+        authorizationEndpoint = authorizationEndpoint,
+        tokenEndpoint = tokenEndpoint,
+        userInfoEndpoint = userInfoEndpoint,
+        revocationEndpoint = revocationEndpoint,
+        endSessionEndpoint = endSessionEndpoint,
+        keys = keys
+      )
+
+    /**
+      * @return a resource representation for the realm
       */
     override def toResource: Option[RealmResource] =
       Some(
         ResourceF(
-          id = id,
+          id = label,
           rev = rev,
-          types = Set(nxv.Realm),
+          types = types,
           deprecated = deprecated,
-          createdAt = Instant.EPOCH,
-          createdBy = Identity.Anonymous,
-          updatedAt = Instant.EPOCH,
-          updatedBy = Identity.Anonymous,
-          schema = Latest(schemas.realms),
-          value = Realm(
-            id = id,
-            name = name,
-            openIdConfig = openIdConfig,
-            issuer = issuer,
-            grantTypes = grantTypes,
-            logo = logo,
-            authorizationEndpoint = authorizationEndpoint,
-            tokenEndpoint = tokenEndpoint,
-            userInfoEndpoint = userInfoEndpoint,
-            revocationEndpoint = revocationEndpoint,
-            endSessionEndpoint = endSessionEndpoint,
-            keys = keys
-          )
+          createdAt = createdAt,
+          createdBy = createdBy,
+          updatedAt = updatedAt,
+          updatedBy = updatedBy,
+          schema = schema,
+          value = realm
         )
       )
   }

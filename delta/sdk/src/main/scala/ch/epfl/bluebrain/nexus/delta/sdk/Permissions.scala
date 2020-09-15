@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, Permissi
 import monix.bio.{IO, Task}
 
 /**
-  * Permissions API.
+  * Operations pertaining to managing permissions.
   */
 trait Permissions {
 

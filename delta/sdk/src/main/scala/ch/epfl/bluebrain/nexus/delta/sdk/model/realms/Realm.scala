@@ -7,7 +7,7 @@ import io.circe.Json
 /**
   * A realm representation.
   *
-  * @param id                    the label of the realm
+  * @param label                 the label of the realm
   * @param name                  the name of the realm
   * @param openIdConfig          the address of the openid configuration
   * @param issuer                an identifier for the issuer
@@ -21,7 +21,7 @@ import io.circe.Json
   * @param keys                  the set of JWK keys as specified by rfc 7517 (https://tools.ietf.org/html/rfc7517)
   */
 final case class Realm(
-    id: Label,
+    label: Label,
     name: Name,
     openIdConfig: Uri,
     issuer: String,

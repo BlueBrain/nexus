@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import java.time.Instant
 
+import cats.Functor
 import org.apache.jena.iri.IRI
 
 /**
@@ -41,12 +42,11 @@ final case class ResourceF[Id, A](
     */
   def map[B](f: A => B): ResourceF[Id, B] =
     ResourceF(id, rev, types, deprecated, createdAt, createdBy, updatedAt, updatedBy, schema, f(value))
+}
 
-  /**
-    * Drops the resource value.
-    *
-    * @return a new resource with no value (just its metadata)
-    */
-  def unit: ResourceF[Id, Unit] =
-    map(_ => ())
+object ResourceF {
+  implicit def resourceFunctor[Id]: Functor[ResourceF[Id, *]] =
+    new Functor[ResourceF[Id, *]] {
+      override def map[A, B](fa: ResourceF[Id, A])(f: A => B): ResourceF[Id, B] = fa.map(f)
+    }
 }
