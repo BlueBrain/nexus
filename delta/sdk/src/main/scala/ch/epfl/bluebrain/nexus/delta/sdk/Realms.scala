@@ -3,7 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.RevisionNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, SearchParams}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import monix.bio.{IO, Task}
 
 /**
@@ -66,9 +69,13 @@ trait Realms {
   /**
     * Lists realms with optional filters.
     *
+    * @param pagination the pagination settings
     * @param params filter parameters of the realms
-    * @return the current realms sorted by their creation date.
+    * @return a paginated results list of realms sorted by their creation date.
     */
-  def list(params: SearchParams = SearchParams.none): Task[List[RealmResource]]
+  def list(
+      pagination: FromPagination,
+      params: RealmSearchParams = RealmSearchParams.none
+  ): Task[UnscoredSearchResults[RealmResource]]
 
 }
