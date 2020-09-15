@@ -25,9 +25,25 @@ object PluginStatus {
     final case object Up extends Status
 
     /**
+      * Status signaling that the [[Plugin]] is starting.
+      */
+    final case object Starting extends Status
+
+    /**
       * Status signaling that the [[Plugin]] is currently unavailable.
       */
-    final case object Down extends Status
+    final case object Stopped extends Status
+
+    /**
+      * Status signaling that the [[Plugin]] is stopping.
+      */
+    final case object Stopping extends Status
+
+    /**
+      * Status signaling that the [[Plugin]] plugin failed to start
+      * @param reason  reason for failure.
+      */
+    final case class Failed(reason: String) extends Status
   }
 
 }
