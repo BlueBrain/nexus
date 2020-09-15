@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 /**
   * Enumeration of Permissions rejection types.
   *
- * @param reason a descriptive message as to why the rejection occurred
+  * @param reason a descriptive message as to why the rejection occurred
   */
 sealed abstract class PermissionsRejection(val reason: String) extends Product with Serializable
 
