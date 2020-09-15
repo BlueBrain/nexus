@@ -33,11 +33,4 @@ trait Plugin {
     * Stop the plugin. This should allow the plugin to terminate gracefully.
     */
   def stop(): Task[Unit]
-
-  /**
-    * Retrieve plugin status.
-    *
-    * @return current status of the plugin
-    */
-  def status(): Task[PluginStatus]
 }

@@ -20,5 +20,5 @@ trait Registry {
     *
     * @return the dependency requested or error if not found.
     */
-  def lookup[A]: IO[DependencyNotFound.type, A]
+  def lookup[A]: IO[DependencyNotFound, A]
 }
