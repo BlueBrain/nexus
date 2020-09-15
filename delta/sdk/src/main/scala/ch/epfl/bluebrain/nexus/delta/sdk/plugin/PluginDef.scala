@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import monix.bio.Task
 
 trait PluginDef {
@@ -7,7 +8,7 @@ trait PluginDef {
   /**
     * Plugin name.
     */
-  def name: String
+  def name: Name
 
   /**
     * Plugin version.
