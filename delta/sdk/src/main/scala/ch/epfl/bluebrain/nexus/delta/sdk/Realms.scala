@@ -61,7 +61,7 @@ trait Realms {
     * @param rev   the permissions revision
     * @return the permissions as a resource at the specified revision
     */
-  def fetchAt(label: Label, rev: Long): IO[RevisionNotFound, RealmResource]
+  def fetchAt(label: Label, rev: Long): IO[RevisionNotFound, Option[RealmResource]]
 
   /**
     * Lists realms with optional filters.
