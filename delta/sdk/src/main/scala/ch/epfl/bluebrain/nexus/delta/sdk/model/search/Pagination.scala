@@ -34,7 +34,20 @@ final case class SearchAfterPagination(searchAfter: Json, size: Int) extends Pag
 
 object Pagination {
 
-  def apply(size: Int): Pagination                    = FromPagination(0, size)
-  def apply(from: Int, size: Int): Pagination         = FromPagination(from, size)
+  /**
+    * Creates a [[FromPagination]] starting from the offset value ''0'' and with the passed ''size''
+    */
+  def apply(size: Int): Pagination =
+    FromPagination(0, size)
+
+  /**
+    * Creates a [[FromPagination]] starting from the passed offset value ''from'' and with the passed ''size''
+    */
+  def apply(from: Int, size: Int): Pagination =
+    FromPagination(from, size)
+
+  /**
+    * Creates a [[SearchAfterPagination]] using the passed ''searchAfter'' value and with the passed ''size''
+    */
   def apply(searchAfter: Json, size: Int): Pagination = SearchAfterPagination(searchAfter, size)
 }

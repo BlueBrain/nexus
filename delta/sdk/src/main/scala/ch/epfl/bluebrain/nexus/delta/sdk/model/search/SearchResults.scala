@@ -7,7 +7,7 @@ import cats.syntax.functor._
   * Defines the signature for a collection of search results with their metadata
   * including pagination
   *
- * @tparam A the type of the result
+  * @tparam A the type of the result
   */
 sealed trait SearchResults[A] extends Product with Serializable {
   def total: Long
@@ -17,7 +17,7 @@ sealed trait SearchResults[A] extends Product with Serializable {
   /**
     * Constructs a new [[SearchResults]] with the provided ''results''
     *
-   * @param res the provided collection of results
+    * @param res the provided collection of results
     * @tparam B the generic type of the newly created [[SearchResults]]
     */
   def copyWith[B](res: List[ResultEntry[B]]): SearchResults[B]
@@ -28,7 +28,7 @@ object SearchResults {
   /**
     * A collection of search results with score including pagination.
     *
-   * @param total    the total number of results
+    * @param total    the total number of results
     * @param maxScore the maximum score of the individual query results
     * @param results  the collection of results
     * @param token    the optional token used to generate the next link
@@ -47,7 +47,7 @@ object SearchResults {
   /**
     * A collection of query results including pagination.
     *
-   * @param total   the total number of results
+    * @param total   the total number of results
     * @param results the collection of results
     * @param token   the optional token used to generate the next link
     */
@@ -84,7 +84,7 @@ object SearchResults {
   /**
     * Constructs an [[ScoredSearchResults]]
     *
-   * @param total      the total number of results
+    * @param total      the total number of results
     * @param maxScore   the maximum score of the individual query results
     * @param results    the collection of results
     */
@@ -94,7 +94,7 @@ object SearchResults {
   /**
     * Constructs an [[UnscoredSearchResults]]
     *
-   * @param total      the total number of results
+    * @param total      the total number of results
     * @param results    the collection of results
     */
   final def apply[A](total: Long, results: List[ResultEntry[A]]): SearchResults[A] =

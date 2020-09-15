@@ -11,6 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
   * @param uuid         the UUID of the organization
   * @param description  an optional description of the organization
   */
-final case class Organization(label: Label, uuid: UUID = UUID.randomUUID(), description: Option[String] = None) {
+final case class Organization(label: Label, uuid: UUID, description: Option[String]) {
   override def toString: String = label.toString
 }
