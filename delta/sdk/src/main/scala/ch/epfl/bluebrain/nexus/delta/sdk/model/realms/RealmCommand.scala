@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 
 /**
   * Enumeration of Realm command types.
@@ -33,7 +33,7 @@ object RealmCommand {
     */
   final case class CreateRealm(
       label: Label,
-      name: String,
+      name: Name,
       openIdConfig: Uri,
       logo: Option[Uri],
       subject: Subject
@@ -52,7 +52,7 @@ object RealmCommand {
   final case class UpdateRealm(
       label: Label,
       rev: Long,
-      name: String,
+      name: Name,
       openIdConfig: Uri,
       logo: Option[Uri],
       subject: Subject

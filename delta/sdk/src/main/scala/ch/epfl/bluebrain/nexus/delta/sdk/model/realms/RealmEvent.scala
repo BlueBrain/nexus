@@ -4,7 +4,7 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import io.circe.Json
 
 /**
@@ -57,7 +57,7 @@ object RealmEvent {
   final case class RealmCreated(
       label: Label,
       rev: Long,
-      name: String,
+      name: Name,
       openIdConfig: Uri,
       issuer: String,
       keys: Set[Json],
@@ -94,7 +94,7 @@ object RealmEvent {
   final case class RealmUpdated(
       label: Label,
       rev: Long,
-      name: String,
+      name: Name,
       openIdConfig: Uri,
       issuer: String,
       keys: Set[Json],
