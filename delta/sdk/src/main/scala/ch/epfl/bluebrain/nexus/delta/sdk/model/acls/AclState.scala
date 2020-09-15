@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
+// $COVERAGE-OFF$
 /**
   * Enumeration of ACLs states.
   */
@@ -39,6 +40,7 @@ sealed trait AclState extends Product with Serializable {
     */
   def toResource: AclResource
 }
+// $COVERAGE-ON$
 
 object AclState {
 
@@ -53,6 +55,7 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
+    // $COVERAGE-OFF$
     override val toResource: AclResource =
       ResourceF(
         id = Target.Root,
@@ -66,6 +69,7 @@ object AclState {
         schema = schema,
         value = Acl.empty
       )
+    // $COVERAGE-ON$
   }
 
   /**
