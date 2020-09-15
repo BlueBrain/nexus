@@ -19,7 +19,7 @@ object Name {
   /**
     * Attempts to construct a label from its string representation.
     *
-   * @param value the string representation of the Label
+    * @param value the string representation of the Label
     */
   def apply(value: String): Either[FormatError, Name] =
     value match {
@@ -30,7 +30,7 @@ object Name {
   /**
     * Constructs a Name from its string representation without validation in terms of allowed characters or size.
     *
-   * @param value the string representation of the name
+    * @param value the string representation of the name
     */
   def unsafe(value: String): Name =
     new Name(value)

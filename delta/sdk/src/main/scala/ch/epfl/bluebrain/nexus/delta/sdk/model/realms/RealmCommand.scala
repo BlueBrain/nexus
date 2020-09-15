@@ -12,7 +12,7 @@ sealed trait RealmCommand extends Product with Serializable {
   /**
     * @return the id of the realm
     */
-  def id: Label
+  def label: Label
 
   /**
     * @return the subject that intends to evaluate this command
@@ -25,14 +25,14 @@ object RealmCommand {
   /**
     * An intent to create a new realm.
     *
-    * @param id           the label of the realm
+    * @param label        the label of the realm
     * @param name         the name of the realm
     * @param openIdConfig the address of the openid configuration
     * @param logo         an optional address for a logo
     * @param subject      the subject that intends to evaluate this command
     */
   final case class CreateRealm(
-      id: Label,
+      label: Label,
       name: String,
       openIdConfig: Uri,
       logo: Option[Uri],
@@ -42,7 +42,7 @@ object RealmCommand {
   /**
     * An intent to update or un-deprecate an existing realm.
     *
-    * @param id           the label of the realm
+    * @param label        the label of the realm
     * @param rev          the expected current revision of the resource
     * @param name         the new name of the realm
     * @param openIdConfig the new address of the openid configuration
@@ -50,7 +50,7 @@ object RealmCommand {
     * @param subject      the subject that intends to evaluate this command
     */
   final case class UpdateRealm(
-      id: Label,
+      label: Label,
       rev: Long,
       name: String,
       openIdConfig: Uri,
@@ -62,12 +62,12 @@ object RealmCommand {
     * An intent to deprecate a realm. Realm deprecation implies users will not be able to authorize requests using
     * tokens issued by the underlying provider.
     *
-    * @param id      the label of the realm
+    * @param label   the label of the realm
     * @param rev     the expected current revision of the resource
     * @param subject the subject that intends to evaluate this command
     */
   final case class DeprecateRealm(
-      id: Label,
+      label: Label,
       rev: Long,
       subject: Subject
   ) extends RealmCommand

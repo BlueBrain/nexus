@@ -15,7 +15,7 @@ sealed trait RealmEvent extends Product with Serializable {
   /**
     * @return the label of the realm for which this event was emitted
     */
-  def id: Label
+  def label: Label
 
   /**
     * @return the revision this event generated
@@ -38,7 +38,7 @@ object RealmEvent {
   /**
     * A witness to a realm creation.
     *
-    * @param id                    the label of the realm
+    * @param label                 the label of the realm
     * @param rev                   the revision this event generated
     * @param name                  the name of the realm
     * @param openIdConfig          the address of the openid configuration
@@ -55,7 +55,7 @@ object RealmEvent {
     * @param subject               the subject that performed the action that resulted in emitting this event
     */
   final case class RealmCreated(
-      id: Label,
+      label: Label,
       rev: Long,
       name: String,
       openIdConfig: Uri,
@@ -75,7 +75,7 @@ object RealmEvent {
   /**
     * A witness to a realm update.
     *
-    * @param id                    the label of the realm
+    * @param label                 the label of the realm
     * @param rev                   the revision this event generated
     * @param name                  the name of the realm
     * @param openIdConfig          the address of the openid configuration
@@ -92,7 +92,7 @@ object RealmEvent {
     * @param subject               the subject that performed the action that resulted in emitting this event
     */
   final case class RealmUpdated(
-      id: Label,
+      label: Label,
       rev: Long,
       name: String,
       openIdConfig: Uri,
@@ -112,13 +112,13 @@ object RealmEvent {
   /**
     * A witness to a realm deprecation.
     *
-    * @param id      the label of the realm
+    * @param label   the label of the realm
     * @param rev     the revision this event generated
     * @param instant the instant when the event was emitted
     * @param subject the subject that performed the action that resulted in emitting this event
     */
   final case class RealmDeprecated(
-      id: Label,
+      label: Label,
       rev: Long,
       instant: Instant,
       subject: Subject
