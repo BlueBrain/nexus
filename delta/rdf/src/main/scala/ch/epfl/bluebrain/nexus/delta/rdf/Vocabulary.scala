@@ -100,7 +100,7 @@ object Vocabulary {
     val AccessControlList = nxv + "AccessControlList"
     val Permissions       = nxv + "Permissions"
     val Realm             = nxv + "Realm"
-    val Organization = nxv + "Organization"
+    val Organization      = nxv + "Organization"
   }
 
   /**
@@ -110,10 +110,10 @@ object Vocabulary {
     val base              = iri"https://bluebrain.github.io/nexus/schemas/"
     def +(suffix: String) = iri"$base$suffix"
 
-    val acls        = schemas + "acls.json"
-    val permissions = schemas + "permissions.json"
-    val realms      = schemas + "realms.json"
-    val organizations        = schemas + "organizations.json"
+    val acls          = schemas + "acls.json"
+    val permissions   = schemas + "permissions.json"
+    val realms        = schemas + "realms.json"
+    val organizations = schemas + "organizations.json"
   }
 }
 // $COVERAGE-ON$
