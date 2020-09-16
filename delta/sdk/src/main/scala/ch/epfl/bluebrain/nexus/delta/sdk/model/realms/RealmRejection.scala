@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 /**
   * Enumeration of Realm rejection types.
   *
- * @param reason a descriptive message as to why the rejection occurred
+  * @param reason a descriptive message as to why the rejection occurred
   */
 sealed abstract class RealmRejection(val reason: String) extends Product with Serializable
 

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
-import monix.bio.{IO, Task}
+import monix.bio.{IO, UIO}
 
 /**
   * Operations pertaining to managing permissions.
@@ -22,7 +22,7 @@ trait Permissions {
   /**
     * @return the current permissions as a resource
     */
-  def fetch: Task[PermissionsResource]
+  def fetch: UIO[PermissionsResource]
 
   /**
     * @param rev the permissions revision
@@ -33,7 +33,7 @@ trait Permissions {
   /**
     * @return the current permissions collection without checking permissions
     */
-  def fetchPermissionSet: Task[Set[Permission]] =
+  def fetchPermissionSet: UIO[Set[Permission]] =
     fetch.map(_.value)
 
   /**

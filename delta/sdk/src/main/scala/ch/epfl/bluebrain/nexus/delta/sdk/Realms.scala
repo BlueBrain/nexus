@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.RevisionNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
-import monix.bio.{IO, Task}
+import monix.bio.{IO, UIO}
 
 /**
   * Operations pertaining to managing realms.
@@ -55,7 +55,7 @@ trait Realms {
     * @param label the realm label
     * @return the realm in a Resource representation, None otherwise
     */
-  def fetch(label: Label): Task[Option[RealmResource]]
+  def fetch(label: Label): UIO[Option[RealmResource]]
 
   /**
     * Fetches a realm at a specific revision.
@@ -76,6 +76,6 @@ trait Realms {
   def list(
       pagination: FromPagination,
       params: RealmSearchParams = RealmSearchParams.none
-  ): Task[UnscoredSearchResults[RealmResource]]
+  ): UIO[UnscoredSearchResults[RealmResource]]
 
 }

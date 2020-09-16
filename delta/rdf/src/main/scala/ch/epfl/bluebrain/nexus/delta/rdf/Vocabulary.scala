@@ -100,6 +100,7 @@ object Vocabulary {
     val AccessControlList = nxv + "AccessControlList"
     val Organization      = nxv + "Organization"
     val Permissions       = nxv + "Permissions"
+    val Project           = nxv + "Project"
     val Realm             = nxv + "Realm"
   }
 
@@ -113,6 +114,7 @@ object Vocabulary {
     val acls          = schemas + "acls.json"
     val organizations = schemas + "organizations.json"
     val permissions   = schemas + "permissions.json"
+    val projects      = schemas + "projects.json"
     val realms        = schemas + "realms.json"
   }
 }
