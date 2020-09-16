@@ -449,6 +449,16 @@ lazy val service    = project
   .dependsOn(sourcingNew, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(libraryDependencies ++= Seq(scalaTest % Test))
 
+lazy val app        = project
+  .in(file("delta/app"))
+  .settings(
+    name       := "delta-app",
+    moduleName := "delta-app"
+  )
+  .settings(shared, compilation, coverage, release)
+  .dependsOn(sourcingNew, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
+  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+
 lazy val cargo      = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val docsFiles =
