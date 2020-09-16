@@ -14,26 +14,26 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
       - name: Setup Scala
         uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: SetVersion
+      - name: Set Version
         run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
       - name: Publish
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ";set Docker/version := \"${{ env.VERSION }}\"; releaseEarly; docker:publishLocal"
-      - name: PublishToDockerHub
+      - name: Publish To DockerHub
         run: |
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-cli:${{ env.VERSION }}
           docker push bluebrain/nexus-delta:${{ env.VERSION }}
           docker push bluebrain/nexus-storage:${{ env.VERSION }}
-      - name: RecordCoverage
+      - name: Record Coverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false clean coverage test coverageReport coverageAggregate
-      - uses: codecov/codecov-action@v1
+      - name: Report Coverage
+        uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
-

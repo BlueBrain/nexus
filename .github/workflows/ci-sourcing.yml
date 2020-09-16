@@ -20,12 +20,14 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
-      - uses: olafurpg/setup-scala@v5
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: StaticAnalysis
+      - name: Static Analysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean coverage test coverageReport coverageAggregate
@@ -40,15 +42,18 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
-      - uses: olafurpg/setup-scala@v5
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: Publish
+      - name: Publish To Bintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" releaseEarly
-      - name: RecordCoverage
+      - name: Record Coverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean coverage test coverageReport coverageAggregate
-      - uses: codecov/codecov-action@v1
+      - name: Report Coverage
+        uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

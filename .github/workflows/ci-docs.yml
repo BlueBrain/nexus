@@ -20,15 +20,16 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-    - name: Checkout
-    - uses: actions/checkout@v2
-    - uses: coursier/cache-action@v4
-    - name: Setup Scala
-      uses: olafurpg/setup-scala@v5
-      with:
-        java-version: adopt@1.11
-    - name: Review
-      run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateLinks
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v5
+        with:
+          java-version: adopt@1.11
+      - name: Review
+        run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateLinks
 
   publish:
     if: github.event_name == 'push'
@@ -41,13 +42,14 @@ jobs:
       BUILD_BOT_SSH_PRIVATE_KEY: ${{ secrets.BUILD_BOT_SSH_PRIVATE_KEY }}
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
       - name: Setup Scala
         uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: Publish
+      - name: Publish Site
         run: |
           git config --global user.email "noreply@epfl.ch"
           git config --global user.name "BBP Nexus Build Bot"
