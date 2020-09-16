@@ -56,6 +56,21 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "tags": [ "first", 2, 30, false ]}"""
     }
 
+    "add @type IRI to existing @type" in {
+      val (person, hero) = (schema.Person, schema + "Hero")
+      val obj            = json"""{"@id": "$iri", "@type": "$person"}""".asObject.value
+      val compacted      = CompactedJsonLd(obj, RawJsonLdContext(context), iri, ContextFields.Skip)
+      val result         = compacted.addType(hero)
+      result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": ["$person", "$hero"]}"""
+    }
+
+    "add @type IRI" in {
+      val obj       = json"""{"@id": "$iri"}""".asObject.value
+      val compacted = CompactedJsonLd(obj, RawJsonLdContext(context), iri, ContextFields.Skip)
+      val result    = compacted.addType(schema.Person)
+      result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": "${schema.Person}"}"""
+    }
+
     "get @context fields" in {
       val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Include).accepted
       compacted.base.value shouldEqual base.value
