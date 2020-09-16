@@ -94,6 +94,17 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
         json"""[{"@id": "$iri", "$friends": [{"@id": "$batman"}, {"@id": "$robin"} ] } ]"""
     }
 
+    "add @type IRI to existing @type" in {
+      val (person, animal, hero) = (schema.Person, schema + "Animal", schema + "Hero")
+      val expanded               = JsonLd.expandedUnsafe(json"""[{"@id": "$iri", "@type": ["$person", "$animal"] } ]""", iri)
+      expanded.addType(hero).types shouldEqual List(person, animal, hero)
+    }
+
+    "add @type IRI" in {
+      val expanded = JsonLd.expandedUnsafe(json"""[{"@id": "$iri"}]""", iri)
+      expanded.addType(schema.Person).types shouldEqual List(schema.Person)
+    }
+
     "add @value value" in {
       val expanded                       = JsonLd.expandedUnsafe(json"""[{"@id": "$iri"}]""", iri)
       val tags                           = vocab + "tags"
