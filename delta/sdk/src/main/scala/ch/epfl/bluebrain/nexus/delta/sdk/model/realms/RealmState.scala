@@ -23,12 +23,12 @@ sealed trait RealmState extends Product with Serializable {
   def deprecated: Boolean
 
   /**
-    * @return the schema reference that acls conforms to
+    * @return the schema reference that realm conforms to
     */
   final def schema: ResourceRef = Latest(schemas.realms)
 
   /**
-    * @return the collection of known types of acls resources
+    * @return the collection of known types of realm resources
     */
   final def types: Set[IRI] = Set(nxv.Realm)
 

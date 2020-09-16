@@ -24,12 +24,14 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
-      - uses: olafurpg/setup-scala@v5
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: StaticAnalysis
+      - name: Static Analysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: |
@@ -47,20 +49,23 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
-      - uses: olafurpg/setup-scala@v5
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: PublishToBintray
+      - name: Publish To Bintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" releaseEarly
-      - name: PublishToDockerHub
+      - name: Publish To DockerHub
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" docker:publishLocal
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-delta:latest
-      - name: RecordCoverage
+      - name: Record Coverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean coverage test coverageReport coverageAggregate
-      - uses: codecov/codecov-action@v1
+      - name: Report Coverage
+        uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

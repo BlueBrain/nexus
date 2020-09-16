@@ -78,6 +78,11 @@ object OrganizationCommand {
     * @param instant      the instant when this command was created
     * @param subject      the subject which created this command.
     */
-  final case class DeprecateOrganization(label: Label, uuid: UUID, rev: Long, instant: Instant, subject: Subject)
-      extends OrganizationCommand
+  final case class DeprecateOrganization(
+      label: Label,
+      uuid: UUID,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationCommand
 }

@@ -15,24 +15,24 @@ trait Pagination {
   def size: Int
 }
 
-/**
-  * Request pagination data type using `from`.
-  *
-  * @param from the start offset
-  * @param size the maximum number of results per page
-  */
-final case class FromPagination(from: Int, size: Int) extends Pagination
-
-/**
-  * Request pagination data type using `search_after`.
-  *
-  * @param searchAfter  [[Json]] to use as ElasticSearch `search_after` field. Should be directly taken from `sort` field
-  *                     in the search results.
-  * @param size         the maximum number of results per page
-  */
-final case class SearchAfterPagination(searchAfter: Json, size: Int) extends Pagination
-
 object Pagination {
+
+  /**
+    * Request pagination data type using `from`.
+    *
+   * @param from the start offset
+    * @param size the maximum number of results per page
+    */
+  final case class FromPagination(from: Int, size: Int) extends Pagination
+
+  /**
+    * Request pagination data type using `search_after`.
+    *
+   * @param searchAfter  [[Json]] to use as ElasticSearch `search_after` field. Should be directly taken from `sort` field
+    *                     in the search results.
+    * @param size         the maximum number of results per page
+    */
+  final case class SearchAfterPagination(searchAfter: Json, size: Int) extends Pagination
 
   /**
     * Creates a [[FromPagination]] starting from the offset value ''0'' and with the passed ''size''

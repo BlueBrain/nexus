@@ -87,7 +87,6 @@ object OrganizationState {
       updatedBy: Subject
   ) extends OrganizationState {
 
-    // $COVERAGE-OFF$
     override val toResource: Option[OrganizationResource] =
       Some(
         ResourceF(
@@ -103,7 +102,6 @@ object OrganizationState {
           value = Organization(label, uuid, description)
         )
       )
-    // $COVERAGE-ON$
   }
 
 }
