@@ -1,9 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
+import java.time.Instant
+
+import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.RevisionNotFound
-import monix.bio.{IO, Task}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Permissions}
+import monix.bio.{IO, Task, UIO}
 
 /**
   * Operations pertaining to managing Access Control Lists.
@@ -109,4 +116,110 @@ trait Acls {
   private def filterSelf(resourceOpt: Option[AclResource])(implicit caller: Caller): Option[AclResource] =
     resourceOpt.map(res => res.map(_.filter(caller.identities)))
 
+}
+
+object Acls {
+  private[delta] def next(state: AclState, event: AclEvent): AclState = {
+    def replaced(e: AclReplaced): AclState     =
+      state match {
+        case Initial    => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case c: Current => c.copy(acl = e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
+    def appended(e: AclAppended): AclState     =
+      state match {
+        case Initial    => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case c: Current => c.copy(acl = c.acl ++ e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
+    def subtracted(e: AclSubtracted): AclState =
+      state match {
+        case Initial    => Initial
+        case c: Current => c.copy(acl = c.acl -- e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
+    def deleted(e: AclDeleted): AclState       =
+      state match {
+        case Initial    => Initial
+        case c: Current => c.copy(acl = Acl.empty, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+      }
+    event match {
+      case ev: AclReplaced   => replaced(ev)
+      case ev: AclAppended   => appended(ev)
+      case ev: AclSubtracted => subtracted(ev)
+      case ev: AclDeleted    => deleted(ev)
+    }
+  }
+
+  private[delta] def evaluate(
+      perms: UIO[Permissions]
+  )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO[*]] = IO.clock): IO[AclRejection, AclEvent] = {
+
+    def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
+      perms.flatMap(_.fetchPermissionSet).flatMap {
+        case permissions if acl.permissions.subsetOf(permissions) => instant.map(f)
+        case permissions                                          => IO.raiseError(UnknownPermissions(acl.permissions -- permissions))
+      }
+
+    def replace(c: ReplaceAcl)   =
+      state match {
+        case Initial if c.rev != 0                                        =>
+          IO.raiseError(IncorrectRev(c.target, c.rev, 0L))
+        case Initial if c.acl.hasEmptyPermissions                         =>
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+        case Initial                                                      =>
+          acceptChecking(c.acl)(AclReplaced(c.target, c.acl, 1L, _, c.subject))
+        case s: Current if !s.acl.isEmpty && c.rev != s.rev               =>
+          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+        case s: Current if s.acl.isEmpty && c.rev != s.rev && c.rev != 0L =>
+          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+        case _: Current if c.acl.hasEmptyPermissions                      =>
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+        case s: Current                                                   =>
+          acceptChecking(c.acl)(AclReplaced(c.target, c.acl, s.rev + 1, _, c.subject))
+      }
+    def append(c: AppendAcl)     =
+      state match {
+        case Initial if c.rev != 0L                                                  =>
+          IO.raiseError(IncorrectRev(c.target, c.rev, 0L))
+        case Initial if c.acl.hasEmptyPermissions                                    =>
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+        case Initial                                                                 =>
+          acceptChecking(c.acl)(AclAppended(c.target, c.acl, c.rev + 1, _, c.subject))
+        case s: Current if s.acl.permissions.nonEmpty && c.rev != s.rev              =>
+          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+        case s: Current if s.acl.permissions.isEmpty && c.rev != s.rev & c.rev != 0L =>
+          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+        case _: Current if c.acl.hasEmptyPermissions                                 =>
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+        case s: Current if s.acl ++ c.acl == s.acl                                   =>
+          IO.raiseError(NothingToBeUpdated(c.target))
+        case s: Current                                                              =>
+          acceptChecking(c.acl)(AclAppended(c.target, c.acl, s.rev + 1, _, c.subject))
+      }
+    def subtract(c: SubtractAcl) =
+      state match {
+        case Initial                                 =>
+          IO.raiseError(AclNotFound(c.target))
+        case s: Current if c.rev != s.rev            =>
+          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+        case _: Current if c.acl.hasEmptyPermissions =>
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+        case s: Current if s.acl -- c.acl == s.acl   =>
+          IO.raiseError(NothingToBeUpdated(c.target))
+        case _: Current                              =>
+          acceptChecking(c.acl)(AclSubtracted(c.target, c.acl, c.rev + 1, _, c.subject))
+      }
+    def delete(c: DeleteAcl)     =
+      state match {
+        case Initial                          => IO.raiseError(AclNotFound(c.target))
+        case s: Current if c.rev != s.rev     => IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+        case s: Current if s.acl == Acl.empty => IO.raiseError(AclIsEmpty(c.target))
+        case _: Current                       => instant.map(AclDeleted(c.target, c.rev + 1, _, c.subject))
+      }
+
+    cmd match {
+      case c: ReplaceAcl  => replace(c)
+      case c: AppendAcl   => append(c)
+      case c: SubtractAcl => subtract(c)
+      case c: DeleteAcl   => delete(c)
+    }
+  }
 }

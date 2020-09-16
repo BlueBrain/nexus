@@ -249,7 +249,8 @@ lazy val testkit = project
       distageTestkit,
       monixBio,
       scalaTest
-    ) ++ dockerTestKit
+    ) ++ dockerTestKit,
+    addCompilerPlugin(kindProjector)
   )
 
 lazy val cli = project
