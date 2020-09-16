@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.xsd
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
@@ -27,10 +27,13 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) e
   lazy val json: Json = Json.arr(obj.asJson)
 
   def add(key: IRI, iri: IRI): This =
-    add(key, expand(iri))
+    add(key.toString, expand(iri))
+
+  def addType(iri: IRI): This =
+    add(keywords.tpe, iri.asJson)
 
   def add(key: IRI, literal: String): This =
-    add(key, expand(literal))
+    add(key.toString, expand(literal))
 
   def add(key: IRI, literal: Boolean): This =
     add(key, literal, includeDataType = false)
@@ -45,16 +48,16 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) e
     add(key, literal, includeDataType = false)
 
   def add(key: IRI, literal: Int, includeDataType: Boolean): This =
-    add(key, expand(literal, Option.when(includeDataType)(xsd.integer)))
+    add(key.toString, expand(literal, Option.when(includeDataType)(xsd.integer)))
 
   def add(key: IRI, literal: Boolean, includeDataType: Boolean): This =
-    add(key, expand(literal, Option.when(includeDataType)(xsd.boolean)))
+    add(key.toString, expand(literal, Option.when(includeDataType)(xsd.boolean)))
 
   def add(key: IRI, literal: Long, includeDataType: Boolean): This =
-    add(key, expand(literal, Option.when(includeDataType)(xsd.long)))
+    add(key.toString, expand(literal, Option.when(includeDataType)(xsd.long)))
 
   def add(key: IRI, literal: Double, includeDataType: Boolean): This =
-    add(key, expand(literal, Option.when(includeDataType)(xsd.double)))
+    add(key.toString, expand(literal, Option.when(includeDataType)(xsd.double)))
 
   /**
     * Fetches the @id values for the passed ''key''.
@@ -95,11 +98,10 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IRI) e
   ): IO[RdfError, Graph] =
     api.toRdf(json).map(model => Graph(rootId, model))
 
-  private def add(key: IRI, value: Json): This = {
-    val keyString = if (key == rdf.tpe) keywords.tpe else key.toString
-    obj(keyString).flatMap(v => v.asArray) match {
-      case None      => copy(obj = obj.add(keyString, Json.arr(value)))
-      case Some(arr) => copy(obj = obj.add(keyString, (arr :+ value).asJson))
+  private def add(key: String, value: Json): This = {
+    obj(key).flatMap(v => v.asArray) match {
+      case None      => copy(obj = obj.add(key, Json.arr(value)))
+      case Some(arr) => copy(obj = obj.add(key, (arr :+ value).asJson))
     }
   }
 

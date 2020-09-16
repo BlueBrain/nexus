@@ -21,13 +21,9 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@v2.1.0
-      - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
+      - name: Checkout
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v4
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.8-0
@@ -56,9 +52,9 @@ jobs:
       BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
-      - uses: actions/checkout@v2.1.0
-      - name: Cache Coursier
-        uses: actions/cache@v1.1.2
+      - name: Checkout
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v4
         with:
           path: ~/.cache/coursier
           key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
@@ -88,13 +84,9 @@ jobs:
       BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
-      - uses: actions/checkout@v2.1.0
-      - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
+      - name: Checkout
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v4
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.8-0

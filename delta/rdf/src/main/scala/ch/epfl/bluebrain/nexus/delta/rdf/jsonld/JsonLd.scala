@@ -42,6 +42,11 @@ trait JsonLd extends Product with Serializable {
   def add(key: Predicate, iri: IRI): This
 
   /**
+    * Adds the passed ''iri'' value to the reserved key @type.
+    */
+  def addType(iri: IRI): This
+
+  /**
     * Adds a ''key'' with its ''literal'' string.
     */
   def add(key: Predicate, literal: String): This

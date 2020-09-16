@@ -33,6 +33,9 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
   def add(key: String, iri: IRI): This =
     add(key, iri.asJson)
 
+  def addType(iri: IRI): This =
+    add(keywords.tpe, iri)
+
   def add(key: String, literal: String): This =
     add(key, literal.asJson)
 
