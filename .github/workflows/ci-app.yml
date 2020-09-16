@@ -57,11 +57,6 @@ jobs:
           java-version: adopt@1.11
     - name: PublishToBintray
       run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" releaseEarly
-#    - name: PublishToDockerHub
-#      run: |
-#        sbt -Dsbt.color=always -Dsbt.supershell=false "project app" docker:publishLocal
-#        echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-#        docker push bluebrain/nexus-delta:latest
     - name: RecordCoverage
       run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage test coverageReport coverageAggregate
     - uses: codecov/codecov-action@v1
