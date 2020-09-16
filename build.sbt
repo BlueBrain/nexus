@@ -421,8 +421,7 @@ lazy val sdk = project
   .dependsOn(rdf, testkit % "test->compile")
   .settings(shared, compilation, coverage, release)
   .settings(
-    coverageFailOnMinimum := false,
-    libraryDependencies  ++= Seq(
+    libraryDependencies ++= Seq(
       monixBio,
       scalaTest % Test
     ),
