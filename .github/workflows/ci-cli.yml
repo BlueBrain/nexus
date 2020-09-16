@@ -20,9 +20,8 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.1.0
-      - name: Cache Coursier
-        uses: actions/cache@v1.1.2
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v3
         with:
           path: ~/.cache/coursier
           key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
@@ -46,9 +45,8 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.1.0
-      - name: Cache Coursier
-        uses: actions/cache@v1.1.2
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v3
         with:
           path: ~/.cache/coursier
           key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
