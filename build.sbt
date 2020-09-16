@@ -239,7 +239,7 @@ lazy val docs = project
 
 lazy val testkit = project
   .in(file("delta/testkit"))
-  .settings(name := "testkit", moduleName := "testkit")
+  .settings(name := "delta-testkit", moduleName := "delta-testkit")
   .settings(shared, compilation, coverage, release)
   .settings(
     libraryDependencies ++= Seq(
@@ -323,7 +323,10 @@ lazy val sourcing = project
 lazy val sourcingNew = project
   .in(file("delta/sourcing"))
   .dependsOn(testkit % "test->compile")
-  .settings(name := "sourcing-new", moduleName := "sourcing-new")
+  .settings(
+    name       := "delta-sourcing",
+    moduleName := "delta-sourcing"
+  )
   .settings(shared, compilation, coverage, release)
   .settings(
     coverageMinimum      := 70,
@@ -361,8 +364,8 @@ lazy val rdf = project
   .dependsOn(testkit % "test->compile")
   .settings(shared, compilation, coverage, release)
   .settings(
-    name       := "rdf",
-    moduleName := "rdf"
+    name       := "delta-rdf",
+    moduleName := "delta-rdf"
   )
   .settings(
     libraryDependencies ++= Seq(
@@ -426,7 +429,27 @@ lazy val sdk = project
     addCompilerPlugin(kindProjector)
   )
 
-lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+lazy val sdkTestkit = project
+  .in(file("delta/sdk-testkit"))
+  .settings(
+    name       := "delta-sdk-testkit",
+    moduleName := "delta-sdk-testkit"
+  )
+  .settings(shared, compilation, coverage, release)
+  .dependsOn(rdf, sdk, testkit % "test->compile")
+  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+
+lazy val service    = project
+  .in(file("delta/service"))
+  .settings(
+    name       := "delta-service",
+    moduleName := "delta-service"
+  )
+  .settings(shared, compilation, coverage, release)
+  .dependsOn(sourcingNew, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
+  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+
+lazy val cargo      = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val docsFiles =
   Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")
@@ -457,7 +480,6 @@ lazy val storage = project
   .settings(
     name                     := "storage",
     moduleName               := "storage",
-    coverageFailOnMinimum    := true,
     buildInfoKeys            := Seq[BuildInfoKey](version),
     buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
     Docker / packageName     := "nexus-storage",
@@ -495,7 +517,6 @@ lazy val storage = project
 lazy val delta = project
   .in(file("delta"))
   .dependsOn(sourcing, rdfOld)
-  .aggregate(sdk, rdf, sourcingNew)
   .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
   .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
   .settings(
