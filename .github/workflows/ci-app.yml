@@ -31,11 +31,7 @@ jobs:
     steps:
       - name: Checkout
       - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v3
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
+      - uses: coursier/cache-action@v4
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
@@ -55,11 +51,7 @@ jobs:
     steps:
       - name: Checkout
       - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v3
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
+      - uses: coursier/cache-action@v4
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
