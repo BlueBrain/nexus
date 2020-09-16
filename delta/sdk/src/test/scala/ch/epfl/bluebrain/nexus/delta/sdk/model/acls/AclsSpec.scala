@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{
   AclIsEmpty,
   AclNotFound,
   IncorrectRev,
-  NothingToBeUpdated
+  NothingToBeUpdated,
+  UnknownPermissions
 }
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acls.{evaluate, next}
@@ -108,6 +109,19 @@ class AclsSpec
         )
         forAll(list) {
           case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[NothingToBeUpdated]
+        }
+      }
+
+      "reject with UnknownPermissions" in {
+        val unknownPerms = Acl(group -> Set(Permission.unsafe("other")))
+        val list         = List(
+          Initial -> ReplaceAcl(Root, unknownPerms, 0L, subject),
+          Initial -> AppendAcl(Root, unknownPerms, 0L, subject),
+          current -> ReplaceAcl(Root, unknownPerms, 1L, subject),
+          current -> AppendAcl(Root, unknownPerms, 1L, subject)
+        )
+        forAll(list) {
+          case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[UnknownPermissions]
         }
       }
 
