@@ -4,7 +4,7 @@ import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.RevisionNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectDescription, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectFields, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -15,27 +15,27 @@ trait Projects {
   /**
     * Creates a new project.
     *
-    * @param ref         the project reference
-    * @param description the project information
-    * @param caller      a reference to the subject that initiated the action
+    * @param ref    the project reference
+    * @param fields the project information
+    * @param caller a reference to the subject that initiated the action
     */
   def create(
       ref: ProjectRef,
-      description: ProjectDescription
+      fields: ProjectFields
   )(implicit caller: Subject): IO[ProjectRejection, ProjectResource]
 
   /**
     * Update an existing project.
     *
-    * @param ref         the project reference
-    * @param rev         the current project revision
-    * @param description the project information
-    * @param caller      a reference to the subject that initiated the action
+    * @param ref    the project reference
+    * @param rev    the current project revision
+    * @param fields the project information
+    * @param caller a reference to the subject that initiated the action
     */
   def update(
       ref: ProjectRef,
       rev: Long,
-      description: ProjectDescription
+      fields: ProjectFields
   )(implicit caller: Subject): IO[ProjectRejection, ProjectResource]
 
   /**
@@ -80,7 +80,7 @@ trait Projects {
     */
   def fetchAt(uuid: UUID, rev: Long): IO[RevisionNotFound, Option[ProjectResource]] =
     fetch(uuid).flatMap {
-      case Some(value) => fetchAt(value.value.projectRef, rev)
+      case Some(value) => fetchAt(value.value.ref, rev)
       case None        => IO.pure(None)
     }
 

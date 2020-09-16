@@ -31,6 +31,6 @@ final case class Project(
   /**
     * @return a project label reference containing the parent organization label
     */
-  def projectRef: ProjectRef =
+  def ref: ProjectRef =
     ProjectRef(organizationLabel, label)
 }
