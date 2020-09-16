@@ -16,6 +16,11 @@ import org.apache.jena.iri.IRI
 sealed trait ProjectState extends Product with Serializable {
 
   /**
+    * @return the current state revision
+    */
+  def rev: Long
+
+  /**
     * @return the current deprecation status
     */
   def deprecated: Boolean
@@ -47,6 +52,11 @@ object ProjectState {
     * Initial state.
     */
   final case object Initial extends ProjectState {
+
+    /**
+      * @return the current state revision
+      */
+    override val rev: Long = 0L
 
     /**
       * @return the current deprecation status

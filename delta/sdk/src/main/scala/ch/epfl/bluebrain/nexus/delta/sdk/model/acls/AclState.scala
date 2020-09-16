@@ -55,7 +55,6 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    // $COVERAGE-OFF$
     override val toResource: AclResource =
       ResourceF(
         id = Target.Root,
@@ -69,7 +68,6 @@ object AclState {
         schema = schema,
         value = Acl.empty
       )
-    // $COVERAGE-ON$
   }
 
   /**
