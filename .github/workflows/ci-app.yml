@@ -1,15 +1,25 @@
-name: Continuous Integration Sourcing
+name: Continuous Integration Delta App
 on:
   push:
     branches:
       - master
     paths:
       - 'delta/sourcing/**'
+      - 'delta/rdf/**'
+      - 'delta/sdk/**'
+      - 'delta/sdk-testkit/**'
+      - 'delta/service/**'
+      - 'delta/app/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
     paths:
       - 'delta/sourcing/**'
+      - 'delta/rdf/**'
+      - 'delta/sdk/**'
+      - 'delta/sdk-testkit/**'
+      - 'delta/service/**'
+      - 'delta/app/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
@@ -26,9 +36,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: StaticAnalysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage test coverageReport coverageAggregate
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -45,10 +55,10 @@ jobs:
       - uses: olafurpg/setup-scala@v5
         with:
           java-version: adopt@1.11
-      - name: Publish
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" releaseEarly
+      - name: PublishToBintray
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" releaseEarly
       - name: RecordCoverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project sourcing" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" clean coverage test coverageReport coverageAggregate
       - uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

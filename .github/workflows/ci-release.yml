@@ -14,13 +14,8 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.1.0
-      - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v4
       - name: Setup Scala
         uses: olafurpg/setup-scala@v5
         with:
