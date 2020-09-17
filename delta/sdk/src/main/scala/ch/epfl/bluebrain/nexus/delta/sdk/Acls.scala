@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 
 /**
   * Operations pertaining to managing Access Control Lists.
@@ -65,7 +65,7 @@ trait Acls {
     *
    * @param target the target location for the ACL
     */
-  final def fetchSelfAcl(target: Target)(implicit caller: Caller): Task[Acl] =
+  final def fetchSelfAcl(target: Target)(implicit caller: Caller): UIO[Acl] =
     fetchSelf(target).map(_.fold(Acl.empty)(_.value))
 
   /**
@@ -76,7 +76,7 @@ trait Acls {
     * @param self      flag to decide whether or not ancestor from other identities than the provided ones should be included in the response
     * @param caller    the caller that contains the provided identities
     */
-  def list(target: Target, ancestors: Boolean, self: Boolean)(implicit caller: Caller): Task[AclTargets]
+  def list(target: Target, ancestors: Boolean, self: Boolean)(implicit caller: Caller): UIO[AclTargets]
 
   /**
     * Overrides ''acl'' on a ''target''.

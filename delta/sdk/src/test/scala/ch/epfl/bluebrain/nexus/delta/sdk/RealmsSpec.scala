@@ -9,11 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmRejection, WellKnown}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
 import io.circe.Json
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -46,7 +45,7 @@ class RealmsSpec
     val keys: Set[Json]        = Set(json"""{ "k": "v" }""")
     val wk                     = WellKnown(issuer, gt, keys, authUri, tokenUri, uiUri, None, Some(endUri))
     val wk2                    = WellKnown(issuer, gt, keys, authUri, token2Uri, ui2Uri, None, Some(endUri))
-    val wkResolution           = new MockedWellKnow(Map(wellKnownUri -> wk, wellKnown2Uri -> wk2))
+    val wkResolution           = new DummyWellKnown(Map(wellKnownUri -> wk, wellKnown2Uri -> wk2))
     // format: off
     val current                = Current(label, 1L, deprecated = false, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, Anonymous, epoch, Anonymous)
     // format: on
@@ -139,13 +138,4 @@ class RealmsSpec
       }
     }
   }
-}
-
-class MockedWellKnow(expected: Map[Uri, WellKnown]) extends WellKnownResolution {
-
-  override def apply(uri: Uri): IO[RealmRejection, WellKnown] =
-    expected.get(uri) match {
-      case Some(wk) => IO.pure(wk)
-      case None     => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri))
-    }
 }

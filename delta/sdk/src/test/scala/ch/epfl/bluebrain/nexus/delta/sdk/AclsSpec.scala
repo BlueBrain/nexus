@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclFixtures}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection, PermissionsState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsState}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -27,9 +27,11 @@ class AclsSpec
     with IOValues {
 
   "The ACL state machine" when {
-    implicit val sc: Scheduler  = Scheduler.global
-    val perms: UIO[Permissions] = IO.pure(MockedPermissions)
-    val current                 = Current(Root, userR_groupX, 1L, epoch, Anonymous, epoch, Anonymous)
+    implicit val sc: Scheduler = Scheduler.global
+    val permsIri               = iri"http://example.com/permissions"
+    val currentPerms           = PermissionsState.Current(1L, rwx, epoch, subject, epoch, subject).toResource(permsIri, Set.empty)
+    val perms                  = IO.pure(new DummyPermissionsFetch(currentPerms))
+    val current                = Current(Root, userR_groupX, 1L, epoch, Anonymous, epoch, Anonymous)
 
     "evaluating an incoming command" should {
 
@@ -153,18 +155,4 @@ class AclsSpec
       }
     }
   }
-}
-
-object MockedPermissions extends Permissions with AclFixtures {
-  val iri = iri"http://example.com/permissions"
-
-  override def persistenceId: String                                                                            = ???
-  override def minimum: Set[Permission]                                                                         = ???
-  override def fetch: UIO[PermissionsResource]                                                                  =
-    IO.pure(PermissionsState.Current(1L, rwx, epoch, subject, epoch, subject).toResource(iri, Set.empty))
-  override def fetchAt(rev: Long): IO[PermissionsRejection.RevisionNotFound, PermissionsResource]               = ???
-  override def replace(permissions: Set[Permission], rev: Long): IO[PermissionsRejection, PermissionsResource]  = ???
-  override def append(permissions: Set[Permission], rev: Long): IO[PermissionsRejection, PermissionsResource]   = ???
-  override def subtract(permissions: Set[Permission], rev: Long): IO[PermissionsRejection, PermissionsResource] = ???
-  override def delete(rev: Long): IO[PermissionsRejection, PermissionsResource]                                 = ???
 }
