@@ -424,6 +424,7 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
+      akkaActor,
       monixBio,
       scalaTest % Test
     ),
