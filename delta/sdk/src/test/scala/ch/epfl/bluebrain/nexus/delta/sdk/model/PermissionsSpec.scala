@@ -9,16 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
+import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import monix.execution.schedulers.CanBlock
-import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration.TimeUnit
 
-class PermissionsSpec extends AnyWordSpecLike with Matchers with Inspectors {
+class PermissionsSpec extends AnyWordSpecLike with Matchers with IOValues {
 
   "The Permissions next function" should {
     val minimum     = Set(Permission.unsafe("perms/write"), Permission.unsafe("perms/read"))
@@ -30,120 +29,236 @@ class PermissionsSpec extends AnyWordSpecLike with Matchers with Inspectors {
     val subject     = Identity.User("user", Label.unsafe("realm"))
     val subjectNext = Identity.User("next-user", Label.unsafe("realm"))
 
-    "compute the next state" in {
-      val cases = List[(PermissionsState, PermissionsEvent, PermissionsState)](
-        // format: off
+    implicit val scheduler: Scheduler = Scheduler.global
+    implicit val fixed2L: Clock[UIO]  = new Clock[UIO] {
+      override def realTime(unit: TimeUnit): UIO[Long]  = IO.pure(unit.convert(2L, unit))
+      override def monotonic(unit: TimeUnit): UIO[Long] = IO.pure(unit.convert(2L, unit))
+    }
 
-        // append with correct rev
-        (Initial, PermissionsAppended(1L, appended, instant, subject), Current(1L, minimum ++ appended, instant, subject, instant, subject)),
-        // append with incorrect rev
-        (Initial, PermissionsAppended(2L, appended, instant, subject), Initial),
-        // subtract with correct rev
-        (Initial, PermissionsSubtracted(1L, subtracted, instant, subject), Initial),
-        // subtract with incorrect rev
-        (Initial, PermissionsSubtracted(2L, subtracted, instant, subject), Initial),
-        // delete with correct rev
-        (Initial, PermissionsDeleted(1L, instant, subject), Initial),
-        // delete with incorrect rev
-        (Initial, PermissionsDeleted(2L, instant, subject), Initial),
-        // replace with correct rev
-        (Initial, PermissionsReplaced(1L, appended, instant, subject), Current(1L, minimum ++ appended, instant, subject, instant, subject)),
-        // replace with incorrect rev
-        (Initial, PermissionsReplaced(2L, appended, instant, subject), Initial),
+    val next = Permissions.next(minimum) _
+    val eval = Permissions.evaluate(minimum) _
 
-        // append with correct rev
-        (Current(1L, minimum, instant, subject, instant, subject),
-          PermissionsAppended(2L, appended, instantNext, subjectNext),
-          Current(2L, minimum ++ appended, instant, subject, instantNext, subjectNext)),
-        // append with incorrect rev
-        (Current(1L, minimum, instant, subject, instant, subject),
-          PermissionsAppended(1L, appended, instantNext, subjectNext),
-          Current(1L, minimum, instant, subject, instant, subject)),
-        // subtract with correct rev
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject),
-          PermissionsSubtracted(2L, subtracted, instantNext, subjectNext),
-          Current(2L, appended -- subtracted ++ minimum, instant, subject, instantNext, subjectNext)),
-        // subtract with incorrect rev
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject),
-          PermissionsSubtracted(1L, subtracted, instantNext, subjectNext),
-          Current(1L, minimum ++ appended, instant, subject, instant, subject)),
-        // delete with correct rev
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject),
-          PermissionsDeleted(2L, instantNext, subjectNext),
-          Current(2L, minimum, instant, subject, instantNext, subjectNext)),
-        // delete with incorrect rev
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject),
-          PermissionsDeleted(1L, instantNext, subjectNext),
-          Current(1L, minimum ++ appended, instant, subject, instant, subject)),
-        // replace with correct rev
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject),
-          PermissionsReplaced(2L, subtracted, instantNext, subjectNext),
-          Current(2L, minimum ++ subtracted, instant, subject, instantNext, subjectNext)),
-        // replace with incorrect rev
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject),
-          PermissionsReplaced(1L, subtracted, instantNext, subjectNext),
-          Current(1L, minimum ++ appended, instant, subject, instant, subject))
-
-        // format: on
-      )
-
-      forAll(cases) {
-        case (state, event, expected) =>
-          Permissions.next(minimum)(state, event) shouldEqual expected
+    "compute the next state" when {
+      "state is Initial and event is PermissionsAppended" in {
+        val event    = PermissionsAppended(1L, appended, instant, subject)
+        val expected = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        next(Initial, event) shouldEqual expected
+      }
+      "state is Initial and event is PermissionsSubtracted" in {
+        val event    = PermissionsSubtracted(1L, subtracted, instant, subject)
+        val expected = Current(1L, minimum, instant, subject, instant, subject)
+        next(Initial, event) shouldEqual expected
+      }
+      "state is Initial and event is PermissionsDeleted" in {
+        val event    = PermissionsDeleted(1L, instant, subject)
+        val expected = Current(1L, minimum, instant, subject, instant, subject)
+        next(Initial, event) shouldEqual expected
+      }
+      "state is Initial and event is PermissionsReplaced" in {
+        val event    = PermissionsReplaced(1L, appended, instant, subject)
+        val expected = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        next(Initial, event) shouldEqual expected
+      }
+      "state is Current and event is PermissionsAppended" in {
+        val state    = Current(1L, minimum, instant, subject, instant, subject)
+        val event    = PermissionsAppended(2L, appended, instantNext, subjectNext)
+        val expected = Current(2L, minimum ++ appended, instant, subject, instantNext, subjectNext)
+        next(state, event) shouldEqual expected
+      }
+      "state is Current and event is PermissionsSubtracted" in {
+        val state    = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val event    = PermissionsSubtracted(2L, subtracted, instantNext, subjectNext)
+        val expected = Current(2L, appended -- subtracted ++ minimum, instant, subject, instantNext, subjectNext)
+        next(state, event) shouldEqual expected
+      }
+      "state is Current and event is PermissionsDeleted" in {
+        val state    = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val event    = PermissionsDeleted(2L, instantNext, subjectNext)
+        val expected = Current(2L, minimum, instant, subject, instantNext, subjectNext)
+        next(state, event) shouldEqual expected
+      }
+      "state is Current and event is PermissionsReplaced" in {
+        val state    = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val event    = PermissionsReplaced(2L, subtracted, instantNext, subjectNext)
+        val expected = Current(2L, minimum ++ subtracted, instant, subject, instantNext, subjectNext)
+        next(state, event) shouldEqual expected
       }
     }
 
-    "evaluate correctly commands" in {
-      val cases = List[(PermissionsState, PermissionsCommand, Either[PermissionsRejection, PermissionsEvent])](
-        // format: off
-
-        // replace
-        (Initial, ReplacePermissions(1L, appended, subjectNext), Left(IncorrectRev(1L, 0L))),
-        (Initial, ReplacePermissions(0L, Set.empty, subjectNext), Left(CannotReplaceWithEmptyCollection)),
-        (Initial, ReplacePermissions(0L, minimum, subjectNext), Left(CannotReplaceWithEmptyCollection)),
-        (Initial, ReplacePermissions(0L, appended, subjectNext), Right(PermissionsReplaced(1L, appended, instantNext, subjectNext))),
-        (Current(1L, minimum, instant, subject, instant, subject), ReplacePermissions(2L, appended, subjectNext), Left(IncorrectRev(2L, 1L))),
-        (Current(1L, minimum, instant, subject, instant, subject), ReplacePermissions(1L, appended, subjectNext), Right(PermissionsReplaced(2L, appended, instantNext, subjectNext))),
-
-        // append
-        (Initial, AppendPermissions(1L, appended, subjectNext), Left(IncorrectRev(1L, 0L))),
-        (Initial, AppendPermissions(0L, Set.empty, subjectNext), Left(CannotAppendEmptyCollection)),
-        (Initial, AppendPermissions(0L, minimum, subjectNext), Left(CannotAppendEmptyCollection)),
-        (Initial, AppendPermissions(0L, appended, subjectNext), Right(PermissionsAppended(1L, appended, instantNext, subjectNext))),
-        (Current(1L, minimum, instant, subject, instant, subject), AppendPermissions(2L, appended, subjectNext), Left(IncorrectRev(2L, 1L))),
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject), AppendPermissions(1L, minimum ++ appended, subjectNext), Left(CannotAppendEmptyCollection)),
-        (Current(1L, minimum, instant, subject, instant, subject), AppendPermissions(1L, appended, subjectNext), Right(PermissionsAppended(2L, appended, instantNext, subjectNext))),
-
-        // subtract
-        (Initial, SubtractPermissions(1L, subtracted, subjectNext), Left(IncorrectRev(1L, 0L))),
-        (Initial, SubtractPermissions(0L, Set.empty, subjectNext), Left(CannotSubtractEmptyCollection)),
-        (Initial, SubtractPermissions(0L, minimum, subjectNext), Left(CannotSubtractFromMinimumCollection(minimum))),
-        (Current(1L, minimum, instant, subject, instant, subject), SubtractPermissions(2L, subtracted, subjectNext), Left(IncorrectRev(2L, 1L))),
-        (Current(1L, minimum, instant, subject, instant, subject), SubtractPermissions(1L, Set.empty, subjectNext), Left(CannotSubtractEmptyCollection)),
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject), SubtractPermissions(1L, minimum, subjectNext), Left(CannotSubtractFromMinimumCollection(minimum))),
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject), SubtractPermissions(1L, minimum ++ subtracted ++ unknown, subjectNext), Left(CannotSubtractUndefinedPermissions(unknown))),
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject), SubtractPermissions(1L, minimum ++ subtracted, subjectNext), Right(PermissionsSubtracted(2L, subtracted, instantNext, subjectNext))),
-
-        // delete
-        (Initial, DeletePermissions(1L, subjectNext), Left(IncorrectRev(1L, 0L))),
-        (Initial, DeletePermissions(0L, subjectNext), Left(CannotDeleteMinimumCollection)),
-        (Current(1L, minimum, instant, subject, instant, subject), DeletePermissions(2L, subjectNext), Left(IncorrectRev(2L, 1L))),
-        (Current(1L, minimum, instant, subject, instant, subject), DeletePermissions(1L, subjectNext), Left(CannotDeleteMinimumCollection)),
-        (Current(1L, minimum ++ appended, instant, subject, instant, subject), DeletePermissions(1L, subjectNext), Right(PermissionsDeleted(2L, instantNext, subjectNext)))
-      )
-
-      implicit val scheduler: Scheduler = Scheduler.global
-      implicit val permit: CanBlock     = CanBlock.permit
-      implicit val fixed2L: Clock[UIO]  = new Clock[UIO] {
-        override def realTime(unit: TimeUnit): UIO[Long] = IO.pure(unit.convert(2L, unit))
-        override def monotonic(unit: TimeUnit): UIO[Long] = IO.pure(unit.convert(2L, unit))
+    "reject with IncorrectRev" when {
+      "state is initial and command is ReplacePermissions" in {
+        val state    = Initial
+        val cmd      = ReplacePermissions(1L, appended, subjectNext)
+        val expected = IncorrectRev(1L, 0L)
+        eval(state, cmd).rejected shouldEqual expected
       }
+      "state is initial and command is AppendPermissions" in {
+        val state    = Initial
+        val cmd      = AppendPermissions(1L, appended, subjectNext)
+        val expected = IncorrectRev(1L, 0L)
+        eval(state, cmd).rejected shouldEqual expected
+      }
+      "state is initial and command is SubtractPermissions" in {
+        val state    = Initial
+        val cmd      = SubtractPermissions(1L, subtracted, subjectNext)
+        val expected = IncorrectRev(1L, 0L)
+        eval(state, cmd).rejected shouldEqual expected
+      }
+      "state is initial and command is DeletePermissions" in {
+        val state    = Initial
+        val cmd      = DeletePermissions(1L, subjectNext)
+        val expected = IncorrectRev(1L, 0L)
+        eval(state, cmd).rejected shouldEqual expected
+      }
+      "state is current and command is ReplacePermissions" in {
+        val state    = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd      = ReplacePermissions(2L, appended, subjectNext)
+        val expected = IncorrectRev(2L, 1L)
+        eval(state, cmd).rejected shouldEqual expected
+      }
+      "state is current and command is AppendPermissions" in {
+        val state    = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd      = AppendPermissions(2L, appended, subjectNext)
+        val expected = IncorrectRev(2L, 1L)
+        eval(state, cmd).rejected shouldEqual expected
+      }
+      "state is current and command is SubtractPermissions" in {
+        val state    = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd      = SubtractPermissions(2L, subtracted, subjectNext)
+        val expected = IncorrectRev(2L, 1L)
+        eval(state, cmd).rejected shouldEqual expected
+      }
+      "state is current and command is DeletePermissions" in {
+        val state    = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd      = DeletePermissions(2L, subjectNext)
+        val expected = IncorrectRev(2L, 1L)
+        eval(state, cmd).rejected shouldEqual expected
+      }
+    }
 
-      forAll(cases) {
-        case (state, command, expected) =>
-          Permissions.evaluate(minimum)(state, command)(fixed2L).attempt.runSyncUnsafe() shouldEqual expected
+    "reject with CannotReplaceWithEmptyCollection" when {
+      "the provided permission set is empty" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = ReplacePermissions(1L, Set.empty, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotReplaceWithEmptyCollection
+      }
+      "the provided permission set is minimum" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = ReplacePermissions(1L, minimum, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotReplaceWithEmptyCollection
+      }
+    }
+
+    "reject with CannotAppendEmptyCollection" when {
+      "the provided permission set is empty" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = AppendPermissions(1L, Set.empty, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
+      }
+      "the provided permission set is minimum while state is initial" in {
+        val state = Initial
+        val cmd   = AppendPermissions(0L, minimum, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
+      }
+      "the provided permission set is minimum while state is current" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = AppendPermissions(1L, minimum, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
+      }
+      "the provided permission set is a subset of the current permissions" in {
+        val state = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val cmd   = AppendPermissions(1L, appended, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotAppendEmptyCollection
+      }
+    }
+
+    "reject with CannotSubtractEmptyCollection" when {
+      "the provided permission set is empty" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = SubtractPermissions(1L, Set.empty, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotSubtractEmptyCollection
+      }
+    }
+
+    "reject with CannotSubtractFromMinimumCollection" when {
+      "the provided permission set is minimum and state is initial" in {
+        val state = Initial
+        val cmd   = SubtractPermissions(0L, minimum, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotSubtractFromMinimumCollection(minimum)
+      }
+      "the provided permission set is minimum and state has more permissions" in {
+        val state = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val cmd   = SubtractPermissions(1L, minimum, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotSubtractFromMinimumCollection(minimum)
+      }
+      "the provided permission set is minimum" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = SubtractPermissions(1L, minimum, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotSubtractFromMinimumCollection(minimum)
+      }
+    }
+
+    "reject with CannotSubtractUndefinedPermissions" when {
+      "the provided permissions are not included in the set" in {
+        val state = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val cmd   = SubtractPermissions(1L, minimum ++ subtracted ++ unknown, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotSubtractUndefinedPermissions(unknown)
+      }
+    }
+
+    "reject with CannotDeleteMinimumCollection" when {
+      "the state is initial" in {
+        val state = Initial
+        val cmd   = DeletePermissions(0L, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotDeleteMinimumCollection
+      }
+      "the current permission set is the minimum" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = DeletePermissions(1L, subjectNext)
+        eval(state, cmd).rejected shouldEqual CannotDeleteMinimumCollection
+      }
+    }
+
+    "replace permissions" when {
+      "the state is initial" in {
+        val state = Initial
+        val cmd   = ReplacePermissions(0L, appended, subjectNext)
+        eval(state, cmd).accepted shouldEqual PermissionsReplaced(1L, appended, instantNext, subjectNext)
+      }
+      "the state is current" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = ReplacePermissions(1L, appended, subjectNext)
+        eval(state, cmd).accepted shouldEqual PermissionsReplaced(2L, appended, instantNext, subjectNext)
+      }
+    }
+
+    "append permissions" when {
+      "the state is initial" in {
+        val state = Initial
+        val cmd   = AppendPermissions(0L, appended, subjectNext)
+        eval(state, cmd).accepted shouldEqual PermissionsAppended(1L, appended, instantNext, subjectNext)
+      }
+      "the state is current" in {
+        val state = Current(1L, minimum, instant, subject, instant, subject)
+        val cmd   = AppendPermissions(1L, minimum ++ appended, subjectNext)
+        eval(state, cmd).accepted shouldEqual PermissionsAppended(2L, appended, instantNext, subjectNext)
+      }
+    }
+
+    "subtract permissions" when {
+      "the state is current" in {
+        val state = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val cmd   = SubtractPermissions(1L, minimum ++ subtracted, subjectNext)
+        eval(state, cmd).accepted shouldEqual PermissionsSubtracted(2L, subtracted, instantNext, subjectNext)
+      }
+    }
+
+    "delete permissions" when {
+      "the state is current" in {
+        val state = Current(1L, minimum ++ appended, instant, subject, instant, subject)
+        val cmd   = DeletePermissions(1L, subjectNext)
+        eval(state, cmd).accepted shouldEqual PermissionsDeleted(2L, instantNext, subjectNext)
       }
     }
   }
-
 }

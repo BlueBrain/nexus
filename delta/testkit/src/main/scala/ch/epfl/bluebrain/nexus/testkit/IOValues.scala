@@ -33,7 +33,7 @@ final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E])
         )
       case Right(value)    =>
         fail(
-          s"Expected raising error, but returned successfull response with type '${value.getClass.getName}'"
+          s"Expected raising error, but returned successful response with type '${value.getClass.getName}'"
         )
     }
   }
