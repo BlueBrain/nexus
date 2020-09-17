@@ -58,7 +58,6 @@ object PermissionsState {
   final case object Initial extends PermissionsState {
     override val rev: Long = 0L
 
-    // $COVERAGE-OFF$
     override def toResource(id: IRI, minimum: Set[Permission]): PermissionsResource =
       ResourceF(
         id = id,
@@ -72,7 +71,6 @@ object PermissionsState {
         schema = schema,
         value = minimum
       )
-    // $COVERAGE-ON$
   }
 
   /**
