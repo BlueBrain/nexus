@@ -9,7 +9,7 @@ import scala.concurrent.duration.TimeUnit
 
 trait IOFixedClock {
 
-  implicit val ioClock: Clock[UIO[*]] = new Clock[UIO] {
+  implicit val ioClock: Clock[UIO] = new Clock[UIO] {
     override def realTime(unit: TimeUnit): UIO[Long]  = IO.pure(Instant.EPOCH.toEpochMilli)
     override def monotonic(unit: TimeUnit): UIO[Long] = IO.pure(Instant.EPOCH.toEpochMilli)
   }

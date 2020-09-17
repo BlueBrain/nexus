@@ -45,7 +45,7 @@ trait Acls {
     * Fetches the ACL resource for a ''target'' on the passed revision.
     * The response only contains ACL with identities present in the provided ''caller''.
     *
-   * @param target the target location for the ACL
+    * @param target the target location for the ACL
     * @param rev    the revision to fetch
     */
   final def fetchSelfAt(target: Target, rev: Long)(implicit caller: Caller): IO[RevisionNotFound, Option[AclResource]] =
@@ -150,7 +150,7 @@ object Acls {
 
   private[delta] def evaluate(
       perms: UIO[Permissions]
-  )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO[*]] = IO.clock): IO[AclRejection, AclEvent] = {
+  )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO] = IO.clock): IO[AclRejection, AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
       perms.flatMap(_.fetchPermissionSet).flatMap {

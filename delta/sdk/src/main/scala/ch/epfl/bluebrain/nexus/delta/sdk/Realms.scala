@@ -2,18 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.http.scaladsl.model.Uri
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmCommand, RealmEvent, RealmRejection, RealmState, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmCommand, RealmEvent, RealmRejection, RealmState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import monix.bio.{IO, UIO}
-import cats.implicits._
 
 /**
   * Operations pertaining to managing realms.
@@ -86,17 +86,6 @@ trait Realms {
 
 }
 
-/**
-  * Well known configuration for an OIDC provider  resolution.
-  */
-trait WellKnownResolution {
-
-  /**
-    * Resolves the passed well known ''uri''
-    */
-  def apply(uri: Uri): IO[RealmRejection, WellKnown]
-}
-
 object Realms {
   private[delta] def next(state: RealmState, event: RealmEvent): RealmState = {
     // format: off
@@ -120,8 +109,8 @@ object Realms {
     }
   }
 
-  private[delta] def evaluate(wellKnown: WellKnownResolution)(state: RealmState, cmd: RealmCommand)(implicit
-      clock: Clock[UIO[*]] = IO.clock
+  private[delta] def evaluate(wellKnown: WellKnownResolver)(state: RealmState, cmd: RealmCommand)(implicit
+      clock: Clock[UIO] = IO.clock
   ): IO[RealmRejection, RealmEvent] = {
     // format: off
     def create(c: CreateRealm) =

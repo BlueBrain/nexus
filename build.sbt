@@ -424,8 +424,8 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
-      akkaActor,
       monixBio,
+      akkaActor % Test,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector)

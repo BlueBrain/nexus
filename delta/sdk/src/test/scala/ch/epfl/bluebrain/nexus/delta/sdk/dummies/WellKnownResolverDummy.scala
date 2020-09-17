@@ -9,7 +9,7 @@ import monix.bio.IO
 /**
   * Dummy implementation of [[WellKnownResolution]] passing the expected results in a map
   */
-class DummyWellKnownResolution(expected: Map[Uri, WellKnown]) extends WellKnownResolution {
+class WellKnownResolverDummy(expected: Map[Uri, WellKnown]) extends WellKnownResolution {
 
   override def apply(uri: Uri): IO[RealmRejection, WellKnown] =
     expected.get(uri) match {

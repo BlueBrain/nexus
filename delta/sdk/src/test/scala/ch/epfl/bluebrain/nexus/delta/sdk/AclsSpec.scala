@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
+import java.time.Instant
+
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.dummies.DummyPermissionsFetch
+import ch.epfl.bluebrain.nexus.delta.sdk.dummies.PermissionsDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -31,8 +33,9 @@ class AclsSpec
     implicit val sc: Scheduler = Scheduler.global
     val permsIri               = iri"http://example.com/permissions"
     val currentPerms           = PermissionsState.Current(1L, rwx, epoch, subject, epoch, subject).toResource(permsIri, Set.empty)
-    val perms                  = IO.pure(new DummyPermissionsFetch(currentPerms))
+    val perms                  = IO.pure(new PermissionsDummy(currentPerms))
     val current                = Current(Root, userR_groupX, 1L, epoch, Anonymous, epoch, Anonymous)
+    val time2                  = Instant.ofEpochMilli(10L)
 
     "evaluating an incoming command" should {
 
@@ -126,33 +129,33 @@ class AclsSpec
     "producing next state" should {
 
       "create a new AclReplaced state" in {
-        next(Initial, AclReplaced(Root, userW, 1L, epoch, subject)) shouldEqual
-          Current(Root, userW, 1L, epoch, subject, epoch, subject)
+        next(Initial, AclReplaced(Root, userW, 1L, time2, subject)) shouldEqual
+          Current(Root, userW, 1L, time2, subject, time2, subject)
 
-        next(current, AclReplaced(Root, userW, 1L, epoch, subject)) shouldEqual
-          Current(Root, userW, 1L, epoch, Anonymous, epoch, subject)
+        next(current, AclReplaced(Root, userW, 1L, time2, subject)) shouldEqual
+          Current(Root, userW, 1L, epoch, Anonymous, time2, subject)
       }
 
       "create new AclAppended state" in {
-        next(Initial, AclAppended(Root, userW, 1L, epoch, subject)) shouldEqual
-          Current(Root, userW, 1L, epoch, subject, epoch, subject)
+        next(Initial, AclAppended(Root, userW, 1L, time2, subject)) shouldEqual
+          Current(Root, userW, 1L, time2, subject, time2, subject)
 
-        next(current, AclAppended(Root, userW, 1L, epoch, subject)) shouldEqual
-          Current(Root, userRW_groupX, 1L, epoch, Anonymous, epoch, subject)
+        next(current, AclAppended(Root, userW, 1L, time2, subject)) shouldEqual
+          Current(Root, userRW_groupX, 1L, epoch, Anonymous, time2, subject)
       }
 
       "create new AclSubtracted state" in {
         next(Initial, AclSubtracted(Root, groupX, 1L, epoch, subject)) shouldEqual Initial
 
-        next(current, AclSubtracted(Root, groupX, 1L, epoch, subject)) shouldEqual
-          Current(Root, userR, 1L, epoch, Anonymous, epoch, subject)
+        next(current, AclSubtracted(Root, groupX, 1L, time2, subject)) shouldEqual
+          Current(Root, userR, 1L, epoch, Anonymous, time2, subject)
       }
 
       "create new AclDeleted state" in {
         next(Initial, AclDeleted(Root, 1L, epoch, subject)) shouldEqual Initial
 
-        next(current, AclDeleted(Root, 1L, epoch, subject)) shouldEqual
-          Current(Root, Acl.empty, 1L, epoch, Anonymous, epoch, subject)
+        next(current, AclDeleted(Root, 1L, time2, subject)) shouldEqual
+          Current(Root, Acl.empty, 1L, epoch, Anonymous, time2, subject)
       }
     }
   }

@@ -4,7 +4,7 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.dummies.DummyWellKnownResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.dummies.WellKnownResolverDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
@@ -31,6 +31,7 @@ class RealmsSpec
   "The Realm state machine" when {
     implicit val sc: Scheduler = Scheduler.global
     val epoch: Instant         = Instant.EPOCH
+    val time2                  = Instant.ofEpochMilli(10L)
     val wellKnownUri: Uri      = "https://example.com/auth/realms/myrealm/.well-known/openid-configuration"
     val wellKnown2Uri: Uri     = "https://example.com/auth/realms/myrealm/.well-known/openid-configuration2"
     val authUri: Uri           = "https://example.com/auth/realms/myrealm/protocol/openid-connect/auth"
@@ -46,7 +47,7 @@ class RealmsSpec
     val keys: Set[Json]        = Set(json"""{ "k": "v" }""")
     val wk                     = WellKnown(issuer, gt, keys, authUri, tokenUri, uiUri, None, Some(endUri))
     val wk2                    = WellKnown(issuer, gt, keys, authUri, token2Uri, ui2Uri, None, Some(endUri))
-    val wkResolution           = new DummyWellKnownResolution(Map(wellKnownUri -> wk, wellKnown2Uri -> wk2))
+    val wkResolution           = new WellKnownResolverDummy(Map(wellKnownUri -> wk, wellKnown2Uri -> wk2))
     // format: off
     val current                = Current(label, 1L, deprecated = false, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, Anonymous, epoch, Anonymous)
     // format: on
@@ -113,29 +114,29 @@ class RealmsSpec
 
       "create a new RealmCreated state" in {
         // format: off
-        next(Initial, RealmCreated(label, 1L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, subject)) shouldEqual
-          current.copy(createdBy = subject, updatedBy = subject)
+        next(Initial, RealmCreated(label, 1L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), time2, subject)) shouldEqual
+          current.copy(createdAt = time2, createdBy = subject, updatedAt = time2, updatedBy = subject)
 
-        next(current, RealmCreated(label, 1L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, subject)) shouldEqual
+        next(current, RealmCreated(label, 1L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), time2, subject)) shouldEqual
           current
         // format: on
       }
 
       "create a new RealmUpdated state" in {
         // format: off
-        next(Initial, RealmUpdated(label, 2L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, subject)) shouldEqual
+        next(Initial, RealmUpdated(label, 2L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), time2, subject)) shouldEqual
           Initial
 
-        next(current, RealmUpdated(label, 2L, name, wellKnown2Uri, issuer, keys, gt, None, authUri, token2Uri, ui2Uri, None, Some(endUri), epoch, subject)) shouldEqual
-          Current(label, 2L, deprecated = false, name, wellKnown2Uri, issuer, keys, gt, None, authUri, token2Uri, ui2Uri, None, Some(endUri), epoch, Anonymous, epoch, subject)
+        next(current, RealmUpdated(label, 2L, name, wellKnown2Uri, issuer, keys, gt, None, authUri, token2Uri, ui2Uri, None, Some(endUri), time2, subject)) shouldEqual
+          Current(label, 2L, deprecated = false, name, wellKnown2Uri, issuer, keys, gt, None, authUri, token2Uri, ui2Uri, None, Some(endUri), epoch, Anonymous, time2, subject)
         // format: on
       }
 
       "create new RealmDeprecated state" in {
-        next(Initial, RealmDeprecated(label, 2L, epoch, subject)) shouldEqual Initial
+        next(Initial, RealmDeprecated(label, 2L, time2, subject)) shouldEqual Initial
 
-        next(current, RealmDeprecated(label, 2L, epoch, subject)) shouldEqual
-          current.copy(rev = 2L, deprecated = true, updatedBy = subject)
+        next(current, RealmDeprecated(label, 2L, time2, subject)) shouldEqual
+          current.copy(rev = 2L, deprecated = true, updatedAt = time2, updatedBy = subject)
       }
     }
   }

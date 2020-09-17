@@ -9,7 +9,7 @@ import monix.bio.{IO, UIO}
   *
  * @param expected the expected result of fetching all the permissions
   */
-class DummyPermissionsFetch(expected: PermissionsResource) extends Permissions {
+class PermissionsDummy(expected: PermissionsResource) extends Permissions {
   override def persistenceId: String                                                                            = ???
   override def minimum: Set[Permission]                                                                         = ???
   override def fetch: UIO[PermissionsResource]                                                                  = IO.pure(expected)
