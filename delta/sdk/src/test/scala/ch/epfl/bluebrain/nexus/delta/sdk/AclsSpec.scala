@@ -1,22 +1,15 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
+package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.Acls.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{
-  AclCannotContainEmptyPermissionCollection,
-  AclIsEmpty,
-  AclNotFound,
-  IncorrectRev,
-  NothingToBeUpdated,
-  UnknownPermissions
-}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acls.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.Root
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection, PermissionsState}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler

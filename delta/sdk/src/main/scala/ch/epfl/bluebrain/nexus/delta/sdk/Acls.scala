@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
+package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
 
@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, Delet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Permissions}
 import monix.bio.{IO, Task, UIO}
 
 /**
