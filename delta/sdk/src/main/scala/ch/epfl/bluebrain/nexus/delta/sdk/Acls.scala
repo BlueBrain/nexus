@@ -22,7 +22,7 @@ trait Acls {
     *
     * @param target the target location for the ACL
     */
-  def fetch(target: Target): Task[Option[AclResource]]
+  def fetch(target: Target): UIO[Option[AclResource]]
 
   /**
     * Fetches the ACL resource for a ''target'' on the passed revision.
@@ -38,7 +38,7 @@ trait Acls {
     *
     * @param target the target location for the ACL
     */
-  final def fetchSelf(target: Target)(implicit caller: Caller): Task[Option[AclResource]] =
+  final def fetchSelf(target: Target)(implicit caller: Caller): UIO[Option[AclResource]] =
     fetch(target).map(filterSelf)
 
   /**
@@ -56,7 +56,7 @@ trait Acls {
     *
     * @param target the target location for the ACL
     */
-  final def fetchAcl(target: Target): Task[Acl] =
+  final def fetchAcl(target: Target): UIO[Acl] =
     fetch(target).map(_.fold(Acl.empty)(_.value))
 
   /**
