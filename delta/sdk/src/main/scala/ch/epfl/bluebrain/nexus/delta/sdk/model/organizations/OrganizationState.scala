@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
-// $COVERAGE-OFF$
 /**
   * Enumeration of organization states.
   */
@@ -42,7 +41,6 @@ sealed trait OrganizationState extends Product with Serializable {
     */
   def toResource: Option[OrganizationResource]
 }
-// $COVERAGE-ON$
 
 object OrganizationState {
 
@@ -68,8 +66,8 @@ object OrganizationState {
     * @param label        the organization label
     * @param uuid         the organization UUID
     * @param rev          the organization revision
-    * @param description  an optional description of the organization
     * @param deprecated   the deprecation status of the organization
+    * @param description  an optional description of the organization
     * @param createdAt    the instant when the organization was created
     * @param createdBy    the identity that created the organization
     * @param updatedAt    the instant when the organization was last updated
@@ -79,8 +77,8 @@ object OrganizationState {
       label: Label,
       uuid: UUID,
       rev: Long,
-      description: Option[String],
       deprecated: Boolean,
+      description: Option[String],
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,

@@ -16,7 +16,7 @@ import org.apache.jena.iri.IRI
 /**
   * A dummy Permissions implementation that uses a synchronized in memory journal.
   *
- * @param minimum   the minimum set of permissions
+  * @param minimum   the minimum set of permissions
   * @param journal   a ref to the journal
   * @param semaphore a semaphore for serializing write operations on the journal
   */

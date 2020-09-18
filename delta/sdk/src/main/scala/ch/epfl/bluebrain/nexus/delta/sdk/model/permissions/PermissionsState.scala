@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
-// $COVERAGE-OFF$
 /**
   * Enumeration of Permissions states.
   */
@@ -43,7 +42,6 @@ sealed trait PermissionsState extends Product with Serializable {
     */
   def toResource(id: IRI, minimum: Set[Permission]): PermissionsResource
 }
-// $COVERAGE-ON$
 
 object PermissionsState {
 

@@ -27,7 +27,7 @@ object RealmRejection {
     *
     * @param label the label of the realm
     */
-  final case class RealmAlreadyExists(label: Label) extends RealmRejection(s"Realm '${label.value}' already exists.")
+  final case class RealmAlreadyExists(label: Label) extends RealmRejection(s"Realm '$label' already exists.")
 
   /**
     * Rejection returned when attempting to create a realm with an openIdConfig that already exists.
@@ -36,22 +36,21 @@ object RealmRejection {
     * @param openIdConfig the already existing openIdConfig
     */
   final case class RealmOpenIdConfigAlreadyExists(label: Label, openIdConfig: Uri)
-      extends RealmRejection(s"Realm '${label.value}' with openIdConfig '${openIdConfig.toString()}' already exists.")
+      extends RealmRejection(s"Realm '$label' with openIdConfig '${openIdConfig.toString()}' already exists.")
 
   /**
     * Rejection returned when attempting to update a realm with an id that doesnt exist.
     *
     * @param label the label of the realm
     */
-  final case class RealmNotFound(label: Label) extends RealmRejection(s"Realm '${label.value}' not found.")
+  final case class RealmNotFound(label: Label) extends RealmRejection(s"Realm '$label' not found.")
 
   /**
     * Rejection returned when attempting to deprecate a realm that is already deprecated.
     *
     * @param label the label of the realm
     */
-  final case class RealmAlreadyDeprecated(label: Label)
-      extends RealmRejection(s"Realm '${label.value}' is already deprecated.")
+  final case class RealmAlreadyDeprecated(label: Label) extends RealmRejection(s"Realm '$label' is already deprecated.")
 
   /**
     * Rejection returned when a subject intends to perform an operation on the current realm, but either provided an

@@ -44,6 +44,7 @@ object OrganizationEvent {
     *
     * @param label       the organization label
     * @param uuid        the organization UUID
+    * @param rev         the organization revision
     * @param description an optional description of the organization
     * @param instant     the instant when this event was created
     * @param subject     the subject which created this event
@@ -51,16 +52,11 @@ object OrganizationEvent {
   final case class OrganizationCreated(
       label: Label,
       uuid: UUID,
+      rev: Long,
       description: Option[String],
       instant: Instant,
       subject: Subject
-  ) extends OrganizationEvent {
-
-    /**
-      *  the revision number that this event generates
-      */
-    val rev: Long = 1L
-  }
+  ) extends OrganizationEvent
 
   /**
     * Event representing organization update.

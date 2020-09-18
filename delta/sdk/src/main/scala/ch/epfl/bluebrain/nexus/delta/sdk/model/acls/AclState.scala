@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
-// $COVERAGE-OFF$
 /**
   * Enumeration of ACLs states.
   */
@@ -40,7 +39,6 @@ sealed trait AclState extends Product with Serializable {
     */
   def toResource: Option[AclResource]
 }
-// $COVERAGE-ON$
 
 object AclState {
 
