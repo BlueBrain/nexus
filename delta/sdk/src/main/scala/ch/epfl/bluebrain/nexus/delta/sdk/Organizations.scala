@@ -123,7 +123,7 @@ object Organizations {
     }
 
   private[delta] def evaluate(state: OrganizationState, command: OrganizationCommand)(implicit
-      clock: Clock[UIO[*]] = IO.clock
+      clock: Clock[UIO] = IO.clock
   ): IO[OrganizationRejection, OrganizationEvent] = {
 
     def create(c: CreateOrganization) =
@@ -136,7 +136,8 @@ object Organizations {
       state match {
         case Initial                      => IO.raiseError(OrganizationNotFound(c.label))
         case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(s.rev, c.rev))
-        case s: Current if s.deprecated   => IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
+        case s: Current if s.deprecated   =>
+          IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
         case s: Current                   => instant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
       }
 
