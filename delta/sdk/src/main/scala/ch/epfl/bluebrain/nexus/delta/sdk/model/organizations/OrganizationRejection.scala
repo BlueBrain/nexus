@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+
 /**
   * Enumeration of organization rejection types.
   *
@@ -14,7 +16,7 @@ object OrganizationRejection {
   /**
     * Signals the the organization already exists.
     */
-  final case class OrganizationAlreadyExists(label: String)
+  final case class OrganizationAlreadyExists(label: Label)
       extends OrganizationRejection(s"Organization with label '$label' already exists.")
 
   /**
@@ -24,9 +26,9 @@ object OrganizationRejection {
 
   object OrganizationNotFound {
     def apply(uuid: UUID): OrganizationNotFound =
-      OrganizationNotFound(s"Organization with uuid '${uuid.toString.toLowerCase()}' not found.")
+      new OrganizationNotFound(s"Organization with uuid '${uuid.toString.toLowerCase()}' not found.")
 
-    def apply(label: String): OrganizationNotFound =
+    def apply(label: Label): OrganizationNotFound =
       new OrganizationNotFound(s"Organization with label '$label' not found.")
   }
 
@@ -49,5 +51,13 @@ object OrganizationRejection {
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends OrganizationRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
+
+  /**
+    * Signals and attempt to update/deprecate an organization that is already deprecated.
+    *
+   * @param label the label of the organization
+    */
+  final case class OrganizationIsDeprecated(label: Label)
+      extends OrganizationRejection(s"Organization '$label' is deprecated.")
 
 }

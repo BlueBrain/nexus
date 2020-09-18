@@ -2,13 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.util.UUID
 
+import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.RevisionNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
 import monix.bio.{IO, UIO}
 
 /**
@@ -100,4 +105,54 @@ trait Organizations {
       params: OrganizationSearchParams = OrganizationSearchParams.none
   ): UIO[UnscoredSearchResults[OrganizationResource]]
 
+}
+
+object Organizations {
+  private[delta] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
+    (state, ev) match {
+      case (Initial, OrganizationCreated(label, uuid, _, desc, instant, identity)) =>
+        Current(label, uuid, 1L, deprecated = false, desc, instant, identity, instant, identity)
+
+      case (c: Current, OrganizationUpdated(_, _, rev, desc, instant, subject))    =>
+        c.copy(rev = rev, description = desc, updatedAt = instant, updatedBy = subject)
+
+      case (c: Current, OrganizationDeprecated(_, _, rev, instant, subject))       =>
+        c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
+
+      case (s, _)                                                                  => s
+    }
+
+  private[delta] def evaluate(state: OrganizationState, command: OrganizationCommand)(implicit
+      clock: Clock[UIO] = IO.clock
+  ): IO[OrganizationRejection, OrganizationEvent] = {
+
+    def create(c: CreateOrganization) =
+      state match {
+        case Initial => instant.map(OrganizationCreated(c.label, c.uuid, 1L, c.description, _, c.subject))
+        case _       => IO.raiseError(OrganizationAlreadyExists(c.label))
+      }
+
+    def update(c: UpdateOrganization) =
+      state match {
+        case Initial                      => IO.raiseError(OrganizationNotFound(c.label))
+        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(s.rev, c.rev))
+        case s: Current if s.deprecated   =>
+          IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
+        case s: Current                   => instant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
+      }
+
+    def deprecate(c: DeprecateOrganization) =
+      state match {
+        case Initial                      => IO.raiseError(OrganizationNotFound(c.label))
+        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(s.rev, c.rev))
+        case s: Current if s.deprecated   => IO.raiseError(OrganizationIsDeprecated(s.label))
+        case s: Current                   => instant.map(OrganizationDeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
+      }
+
+    command match {
+      case c: CreateOrganization    => create(c)
+      case c: UpdateOrganization    => update(c)
+      case c: DeprecateOrganization => deprecate(c)
+    }
+  }
 }

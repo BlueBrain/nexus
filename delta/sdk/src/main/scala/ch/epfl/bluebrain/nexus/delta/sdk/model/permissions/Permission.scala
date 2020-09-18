@@ -8,7 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalPermissionForm
   *
   * @param value a valid permission string
   */
-final case class Permission private (value: String)
+final case class Permission private (value: String) extends AnyVal {
+  override def toString: String = value
+}
 
 object Permission {
 
