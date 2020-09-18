@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.utils.{IORef, IOSemaphore}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
+import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import monix.bio.{IO, UIO}
 import org.apache.jena.iri.IRI
 

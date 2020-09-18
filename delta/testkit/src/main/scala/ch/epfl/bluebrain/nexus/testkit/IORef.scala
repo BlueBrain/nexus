@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.testkit.utils
+package ch.epfl.bluebrain.nexus.testkit
 
 import cats.data.State
 import cats.effect.concurrent.Ref

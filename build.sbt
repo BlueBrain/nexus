@@ -438,7 +438,7 @@ lazy val sdkTestkit = project
     moduleName := "delta-sdk-testkit"
   )
   .settings(shared, compilation, coverage, release)
-  .dependsOn(rdf, sdk, testkit % "test->compile")
+  .dependsOn(rdf, sdk, testkit)
   .settings(libraryDependencies ++= Seq(scalaTest % Test))
 
 lazy val service    = project
