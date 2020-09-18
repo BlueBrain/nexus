@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
 // $COVERAGE-OFF$
@@ -37,10 +37,8 @@ sealed trait AclState extends Product with Serializable {
 
   /**
     * Converts the state into a resource representation.
-    *
-   * @param initial the [[Acl]] set for the Initial state
     */
-  def toResource(initial: Acl): AclResource
+  def toResource: Option[AclResource]
 }
 // $COVERAGE-ON$
 
@@ -57,19 +55,7 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    override def toResource(initial: Acl): AclResource =
-      ResourceF(
-        id = Target.Root,
-        rev = rev,
-        types = types,
-        deprecated = deprecated,
-        createdAt = Instant.EPOCH,
-        createdBy = Identity.Anonymous,
-        updatedAt = Instant.EPOCH,
-        updatedBy = Identity.Anonymous,
-        schema = schema,
-        value = initial
-      )
+    override val toResource: Option[AclResource] = None
   }
 
   /**
@@ -92,18 +78,20 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override def toResource(initial: Acl = Acl.empty): AclResource =
-      ResourceF(
-        id = target,
-        rev = rev,
-        types = types,
-        deprecated = deprecated,
-        createdAt = createdAt,
-        createdBy = createdBy,
-        updatedAt = updatedAt,
-        updatedBy = updatedBy,
-        schema = schema,
-        value = acl
+    override val toResource: Option[AclResource] =
+      Some(
+        ResourceF(
+          id = target,
+          rev = rev,
+          types = types,
+          deprecated = deprecated,
+          createdAt = createdAt,
+          createdBy = createdBy,
+          updatedAt = updatedAt,
+          updatedBy = updatedBy,
+          schema = schema,
+          value = acl
+        )
       )
   }
 
