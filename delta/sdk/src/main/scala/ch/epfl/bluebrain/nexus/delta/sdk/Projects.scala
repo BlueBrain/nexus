@@ -126,7 +126,7 @@ object Projects {
       clock: Clock[UIO] = IO.clock
   ): IO[ProjectRejection, ProjectEvent] = {
 
-    def checkNotExitOrDeprecated(orgLabel: Label) =
+    def checkNotExistOrDeprecated(orgLabel: Label) =
       orgs.fetch(orgLabel).flatMap {
         case Some(org) if org.deprecated => IO.raiseError(OrganizationIsDeprecated(orgLabel))
         case Some(_)                     => IO.unit
@@ -137,7 +137,7 @@ object Projects {
       state match {
         case Initial =>
           // format: off
-          checkNotExitOrDeprecated(c.organizationLabel) >>
+          checkNotExistOrDeprecated(c.organizationLabel) >>
               instant.map(ProjectCreated(c.label, c.uuid, c.organizationLabel, c.organizationUuid, 1L, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
         case _       =>
@@ -154,7 +154,7 @@ object Projects {
           IO.raiseError(ProjectIsDeprecated(ProjectRef(c.organizationLabel, c.label)))
         case s: Current                   =>
           // format: off
-          checkNotExitOrDeprecated(c.organizationLabel) >>
+          checkNotExistOrDeprecated(c.organizationLabel) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }
@@ -169,7 +169,7 @@ object Projects {
           IO.raiseError(ProjectIsDeprecated(ProjectRef(c.organizationLabel, c.label)))
         case s: Current                   =>
           // format: off
-          checkNotExitOrDeprecated(c.organizationLabel) >>
+          checkNotExistOrDeprecated(c.organizationLabel) >>
               instant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }
