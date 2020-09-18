@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import cats.effect.concurrent.{Ref, Semaphore}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
@@ -9,8 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.utils.{IORef, IOSemaphore}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 import org.apache.jena.iri.IRI
 
 /**
@@ -22,8 +21,8 @@ import org.apache.jena.iri.IRI
   */
 final class PermissionsDummy private (
     override val minimum: Set[Permission],
-    journal: Ref[Task, Vector[PermissionsEvent]],
-    semaphore: Semaphore[Task]
+    journal: IORef[Vector[PermissionsEvent]],
+    semaphore: IOSemaphore
 ) extends Permissions {
 
   /**
@@ -96,42 +95,40 @@ final class PermissionsDummy private (
     eval(DeletePermissions(rev, caller))
 
   private def currentState: UIO[PermissionsState] =
-    journal.get.hideErrors.map { events =>
+    journal.get.map { events =>
       events.foldLeft[PermissionsState](Initial)(Permissions.next(minimum))
     }
 
   private def stateAt(rev: Long): IO[RevisionNotFound, PermissionsState] =
-    journal.get.hideErrors.flatMap { events =>
+    journal.get.flatMap { events =>
       if (events.size < rev) IO.raiseError(RevisionNotFound(rev, events.size.toLong))
-      else
-        events
-          .foldLeft[PermissionsState](Initial) {
-            case (state, event) if event.rev <= rev => Permissions.next(minimum)(state, event)
-            case (state, _)                         => state
-          }
-          .pure[UIO]
+      else {
+        UIO.pure(
+          events
+            .foldLeft[PermissionsState](Initial) {
+              case (state, event) if event.rev <= rev => Permissions.next(minimum)(state, event)
+              case (state, _)                         => state
+            }
+        )
+      }
     }
 
-  private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] = {
-    val result = semaphore.withPermit {
+  private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] =
+    semaphore.withPermit {
       for {
-        events     <- journal.get.hideErrors
-        current     = events.foldLeft[PermissionsState](Initial)(Permissions.next(minimum))
-        rejOrEvent <- Permissions.evaluate(minimum)(current, cmd).attempt
-        rejOrState <- rejOrEvent match {
-                        case Left(rej)    => UIO.pure(Left(rej))
-                        case Right(event) =>
-                          journal.set(events :+ event).hideErrors >> UIO.pure(
-                            Right(Permissions.next(minimum)(current, event))
-                          )
-                      }
-      } yield rejOrState
+        events <- journal.get
+        current = events.foldLeft[PermissionsState](Initial)(Permissions.next(minimum))
+        event  <- Permissions.evaluate(minimum)(current, cmd)
+        _      <- journal.set(events :+ event)
+      } yield Permissions.next(minimum)(current, event).toResource(id, minimum)
     }
-    result.hideErrors.flatMap(either => IO.fromEither(either)).map(_.toResource(id, minimum))
-  }
 }
 
 object PermissionsDummy {
+
+  /**
+    * Permissions resource id.
+    */
   val id: IRI = iri"http://localhost/v1/permissions"
 
   /**
@@ -139,11 +136,9 @@ object PermissionsDummy {
     *
     * @param minimum the minimum set of permissions
     */
-  final def apply(minimum: Set[Permission]): UIO[PermissionsDummy] = {
-    val dummy = for {
-      ref <- Ref.of[Task, Vector[PermissionsEvent]](Vector.empty)
-      sem <- Semaphore[Task](1L)
+  final def apply(minimum: Set[Permission]): UIO[PermissionsDummy] =
+    for {
+      ref <- IORef.of(Vector.empty[PermissionsEvent])
+      sem <- IOSemaphore(1L)
     } yield new PermissionsDummy(minimum, ref, sem)
-    dummy.hideErrors
-  }
 }
