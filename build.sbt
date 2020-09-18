@@ -249,7 +249,8 @@ lazy val testkit = project
       distageTestkit,
       monixBio,
       scalaTest
-    ) ++ dockerTestKit
+    ) ++ dockerTestKit,
+    addCompilerPlugin(kindProjector)
   )
 
 lazy val cli = project
@@ -424,6 +425,7 @@ lazy val sdk = project
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
       monixBio,
+      akkaActor % Test,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector)

@@ -15,8 +15,10 @@ final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E])
 
   def accepted(implicit pos: source.Position, s: Scheduler): A =
     io.attempt.runSyncUnsafe() match {
-      case Left(_)      =>
-        fail(s"Error caught of type '${E.runtimeClass.getName}', expected a successful response")
+      case Left(err)    =>
+        fail(
+          s"Error caught of type '${E.runtimeClass.getName}', expected a successful response\nMessage: ${err.toString}"
+        )
       case Right(value) =>
         value
     }

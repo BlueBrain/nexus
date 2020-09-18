@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
-import java.time.Instant
-
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
@@ -14,19 +12,12 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class AclTargetsSpec extends AnyWordSpecLike with Matchers with AclFixtures {
 
   "AclTargets" should {
-    val instant = Instant.EPOCH
-
     val types  = Set(nxv.AccessControlList)
     val schema = Latest(schemas.acls)
 
-    val userRW_groupX    = Acl(user -> Set(r, w), group -> Set(x))
-    val acl: AclResource = ResourceF(Root, 1L, types, false, instant, user, instant, anon, schema, userRW_groupX)
-
-    val groupR            = Acl(group -> Set(r))
-    val acl2: AclResource = ResourceF(Root, 2L, types, false, instant, user, instant, user, schema, groupR)
-
-    val groupX            = Acl(group -> Set(x))
-    val acl3: AclResource = ResourceF(Root, 3L, types, false, instant, user, instant, anon, schema, groupX)
+    val acl: AclResource  = ResourceF(Root, 1L, types, false, epoch, user, epoch, anon, schema, userRW_groupX)
+    val acl2: AclResource = ResourceF(Root, 2L, types, false, epoch, user, epoch, user, schema, groupR)
+    val acl3: AclResource = ResourceF(Root, 3L, types, false, epoch, user, epoch, anon, schema, groupX)
 
     "be merged with other AclTargets" in {
       val acls1    = AclTargets(acl)

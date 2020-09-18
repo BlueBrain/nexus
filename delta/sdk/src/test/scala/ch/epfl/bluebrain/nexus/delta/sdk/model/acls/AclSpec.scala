@@ -8,10 +8,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class AclSpec extends AnyWordSpecLike with Matchers with EitherValuable with AclFixtures {
 
   "An Access Control List" should {
-    val userRW_groupX = Acl(user -> Set(r, w), group -> Set(x))
-    val groupR        = Acl(group -> Set(r))
-    val anonR         = Acl(anon -> Set(r))
-    val userR_groupX  = Acl(user -> Set(r), group -> Set(x))
 
     "add another ACL" in {
       userRW_groupX ++ userR_groupX shouldEqual userRW_groupX

@@ -37,8 +37,10 @@ sealed trait AclState extends Product with Serializable {
 
   /**
     * Converts the state into a resource representation.
+    *
+   * @param initial the [[Acl]] set for the Initial state
     */
-  def toResource: AclResource
+  def toResource(initial: Acl): AclResource
 }
 // $COVERAGE-ON$
 
@@ -55,7 +57,7 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    override val toResource: AclResource =
+    override def toResource(initial: Acl): AclResource =
       ResourceF(
         id = Target.Root,
         rev = rev,
@@ -66,7 +68,7 @@ object AclState {
         updatedAt = Instant.EPOCH,
         updatedBy = Identity.Anonymous,
         schema = schema,
-        value = Acl.empty
+        value = initial
       )
   }
 
@@ -90,7 +92,7 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override val toResource: AclResource =
+    override def toResource(initial: Acl = Acl.empty): AclResource =
       ResourceF(
         id = target,
         rev = rev,

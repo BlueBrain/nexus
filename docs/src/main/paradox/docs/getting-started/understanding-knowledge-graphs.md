@@ -12,7 +12,7 @@ programmatical reasoning about concepts in the world around us.
 
 In @link:[this introduction to knowledge graphs](https://link.springer.com/chapter/10.1007%2F978-3-030-37439-6_1){ open=new } the authors 
 conclude that there is no clear definition of what a knowledge graph is. The term itself was coined in 2012 by Google
-as they @link:[introduced their Knowledge Graph](https://googleblog.blogspot.com/2012/05/introducing-knowledge-graph-things-not.html){ open=new } 
+as they @link:[introduced their Knowledge Graph](https://blog.google/products/search/introducing-knowledge-graph-things-not/){ open=new } 
 as a mean of finding more relevant related search results by linking connected data on the web. As an idea, knowledge 
 graphs are similar to @link:[semantic networks](https://en.wikipedia.org/wiki/Semantic_network){ open=new } which date 
 back to the 60's and 70's. The difference mainly lies in the size of the network, with knowledge graphs being larger. 
