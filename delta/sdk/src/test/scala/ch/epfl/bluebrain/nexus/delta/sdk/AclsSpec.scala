@@ -34,16 +34,17 @@ class AclsSpec
     val permsIri               = iri"http://example.com/permissions"
     val currentPerms           = PermissionsState.Current(1L, rwx, epoch, subject, epoch, subject).toResource(permsIri, Set.empty)
     val perms                  = IO.pure(new PermissionsDummy(currentPerms))
+    val initial                = Initial(Root, Acl(anon -> rwx))
     val current                = Current(Root, userR_groupX, 1L, epoch, Anonymous, epoch, Anonymous)
     val time2                  = Instant.ofEpochMilli(10L)
 
     "evaluating an incoming command" should {
 
       "create a new event" in {
-        evaluate(perms)(Initial, ReplaceAcl(Root, groupR, 0L, subject)).accepted shouldEqual
+        evaluate(perms)(initial, ReplaceAcl(Root, groupR, 0L, subject)).accepted shouldEqual
           AclReplaced(Root, groupR, 1L, epoch, subject)
 
-        evaluate(perms)(Initial, AppendAcl(Root, groupR, 0L, subject)).accepted shouldEqual
+        evaluate(perms)(initial, AppendAcl(Root, groupR, 0L, subject)).accepted shouldEqual
           AclAppended(Root, groupR, 1L, epoch, subject)
 
         evaluate(perms)(current, ReplaceAcl(Root, userW, 1L, subject)).accepted shouldEqual
@@ -61,9 +62,9 @@ class AclsSpec
 
       "reject with IncorrectRev" in {
         val list = List(
-          Initial -> ReplaceAcl(Root, groupR, 1L, subject),
+          initial -> ReplaceAcl(Root, groupR, 1L, subject),
           current -> ReplaceAcl(Root, groupR, 2L, subject),
-          Initial -> AppendAcl(Root, groupR, 1L, subject),
+          initial -> AppendAcl(Root, groupR, 1L, subject),
           current -> AppendAcl(Root, groupR, 2L, subject),
           current -> SubtractAcl(Root, groupR, 2L, subject),
           current -> DeleteAcl(Root, 2L, subject)
@@ -79,8 +80,8 @@ class AclsSpec
 
       "reject with AclNotFound" in {
         val list = List(
-          Initial -> SubtractAcl(Root, groupR, 0L, subject),
-          Initial -> DeleteAcl(Root, 0L, subject)
+          initial -> SubtractAcl(Root, groupR, 0L, subject),
+          initial -> DeleteAcl(Root, 0L, subject)
         )
         forAll(list) {
           case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[AclNotFound]
@@ -90,8 +91,8 @@ class AclsSpec
       "reject with AclCannotContainEmptyPermissionCollection" in {
         val someEmptyPerms = groupR ++ Acl(user -> Set.empty[Permission])
         val list           = List(
-          Initial -> ReplaceAcl(Root, someEmptyPerms, 0L, subject),
-          Initial -> AppendAcl(Root, someEmptyPerms, 0L, subject),
+          initial -> ReplaceAcl(Root, someEmptyPerms, 0L, subject),
+          initial -> AppendAcl(Root, someEmptyPerms, 0L, subject),
           current -> ReplaceAcl(Root, someEmptyPerms, 1L, subject),
           current -> AppendAcl(Root, someEmptyPerms, 1L, subject),
           current -> SubtractAcl(Root, someEmptyPerms, 1L, subject)
@@ -114,8 +115,8 @@ class AclsSpec
       "reject with UnknownPermissions" in {
         val unknownPerms = Acl(group -> Set(Permission.unsafe("other")))
         val list         = List(
-          Initial -> ReplaceAcl(Root, unknownPerms, 0L, subject),
-          Initial -> AppendAcl(Root, unknownPerms, 0L, subject),
+          initial -> ReplaceAcl(Root, unknownPerms, 0L, subject),
+          initial -> AppendAcl(Root, unknownPerms, 0L, subject),
           current -> ReplaceAcl(Root, unknownPerms, 1L, subject),
           current -> AppendAcl(Root, unknownPerms, 1L, subject)
         )
@@ -129,7 +130,7 @@ class AclsSpec
     "producing next state" should {
 
       "create a new AclReplaced state" in {
-        next(Initial, AclReplaced(Root, userW, 1L, time2, subject)) shouldEqual
+        next(initial, AclReplaced(Root, userW, 1L, time2, subject)) shouldEqual
           Current(Root, userW, 1L, time2, subject, time2, subject)
 
         next(current, AclReplaced(Root, userW, 1L, time2, subject)) shouldEqual
@@ -137,7 +138,7 @@ class AclsSpec
       }
 
       "create new AclAppended state" in {
-        next(Initial, AclAppended(Root, userW, 1L, time2, subject)) shouldEqual
+        next(initial, AclAppended(Root, userW, 1L, time2, subject)) shouldEqual
           Current(Root, userW, 1L, time2, subject, time2, subject)
 
         next(current, AclAppended(Root, userW, 1L, time2, subject)) shouldEqual
@@ -145,14 +146,14 @@ class AclsSpec
       }
 
       "create new AclSubtracted state" in {
-        next(Initial, AclSubtracted(Root, groupX, 1L, epoch, subject)) shouldEqual Initial
+        next(initial, AclSubtracted(Root, groupX, 1L, epoch, subject)) shouldEqual initial
 
         next(current, AclSubtracted(Root, groupX, 1L, time2, subject)) shouldEqual
           Current(Root, userR, 1L, epoch, Anonymous, time2, subject)
       }
 
       "create new AclDeleted state" in {
-        next(Initial, AclDeleted(Root, 1L, epoch, subject)) shouldEqual Initial
+        next(initial, AclDeleted(Root, 1L, epoch, subject)) shouldEqual initial
 
         next(current, AclDeleted(Root, 1L, time2, subject)) shouldEqual
           Current(Root, Acl.empty, 1L, epoch, Anonymous, time2, subject)

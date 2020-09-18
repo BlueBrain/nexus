@@ -122,22 +122,22 @@ object Acls {
   private[delta] def next(state: AclState, event: AclEvent): AclState = {
     def replaced(e: AclReplaced): AclState     =
       state match {
-        case Initial    => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case _: Initial => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
         case c: Current => c.copy(acl = e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     def appended(e: AclAppended): AclState     =
       state match {
-        case Initial    => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case _: Initial => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
         case c: Current => c.copy(acl = c.acl ++ e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     def subtracted(e: AclSubtracted): AclState =
       state match {
-        case Initial    => Initial
+        case s: Initial => s
         case c: Current => c.copy(acl = c.acl -- e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     def deleted(e: AclDeleted): AclState       =
       state match {
-        case Initial    => Initial
+        case s: Initial => s
         case c: Current => c.copy(acl = Acl.empty, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     event match {
@@ -160,11 +160,11 @@ object Acls {
 
     def replace(c: ReplaceAcl)   =
       state match {
-        case Initial if c.rev != 0                                        =>
+        case _: Initial if c.rev != 0                                     =>
           IO.raiseError(IncorrectRev(c.target, c.rev, 0L))
-        case Initial if c.acl.hasEmptyPermissions                         =>
+        case _: Initial if c.acl.hasEmptyPermissions                      =>
           IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
-        case Initial                                                      =>
+        case _: Initial                                                   =>
           acceptChecking(c.acl)(AclReplaced(c.target, c.acl, 1L, _, c.subject))
         case s: Current if !s.acl.isEmpty && c.rev != s.rev               =>
           IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
@@ -177,11 +177,11 @@ object Acls {
       }
     def append(c: AppendAcl)     =
       state match {
-        case Initial if c.rev != 0L                                                  =>
+        case _: Initial if c.rev != 0L                                               =>
           IO.raiseError(IncorrectRev(c.target, c.rev, 0L))
-        case Initial if c.acl.hasEmptyPermissions                                    =>
+        case _: Initial if c.acl.hasEmptyPermissions                                 =>
           IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
-        case Initial                                                                 =>
+        case _: Initial                                                              =>
           acceptChecking(c.acl)(AclAppended(c.target, c.acl, c.rev + 1, _, c.subject))
         case s: Current if s.acl.permissions.nonEmpty && c.rev != s.rev              =>
           IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
@@ -196,7 +196,7 @@ object Acls {
       }
     def subtract(c: SubtractAcl) =
       state match {
-        case Initial                                 =>
+        case _: Initial                              =>
           IO.raiseError(AclNotFound(c.target))
         case s: Current if c.rev != s.rev            =>
           IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
@@ -209,7 +209,7 @@ object Acls {
       }
     def delete(c: DeleteAcl)     =
       state match {
-        case Initial                          => IO.raiseError(AclNotFound(c.target))
+        case _: Initial                       => IO.raiseError(AclNotFound(c.target))
         case s: Current if c.rev != s.rev     => IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
         case s: Current if s.acl == Acl.empty => IO.raiseError(AclIsEmpty(c.target))
         case _: Current                       => instant.map(AclDeleted(c.target, c.rev + 1, _, c.subject))

@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
-// $COVERAGE-OFF$
 /**
   * Enumeration of ACLs states.
   */
@@ -38,28 +37,24 @@ sealed trait AclState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     *
-   * @param initial the [[Acl]] set for the Initial state
     */
-  def toResource(initial: Acl): AclResource
+  def toResource: AclResource
 }
-// $COVERAGE-ON$
 
 object AclState {
 
   /**
-    * Initial state type.
+    * Initial state for the ACL.
+    *
+    * @param target the target location for the ACL
+    * @param acl    the Access Control List
     */
-  type Initial = Initial.type
-
-  /**
-    * Initial state for the permission set.
-    */
-  final case object Initial extends AclState {
+  final case class Initial(target: Target, acl: Acl) extends AclState {
     override val rev: Long = 0L
 
-    override def toResource(initial: Acl): AclResource =
+    override val toResource: AclResource =
       ResourceF(
-        id = Target.Root,
+        id = target,
         rev = rev,
         types = types,
         deprecated = deprecated,
@@ -68,7 +63,7 @@ object AclState {
         updatedAt = Instant.EPOCH,
         updatedBy = Identity.Anonymous,
         schema = schema,
-        value = initial
+        value = acl
       )
   }
 
@@ -92,7 +87,7 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override def toResource(initial: Acl = Acl.empty): AclResource =
+    override val toResource: AclResource =
       ResourceF(
         id = target,
         rev = rev,
