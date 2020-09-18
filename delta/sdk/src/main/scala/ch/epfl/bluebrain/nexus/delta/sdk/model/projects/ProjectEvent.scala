@@ -18,7 +18,7 @@ sealed trait ProjectEvent extends Product with Serializable {
   def label: Label
 
   /**
-    * @return the project unique identifier
+    * @return the project uuid
     */
   def uuid: UUID
 
@@ -54,13 +54,14 @@ object ProjectEvent {
     * Evidence that a project has been created.
     *
     * @param label             the project label
-    * @param uuid              the project unique identifier
+    * @param uuid              the project uuid
     * @param organizationLabel the parent organization label
     * @param organizationUuid  the parent organization uuid
+    * @param rev               the project revision
     * @param description       an optional project description
     * @param apiMappings       the project API mappings
-    * @param base              the base IRI for generated resource IDs
-    * @param vocab             an optional vocabulary for resources with no context
+    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param instant           the timestamp associated to this event
     * @param subject           the identity associated to this event
     */
@@ -69,31 +70,26 @@ object ProjectEvent {
       uuid: UUID,
       organizationLabel: Label,
       organizationUuid: UUID,
+      rev: Long,
       description: Option[String],
       apiMappings: Map[String, IRI],
-      base: IRI,
-      vocab: IRI,
+      base: PrefixIRI,
+      vocab: PrefixIRI,
       instant: Instant,
       subject: Subject
-  ) extends ProjectEvent {
-
-    /**
-      *  the revision number that this event generates
-      */
-    val rev: Long = 1L
-  }
+  ) extends ProjectEvent
 
   /**
     * Evidence that a project has been updated.
     *
     * @param label             the project label
-    * @param uuid              the project unique identifier
+    * @param uuid              the project uuid
     * @param organizationLabel the parent organization label
     * @param organizationUuid  the parent organization uuid
     * @param description       an optional project description
     * @param apiMappings       the project API mappings
-    * @param base              the base IRI for generated resource IDs
-    * @param vocab             an optional vocabulary for resources with no context
+    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param rev               the revision number that this event generates
     * @param instant           the timestamp associated to this event
     * @param subject           the identity associated to this event
@@ -106,8 +102,8 @@ object ProjectEvent {
       rev: Long,
       description: Option[String],
       apiMappings: Map[String, IRI],
-      base: IRI,
-      vocab: IRI,
+      base: PrefixIRI,
+      vocab: PrefixIRI,
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent

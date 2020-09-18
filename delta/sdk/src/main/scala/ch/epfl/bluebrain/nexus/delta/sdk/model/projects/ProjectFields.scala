@@ -7,12 +7,12 @@ import org.apache.jena.iri.IRI
   *
   * @param description an optional description
   * @param apiMappings the API mappings
-  * @param base        an optional base IRI for generated resource IDs
-  * @param vocab       an optional vocabulary for resources with no context
+  * @param base        an optional base IRI for generated resource IDs ending with ''/'' or ''#''
+  * @param vocab       an optional vocabulary for resources with no context ending with ''/'' or ''#''
   */
 final case class ProjectFields(
     description: Option[String],
     apiMappings: Map[String, IRI],
-    base: Option[IRI],
-    vocab: Option[IRI]
+    base: Option[PrefixIRI],
+    vocab: Option[PrefixIRI]
 )

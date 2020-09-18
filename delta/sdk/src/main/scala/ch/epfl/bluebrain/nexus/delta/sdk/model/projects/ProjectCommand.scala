@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
-import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
@@ -33,11 +32,6 @@ sealed trait ProjectCommand extends Product with Serializable {
   def organizationUuid: UUID
 
   /**
-    * @return the timestamp associated to this command
-    */
-  def instant: Instant
-
-  /**
     * @return the identity associated to this command
     */
   def subject: Subject
@@ -54,9 +48,8 @@ object ProjectCommand {
     * @param organizationUuid  the parent organization uuid
     * @param description       an optional project description
     * @param apiMappings       the API mappings
-    * @param base              the base IRI for generated resource IDs
-    * @param vocab             an optional vocabulary for resources with no context
-    * @param instant           the timestamp associated to this command
+    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param subject           the identity associated to this command
     */
   final case class CreateProject(
@@ -66,9 +59,8 @@ object ProjectCommand {
       organizationUuid: UUID,
       description: Option[String],
       apiMappings: Map[String, IRI],
-      base: IRI,
-      vocab: IRI,
-      instant: Instant,
+      base: PrefixIRI,
+      vocab: PrefixIRI,
       subject: Subject
   ) extends ProjectCommand
 
@@ -81,10 +73,9 @@ object ProjectCommand {
     * @param organizationUuid  the parent organization uuid
     * @param description       an optional project description
     * @param apiMappings       the API mappings
-    * @param base              the base IRI for generated resource IDs
-    * @param vocab             an optional vocabulary for resources with no context
+    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param rev               the last known revision of the project
-    * @param instant           the timestamp associated to this command
     * @param subject           the identity associated to this command
     */
   final case class UpdateProject(
@@ -94,10 +85,9 @@ object ProjectCommand {
       organizationUuid: UUID,
       description: Option[String],
       apiMappings: Map[String, IRI],
-      base: IRI,
-      vocab: IRI,
+      base: PrefixIRI,
+      vocab: PrefixIRI,
       rev: Long,
-      instant: Instant,
       subject: Subject
   ) extends ProjectCommand
 
@@ -109,7 +99,6 @@ object ProjectCommand {
     * @param organizationLabel the parent organization label
     * @param organizationUuid  the parent organization uuid
     * @param rev               the last known revision of the project
-    * @param instant           the timestamp associated to this command
     * @param subject           the identity associated to this command
     */
   final case class DeprecateProject(
@@ -118,7 +107,6 @@ object ProjectCommand {
       organizationLabel: Label,
       organizationUuid: UUID,
       rev: Long,
-      instant: Instant,
       subject: Subject
   ) extends ProjectCommand
 }
