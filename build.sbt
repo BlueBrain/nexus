@@ -439,7 +439,7 @@ lazy val sdkTestkit = project
   )
   .settings(shared, compilation, coverage, release)
   .dependsOn(rdf, sdk, testkit)
-  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+  .settings(libraryDependencies ++= Seq(akkaActor % Test, scalaTest % Test))
 
 lazy val service    = project
   .in(file("delta/service"))
