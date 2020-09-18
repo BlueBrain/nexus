@@ -1,24 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import monix.bio.Task
 
 trait PluginDef {
 
   /**
-    * Plugin name.
+    * Plugin information
     */
-  def name: Name
-
-  /**
-    * Plugin version.
-    */
-  def version: String
+  def info: PluginInfo
 
   /**
     * Plugin dependencies.
     */
-  def dependencies: Set[PluginDef]
+  def dependencies: Set[PluginInfo]
 
   /**
     * Initialize the plugin.
