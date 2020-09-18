@@ -44,4 +44,10 @@ final class IriOpts(private val iri: IRI) extends AnyVal {
     */
   def stripPrefix(prefix: String): String =
     iri.toString.stripPrefix(prefix)
+
+  /**
+   * An IRI is a prefix mapping if it ends with `/` or `#`
+   */
+  def isPrefixMapping: Boolean =
+    iri.toString.endsWith("/") || iri.toString.endsWith("#")
 }
