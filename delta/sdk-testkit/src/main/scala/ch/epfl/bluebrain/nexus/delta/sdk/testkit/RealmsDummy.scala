@@ -106,12 +106,11 @@ final class RealmsDummy private (
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
     semaphore.withPermit {
       for {
-        labelsEvents <- journal.get
-        state         = labelsEvents.get(cmd.label).fold[RealmState](Initial)(_.foldLeft[RealmState](Initial)(Realms.next))
-        event        <- Realms.evaluate(wellKnown)(state, cmd)
-        _            <-
-          journal.set(labelsEvents.updatedWith(cmd.label)(_.fold(Some(Vector(event)))(events => Some(events :+ event))))
-        res          <- IO.fromEither(Realms.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
+        lbEvents <- journal.get
+        state     = lbEvents.get(cmd.label).fold[RealmState](Initial)(_.foldLeft[RealmState](Initial)(Realms.next))
+        event    <- Realms.evaluate(wellKnown)(state, cmd)
+        _        <- journal.set(lbEvents.updatedWith(cmd.label)(_.fold(Some(Vector(event)))(events => Some(events :+ event))))
+        res      <- IO.fromEither(Realms.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
       } yield res
     }
 }
