@@ -4,6 +4,7 @@ import java.time.Instant
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
@@ -69,14 +70,21 @@ trait Acls {
     fetchSelf(target).map(_.fold(Acl.empty)(_.value))
 
   /**
-    * Fetches the [[AclTargets]] of the provided ''target'' location with some filtering options.
+    * Fetches the [[AclTargets]] of the provided ''target'' location.
     *
     * @param target    the target location where the ACLs are going to be looked up
     * @param ancestors flag to decide whether or not ancestor target locations should be included in the response
-    * @param self      flag to decide whether or not ancestor from other identities than the provided ones should be included in the response
+    */
+  def list(target: Target, ancestors: Boolean): UIO[AclTargets]
+
+  /**
+    * Fetches the [[AclTargets]] of the provided ''target'' location with identities present in the ''caller''.
+    *
+   * @param target    the target location where the ACLs are going to be looked up
+    * @param ancestors flag to decide whether or not ancestor target locations should be included in the response
     * @param caller    the caller that contains the provided identities
     */
-  def list(target: Target, ancestors: Boolean, self: Boolean)(implicit caller: Caller): UIO[AclTargets]
+  def listSelf(target: Target, ancestors: Boolean)(implicit caller: Caller): UIO[AclTargets]
 
   /**
     * Overrides ''acl'' on a ''target''.
@@ -85,7 +93,7 @@ trait Acls {
     * @param acl    the identity to permissions mapping to replace
     * @param rev    the last known revision of the resource
     */
-  def replace(target: Target, acl: Acl, rev: Long): IO[AclRejection, AclResource]
+  def replace(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Appends ''acl'' on a ''target''.
@@ -94,7 +102,7 @@ trait Acls {
     * @param acl    the identity to permissions mapping to append
     * @param rev    the last known revision of the resource
     */
-  def append(target: Target, acl: Acl, rev: Long): IO[AclRejection, AclResource]
+  def append(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Subtracts ''acl'' on a ''target''.
@@ -103,7 +111,7 @@ trait Acls {
     * @param acl    the identity to permissions mapping to subtract
     * @param rev    the last known revision of the resource
     */
-  def subtract(target: Target, acl: Acl, rev: Long): IO[AclRejection, AclResource]
+  def subtract(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Delete all ''acl'' on a ''target''.
@@ -111,7 +119,7 @@ trait Acls {
     * @param target the target location for the ACL
     * @param rev    the last known revision of the resource
     */
-  def delete(target: Target, rev: Long): IO[AclRejection, AclResource]
+  def delete(target: Target, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   private def filterSelf(resourceOpt: Option[AclResource])(implicit caller: Caller): Option[AclResource] =
     resourceOpt.map(res => res.map(_.filter(caller.identities)))

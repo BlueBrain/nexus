@@ -32,20 +32,26 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
   /**
     * @return a collapsed Set of [[Permission]] from all the identities
     */
-  def permissions: Set[Permission]           =
+  def permissions: Set[Permission] =
     value.foldLeft(Set.empty[Permission]) { case (acc, (_, perms)) => acc ++ perms }
 
   /**
     * @return ''true'' if the underlying map is empty or if any permission set is empty
     */
-  def hasEmptyPermissions: Boolean           =
+  def hasEmptyPermissions: Boolean =
     value.isEmpty || value.exists { case (_, perms) => perms.isEmpty }
 
   /**
     * @return ''true'' if the underlying map is empty or if every permission set is empty
     */
-  def isEmpty: Boolean                       =
+  def isEmpty: Boolean             =
     value.isEmpty || value.forall { case (_, perms) => perms.isEmpty }
+
+  /**
+    * @return ''true'' if the underlying map is not empty and every permission set is not empty
+    */
+  def nonEmpty: Boolean            =
+    !isEmpty
 
   /**
     * @return a new [[Acl]] without the identities that have empty permission sets

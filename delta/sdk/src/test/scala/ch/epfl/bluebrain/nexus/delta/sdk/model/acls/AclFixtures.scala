@@ -22,6 +22,7 @@ trait AclFixtures extends EitherValuable with Inspectors {
   val epoch                = Instant.EPOCH
   val userR                = Acl(user -> Set(r))
   val userW                = Acl(user -> Set(w))
+  val userRW               = Acl(user -> Set(r, w))
   val userR_groupX         = Acl(user -> Set(r), group -> Set(x))
   val userRW_groupX        = Acl(user -> Set(r, w), group -> Set(x))
   val groupR               = Acl(group -> Set(r))

@@ -22,7 +22,7 @@ class AclTargetsSpec extends AnyWordSpecLike with Matchers with AclFixtures {
     "be merged with other AclTargets" in {
       val acls1    = AclTargets(acl)
       val acls2    = AclTargets(acl2, acl3.copy(id = Project(org, proj)))
-      val expected = AclTargets(acl.as(Acl(user -> Set(r, w), group -> Set(r, x))), acl3.copy(id = Project(org, proj)))
+      val expected = AclTargets(acl2.as(Acl(user -> Set(r, w), group -> Set(r, x))), acl3.copy(id = Project(org, proj)))
 
       acls1 ++ acls2 shouldEqual expected
 
@@ -39,6 +39,16 @@ class AclTargetsSpec extends AnyWordSpecLike with Matchers with AclFixtures {
           acl.copy(id = Project(org, proj), value = Acl(user -> Set(r, w)))
         )
       acls.filter(Set(user, group)) shouldEqual acls
+    }
+
+    "subtract an ACL" in {
+      (AclTargets(acl) - acl3) shouldEqual AclTargets(acl3.copy(value = userRW))
+      (AclTargets(acl) - acl) shouldEqual AclTargets.empty
+    }
+
+    "subtract a Target location" in {
+      val acls = AclTargets(acl2, acl3.copy(id = Project(org, proj)))
+      (acls - Project(org, proj)) shouldEqual AclTargets(acl2)
     }
 
     "remove empty ACL" in {
