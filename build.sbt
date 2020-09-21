@@ -286,49 +286,13 @@ lazy val cli = project
   )
 
 lazy val sourcing = project
-  .in(file("sourcing"))
-  .dependsOn(testkit % "test->compile")
-  .settings(name := "sourcing", moduleName := "sourcing")
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .settings(
-    libraryDependencies ++= Seq(
-      akkaActor,
-      akkaCluster,
-      akkaClusterSharding,
-      akkaPersistence,
-      akkaPersistenceCassandra,
-      akkaPersistenceQuery,
-      catsCore,
-      catsEffectRetry,
-      catsEffect,
-      circeCore,
-      circeGenericExtras,
-      circeParser,
-      pureconfig,
-      scalaLogging,
-      akkaPersistenceInMem % Test,
-      akkaSlf4j            % Test,
-      akkaTestKit          % Test,
-      akkaHttpTestKit      % Test,
-      distageDocker        % Test,
-      distageTestkit       % Test,
-      kryo                 % Test,
-      logback              % Test,
-      scalaTest            % Test,
-      mockito              % Test,
-      pureconfig           % Test
-    ),
-    Test / fork          := true
-  )
-
-lazy val sourcingNew = project
   .in(file("delta/sourcing"))
   .dependsOn(testkit % "test->compile")
   .settings(
     name       := "delta-sourcing",
     moduleName := "delta-sourcing"
   )
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageMinimum      := 70,
     libraryDependencies ++= Seq(
@@ -363,7 +327,7 @@ lazy val sourcingNew = project
 lazy val rdf = project
   .in(file("delta/rdf"))
   .dependsOn(testkit % "test->compile")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     name       := "delta-rdf",
     moduleName := "delta-rdf"
@@ -420,7 +384,7 @@ lazy val sdk = project
     moduleName := "delta-sdk"
   )
   .dependsOn(rdf, testkit % "test->compile")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
@@ -437,9 +401,9 @@ lazy val sdkTestkit = project
     name       := "delta-sdk-testkit",
     moduleName := "delta-sdk-testkit"
   )
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(rdf, sdk, testkit)
-  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+  .settings(libraryDependencies ++= Seq(akkaActor % Test, scalaTest % Test))
 
 lazy val service    = project
   .in(file("delta/service"))
@@ -447,8 +411,8 @@ lazy val service    = project
     name       := "delta-service",
     moduleName := "delta-service"
   )
-  .settings(shared, compilation, coverage, release)
-  .dependsOn(sourcingNew, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(libraryDependencies ++= Seq(scalaTest % Test))
 
 lazy val app        = project
@@ -457,8 +421,8 @@ lazy val app        = project
     name       := "delta-app",
     moduleName := "delta-app"
   )
-  .settings(shared, compilation, coverage, release)
-  .dependsOn(sourcingNew, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(libraryDependencies ++= Seq(scalaTest % Test))
 
 lazy val cargo      = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
@@ -592,7 +556,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, sourcing, rdfOld, testkit, storage, delta)
+  .aggregate(docs, cli, testkit, storage, app)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -755,7 +719,8 @@ inThisBuild(
     developers                    := List(
       Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("umbreak", "Didac Montero Mendez", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-      Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
+      Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+      Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
     ),
     // These are the sbt-release-early settings to configure
     releaseEarlyWith              := BintrayPublisher,

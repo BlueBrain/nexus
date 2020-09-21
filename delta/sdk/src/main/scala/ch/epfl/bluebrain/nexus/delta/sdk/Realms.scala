@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.http.scaladsl.model.Uri
 import cats.effect.Clock
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
@@ -28,7 +29,12 @@ trait Realms {
     * @param openIdConfig the address of the openid configuration
     * @param logo         an optional realm logo
     */
-  def create(label: Label, name: Name, openIdConfig: Uri, logo: Option[Uri]): IO[RealmRejection, RealmResource]
+  def create(
+      label: Label,
+      name: Name,
+      openIdConfig: Uri,
+      logo: Option[Uri]
+  )(implicit caller: Subject): IO[RealmRejection, RealmResource]
 
   /**
     * Updates an existing realm using the provided configuration.
@@ -45,7 +51,7 @@ trait Realms {
       name: Name,
       openIdConfig: Uri,
       logo: Option[Uri]
-  ): IO[RealmRejection, RealmResource]
+  )(implicit caller: Subject): IO[RealmRejection, RealmResource]
 
   /**
     * Deprecates an existing realm. A deprecated realm prevents clients from authenticating.
@@ -53,7 +59,7 @@ trait Realms {
     * @param label the id of the realm
     * @param rev   the revision of the realm
     */
-  def deprecate(label: Label, rev: Long): IO[RealmRejection, RealmResource]
+  def deprecate(label: Label, rev: Long)(implicit caller: Subject): IO[RealmRejection, RealmResource]
 
   /**
     * Fetches a realm.

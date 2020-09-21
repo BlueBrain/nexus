@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
 
-import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -10,15 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.duration.TimeUnit
-
-class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues with TestHelpers {
+class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues with TestHelpers with IOFixedClock {
 
   val minimum = Set(
     Permission.unsafe("acls/read"),
@@ -52,14 +48,10 @@ class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues w
   val perm3: Permission = Permission.unsafe(genString())
   val perm4: Permission = Permission.unsafe(genString())
 
-  val instant2L: Instant        = Instant.ofEpochMilli(2L)
+  val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
   implicit val scheduler: Scheduler = Scheduler.global
-  implicit val fixed2L: Clock[UIO]  = new Clock[UIO] {
-    override def realTime(unit: TimeUnit): UIO[Long]  = IO.pure(unit.convert(2L, unit))
-    override def monotonic(unit: TimeUnit): UIO[Long] = IO.pure(unit.convert(2L, unit))
-  }
 
   val dummy: Permissions = PermissionsDummy(minimum).accepted
 

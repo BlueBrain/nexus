@@ -25,72 +25,32 @@ final class PermissionsDummy private (
     semaphore: IOSemaphore
 ) extends Permissions {
 
-  /**
-    * @return the permissions singleton persistence id
-    */
   override val persistenceId: String = "permissions"
 
-  /**
-    * @return the current permissions as a resource
-    */
   override def fetch: UIO[PermissionsResource] =
     currentState.map(_.toResource(id, minimum))
 
-  /**
-    * @param rev the permissions revision
-    * @return the permissions as a resource at the specified revision
-    */
   override def fetchAt(rev: Long): IO[RevisionNotFound, PermissionsResource] =
     stateAt(rev).map(_.toResource(id, minimum))
 
-  /**
-    * Replaces the current collection of permissions with the provided collection.
-    *
-    * @param permissions the permissions to set
-    * @param rev         the last known revision of the resource
-    * @param caller      a reference to the subject that initiated the action
-    * @return the new resource or a description of why the change was rejected
-    */
   override def replace(
       permissions: Set[Permission],
       rev: Long
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(ReplacePermissions(rev, permissions, caller))
 
-  /**
-    * Appends the provided permissions to the current collection of permissions.
-    *
-    * @param permissions the permissions to append
-    * @param rev         the last known revision of the resource
-    * @return the new resource or a description of why the change was rejected
-    */
   override def append(
       permissions: Set[Permission],
       rev: Long
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(AppendPermissions(rev, permissions, caller))
 
-  /**
-    * Subtracts the provided permissions to the current collection of permissions.
-    *
-    * @param permissions the permissions to subtract
-    * @param rev         the last known revision of the resource
-    * @param caller      a reference to the subject that initiated the action
-    * @return the new resource or a description of why the change was rejected
-    */
   override def subtract(
       permissions: Set[Permission],
       rev: Long
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(SubtractPermissions(rev, permissions, caller))
 
-  /**
-    * Removes all but the minimum permissions from the collection of permissions.
-    *
-    * @param rev    the last known revision of the resource
-    * @param caller a reference to the subject that initiated the action
-    * @return the new resource or a description of why the change was rejected
-    */
   override def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(DeletePermissions(rev, caller))
 

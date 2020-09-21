@@ -22,14 +22,12 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v4
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v5
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v4
+      - uses: olafurpg/setup-scala@v5
         with:
-          java-version: adopt@1.11
-      - name: Static Analysis
+          java-version: adopt@1.8-0
+      - name: StaticAnalysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
@@ -39,11 +37,10 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Build Image
+      - uses: actions/checkout@v2
+      - name: Build image
         run: docker build ./storage/permissions-fixer --tag=nexus/fixer
-      - name: Tests
+      - name: Compile and run tests
         run: docker run nexus/fixer
   publish:
     if: github.event_name == 'push'
@@ -56,23 +53,54 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v4
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v5
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v4
         with:
-          java-version: adopt@1.11
-      - name: Publish To Bintray
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
+          restore-keys: ${{ runner.os }}-coursier-scala-
+      - uses: olafurpg/setup-scala@v5
+        with:
+          java-version: adopt@1.8-0
+      - name: PublishToBintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
-      - name: Publish To DockerHub
+      - name: PublishToDockerHub
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" docker:publishLocal
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-storage:latest
-      - name: Record Coverage
+      - name: RecordCoverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
-      - name: Report Coverage
-        uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+  release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    env:
+      CI: true
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
+    steps:
+      - name: Checkout
+      - uses: actions/checkout@v2
+      - uses: coursier/cache-action@v4
+      - uses: olafurpg/setup-scala@v5
+        with:
+          java-version: adopt@1.8-0
+      - name: SetVersion
+        run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
+      - name: PublishToBintray
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
+      - name: PublishToDockerHub
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" ";set Docker/version := \"${{ env.VERSION }}\"; docker:publishLocal"
+          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
+          docker push bluebrain/nexus-storage:${{ env.VERSION }}
+      - name: RecordCoverage
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
+      - uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

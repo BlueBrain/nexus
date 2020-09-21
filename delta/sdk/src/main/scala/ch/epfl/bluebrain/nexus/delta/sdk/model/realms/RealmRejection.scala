@@ -138,4 +138,11 @@ object RealmRejection {
   final case class NoValidKeysFound(document: Uri)
       extends RealmRejection(s"Failed to find a valid RSA JWK key at '${document.toString()}'.")
 
+  /**
+    * Rejection returned when the returned state is the initial state after a Realm.evaluation plus a Realm.next
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    */
+  final case class UnexpectedInitialState(label: Label)
+      extends RealmRejection(s"Unexpected initial state for realm '$label'.")
+
 }
