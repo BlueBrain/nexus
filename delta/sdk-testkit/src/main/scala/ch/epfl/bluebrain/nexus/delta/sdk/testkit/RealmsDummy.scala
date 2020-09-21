@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmCommand, RealmEvent, RealmRejection, RealmState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmCommand, RealmEvent, RealmRejection, RealmState, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
@@ -61,7 +61,7 @@ final class RealmsDummy private (
     stateAt(label, rev).map(_.flatMap(_.toResource))
 
   override def list(pagination: FromPagination, params: RealmSearchParams): UIO[UnscoredSearchResults[RealmResource]] =
-    cache.get.hideErrors.map { resources =>
+    cache.get.map { resources =>
       val filtered = resources.values
         .filter { resource =>
           params.rev.forall(_ == resource.rev) &&
@@ -78,18 +78,18 @@ final class RealmsDummy private (
     }
 
   private def setToCache(resource: RealmResource): UIO[RealmResource]         =
-    cache.update(_ + (resource.id -> resource)).hideErrors.as(resource)
+    cache.update(_ + (resource.id -> resource)).as(resource)
 
   private def deprecateFromCache(resource: RealmResource): UIO[RealmResource] =
-    cache.update(_.updatedWith(resource.id)(_.as(resource))).hideErrors.as(resource)
+    cache.update(_.updatedWith(resource.id)(_.as(resource))).as(resource)
 
   private def currentState(label: Label): UIO[Option[RealmState]] =
-    journal.get.hideErrors.map { labelsEvents =>
+    journal.get.map { labelsEvents =>
       labelsEvents.get(label).map(_.foldLeft[RealmState](Initial)(Realms.next))
     }
 
   private def stateAt(label: Label, rev: Long): IO[RevisionNotFound, Option[RealmState]] =
-    journal.get.hideErrors.flatMap { labelsEvents =>
+    journal.get.flatMap { labelsEvents =>
       labelsEvents.get(label).traverse { events =>
         if (events.size < rev)
           IO.raiseError(RevisionNotFound(rev, events.size.toLong))
@@ -125,10 +125,18 @@ object RealmsDummy {
     *
     * @param wellKnown the well known configuration for an OIDC provider resolver
     */
-  final def apply(wellKnown: WellKnownResolver)(implicit clock: Clock[UIO] = IO.clock): UIO[RealmsDummy] =
+  final def apply(wellKnown: WellKnownResolver)(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
     for {
       journalRef <- IORef.of[RealmsJournal](Map.empty)
       cacheRef   <- IORef.of[RealmsCache](Map.empty)
       sem        <- IOSemaphore(1L)
     } yield new RealmsDummy(wellKnown, journalRef, cacheRef, sem)
+
+  /**
+    * Creates a new dummy Realms implementation.
+    *
+   * @param wellKnownMap a map where the keys are the OIDC well-known uris and the values are the resolved [[WellKnown]]
+    */
+  final def apply(wellKnownMap: Map[Uri, WellKnown])(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
+    apply(new WellKnownResolverDummy(wellKnownMap))
 }

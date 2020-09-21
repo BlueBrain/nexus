@@ -48,7 +48,7 @@ class RealmsDummySpec
   val gitlabWk                 = WellKnown(gitlab.value, gt, glKeys, glOpenId, s"$glBase/token", s"$glBase/userinfo", None, None)
   // format: on
 
-  val dummy = RealmsDummy(new WellKnownResolverDummy(Map(ghOpenId -> githubWk, glOpenId -> gitlabWk))).accepted
+  val dummy = RealmsDummy(Map(ghOpenId -> githubWk, glOpenId -> gitlabWk)).accepted
 
   def resourceFor(
       openIdConfig: Uri,

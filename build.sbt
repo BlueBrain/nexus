@@ -348,6 +348,35 @@ lazy val rdf = project
     Test / fork          := true
   )
 
+lazy val rdfOld = project
+  .in(file("rdf"))
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    name       := "rdf-old",
+    moduleName := "rdf-old"
+  )
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaHttp,
+      akkaHttpCirce,
+      akkaHttpXml,
+      alleycatsCore,
+      catsCore,
+      jenaArq,
+      magnolia,
+      nimbusJoseJwt,
+      parboiled2,
+      scalaReflect,
+      topBraidShacl,
+      akkaSlf4j    % Test,
+      akkaTestKit  % Test,
+      circeLiteral % Test,
+      logback      % Test,
+      scalaTest    % Test
+    ),
+    Test / fork          := true
+  )
+
 lazy val sdk = project
   .in(file("delta/sdk"))
   .settings(
@@ -396,7 +425,9 @@ lazy val app        = project
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(libraryDependencies ++= Seq(scalaTest % Test))
 
-lazy val docsFiles  =
+lazy val cargo      = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+
+lazy val docsFiles =
   Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")
 
 def docsFilesFilter(repo: File) =
@@ -404,11 +435,128 @@ def docsFilesFilter(repo: File) =
     def accept(repoFile: File) = docsFiles.exists(file => repoFile.getCanonicalPath.startsWith((repo / file).getCanonicalPath))
   }
 
+lazy val storage = project
+  .in(file("storage"))
+  .dependsOn(rdfOld)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .settings(cargo := {
+    import scala.sys.process._
+
+    val log = streams.value.log
+    val cmd = Process(Seq("cargo", "build", "--release"), baseDirectory.value / "permissions-fixer")
+    if ((cmd !) == 0) {
+      log.success("Cargo build successful.")
+      (baseDirectory.value / "permissions-fixer" / "target" / "release" / "nexus-fixer") -> "bin/nexus-fixer"
+    } else {
+      log.error("Cargo build failed.")
+      throw new RuntimeException
+    }
+  })
+  .settings(
+    name                     := "storage",
+    moduleName               := "storage",
+    buildInfoKeys            := Seq[BuildInfoKey](version),
+    buildInfoPackage         := "ch.epfl.bluebrain.nexus.storage.config",
+    Docker / packageName     := "nexus-storage",
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
+      apacheCompress,
+      akkaHttp,
+      akkaStream,
+      akkaSlf4j,
+      alpakkaFiles,
+      catsCore,
+      catsEffect,
+      circeCore,
+      circeGenericExtras,
+      logback,
+      monixEval,
+      pureconfig,
+      scalaLogging,
+      akkaHttpTestKit % Test,
+      akkaTestKit     % Test,
+      mockito         % Test,
+      scalaTest       % Test
+    ),
+    cleanFiles              ++= Seq(
+      baseDirectory.value / "permissions-fixer" / "target" / "**",
+      baseDirectory.value / "nexus-storage.jar"
+    ),
+    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    Test / parallelExecution := false,
+    mappings in Universal    := {
+      (mappings in Universal).value :+ cargo.value
+    }
+  )
+
+lazy val delta = project
+  .in(file("delta"))
+  .dependsOn(sourcing, rdfOld)
+  .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
+  .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
+  .settings(
+    name                 := "delta",
+    moduleName           := "delta",
+    coverageMinimum      := 75d,
+    buildInfoKeys        := Seq[BuildInfoKey](version),
+    Docker / packageName := "nexus-delta",
+    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config"
+  )
+  .settings(kamonSettings)
+  .settings(
+    libraryDependencies       ++= Seq(
+      akkaClusterSharding,
+      akkaHttp,
+      akkaHttpCirce,
+      akkaHttpCors,
+      akkaPersistence,
+      akkaPersistenceCassandra,
+      akkaPersistenceQuery,
+      akkaSlf4j,
+      alleycatsCore,
+      alpakkaS3,
+      alpakkaSse,
+      catsCore,
+      catsEffectRetry,
+      catsEffect,
+      guava,
+      jenaArq,
+      jsonldjava,
+      kryo,
+      logback,
+      magnolia,
+      monixEval,
+      nimbusJoseJwt,
+      parboiled2,
+      topBraidShacl,
+      akkaHttpTestKit         % Test,
+      akkaPersistenceInMem    % Test,
+      akkaPersistenceLauncher % Test,
+      akkaTestKit             % Test,
+      asm                     % Test,
+      circeLiteral            % Test,
+      distageDocker           % Test,
+      distageTestkit          % Test,
+      jsonldjava              % Test,
+      log4jCore               % Test,
+      log4jApi                % Test,
+      mockito                 % Test,
+      scalaTest               % Test
+    ),
+    sourceDirectory in Jmh     := (sourceDirectory in Test).value,
+    classDirectory in Jmh      := (classDirectory in Test).value,
+    dependencyClasspath in Jmh := (dependencyClasspath in Test).value,
+    compile in Jmh             := (compile in Jmh).dependsOn(compile in Test).value,
+    run in Jmh                 := (run in Jmh).dependsOn(Keys.compile in Jmh).evaluated,
+    Test / fork                := true
+  )
+
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, testkit)
+  .aggregate(docs, cli, testkit, storage, app)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -447,6 +595,20 @@ lazy val kamonSettings = Seq(
     "io.kamon" %% "kamon-prometheus"             % kamonVersion,
     "io.kamon" %% "kamon-jaeger"                 % kamonVersion
   )
+)
+
+lazy val storageAssemblySettings = Seq(
+  test in assembly                  := {},
+  assemblyOutputPath in assembly    := baseDirectory.value / "nexus-storage.jar",
+  assemblyMergeStrategy in assembly := {
+    case PathList("org", "apache", "commons", "logging", xs @ _*)        => MergeStrategy.last
+    case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
+    case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
+    case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
+    case x                                                               =>
+      val oldStrategy = (assemblyMergeStrategy in assembly).value
+      oldStrategy(x)
+  }
 )
 
 lazy val compilation = {
