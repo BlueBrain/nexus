@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AclsDummy.AclsJournal
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
@@ -29,10 +30,10 @@ final class AclsDummy private (
 )(implicit clock: Clock[UIO] = IO.clock)
     extends Acls {
 
-  override def fetch(target: Target): UIO[Option[AclResource]] =
+  override def fetch(target: TargetLocation): UIO[Option[AclResource]] =
     currentState(target).map(_.flatMap(_.toResource))
 
-  override def fetchAt(target: Target, rev: Long): IO[RevisionNotFound, Option[AclResource]] =
+  override def fetchAt(target: TargetLocation, rev: Long): IO[RevisionNotFound, Option[AclResource]] =
     stateAt(target, rev).map(_.flatMap(_.toResource))
 
   override def list(target: Target, ancestors: Boolean): UIO[AclTargets] =
@@ -43,22 +44,28 @@ final class AclsDummy private (
     list(target, ancestors).map(_.filter(caller.identities))
 
   private def listWithoutAncestors(target: Target): UIO[AclTargets] =
-    cache.get.map(_.value.get(target).fold(AclTargets.empty)(AclTargets(_)))
+    cache.get.map(_.fetch(target))
 
   private def listWithAncestors(target: Target): UIO[AclTargets] =
     listWithoutAncestors(target)
       .flatMap(result => target.parent.fold(UIO.pure(result))(parent => listWithAncestors(parent).map(result ++ _)))
 
-  override def replace(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+  override def replace(target: TargetLocation, acl: Acl, rev: Long)(implicit
+      caller: Subject
+  ): IO[AclRejection, AclResource] =
     eval(ReplaceAcl(target, acl, rev, caller)).flatMap(setToCache)
 
-  override def append(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+  override def append(target: TargetLocation, acl: Acl, rev: Long)(implicit
+      caller: Subject
+  ): IO[AclRejection, AclResource] =
     eval(AppendAcl(target, acl, rev, caller)).flatMap(appendToCache)
 
-  override def subtract(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+  override def subtract(target: TargetLocation, acl: Acl, rev: Long)(implicit
+      caller: Subject
+  ): IO[AclRejection, AclResource] =
     eval(SubtractAcl(target, acl, rev, caller)).flatMap(subtractFromCache)
 
-  override def delete(target: Target, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+  override def delete(target: TargetLocation, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
     eval(DeleteAcl(target, rev, caller)).flatMap(deleteFromCache(target, _))
 
   private def setToCache(resource: AclResource): UIO[AclResource]    =
@@ -70,10 +77,10 @@ final class AclsDummy private (
   private def subtractFromCache(resource: AclResource): UIO[AclResource] =
     cache.update(_ - resource).as(resource)
 
-  private def deleteFromCache(target: Target, resource: AclResource): UIO[AclResource] =
+  private def deleteFromCache(target: TargetLocation, resource: AclResource): UIO[AclResource] =
     cache.update(_ - target).as(resource)
 
-  private def currentState(target: Target): UIO[Option[AclState]] =
+  private def currentState(target: TargetLocation): UIO[Option[AclState]] =
     journal.get.map { labelsEvents =>
       labelsEvents.get(target).map(_.foldLeft[AclState](Initial)(Acls.next))
     }

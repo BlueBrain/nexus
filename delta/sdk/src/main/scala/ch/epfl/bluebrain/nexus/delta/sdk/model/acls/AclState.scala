@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
@@ -68,7 +69,7 @@ object AclState {
     * @param updatedBy the identity that last updated the resource
     */
   final case class Current(
-      target: Target,
+      target: TargetLocation,
       acl: Acl,
       rev: Long,
       createdAt: Instant,

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 
 /**
   * Enumeration of ACL collection command types.
@@ -10,7 +11,7 @@ sealed trait AclCommand extends Product with Serializable {
   /**
     * @return the target location for the ACL
     */
-  def target: Target
+  def target: TargetLocation
 
   /**
     * @return the last known revision of the resource when this command was created
@@ -36,7 +37,7 @@ object AclCommand {
     * @return the identities which were used to created this command
     */
   final case class ReplaceAcl(
-      target: Target,
+      target: TargetLocation,
       acl: Acl,
       rev: Long,
       subject: Subject
@@ -51,7 +52,7 @@ object AclCommand {
     * @param subject the subject used to created this command
     */
   final case class AppendAcl(
-      target: Target,
+      target: TargetLocation,
       acl: Acl,
       rev: Long,
       subject: Subject
@@ -66,7 +67,7 @@ object AclCommand {
     * @param subject the subject used to created this command
     */
   final case class SubtractAcl(
-      target: Target,
+      target: TargetLocation,
       acl: Acl,
       rev: Long,
       subject: Subject
@@ -80,7 +81,7 @@ object AclCommand {
     * @param subject the subject used to created this command
     */
   final case class DeleteAcl(
-      target: Target,
+      target: TargetLocation,
       rev: Long,
       subject: Subject
   ) extends AclCommand

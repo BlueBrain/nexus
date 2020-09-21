@@ -6,15 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{
-  AclCannotContainEmptyPermissionCollection,
-  AclIsEmpty,
-  AclNotFound,
-  NothingToBeUpdated,
-  RevisionNotFound,
-  UnknownPermissions
-}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.Organization
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclTargets, Target}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Caller, Identity, Label, ResourceF}
@@ -64,11 +57,13 @@ class AclsDummySpec
   val orgTarget     = Target.Organization(org)
   val org2Target    = Target.Organization(org2)
   val projectTarget = Target.Project(org, proj)
+  val any           = AnyOrganizationAnyProject
+  val anyOrg        = AnyOrganization
 
   val permsDummy = PermissionsDummy(minimum)
   val dummy      = AclsDummy(permsDummy).accepted
 
-  def resourceFor(target: Target, acl: Acl, rev: Long, deprecated: Boolean = false): AclResource =
+  def resourceFor(target: TargetLocation, acl: Acl, rev: Long, deprecated: Boolean = false): AclResource =
     ResourceF(
       id = target,
       rev = rev,
@@ -130,16 +125,20 @@ class AclsDummySpec
       dummy.append(projectTarget, anonR, 0L).accepted
 
       dummy.list(Target.Root, ancestors = false).accepted shouldEqual AclTargets(resourceFor(Target.Root, groupR, 5L))
-      dummy.list(projectTarget, ancestors = false).accepted shouldEqual AclTargets(
-        resourceFor(projectTarget, anonR, 1L)
-      )
+
+      forAll(List(projectTarget, any, AnyProject(org))) { target =>
+        dummy.list(target, ancestors = false).accepted shouldEqual
+          AclTargets(resourceFor(projectTarget, anonR, 1L))
+      }
+
     }
 
     "list ACLs containing only caller identities" in {
       dummy.listSelf(Target.Root, ancestors = false).accepted shouldEqual
         AclTargets(resourceFor(Target.Root, Acl.empty, 5L))
-      dummy.listSelf(orgTarget, ancestors = false).accepted shouldEqual AclTargets(resourceFor(orgTarget, userRW, 2L))
-
+      forAll(List(orgTarget, anyOrg)) { target =>
+        dummy.listSelf(target, ancestors = false).accepted shouldEqual AclTargets(resourceFor(orgTarget, userRW, 2L))
+      }
     }
 
     "list ACLs containing ancestors" in {
@@ -157,6 +156,27 @@ class AclsDummySpec
           resourceFor(org2Target, userRW, 1L)
         )
 
+      dummy.list(any, ancestors = true).accepted shouldEqual
+        AclTargets(
+          resourceFor(Target.Root, groupR, 5L),
+          resourceFor(orgTarget, userRW_groupX, 2L),
+          resourceFor(org2Target, userRW, 1L),
+          resourceFor(projectTarget, anonR, 1L)
+        )
+
+      dummy.list(AnyProject(org), ancestors = true).accepted shouldEqual
+        AclTargets(
+          resourceFor(Target.Root, groupR, 5L),
+          resourceFor(orgTarget, userRW_groupX, 2L),
+          resourceFor(projectTarget, anonR, 1L)
+        )
+
+      dummy.list(anyOrg, ancestors = true).accepted shouldEqual
+        AclTargets(
+          resourceFor(Target.Root, groupR, 5L),
+          resourceFor(orgTarget, userRW_groupX, 2L),
+          resourceFor(org2Target, userRW, 1L)
+        )
     }
 
     "list ACLs containing ancestors and caller identities" in {

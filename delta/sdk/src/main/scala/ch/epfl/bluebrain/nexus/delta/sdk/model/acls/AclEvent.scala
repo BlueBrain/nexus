@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 
 /**
   * Enumeration of ACL event types.
@@ -12,7 +13,7 @@ sealed trait AclEvent extends Product with Serializable {
   /**
     * @return the target location for the ACL
     */
-  def target: Target
+  def target: TargetLocation
 
   /**
     * @return the revision that this event generated
@@ -43,7 +44,7 @@ object AclEvent {
     * @param subject the subject which generated this event
     */
   final case class AclReplaced(
-      target: Target,
+      target: TargetLocation,
       acl: Acl,
       rev: Long,
       instant: Instant,
@@ -60,7 +61,7 @@ object AclEvent {
     * @param subject the subject which generated this event
     */
   final case class AclAppended(
-      target: Target,
+      target: TargetLocation,
       acl: Acl,
       rev: Long,
       instant: Instant,
@@ -77,7 +78,7 @@ object AclEvent {
     * @param subject the subject which generated this event
     */
   final case class AclSubtracted(
-      target: Target,
+      target: TargetLocation,
       acl: Acl,
       rev: Long,
       instant: Instant,
@@ -93,7 +94,7 @@ object AclEvent {
     * @param subject the subject which generated this event
     */
   final case class AclDeleted(
-      target: Target,
+      target: TargetLocation,
       rev: Long,
       instant: Instant,
       subject: Subject

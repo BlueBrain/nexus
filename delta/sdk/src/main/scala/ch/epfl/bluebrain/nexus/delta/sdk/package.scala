@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, Target}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -18,7 +19,7 @@ package object sdk {
   /**
     * Type alias for a acl with its target location specific resource.
     */
-  type AclResource = ResourceF[Target, Acl]
+  type AclResource = ResourceF[TargetLocation, Acl]
 
   /**
     * Type alias for a realm specific resource.

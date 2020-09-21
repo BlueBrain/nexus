@@ -4,7 +4,14 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.{Organization, Project, Root}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.{
+  AnyOrganization,
+  AnyOrganizationAnyProject,
+  AnyProject,
+  Organization,
+  Project,
+  Root
+}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -46,7 +53,7 @@ class AclTargetsSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       (AclTargets(acl) - acl) shouldEqual AclTargets.empty
     }
 
-    "subtract a Target location" in {
+    "subtract a AnchoredTarget location" in {
       val acls = AclTargets(acl2, acl3.copy(id = Project(org, proj)))
       (acls - Project(org, proj)) shouldEqual AclTargets(acl2)
     }
@@ -74,7 +81,6 @@ class AclTargetsSpec extends AnyWordSpecLike with Matchers with AclFixtures {
         acls.exists(Set(anon), r, target) shouldEqual false
         acls.exists(Set(user, anon), x, target) shouldEqual false
       }
-
     }
 
     "check for matching identities and permission on a Project target" in {
@@ -87,6 +93,32 @@ class AclTargetsSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       acls.exists(Set(user, anon), r, Project(org, proj)) shouldEqual true
       acls.exists(Set(anon), r, Project(org, proj)) shouldEqual false
       acls.exists(Set(user, anon), x, Project(org, proj)) shouldEqual false
+    }
+
+    "fetch ACLs from given target" in {
+      val org2         = Label.unsafe("org2")
+      val proj2        = Label.unsafe("proj2")
+      val orgTarget    = Organization(org)
+      val org2Target   = Organization(org2)
+      val projTarget   = Project(org, proj)
+      val proj12Target = Project(org, proj2)
+      val proj22Target = Project(org2, proj2)
+      val any          = AnyOrganizationAnyProject
+      val anyOrg       = AnyOrganization
+
+      val orgAcl: AclResource    = acl2.copy(id = orgTarget)
+      val org2Acl: AclResource   = acl3.copy(id = org2Target)
+      val projAcl: AclResource   = acl2.copy(id = projTarget)
+      val proj12Acl: AclResource = acl3.copy(id = proj12Target)
+      val proj22Acl: AclResource = acl.copy(id = proj22Target)
+      val acls                   = AclTargets(acl, orgAcl, org2Acl, projAcl, proj12Acl, proj22Acl)
+
+      acls.fetch(Root) shouldEqual AclTargets(acl)
+      acls.fetch(orgTarget) shouldEqual AclTargets(orgAcl)
+      acls.fetch(projTarget) shouldEqual AclTargets(projAcl)
+      acls.fetch(any) shouldEqual AclTargets(projAcl, proj12Acl, proj22Acl)
+      acls.fetch(AnyProject(org)) shouldEqual AclTargets(projAcl, proj12Acl)
+      acls.fetch(anyOrg) shouldEqual AclTargets(orgAcl, org2Acl)
     }
   }
 

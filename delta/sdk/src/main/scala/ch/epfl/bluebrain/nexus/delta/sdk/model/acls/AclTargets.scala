@@ -3,16 +3,27 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 
 import scala.collection.immutable.SortedMap
 
 /**
-  * A collection of ACL anchored into [[Target]] locations codified as a ordered Map (by key)
-  * where the keys are [[Target]] locations and the values are [[AclResource]].
+  * A collection of ACL anchored into [[TargetLocation]] locations codified as a ordered Map (by key)
+  * where the keys are [[TargetLocation]] locations and the values are [[AclResource]].
   * It specifies which permissions are applied for which identities in which locations.
   */
-final case class AclTargets private (value: SortedMap[Target, AclResource]) { self =>
+final case class AclTargets private (value: SortedMap[TargetLocation, AclResource]) { self =>
+
+  /**
+    * Fetch the AclTargets from the passed ''target''
+    * @param target the target location where the ACLs are going to be looked up, which can be a non-anchored target (*)
+    */
+  def fetch(target: Target): AclTargets =
+    target match {
+      case t: TargetLocation => value.get(t).fold(AclTargets.empty)(AclTargets(_))
+      case t                 => AclTargets(value.filter { case (tt, _) => tt.appliesOn(t) })
+    }
 
   /**
     * Adds the provided ''acls'' to the current ''value'' and returns a new [[AclTargets]] with the added ACLs.
@@ -50,7 +61,7 @@ final case class AclTargets private (value: SortedMap[Target, AclResource]) { se
   /**
     * Removes the [[AclResource]] for the passed ''target''.
     */
-  def -(target: Target): AclTargets =
+  def -(target: TargetLocation): AclTargets =
     AclTargets(self.value - target)
 
   /**
@@ -67,7 +78,7 @@ final case class AclTargets private (value: SortedMap[Target, AclResource]) { se
     * @return a new [[AclTargets]] containing the ACLs with non empty [[Acl]]
     */
   def removeEmpty(): AclTargets =
-    AclTargets(value.foldLeft(SortedMap.empty[Target, AclResource]) {
+    AclTargets(value.foldLeft(SortedMap.empty[TargetLocation, AclResource]) {
       case (acc, (_, acl)) if acl.value.isEmpty => acc
       case (acc, (target, acl))                 =>
         val filteredAcl = acl.value.removeEmpty()
@@ -87,8 +98,8 @@ final case class AclTargets private (value: SortedMap[Target, AclResource]) { se
   def exists(identities: Set[Identity], permission: Permission, target: Target): Boolean =
     filter(identities).value.exists {
       case (aclTarget, aclResource) =>
-        aclTarget.appliesWithAncestorsOn(target) && aclResource.value.permissions.contains(permission)
-    }
+        aclTarget.appliesOn(target) && aclResource.value.permissions.contains(permission)
+    } || target.parent.fold(false)(exists(identities, permission, _))
 }
 
 object AclTargets {
@@ -96,7 +107,7 @@ object AclTargets {
   /**
     * An empty [[AclTargets]].
     */
-  val empty: AclTargets = AclTargets(SortedMap.empty[Target, AclResource])
+  val empty: AclTargets = AclTargets(SortedMap.empty[TargetLocation, AclResource])
 
   /**
     * Convenience factory method to build a [[AclTargets]] [[AclResource]]s.

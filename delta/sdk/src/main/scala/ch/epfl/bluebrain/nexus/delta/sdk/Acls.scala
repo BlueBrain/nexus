@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, Delet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
 import monix.bio.{IO, UIO}
@@ -23,7 +24,7 @@ trait Acls {
     *
     * @param target the target location for the ACL
     */
-  def fetch(target: Target): UIO[Option[AclResource]]
+  def fetch(target: TargetLocation): UIO[Option[AclResource]]
 
   /**
     * Fetches the ACL resource for a ''target'' on the passed revision.
@@ -31,7 +32,7 @@ trait Acls {
     * @param target the target location for the ACL
     * @param rev    the revision to fetch
     */
-  def fetchAt(target: Target, rev: Long): IO[RevisionNotFound, Option[AclResource]]
+  def fetchAt(target: TargetLocation, rev: Long): IO[RevisionNotFound, Option[AclResource]]
 
   /**
     * Fetches the ACL resource for a ''target'' on the current revision.
@@ -39,7 +40,7 @@ trait Acls {
     *
     * @param target the target location for the ACL
     */
-  final def fetchSelf(target: Target)(implicit caller: Caller): UIO[Option[AclResource]] =
+  final def fetchSelf(target: TargetLocation)(implicit caller: Caller): UIO[Option[AclResource]] =
     fetch(target).map(filterSelf)
 
   /**
@@ -49,7 +50,9 @@ trait Acls {
     * @param target the target location for the ACL
     * @param rev    the revision to fetch
     */
-  final def fetchSelfAt(target: Target, rev: Long)(implicit caller: Caller): IO[RevisionNotFound, Option[AclResource]] =
+  final def fetchSelfAt(target: TargetLocation, rev: Long)(implicit
+      caller: Caller
+  ): IO[RevisionNotFound, Option[AclResource]] =
     fetchAt(target, rev).map(filterSelf)
 
   /**
@@ -57,7 +60,7 @@ trait Acls {
     *
     * @param target the target location for the ACL
     */
-  final def fetchAcl(target: Target): UIO[Acl] =
+  final def fetchAcl(target: TargetLocation): UIO[Acl] =
     fetch(target).map(_.fold(Acl.empty)(_.value))
 
   /**
@@ -66,13 +69,13 @@ trait Acls {
     *
    * @param target the target location for the ACL
     */
-  final def fetchSelfAcl(target: Target)(implicit caller: Caller): UIO[Acl] =
+  final def fetchSelfAcl(target: TargetLocation)(implicit caller: Caller): UIO[Acl] =
     fetchSelf(target).map(_.fold(Acl.empty)(_.value))
 
   /**
     * Fetches the [[AclTargets]] of the provided ''target'' location.
     *
-    * @param target    the target location where the ACLs are going to be looked up
+    * @param target    the target location where the ACLs are going to be looked up, which can be a non-anchored target (*)
     * @param ancestors flag to decide whether or not ancestor target locations should be included in the response
     */
   def list(target: Target, ancestors: Boolean): UIO[AclTargets]
@@ -80,7 +83,7 @@ trait Acls {
   /**
     * Fetches the [[AclTargets]] of the provided ''target'' location with identities present in the ''caller''.
     *
-   * @param target    the target location where the ACLs are going to be looked up
+    * @param target    the target location where the ACLs are going to be looked up, which can be a non-anchored target (*)
     * @param ancestors flag to decide whether or not ancestor target locations should be included in the response
     * @param caller    the caller that contains the provided identities
     */
@@ -93,7 +96,7 @@ trait Acls {
     * @param acl    the identity to permissions mapping to replace
     * @param rev    the last known revision of the resource
     */
-  def replace(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def replace(target: TargetLocation, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Appends ''acl'' on a ''target''.
@@ -102,7 +105,7 @@ trait Acls {
     * @param acl    the identity to permissions mapping to append
     * @param rev    the last known revision of the resource
     */
-  def append(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def append(target: TargetLocation, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Subtracts ''acl'' on a ''target''.
@@ -111,7 +114,7 @@ trait Acls {
     * @param acl    the identity to permissions mapping to subtract
     * @param rev    the last known revision of the resource
     */
-  def subtract(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def subtract(target: TargetLocation, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Delete all ''acl'' on a ''target''.
@@ -119,7 +122,7 @@ trait Acls {
     * @param target the target location for the ACL
     * @param rev    the last known revision of the resource
     */
-  def delete(target: Target, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def delete(target: TargetLocation, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   private def filterSelf(resourceOpt: Option[AclResource])(implicit caller: Caller): Option[AclResource] =
     resourceOpt.map(res => res.map(_.filter(caller.identities)))
