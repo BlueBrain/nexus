@@ -72,4 +72,11 @@ object AclRejection {
       extends AclRejection(
         s"Some of the permissions specified are not known: '${permissions.mkString("\"", ", ", "\"")}'"
       )
+
+  /**
+    * Rejection returned when the returned state is the initial state after a Acls.evaluation plus a Acls.next
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    */
+  final case class UnexpectedInitialState(target: Target)
+      extends AclRejection(s"Unexpected initial state for realm '$target'.")
 }

@@ -23,17 +23,35 @@ final case class AclTargets private (value: SortedMap[Target, AclResource]) { se
     AclTargets(acls.value.foldLeft(value) {
       case (acc, (target, aclToAdd)) if aclToAdd.id != target => acc // should not happen, ignore it
       case (acc, (target, aclToAdd))                          =>
-        acc.updatedWith(target)(acl => Some(acl.fold(aclToAdd)(_.map(_ ++ aclToAdd.value))))
+        acc.updatedWith(target)(acl => Some(acl.fold(aclToAdd)(c => aclToAdd.map(c.value ++ _))))
     })
 
   /**
-    * Adds a key pair of [[Target]] and [[AclResource]] to the current ''value'' and
+    * Adds an [[AclResource]] to the current ''value'' and
     * returns a new [[AclTargets]] with the added acl.
     *
-    * @param entry the key pair of [[Target]] and [[AclResource]] to be added
+    * @param entry the [[AclResource]] to be added
     */
-  def +(entry: AclResource): AclTargets             =
+  def +(entry: AclResource): AclTargets =
     self ++ AclTargets(SortedMap(entry.id -> entry))
+
+  /**
+    * Removes an [[AclResource]] to the current ''value'' and
+    * returns a new [[AclTargets]] with the subtracted acl.
+    *
+    * @param entry the [[AclResource]] to be subtracted
+    */
+  def -(entry: AclResource): AclTargets =
+    AclTargets(self.value.updatedWith(entry.id)(_.fold[Option[AclResource]](None) { cur =>
+      val updated = entry.map(acl => cur.value -- acl)
+      Option.when(updated.value.nonEmpty)(updated)
+    }))
+
+  /**
+    * Removes the [[AclResource]] for the passed ''target''.
+    */
+  def -(target: Target): AclTargets =
+    AclTargets(self.value - target)
 
   /**
     * Generates a new [[AclTargets]] only containing the provided ''identities''.

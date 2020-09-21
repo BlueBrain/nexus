@@ -19,6 +19,11 @@ sealed trait Target extends Product with Serializable {
     */
   def appliesWithAncestorsOn(that: Target): Boolean
 
+  /**
+    * @return the parent [[Target]] location for the current target, or None when there is no parent
+    */
+  def parent: Option[Target]
+
   override def toString: String = string
 }
 
@@ -34,6 +39,8 @@ object Target {
     val string: String = "/"
 
     def appliesWithAncestorsOn(that: Target): Boolean = true
+
+    val parent: Option[Target] = None
   }
 
   /**
@@ -49,6 +56,9 @@ object Target {
         case Organization(thatOrg) => org == thatOrg
         case Project(thatOrg, _)   => org == thatOrg
       }
+
+    val parent: Option[Target] = Some(Root)
+
   }
 
   /**
@@ -58,8 +68,10 @@ object Target {
 
     val string = s"/$org/$project"
 
-    def appliesWithAncestorsOn(that: Target): Boolean =
-      that == this
+    def appliesWithAncestorsOn(that: Target): Boolean = that == this
+
+    val parent: Option[Target] = Some(Organization(org))
+
   }
 
   implicit val orderingTarget: Ordering[Target] = Ordering.by(_.string)

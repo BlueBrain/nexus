@@ -18,6 +18,13 @@ class TargetSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       }
     }
 
+    "return its parents" in {
+      val list = List(Root -> None, orgTarget -> Some(Root), projTarget -> Some(orgTarget))
+      forAll(list) {
+        case (target, parent) => target.parent shouldEqual parent
+      }
+    }
+
     "apply on another target taking into account ancestors" in {
       val rootList = List(Root, orgTarget, projTarget).map(Root -> _)
       val orgList  = List(orgTarget, projTarget, Project(org, Label.unsafe("proj2"))).map(orgTarget -> _)

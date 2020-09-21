@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummySpec.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
@@ -15,31 +16,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues with TestHelpers with IOFixedClock {
-
-  val minimum = Set(
-    Permission.unsafe("acls/read"),
-    Permission.unsafe("acls/write"),
-    Permission.unsafe("permissions/read"),
-    Permission.unsafe("permissions/write"),
-    Permission.unsafe("realms/read"),
-    Permission.unsafe("realms/write"),
-    Permission.unsafe("events/read"),
-    Permission.unsafe("organizations/read"),
-    Permission.unsafe("organizations/write"),
-    Permission.unsafe("organizations/create"),
-    Permission.unsafe("projects/read"),
-    Permission.unsafe("projects/write"),
-    Permission.unsafe("projects/create"),
-    Permission.unsafe("resources/read"),
-    Permission.unsafe("resources/write"),
-    Permission.unsafe("resolvers/write"),
-    Permission.unsafe("views/query"),
-    Permission.unsafe("views/write"),
-    Permission.unsafe("schemas/write"),
-    Permission.unsafe("files/write"),
-    Permission.unsafe("storages/write"),
-    Permission.unsafe("archives/write")
-  )
 
   val read: Permission = Permission.unsafe("permissions/read")
 
@@ -74,7 +50,7 @@ class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues w
       value = permissions
     )
 
-  "A PermissionsDummy" should {
+  "A dummy permissions implementation" should {
     "return its persistence id" in {
       dummy.persistenceId shouldEqual "permissions"
     }
@@ -157,4 +133,31 @@ class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues w
 
   }
 
+}
+
+object PermissionsDummySpec {
+  val minimum = Set(
+    Permission.unsafe("acls/read"),
+    Permission.unsafe("acls/write"),
+    Permission.unsafe("permissions/read"),
+    Permission.unsafe("permissions/write"),
+    Permission.unsafe("realms/read"),
+    Permission.unsafe("realms/write"),
+    Permission.unsafe("events/read"),
+    Permission.unsafe("organizations/read"),
+    Permission.unsafe("organizations/write"),
+    Permission.unsafe("organizations/create"),
+    Permission.unsafe("projects/read"),
+    Permission.unsafe("projects/write"),
+    Permission.unsafe("projects/create"),
+    Permission.unsafe("resources/read"),
+    Permission.unsafe("resources/write"),
+    Permission.unsafe("resolvers/write"),
+    Permission.unsafe("views/query"),
+    Permission.unsafe("views/write"),
+    Permission.unsafe("schemas/write"),
+    Permission.unsafe("files/write"),
+    Permission.unsafe("storages/write"),
+    Permission.unsafe("archives/write")
+  )
 }

@@ -73,7 +73,7 @@ class RealmsDummySpec
     )
   }
 
-  "A RealmsDummy" should {
+  "A dummy Realms implementation" should {
 
     "create a realm" in {
       dummy.create(github, githubName, ghOpenId, None).accepted shouldEqual
