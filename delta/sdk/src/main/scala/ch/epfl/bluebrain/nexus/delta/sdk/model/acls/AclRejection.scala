@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 
 /**
@@ -15,37 +14,35 @@ object AclRejection {
   /**
     * Signals an attempt to append/subtract ACLs that won't change the current state.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     */
-  final case class NothingToBeUpdated(target: TargetLocation)
-      extends AclRejection(s"The ACL on target location '$target' will not change after applying the provided update.")
+  final case class NothingToBeUpdated(address: AclAddress)
+      extends AclRejection(s"The ACL on address '$address' will not change after applying the provided update.")
 
   /**
     * Signals an attempt to modify ACLs that do not exists.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     */
-  final case class AclNotFound(target: TargetLocation)
-      extends AclRejection(s"The ACL on target location '$target' does not exists.")
+  final case class AclNotFound(address: AclAddress) extends AclRejection(s"The ACL address '$address' does not exists.")
 
   /**
     * Signals an attempt to delete ACLs that are already empty.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     */
-  final case class AclIsEmpty(target: TargetLocation)
-      extends AclRejection(s"The ACL on target location '$target' is empty.")
+  final case class AclIsEmpty(address: AclAddress) extends AclRejection(s"The ACL on address '$address' is empty.")
 
   /**
     * Signals an attempt to interact with an ACL collection with an incorrect revision.
     *
-    * @param target the target location for the ACL
+    * @param address  the ACL address
     * @param provided the provided revision
     * @param expected the expected revision
     */
-  final case class IncorrectRev(target: TargetLocation, provided: Long, expected: Long)
+  final case class IncorrectRev(address: AclAddress, provided: Long, expected: Long)
       extends AclRejection(
-        s"Incorrect revision '$provided' provided, expected '$expected', the ACL on target location '$target' may have been updated since last seen."
+        s"Incorrect revision '$provided' provided, expected '$expected', the ACL address '$address' may have been updated since last seen."
       )
 
   /**
@@ -60,10 +57,10 @@ object AclRejection {
   /**
     * Signals an attempt to create/replace/append/subtract ACL collection which contains void permissions.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     */
-  final case class AclCannotContainEmptyPermissionCollection(target: TargetLocation)
-      extends AclRejection(s"The ACL for target location '$target' cannot contain an empty permission collection.")
+  final case class AclCannotContainEmptyPermissionCollection(address: AclAddress)
+      extends AclRejection(s"The ACL address '$address' cannot contain an empty permission collection.")
 
   /**
     * Signals that an acl operation could not be performed because of unknown referenced permissions.
@@ -79,6 +76,6 @@ object AclRejection {
     * Rejection returned when the returned state is the initial state after a Acls.evaluation plus a Acls.next
     * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
     */
-  final case class UnexpectedInitialState(target: TargetLocation)
-      extends AclRejection(s"Unexpected initial state for realm '$target'.")
+  final case class UnexpectedInitialState(address: AclAddress)
+      extends AclRejection(s"Unexpected initial state for acl address '$address'.")
 }

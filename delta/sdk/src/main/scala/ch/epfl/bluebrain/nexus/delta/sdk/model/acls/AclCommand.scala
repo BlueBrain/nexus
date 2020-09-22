@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 
 /**
   * Enumeration of ACL collection command types.
@@ -9,9 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.TargetLocation
 sealed trait AclCommand extends Product with Serializable {
 
   /**
-    * @return the target location for the ACL
+    * @return the address for the ACL
     */
-  def target: TargetLocation
+  def address: AclAddress
 
   /**
     * @return the last known revision of the resource when this command was created
@@ -30,14 +29,14 @@ object AclCommand {
   /**
     * An intent to replace ACL.
     *
-    * @param target  the target location for the ACL
+    * @param address the address for the ACL
     * @param acl     the ACL to be replaced, represented as a mapping of identities to permissions
     * @param rev     the last known revision of the resource when this command was created
     * @param subject the subject used to created this command
     * @return the identities which were used to created this command
     */
   final case class ReplaceAcl(
-      target: TargetLocation,
+      address: AclAddress,
       acl: Acl,
       rev: Long,
       subject: Subject
@@ -46,13 +45,13 @@ object AclCommand {
   /**
     * An intent to append ACL.
     *
-    * @param target  the target location for the ACL
+    * @param address the address for the ACL
     * @param acl     the ACL to be appended, represented as a mapping of identities to permissions
     * @param rev     the last known revision of the resource when this command was created
     * @param subject the subject used to created this command
     */
   final case class AppendAcl(
-      target: TargetLocation,
+      address: AclAddress,
       acl: Acl,
       rev: Long,
       subject: Subject
@@ -61,13 +60,13 @@ object AclCommand {
   /**
     * An intent to subtract ACL.
     *
-    * @param target  the target location for the ACL
+    * @param address the address for the ACL
     * @param acl     the ACL to be subtracted, represented as a mapping of identities to permissions
     * @param rev     the last known revision of the resource when this command was created
     * @param subject the subject used to created this command
     */
   final case class SubtractAcl(
-      target: TargetLocation,
+      address: AclAddress,
       acl: Acl,
       rev: Long,
       subject: Subject
@@ -76,12 +75,12 @@ object AclCommand {
   /**
     * An intent to delete ACL.
     *
-    * @param target  the target location for the ACL
+    * @param address the address for the ACL
     * @param rev     the last known revision of the resource when this command was created
     * @param subject the subject used to created this command
     */
   final case class DeleteAcl(
-      target: TargetLocation,
+      address: AclAddress,
       rev: Long,
       subject: Subject
   ) extends AclCommand
