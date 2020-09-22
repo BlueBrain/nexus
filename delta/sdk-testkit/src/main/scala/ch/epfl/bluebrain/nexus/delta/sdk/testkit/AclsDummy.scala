@@ -27,7 +27,7 @@ final class AclsDummy private (
     journal: IORef[AclsJournal],
     cache: IORef[AclTargets],
     semaphore: IOSemaphore
-)(implicit clock: Clock[UIO] = IO.clock)
+)(implicit clock: Clock[UIO])
     extends Acls {
 
   override def fetch(target: TargetLocation): UIO[Option[AclResource]] =

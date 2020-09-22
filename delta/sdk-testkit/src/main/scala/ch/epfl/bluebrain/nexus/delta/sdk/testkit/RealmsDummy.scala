@@ -31,7 +31,7 @@ final class RealmsDummy private (
     journal: IORef[RealmsJournal],
     cache: IORef[RealmsCache],
     semaphore: IOSemaphore
-)(implicit clock: Clock[UIO] = IO.clock)
+)(implicit clock: Clock[UIO])
     extends Realms {
 
   override def create(

@@ -36,6 +36,11 @@ object Target {
 
   }
 
+  /**
+    * An ACL location that is a filter for several TargetLocation. E.g.: ''/\*'' filters every [[Organization]] target
+    */
+  sealed trait TargetFilterLocation extends Target
+
   type Root = Root.type
 
   /**
@@ -93,7 +98,7 @@ object Target {
   /**
     * A non-specific target location that targets any organization.
     */
-  final case object AnyOrganization extends Target {
+  final case object AnyOrganization extends TargetFilterLocation {
     val string                 = s"/*"
     val parent: Option[Target] = Some(Root)
   }
@@ -101,7 +106,7 @@ object Target {
   /**
     * A non-specific target location that targets any project.
     */
-  final case class AnyProject(org: Label) extends Target {
+  final case class AnyProject(org: Label) extends TargetFilterLocation {
     val string                 = s"$org/*"
     val parent: Option[Target] = Some(Organization(org))
   }
@@ -109,7 +114,7 @@ object Target {
   /**
     * A non-specific target location that targets any project.
     */
-  final case object AnyOrganizationAnyProject extends Target {
+  final case object AnyOrganizationAnyProject extends TargetFilterLocation {
     val string                 = s"*/*"
     val parent: Option[Target] = Some(AnyOrganization)
   }

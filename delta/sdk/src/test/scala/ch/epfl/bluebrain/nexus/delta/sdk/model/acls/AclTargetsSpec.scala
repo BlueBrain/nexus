@@ -4,14 +4,7 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.{
-  AnyOrganization,
-  AnyOrganizationAnyProject,
-  AnyProject,
-  Organization,
-  Project,
-  Root
-}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.{AnyOrganization, AnyOrganizationAnyProject, AnyProject, Organization, Project, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
