@@ -1,11 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.persistence.query.{NoOffset, Offset}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.{
-  CompositeViewProjectionId,
-  SourceProjectionId,
-  ViewProjectionId
-}
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
 import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
 import io.circe.parser.decode
 
