@@ -19,107 +19,157 @@ import monix.bio.{IO, UIO}
 trait Acls {
 
   /**
-    * Fetches the ACL resource for a ''target'' on the current revision.
+    * Fetches the ACL resource for an ''address'' on the current revision.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     */
-  def fetch(target: Target): UIO[Option[AclResource]]
+  def fetch(address: AclAddress): UIO[Option[AclResource]]
 
   /**
-    * Fetches the ACL resource for a ''target'' on the passed revision.
+    * Fetches the ACL resource for an ''address'' and its ancestors on the current revision.
     *
-    * @param target the target location for the ACL
+   * @param address the ACL address
+    */
+  def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
+    fetch(address).map(_.fold(AclCollection.empty)(res => AclCollection(res))).flatMap { cur =>
+      address.parent match {
+        case Some(parent) => fetchWithAncestors(parent).map(_ ++ cur)
+        case None         => UIO.pure(cur)
+      }
+    }
+
+  /**
+    * Fetches the ACL resource with the passed address ''address'' on the passed revision.
+    *
+    * @param address the ACL address
     * @param rev    the revision to fetch
     */
-  def fetchAt(target: Target, rev: Long): IO[RevisionNotFound, Option[AclResource]]
+  def fetchAt(address: AclAddress, rev: Long): IO[RevisionNotFound, Option[AclResource]]
 
   /**
-    * Fetches the ACL resource for a ''target'' on the current revision.
-    * The response only contains ACL with identities present in the provided ''caller''.
+    * Fetches the ACL resource with the passed address ''address'' and its ancestors on the passed revision.
     *
-    * @param target the target location for the ACL
-    */
-  final def fetchSelf(target: Target)(implicit caller: Caller): UIO[Option[AclResource]] =
-    fetch(target).map(filterSelf)
-
-  /**
-    * Fetches the ACL resource for a ''target'' on the passed revision.
-    * The response only contains ACL with identities present in the provided ''caller''.
-    *
-    * @param target the target location for the ACL
+   * @param address the ACL address
     * @param rev    the revision to fetch
     */
-  final def fetchSelfAt(target: Target, rev: Long)(implicit caller: Caller): IO[RevisionNotFound, Option[AclResource]] =
-    fetchAt(target, rev).map(filterSelf)
+  def fetchAtWithAncestors(address: AclAddress, rev: Long): IO[RevisionNotFound, AclCollection] =
+    fetchAt(address, rev).map(_.fold(AclCollection.empty)(res => AclCollection(res))).flatMap { cur =>
+      address.parent match {
+        case Some(parent) => fetchAtWithAncestors(parent, rev).map(_ ++ cur)
+        case None         => UIO.pure(cur)
+      }
+    }
 
   /**
-    * Fetches the ACL for a ''target''. If ACL does not exist, return an empty [[Acl]]
-    *
-    * @param target the target location for the ACL
-    */
-  final def fetchAcl(target: Target): UIO[Acl] =
-    fetch(target).map(_.fold(Acl.empty)(_.value))
-
-  /**
-    * Fetches the ACL for a ''target''. If ACL does not exist, return an empty [[Acl]]
+    * Fetches the ACL resource with the passed ''address'' on the current revision.
     * The response only contains ACL with identities present in the provided ''caller''.
     *
-   * @param target the target location for the ACL
+    * @param address the ACL address
     */
-  final def fetchSelfAcl(target: Target)(implicit caller: Caller): UIO[Acl] =
-    fetchSelf(target).map(_.fold(Acl.empty)(_.value))
+  final def fetchSelf(address: AclAddress)(implicit caller: Caller): UIO[Option[AclResource]] =
+    fetch(address).map(filterSelf)
 
   /**
-    * Fetches the [[AclTargets]] of the provided ''target'' location.
+    * Fetches the ACL resource with the passed ''address'' and its ancestors on the current revision.
+    * The response only contains ACL with identities present in the provided ''caller''.
     *
-    * @param target    the target location where the ACLs are going to be looked up
-    * @param ancestors flag to decide whether or not ancestor target locations should be included in the response
+   * @param address the ACL address
     */
-  def list(target: Target, ancestors: Boolean): UIO[AclTargets]
+  def fetchSelfWithAncestors(address: AclAddress)(implicit caller: Caller): UIO[AclCollection] =
+    fetchWithAncestors(address).map(_.filter(caller.identities))
 
   /**
-    * Fetches the [[AclTargets]] of the provided ''target'' location with identities present in the ''caller''.
+    * Fetches the ACL resource with the passed ''address'' on the passed revision.
+    * The response only contains ACL with identities present in the provided ''caller''.
     *
-   * @param target    the target location where the ACLs are going to be looked up
-    * @param ancestors flag to decide whether or not ancestor target locations should be included in the response
+    * @param address the ACL address
+    * @param rev    the revision to fetch
+    */
+  final def fetchSelfAt(address: AclAddress, rev: Long)(implicit
+      caller: Caller
+  ): IO[RevisionNotFound, Option[AclResource]] =
+    fetchAt(address, rev).map(filterSelf)
+
+  /**
+    * Fetches the ACL resource with the passed ''address'' and ancestors on the passed revision.
+    * The response only contains ACL with identities present in the provided ''caller''.
+    *
+   * @param address the ACL address
+    * @param rev    the revision to fetch
+    */
+  def fetchSelfAtWithAncestors(address: AclAddress, rev: Long)(implicit
+      caller: Caller
+  ): IO[RevisionNotFound, AclCollection] =
+    fetchAtWithAncestors(address, rev).map(_.filter(caller.identities))
+
+  /**
+    * Fetches the ACL with the passed ''address''. If ACL does not exist, return an empty [[Acl]]
+    *
+    * @param address the ACL address
+    */
+  final def fetchAcl(address: AclAddress): UIO[Acl] =
+    fetch(address).map(_.fold(Acl.empty)(_.value))
+
+  /**
+    * Fetches the ACL with the passed ''address''. If ACL does not exist, return an empty [[Acl]]
+    * The response only contains ACL with identities present in the provided ''caller''.
+    *
+   * @param address the ACL address
+    */
+  final def fetchSelfAcl(address: AclAddress)(implicit caller: Caller): UIO[Acl] =
+    fetchSelf(address).map(_.fold(Acl.empty)(_.value))
+
+  /**
+    * Fetches the [[AclCollection]] of the provided ''filter'' address.
+    *
+    * @param filter    the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
+    * @param ancestors flag to decide whether or not ancestor addresses should be included in the response
+    */
+  def list(filter: AclAddressFilter, ancestors: Boolean): UIO[AclCollection]
+
+  /**
+    * Fetches the [[AclCollection]] of the provided ''filter'' address with identities present in the ''caller''.
+    *
+    * @param filter    the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
+    * @param ancestors flag to decide whether or not ancestor addresses should be included in the response
     * @param caller    the caller that contains the provided identities
     */
-  def listSelf(target: Target, ancestors: Boolean)(implicit caller: Caller): UIO[AclTargets]
+  def listSelf(filter: AclAddressFilter, ancestors: Boolean)(implicit caller: Caller): UIO[AclCollection]
 
   /**
-    * Overrides ''acl'' on a ''target''.
+    * Overrides ''acl'' on a the passed ''address''.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     * @param acl    the identity to permissions mapping to replace
     * @param rev    the last known revision of the resource
     */
-  def replace(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def replace(address: AclAddress, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
-    * Appends ''acl'' on a ''target''.
+    * Appends ''acl'' on the passed ''address''.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     * @param acl    the identity to permissions mapping to append
     * @param rev    the last known revision of the resource
     */
-  def append(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def append(address: AclAddress, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
-    * Subtracts ''acl'' on a ''target''.
+    * Subtracts ''acl'' on the passed ''address''.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     * @param acl    the identity to permissions mapping to subtract
     * @param rev    the last known revision of the resource
     */
-  def subtract(target: Target, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def subtract(address: AclAddress, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
-    * Delete all ''acl'' on a ''target''.
+    * Delete all ''acl'' on the passed ''address''.
     *
-    * @param target the target location for the ACL
+    * @param address the ACL address
     * @param rev    the last known revision of the resource
     */
-  def delete(target: Target, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   private def filterSelf(resourceOpt: Option[AclResource])(implicit caller: Caller): Option[AclResource] =
     resourceOpt.map(res => res.map(_.filter(caller.identities)))
@@ -130,12 +180,12 @@ object Acls {
   private[delta] def next(state: AclState, event: AclEvent): AclState = {
     def replaced(e: AclReplaced): AclState     =
       state match {
-        case Initial    => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case Initial    => Current(e.address, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
         case c: Current => c.copy(acl = e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     def appended(e: AclAppended): AclState     =
       state match {
-        case Initial    => Current(e.target, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case Initial    => Current(e.address, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
         case c: Current => c.copy(acl = c.acl ++ e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     def subtracted(e: AclSubtracted): AclState =
@@ -169,58 +219,58 @@ object Acls {
     def replace(c: ReplaceAcl)   =
       state match {
         case Initial if c.rev != 0                                        =>
-          IO.raiseError(IncorrectRev(c.target, c.rev, 0L))
+          IO.raiseError(IncorrectRev(c.address, c.rev, 0L))
         case Initial if c.acl.hasEmptyPermissions                         =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
         case Initial                                                      =>
-          acceptChecking(c.acl)(AclReplaced(c.target, c.acl, 1L, _, c.subject))
+          acceptChecking(c.acl)(AclReplaced(c.address, c.acl, 1L, _, c.subject))
         case s: Current if !s.acl.isEmpty && c.rev != s.rev               =>
-          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case s: Current if s.acl.isEmpty && c.rev != s.rev && c.rev != 0L =>
-          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case _: Current if c.acl.hasEmptyPermissions                      =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
         case s: Current                                                   =>
-          acceptChecking(c.acl)(AclReplaced(c.target, c.acl, s.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclReplaced(c.address, c.acl, s.rev + 1, _, c.subject))
       }
     def append(c: AppendAcl)     =
       state match {
         case Initial if c.rev != 0L                                                  =>
-          IO.raiseError(IncorrectRev(c.target, c.rev, 0L))
+          IO.raiseError(IncorrectRev(c.address, c.rev, 0L))
         case Initial if c.acl.hasEmptyPermissions                                    =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
         case Initial                                                                 =>
-          acceptChecking(c.acl)(AclAppended(c.target, c.acl, c.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclAppended(c.address, c.acl, c.rev + 1, _, c.subject))
         case s: Current if s.acl.permissions.nonEmpty && c.rev != s.rev              =>
-          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case s: Current if s.acl.permissions.isEmpty && c.rev != s.rev & c.rev != 0L =>
-          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case _: Current if c.acl.hasEmptyPermissions                                 =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
         case s: Current if s.acl ++ c.acl == s.acl                                   =>
-          IO.raiseError(NothingToBeUpdated(c.target))
+          IO.raiseError(NothingToBeUpdated(c.address))
         case s: Current                                                              =>
-          acceptChecking(c.acl)(AclAppended(c.target, c.acl, s.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclAppended(c.address, c.acl, s.rev + 1, _, c.subject))
       }
     def subtract(c: SubtractAcl) =
       state match {
         case Initial                                 =>
-          IO.raiseError(AclNotFound(c.target))
+          IO.raiseError(AclNotFound(c.address))
         case s: Current if c.rev != s.rev            =>
-          IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
         case _: Current if c.acl.hasEmptyPermissions =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.target))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
         case s: Current if s.acl -- c.acl == s.acl   =>
-          IO.raiseError(NothingToBeUpdated(c.target))
+          IO.raiseError(NothingToBeUpdated(c.address))
         case _: Current                              =>
-          acceptChecking(c.acl)(AclSubtracted(c.target, c.acl, c.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclSubtracted(c.address, c.acl, c.rev + 1, _, c.subject))
       }
     def delete(c: DeleteAcl)     =
       state match {
-        case Initial                          => IO.raiseError(AclNotFound(c.target))
-        case s: Current if c.rev != s.rev     => IO.raiseError(IncorrectRev(c.target, c.rev, s.rev))
-        case s: Current if s.acl == Acl.empty => IO.raiseError(AclIsEmpty(c.target))
-        case _: Current                       => instant.map(AclDeleted(c.target, c.rev + 1, _, c.subject))
+        case Initial                          => IO.raiseError(AclNotFound(c.address))
+        case s: Current if c.rev != s.rev     => IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
+        case s: Current if s.acl == Acl.empty => IO.raiseError(AclIsEmpty(c.address))
+        case _: Current                       => instant.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
       }
 
     cmd match {

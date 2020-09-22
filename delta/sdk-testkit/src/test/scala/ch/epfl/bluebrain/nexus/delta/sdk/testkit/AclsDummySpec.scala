@@ -6,16 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{
-  AclCannotContainEmptyPermissionCollection,
-  AclIsEmpty,
-  AclNotFound,
-  NothingToBeUpdated,
-  RevisionNotFound,
-  UnknownPermissions
-}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclTargets, Target}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Caller, Identity, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummySpec.minimum
@@ -61,16 +55,18 @@ class AclsDummySpec
   val org: Label    = Label.unsafe("org")
   val org2: Label   = Label.unsafe("org2")
   val proj: Label   = Label.unsafe("proj")
-  val orgTarget     = Target.Organization(org)
-  val org2Target    = Target.Organization(org2)
-  val projectTarget = Target.Project(org, proj)
+  val orgTarget     = AclAddress.Organization(org)
+  val org2Target    = AclAddress.Organization(org2)
+  val projectTarget = AclAddress.Project(org, proj)
+  val any           = AnyOrganizationAnyProject
+  val anyOrg        = AnyOrganization
 
   val permsDummy = PermissionsDummy(minimum)
   val dummy      = AclsDummy(permsDummy).accepted
 
-  def resourceFor(target: Target, acl: Acl, rev: Long, deprecated: Boolean = false): AclResource =
+  def resourceFor(address: AclAddress, acl: Acl, rev: Long, deprecated: Boolean = false): AclResource =
     ResourceF(
-      id = target,
+      id = address,
       rev = rev,
       types = Set(nxv.AccessControlList),
       deprecated = deprecated,
@@ -85,19 +81,23 @@ class AclsDummySpec
   "A dummy ACLs implementation" should {
 
     "append an ACL" in {
-      dummy.append(Target.Root, userR, 0L).accepted shouldEqual resourceFor(Target.Root, userR, 1L)
+      dummy.append(AclAddress.Root, userR, 0L).accepted shouldEqual resourceFor(AclAddress.Root, userR, 1L)
     }
 
     "replace an ACL" in {
-      dummy.replace(Target.Root, userR_groupX, 1L).accepted shouldEqual resourceFor(Target.Root, userR_groupX, 2L)
+      dummy.replace(AclAddress.Root, userR_groupX, 1L).accepted shouldEqual resourceFor(
+        AclAddress.Root,
+        userR_groupX,
+        2L
+      )
     }
 
     "subtract an ACL" in {
-      dummy.subtract(Target.Root, groupX, 2L).accepted shouldEqual resourceFor(Target.Root, userR, 3L)
+      dummy.subtract(AclAddress.Root, groupX, 2L).accepted shouldEqual resourceFor(AclAddress.Root, userR, 3L)
     }
 
     "delete an ACL" in {
-      dummy.delete(Target.Root, 3L).accepted shouldEqual resourceFor(Target.Root, Acl.empty, 4L)
+      dummy.delete(AclAddress.Root, 3L).accepted shouldEqual resourceFor(AclAddress.Root, Acl.empty, 4L)
     }
 
     "fetch an ACL" in {
@@ -126,50 +126,69 @@ class AclsDummySpec
     }
 
     "list ACLs" in {
-      dummy.append(Target.Root, groupR, 4L).accepted
+      dummy.append(AclAddress.Root, groupR, 4L).accepted
       dummy.append(projectTarget, anonR, 0L).accepted
 
-      dummy.list(Target.Root, ancestors = false).accepted shouldEqual AclTargets(resourceFor(Target.Root, groupR, 5L))
-      dummy.list(projectTarget, ancestors = false).accepted shouldEqual AclTargets(
-        resourceFor(projectTarget, anonR, 1L)
-      )
+      forAll(List(any, AnyProject(org))) { filter =>
+        dummy.list(filter, ancestors = false).accepted shouldEqual
+          AclCollection(resourceFor(projectTarget, anonR, 1L))
+      }
     }
 
     "list ACLs containing only caller identities" in {
-      dummy.listSelf(Target.Root, ancestors = false).accepted shouldEqual
-        AclTargets(resourceFor(Target.Root, Acl.empty, 5L))
-      dummy.listSelf(orgTarget, ancestors = false).accepted shouldEqual AclTargets(resourceFor(orgTarget, userRW, 2L))
-
+      dummy.listSelf(anyOrg, ancestors = false).accepted shouldEqual AclCollection(resourceFor(orgTarget, userRW, 2L))
     }
 
     "list ACLs containing ancestors" in {
       dummy.append(org2Target, userRW, 0L).accepted
-      dummy.list(projectTarget, ancestors = true).accepted shouldEqual
-        AclTargets(
-          resourceFor(Target.Root, groupR, 5L),
+
+      dummy.list(any, ancestors = true).accepted shouldEqual
+        AclCollection(
+          resourceFor(AclAddress.Root, groupR, 5L),
+          resourceFor(orgTarget, userRW_groupX, 2L),
+          resourceFor(org2Target, userRW, 1L),
+          resourceFor(projectTarget, anonR, 1L)
+        )
+
+      dummy.list(AnyProject(org), ancestors = true).accepted shouldEqual
+        AclCollection(
+          resourceFor(AclAddress.Root, groupR, 5L),
           resourceFor(orgTarget, userRW_groupX, 2L),
           resourceFor(projectTarget, anonR, 1L)
         )
 
-      dummy.list(org2Target, ancestors = true).accepted shouldEqual
-        AclTargets(
-          resourceFor(Target.Root, groupR, 5L),
+      dummy.list(anyOrg, ancestors = true).accepted shouldEqual
+        AclCollection(
+          resourceFor(AclAddress.Root, groupR, 5L),
+          resourceFor(orgTarget, userRW_groupX, 2L),
           resourceFor(org2Target, userRW, 1L)
         )
-
     }
 
     "list ACLs containing ancestors and caller identities" in {
-      dummy.listSelf(projectTarget, ancestors = true).accepted shouldEqual
-        AclTargets(
-          resourceFor(Target.Root, Acl.empty, 5L),
+      dummy.listSelf(anyOrg, ancestors = true).accepted shouldEqual
+        AclCollection(
+          resourceFor(AclAddress.Root, Acl.empty, 5L),
           resourceFor(orgTarget, userRW, 2L),
-          resourceFor(projectTarget, Acl.empty, 1L)
-        )
-      dummy.listSelf(org2Target, ancestors = true).accepted shouldEqual
-        AclTargets(
-          resourceFor(Target.Root, Acl.empty, 5L),
           resourceFor(org2Target, userRW, 1L)
+        )
+    }
+
+    "fetch ACLs containing ancestors" in {
+      dummy.fetchWithAncestors(projectTarget).accepted shouldEqual
+        AclCollection(
+          resourceFor(AclAddress.Root, groupR, 5L),
+          resourceFor(orgTarget, userRW_groupX, 2L),
+          resourceFor(projectTarget, anonR, 1L)
+        )
+    }
+
+    "fetch ACLs containing ancestors at specific revision" in {
+      dummy.fetchAtWithAncestors(projectTarget, 1L).accepted shouldEqual
+        AclCollection(
+          resourceFor(AclAddress.Root, userR, 1L),
+          resourceFor(orgTarget, userR_groupX, 1L),
+          resourceFor(projectTarget, anonR, 1L)
         )
     }
 

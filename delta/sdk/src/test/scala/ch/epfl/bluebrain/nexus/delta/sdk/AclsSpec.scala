@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, Delet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Target.Root
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsState}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}

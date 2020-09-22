@@ -59,7 +59,7 @@ object AclState {
   /**
     * An existing ACLs state.
     *
-    * @param target    the target location for the ACL
+    * @param address   the ACL address
     * @param acl       the Access Control List
     * @param rev       the ACLs revision
     * @param createdAt the instant when the resource was created
@@ -68,7 +68,7 @@ object AclState {
     * @param updatedBy the identity that last updated the resource
     */
   final case class Current(
-      target: Target,
+      address: AclAddress,
       acl: Acl,
       rev: Long,
       createdAt: Instant,
@@ -79,7 +79,7 @@ object AclState {
     override val toResource: Option[AclResource] =
       Some(
         ResourceF(
-          id = target,
+          id = address,
           rev = rev,
           types = types,
           deprecated = deprecated,
