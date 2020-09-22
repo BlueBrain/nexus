@@ -3,13 +3,12 @@ package ch.epfl.bluebrain.nexus.storage
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Get
-import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.util.ByteString
 import cats.effect.{ContextShift, Effect, IO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity._
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient._
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClientError.IdentitiesSerializationError
@@ -29,8 +28,10 @@ class DeltaIdentitiesClient[F[_]](config: DeltaClientConfig)(implicit F: Effect[
 
   def apply()(implicit credentials: Option[AccessToken]): F[Caller] =
     credentials match {
-      case Some(token) => execute(Get(config.identitiesIri.asAkka).addCredentials(OAuth2BearerToken(token.value)))
-      case None        => F.pure(Caller.anonymous)
+      case Some(token) =>
+        execute(Get(Uri(config.identitiesIri.toString)).addCredentials(OAuth2BearerToken(token.value)))
+      case None        =>
+        F.pure(Caller.anonymous)
     }
 
   private def execute(req: HttpRequest): F[Caller] = {

@@ -7,21 +7,11 @@ import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{
-  NoSnapshot,
-  SnapshotCombined,
-  SnapshotEvery,
-  SnapshotPredicate
-}
+import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.GetLastSeqNr
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
-import ch.epfl.bluebrain.nexus.sourcing.{
-  EventDefinition,
-  PersistentEventDefinition,
-  SnapshotStrategy,
-  TransientEventDefinition
-}
+import ch.epfl.bluebrain.nexus.sourcing.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
 import monix.bio.IO
 import monix.execution.Scheduler
 

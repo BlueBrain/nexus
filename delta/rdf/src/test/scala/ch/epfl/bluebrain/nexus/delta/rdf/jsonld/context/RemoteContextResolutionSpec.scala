@@ -2,10 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{
-  RemoteContextCircularDependency,
-  RemoteContextNotFound
-}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextCircularDependency, RemoteContextNotFound}
 import io.circe.Json
 import org.apache.jena.iri.IRI
 import org.scalatest.matchers.should.Matchers

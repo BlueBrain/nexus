@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.storage.config
 
-import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import org.apache.jena.iri.IRI
 
 object Contexts {
 
-  val base = url"https://bluebrain.github.io/nexus/contexts/"
+  private val base = "https://bluebrain.github.io/nexus/contexts/"
 
-  val errorCtxUri: AbsoluteIri    = base + "error.json"
-  val resourceCtxUri: AbsoluteIri = base + "resource.json"
+  val errorCtxIri: IRI    = iri"${base}error.json"
+  val resourceCtxIri: IRI = iri"${base}resource.json"
 
 }

@@ -26,7 +26,7 @@ object InfluxDocker extends ContainerDef {
     }
 
     make[InfluxHostConfig].from { docker: InfluxDocker.Container =>
-      val knownAddress = docker.availablePorts.availablePorts(primaryPort).head
+      val knownAddress = docker.availablePorts.first(primaryPort)
       InfluxHostConfig(knownAddress.hostV4, knownAddress.port)
     }
 

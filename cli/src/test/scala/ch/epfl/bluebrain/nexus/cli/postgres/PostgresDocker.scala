@@ -33,7 +33,7 @@ object PostgresDocker extends ContainerDef {
     }
 
     make[PostgresHostConfig].from { docker: PostgresDocker.Container =>
-      val knownAddress = docker.availablePorts.availablePorts(primaryPort).head
+      val knownAddress = docker.availablePorts.first(primaryPort)
       PostgresHostConfig(knownAddress.hostV4, knownAddress.port)
     }
 

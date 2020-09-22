@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.storage
 
 import akka.http.scaladsl.model.{ContentType, Uri}
-import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.storage.config.Contexts.resourceCtxUri
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.storage.config.Contexts.resourceCtxIri
 import scala.annotation.nowarn
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
@@ -45,7 +45,7 @@ object File {
       Decoder.decodeString.emap(ContentType.parse(_).left.map(_.mkString("\n")))
 
     implicit val fileAttrEncoder: Encoder[FileAttributes] =
-      deriveConfiguredEncoder[FileAttributes].mapJson(_.addContext(resourceCtxUri))
+      deriveConfiguredEncoder[FileAttributes].mapJson(_.addContext(resourceCtxIri))
     implicit val fileAttrDecoder: Decoder[FileAttributes] = deriveConfiguredDecoder[FileAttributes]
   }
 

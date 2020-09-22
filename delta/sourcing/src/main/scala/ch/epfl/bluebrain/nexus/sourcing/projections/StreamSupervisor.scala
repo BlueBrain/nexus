@@ -65,7 +65,7 @@ object StreamSupervisor {
       }
 
       def interruptStream(interrupter: SignallingRef[Task, Boolean]): Unit =
-        interrupter.set(true).toIO.unsafeRunSync
+        interrupter.set(true).toIO.unsafeRunSync()
 
       def running(interrupter: SignallingRef[Task, Boolean]): Behavior[SupervisorCommand] =
         Behaviors
