@@ -4,9 +4,10 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import org.apache.jena.iri.IRI
 
 /**

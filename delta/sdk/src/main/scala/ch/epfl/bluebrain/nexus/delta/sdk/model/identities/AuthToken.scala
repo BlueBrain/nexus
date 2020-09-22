@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 

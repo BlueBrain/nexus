@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import org.scalatest.Inspectors
 

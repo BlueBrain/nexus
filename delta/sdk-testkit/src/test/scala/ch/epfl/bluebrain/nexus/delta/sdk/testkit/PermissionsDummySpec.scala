@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Identity, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummySpec.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}

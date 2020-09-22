@@ -5,7 +5,7 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.dummies.PermissionsDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._

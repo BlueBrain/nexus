@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
 /**
   * Enumeration of ACL event types.

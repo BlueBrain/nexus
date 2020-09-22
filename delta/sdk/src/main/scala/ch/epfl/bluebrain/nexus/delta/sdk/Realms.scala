@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import akka.http.scaladsl.model.Uri
 import cats.effect.Clock
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._

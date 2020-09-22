@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.dummies.OrganizationsDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{Current => OrgCurrent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.PrefixIRI

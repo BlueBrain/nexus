@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import io.circe.Json
 

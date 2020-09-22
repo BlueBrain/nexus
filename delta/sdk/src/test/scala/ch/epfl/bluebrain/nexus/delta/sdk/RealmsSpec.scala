@@ -5,7 +5,7 @@ import java.time.Instant
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.dummies.WellKnownResolverDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
