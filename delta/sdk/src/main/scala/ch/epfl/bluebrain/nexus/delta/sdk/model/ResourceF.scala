@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import java.time.Instant
 
 import cats.Functor
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import org.apache.jena.iri.IRI
 
 /**

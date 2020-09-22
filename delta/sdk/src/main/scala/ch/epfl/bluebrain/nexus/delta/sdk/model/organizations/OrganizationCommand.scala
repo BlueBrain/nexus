@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 
 /**

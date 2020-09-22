@@ -1,4 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
+
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 
 /**
   * Parent type for unique identities as recognized by the system. A client usually has multiple identities with the

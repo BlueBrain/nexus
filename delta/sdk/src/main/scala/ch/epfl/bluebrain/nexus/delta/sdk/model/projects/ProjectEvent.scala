@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import org.apache.jena.iri.IRI
 

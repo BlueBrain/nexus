@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.dummies
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import monix.bio.{IO, UIO}

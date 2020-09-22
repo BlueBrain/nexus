@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.sdk.error.AuthError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import monix.bio.IO
 
 /**
@@ -14,6 +13,6 @@ trait Identities {
     *
     * @param token a well formatted authentication token (usually a bearer token)
     */
-  def exchange(token: AuthToken): IO[AuthError, Caller]
+  def exchange(token: AuthToken): IO[TokenRejection, Caller]
 
 }

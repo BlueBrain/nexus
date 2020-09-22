@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 
 import scala.collection.immutable.SortedMap

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
 /**
   * Enumeration of Permissions event types.
