@@ -15,7 +15,7 @@ object TarFlow {
   private val eofBlockSize: Int = recordSize * 2
 
   private val terminalChunk =
-    ByteString.newBuilder.putBytes(Array.ofDim[Byte](eofBlockSize)).result
+    ByteString.newBuilder.putBytes(Array.ofDim[Byte](eofBlockSize)).result()
 
   private def headerBytes(basePath: Path, path: Path): ByteString = {
     val header  = new TarArchiveEntry(path.toFile, basePath.getParent.relativize(path).toString)

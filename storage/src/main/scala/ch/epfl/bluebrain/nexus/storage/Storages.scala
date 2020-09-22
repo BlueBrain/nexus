@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.storage.Storages.{BucketExistence, PathExistence}
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesCache
 import ch.epfl.bluebrain.nexus.storage.attributes.AttributesComputation._
 import ch.epfl.bluebrain.nexus.storage.config.AppConfig.{DigestConfig, StorageConfig}
-import scala.annotation.nowarn
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process._
@@ -51,10 +50,11 @@ trait Storages[F[_], Source] {
     * @param source       the file content
     * @return The file attributes containing the metadata (bytes and location) wrapped in an F effect type
     */
-  def createFile(name: String, relativePath: Uri.Path, source: Source)(implicit
-      @nowarn("cat=unused") bucketEv: BucketExists,
-      @nowarn("cat=unused") pathEv: PathDoesNotExist
-  ): F[FileAttributes]
+  def createFile(
+      name: String,
+      relativePath: Uri.Path,
+      source: Source
+  )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes]
 
   /**
     * Moves a path from the provided ''sourceRelativePath'' to ''destRelativePath'' inside the nexus folder.
@@ -65,9 +65,11 @@ trait Storages[F[_], Source] {
     * @return Left(rejection) or Right(fileAttributes).
     *         The file attributes contain the metadata (bytes and location) wrapped in an F effect type
     */
-  def moveFile(name: String, sourceRelativePath: Uri.Path, destRelativePath: Uri.Path)(implicit
-      @nowarn("cat=unused") bucketEv: BucketExists
-  ): F[RejOrAttributes]
+  def moveFile(
+      name: String,
+      sourceRelativePath: Uri.Path,
+      destRelativePath: Uri.Path
+  )(implicit bucketEv: BucketExists): F[RejOrAttributes]
 
   /**
     * Retrieves the file as a Source.
@@ -76,10 +78,10 @@ trait Storages[F[_], Source] {
     * @param relativePath the relative path to the file location
     * @return Left(rejection),  Right(source, Some(filename)) when the path is a file and Right(source, None) when the path is a directory
     */
-  def getFile(name: String, relativePath: Uri.Path)(implicit
-      @nowarn("cat=unused") bucketEv: BucketExists,
-      @nowarn("cat=unused") pathEv: PathExists
-  ): RejOr[(Source, Option[String])]
+  def getFile(
+      name: String,
+      relativePath: Uri.Path
+  )(implicit bucketEv: BucketExists, pathEv: PathExists): RejOr[(Source, Option[String])]
 
   /**
     * Retrieves the attributes of the file.
@@ -87,10 +89,10 @@ trait Storages[F[_], Source] {
     * @param name         the storage bucket name
     * @param relativePath the relative path to the file location
     */
-  def getAttributes(name: String, relativePath: Uri.Path)(implicit
-      @nowarn("cat=unused") bucketEv: BucketExists,
-      @nowarn("cat=unused") pathEv: PathExists
-  ): F[FileAttributes]
+  def getAttributes(
+      name: String,
+      relativePath: Uri.Path
+  )(implicit bucketEv: BucketExists, pathEv: PathExists): F[FileAttributes]
 
 }
 
@@ -146,10 +148,11 @@ object Storages {
       else PathDoesNotExist
     }
 
-    def createFile(name: String, relativeFilePath: Uri.Path, source: AkkaSource)(implicit
-        @nowarn("cat=unused") bucketEv: BucketExists,
-        @nowarn("cat=unused") pathEv: PathDoesNotExist
-    ): F[FileAttributes] = {
+    def createFile(
+        name: String,
+        relativeFilePath: Uri.Path,
+        source: AkkaSource
+    )(implicit bucketEv: BucketExists, pathEv: PathDoesNotExist): F[FileAttributes] = {
       val absFilePath = filePath(name, relativeFilePath)
       if (absFilePath.descendantOf(basePath(name)))
         F.fromTry(Try(Files.createDirectories(absFilePath.getParent))) >>
@@ -173,9 +176,11 @@ object Storages {
         F.raiseError(PathInvalid(name, relativeFilePath))
     }
 
-    def moveFile(name: String, sourceRelativePath: Uri.Path, destRelativePath: Uri.Path)(implicit
-        bucketEv: BucketExists
-    ): F[RejOrAttributes] = {
+    def moveFile(
+        name: String,
+        sourceRelativePath: Uri.Path,
+        destRelativePath: Uri.Path
+    )(implicit bucketEv: BucketExists): F[RejOrAttributes] = {
 
       val bucketPath          = basePath(name, protectedDir = false)
       val bucketProtectedPath = basePath(name)
@@ -243,10 +248,7 @@ object Storages {
     def getFile(
         name: String,
         relativePath: Uri.Path
-    )(implicit
-        @nowarn("cat=unused") bucketEv: BucketExists,
-        @nowarn("cat=unused") pathEv: PathExists
-    ): RejOr[(AkkaSource, Option[String])] = {
+    )(implicit bucketEv: BucketExists, pathEv: PathExists): RejOr[(AkkaSource, Option[String])] = {
       val absPath = filePath(name, relativePath)
       if (Files.isRegularFile(absPath)) Right(fileSource(absPath) -> Some(absPath.getFileName.toString))
       else if (Files.isDirectory(absPath)) Right(folderSource(absPath) -> None)

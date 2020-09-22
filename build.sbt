@@ -13,50 +13,50 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "1.4.4"
-val scalaCompilerVersion   = "2.13.2"
+val scalacScapegoatVersion = "1.4.5"
+val scalaCompilerVersion   = "2.13.3"
 
-val akkaHttpVersion                 = "10.1.12"
+val akkaHttpVersion                 = "10.2.0"
 val akkaHttpCirceVersion            = "1.33.0"
 val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaPersistenceJdbcVersion      = "4.0.0"
-val akkaVersion                     = "2.6.6"
-val alpakkaVersion                  = "2.0.1"
+val akkaVersion                     = "2.6.9"
+val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
 val asmVersion                      = "7.3.1"
-val byteBuddyAgentVersion           = "1.10.13"
+val byteBuddyAgentVersion           = "1.10.15"
 val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
-val catsVersion                     = "2.1.1"
+val catsVersion                     = "2.2.0"
 val circeVersion                    = "0.13.0"
-val declineVersion                  = "1.2.0"
-val distageVersion                  = "0.10.16"
+val declineVersion                  = "1.3.0"
+val distageVersion                  = "0.10.19"
 val dockerTestKitVersion            = "0.9.9"
-val doobieVersion                   = "0.9.0"
+val doobieVersion                   = "0.9.2"
 val flywayVersion                   = "6.5.2"
-val fs2Version                      = "2.4.2"
+val fs2Version                      = "2.4.4"
 val guavaVersion                    = "29.0-jre"
-val http4sVersion                   = "0.21.6"
+val http4sVersion                   = "0.21.7"
 val iamVersion                      = "1.3.0"
 val jenaVersion                     = "3.15.0"
-val jsonldjavaVersion               = "0.13.0"
-val kamonVersion                    = "2.1.2"
+val jsonldjavaVersion               = "0.13.1"
+val kamonVersion                    = "2.1.6"
 val kanelaAgentVersion              = "1.0.6"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
 val log4jVersion                    = "2.13.3"
 val magnoliaVersion                 = "0.16.0"
-val mockitoVersion                  = "1.14.8"
+val mockitoVersion                  = "1.15.0"
 val monixVersion                    = "3.2.2"
 val monixBioVersion                 = "1.0.0"
 val nimbusJoseJwtVersion            = "8.19"
 val parboiledVersion                = "2.2.0"
-val pureconfigVersion               = "0.13.0"
+val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
-val scalaTestVersion                = "3.2.0"
+val scalaTestVersion                = "3.2.2"
 val slickVersion                    = "3.3.2"
 val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2"
@@ -348,35 +348,6 @@ lazy val rdf = project
     Test / fork          := true
   )
 
-lazy val rdfOld = project
-  .in(file("rdf"))
-  .settings(shared, compilation, coverage, release)
-  .settings(
-    name       := "rdf-old",
-    moduleName := "rdf-old"
-  )
-  .settings(
-    libraryDependencies ++= Seq(
-      akkaHttp,
-      akkaHttpCirce,
-      akkaHttpXml,
-      alleycatsCore,
-      catsCore,
-      jenaArq,
-      magnolia,
-      nimbusJoseJwt,
-      parboiled2,
-      scalaReflect,
-      topBraidShacl,
-      akkaSlf4j    % Test,
-      akkaTestKit  % Test,
-      circeLiteral % Test,
-      logback      % Test,
-      scalaTest    % Test
-    ),
-    Test / fork          := true
-  )
-
 lazy val sdk = project
   .in(file("delta/sdk"))
   .settings(
@@ -403,7 +374,7 @@ lazy val sdkTestkit = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(rdf, sdk, testkit)
-  .settings(libraryDependencies ++= Seq(akkaActor % Test, scalaTest % Test))
+  .settings(libraryDependencies ++= Seq(akkaActor, scalaTest % Test))
 
 lazy val service    = project
   .in(file("delta/service"))
@@ -437,9 +408,9 @@ def docsFilesFilter(repo: File) =
 
 lazy val storage = project
   .in(file("storage"))
-  .dependsOn(rdfOld)
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
+  .dependsOn(rdf)
   .settings(cargo := {
     import scala.sys.process._
 
@@ -463,6 +434,7 @@ lazy val storage = project
     libraryDependencies     ++= Seq(
       apacheCompress,
       akkaHttp,
+      akkaHttpCirce,
       akkaStream,
       akkaSlf4j,
       alpakkaFiles,
@@ -488,68 +460,6 @@ lazy val storage = project
     mappings in Universal    := {
       (mappings in Universal).value :+ cargo.value
     }
-  )
-
-lazy val delta = project
-  .in(file("delta"))
-  .dependsOn(sourcing, rdfOld)
-  .enablePlugins(JmhPlugin, BuildInfoPlugin, UniversalPlugin, JavaAppPackaging, DockerPlugin)
-  .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
-  .settings(
-    name                 := "delta",
-    moduleName           := "delta",
-    coverageMinimum      := 75d,
-    buildInfoKeys        := Seq[BuildInfoKey](version),
-    Docker / packageName := "nexus-delta",
-    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config"
-  )
-  .settings(kamonSettings)
-  .settings(
-    libraryDependencies       ++= Seq(
-      akkaClusterSharding,
-      akkaHttp,
-      akkaHttpCirce,
-      akkaHttpCors,
-      akkaPersistence,
-      akkaPersistenceCassandra,
-      akkaPersistenceQuery,
-      akkaSlf4j,
-      alleycatsCore,
-      alpakkaS3,
-      alpakkaSse,
-      catsCore,
-      catsEffectRetry,
-      catsEffect,
-      guava,
-      jenaArq,
-      jsonldjava,
-      kryo,
-      logback,
-      magnolia,
-      monixEval,
-      nimbusJoseJwt,
-      parboiled2,
-      topBraidShacl,
-      akkaHttpTestKit         % Test,
-      akkaPersistenceInMem    % Test,
-      akkaPersistenceLauncher % Test,
-      akkaTestKit             % Test,
-      asm                     % Test,
-      circeLiteral            % Test,
-      distageDocker           % Test,
-      distageTestkit          % Test,
-      jsonldjava              % Test,
-      log4jCore               % Test,
-      log4jApi                % Test,
-      mockito                 % Test,
-      scalaTest               % Test
-    ),
-    sourceDirectory in Jmh     := (sourceDirectory in Test).value,
-    classDirectory in Jmh      := (classDirectory in Test).value,
-    dependencyClasspath in Jmh := (dependencyClasspath in Test).value,
-    compile in Jmh             := (compile in Jmh).dependsOn(compile in Test).value,
-    run in Jmh                 := (run in Jmh).dependsOn(Keys.compile in Jmh).evaluated,
-    Test / fork                := true
   )
 
 lazy val root = project

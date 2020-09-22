@@ -9,7 +9,7 @@ import akka.stream.scaladsl.{FileIO, Source}
 import akka.util.ByteString
 import cats.effect.{IO, LiftIO}
 import ch.epfl.bluebrain.nexus.storage.File.FileAttributes
-import ch.epfl.bluebrain.nexus.storage.config.Contexts.errorCtxUri
+import ch.epfl.bluebrain.nexus.storage.config.Contexts.errorCtxIri
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
@@ -41,8 +41,6 @@ package object storage {
 
   implicit val encUriPath: Encoder[Path] = Encoder.encodeString.contramap(_.toString())
   implicit val decUriPath: Decoder[Path] = Decoder.decodeString.emapTry(s => Try(Path(s)))
-  implicit val encUri: Encoder[Uri]      = Encoder.encodeString.contramap(_.toString)
-  implicit val decUri: Decoder[Uri]      = Decoder.decodeString.emapTry(s => Try(Uri(s)))
 
   implicit class FutureSyntax[A](private val future: Future[A]) extends AnyVal {
     def to[F[_]](implicit F: LiftIO[F], ec: ExecutionContext): F[A] = {
@@ -84,7 +82,7 @@ package object storage {
     */
   def jsonError(json: Json): Json = {
     val typed = json.hcursor.get[String]("@type").map(v => Json.obj("@type" -> v.asJson)).getOrElse(Json.obj())
-    typed deepMerge Json.obj("@context" -> Json.fromString(errorCtxUri.toString()))
+    typed deepMerge Json.obj("@context" -> Json.fromString(errorCtxIri.toString()))
   }
 
   def folderSource(path: JavaPath): AkkaSource = Directory.walk(path).via(TarFlow.writer(path))

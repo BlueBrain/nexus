@@ -4,10 +4,11 @@ import java.nio.file.{Path, Paths}
 
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.rdf.implicits._
-import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+
 import scala.annotation.nowarn
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import com.typesafe.config.Config
+import org.apache.jena.iri.IRI
 import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers._
 import pureconfig._
@@ -23,12 +24,12 @@ class Settings(config: Config) extends Extension {
 
   @nowarn("cat=unused")
   val appConfig: AppConfig = {
-    implicit val uriConverter: ConfigConvert[Uri]                 =
+    implicit val uriConverter: ConfigConvert[Uri]   =
       ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)
-    implicit val pathConverter: ConfigConvert[Path]               =
+    implicit val iriConverter: ConfigConvert[IRI]   =
+      ConfigConvert.viaString[IRI](catchReadError(s => iri"$s"), _.toString)
+    implicit val pathConverter: ConfigConvert[Path] =
       ConfigConvert.viaString[Path](catchReadError(s => Paths.get(s)), _.toString)
-    implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
-      ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s"), _.toString)
     ConfigSource.fromConfig(config).at("app").loadOrThrow[AppConfig]
   }
 
@@ -36,7 +37,7 @@ class Settings(config: Config) extends Extension {
 
 object Settings extends ExtensionId[Settings] with ExtensionIdProvider {
 
-  override def lookup(): ExtensionId[_ <: Extension] = Settings
+  override def lookup: ExtensionId[_ <: Extension] = Settings
 
   override def createExtension(system: ExtendedActorSystem): Settings = apply(system.settings.config)
 

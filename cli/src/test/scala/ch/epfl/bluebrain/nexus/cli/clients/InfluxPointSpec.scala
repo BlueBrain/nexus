@@ -26,7 +26,7 @@ class InfluxPointSpec extends AnyWordSpecLike with Matchers with Resources with 
       .compile
       .last
       .map(_.getOrElse(""))
-      .unsafeRunSync
+      .unsafeRunSync()
 
   "An InfluxPoint" should {
 

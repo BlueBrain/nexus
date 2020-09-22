@@ -15,8 +15,7 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.storage.File.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Caller
 import ch.epfl.bluebrain.nexus.storage.DeltaIdentitiesClient.Identity.Anonymous
@@ -59,8 +58,8 @@ class StorageRoutesSpec
   deltaIdentities()(None) shouldReturn Task(Caller(Anonymous, Set.empty))
 
   trait Ctx {
-    val name                     = genString()
-    val resourceCtx: AbsoluteIri = url"https://bluebrain.github.io/nexus/contexts/resource.json"
+    val name        = genString()
+    val resourceCtx = iri"https://bluebrain.github.io/nexus/contexts/resource.json"
   }
 
   trait RandomFile extends Ctx {

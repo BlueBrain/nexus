@@ -50,4 +50,17 @@ final class IriOpts(private val iri: IRI) extends AnyVal {
     */
   def isPrefixMapping: Boolean =
     iri.toString.endsWith("/") || iri.toString.endsWith("#")
+
+  /**
+    * Adds a segment to the end of the IRI
+    */
+  def /(segment: String): IRI = {
+    lazy val segmentStartsWithSlash = segment.startsWith("/")
+    lazy val iriEndsWithSlash       = iri.toString.endsWith("/")
+    if (iriEndsWithSlash && segmentStartsWithSlash)
+      iriUnsafe(s"$iri${segment.drop(1)}")
+    else if (iriEndsWithSlash || segmentStartsWithSlash)
+      iriUnsafe(s"$iri$segment")
+    else iriUnsafe(s"$iri/$segment")
+  }
 }

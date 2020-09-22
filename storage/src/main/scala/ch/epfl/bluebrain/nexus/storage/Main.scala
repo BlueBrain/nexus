@@ -71,7 +71,7 @@ object Main {
     val routes: Route = Routes(storages)
 
     val httpBinding: Future[Http.ServerBinding] = {
-      Http().bindAndHandle(routes, appConfig.http.interface, appConfig.http.port)
+      Http().newServerAt(appConfig.http.interface, appConfig.http.port).bind(routes)
     }
     httpBinding onComplete {
       case Success(binding) =>
