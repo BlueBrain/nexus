@@ -466,7 +466,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, testkit, storage, app)
+  .aggregate(docs, cli, testkit, storage, sourcing, rdf, sdk, sdkTestkit, service, app)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
