@@ -36,7 +36,7 @@ object AclAddressFilter {
     * An ACL filtering that matches any [[AclAddress.Organization]] address
     */
   final case object AnyOrganization extends AclAddressFilter {
-    val string = s"/*"
+    val string = "/*"
 
     def matches(address: AclAddress): Boolean =
       address match {
@@ -76,7 +76,7 @@ object AclAddressFilter {
     * An ACL filtering that matches any [[AclAddress.Project]] and any [[AclAddress.Organization]]
     */
   final case object AnyOrganizationAnyProject extends AclAddressFilter {
-    val string = s"/*/*"
+    val string = "/*/*"
 
     def matches(address: AclAddress): Boolean =
       address match {
