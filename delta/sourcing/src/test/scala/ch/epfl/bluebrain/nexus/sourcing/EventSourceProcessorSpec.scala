@@ -58,7 +58,7 @@ abstract class EventSourceProcessorSpec(config: Config)
         Initialize(0) -> Left(InvalidRevision(0))
       )
 
-      val probeState = testKit.createTestProbe[TestState]
+      val probeState = testKit.createTestProbe[TestState]()
       processorWithoutStop ! RequestState(entityId, probeState.ref)
       probeState.expectMessage(Current(2, 7))
     }
@@ -78,7 +78,7 @@ abstract class EventSourceProcessorSpec(config: Config)
 
   "Stop" should {
     "happen after some inactivity" in {
-      val probe = testKit.createTestProbe[String]
+      val probe = testKit.createTestProbe[String]()
 
       def stopAfterInactivity(actorRef: ActorRef[ProcessorCommand]) = {
         probe.ref ! s"${actorRef.path.name} got stopped"
@@ -199,7 +199,7 @@ class PersistentEventProcessorSpec
 
   "Stop" should {
     "happen after recovery has been completed" in {
-      val probe = testKit.createTestProbe[String]
+      val probe = testKit.createTestProbe[String]()
 
       def stopAfterInactivity(actorRef: ActorRef[ProcessorCommand]) = {
         probe.ref ! s"${actorRef.path.name} got stopped"
