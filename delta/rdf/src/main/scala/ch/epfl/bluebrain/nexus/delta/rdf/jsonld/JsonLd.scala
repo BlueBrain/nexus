@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RawJsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOptionOr
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -97,9 +97,19 @@ trait JsonLd extends Product with Serializable {
 object JsonLd {
 
   /**
+    * Creates a [[CompactedJsonLd]] unsafely.
+    *
+    * @param json   the json object representation
+    * @param ctx    the context
+    * @param rootId the top @id value
+    */
+  final def compactedUnsafe(json: JsonObject, ctx: RawJsonLdContext, rootId: IRI): CompactedJsonLd[RawJsonLdContext] =
+    CompactedJsonLd(json, ctx, rootId, ContextFields.Skip)
+
+  /**
     * Creates an [[ExpandedJsonLd]] unsafely.
     *
-   * @param expanded an already expanded Json-LD document. It must be a Json array with a single Json Object inside
+    * @param expanded an already expanded Json-LD document. It must be a Json array with a single Json Object inside
     * @param rootId   the top @id value
     * @throws IllegalArgumentException when the provided ''expanded'' json does not match the expected value
     */
@@ -112,11 +122,11 @@ object JsonLd {
   /**
     * Create an expanded ExpandedJsonLd document using the passed ''input''.
     *
-   * If the Json-LD document does not have a root @id, and the ''defaultId'' is present, it creates one.
+    * If the Json-LD document does not have a root @id, and the ''defaultId'' is present, it creates one.
     *
-   * If the Json-LD document does not have a root @id, and the ''defaultId'' is not present, it fails.
+    * If the Json-LD document does not have a root @id, and the ''defaultId'' is not present, it fails.
     *
-   * If the Json-LD document has more than one Json Object inside the array, it fails (@graph with more than an element).
+    * If the Json-LD document has more than one Json Object inside the array, it fails (@graph with more than an element).
     */
   final def expand(
       input: Json,
@@ -142,9 +152,9 @@ object JsonLd {
   /**
     * Create compacted JSON-LD document using the passed ''input'' and ''context''.
     *
-   * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
+    * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
     *
-   * This method does NOT verify the passed ''rootId'' is present in the compacted form. It just verifies the compacted
+    * This method does NOT verify the passed ''rootId'' is present in the compacted form. It just verifies the compacted
     * form has the expected format (a Json Object without a top @graph only key)
     */
   final def compact[Ctx <: JsonLdContext](
@@ -166,9 +176,9 @@ object JsonLd {
   /**
     * Create compacted JSON-LD document using the passed ''input'' and ''context''.
     *
-   * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
+    * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
     *
-   * The ''rootId'' is enforced using a framing on it.
+    * The ''rootId'' is enforced using a framing on it.
     */
   final def frame[Ctx <: JsonLdContext](
       input: Json,

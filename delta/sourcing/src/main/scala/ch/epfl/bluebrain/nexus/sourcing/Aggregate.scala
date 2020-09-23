@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing
 
 import ch.epfl.bluebrain.nexus.sourcing.processor.EvaluationIO
+import fs2._
 import monix.bio.Task
 
 /**
@@ -20,6 +21,11 @@ trait Aggregate[Id, State, Command, Event, Rejection] {
     * @param id the entity identifier
     */
   def state(id: Id): Task[State]
+
+  /**
+    * The ordered events for a resource.
+    */
+  def events(id: Id): Stream[Task, Event]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.

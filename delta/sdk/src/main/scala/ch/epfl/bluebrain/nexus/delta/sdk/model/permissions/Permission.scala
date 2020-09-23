@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalPermissionFormatError
+import io.circe.{Decoder, Encoder}
 
 /**
   * Wraps a permission string that must begin with a letter, followed by at most 31
@@ -34,4 +35,10 @@ object Permission {
     */
   final def unsafe(value: String): Permission =
     new Permission(value)
+
+  implicit final val permissionEncoder: Encoder[Permission] =
+    Encoder.encodeString.contramap(_.value)
+
+  implicit final val permissionDecoder: Decoder[Permission] =
+    Decoder.decodeString.emapTry(str => Permission(str).toTry)
 }

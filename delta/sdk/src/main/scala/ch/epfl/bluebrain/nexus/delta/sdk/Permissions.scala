@@ -41,7 +41,7 @@ trait Permissions {
     * @return the current permissions collection without checking permissions
     */
   def fetchPermissionSet: UIO[Set[Permission]] =
-    fetch.map(_.value)
+    fetch.map(_.value.permissions)
 
   /**
     * Replaces the current collection of permissions with the provided collection.

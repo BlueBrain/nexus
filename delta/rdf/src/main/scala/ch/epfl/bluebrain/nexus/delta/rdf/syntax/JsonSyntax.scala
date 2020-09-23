@@ -36,6 +36,13 @@ final class JsonOps(private val json: Json) extends AnyVal {
   def addContext(iri: IRI): Json = JsonLdContext.addContext(json, iri)
 
   /**
+   * Merge two context value objects
+   *
+   * @param that the value of the @context key
+   */
+  def merge(that: Json): Json = JsonLdContext.merge(json, that)
+
+  /**
     * Removes the provided keys from the top object on the current json.
     */
   def removeKeys(keys: String*): Json = JsonUtils.removeKeys(json, keys: _*)

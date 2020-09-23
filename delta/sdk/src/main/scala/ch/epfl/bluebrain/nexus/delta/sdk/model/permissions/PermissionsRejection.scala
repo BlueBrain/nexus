@@ -1,5 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
+import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
+import monix.bio.{IO, UIO}
+
+import scala.annotation.nowarn
+
 /**
   * Enumeration of Permissions rejection types.
   *
@@ -78,4 +91,25 @@ object PermissionsRejection {
   final case class RevisionNotFound(provided: Long, current: Long)
       extends PermissionsRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
+  implicit final val permissionsRejectionJsonLdEncoder: JsonLdEncoder[PermissionsRejection] = {
+    val context = RawJsonLdContext(Vocabulary.contexts.permissions.asJson)
+
+    @nowarn("cat=unused")
+    implicit val cfg: Configuration =
+      Configuration.default.withDiscriminator("@type")
+
+    implicit val permissionsRejectionEncoder: Encoder.AsObject[PermissionsRejection] = {
+      val encoder = deriveConfiguredEncoder[PermissionsRejection]
+      Encoder.AsObject.instance { rejection =>
+        encoder.encodeObject(rejection).add("reason", Json.fromString(rejection.reason))
+      }
+    }
+
+    new JsonLdEncoder[PermissionsRejection] {
+      override def apply(value: PermissionsRejection): IO[RdfError, JsonLd] =
+        JsonLd.compactedUnsafe(value.asJsonObject, context, iri"").pure[UIO]
+
+      override val contextValue: RawJsonLdContext = context
+    }
+  }
 }

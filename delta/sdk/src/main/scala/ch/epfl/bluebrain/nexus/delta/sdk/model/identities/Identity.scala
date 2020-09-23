@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import org.apache.jena.iri.IRI
 
 /**
   * Parent type for unique identities as recognized by the system. A client usually has multiple identities with the
@@ -13,7 +15,15 @@ object Identity {
   /**
     * Parent type for identities that represent a uniquely identified caller.
     */
-  sealed trait Subject extends Identity
+  sealed trait Subject extends Identity {
+
+    /**
+      * An id for the subject.
+      *
+     * @param base the base address of the deployment
+      */
+    def id(base: BaseUri): IRI
+  }
 
   /**
     * The Anonymous type.
@@ -23,7 +33,10 @@ object Identity {
   /**
     * The Anonymous singleton identity.
     */
-  final case object Anonymous extends Subject
+  final case object Anonymous extends Subject {
+    override def id(base: BaseUri): IRI =
+      iri"${base.value}/anonymous"
+  }
 
   /**
     * A user identity. It represents a unique person or a service account.
@@ -31,7 +44,10 @@ object Identity {
    * @param subject the subject name (usually the preferred_username claim)
     * @param realm   the associated realm that asserts this identity
     */
-  final case class User(subject: String, realm: Label) extends Subject
+  final case class User(subject: String, realm: Label) extends Subject {
+    override def id(base: BaseUri): IRI =
+      iri"${base.value}/realms/${realm.value}/users/$subject"
+  }
 
   /**
     * A group identity. It asserts that the caller belongs to a certain group of callers.
@@ -47,6 +63,4 @@ object Identity {
     * @param realm the realm that asserts this identity
     */
   final case class Authenticated(realm: Label) extends Identity
-
-  // TODO: figure out a way to deal with multiple representation formats for both JSON-LD and JSON for API and DB
 }

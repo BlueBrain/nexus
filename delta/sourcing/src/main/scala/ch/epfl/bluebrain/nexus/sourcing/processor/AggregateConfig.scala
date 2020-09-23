@@ -8,7 +8,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Aggregate configuration.
   *
- * @param askTimeout                 timeout for the message exchange with the aggregate actor
+  * @param askTimeout                 timeout for the message exchange with the aggregate actor
   * @param evaluationMaxDuration      timeout for evaluating commands
   * @param evaluationExecutionContext the execution context where commands are to be evaluated
   * @param stashSize                  the maximum size allowed for stashing when evaluating

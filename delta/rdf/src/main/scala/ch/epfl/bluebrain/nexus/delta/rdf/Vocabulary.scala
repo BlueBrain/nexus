@@ -117,5 +117,16 @@ object Vocabulary {
     val projects      = schemas + "projects.json"
     val realms        = schemas + "realms.json"
   }
+
+  /**
+    * Nexus contexts
+    */
+  object contexts {
+    val base              = iri"https://bluebrain.github.io/nexus/contexts/"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val permissions = contexts + "permissions.json"
+    val resource    = contexts + "resource.json"
+  }
 }
 // $COVERAGE-ON$

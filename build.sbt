@@ -89,6 +89,8 @@ lazy val akkaPersistenceJdbc = Seq(
   "com.typesafe.slick" %% "slick-hikaricp"        % slickVersion
 )
 
+lazy val akkaStreamTestKit = "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion
+
 lazy val akkaPersistenceLauncher = "com.typesafe.akka"  %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
 lazy val akkaPersistenceQuery    = "com.typesafe.akka"  %% "akka-persistence-query"              % akkaVersion
 lazy val akkaSlf4j               = "com.typesafe.akka"  %% "akka-slf4j"                          % akkaVersion
@@ -359,6 +361,7 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
+      circeGenericExtras,
       monixBio,
       akkaActor % Test,
       scalaTest % Test
@@ -394,9 +397,17 @@ lazy val app        = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
-  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaHttpCirce,
+      akkaStreamTestKit % Test,
+      akkaHttpTestKit   % Test,
+      circeLiteral      % Test,
+      scalaTest         % Test
+    )
+  )
 
-lazy val cargo      = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val docsFiles =
   Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")

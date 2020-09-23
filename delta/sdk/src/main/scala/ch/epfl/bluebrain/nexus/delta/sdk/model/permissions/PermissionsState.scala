@@ -68,7 +68,7 @@ object PermissionsState {
         updatedAt = Instant.EPOCH,
         updatedBy = Identity.Anonymous,
         schema = schema,
-        value = minimum
+        value = PermissionSet(minimum)
       )
   }
 
@@ -102,7 +102,7 @@ object PermissionsState {
         updatedAt = updatedAt,
         updatedBy = updatedBy,
         schema = schema,
-        value = permissions ++ minimum
+        value = PermissionSet(permissions ++ minimum)
       )
   }
 }

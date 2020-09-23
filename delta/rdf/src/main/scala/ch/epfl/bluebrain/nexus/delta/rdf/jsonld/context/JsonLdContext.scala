@@ -10,6 +10,11 @@ import org.apache.jena.iri.IRI
 trait JsonLdContext extends Product with Serializable {
   type This >: this.type <: JsonLdContext
 
+  def isEmpty: Boolean =
+    value == Json.obj() || value == Json.arr() || value == Json.fromString("")
+
+  def merge(that: This): This
+
   /**
     * The value of the key @context. It must be a Json Array or a Json Object
     */
@@ -141,7 +146,13 @@ object JsonLdContext {
       case _ :: _      => Json.arr(arr: _*)
     }
 
-  private def merge(json: Json, that: Json): Json =
+  /**
+    * Merge two context value objects
+    *
+    * @param json the value of the @context key
+    * @param that the value of the @context key
+    */
+  def merge(json: Json, that: Json): Json =
     (json.asArray, that.asArray, json.asString, that.asString) match {
       case (Some(arr), Some(thatArr), _, _) => arrOrObj(removeEmpty(arr ++ thatArr))
       case (_, Some(thatArr), _, _)         => arrOrObj(removeEmpty(json +: thatArr))

@@ -253,7 +253,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     val scope = if (dryRun) "testing" else "evaluating"
     val eval  = for {
       _ <- IO.shift(config.evaluationExecutionContext)
-      r <- definition.evaluate(state, cmd)
+      r <- definition.evaluate(state, cmd).attempt
       _ <- IO.shift(context.executionContext)
       _ <- tellResult(r.map { e => EvaluationSuccess(e, definition.next(state, e)) }.valueOr(EvaluationRejection(_)))
     } yield ()

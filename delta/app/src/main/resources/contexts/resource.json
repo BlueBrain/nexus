@@ -1,0 +1,53 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "Schema": "nxv:Schema",
+    "File": "nxv:File",
+    "Resolver": "nxv:Resolver",
+    "InProject": "nxv:InProject",
+    "CrossProject": "nxv:CrossProject",
+    "View": "nxv:View",
+    "ElasticSearchView": "nxv:ElasticSearchView",
+    "Storage": "nxv:Storage",
+    "DiskStorage": "nxv:DiskStorage",
+    "RemoteDiskStorage": "nxv:RemoteDiskStorage",
+    "S3Storage": "nxv:S3Storage",
+    "AggregateElasticSearchView": "nxv:AggregateElasticSearchView",
+    "AggregateSparqlView": "nxv:AggregateSparqlView",
+    "Archive": "nxv:Archive",
+    "SparqlView": "nxv:SparqlView",
+    "CompositeView": "nxv:CompositeView",
+    "Beta": "nxv:Beta",
+    "_deprecated": "nxv:deprecated",
+    "_createdAt": "nxv:createdAt",
+    "_updatedAt": "nxv:updatedAt",
+    "_project": {
+      "@id": "nxv:project",
+      "@type": "@id"
+    },
+    "_self": "nxv:self",
+    "_incoming": "nxv:incoming",
+    "_outgoing": "nxv:outgoing",
+    "_createdBy": "nxv:createdBy",
+    "_updatedBy": "nxv:updatedBy",
+    "_constrainedBy": {
+      "@id": "nxv:constrainedBy",
+      "@type": "@id"
+    },
+    "_rev": "nxv:rev",
+    "_digest": "nxv:digest",
+    "_algorithm": "nxv:algorithm",
+    "_value": "nxv:value",
+    "_mediaType": "nxv:mediaType",
+    "_location": "nxv:location",
+    "_filename": "nxv:filename",
+    "_bytes": "nxv:bytes",
+    "_instant": "nxv:instant",
+    "_storage": "nxv:storage",
+    "_subject": {
+      "@id": "nxv:subject",
+      "@type": "@id"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/resource.json"
+}

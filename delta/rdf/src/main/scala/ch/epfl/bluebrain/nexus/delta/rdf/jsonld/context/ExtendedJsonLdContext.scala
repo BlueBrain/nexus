@@ -78,6 +78,15 @@ final case class ExtendedJsonLdContext(
   def addPrefix(prefix: String, iri: IRI): This                                           =
     copy(value = add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))
 
+  override def merge(that: This): This =
+    ExtendedJsonLdContext(
+      value.merge(that.value),
+      that.base.orElse(base),
+      that.vocab.orElse(vocab),
+      aliases ++ that.aliases,
+      prefixMappings ++ that.prefixMappings
+    )
+
   protected def addAlias(prefix: String, iri: IRI, dataType: Option[String] = None): This =
     copy(
       value = add(prefix, dataType.fold(iri.asJson)(dt => expandedTermDefinition(dt, iri))),
