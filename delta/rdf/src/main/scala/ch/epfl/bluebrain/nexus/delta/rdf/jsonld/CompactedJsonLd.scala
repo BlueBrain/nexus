@@ -15,7 +15,7 @@ import org.apache.jena.iri.IRI
 /**
   * Json-LD Compacted Document. This specific implementation is entity centric, having always only one root @id.
   *
- * The addition operations do not guarantee the proper compaction of those fields, neither guarantee the addition of
+  * The addition operations do not guarantee the proper compaction of those fields, neither guarantee the addition of
   * any necessary information into the context. This task is left to the developer to explicitly update the context
   */
 final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
@@ -28,7 +28,9 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
   type This                = CompactedJsonLd[Ctx]
   protected type Predicate = String
 
-  lazy val json: Json = obj.asJson.addContext(Json.obj(keywords.context -> ctx.value))
+  lazy val json: Json                  =
+    if (ctx.isEmpty) obj.asJson
+    else obj.asJson.addContext(Json.obj(keywords.context -> ctx.value))
 
   def add(key: String, iri: IRI): This =
     add(key, iri.asJson)
@@ -108,4 +110,9 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
     copy(obj = newObj)
   }
 
+}
+
+object CompactedJsonLd {
+  type CompactedJsonLdWithRawContext      = CompactedJsonLd[RawJsonLdContext]
+  type CompactedJsonLdWithExtendedContext = CompactedJsonLd[ExtendedJsonLdContext]
 }

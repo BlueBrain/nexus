@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.dummies.PermissionsDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous

@@ -1,0 +1,6 @@
+<http://nexus.example.com/john-doé> <https://bluebrain.github.io/nexus/vocabulary/rev> "1"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://nexus.example.com/john-doé> <https://bluebrain.github.io/nexus/vocabulary/deprecated> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<http://nexus.example.com/john-doé> <https://bluebrain.github.io/nexus/vocabulary/createdAt> "1970-01-01T00:00:00Z" .
+<http://nexus.example.com/john-doé> <https://bluebrain.github.io/nexus/vocabulary/permissions> "execute" .
+<http://nexus.example.com/john-doé> <https://bluebrain.github.io/nexus/vocabulary/permissions> "write" .
+<http://nexus.example.com/john-doé> <https://bluebrain.github.io/nexus/vocabulary/permissions> "read" .

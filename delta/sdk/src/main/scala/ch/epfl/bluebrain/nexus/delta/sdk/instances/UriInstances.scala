@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.rdf.instances
+package ch.epfl.bluebrain.nexus.delta.sdk.instances
 
 import akka.http.scaladsl.model.Uri
 import io.circe.{Decoder, Encoder}

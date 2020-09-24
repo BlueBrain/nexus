@@ -13,14 +13,14 @@ trait RemoteContextResolution {
   /**
     * Resolve a passed ''iri''.
     *
-   * @return the expected Json payload response from the passed ''iri''
+    * @return the expected Json payload response from the passed ''iri''
     */
   def resolve(iri: IRI): Result[Json]
 
   /**
     * From a given ''json'', resolve all its remote context IRIs.
     *
-   * @return a Map where the keys are the IRIs resolved and the values the @context value
+    * @return a Map where the keys are the IRIs resolved and the values the @context value
     *         from the payload of the resolved wrapped in an IO
     */
   final def apply(json: Json): Result[Map[IRI, Json]] = {
@@ -50,5 +50,10 @@ trait RemoteContextResolution {
 object RemoteContextResolution {
   type Result[A] = IO[RemoteContextResolutionError, A]
 
+  /**
+    * Helper method to construct a [[RemoteContextResolution]] .
+    *
+   * @param f a function from an [[IRI]] to a [[Result]] of [[Json]]
+    */
   final def apply(f: IRI => Result[Json]): RemoteContextResolution = (iri: IRI) => f(iri)
 }

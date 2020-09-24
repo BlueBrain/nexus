@@ -4,7 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.dummies.OrganizationsDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}

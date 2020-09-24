@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, RemoteContextResolutionDummy}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextCircularDependency, RemoteContextNotFound}
 import io.circe.Json
@@ -32,14 +32,14 @@ class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fix
         )
       // format: on
 
-      val remoteResolution = resolution(contexts)
+      val remoteResolution = new RemoteContextResolutionDummy(contexts)
       remoteResolution(input).rejected shouldEqual RemoteContextCircularDependency(iri"http://example.com/cöntéxt/1")
     }
 
     "fail to resolve when some context does not exist" in {
       val excluded                 = iri"http://example.com/cöntéxt/3"
       val contexts: Map[IRI, Json] = remoteContexts - excluded
-      val remoteResolution         = resolution(contexts)
+      val remoteResolution         = new RemoteContextResolutionDummy(contexts)
       remoteResolution(input).rejected shouldEqual RemoteContextNotFound(excluded)
     }
   }
