@@ -19,6 +19,9 @@ final case class RawJsonLdContext(value: Json) extends JsonLdContext {
       case Some(dt) => RawJsonLdContext(add(prefix, expandedTermDefinition(dt, iri)))
       case None     => RawJsonLdContext(add(prefix, iri.asJson))
     }
+
+  override def merge(that: This): This =
+    RawJsonLdContext(value.merge(that.value))
 }
 
 object RawJsonLdContext {

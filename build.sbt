@@ -41,7 +41,7 @@ val guavaVersion                    = "29.0-jre"
 val http4sVersion                   = "0.21.7"
 val iamVersion                      = "1.3.0"
 val jenaVersion                     = "3.15.0"
-val jsonldjavaVersion               = "0.13.1"
+val jsonldjavaVersion               = "0.13.2"
 val kamonVersion                    = "2.1.6"
 val kanelaAgentVersion              = "1.0.6"
 val kindProjectorVersion            = "0.11.0"
@@ -334,7 +334,6 @@ lazy val rdf = project
   )
   .settings(
     libraryDependencies ++= Seq(
-      akkaHttp, // Remove this dependency when moving RdfMediaTypes to the service module
       catsCore,
       circeParser,
       circeGeneric,
@@ -360,7 +359,8 @@ lazy val sdk = project
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
       monixBio,
-      akkaActor % Test,
+      akkaActor, // Needed to create Uri
+      akkaHttp,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector)
@@ -374,9 +374,13 @@ lazy val sdkTestkit = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(rdf, sdk, testkit)
-  .settings(libraryDependencies ++= Seq(akkaActor, scalaTest % Test))
+  .settings(
+    libraryDependencies ++= Seq(
+      scalaTest % Test
+    )
+  )
 
-lazy val service    = project
+lazy val service = project
   .in(file("delta/service"))
   .settings(
     name       := "delta-service",
@@ -384,9 +388,13 @@ lazy val service    = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
-  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+  .settings(
+    libraryDependencies ++= Seq(
+      scalaTest % Test
+    )
+  )
 
-lazy val app        = project
+lazy val app = project
   .in(file("delta/app"))
   .settings(
     name       := "delta-app",
@@ -394,9 +402,13 @@ lazy val app        = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
-  .settings(libraryDependencies ++= Seq(scalaTest % Test))
+  .settings(
+    libraryDependencies ++= Seq(
+      scalaTest % Test
+    )
+  )
 
-lazy val cargo      = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
+lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
 lazy val docsFiles =
   Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")

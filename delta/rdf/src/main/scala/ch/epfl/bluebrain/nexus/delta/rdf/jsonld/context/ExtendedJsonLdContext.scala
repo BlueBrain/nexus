@@ -8,7 +8,7 @@ import org.apache.jena.iri.IRI
 /**
   * A Json-LD context that has been inspected to obtain its relevant fields.
   *
- * @param value          the value of the @context key
+  * @param value          the value of the @context key
   * @param base           the IRI value of the @base key if present
   * @param vocab          the IRI value of the @vocab key if present
   * @param aliases        the @context aliases used to compact or shorten keys/values
@@ -75,8 +75,17 @@ final case class ExtendedJsonLdContext(
     alias(iri).orElse(compactedVocabOrBase).orElse(curie(iri)).getOrElse(iri.toString)
   }
 
-  def addPrefix(prefix: String, iri: IRI): This                                           =
+  def addPrefix(prefix: String, iri: IRI): This =
     copy(value = add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))
+
+  override def merge(that: This): This          =
+    ExtendedJsonLdContext(
+      value.merge(that.value),
+      that.base.orElse(base),
+      that.vocab.orElse(vocab),
+      aliases ++ that.aliases,
+      prefixMappings ++ that.prefixMappings
+    )
 
   protected def addAlias(prefix: String, iri: IRI, dataType: Option[String] = None): This =
     copy(

@@ -1,0 +1,15 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/permissions.json"
+  ],
+  "@id": "http://nexus.example.com/john-doé",
+  "rev": 1,
+  "deprecated": false,
+  "createdAt": "1970-01-01T00:00:00Z",
+  "permissions": [
+    "read",
+    "write",
+    "execute"
+  ]
+}

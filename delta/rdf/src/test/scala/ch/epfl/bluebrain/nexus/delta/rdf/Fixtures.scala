@@ -5,10 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotFound
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers, TestMatchers}
+import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.IO
 import monix.execution.Scheduler
 import monix.execution.schedulers.CanBlock
 import org.apache.jena.iri.IRI
@@ -36,7 +34,7 @@ trait Fixtures
     )
   // format: on
 
-  implicit val remoteResolution: RemoteContextResolution = resolution(remoteContexts)
+  implicit val remoteResolution: RemoteContextResolution = new RemoteContextResolutionDummy(remoteContexts)
   implicit val sc: Scheduler                             = Scheduler.global
   implicit val pm: CanBlock                              = CanBlock.permit
   implicit val opts: JsonLdOptions                       = JsonLdOptions.empty
@@ -50,9 +48,6 @@ trait Fixtures
     val value                  = iri"http://nexus.example.com/"
     def +(string: String): IRI = iri"$value$string"
   }
-
-  def resolution(contexts: Map[IRI, Json]): RemoteContextResolution =
-    RemoteContextResolution((iri: IRI) => IO.fromEither(contexts.get(iri).toRight(RemoteContextNotFound(iri))))
 
   def bNode(graph: Graph) =
     graph

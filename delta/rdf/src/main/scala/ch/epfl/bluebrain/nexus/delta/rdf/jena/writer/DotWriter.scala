@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jena.writer
 import java.io.{OutputStream, OutputStreamWriter, Writer}
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/vnd.graphviz`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ExtendedJsonLdContext
@@ -70,7 +69,7 @@ private object DotWriterImpl extends WriterGraphRIOTBase {
 }
 
 object DotWriter {
-  final val DOT: Lang = LangBuilder.create("DOT", `application/vnd.graphviz`.toString).addFileExtensions("dot").build
+  final val DOT: Lang = LangBuilder.create("DOT", "application/vnd.graphviz").addFileExtensions("dot").build
 
   private val dotNamespace                         = "http://jena.apache.org/riot/dot#"
   final private[writer] val JSONLD_CONTEXT: Symbol = Symbol.create(s"${dotNamespace}JSONLD_CONTEXT")

@@ -20,9 +20,9 @@ import scala.annotation.tailrec
 import scala.jdk.CollectionConverters._
 
 /**
-  * A rooted Graph representation backed up by a Jena Model
+  * A rooted Graph representation backed up by a Jena Model.
   *
- * @param root  the root node of the graph
+  * @param root  the root node of the graph
   * @param model the Jena model
   */
 final case class Graph private (root: IRI, model: Model) { self =>
@@ -99,14 +99,15 @@ final case class Graph private (root: IRI, model: Model) { self =>
 
   /**
     * Attempts to convert the current Graph to the N-Triples format: https://www.w3.org/TR/n-triples/
-    * @return
     */
   def toNTriples: IO[RdfError, NTriples] =
     tryOrConversionErr(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
       .map(NTriples(_, root))
 
   /**
-    * Attempts to convert the current Graph with the passed ''context'' as Json to the DOT format: https://graphviz.org/doc/info/lang.html
+    * Attempts to convert the current Graph with the passed ''context''
+    * as Json to the DOT format: https://graphviz.org/doc/info/lang.html
+    *
     * The context will be inspected to populate its fields and then the conversion will be performed.
     */
   def toDot(
@@ -119,8 +120,9 @@ final case class Graph private (root: IRI, model: Model) { self =>
     } yield Dot(string, root)
 
   /**
-    * Attempts to convert the current Graph with the passed ''context'' as Json to the JSON-LD compacted format:
-    * https://www.w3.org/TR/json-ld11-api/#compaction-algorithms
+    * Attempts to convert the current Graph with the passed ''context'' as Json
+    * to the JSON-LD compacted format:  https://www.w3.org/TR/json-ld11-api/#compaction-algorithms
+    *
     * Note: This is done in two steps, first transforming the graph to JSON-LD expanded format and then compacting it.
     */
   def toCompactedJsonLd[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
@@ -131,8 +133,8 @@ final case class Graph private (root: IRI, model: Model) { self =>
     api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, context, root, f))
 
   /**
-    * Attempts to convert the current Graph to the JSON-LD expanded format:
-    * https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
+    * Attempts to convert the current Graph to the JSON-LD expanded format: https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
+    *
     * Note: This is done in three steps, first transforming the graph to JSON-LD expanded format and then framing it (to have a single root) and then expanding it again.
     */
   def toExpandedJsonLd(implicit
@@ -151,7 +153,7 @@ object Graph {
   /**
     * Creates a [[Graph]] from a JSON-LD.
     *
-   * @param iri   the root IRI for the graph
+    * @param iri   the root IRI for the graph
     * @param input the JSON-LD input to transform into a Graph
     */
   final def apply(iri: IRI, input: Json)(implicit

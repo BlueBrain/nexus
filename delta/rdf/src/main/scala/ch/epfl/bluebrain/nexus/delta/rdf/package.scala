@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import akka.http.scaladsl.model.Uri
 import org.apache.jena.iri.{IRI, IRIFactory}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
@@ -19,12 +18,6 @@ package object rdf {
     val iri = iriUnsafe(string)
     Option.when(!iri.hasViolation(false))(iri).toRight(s"'$string' is not an IRI")
   }
-
-  /**
-    * Attempts to construct an Uri, returning a Left when it does not have the correct Uri format.
-    */
-  def uri(string: String): Either[String, Uri] =
-    Try(Uri(string)).toEither.leftMap(_ => s"'$string' is not an Uri")
 
   /**
     * Construct an IRI without checking the validity of the format.
