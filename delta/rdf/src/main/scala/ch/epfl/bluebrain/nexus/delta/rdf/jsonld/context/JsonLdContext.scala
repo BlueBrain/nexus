@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOptionOr
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.Json
 import io.circe.syntax._
 
@@ -101,7 +100,7 @@ object JsonLdContext {
     json
       .arrayOrObject(
         None,
-        arr => headOnlyOptionOr(arr)(Json.obj()).flatMap(_.asObject).flatMap(_(keywords.context)),
+        arr => arr.singleEntryOr(Json.obj()).flatMap(_.asObject).flatMap(_(keywords.context)),
         obj => obj(keywords.context)
       )
       .getOrElse(Json.obj())
@@ -174,9 +173,5 @@ object JsonLdContext {
     arr.filter(j => j != Json.obj() && j != Json.fromString("") && j != Json.arr())
 
   private def arrOrObj(arr: Seq[Json]): Json =
-    arr.take(2).toList match {
-      case Nil         => Json.obj()
-      case head :: Nil => head
-      case _ :: _      => Json.arr(arr: _*)
-    }
+    arr.singleEntryOr(Json.obj()).getOrElse(Json.fromValues(arr))
 }

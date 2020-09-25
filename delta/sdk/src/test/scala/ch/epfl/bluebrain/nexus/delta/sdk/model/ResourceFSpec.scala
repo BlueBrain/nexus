@@ -2,40 +2,63 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionSet
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class ResourceFSpec extends AnyWordSpecLike with Matchers {
+class ResourceFSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with CirceLiteral
+    with TestHelpers
+    with IOValues
+    with TestMatchers {
 
   "A ResourceF" should {
-    val resource = ResourceF(
-      1,
-      0L,
-      Set.empty,
-      deprecated = false,
-      Instant.EPOCH,
-      Identity.Anonymous,
-      Instant.EPOCH,
-      Identity.Anonymous,
-      Latest(schemas.permissions),
-      1
-    )
-    "map its value" in {
-      resource.map(_.toString) shouldEqual ResourceF(
-        1,
-        0L,
-        Set.empty,
+    val iri                       = iri"http://example.com/permissions"
+    implicit val baseUri: BaseUri = BaseUri("http://nexus.com")
+    val resource                  =
+      ResourceF(
+        iri,
+        1L,
+        Set(nxv.Permissions),
         deprecated = false,
         Instant.EPOCH,
-        Identity.Anonymous,
+        Anonymous,
         Instant.EPOCH,
-        Identity.Anonymous,
+        User("maria", Label.unsafe("bbp")),
         Latest(schemas.permissions),
-        "1"
+        PermissionSet(Set(acls.read, acls.write))
       )
+
+    implicit val remoteResolution: RemoteContextResolutionDummy = RemoteContextResolutionDummy(
+      contexts.permissions -> jsonContentOf("contexts/permissions.json"),
+      contexts.resource    -> jsonContentOf("contexts/resource.json")
+    )
+
+    "be converted to Json-LD compacted" in {
+      resource.toCompactedJsonLd.accepted.json shouldEqual jsonContentOf("resource-compacted.jsonld")
+    }
+
+    "be converted to Json-LD expanded" in {
+      resource.toExpandedJsonLd.accepted.json shouldEqual jsonContentOf("resource-expanded.jsonld")
+    }
+
+    "be converted to Dot format" in {
+      resource.toDot.accepted.toString should equalLinesUnordered(contentOf("resource-dot.dot"))
+
+    }
+
+    "be converted to NTriples format" in {
+      resource.toNTriples.accepted.toString should equalLinesUnordered(contentOf("resource-ntriples.nt"))
     }
   }
 

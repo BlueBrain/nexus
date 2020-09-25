@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, RootIriNotFound, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.CompactedJsonLdWithRawContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RawJsonLdContext, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOptionOr
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -119,7 +119,7 @@ object JsonLd {
     * @throws IllegalArgumentException when the provided ''expanded'' json does not match the expected value
     */
   final def expandedUnsafe(expanded: Json, rootId: IriOrBNode): ExpandedJsonLd =
-    expanded.asArray.flatMap(headOnlyOptionOr(_)(Json.obj())).flatMap(_.asObject) match {
+    expanded.asArray.flatMap(_.singleEntryOr(Json.obj())).flatMap(_.asObject) match {
       case Some(obj) => ExpandedJsonLd(obj, rootId)
       case None      => throw new IllegalArgumentException("Expected a sequence of Json Objects with a single value")
     }
@@ -144,7 +144,7 @@ object JsonLd {
     for {
       expanded      <- api.expand(input)
       obj           <- IO.fromOption(
-                         headOnlyOptionOr(expanded)(JsonObject.empty),
+                         expanded.singleEntryOr(JsonObject.empty),
                          UnexpectedJsonLd("Expected a sequence of Json Objects with a single value")
                        )
       id            <- (obj(keywords.id), defaultId) match {
