@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedIri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedIriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
-import org.apache.jena.iri.IRI
 
 /**
   * Json-LD Compacted Document. This specific implementation is entity centric, having always only one root @id.
@@ -21,7 +21,7 @@ import org.apache.jena.iri.IRI
 final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
     obj: JsonObject,
     ctx: Ctx,
-    rootId: IRI,
+    rootId: IriOrBNode,
     ctxFields: ContextFields[Ctx]
 ) extends JsonLd { self =>
 
@@ -32,10 +32,10 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
     if (ctx.isEmpty) obj.asJson
     else obj.asJson.addContext(Json.obj(keywords.context -> ctx.value))
 
-  def add(key: String, iri: IRI): This =
+  def add(key: String, iri: Iri): This =
     add(key, iri.asJson)
 
-  def addType(iri: IRI): This =
+  def addType(iri: Iri): This =
     add(keywords.tpe, iri)
 
   def add(key: String, literal: String): This =
@@ -53,16 +53,16 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
   def add(key: String, literal: Double): This =
     add(key, literal.asJson)
 
-  def base(implicit ev: Ctx =:= ExtendedJsonLdContext): Option[IRI] =
+  def base(implicit ev: Ctx =:= ExtendedJsonLdContext): Option[Iri] =
     ctx.base
 
-  def vocab(implicit ev: Ctx =:= ExtendedJsonLdContext): Option[IRI] =
+  def vocab(implicit ev: Ctx =:= ExtendedJsonLdContext): Option[Iri] =
     ctx.vocab
 
-  def aliases(implicit ev: Ctx =:= ExtendedJsonLdContext): Map[String, IRI] =
+  def aliases(implicit ev: Ctx =:= ExtendedJsonLdContext): Map[String, Iri] =
     ctx.aliases
 
-  def prefixMappings(implicit ev: Ctx =:= ExtendedJsonLdContext): Map[String, IRI] =
+  def prefixMappings(implicit ev: Ctx =:= ExtendedJsonLdContext): Map[String, Iri] =
     ctx.prefixMappings
 
   @SuppressWarnings(Array("ComparingUnrelatedTypes"))
@@ -74,9 +74,9 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
     lazy val ctxValue = context.topContextValueOrEmpty
     if (ctxValue == ctx.value) {
       if (f == self.ctxFields)
-        IO.now(self.asInstanceOf[CompactedJsonLd[C]])
+        IO.pure(self.asInstanceOf[CompactedJsonLd[C]])
       else if (ctxFields == ContextFields.Include && f == ContextFields.Skip)
-        IO.now(self.copy(ctx = RawJsonLdContext(ctx.value).asInstanceOf[C], ctxFields = f))
+        IO.pure(self.copy(ctx = RawJsonLdContext(ctx.value).asInstanceOf[C], ctxFields = f))
       else
         api.context(Json.obj(keywords.context -> ctx.value), f).map(ctx => self.copy(ctx = ctx, ctxFields = f))
     } else
@@ -88,9 +88,9 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, ExpandedJsonLd] =
-    JsonLd.expand(json).flatMap {
-      case expanded if expanded.rootId != rootId => IO.raiseError(UnexpectedIri(rootId, expanded.rootId))
-      case expanded                              => IO.now(expanded)
+    JsonLd.expand(json, Some(rootId)).flatMap {
+      case expanded if rootId != expanded.rootId => IO.raiseError(UnexpectedIriOrBNode(rootId, expanded.rootId))
+      case expanded                              => IO.pure(expanded)
     }
 
   override def toGraph(implicit

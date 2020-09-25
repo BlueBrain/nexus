@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import java.time.Instant
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import org.apache.jena.iri.IRI
 
 /**
   * Enumeration of Project event types.
@@ -60,7 +60,7 @@ object ProjectEvent {
     * @param rev               the project revision
     * @param description       an optional project description
     * @param apiMappings       the project API mappings
-    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param base              the base Iri for generated resource IDs ending with ''/'' or ''#''
     * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param instant           the timestamp associated to this event
     * @param subject           the identity associated to this event
@@ -72,7 +72,7 @@ object ProjectEvent {
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
-      apiMappings: Map[String, IRI],
+      apiMappings: Map[String, Iri],
       base: PrefixIRI,
       vocab: PrefixIRI,
       instant: Instant,
@@ -88,7 +88,7 @@ object ProjectEvent {
     * @param organizationUuid  the parent organization uuid
     * @param description       an optional project description
     * @param apiMappings       the project API mappings
-    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param base              the base Iri for generated resource IDs ending with ''/'' or ''#''
     * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param rev               the revision number that this event generates
     * @param instant           the timestamp associated to this event
@@ -101,7 +101,7 @@ object ProjectEvent {
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
-      apiMappings: Map[String, IRI],
+      apiMappings: Map[String, Iri],
       base: PrefixIRI,
       vocab: PrefixIRI,
       instant: Instant,

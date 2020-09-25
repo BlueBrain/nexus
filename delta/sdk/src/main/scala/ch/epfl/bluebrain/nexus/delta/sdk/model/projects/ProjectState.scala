@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import java.time.Instant
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
-import org.apache.jena.iri.IRI
 
 /**
   * Enumeration of Project state types.
@@ -33,7 +33,7 @@ sealed trait ProjectState extends Product with Serializable {
   /**
     * @return the collection of known types of acls resources
     */
-  final def types: Set[IRI] = Set(nxv.Project)
+  final def types: Set[Iri] = Set(nxv.Project)
 
   /**
     * Converts the state into a resource representation.
@@ -80,7 +80,7 @@ object ProjectState {
     * @param deprecated        the current state deprecation status
     * @param description       an optional project description
     * @param apiMappings       the project API mappings
-    * @param base              the base IRI for generated resource IDs
+    * @param base              the base Iri for generated resource IDs
     * @param vocab             an optional vocabulary for resources with no context
     * @param createdAt         the instant when the resource was created
     * @param createdBy         the subject that created the resource
@@ -95,9 +95,9 @@ object ProjectState {
       rev: Long,
       deprecated: Boolean,
       description: Option[String],
-      apiMappings: Map[String, IRI],
-      base: IRI,
-      vocab: IRI,
+      apiMappings: Map[String, Iri],
+      base: Iri,
+      vocab: Iri,
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,

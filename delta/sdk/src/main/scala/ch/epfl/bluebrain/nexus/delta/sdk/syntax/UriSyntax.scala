@@ -2,9 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import akka.http.scaladsl.model.Uri
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.iriUnsafe
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.UriSyntax.uri
-import org.apache.jena.iri.IRI
 
 import scala.util.Try
 
@@ -38,9 +37,9 @@ final class UriStringOps(private val string: String) extends AnyVal {
 final class UriOps(private val uri: Uri) extends AnyVal {
 
   /**
-    * Constructs an [[IRI]] from a [[Uri]]
+    * Constructs an [[Iri]] from a [[Uri]]
     */
-  def toIRI: IRI = iriUnsafe(uri.toString)
+  def toIri: Iri = Iri.unsafe(uri.toString)
 
   /**
     * Adds a segment to the end of the Uri

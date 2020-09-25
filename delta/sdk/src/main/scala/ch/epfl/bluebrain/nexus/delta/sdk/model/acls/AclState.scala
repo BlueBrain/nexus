@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import java.time.Instant
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
-import org.apache.jena.iri.IRI
 
 /**
   * Enumeration of ACLs states.
@@ -32,7 +32,7 @@ sealed trait AclState extends Product with Serializable {
   /**
     * @return the collection of known types of acls resources
     */
-  final def types: Set[IRI] = Set(nxv.AccessControlList)
+  final def types: Set[Iri] = Set(nxv.AccessControlList)
 
   /**
     * Converts the state into a resource representation.

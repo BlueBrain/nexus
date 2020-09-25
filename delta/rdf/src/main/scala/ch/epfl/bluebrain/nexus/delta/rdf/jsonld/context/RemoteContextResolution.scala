@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextCircularDependency
 import io.circe.Json
 import monix.bio.IO
-import org.apache.jena.iri.IRI
 
 trait RemoteContextResolution {
 
@@ -15,7 +15,7 @@ trait RemoteContextResolution {
     *
     * @return the expected Json payload response from the passed ''iri''
     */
-  def resolve(iri: IRI): Result[Json]
+  def resolve(iri: Iri): Result[Json]
 
   /**
     * From a given ''json'', resolve all its remote context IRIs.
@@ -23,10 +23,10 @@ trait RemoteContextResolution {
     * @return a Map where the keys are the IRIs resolved and the values the @context value
     *         from the payload of the resolved wrapped in an IO
     */
-  final def apply(json: Json): Result[Map[IRI, Json]] = {
+  final def apply(json: Json): Result[Map[Iri, Json]] = {
 
-    def inner(ctx: Set[Json], resolved: Map[IRI, Json] = Map.empty): Result[Map[IRI, Json]] = {
-      val uris: Set[IRI] = ctx.flatMap(remoteIRIs)
+    def inner(ctx: Set[Json], resolved: Map[Iri, Json] = Map.empty): Result[Map[Iri, Json]] = {
+      val uris: Set[Iri] = ctx.flatMap(remoteIRIs)
       for {
         _               <- IO.fromEither(uris.find(resolved.keySet.contains).toLeft(uris).leftMap(RemoteContextCircularDependency))
         curResolved     <- IO.parTraverseUnordered(uris)(uri => resolve(uri).map(j => uri -> j.topContextValueOrEmpty))
@@ -39,11 +39,11 @@ trait RemoteContextResolution {
     inner(json.contextValues)
   }
 
-  private def remoteIRIs(ctxValue: Json): Set[IRI] =
-    (ctxValue.asArray, ctxValue.as[IRI].toOption) match {
-      case (Some(arr), _)    => arr.foldLeft(Set.empty[IRI]) { case (acc, c) => acc ++ c.as[IRI].toOption }
+  private def remoteIRIs(ctxValue: Json): Set[Iri] =
+    (ctxValue.asArray, ctxValue.as[Iri].toOption) match {
+      case (Some(arr), _)    => arr.foldLeft(Set.empty[Iri]) { case (acc, c) => acc ++ c.as[Iri].toOption }
       case (_, Some(remote)) => Set(remote)
-      case _                 => Set.empty[IRI]
+      case _                 => Set.empty[Iri]
     }
 }
 
@@ -53,7 +53,7 @@ object RemoteContextResolution {
   /**
     * Helper method to construct a [[RemoteContextResolution]] .
     *
-   * @param f a function from an [[IRI]] to a [[Result]] of [[Json]]
+   * @param f a function from an [[Iri]] to a [[Result]] of [[Json]]
     */
-  final def apply(f: IRI => Result[Json]): RemoteContextResolution = (iri: IRI) => f(iri)
+  final def apply(f: Iri => Result[Json]): RemoteContextResolution = (iri: Iri) => f(iri)
 }

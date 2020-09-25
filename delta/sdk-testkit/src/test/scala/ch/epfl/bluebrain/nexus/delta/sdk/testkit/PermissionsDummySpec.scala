@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionSet}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummySpec.minimum
@@ -48,7 +48,7 @@ class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues w
       updatedAt = updatedAt,
       updatedBy = updatedBy,
       schema = Latest(schemas.permissions),
-      value = permissions
+      value = PermissionSet(permissions)
     )
 
   "A dummy permissions implementation" should {
@@ -126,7 +126,7 @@ class PermissionsDummySpec extends AnyWordSpecLike with Matchers with IOValues w
       dummy.delete(5L).rejected shouldEqual CannotDeleteMinimumCollection
     }
     "return revision for correct rev" in {
-      dummy.fetchAt(4L).accepted.value shouldEqual (minimum ++ Set(perm3, perm4))
+      dummy.fetchAt(4L).accepted.value shouldEqual PermissionSet(minimum ++ Set(perm3, perm4))
     }
     "return none for unknown rev" in {
       dummy.fetchAt(9999L).rejected shouldEqual RevisionNotFound(9999, 5)

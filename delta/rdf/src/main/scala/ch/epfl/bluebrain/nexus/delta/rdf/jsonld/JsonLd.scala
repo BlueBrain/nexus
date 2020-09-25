@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, RootIriNotFound, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.CompactedJsonLdWithRawContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOptionOr
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
-import org.apache.jena.iri.IRI
 
 /**
   * Base trait for JSON-LD implementation. This specific implementation is entity centric, having always only one root @id
@@ -35,17 +34,17 @@ trait JsonLd extends Product with Serializable {
   /**
     * The top most @id value on the Json-LD Document
     */
-  def rootId: IRI
+  def rootId: IriOrBNode
 
   /**
     * Adds a ''key'' with its '@id ''iri'' value.
     */
-  def add(key: Predicate, iri: IRI): This
+  def add(key: Predicate, iri: Iri): This
 
   /**
     * Adds the passed ''iri'' value to the reserved key @type.
     */
-  def addType(iri: IRI): This
+  def addType(iri: Iri): This
 
   /**
     * Adds a ''key'' with its ''literal'' string.
@@ -108,7 +107,7 @@ object JsonLd {
   final def compactedUnsafe(
       compacted: JsonObject,
       contextValue: RawJsonLdContext,
-      rootId: IRI
+      rootId: IriOrBNode
   ): CompactedJsonLdWithRawContext =
     CompactedJsonLd(compacted, contextValue, rootId, ContextFields.Skip)
 
@@ -119,7 +118,7 @@ object JsonLd {
     * @param rootId   the top @id value
     * @throws IllegalArgumentException when the provided ''expanded'' json does not match the expected value
     */
-  final def expandedUnsafe(expanded: Json, rootId: IRI): ExpandedJsonLd =
+  final def expandedUnsafe(expanded: Json, rootId: IriOrBNode): ExpandedJsonLd =
     expanded.asArray.flatMap(headOnlyOptionOr(_)(Json.obj())).flatMap(_.asObject) match {
       case Some(obj) => ExpandedJsonLd(obj, rootId)
       case None      => throw new IllegalArgumentException("Expected a sequence of Json Objects with a single value")
@@ -136,24 +135,25 @@ object JsonLd {
     */
   final def expand(
       input: Json,
-      defaultId: => Option[IRI] = None
+      defaultId: => Option[IriOrBNode] = None
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
     for {
-      expanded <- api.expand(input)
-      obj      <- IO.fromOption(
-                    headOnlyOptionOr(expanded)(JsonObject.empty),
-                    UnexpectedJsonLd("Expected a sequence of Json Objects with a single value")
-                  )
-      id       <- (obj(keywords.id), defaultId) match {
-                    case (Some(jsonIri), _) => IO.fromEither(jsonIri.as[IRI]).leftMap(_ => InvalidIri(jsonIri.noSpaces))
-                    case (_, Some(default)) => IO.now(default)
-                    case _                  => IO.raiseError(RootIriNotFound)
-                  }
-    } yield ExpandedJsonLd(obj.add(keywords.id, id.asJson), id)
+      expanded      <- api.expand(input)
+      obj           <- IO.fromOption(
+                         headOnlyOptionOr(expanded)(JsonObject.empty),
+                         UnexpectedJsonLd("Expected a sequence of Json Objects with a single value")
+                       )
+      id            <- (obj(keywords.id), defaultId) match {
+                         case (Some(jsonIri), _) => IO.fromEither(jsonIri.as[Iri]).leftMap(_ => InvalidIri(jsonIri.noSpaces))
+                         case (_, Some(default)) => IO.pure(default)
+                         case _                  => IO.raiseError(RootIriNotFound)
+                       }
+      objWithIdOnIri = id.asIri.fold(obj)(iriId => obj.add(keywords.id, iriId.asJson))
+    } yield ExpandedJsonLd(objWithIdOnIri, id)
 
   /**
     * Create compacted JSON-LD document using the passed ''input'' and ''context''.
@@ -166,7 +166,7 @@ object JsonLd {
   final def compact[Ctx <: JsonLdContext](
       input: Json,
       context: Json,
-      rootId: IRI,
+      rootId: IriOrBNode,
       f: ContextFields[Ctx]
   )(implicit
       api: JsonLdApi,
@@ -189,14 +189,14 @@ object JsonLd {
   final def frame[Ctx <: JsonLdContext](
       input: Json,
       context: Json,
-      rootId: IRI,
+      rootId: IriOrBNode,
       f: ContextFields[Ctx]
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd[Ctx]] = {
-    val jsonId = Json.obj(keywords.id -> rootId.asJson)
+    val jsonId = rootId.asIri.fold(Json.obj())(rootIri => Json.obj(keywords.id -> rootIri.asJson))
     val frame  = context.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
     for {
       compactedWithCtx <- api.frame(input, frame, f)

@@ -18,12 +18,12 @@ class UriSpec extends AnyWordSpecLike with Matchers with EitherValuable with Ins
       uriString.toUri.rightValue shouldEqual uri
     }
 
-    "be constructed from IRI" in {
+    "be constructed from Iri" in {
       val iri = iri"$uriString"
       iri.toUri.rightValue shouldEqual uri
     }
 
-    "fail to construct from IRI" in {
+    "fail to construct from Iri" in {
       val iri = iri"http://example.com/é"
       iri.toUri.leftValue
     }

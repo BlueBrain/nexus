@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 import java.time.Instant
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
-import org.apache.jena.iri.IRI
 
 /**
   * Enumeration of organization states.
@@ -34,7 +34,7 @@ sealed trait OrganizationState extends Product with Serializable {
   /**
     * @return the collection of known types of organizations resources
     */
-  final def types: Set[IRI] = Set(nxv.Organization)
+  final def types: Set[Iri] = Set(nxv.Organization)
 
   /**
     * Converts the state into a resource representation.

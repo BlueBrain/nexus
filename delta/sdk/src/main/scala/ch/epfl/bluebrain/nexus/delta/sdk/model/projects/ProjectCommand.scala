@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import org.apache.jena.iri.IRI
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
 /**
   * Enumeration of Project command types.
@@ -48,7 +48,7 @@ object ProjectCommand {
     * @param organizationUuid  the parent organization uuid
     * @param description       an optional project description
     * @param apiMappings       the API mappings
-    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param base              the base Iri for generated resource IDs ending with ''/'' or ''#''
     * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param subject           the identity associated to this command
     */
@@ -58,7 +58,7 @@ object ProjectCommand {
       organizationLabel: Label,
       organizationUuid: UUID,
       description: Option[String],
-      apiMappings: Map[String, IRI],
+      apiMappings: Map[String, Iri],
       base: PrefixIRI,
       vocab: PrefixIRI,
       subject: Subject
@@ -73,7 +73,7 @@ object ProjectCommand {
     * @param organizationUuid  the parent organization uuid
     * @param description       an optional project description
     * @param apiMappings       the API mappings
-    * @param base              the base IRI for generated resource IDs ending with ''/'' or ''#''
+    * @param base              the base Iri for generated resource IDs ending with ''/'' or ''#''
     * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
     * @param rev               the last known revision of the project
     * @param subject           the identity associated to this command
@@ -84,7 +84,7 @@ object ProjectCommand {
       organizationLabel: Label,
       organizationUuid: UUID,
       description: Option[String],
-      apiMappings: Map[String, IRI],
+      apiMappings: Map[String, Iri],
       base: PrefixIRI,
       vocab: PrefixIRI,
       rev: Long,

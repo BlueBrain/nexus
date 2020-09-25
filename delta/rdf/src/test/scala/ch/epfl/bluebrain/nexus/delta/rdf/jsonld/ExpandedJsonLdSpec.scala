@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RootIriNotFound, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextFields
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.Json
-import org.apache.jena.iri.IRI
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -20,6 +20,14 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be constructed successfully" in {
       JsonLd.expand(compacted).accepted shouldEqual JsonLd.expandedUnsafe(expectedExpanded, iri)
+    }
+
+    "be constructed successfully without @id" in {
+      val name             = vocab + "name"
+      val expectedExpanded = json"""[{"@type": ["${schema.Person}"], "$name": [{"@value": "Me"} ] } ]"""
+      val compacted        = json"""{"@type": "Person", "name": "Me"}""".addContext(context)
+      val bNode            = BNode.random
+      JsonLd.expand(compacted, Some(bNode)).accepted shouldEqual JsonLd.expandedUnsafe(expectedExpanded, bNode)
     }
 
     "be constructed successfully with remote contexts" in {
@@ -81,8 +89,8 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "return empty fetching non existing keys" in {
       val expanded = JsonLd.expand(compacted.removeKeys("@type")).accepted
       expanded.literals[String](vocab + "non-existing") shouldEqual List.empty[String]
-      expanded.ids(vocab + "non-existing") shouldEqual List.empty[IRI]
-      expanded.types shouldEqual List.empty[IRI]
+      expanded.ids(vocab + "non-existing") shouldEqual List.empty[Iri]
+      expanded.types shouldEqual List.empty[Iri]
     }
 
     "add @id value" in {
@@ -94,13 +102,13 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
         json"""[{"@id": "$iri", "$friends": [{"@id": "$batman"}, {"@id": "$robin"} ] } ]"""
     }
 
-    "add @type IRI to existing @type" in {
+    "add @type Iri to existing @type" in {
       val (person, animal, hero) = (schema.Person, schema + "Animal", schema + "Hero")
       val expanded               = JsonLd.expandedUnsafe(json"""[{"@id": "$iri", "@type": ["$person", "$animal"] } ]""", iri)
       expanded.addType(hero).types shouldEqual List(person, animal, hero)
     }
 
-    "add @type IRI" in {
+    "add @type Iri" in {
       val expanded = JsonLd.expandedUnsafe(json"""[{"@id": "$iri"}]""", iri)
       expanded.addType(schema.Person).types shouldEqual List(schema.Person)
     }
@@ -122,7 +130,17 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be converted to compacted form" in {
       val expanded = JsonLd.expand(compacted).accepted
       val result   = expanded.toCompacted(context, ContextFields.Skip).accepted
-      result shouldEqual JsonLd.compact(expectedExpanded, context, iri, ContextFields.Skip).accepted
+      result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
+    }
+
+    "be converted to compacted form without @id" in {
+      val bNode     = BNode.random
+      val compacted = json"""{"@type": "Person", "name": "Me"}""".addContext(context)
+
+      val expanded = JsonLd.expand(compacted, Some(bNode)).accepted
+      val result   = expanded.toCompacted(context, ContextFields.Skip).accepted
+      result.rootId shouldEqual bNode
+      result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
     }
 
     "return self when attempted to convert again to expanded form" in {
@@ -133,8 +151,8 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be converted to graph" in {
       val expanded = JsonLd.expand(compacted).accepted
       val graph    = expanded.toGraph.accepted
-      val expected = contentOf("ntriples.nt", "{bnode}" -> s"_:B${bNode(graph)}")
-      graph.root shouldEqual iri
+      val expected = contentOf("ntriples.nt", "{bnode}" -> bNode(graph).rdfFormat, "{rootNode}" -> iri.rdfFormat)
+      graph.rootNode shouldEqual iri
       graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
   }

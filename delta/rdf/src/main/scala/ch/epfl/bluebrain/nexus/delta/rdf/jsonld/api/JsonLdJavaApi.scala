@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -9,7 +10,6 @@ import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdProcessor, Jso
 import com.github.jsonldjava.utils.JsonUtils
 import io.circe.{parser, Json, JsonObject}
 import monix.bio.IO
-import org.apache.jena.iri.IRI
 import org.apache.jena.rdf.model.{Model, ModelFactory}
 import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
 import org.apache.jena.riot.system.StreamRDFLib
@@ -98,7 +98,7 @@ object JsonLdJavaApi extends JsonLdApi {
     val cxtValue = value.topContextValueOrEmpty
     f match {
 
-      case ContextFields.Skip => IO.now(RawJsonLdContext(cxtValue))
+      case ContextFields.Skip => IO.pure(RawJsonLdContext(cxtValue))
 
       case ContextFields.Include =>
         IO.fromTry(Try(new Context(options).parse(JsonUtils.fromString(cxtValue.noSpaces))))
@@ -118,7 +118,7 @@ object JsonLdJavaApi extends JsonLdApi {
     IO.parTraverseUnordered(jsons)(resolution(_))
       .leftMap(RemoteContextError)
       .map {
-        _.foldLeft(Map.empty[IRI, Json])(_ ++ _).foldLeft(new DocumentLoader()) {
+        _.foldLeft(Map.empty[Iri, Json])(_ ++ _).foldLeft(new DocumentLoader()) {
           case (dl, (iri, cxt)) => dl.addInjectedDoc(iri.toString, Json.obj(keywords.context -> cxt).noSpaces)
         }
       }
@@ -142,7 +142,7 @@ object JsonLdJavaApi extends JsonLdApi {
     opts
   }
 
-  private def getIri(ctx: Context, key: String): Option[IRI]                  =
+  private def getIri(ctx: Context, key: String): Option[Iri]                  =
     Option(ctx.get(key)).collectFirstSome { case str: String => str.toIri.toOption }
 
   private def toJsonObjectOrErr(string: String): Either[RdfError, JsonObject] =

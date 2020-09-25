@@ -11,14 +11,14 @@ class AclSpec extends AnyWordSpecLike with Matchers with EitherValuable with Acl
 
     "add another ACL" in {
       userRW_groupX ++ userR_groupX shouldEqual userRW_groupX
-      userRW_groupX ++ anonR shouldEqual Acl(user -> Set(r, w), group -> Set(x), anon -> Set(r))
-      userRW_groupX ++ groupR shouldEqual Acl(user -> Set(r, w), group -> Set(r, x))
+      userRW_groupX ++ anonR shouldEqual Acl(subject -> Set(r, w), group -> Set(x), anon -> Set(r))
+      userRW_groupX ++ groupR shouldEqual Acl(subject -> Set(r, w), group -> Set(r, x))
     }
 
     "subtract an ACL" in {
       userRW_groupX -- groupR shouldEqual userRW_groupX
       userRW_groupX -- anonR shouldEqual userRW_groupX
-      userRW_groupX -- userR_groupX shouldEqual Acl(user -> Set(w))
+      userRW_groupX -- userR_groupX shouldEqual Acl(subject -> Set(w))
     }
 
     "return all its permissions" in {
@@ -26,30 +26,30 @@ class AclSpec extends AnyWordSpecLike with Matchers with EitherValuable with Acl
     }
 
     "check if it is empty" in {
-      Acl(anon -> Set.empty[Permission], user -> Set.empty[Permission]).isEmpty shouldEqual true
+      Acl(anon -> Set.empty[Permission], subject -> Set.empty[Permission]).isEmpty shouldEqual true
       Acl.empty.isEmpty shouldEqual true
       userRW_groupX.isEmpty shouldEqual false
     }
 
     "check if it has some empty permissions" in {
-      Acl(user -> Set.empty[Permission]).hasEmptyPermissions shouldEqual true
-      Acl(user -> Set.empty[Permission], anon -> Set(r)).hasEmptyPermissions shouldEqual true
+      Acl(subject -> Set.empty[Permission]).hasEmptyPermissions shouldEqual true
+      Acl(subject -> Set.empty[Permission], anon -> Set(r)).hasEmptyPermissions shouldEqual true
       userRW_groupX.hasEmptyPermissions shouldEqual false
     }
 
     "remove empty permissions" in {
-      Acl(user -> Set.empty[Permission]).removeEmpty() shouldEqual Acl.empty
-      Acl(user -> Set(), anon -> Set(r)).removeEmpty() shouldEqual Acl(anon -> Set(r))
+      Acl(subject -> Set.empty[Permission]).removeEmpty() shouldEqual Acl.empty
+      Acl(subject -> Set(), anon -> Set(r)).removeEmpty() shouldEqual Acl(anon -> Set(r))
       userRW_groupX.removeEmpty() shouldEqual userRW_groupX
     }
 
     "be filtered" in {
-      userRW_groupX.filter(Set(user, anon)) shouldEqual Acl(user -> Set(r, w))
+      userRW_groupX.filter(Set(subject, anon)) shouldEqual Acl(subject -> Set(r, w))
     }
 
     "check for permissions" in {
-      userRW_groupX.hasPermission(Set(user, anon), r) shouldEqual true
-      userRW_groupX.hasPermission(Set(user, anon), x) shouldEqual false
+      userRW_groupX.hasPermission(Set(subject, anon), r) shouldEqual true
+      userRW_groupX.hasPermission(Set(subject, anon), x) shouldEqual false
       userRW_groupX.hasPermission(Set(anon), r) shouldEqual false
     }
 

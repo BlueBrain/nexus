@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import monix.bio.{IO, UIO}
-import org.apache.jena.iri.IRI
 
 /**
   * A dummy Permissions implementation that uses a synchronized in memory journal.
@@ -89,7 +89,7 @@ object PermissionsDummy {
   /**
     * Permissions resource id.
     */
-  val id: IRI = iri"http://localhost/v1/permissions"
+  val id: Iri = iri"http://localhost/v1/permissions"
 
   /**
     * Creates a new dummy Permissions implementation.

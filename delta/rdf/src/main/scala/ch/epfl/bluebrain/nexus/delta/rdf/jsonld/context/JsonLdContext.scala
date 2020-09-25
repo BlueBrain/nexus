@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.SeqUtils.headOnlyOptionOr
 import io.circe.Json
 import io.circe.syntax._
-import org.apache.jena.iri.IRI
 
 trait JsonLdContext extends Product with Serializable {
   type This >: this.type <: JsonLdContext
@@ -42,7 +42,7 @@ trait JsonLdContext extends Product with Serializable {
     * @param prefix the prefix that can be used to create curies
     * @param iri    the iri which replaces the ''prefix'' when expanding JSON-LD
     */
-  def addPrefix(prefix: String, iri: IRI): This
+  def addPrefix(prefix: String, iri: Iri): This
 
   /**
     * Add an alias to the current context.
@@ -50,7 +50,7 @@ trait JsonLdContext extends Product with Serializable {
     * @param prefix the prefix which replces the ''iri'' when compacting JSON-LD
     * @param iri    the iri which replaces the ''prefix'' when expanding JSON-LD
     */
-  def addAlias(prefix: String, iri: IRI): This =
+  def addAlias(prefix: String, iri: Iri): This =
     addAlias(prefix, iri, None)
 
   /**
@@ -58,9 +58,9 @@ trait JsonLdContext extends Product with Serializable {
     *
    * @param prefix  the prefix which replces the ''iri'' when compacting JSON-LD
     * @param iri     the iri which replaces the ''prefix'' when expanding JSON-LD
-    * @param dataType the @type IRI value
+    * @param dataType the @type Iri value
     */
-  def addAlias(prefix: String, iri: IRI, dataType: IRI): This =
+  def addAlias(prefix: String, iri: Iri, dataType: Iri): This =
     addAlias(prefix, iri, Some(dataType.toString))
 
   /**
@@ -69,15 +69,15 @@ trait JsonLdContext extends Product with Serializable {
     * @param prefix  the prefix which replces the ''iri'' when compacting JSON-LD
     * @param iri     the iri which replaces the ''prefix'' when expanding JSON-LD
     */
-  def addAliasIdType(prefix: String, iri: IRI): This =
+  def addAliasIdType(prefix: String, iri: Iri): This =
     addAlias(prefix, iri, Some(keywords.id))
 
-  protected def addAlias(prefix: String, iri: IRI, dataType: Option[String]): This
+  protected def addAlias(prefix: String, iri: Iri, dataType: Option[String]): This
 
   protected def add(key: String, v: Json): Json                    =
     value.arrayOrObject(Json.obj(key -> v), arr => (arr :+ Json.obj(key -> v)).asJson, _.add(key, v).asJson)
 
-  protected def expandedTermDefinition(dt: String, iri: IRI): Json =
+  protected def expandedTermDefinition(dt: String, iri: Iri): Json =
     Json.obj(keywords.tpe -> dt.asJson, keywords.id -> iri.asJson)
 
 }
@@ -124,9 +124,9 @@ object JsonLdContext {
     json deepMerge Json.obj(keywords.context -> merge(topContextValueOrEmpty(json), topContextValueOrEmpty(that)))
 
   /**
-    * Adds a context IRI to an existing @context, or creates an @context with the IRI as a value.
+    * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.
     */
-  def addContext(json: Json, contextIri: IRI): Json = {
+  def addContext(json: Json, contextIri: Iri): Json = {
     val jUriString = Json.fromString(contextIri.toString)
 
     json.asObject match {

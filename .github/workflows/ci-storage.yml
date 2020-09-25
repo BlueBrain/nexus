@@ -4,13 +4,13 @@ on:
     branches:
       - master
     paths:
-      - 'rdf/**'
+      - 'delta/rdf/**'
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
     paths:
-      - 'rdf/**'
+      - 'delta/rdf/**'
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'

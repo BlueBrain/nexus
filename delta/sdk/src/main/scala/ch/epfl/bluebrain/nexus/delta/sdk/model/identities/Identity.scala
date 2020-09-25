@@ -47,6 +47,4 @@ object Identity {
     * @param realm the realm that asserts this identity
     */
   final case class Authenticated(realm: Label) extends Identity
-
-  // TODO: figure out a way to deal with multiple representation formats for both JSON-LD and JSON for API and DB
 }

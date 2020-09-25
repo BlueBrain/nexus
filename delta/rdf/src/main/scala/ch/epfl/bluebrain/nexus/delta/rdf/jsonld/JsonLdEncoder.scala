@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, RawJsonLdContext, RemoteContextResolution}
 import monix.bio.IO
-import org.apache.jena.iri.IRI
 
 trait JsonLdEncoder[A] {
 
@@ -92,19 +91,21 @@ object JsonLdEncoder {
   /**
     * Creates an encoder composing two different encoders and a decomposition function ''f''.
     *
-    * The root IRI used to build the resulting [[JsonLd]] is picked from the ''f''.
+    * The root IriOrBNode used to build the resulting [[JsonLd]] is picked from the ''f''.
     *
     * The decomposed ''A'' and ''B'' are resolved using the corresponding encoders and their results are merged.
     * If there are keys present in both the resulting encoding of ''A'' and ''B'', the keys will be overiden with the
     * values of ''B''.
     *
     *
-    * @param f  the function to decomposed the value of the target encoder into values the passed encoders and its IRI
+    * @param f  the function to decomposed the value of the target encoder into values the passed encoders and its IriOrBNode
     * @tparam A the generic type for values of the first passed encoder
     * @tparam B the generic type for values of the second passed encoder
     * @tparam C the generic type for values of the target encoder
     */
-  def compose[A, B, C](f: C => (A, B, IRI))(implicit A: JsonLdEncoder[A], B: JsonLdEncoder[B]): JsonLdEncoder[C] =
+  def compose[A, B, C](
+      f: C => (A, B, IriOrBNode)
+  )(implicit A: JsonLdEncoder[A], B: JsonLdEncoder[B]): JsonLdEncoder[C] =
     new JsonLdEncoder[C] {
       def apply(value: C): IO[RdfError, JsonLd] = {
         val (a, b, rootId) = f(value)

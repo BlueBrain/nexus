@@ -1,17 +1,20 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
+import java.util.UUID
+
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.{tryOrConversionErr, RdfError, Triple}
+import ch.epfl.bluebrain.nexus.delta.rdf.{tryOrConversionErr, IriOrBNode, RdfError, Triple}
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
-import org.apache.jena.iri.IRI
 import org.apache.jena.rdf.model.ResourceFactory.createStatement
 import org.apache.jena.rdf.model._
 import org.apache.jena.riot.{Lang, RDFWriter}
@@ -22,12 +25,12 @@ import scala.jdk.CollectionConverters._
 /**
   * A rooted Graph representation backed up by a Jena Model.
   *
-  * @param root  the root node of the graph
+  * @param rootNode  the root node of the graph
   * @param model the Jena model
   */
-final case class Graph private (root: IRI, model: Model) { self =>
+final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
 
-  lazy val rootResource: Resource = subject(root)
+  lazy val rootResource: Resource = subject(rootNode)
 
   /**
     * Returns a subgraph retaining all the triples that satisfy the provided predicate.
@@ -39,7 +42,7 @@ final case class Graph private (root: IRI, model: Model) { self =>
       val stmt = iter.nextStatement
       if (evalTriple(Triple(stmt))) newModel.add(stmt)
     }
-    Graph(root, newModel)
+    Graph(rootNode, newModel)
   }
 
   /**
@@ -60,6 +63,27 @@ final case class Graph private (root: IRI, model: Model) { self =>
   }
 
   /**
+    * Replace an [[IriOrBNode]] to another [[IriOrBNode]] on the subject or object positions of the graph.
+    *
+    * @param current the current [[IriOrBNode]]
+    * @param replace the replacement when the ''current'' [[IriOrBNode]] is found
+    */
+  def replace(current: IriOrBNode, replace: IriOrBNode): Graph = {
+    val currentResource = subject(current)
+    val replaceResource = subject(replace)
+    val iter            = model.listStatements()
+    val newModel        = ModelFactory.createDefaultModel()
+    while (iter.hasNext) {
+      val stmt      = iter.nextStatement
+      val (s, p, o) = Triple(stmt)
+      val ss        = if (s == currentResource) replaceResource else s
+      val oo        = if (o == currentResource) replaceResource else o
+      newModel.add(ss, p, oo)
+    }
+    Graph(rootNode, newModel)
+  }
+
+  /**
     * Returns all the triples of the current graph
     */
   def triples: Set[Triple] =
@@ -68,7 +92,7 @@ final case class Graph private (root: IRI, model: Model) { self =>
   /**
     * Returns the objects with the predicate ''rdf:type'' and subject ''root''.
     */
-  def rootTypes: Set[IRI] =
+  def rootTypes: Set[Iri] =
     filter { case (s, p, _) => p == predicate(rdf.tpe) && s == rootResource }.model
       .listObjects()
       .asScala
@@ -94,7 +118,7 @@ final case class Graph private (root: IRI, model: Model) { self =>
     */
   def add(triple: Set[Triple]): Graph = {
     val stmt = triple.foldLeft(Vector.empty[Statement]) { case (acc, (s, p, o)) => acc :+ createStatement(s, p, o) }
-    Graph(root, copy(model).add(stmt.asJava))
+    Graph(rootNode, copy(model).add(stmt.asJava))
   }
 
   /**
@@ -102,7 +126,7 @@ final case class Graph private (root: IRI, model: Model) { self =>
     */
   def toNTriples: IO[RdfError, NTriples] =
     tryOrConversionErr(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
-      .map(NTriples(_, root))
+      .map(NTriples(_, rootNode))
 
   /**
     * Attempts to convert the current Graph with the passed ''context''
@@ -117,7 +141,7 @@ final case class Graph private (root: IRI, model: Model) { self =>
       resolvedCtx <- api.context(context, ContextFields.Include)
       ctx          = dotContext(rootResource, resolvedCtx)
       string      <- tryOrConversionErr(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
-    } yield Dot(string, root)
+    } yield Dot(string, rootNode)
 
   /**
     * Attempts to convert the current Graph with the passed ''context'' as Json
@@ -130,7 +154,20 @@ final case class Graph private (root: IRI, model: Model) { self =>
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd[Ctx]] =
-    api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, context, root, f))
+    if (rootNode.isIri) {
+      api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, context, rootNode, f))
+    } else {
+      // A new model is created where the rootNode is a fake Iri.
+      // This is done in order to be able to perform the framing, since framing won't work on blank nodes.
+      // After the framing is done, the @id value is removed from the json and the blank node reverted as rootId
+      val fakeId   = iri"http://fake.com/${UUID.randomUUID()}"
+      val newModel = replace(rootNode, fakeId).model
+      for {
+        expanded  <- api.fromRdf(newModel)
+        framed    <- JsonLd.frame(expanded.asJson, context, fakeId, f)
+        fakeIdJson = fakeId.asJson
+      } yield framed.copy(obj = framed.obj.filter { case (_, v) => v != fakeIdJson }, rootId = self.rootNode)
+    }
 
   /**
     * Attempts to convert the current Graph to the JSON-LD expanded format: https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
@@ -151,16 +188,23 @@ final case class Graph private (root: IRI, model: Model) { self =>
 object Graph {
 
   /**
-    * Creates a [[Graph]] from a JSON-LD.
+    * Creates a [[Graph]] from an expanded JSON-LD.
     *
-    * @param iri   the root IRI for the graph
-    * @param input the JSON-LD input to transform into a Graph
+    * @param root   the root Iri or blank node for the Graph
+    * @param expanded the expanded JSON-LD input to transform into a Graph
     */
-  final def apply(iri: IRI, input: Json)(implicit
+  final def apply(expanded: ExpandedJsonLd)(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       options: JsonLdOptions
   ): IO[RdfError, Graph] =
-    api.toRdf(input).map(m => Graph(iri, m))
-
+    if (expanded.rootId.isIri) {
+      api.toRdf(expanded.json).map(model => Graph(expanded.rootId, model))
+    } else {
+      // A fake @id is injected in the Json and then replaced in the model.
+      // This is required in order preserve the original blank node since jena will create its own otherwise
+      val fakeId = iri"http://fake.com/${UUID.randomUUID()}"
+      val json   = Json.arr(expanded.obj.add(keywords.id, fakeId.asJson).asJson)
+      api.toRdf(json).map(model => Graph(expanded.rootId, model).replace(fakeId, expanded.rootId))
+    }
 }

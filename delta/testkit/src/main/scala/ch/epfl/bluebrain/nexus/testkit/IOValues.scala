@@ -13,7 +13,7 @@ trait IOValues {
 
 final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E]) {
 
-  def accepted(implicit pos: source.Position, s: Scheduler): A =
+  def accepted(implicit pos: source.Position, s: Scheduler = Scheduler.global): A =
     io.attempt.runSyncUnsafe() match {
       case Left(err)    =>
         fail(
@@ -23,10 +23,10 @@ final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E])
         value
     }
 
-  def rejected(implicit pos: source.Position, s: Scheduler): E =
+  def rejected(implicit pos: source.Position, s: Scheduler = Scheduler.global): E =
     rejectedWith[E]
 
-  def rejectedWith[EE <: E](implicit pos: source.Position, EE: ClassTag[EE], s: Scheduler): EE = {
+  def rejectedWith[EE <: E](implicit pos: source.Position, EE: ClassTag[EE], s: Scheduler = Scheduler.global): EE = {
     io.attempt.runSyncUnsafe() match {
       case Left(EE(value)) => value
       case Left(value)     =>

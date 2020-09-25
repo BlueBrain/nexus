@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.testkit
+package ch.epfl.bluebrain.nexus.delta.rdf.dummies
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution

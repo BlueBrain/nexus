@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas => nxvschemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import org.apache.jena.iri.IRI
 
 /**
   * Enumeration of the possible Search Parameters
@@ -14,7 +14,7 @@ sealed trait SearchParams {
   def rev: Option[Long]
   def createdBy: Option[Subject]
   def updatedBy: Option[Subject]
-  def types: Set[IRI]
+  def types: Set[Iri]
   def schemas: Set[ResourceRef]
 }
 
@@ -34,7 +34,7 @@ object SearchParams {
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None
   ) extends SearchParams {
-    override val types: Set[IRI]           = Set(nxv.Realm)
+    override val types: Set[Iri]           = Set(nxv.Realm)
     override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.realms))
   }
 
@@ -60,7 +60,7 @@ object SearchParams {
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None
   ) extends SearchParams {
-    override val types: Set[IRI]           = Set(nxv.Organization)
+    override val types: Set[Iri]           = Set(nxv.Organization)
     override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.organizations))
   }
 
@@ -88,7 +88,7 @@ object SearchParams {
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None
   ) extends SearchParams {
-    override val types: Set[IRI]           = Set(nxv.Project)
+    override val types: Set[Iri]           = Set(nxv.Project)
     override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.projects))
   }
 

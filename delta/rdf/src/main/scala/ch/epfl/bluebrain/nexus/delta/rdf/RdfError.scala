@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError
-import org.apache.jena.iri.IRI
 
 sealed abstract class RdfError(reason: String, details: Option[String] = None) extends Exception {
   override def fillInStackTrace(): RdfError = this
@@ -33,18 +32,18 @@ object RdfError {
       extends RdfError(s"Error on the conversion stage '$stage'", Some(details))
 
   /**
-    * Invalid IRI
+    * Invalid Iri
     */
   final case class InvalidIri(iri: String) extends RdfError(s"The value '$iri' is not an Iri")
 
   /**
-    * Unexpected IRI value
+    * Unexpected Iri value
     */
-  final case class UnexpectedIri(expected: IRI, found: IRI)
-      extends RdfError(s"Unexpected IRI value. Expected '$expected', found '$found'")
+  final case class UnexpectedIriOrBNode(expected: IriOrBNode, found: IriOrBNode)
+      extends RdfError(s"Unexpected Iri or blank node value. Expected '$expected', found '$found'")
 
   /**
     * The JSON-LD document // RDF Dataset does not have a root node
     */
-  final case object RootIriNotFound extends RdfError(s"Root IRI not found")
+  final case object RootIriNotFound extends RdfError(s"Root Iri not found")
 }

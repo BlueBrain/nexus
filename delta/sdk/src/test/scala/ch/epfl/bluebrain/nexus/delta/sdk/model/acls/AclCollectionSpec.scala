@@ -19,15 +19,15 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
     val orgAddress  = Organization(org)
     val projAddress = Project(org, proj)
 
-    val acl: AclResource  = ResourceF(Root, 1L, types, false, epoch, user, epoch, anon, schema, userRW_groupX)
-    val acl2: AclResource = ResourceF(Root, 2L, types, false, epoch, user, epoch, user, schema, groupR)
-    val acl3: AclResource = ResourceF(Root, 3L, types, false, epoch, user, epoch, anon, schema, groupX)
+    val acl: AclResource  = ResourceF(Root, 1L, types, false, epoch, subject, epoch, anon, schema, userRW_groupX)
+    val acl2: AclResource = ResourceF(Root, 2L, types, false, epoch, subject, epoch, subject, schema, groupR)
+    val acl3: AclResource = ResourceF(Root, 3L, types, false, epoch, subject, epoch, anon, schema, groupX)
 
     "be merged with other ACL collection" in {
       val acls1    = AclCollection(acl)
       val acls2    = AclCollection(acl2, acl3.copy(id = projAddress))
       val expected =
-        AclCollection(acl2.as(Acl(user -> Set(r, w), group -> Set(r, x))), acl3.copy(id = projAddress))
+        AclCollection(acl2.as(Acl(subject -> Set(r, w), group -> Set(r, x))), acl3.copy(id = projAddress))
 
       acls1 ++ acls2 shouldEqual expected
 
@@ -37,13 +37,13 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
 
     "filter identities" in {
       val acls = AclCollection(acl.copy(id = projAddress), acl2.copy(id = orgAddress), acl3)
-      acls.filter(Set(user)) shouldEqual
+      acls.filter(Set(subject)) shouldEqual
         AclCollection(
           acl3.as(Acl.empty),
           acl2.copy(id = orgAddress, value = Acl.empty),
-          acl.copy(id = projAddress, value = Acl(user -> Set(r, w)))
+          acl.copy(id = projAddress, value = Acl(subject -> Set(r, w)))
         )
-      acls.filter(Set(user, group)) shouldEqual acls
+      acls.filter(Set(subject, group)) shouldEqual acls
     }
 
     "subtract an ACL" in {
@@ -61,13 +61,13 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       val acls  = AclCollection(
         acl.copy(id = projAddress),
         acl.as(Acl.empty),
-        acl.copy(id = Project(org, proj2), value = Acl(user -> Set(r, w), group -> Set.empty)),
-        acl.copy(id = orgAddress, value = Acl(user -> Set.empty, group -> Set.empty))
+        acl.copy(id = Project(org, proj2), value = Acl(subject -> Set(r, w), group -> Set.empty)),
+        acl.copy(id = orgAddress, value = Acl(subject -> Set.empty, group -> Set.empty))
       )
       acls.removeEmpty() shouldEqual
         AclCollection(
           acl.copy(id = projAddress),
-          acl.copy(id = Project(org, proj2), value = Acl(user -> Set(r, w)))
+          acl.copy(id = Project(org, proj2), value = Acl(subject -> Set(r, w)))
         )
     }
 
@@ -75,9 +75,9 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       val acls = AclCollection(acl)
 
       forAll(List(projAddress, orgAddress, Root)) { address =>
-        acls.exists(Set(user, anon), r, address) shouldEqual true
+        acls.exists(Set(subject, anon), r, address) shouldEqual true
         acls.exists(Set(anon), r, address) shouldEqual false
-        acls.exists(Set(user, anon), x, address) shouldEqual false
+        acls.exists(Set(subject, anon), x, address) shouldEqual false
       }
     }
 
@@ -86,11 +86,11 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       val proj2 = Label.unsafe("proj2")
 
       forAll(List(Project(org, proj2), orgAddress, Root)) { address =>
-        acls.exists(Set(user, anon), r, address) shouldEqual false
+        acls.exists(Set(subject, anon), r, address) shouldEqual false
       }
-      acls.exists(Set(user, anon), r, projAddress) shouldEqual true
+      acls.exists(Set(subject, anon), r, projAddress) shouldEqual true
       acls.exists(Set(anon), r, projAddress) shouldEqual false
-      acls.exists(Set(user, anon), x, projAddress) shouldEqual false
+      acls.exists(Set(subject, anon), x, projAddress) shouldEqual false
     }
 
     "fetch ACLs from given filter" in {
