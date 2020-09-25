@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 
 /**
@@ -13,7 +16,15 @@ object Identity {
   /**
     * Parent type for identities that represent a uniquely identified caller.
     */
-  sealed trait Subject extends Identity
+  sealed trait Subject extends Identity {
+
+    /**
+      * A [[Subject]] expressed as an Iri
+      *
+     * @param base the platform [[BaseUri]]
+      */
+    def id(implicit base: BaseUri): Iri
+  }
 
   /**
     * The Anonymous type.
@@ -23,7 +34,9 @@ object Identity {
   /**
     * The Anonymous singleton identity.
     */
-  final case object Anonymous extends Subject
+  final case object Anonymous extends Subject {
+    override def id(implicit base: BaseUri): Iri = base.endpoint.toIri / "anonymous"
+  }
 
   /**
     * A user identity. It represents a unique person or a service account.
@@ -31,7 +44,9 @@ object Identity {
    * @param subject the subject name (usually the preferred_username claim)
     * @param realm   the associated realm that asserts this identity
     */
-  final case class User(subject: String, realm: Label) extends Subject
+  final case class User(subject: String, realm: Label) extends Subject {
+    override def id(implicit base: BaseUri): Iri = base.endpoint.toIri / "realms" / realm.value / "users" / subject
+  }
 
   /**
     * A group identity. It asserts that the caller belongs to a certain group of callers.

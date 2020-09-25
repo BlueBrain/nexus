@@ -1,0 +1,51 @@
+[
+  {
+    "@id": "http://example.com/permissions",
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Permissions"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/permissions": [
+      {
+        "@value": "acls/read"
+      },
+      {
+        "@value": "acls/write"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/rev": [
+      {
+        "@value": 1
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/deprecated": [
+      {
+        "@value": false
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/createdAt": [
+      {
+        "@value": "1970-01-01T00:00:00Z"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/createdBy": [
+      {
+        "@id": "http://nexus.com/anonymous"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/updatedAt": [
+      {
+        "@value": "1970-01-01T00:00:00Z"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/updatedBy": [
+      {
+        "@id": "http://nexus.com/realms/bbp/users/maria"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": [
+      {
+        "@id": "https://bluebrain.github.io/nexus/schemas/permissions.json"
+      }
+    ]
+  }
+]

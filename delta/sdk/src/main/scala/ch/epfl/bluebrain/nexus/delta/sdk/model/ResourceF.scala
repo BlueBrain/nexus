@@ -3,8 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import java.time.Instant
 
 import cats.Functor
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import io.circe.JsonObject
+import io.circe.syntax._
+import monix.bio.IO
 
 /**
   * A resource representation.
@@ -49,5 +59,32 @@ object ResourceF {
   implicit def resourceFunctor[Id]: Functor[ResourceF[Id, *]] =
     new Functor[ResourceF[Id, *]] {
       override def map[A, B](fa: ResourceF[Id, A])(f: A => B): ResourceF[Id, B] = fa.map(f)
+    }
+
+  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[Iri, A]] =
+    JsonLdEncoder.compose(rf => (rf.void, rf.value, rf.id))
+
+  implicit def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Iri, Unit]] =
+    new JsonLdEncoder[ResourceF[Iri, Unit]] {
+      override def apply(rf: ResourceF[Iri, Unit]): IO[RdfError, JsonLd] =
+        IO.pure {
+          val obj          = JsonObject.empty
+            .add(keywords.id, rf.id.asJson)
+            .add("_rev", rf.rev.asJson)
+            .add("_deprecated", rf.deprecated.asJson)
+            .add("_createdAt", rf.createdAt.asJson)
+            .add("_createdBy", rf.createdBy.id.asJson)
+            .add("_updatedAt", rf.updatedAt.asJson)
+            .add("_updatedBy", rf.updatedBy.id.asJson)
+            .add("_constrainedBy", rf.schema.iri.asJson)
+          val objWithTypes = rf.types.take(2).toList match {
+            case Nil         => obj
+            case head :: Nil => obj.add(keywords.tpe, head.stripPrefix(nxv.base).asJson)
+            case _           => obj.add(keywords.tpe, rf.types.map(_.stripPrefix(nxv.base)).asJson)
+          }
+          JsonLd.compactedUnsafe(objWithTypes, defaultContext, rf.id)
+        }
+
+      override val defaultContext: RawJsonLdContext = RawJsonLdContext(contexts.resource.asJson)
     }
 }

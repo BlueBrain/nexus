@@ -1,0 +1,26 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_rev": "nxv:rev",
+    "_deprecated": "nxv:deprecated",
+    "_createdAt": "nxv:createdAt",
+    "_updatedAt": "nxv:updatedAt",
+    "_createdBy": {
+      "@id": "nxv:createdBy",
+      "@type": "@id"
+    },
+    "_updatedBy": {
+      "@id": "nxv:updatedBy",
+      "@type": "@id"
+    },
+    "_constrainedBy": {
+      "@id": "nxv:constrainedBy",
+      "@type": "@id"
+    },
+    "AccessControlList": "nxv:AccessControlList",
+    "Organization": "nxv:Organization",
+    "Permissions": "nxv:Permissions",
+    "Project": "nxv:Project",
+    "Realm": "nxv:Realm"
+  }
+}

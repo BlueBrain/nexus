@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.TripleInstances
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, JsonLdEncoderSyntax, JsonSyntax}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.UriInstances
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{IriUriSyntax, UriSyntax}
 
@@ -16,3 +16,4 @@ package object implicits
     with UriInstances
     with UriSyntax
     with IriUriSyntax
+    with IterableSyntax

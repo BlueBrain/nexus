@@ -1,0 +1,16 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/permissions.json"
+  ],
+  "@id": "http://example.com/permissions",
+  "@type": "Permissions",
+  "permissions": [ "acls/read", "acls/write"],
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "http://nexus.com/anonymous",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "http://nexus.com/realms/bbp/users/maria",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/permissions.json"
+}
