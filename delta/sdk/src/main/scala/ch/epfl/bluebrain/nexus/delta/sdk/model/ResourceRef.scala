@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import org.apache.jena.iri.IRI
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 
 /**
   * A resource reference.
@@ -10,7 +10,7 @@ sealed trait ResourceRef extends Product with Serializable {
   /**
     * @return the reference identifier as an iri
     */
-  def iri: IRI
+  def iri: Iri
 }
 
 object ResourceRef {
@@ -20,7 +20,7 @@ object ResourceRef {
     *
     * @param iri the reference identifier as an iri
     */
-  final case class Latest(iri: IRI) extends ResourceRef
+  final case class Latest(iri: Iri) extends ResourceRef
 
   /**
     * A reference annotated with a revision.
@@ -28,7 +28,7 @@ object ResourceRef {
     * @param iri the reference identifier as an iri
     * @param rev the reference revision
     */
-  final case class Revision(iri: IRI, rev: Long) extends ResourceRef
+  final case class Revision(iri: Iri, rev: Long) extends ResourceRef
 
   /**
     * A reference annotated with a tag.
@@ -36,6 +36,6 @@ object ResourceRef {
     * @param iri the reference identifier as an iri
     * @param tag the reference tag
     */
-  final case class Tag(iri: IRI, tag: String) extends ResourceRef
+  final case class Tag(iri: Iri, tag: String) extends ResourceRef
 
 }

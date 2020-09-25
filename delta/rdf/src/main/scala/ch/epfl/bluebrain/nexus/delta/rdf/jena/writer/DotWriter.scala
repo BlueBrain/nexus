@@ -54,7 +54,7 @@ private object DotWriterImpl extends WriterGraphRIOTBase {
       formatLiteral(node) orElse formatIri(node, useVocab) orElse formatBNode(node)
 
     val iter = graph.find()
-    out.write(s"""digraph ${formatIri(root.asNode).get} {\n""")
+    out.write(s"""digraph ${formatSubject(root.asNode).get} {\n""")
     while (iter.hasNext) {
       val triple    = iter.next()
       val (s, p, o) = (triple.getSubject, triple.getPredicate, triple.getObject)

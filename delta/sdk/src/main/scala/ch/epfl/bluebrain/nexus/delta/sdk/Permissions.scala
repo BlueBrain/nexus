@@ -41,7 +41,7 @@ trait Permissions {
     * @return the current permissions collection without checking permissions
     */
   def fetchPermissionSet: UIO[Set[Permission]] =
-    fetch.map(_.value)
+    fetch.map(_.value.permissions)
 
   /**
     * Replaces the current collection of permissions with the provided collection.
@@ -93,6 +93,112 @@ trait Permissions {
 }
 
 object Permissions {
+
+  /**
+    * ACLs permissions.
+    */
+  object acls {
+    final val read: Permission  = Permission.unsafe("acls/read")
+    final val write: Permission = Permission.unsafe("acls/write")
+  }
+
+  /**
+    * Realms permissions.
+    */
+  object realms {
+    final val read: Permission  = Permission.unsafe("realms/read")
+    final val write: Permission = Permission.unsafe("realms/write")
+  }
+
+  /**
+    * Permissions permissions.
+    */
+  object permissions {
+    final val read: Permission  = Permission.unsafe("realms/read")
+    final val write: Permission = Permission.unsafe("realms/write")
+  }
+
+  /**
+    * Organizations permissions.
+    */
+  object orgs {
+    final val read: Permission   = Permission.unsafe("organizations/read")
+    final val write: Permission  = Permission.unsafe("organizations/write")
+    final val create: Permission = Permission.unsafe("organizations/create")
+  }
+
+  /**
+    * Projects permissions.
+    */
+  object projects {
+    final val read: Permission   = Permission.unsafe("projects/read")
+    final val write: Permission  = Permission.unsafe("projects/write")
+    final val create: Permission = Permission.unsafe("projects/create")
+  }
+
+  /**
+    * Generic event permissions.
+    */
+  object events {
+    final val read: Permission = Permission.unsafe("events/read")
+  }
+
+  /**
+    * Resources permissions.
+    */
+  object resources {
+    final val read: Permission  = Permission.unsafe("resources/read")
+    final val write: Permission = Permission.unsafe("resources/write")
+  }
+
+  /**
+    * Schemas permissions.
+    */
+  object schemas {
+    final val read: Permission  = resources.read
+    final val write: Permission = Permission.unsafe("schemas/write")
+  }
+
+  /**
+    * Views permissions.
+    */
+  object views {
+    final val read: Permission  = resources.read
+    final val write: Permission = Permission.unsafe("views/write")
+    final val query: Permission = Permission.unsafe("views/query")
+  }
+
+  /**
+    * Files permissions.
+    */
+  object files {
+    final val read: Permission  = resources.read
+    final val write: Permission = Permission.unsafe("files/write")
+  }
+
+  /**
+    * Storages permissions.
+    */
+  object storages {
+    final val read: Permission  = resources.read
+    final val write: Permission = Permission.unsafe("storages/write")
+  }
+
+  /**
+    * Resolvers permissions.
+    */
+  object resolvers {
+    final val read: Permission  = resources.read
+    final val write: Permission = Permission.unsafe("resolvers/write")
+  }
+
+  /**
+    * Archives permissions.
+    */
+  object archives {
+    final val read: Permission  = resources.read
+    final val write: Permission = Permission.unsafe("archives/write")
+  }
 
   private[delta] def next(
       minimum: Set[Permission]

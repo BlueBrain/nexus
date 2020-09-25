@@ -1,26 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.{IllegalIRIFormatError, IllegalPrefixIRIFormatError}
-import org.apache.jena.iri.IRI
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 /**
-  * An IRI that ends with ''/'' or ''#''
+  * An Iri that ends with ''/'' or ''#''
   */
-final case class PrefixIRI private (value: IRI) extends AnyVal {
+final case class PrefixIRI private (value: Iri) extends AnyVal {
   override def toString: String = value.toString
 }
 
 object PrefixIRI {
 
   /**
-    * Attempts to construct a [[PrefixIRI]] from its IRI representation.
+    * Attempts to construct a [[PrefixIRI]] from its Iri representation.
     *
    * @param value the iri
     */
-  final def apply(value: IRI): Either[FormatError, PrefixIRI] =
+  final def apply(value: Iri): Either[FormatError, PrefixIRI] =
     Option.when(value.isPrefixMapping)(new PrefixIRI(value)).toRight(IllegalPrefixIRIFormatError(value))
 
   /**
@@ -36,7 +36,7 @@ object PrefixIRI {
     *
    * @param value the iri
     */
-  final def unsafe(value: IRI): PrefixIRI =
+  final def unsafe(value: Iri): PrefixIRI =
     new PrefixIRI(value)
 
 }

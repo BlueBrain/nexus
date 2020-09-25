@@ -2,51 +2,116 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import java.time.Instant
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.{encoderPermissions, Permissions, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
-import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, RdfError, RemoteContextResolutionDummy}
+import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, RdfError}
 import io.circe.JsonObject
 import io.circe.syntax._
 import monix.bio.IO
-import org.apache.jena.iri.IRI
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
-  "a JsonLdEncoder" should {
-    val iri                           = iri"http://nexus.example.com/john-doé"
-    val permissions: Permissions      = Set("read", "write", "execute")
-    val value: ResourceF[Permissions] = ResourceF(iri, 1L, deprecated = false, Instant.EPOCH, permissions)
+  "a JsonLdEncoder" when {
+    val iri                      = iri"http://nexus.example.com/john-doé"
+    val permissions: Permissions = Set("read", "write", "execute")
+    val permissionsContext       = json"""{ "@context": {"permissions": "${nxv + "permissions"}"} }"""
 
-    implicit val remoteResolution: RemoteContextResolutionDummy = new RemoteContextResolutionDummy(
-      Map(
-        contexts.permissions -> json"""{ "@context": {"permissions": "${nxv + "permissions"}"} }""",
-        contexts.resource    -> json"""{ "@context": {"@vocab": "${nxv.base}"} }"""
-      )
-    )
+    "dealing with Permissions" should {
 
-    "return a compacted Json-LD format" in {
-      val compacted = jsonContentOf("encoder/compacted.json")
-      value.toCompactedJsonLd.accepted.json shouldEqual compacted
+      implicit val remoteResolution: RemoteContextResolutionDummy =
+        RemoteContextResolutionDummy(contexts.permissions -> permissionsContext)
+      val mergedCtx                                               = RawJsonLdContext(permissionsContext.topContextValueOrEmpty)
+
+      val compacted         = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
+      val expanded          =
+        json"""[{"${nxv + "permissions"}": [{"@value": "read"}, {"@value": "write"}, {"@value": "execute"} ] } ]"""
+      def dot(bnode: BNode) = s"""digraph "${bnode.rdfFormat}" {
+           |  "${bnode.rdfFormat}" -> "execute" [label = "permissions"]
+           |  "${bnode.rdfFormat}" -> "write" [label = "permissions"]
+           |  "${bnode.rdfFormat}" -> "read" [label = "permissions"]
+           |}""".stripMargin
+
+      def ntriples(bnode: BNode) =
+        s"""${bnode.rdfFormat} <${nxv + "permissions"}> "execute" .
+           |${bnode.rdfFormat} <${nxv + "permissions"}> "write" .
+           |${bnode.rdfFormat} <${nxv + "permissions"}> "read" .
+           |""".stripMargin
+
+      "return a compacted Json-LD format" in {
+        permissions.toCompactedJsonLd.accepted.json shouldEqual compacted
+      }
+
+      "return a compacted Json-LD format using a custom @context" in {
+        permissions.toCompactedJsonLd(mergedCtx).accepted.json.removeKeys(keywords.context) shouldEqual
+          compacted.removeKeys(keywords.context)
+      }
+
+      "return an expanded Json-LD format" in {
+        permissions.toExpandedJsonLd.accepted.json shouldEqual expanded
+      }
+
+      "return a DOT format" in {
+        val result = permissions.toDot.accepted
+        result.toString should equalLinesUnordered(dot(result.rootNode.asBNode.value))
+      }
+
+      "return a DOT format using a custom @context" in {
+        val result = permissions.toDot(mergedCtx).accepted
+        result.toString should equalLinesUnordered(dot(result.rootNode.asBNode.value))
+      }
+
+      "return a NTriples format" in {
+        val result = permissions.toNTriples.accepted
+        result.toString should equalLinesUnordered(ntriples(result.rootNode.asBNode.value))
+      }
     }
 
-    "return an expanded Json-LD format" in {
-      val expanded = jsonContentOf("encoder/expanded.json")
-      value.toExpandedJsonLd.accepted.json shouldEqual expanded
-    }
+    "dealing with a ResourceF of Permissions" should {
 
-    "return a DOT format" in {
-      val dot = contentOf("encoder/dot.dot")
-      value.toDot.accepted.toString should equalLinesUnordered(dot)
-    }
+      val resourceContext               = json"""{ "@context": {"@vocab": "${nxv.base}"} }"""
+      val mergedCtx                     = RawJsonLdContext(permissionsContext.addContext(resourceContext).topContextValueOrEmpty)
+      val value: ResourceF[Permissions] = ResourceF(iri, 1L, deprecated = false, Instant.EPOCH, permissions)
+      val compacted                     = jsonContentOf("encoder/compacted.json")
+      val expanded                      = jsonContentOf("encoder/expanded.json")
+      val dot                           = contentOf("encoder/dot.dot")
+      val ntriples                      = contentOf("encoder/ntriples.nt")
 
-    "return a NTriples format" in {
-      val ntriples = contentOf("encoder/ntriples.nt")
-      value.toNTriples.accepted.toString should equalLinesUnordered(ntriples)
+      implicit val remoteResolution: RemoteContextResolutionDummy =
+        RemoteContextResolutionDummy(contexts.permissions -> permissionsContext, contexts.resource -> resourceContext)
+
+      "return a compacted Json-LD format" in {
+
+        value.toCompactedJsonLd.accepted.json shouldEqual compacted
+      }
+
+      "return a compacted Json-LD format using a custom @context" in {
+        value.toCompactedJsonLd(mergedCtx).accepted.json.removeKeys(keywords.context) shouldEqual
+          compacted.removeKeys(keywords.context)
+      }
+
+      "return an expanded Json-LD format" in {
+        value.toExpandedJsonLd.accepted.json shouldEqual expanded
+      }
+
+      "return a DOT format" in {
+        value.toDot.accepted.toString should equalLinesUnordered(dot)
+      }
+
+      "return a DOT format using a custom @context" in {
+        value.toDot(mergedCtx).accepted.toString should equalLinesUnordered(dot)
+      }
+
+      "return a NTriples format" in {
+        value.toNTriples.accepted.toString should equalLinesUnordered(ntriples)
+      }
     }
   }
 }
@@ -55,7 +120,7 @@ object JsonLdEncoderSpec {
 
   type Permissions = Set[String]
 
-  final case class ResourceF[A](id: IRI, rev: Long, deprecated: Boolean, createdAt: Instant, value: A) {
+  final case class ResourceF[A](id: Iri, rev: Long, deprecated: Boolean, createdAt: Instant, value: A) {
     def unit: ResourceF[Unit] = copy(value = ())
   }
 
@@ -87,7 +152,7 @@ object JsonLdEncoderSpec {
 
       override def apply(value: Permissions): IO[RdfError, JsonLd] = {
         val obj = JsonObject.empty.add("permissions", value.asJson)
-        IO.pure(JsonLd.compactedUnsafe(obj, defaultContext, iri""))
+        IO.pure(JsonLd.compactedUnsafe(obj, defaultContext, BNode.random))
       }
     }
 }

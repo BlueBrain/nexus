@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
-import io.circe.{Json, JsonObject}
+import io.circe.{Encoder, Json, JsonObject}
+import io.circe.syntax._
 
 trait JsonUtils {
 
@@ -40,16 +41,38 @@ trait JsonUtils {
   }
 
   /**
+    * Removes the provided key value pairs from everywhere on the json.
+    */
+  def removeAll[A: Encoder](json: Json, keyValues: (String, A)*): Json =
+    removeNested(
+      json,
+      keyValues.map {
+        case (k, v) => (kk => kk == k, vv => vv == v.asJson)
+      }
+    )
+
+  /**
+    * Removes the provided values from everywhere on the json.
+    */
+  def removeAllValues[A: Encoder](json: Json, values: A*): Json =
+    removeNested(json, values.map(v => (_ => true, vv => vv == v.asJson)))
+
+  /**
     * Removes the provided keys from everywhere on the json.
     */
-  def removeNestedKeys(json: Json, keys: String*): Json = {
+  def remoteAllKeys(json: Json, keys: String*): Json =
+    removeNested(json, keys.map(k => (kk => kk == k, _ => true)))
+
+  private def removeNested(json: Json, keyValues: Seq[(String => Boolean, Json => Boolean)]): Json = {
     def inner(obj: JsonObject): JsonObject =
       JsonObject.fromIterable(
-        obj.filterKeys(!keys.contains(_)).toVector.map { case (k, v) => k -> removeNestedKeys(v, keys: _*) }
+        obj.filter { case (k, v) => !keyValues.exists { case (fk, fv) => fk(k) && fv(v) } }.toVector.map {
+          case (k, v) => k -> removeNested(v, keyValues)
+        }
       )
     json.arrayOrObject(
       json,
-      arr => Json.fromValues(arr.map(j => removeNestedKeys(j, keys: _*))),
+      arr => Json.fromValues(arr.map(j => removeNested(j, keyValues))),
       obj => Json.fromJsonObject(inner(obj))
     )
   }

@@ -1,20 +1,37 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextFields
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
   "A Graph" should {
-    val expanded   = jsonContentOf("expanded.json")
-    val graph      = Graph(iri, expanded).accepted
-    val bnode      = bNode(graph)
-    val iriSubject = subject(iri)
+    val expandedJson     = jsonContentOf("expanded.json")
+    val expanded         = JsonLd.expand(expandedJson).accepted
+    val graph            = Graph(expanded).accepted
+    val bnode            = bNode(graph)
+    val iriSubject       = subject(iri)
+    val rootBNode        = BNode.random
+    val expandedNoIdJson = expandedJson.removeAll(keywords.id -> iri)
+    val expandedNoId     = JsonLd.expand(expandedNoIdJson, Some(rootBNode)).accepted
+    val graphNoId        = Graph(expandedNoId).accepted
+    val bnodeNoId        = bNode(graphNoId)
+
+    "be created from expanded jsonld" in {
+      Graph(expanded).accepted.triples.size shouldEqual 16
+    }
+
+    "be created from expanded jsonld with a root blank node" in {
+      Graph(expandedNoId).accepted.triples.size shouldEqual 16
+    }
 
     "return a filtered graph" in {
       val deprecated = predicate(schema + "deprecated")
@@ -54,19 +71,37 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "be converted to NTriples" in {
-      val expected = contentOf("ntriples.nt", "{bnode}" -> s"_:B$bnode")
+      val expected = contentOf("ntriples.nt", "{bnode}" -> bnode.rdfFormat, "{rootNode}" -> iri.rdfFormat)
       graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
+    "be converted to NTriples with a root blank node" in {
+      val expected = contentOf("ntriples.nt", "{bnode}" -> bnodeNoId.rdfFormat, "{rootNode}" -> rootBNode.rdfFormat)
+      graphNoId.toNTriples.accepted.toString should equalLinesUnordered(expected)
+    }
+
     "be converted to dot without context" in {
-      val expected = contentOf("graph/dot-expanded.dot", "{bnode}" -> s"_:B$bnode")
+      val expected = contentOf("graph/dot-expanded.dot", "{bnode}" -> bnode.rdfFormat, "{rootNode}" -> iri.toString)
       graph.toDot().accepted.toString should equalLinesUnordered(expected)
     }
 
+    "be converted to dot without context with a root blank node" in {
+      val expected =
+        contentOf("graph/dot-expanded.dot", "{bnode}" -> bnodeNoId.rdfFormat, "{rootNode}" -> rootBNode.rdfFormat)
+      graphNoId.toDot().accepted.toString should equalLinesUnordered(expected)
+    }
+
     "be converted to dot with context" in {
-      val expected = contentOf("graph/dot-compacted.dot", "{bnode}" -> s"_:B$bnode")
+      val expected = contentOf("graph/dot-compacted.dot", "{bnode}" -> bnode.rdfFormat, "{rootNode}" -> "john-doé")
       val context  = jsonContentOf("context.json")
       graph.toDot(context).accepted.toString should equalLinesUnordered(expected)
+    }
+
+    "be converted to dot with context with a root blank node" in {
+      val expected =
+        contentOf("graph/dot-compacted.dot", "{bnode}" -> bnodeNoId.rdfFormat, "{rootNode}" -> rootBNode.rdfFormat)
+      val context  = jsonContentOf("context.json")
+      graphNoId.toDot(context).accepted.toString should equalLinesUnordered(expected)
     }
 
     // The returned json is not exactly the same as the original expanded json from where the Graph was created.
@@ -76,12 +111,27 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       graph.toExpandedJsonLd.accepted.json shouldEqual expanded
     }
 
+    // The returned json is not exactly the same as the original expanded json from where the Graph was created.
+    // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
+    "be converted to expanded JSON-LD with a root blank node" in {
+      val expanded = jsonContentOf("graph/expanded.json").removeAll(keywords.id -> iri)
+      graphNoId.toExpandedJsonLd.accepted.json shouldEqual expanded
+    }
+
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.
     // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
     "be converted to compacted JSON-LD" in {
       val context   = jsonContentOf("context.json")
       val compacted = jsonContentOf("graph/compacted.json")
       graph.toCompactedJsonLd(context, ContextFields.Skip).accepted.json shouldEqual compacted
+    }
+
+    // The returned json is not exactly the same as the original compacted json from where the Graph was created.
+    // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
+    "be converted to compacted JSON-LD with a root blank node" in {
+      val context   = jsonContentOf("context.json")
+      val compacted = jsonContentOf("graph/compacted.json").removeAll("id" -> "john-doé")
+      graphNoId.toCompactedJsonLd(context, ContextFields.Skip).accepted.json shouldEqual compacted
     }
   }
 }

@@ -27,7 +27,7 @@ class PermissionsStateSpec extends AnyWordSpecLike with Matchers {
           Instant.EPOCH,
           Identity.Anonymous,
           Latest(schemas.permissions),
-          minimum
+          PermissionSet(minimum)
         )
       }
     }
@@ -51,7 +51,7 @@ class PermissionsStateSpec extends AnyWordSpecLike with Matchers {
           Instant.EPOCH,
           Identity.Anonymous,
           Latest(schemas.permissions),
-          minimum ++ additional
+          PermissionSet(minimum ++ additional)
         )
       }
     }

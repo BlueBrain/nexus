@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import io.circe.Json
 import io.circe.syntax._
-import org.apache.jena.iri.IRI
 
 /**
   * A Json-LD context that contains only the value of the @context key.
@@ -11,10 +11,10 @@ import org.apache.jena.iri.IRI
 final case class RawJsonLdContext(value: Json) extends JsonLdContext {
   type This = RawJsonLdContext
 
-  override def addPrefix(prefix: String, iri: IRI): This =
+  override def addPrefix(prefix: String, iri: Iri): This =
     RawJsonLdContext(add(prefix, iri.asJson))
 
-  protected def addAlias(prefix: String, iri: IRI, dataType: Option[String] = None): This =
+  protected def addAlias(prefix: String, iri: Iri, dataType: Option[String] = None): This =
     dataType match {
       case Some(dt) => RawJsonLdContext(add(prefix, expandedTermDefinition(dt, iri)))
       case None     => RawJsonLdContext(add(prefix, iri.asJson))

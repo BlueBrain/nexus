@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import java.time.Instant
 
 import cats.Functor
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import org.apache.jena.iri.IRI
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
 /**
   * A resource representation.
@@ -14,9 +14,9 @@ import org.apache.jena.iri.IRI
   * @param types      the collection of known types of this resource
   * @param deprecated whether the resource is deprecated of not
   * @param createdAt  the instant when this resource was created
-  * @param createdBy  the identity that created this resource
+  * @param createdBy  the subject that created this resource
   * @param updatedAt  the last instant when this resource was updated
-  * @param updatedBy  the last identity that updated this resource
+  * @param updatedBy  the last subject that updated this resource
   * @param schema     the schema reference that this resource conforms to
   * @param value      the resource value
   * @tparam Id the resource id type
@@ -25,12 +25,12 @@ import org.apache.jena.iri.IRI
 final case class ResourceF[Id, A](
     id: Id,
     rev: Long,
-    types: Set[IRI],
+    types: Set[Iri],
     deprecated: Boolean,
     createdAt: Instant,
-    createdBy: Identity,
+    createdBy: Subject,
     updatedAt: Instant,
-    updatedBy: Identity,
+    updatedBy: Subject,
     schema: ResourceRef,
     value: A
 ) {

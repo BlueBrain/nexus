@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import ch.epfl.bluebrain.nexus.delta.rdf.{Fixtures, RemoteContextResolutionDummy}
+import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextCircularDependency, RemoteContextNotFound}
 import io.circe.Json
-import org.apache.jena.iri.IRI
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -21,7 +22,7 @@ class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fix
 
     "fail to resolve when there are circular dependencies" in {
       // format: off
-      val contexts: Map[IRI, Json] =
+      val contexts: Map[Iri, Json] =
         Map(
           iri"http://example.com/cöntéxt/0" -> json"""{"@context": {"deprecated": {"@id": "http://schema.org/deprecated", "@type": "http://www.w3.org/2001/XMLSchema#boolean"} }}""",
           iri"http://example.com/cöntéxt/1" -> json"""{"@context": ["http://example.com/cöntéxt/11", "http://example.com/cöntéxt/12"] }""",
@@ -38,7 +39,7 @@ class RemoteContextResolutionSpec extends AnyWordSpecLike with Matchers with Fix
 
     "fail to resolve when some context does not exist" in {
       val excluded                 = iri"http://example.com/cöntéxt/3"
-      val contexts: Map[IRI, Json] = remoteContexts - excluded
+      val contexts: Map[Iri, Json] = remoteContexts - excluded
       val remoteResolution         = new RemoteContextResolutionDummy(contexts)
       remoteResolution(input).rejected shouldEqual RemoteContextNotFound(excluded)
     }

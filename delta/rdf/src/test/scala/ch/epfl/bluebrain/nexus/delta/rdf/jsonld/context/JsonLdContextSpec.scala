@@ -167,7 +167,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
         RawJsonLdContext(json"""[{"@base": "${base.value}"}, {"xsd": "${xsd.base}"}]""")
     }
 
-    "add remote contexts IRI" in {
+    "add remote contexts Iri" in {
       val remoteCtx = iri"http://example.com/remote"
       val list      = List(
         json"""{"@id":"$iri","age": 30}"""                                                                                    -> json"""{"@context":"$remoteCtx","@id":"$iri","age": 30}""",

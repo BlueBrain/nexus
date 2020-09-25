@@ -1,8 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalPermissionFormatError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
+import io.circe.Json
+import io.circe.syntax._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -23,6 +25,14 @@ class PermissionSpec extends AnyWordSpecLike with Matchers with Inspectors with 
       forAll(List("", " ", "1", "1abd", "_abd", "foö", "bar*", genString(33))) { string =>
         Permission(string).leftValue shouldBe an[IllegalPermissionFormatError]
       }
+    }
+
+    "be converted to Json" in {
+      acls.read.asJson shouldEqual Json.fromString(acls.read.value)
+    }
+
+    "be constructed from Json" in {
+      Json.fromString(acls.read.value).as[Permission].rightValue shouldEqual acls.read
     }
   }
 

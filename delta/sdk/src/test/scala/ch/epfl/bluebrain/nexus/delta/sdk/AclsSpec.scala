@@ -88,7 +88,7 @@ class AclsSpec
       }
 
       "reject with AclCannotContainEmptyPermissionCollection" in {
-        val someEmptyPerms = groupR ++ Acl(user -> Set.empty[Permission])
+        val someEmptyPerms = groupR ++ Acl(subject -> Set.empty[Permission])
         val list           = List(
           Initial -> ReplaceAcl(Root, someEmptyPerms, 0L, subject),
           Initial -> AppendAcl(Root, someEmptyPerms, 0L, subject),

@@ -10,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class PrefixIRISpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
   "A PrefixIRI" should {
 
-    "be an IRI ending with / or #" in {
+    "be an iri ending with / or #" in {
       forAll(List(xsd.base, schema.base, owl.base, rdf.base)) { iri =>
         PrefixIRI.apply(iri).rightValue.value shouldEqual iri
         PrefixIRI(iri.toString).rightValue.value shouldEqual iri

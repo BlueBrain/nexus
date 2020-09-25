@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 
-import org.apache.jena.iri.IRI
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 
 /**
   * Json-LD Options defined by https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions
@@ -9,7 +9,7 @@ import org.apache.jena.iri.IRI
   * JSON-LD implementaiton does not fully support 1.1 yet
   */
 final case class JsonLdOptions(
-    base: Option[IRI] = None,
+    base: Option[Iri] = None,
     compactArrays: Boolean = true,
     compactToRelative: Boolean = true,
     extractAllScripts: Boolean = false,
@@ -28,5 +28,5 @@ final case class JsonLdOptions(
 )
 
 object JsonLdOptions {
-  val empty: JsonLdOptions = JsonLdOptions()
+  implicit val defaults: JsonLdOptions = JsonLdOptions()
 }

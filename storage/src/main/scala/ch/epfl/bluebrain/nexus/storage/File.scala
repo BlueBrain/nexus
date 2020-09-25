@@ -8,6 +8,8 @@ import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.{Decoder, Encoder}
 
+import scala.util.Try
+
 // $COVERAGE-OFF$
 object File {
 
@@ -39,6 +41,14 @@ object File {
     @nowarn("cat=unused")
     implicit private val encMediaType: Encoder[ContentType] =
       Encoder.encodeString.contramap(_.value)
+
+    @nowarn("cat=unused")
+    implicit final private val uriDecoder: Decoder[Uri] =
+      Decoder.decodeString.emapTry(s => Try(Uri(s)))
+
+    @nowarn("cat=unused")
+    implicit final private val uriEncoder: Encoder[Uri] =
+      Encoder.encodeString.contramap(_.toString())
 
     @nowarn("cat=unused")
     implicit private val decMediaType: Decoder[ContentType] =

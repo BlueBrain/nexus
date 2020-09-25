@@ -3,13 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, ResourceF, ResourceRef}
 import io.circe.Json
-import org.apache.jena.iri.IRI
 
 /**
   * Enumeration of Permissions states.
@@ -29,7 +29,7 @@ sealed trait RealmState extends Product with Serializable {
   /**
     * @return the collection of known types of realm resources
     */
-  final def types: Set[IRI] = Set(nxv.Realm)
+  final def types: Set[Iri] = Set(nxv.Realm)
 
   /**
     * Converts the state into a resource representation.

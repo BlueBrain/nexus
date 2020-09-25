@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import org.apache.jena.iri.IRI
 
 /**
   * A project representation.
@@ -14,7 +14,7 @@ import org.apache.jena.iri.IRI
   * @param organizationUuid  the parent organization unique identifier
   * @param description       an optional description
   * @param apiMappings       the API mappings
-  * @param base              the base IRI for generated resource IDs
+  * @param base              the base Iri for generated resource IDs
   * @param vocab             an optional vocabulary for resources with no context
   */
 final case class Project(
@@ -23,9 +23,9 @@ final case class Project(
     organizationLabel: Label,
     organizationUuid: UUID,
     description: Option[String],
-    apiMappings: Map[String, IRI],
-    base: IRI,
-    vocab: IRI
+    apiMappings: Map[String, Iri],
+    base: Iri,
+    vocab: Iri
 ) {
 
   /**

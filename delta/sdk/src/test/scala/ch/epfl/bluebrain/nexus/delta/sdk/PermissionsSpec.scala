@@ -1,8 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model
+package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, permissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
@@ -17,9 +18,9 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class PermissionsSpec extends AnyWordSpecLike with Matchers with IOValues with IOFixedClock {
 
   "The Permissions next function" should {
-    val minimum     = Set(Permission.unsafe("perms/write"), Permission.unsafe("perms/read"))
-    val appended    = Set(Permission.unsafe("acls/write"), Permission.unsafe("acls/read"))
-    val subtracted  = Set(Permission.unsafe("acls/write"))
+    val minimum     = Set(permissions.write, permissions.read)
+    val appended    = Set(acls.write, acls.read)
+    val subtracted  = Set(acls.write)
     val unknown     = Set(Permission.unsafe("unknown/unknown"))
     val epoch       = Instant.EPOCH
     val instantNext = epoch.plusMillis(1L)

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
-import org.apache.jena.iri.IRI
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 
 sealed abstract class RemoteContextResolutionError(reason: String) extends Exception {
   override def fillInStackTrace(): RemoteContextResolutionError = this
@@ -12,25 +12,25 @@ object RemoteContextResolutionError {
   /**
     * The remote context with the passed ''iri'' is not found.
     */
-  final case class RemoteContextNotFound(iri: IRI)
+  final case class RemoteContextNotFound(iri: Iri)
       extends RemoteContextResolutionError(s"Remote context '$iri' not found")
 
   /**
     * The remote context with the passed ''iri'' cannot be accessed.
     */
-  final case class RemoteContextNotAccessible(iri: IRI, reason: String)
+  final case class RemoteContextNotAccessible(iri: Iri, reason: String)
       extends RemoteContextResolutionError(s"Remote context '$iri' not accessible. Details: '$reason'")
 
   /**
     * The remote context with passed ''iri'' payload response is not a Json Document as expected.
     */
-  final case class RemoteContextWrongPayload(iri: IRI)
+  final case class RemoteContextWrongPayload(iri: Iri)
       extends RemoteContextResolutionError(s"Remote context '$iri' payload response cannot be transformed to Json")
 
   /**
     * Circular dependency on remote context resolution
     */
-  final case class RemoteContextCircularDependency(iri: IRI)
+  final case class RemoteContextCircularDependency(iri: Iri)
       extends RemoteContextResolutionError(
         s"Remote context '$iri' has already been resolved once. Circular dependency detected"
       )

@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.storage.config
 
-import org.apache.jena.iri.IRI
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 
 /**
   * Configuration for DeltaClient identities endpoint.
@@ -11,11 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
   * @param prefix        the prefix
   */
 final case class DeltaClientConfig(
-    publicIri: IRI,
-    internalIri: IRI,
+    publicIri: Iri,
+    internalIri: Iri,
     prefix: String
 ) {
-  lazy val baseInternalIri: IRI = internalIri / prefix
-  lazy val basePublicIri: IRI   = publicIri / prefix
-  lazy val identitiesIri: IRI   = baseInternalIri / "identities"
+  lazy val baseInternalIri: Iri = internalIri / prefix
+  lazy val basePublicIri: Iri   = publicIri / prefix
+  lazy val identitiesIri: Iri   = baseInternalIri / "identities"
 }
