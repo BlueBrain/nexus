@@ -54,8 +54,8 @@ class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "sort its keys" in {
-      implicit val ordering: OrderingJsonKeys =
-        OrderingJsonKeys(topKeys = Seq("@id", "@type"), bottomKeys = Seq("_rev", "_project"))
+      implicit val ordering: JsonKeyOrdering =
+        JsonKeyOrdering(topKeys = Seq("@id", "@type"), bottomKeys = Seq("_rev", "_project"))
 
       val json =
         json"""{

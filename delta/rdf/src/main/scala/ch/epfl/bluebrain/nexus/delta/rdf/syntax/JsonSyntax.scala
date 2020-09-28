@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonUtils, OrderingJsonKeys}
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonKeyOrdering, JsonUtils}
 import io.circe.{Encoder, Json}
 
 trait JsonSyntax {
@@ -75,5 +75,5 @@ final class JsonOps(private val json: Json) extends AnyVal {
     *
    * @param ordering the sorting strategy
     */
-  def sort(implicit ordering: OrderingJsonKeys): Json = JsonUtils.sort(json)
+  def sort(implicit ordering: JsonKeyOrdering): Json = JsonUtils.sort(json)
 }

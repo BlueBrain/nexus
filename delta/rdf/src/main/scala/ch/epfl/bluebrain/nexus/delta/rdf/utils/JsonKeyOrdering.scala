@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 /**
   * Ordering for Json keys.
   */
-trait OrderingJsonKeys extends Ordering[String]
+trait JsonKeyOrdering extends Ordering[String]
 
-object OrderingJsonKeys {
+object JsonKeyOrdering {
 
   /**
     * Ordering based on passed keys sequences. Any json key will be sorted as the order on the ''topKeys'' plus ''bottomKeys''.
@@ -20,8 +20,8 @@ object OrderingJsonKeys {
       topKeys: Seq[String],
       bottomKeys: Seq[String],
       middleKeysOrdering: Ordering[String] = Ordering.String
-  ): OrderingJsonKeys =
-    new OrderingJsonKeys {
+  ): JsonKeyOrdering =
+    new JsonKeyOrdering {
       private val keysMap: Map[String, Int]  = ((topKeys :+ "*") ++ bottomKeys).zipWithIndex.toMap
       private val middlePosition             = keysMap("*")
       private def position(key: String): Int = keysMap.getOrElse(key, middlePosition)

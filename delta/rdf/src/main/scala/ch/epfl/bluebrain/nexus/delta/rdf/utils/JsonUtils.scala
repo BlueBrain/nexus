@@ -83,7 +83,7 @@ trait JsonUtils {
     * @param json     the json to sort
     * @param ordering the sorting strategy
     */
-  def sort(json: Json)(implicit ordering: OrderingJsonKeys): Json = {
+  def sort(json: Json)(implicit ordering: JsonKeyOrdering): Json = {
 
     def inner(obj: JsonObject): JsonObject =
       JsonObject.fromIterable(obj.toVector.sortBy(_._1)(ordering).map { case (k, v) => k -> sort(v) })
