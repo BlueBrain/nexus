@@ -50,8 +50,8 @@ export default function PoweredByNexus() {
             </div>
 
             <div className="column">
-              <a href="https://www.switch.ch/">
-                <img src={switchLogo} alt="switch" className="full" />
+              <a href="https://www.switch.ch/about/open-science/">
+                <p className="text-centered">The Research Data Connectome</p>
               </a>
             </div>
           </div>
