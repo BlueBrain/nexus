@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 /**
- * Ordering for Json keys.
- */
+  * Ordering for Json keys.
+  */
 trait OrderingJsonKeys extends Ordering[String]
 
 object OrderingJsonKeys {
