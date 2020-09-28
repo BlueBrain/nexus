@@ -52,6 +52,38 @@ class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures {
         json"""[{"key": "value", "key2": {"key": {"key21": "value"}}}, { "@context": {"@vocab": "${vocab.value}", "key3": {"key": "value2"}} }]"""
       json.extractValuesFrom("key") shouldEqual Set("value".asJson, json"""{"key21": "value"}""", "value2".asJson)
     }
+
+    "sort its keys" in {
+      implicit val ordering: JsonKeyOrdering =
+        JsonKeyOrdering(topKeys = Seq("@id", "@type"), bottomKeys = Seq("_rev", "_project"))
+
+      val json =
+        json"""{
+                "name": "Maria",
+                "_rev": 5,
+                "age": 30,
+                "@id": "mariaId",
+                "friends": [
+                  { "_rev": 1, "name": "Pablo", "_project": "a", "age": 20 },
+                  { "name": "Laura", "_project": "b", "age": 23, "_rev": 2, "@id": "lauraId" }
+                ],
+                "@type": "Person"
+              }"""
+
+      json.sort shouldEqual
+        json"""{
+                "@id": "mariaId",
+                "@type": "Person",
+                "age": 30,
+                "friends": [
+                  { "age": 20, "name": "Pablo", "_rev": 1, "_project": "a" },
+                  { "@id": "lauraId", "age": 23, "name": "Laura", "_rev": 2, "_project": "b" }
+                ],
+                "name": "Maria",
+                "_rev": 5
+              }"""
+
+    }
   }
 
 }

@@ -76,6 +76,20 @@ trait JsonUtils {
       obj => Json.fromJsonObject(inner(obj))
     )
   }
+
+  /**
+    * Sort all the keys in the passed ''json''.
+    *
+    * @param json     the json to sort
+    * @param ordering the sorting strategy
+    */
+  def sort(json: Json)(implicit ordering: JsonKeyOrdering): Json = {
+
+    def inner(obj: JsonObject): JsonObject =
+      JsonObject.fromIterable(obj.toVector.sortBy(_._1)(ordering).map { case (k, v) => k -> sort(v) })
+
+    json.arrayOrObject[Json](json, arr => Json.fromValues(arr.map(sort)), obj => inner(obj).asJson)
+  }
 }
 
 object JsonUtils extends JsonUtils
