@@ -1,6 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import io.circe.syntax._
+import io.circe.{Encoder, JsonObject}
+import monix.bio.{IO, UIO}
 
 /**
   * Enumeration of ACLS rejection types.
@@ -78,4 +88,20 @@ object AclRejection {
     */
   final case class UnexpectedInitialState(address: AclAddress)
       extends AclRejection(s"Unexpected initial state for acl address '$address'.")
+
+  implicit final val aclRejectionJsonLdEncoder: JsonLdEncoder[AclRejection] =
+    new JsonLdEncoder[AclRejection] {
+      private val bnode = BNode.random
+
+      implicit private val aclRejectionEncoder: Encoder.AsObject[AclRejection] =
+        Encoder.AsObject.instance { r =>
+          val tpe = r.getClass.getSimpleName.split('$').head
+          JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+        }
+
+      override def apply(value: AclRejection): IO[RdfError, JsonLd] =
+        JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, bnode).pure[UIO]
+
+      override val defaultContext: RawJsonLdContext = RawJsonLdContext(contexts.error.asJson)
+    }
 }
