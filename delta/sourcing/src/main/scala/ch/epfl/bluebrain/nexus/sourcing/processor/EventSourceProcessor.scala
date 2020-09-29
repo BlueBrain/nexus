@@ -253,21 +253,23 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     val scope = if (dryRun) "testing" else "evaluating"
     val eval  = for {
       _ <- IO.shift(config.evaluationExecutionContext)
-      r <- definition.evaluate(state, cmd)
+      r <- definition.evaluate(state, cmd).attempt
       _ <- IO.shift(context.executionContext)
       _ <- tellResult(r.map { e => EvaluationSuccess(e, definition.next(state, e)) }.valueOr(EvaluationRejection(_)))
     } yield ()
     val io    = eval
       .timeoutTo(
         config.evaluationMaxDuration, {
-          context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)
-          IO.shift(context.executionContext) >> tellResult(EvaluationCommandTimeout(cmd, config.evaluationMaxDuration))
+          IO.shift(context.executionContext) >>
+            IO.delay(context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)) >>
+            tellResult(EvaluationCommandTimeout(cmd, config.evaluationMaxDuration))
         }
       )
       .onError {
         case NonFatal(th) =>
-          context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)
-          IO.shift(context.executionContext) >> tellResult(EvaluationCommandError(cmd, Option(th.getMessage)))
+          IO.shift(context.executionContext) >>
+            IO.delay(context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)) >>
+            tellResult(EvaluationCommandError(cmd, Option(th.getMessage)))
       }
 
     io.runAsyncAndForget

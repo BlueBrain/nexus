@@ -1,11 +1,14 @@
 package ch.epfl.bluebrain.nexus.testkit
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalactic.source
 import org.scalatest.matchers.should.Matchers.fail
 
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 trait IOValues {
   implicit final def ioValuesSyntax[E: ClassTag, A](io: IO[E, A]): IOValuesOps[E, A] = new IOValuesOps(io)
@@ -15,11 +18,23 @@ final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E])
 
   def accepted(implicit pos: source.Position, s: Scheduler = Scheduler.global): A =
     io.attempt.runSyncUnsafe() match {
-      case Left(err)    =>
+      case Left(NonFatal(err)) =>
+        val baos  = new ByteArrayOutputStream()
+        err.printStackTrace(new PrintStream(baos))
+        val stack = new String(baos.toByteArray)
         fail(
-          s"Error caught of type '${E.runtimeClass.getName}', expected a successful response\nMessage: ${err.toString}"
+          s"""Error caught of type '${err.getClass.getName}', expected a successful response
+             |Message: ${err.toString}
+             |Stack:
+             |$stack""".stripMargin,
+          err
         )
-      case Right(value) =>
+      case Left(err)           =>
+        fail(
+          s"""Error caught of type '${E.runtimeClass.getName}', expected a successful response
+             |Message: ${err.toString}""".stripMargin
+        )
+      case Right(value)        =>
         value
     }
 

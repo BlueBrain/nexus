@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.sourcing
 
+import ch.epfl.bluebrain.nexus.sourcing.TestCommand._
 import ch.epfl.bluebrain.nexus.sourcing.TestEvent.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.sourcing.TestRejection.InvalidRevision
 import ch.epfl.bluebrain.nexus.sourcing.TestState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.sourcing.TestCommand._
-import monix.bio.Task
+import monix.bio.IO
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -73,29 +73,29 @@ object EventSourceFixture {
       evaluate
     )
 
-  def evaluate(state: TestState, cmd: TestCommand): Task[Either[TestRejection, TestEvent]] =
+  def evaluate(state: TestState, cmd: TestCommand): IO[TestRejection, TestEvent] =
     (state, cmd) match {
-      case (Current(revS, _), Boom(revC, message)) if revS == revC                  => Task.raiseError(new RuntimeException(message))
-      case (Initial, Boom(rev, message)) if rev == 0                                => Task.raiseError(new RuntimeException(message))
-      case (_, Boom(rev, _))                                                        => Task.pure(Left(InvalidRevision(rev)))
-      case (Current(revS, _), Never(revC)) if revS == revC                          => Task.never
-      case (Initial, Never(rev)) if rev == 0                                        => Task.never
-      case (_, Never(rev))                                                          => Task.pure(Left(InvalidRevision(rev)))
-      case (Initial, Increment(rev, step)) if rev == 0                              => Task.pure(Right(Incremented(1, step)))
-      case (Initial, Increment(rev, _))                                             => Task.pure(Left(InvalidRevision(rev)))
+      case (Current(revS, _), Boom(revC, message)) if revS == revC                  => IO.terminate(new RuntimeException(message))
+      case (Initial, Boom(rev, message)) if rev == 0                                => IO.terminate(new RuntimeException(message))
+      case (_, Boom(rev, _))                                                        => IO.raiseError(InvalidRevision(rev))
+      case (Current(revS, _), Never(revC)) if revS == revC                          => IO.never
+      case (Initial, Never(rev)) if rev == 0                                        => IO.never
+      case (_, Never(rev))                                                          => IO.raiseError(InvalidRevision(rev))
+      case (Initial, Increment(rev, step)) if rev == 0                              => IO.pure(Incremented(1, step))
+      case (Initial, Increment(rev, _))                                             => IO.raiseError(InvalidRevision(rev))
       case (Initial, IncrementAsync(rev, step, duration)) if rev == 0               =>
-        Task.sleep(duration) >> Task.pure(Right(Incremented(1, step)))
-      case (Initial, IncrementAsync(rev, _, _))                                     => Task.pure(Left(InvalidRevision(rev)))
-      case (Initial, Initialize(rev)) if rev == 0                                   => Task.pure(Right(Initialized(1)))
-      case (Initial, Initialize(rev))                                               => Task.pure(Left(InvalidRevision(rev)))
-      case (Current(revS, _), Increment(revC, step)) if revS == revC                => Task.pure(Right(Incremented(revS + 1, step)))
-      case (Current(_, _), Increment(revC, _))                                      => Task.pure(Left(InvalidRevision(revC)))
+        IO.sleep(duration) >> IO.pure(Incremented(1, step))
+      case (Initial, IncrementAsync(rev, _, _))                                     => IO.raiseError(InvalidRevision(rev))
+      case (Initial, Initialize(rev)) if rev == 0                                   => IO.pure(Initialized(1))
+      case (Initial, Initialize(rev))                                               => IO.raiseError(InvalidRevision(rev))
+      case (Current(revS, _), Increment(revC, step)) if revS == revC                => IO.pure(Incremented(revS + 1, step))
+      case (Current(_, _), Increment(revC, _))                                      => IO.raiseError(InvalidRevision(revC))
       case (Current(revS, _), IncrementAsync(revC, step, duration)) if revS == revC =>
-        Task.sleep(duration) >> Task.pure(Right(Incremented(revS + 1, step)))
+        IO.sleep(duration) >> IO.pure(Incremented(revS + 1, step))
       case (Current(_, _), IncrementAsync(revC, _, duration))                       =>
-        Task.sleep(duration) >> Task.pure(Left(InvalidRevision(revC)))
-      case (Current(revS, _), Initialize(revC)) if revS == revC                     => Task.pure(Right(Initialized(revS + 1)))
-      case (Current(_, _), Initialize(rev))                                         => Task.pure(Left(InvalidRevision(rev)))
+        IO.sleep(duration) >> IO.raiseError(InvalidRevision(revC))
+      case (Current(revS, _), Initialize(revC)) if revS == revC                     => IO.pure(Initialized(revS + 1))
+      case (Current(_, _), Initialize(rev))                                         => IO.raiseError(InvalidRevision(rev))
     }
 
 }
