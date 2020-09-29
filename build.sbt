@@ -315,13 +315,13 @@ lazy val sourcing = project
       doobiePostgres,
       fs2,
       flyway,
+      kryo,
       monixBio,
       scalaLogging,
       streamz,
       akkaActorTyped         % Test,
       akkaPersistenceTestKit % Test,
       akkaSlf4j              % Test,
-      kryo                   % Test,
       logback                % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork          := true
@@ -396,7 +396,6 @@ lazy val service = project
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
       h2               % Test,
-      kryo             % Test,
       logback          % Test,
       scalaTest        % Test
     ),

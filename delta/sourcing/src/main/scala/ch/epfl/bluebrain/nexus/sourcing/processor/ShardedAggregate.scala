@@ -6,6 +6,7 @@ import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.sourcing._
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.StateReply
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
 import monix.bio.{IO, Task, UIO}
 import retry.CatsEffect._
@@ -43,7 +44,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     * @return the state for the given id
     */
   override def state(id: String): Task[State] =
-    send(id, { askTo: ActorRef[State] => RequestState(id, askTo) })
+    send(id, { askTo: ActorRef[StateReply[State]] => RequestState(id, askTo) }).map(_.value)
 
   private def toEvaluationIO(result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
     result.hideErrors.flatMap {

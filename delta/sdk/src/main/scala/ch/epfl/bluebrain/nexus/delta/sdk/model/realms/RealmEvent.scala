@@ -4,33 +4,18 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label, Name}
 import io.circe.Json
 
 /**
   * Enumeration of Realm event types.
   */
-sealed trait RealmEvent extends Product with Serializable {
+sealed trait RealmEvent extends Event {
 
   /**
     * @return the label of the realm for which this event was emitted
     */
   def label: Label
-
-  /**
-    * @return the revision this event generated
-    */
-  def rev: Long
-
-  /**
-    * @return the instant when the event was emitted
-    */
-  def instant: Instant
-
-  /**
-    * @return the subject that performed the action that resulted in emitting this event
-    */
-  def subject: Subject
 }
 
 object RealmEvent {

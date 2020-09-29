@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.sourcing.TestEvent.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.sourcing.TestRejection.InvalidRevision
 import ch.epfl.bluebrain.nexus.sourcing.TestState.Current
 import ch.epfl.bluebrain.nexus.sourcing.TestCommand.{Increment, IncrementAsync, Initialize}
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.GetLastSeqNr
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
 import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, EventSourceProcessor, ProcessorCommand}
@@ -58,9 +58,9 @@ abstract class EventSourceProcessorSpec(config: Config)
         Initialize(0) -> Left(InvalidRevision(0))
       )
 
-      val probeState = testKit.createTestProbe[TestState]()
+      val probeState = testKit.createTestProbe[StateReply[TestState]]()
       processorWithoutStop ! RequestState(entityId, probeState.ref)
-      probeState.expectMessage(Current(2, 7))
+      probeState.expectMessage(StateReply(Current(2, 7): TestState))
     }
 
     "evaluate commands one at a time" in {
@@ -96,7 +96,7 @@ abstract class EventSourceProcessorSpec(config: Config)
 
   private def expectEvaluate(evaluate: (TestCommand, Either[TestRejection, (TestEvent, TestState)])*): Unit = {
     val probe      = testKit.createTestProbe[EvaluationResult]()
-    val probeState = testKit.createTestProbe[TestState]()
+    val probeState = testKit.createTestProbe[StateReply[TestState]]()
 
     evaluate.foreach {
       case (command, result) =>
@@ -111,7 +111,7 @@ abstract class EventSourceProcessorSpec(config: Config)
             probe.expectMessage(EvaluationSuccess(event, state))
 
             processorWithoutStop ! RequestState(entityId, probeState.ref)
-            probeState.expectMessage(state)
+            probeState.expectMessage(StateReply(state))
         }
 
     }
@@ -122,7 +122,7 @@ abstract class EventSourceProcessorSpec(config: Config)
       evaluate: (TestCommand, Either[TestRejection, (TestEvent, TestState)])*
   ): Unit = {
     val probe      = testKit.createTestProbe[DryRunResult]()
-    val probeState = testKit.createTestProbe[TestState]()
+    val probeState = testKit.createTestProbe[StateReply[TestState]]()
 
     evaluate.foreach {
       case (command, result) =>
@@ -137,7 +137,7 @@ abstract class EventSourceProcessorSpec(config: Config)
         }
 
         processorWithoutStop ! RequestState(entityId, probeState.ref)
-        probeState.expectMessage(initialState)
+        probeState.expectMessage(StateReply(initialState))
 
     }
   }
@@ -190,10 +190,10 @@ class PersistentEventProcessorSpec
 
   "Requesting the last seq nr" should {
     "return the current seq nr" in {
-      val probe = testKit.createTestProbe[GetLastSeqNr]()
+      val probe = testKit.createTestProbe[LastSeqNr]()
       processorWithoutStop ! RequestLastSeqNr(entityId, probe.ref)
 
-      probe.expectMessage(GetLastSeqNr(5L))
+      probe.expectMessage(LastSeqNr(5L))
     }
   }
 

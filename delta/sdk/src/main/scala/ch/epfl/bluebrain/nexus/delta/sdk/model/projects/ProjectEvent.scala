@@ -5,12 +5,12 @@ import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
 
 /**
   * Enumeration of Project event types.
   */
-sealed trait ProjectEvent extends Product with Serializable {
+sealed trait ProjectEvent extends Event {
 
   /**
     * @return the project label
@@ -31,21 +31,6 @@ sealed trait ProjectEvent extends Product with Serializable {
     * @return the parent organization unique identifier
     */
   def organizationUuid: UUID
-
-  /**
-    * @return the revision number that this event generates
-    */
-  def rev: Long
-
-  /**
-    * @return the timestamp associated to this event
-    */
-  def instant: Instant
-
-  /**
-    * @return the identity associated to this event
-    */
-  def subject: Subject
 }
 
 object ProjectEvent {

@@ -8,7 +8,7 @@ import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.GetLastSeqNr
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.sourcing.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
@@ -56,13 +56,13 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
         // Command handler
         { (state, command) =>
           command match {
-            case RequestState(_, replyTo: ActorRef[State])            =>
-              Effect.reply(replyTo)(state)
-            case RequestLastSeqNr(_, replyTo: ActorRef[GetLastSeqNr]) =>
+            case RequestState(_, replyTo: ActorRef[StateReply[_]]) =>
+              Effect.reply(replyTo)(StateReply(state))
+            case RequestLastSeqNr(_, replyTo: ActorRef[LastSeqNr]) =>
               Effect.reply(replyTo)(
-                GetLastSeqNr(EventSourcedBehavior.lastSequenceNumber(context))
+                LastSeqNr(EventSourcedBehavior.lastSequenceNumber(context))
               )
-            case Append(_, event: Event)                              => Effect.persist(event)
+            case Append(_, event: Event)                           => Effect.persist(event)
           }
         },
         // Event handler
@@ -119,12 +119,12 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     def behavior(state: State): Behaviors.Receive[EventSourceCommand] =
       Behaviors.receive[EventSourceCommand] { (_, cmd) =>
         cmd match {
-          case RequestState(_, replyTo: ActorRef[State]) =>
-            replyTo ! state
+          case RequestState(_, replyTo: ActorRef[StateReply[_]]) =>
+            replyTo ! StateReply(state)
             Behaviors.same
-          case _: RequestLastSeqNr                       =>
+          case _: RequestLastSeqNr                               =>
             Behaviors.same
-          case Append(_, event: Event)                   =>
+          case Append(_, event: Event)                           =>
             behavior(t.next(state, event))
         }
       }
