@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.service.permissions
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{BaseUri, Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.{entityId, entityType, PermissionsAggregate}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, ShardedAggregate, StopStrategy}
@@ -17,10 +16,10 @@ import monix.bio.{IO, UIO}
 final class PermissionsImpl private (
     override val minimum: Set[Permission],
     agg: PermissionsAggregate,
-    base: Uri
+    base: BaseUri
 ) extends Permissions {
 
-  private val id: Iri = iri"$base/permissions"
+  private val id: Iri = iri"${base.endpoint}/permissions"
 
   override val persistenceId: String = s"$entityType-$entityId"
 
@@ -131,7 +130,7 @@ object PermissionsImpl {
     * @param agg     the permissions aggregate
     * @param base    the base uri of the system API
     */
-  final def apply(minimum: Set[Permission], agg: PermissionsAggregate, base: Uri): Permissions =
+  final def apply(minimum: Set[Permission], agg: PermissionsAggregate, base: BaseUri): Permissions =
     new PermissionsImpl(minimum, agg, base)
 
   /**
@@ -145,7 +144,7 @@ object PermissionsImpl {
     */
   final def apply(
       minimum: Set[Permission],
-      base: Uri,
+      base: BaseUri,
       aggregateConfig: AggregateConfig,
       eventLog: EventLog[PermissionsEvent]
   )(implicit as: ActorSystem[Nothing]): UIO[Permissions] =

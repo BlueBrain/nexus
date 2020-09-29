@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.service.permissions
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviours
+import ch.epfl.bluebrain.nexus.delta.sdk.{BaseUri, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.AbstractDBSpec
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
@@ -29,7 +29,7 @@ class PermissionsImplSpec extends AbstractDBSpec("permissions-test.conf") with P
     eventLog.flatMap { el =>
       PermissionsImpl(
         PermissionsBehaviours.minimum,
-        "http://localhost:8080/v1",
+        BaseUri("http://localhost:8080/v1"),
         AggregateConfig(
           askTimeout = Timeout(5.seconds),
           evaluationMaxDuration = 1.second,
