@@ -4,12 +4,12 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
 
 /**
   * Enumeration of organization event states
   */
-sealed trait OrganizationEvent extends Product with Serializable {
+sealed trait OrganizationEvent extends Event {
 
   /**
     * @return the organization Label
@@ -20,21 +20,6 @@ sealed trait OrganizationEvent extends Product with Serializable {
     * @return the organization UUID
     */
   def uuid: UUID
-
-  /**
-    * @return the revision that this event generated
-    */
-  def rev: Long
-
-  /**
-    * @return the instant when this event was created
-    */
-  def instant: Instant
-
-  /**
-    * @return the subject which created this event
-    */
-  def subject: Subject
 }
 
 object OrganizationEvent {

@@ -6,8 +6,9 @@ import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.sourcing._
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.StateReply
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import retry.CatsEffect._
 import retry.syntax.all._
 
@@ -17,12 +18,14 @@ import scala.reflect.ClassTag
   * Relies on cluster sharding to distribute the work for the given
   * (State, Command, Event, Rejection)
   *
+  * @param eventLog      access to the persistent event log
   * @param entityTypeKey the key of an entity type, unique
   * @param clusterSharding the sharding for this aggregate
   * @param retryStrategy the retry strategy to adopt
   * @param askTimeout the ask timeout
   */
 private[processor] class ShardedAggregate[State, Command, Event, Rejection](
+    eventLog: EventLog[Event],
     entityTypeKey: EntityTypeKey[ProcessorCommand],
     clusterSharding: ClusterSharding,
     retryStrategy: RetryStrategy,
@@ -41,7 +44,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     * @return the state for the given id
     */
   override def state(id: String): Task[State] =
-    send(id, { askTo: ActorRef[State] => RequestState(id, askTo) })
+    send(id, { askTo: ActorRef[StateReply[State]] => RequestState(id, askTo) }).map(_.value)
 
   private def toEvaluationIO(result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
     result.hideErrors.flatMap {
@@ -91,18 +94,25 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
       }
       .retryingOnSomeErrors(retryWhen)
   }
+
+  /**
+    * The ordered events for a resource.
+    */
+  override def events(id: String): fs2.Stream[Task, Event] =
+    eventLog.currentEventsByPersistenceId(s"${entityTypeKey.name}-$id", Long.MinValue, Long.MaxValue)
 }
 
 object ShardedAggregate {
 
   private def sharded[State: ClassTag, Command, Event: ClassTag, Rejection: ClassTag](
+      eventLog: EventLog[Event],
       entityTypeKey: EntityTypeKey[ProcessorCommand],
       eventSourceProcessor: EntityContext[ProcessorCommand] => EventSourceProcessor[State, Command, Event, Rejection],
       retryStrategy: RetryStrategy,
       askTimeout: Timeout,
       shardingSettings: Option[ClusterShardingSettings]
-  )(implicit as: ActorSystem[Nothing]): Task[Aggregate[String, State, Command, Event, Rejection]] = {
-    Task.delay {
+  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] = {
+    UIO.delay {
       val clusterSharding = ClusterSharding(as)
       val settings        = shardingSettings.getOrElse(ClusterShardingSettings(as))
 
@@ -112,7 +122,13 @@ object ShardedAggregate {
         }.withSettings(settings)
       )
 
-      new ShardedAggregate[State, Command, Event, Rejection](entityTypeKey, clusterSharding, retryStrategy, askTimeout)
+      new ShardedAggregate[State, Command, Event, Rejection](
+        eventLog,
+        entityTypeKey,
+        clusterSharding,
+        retryStrategy,
+        askTimeout
+      )
     }
   }
 
@@ -134,6 +150,7 @@ object ShardedAggregate {
     * Creates an [[ShardedAggregate]] that makes use of persistent actors to perform its functions. The actors
     * are automatically spread across all nodes of the cluster.
     *
+    * @param eventLog         access to the eventLog
     * @param definition       the event definition
     * @param config           the config
     * @param retryStrategy    the retry strategy to adopt
@@ -141,12 +158,14 @@ object ShardedAggregate {
     * @param as               the actor system
     */
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+      eventLog: EventLog[Event],
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
       config: AggregateConfig,
       retryStrategy: RetryStrategy,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(implicit as: ActorSystem[Nothing]): Task[Aggregate[String, State, Command, Event, Rejection]] =
+  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
+      eventLog,
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext =>
         EventSourceProcessor.persistent[State, Command, Event, Rejection](
@@ -164,21 +183,22 @@ object ShardedAggregate {
     * Creates an [[ShardedAggregate]] that makes use of transient actors to perform its functions. The actors
     * are automatically spread across all nodes of the cluster.
     *
+    * @param eventLog         access to the event log
     * @param definition       the event definition
     * @param config           the config
     * @param retryStrategy    the retry strategy to adopt
     * @param shardingSettings the sharding settings
     * @param as               the actor system
-    *
-    * @return
     */
   def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
+      eventLog: EventLog[Event],
       definition: TransientEventDefinition[State, Command, Event, Rejection],
       config: AggregateConfig,
       retryStrategy: RetryStrategy,
       shardingSettings: Option[ClusterShardingSettings] = None
-  )(implicit as: ActorSystem[Nothing]): Task[Aggregate[String, State, Command, Event, Rejection]] =
+  )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
     sharded(
+      eventLog,
       EntityTypeKey[ProcessorCommand](definition.entityType),
       entityContext =>
         EventSourceProcessor.transient[State, Command, Event, Rejection](

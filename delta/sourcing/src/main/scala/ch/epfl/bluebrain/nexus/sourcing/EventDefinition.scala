@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.sourcing
 
 import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy
 import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
-import monix.bio.Task
+import monix.bio.IO
 
 /**
   * Description of an event source based entity
@@ -30,7 +30,7 @@ sealed trait EventDefinition[State, Command, Event, Rejection] extends Product w
     * that returns the evaluation in an arbitrary effect type
     * May be asynchronous
     */
-  def evaluate: (State, Command) => Task[Either[Rejection, Event]]
+  def evaluate: (State, Command) => IO[Rejection, Event]
 
   /**
     * Strategy to stop the actor responsible for running this definition
@@ -49,9 +49,8 @@ final case class PersistentEventDefinition[State, Command, Event, Rejection](
     entityType: String,
     initialState: State,
     next: (State, Event) => State,
-    evaluate: (State, Command) => Task[Either[Rejection, Event]],
+    evaluate: (State, Command) => IO[Rejection, Event],
     tagger: Event => Set[String],
-    // TODO: Default snapshot strategy ?
     snapshotStrategy: SnapshotStrategy = SnapshotStrategy.NoSnapshot,
     stopStrategy: PersistentStopStrategy = PersistentStopStrategy.never
 ) extends EventDefinition[State, Command, Event, Rejection]
@@ -67,6 +66,6 @@ final case class TransientEventDefinition[State, Command, Event, Rejection](
     entityType: String,
     initialState: State,
     next: (State, Event) => State,
-    evaluate: (State, Command) => Task[Either[Rejection, Event]],
+    evaluate: (State, Command) => IO[Rejection, Event],
     stopStrategy: TransientStopStrategy = TransientStopStrategy.never
 ) extends EventDefinition[State, Command, Event, Rejection]

@@ -114,8 +114,8 @@ object Permissions {
     * Permissions permissions.
     */
   object permissions {
-    final val read: Permission  = Permission.unsafe("realms/read")
-    final val write: Permission = Permission.unsafe("realms/write")
+    final val read: Permission  = Permission.unsafe("permissions/read")
+    final val write: Permission = Permission.unsafe("permissions/write")
   }
 
   /**

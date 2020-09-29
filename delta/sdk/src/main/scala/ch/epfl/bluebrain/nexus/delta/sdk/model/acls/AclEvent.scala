@@ -2,33 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import java.time.Instant
 
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
 /**
   * Enumeration of ACL event types.
   */
-sealed trait AclEvent extends Product with Serializable {
+sealed trait AclEvent extends Event {
 
   /**
     * @return the address for the ACL
     */
   def address: AclAddress
-
-  /**
-    * @return the revision that this event generated
-    */
-  def rev: Long
-
-  /**
-    * @return the instant when this event was created
-    */
-  def instant: Instant
-
-  /**
-    * @return the subject which created this event
-    */
-  def subject: Subject
-
 }
 
 object AclEvent {

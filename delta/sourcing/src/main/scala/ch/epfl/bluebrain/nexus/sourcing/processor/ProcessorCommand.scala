@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.sourcing.processor
 
 import akka.actor.typed.ActorRef
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.GetLastSeqNr
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -42,9 +42,9 @@ object ProcessorCommand {
   /**
     * Read only commands that don't need to be stashed when a [[Evaluate]] is running
     */
-  sealed trait ReadonlyCommand                                                   extends EventSourceCommand
-  final case class RequestState[State](id: String, replyTo: ActorRef[State])     extends ReadonlyCommand
-  final case class RequestLastSeqNr(id: String, replyTo: ActorRef[GetLastSeqNr]) extends ReadonlyCommand
+  sealed trait ReadonlyCommand                                                           extends EventSourceCommand
+  final case class RequestState[State](id: String, replyTo: ActorRef[StateReply[State]]) extends ReadonlyCommand
+  final case class RequestLastSeqNr(id: String, replyTo: ActorRef[LastSeqNr])            extends ReadonlyCommand
 
   /**
     * Internal event sent by the [[EventSourceProcessor]] to its state actor
@@ -108,5 +108,6 @@ object ProcessorCommand {
 sealed trait AggregateReply extends Product with Serializable
 
 object AggregateReply {
-  final case class GetLastSeqNr(value: Long) extends AggregateReply
+  final case class LastSeqNr(value: Long)          extends AggregateReply
+  final case class StateReply[State](value: State) extends AggregateReply
 }

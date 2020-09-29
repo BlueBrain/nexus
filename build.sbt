@@ -39,6 +39,7 @@ val flywayVersion                   = "6.5.2"
 val fs2Version                      = "2.4.4"
 val guavaVersion                    = "29.0-jre"
 val http4sVersion                   = "0.21.7"
+val h2Version                       = "1.4.200"
 val iamVersion                      = "1.3.0"
 val jenaVersion                     = "3.15.0"
 val jsonldjavaVersion               = "0.13.2"
@@ -94,6 +95,7 @@ lazy val akkaPersistenceQuery    = "com.typesafe.akka"  %% "akka-persistence-que
 lazy val akkaSlf4j               = "com.typesafe.akka"  %% "akka-slf4j"                          % akkaVersion
 lazy val akkaStream              = "com.typesafe.akka"  %% "akka-stream"                         % akkaVersion
 lazy val akkaTestKit             = "com.typesafe.akka"  %% "akka-testkit"                        % akkaVersion
+lazy val akkaTestKitTyped        = "com.typesafe.akka"  %% "akka-actor-testkit-typed"            % akkaVersion
 lazy val alleycatsCore           = "org.typelevel"      %% "alleycats-core"                      % catsVersion
 lazy val alpakkaFiles            = "com.lightbend.akka" %% "akka-stream-alpakka-file"            % alpakkaVersion
 lazy val alpakkaSse              = "com.lightbend.akka" %% "akka-stream-alpakka-sse"             % alpakkaVersion
@@ -123,6 +125,7 @@ lazy val dockerTestKit = Seq(
 
 lazy val fs2           = "co.fs2"                     %% "fs2-core"                % fs2Version
 lazy val flyway        = "org.flywaydb"                % "flyway-core"             % flywayVersion
+lazy val h2            = "com.h2database"              % "h2"                      % h2Version
 lazy val http4sCirce   = "org.http4s"                 %% "http4s-circe"            % http4sVersion
 lazy val http4sClient  = "org.http4s"                 %% "http4s-blaze-client"     % http4sVersion
 lazy val http4sDsl     = "org.http4s"                 %% "http4s-dsl"              % http4sVersion
@@ -312,13 +315,13 @@ lazy val sourcing = project
       doobiePostgres,
       fs2,
       flyway,
+      kryo,
       monixBio,
       scalaLogging,
       streamz,
       akkaActorTyped         % Test,
       akkaPersistenceTestKit % Test,
       akkaSlf4j              % Test,
-      kryo                   % Test,
       logback                % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork          := true
@@ -390,8 +393,13 @@ lazy val service = project
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
-      scalaTest % Test
-    )
+      akkaSlf4j        % Test,
+      akkaTestKitTyped % Test,
+      h2               % Test,
+      logback          % Test,
+      scalaTest        % Test
+    ),
+    Test / fork          := true
   )
 
 lazy val app = project

@@ -25,7 +25,7 @@ final class PermissionsDummy private (
     semaphore: IOSemaphore
 ) extends Permissions {
 
-  override val persistenceId: String = "permissions"
+  override val persistenceId: String = "permissions-permissions"
 
   override def fetch: UIO[PermissionsResource] =
     currentState.map(_.toResource(id, minimum))
@@ -61,16 +61,12 @@ final class PermissionsDummy private (
 
   private def stateAt(rev: Long): IO[RevisionNotFound, PermissionsState] =
     journal.get.flatMap { events =>
-      if (events.size < rev) IO.raiseError(RevisionNotFound(rev, events.size.toLong))
-      else {
-        UIO.pure(
-          events
-            .foldLeft[PermissionsState](Initial) {
-              case (state, event) if event.rev <= rev => Permissions.next(minimum)(state, event)
-              case (state, _)                         => state
-            }
-        )
+      val state = events.foldLeft[PermissionsState](Initial) {
+        case (state, event) if event.rev <= rev => Permissions.next(minimum)(state, event)
+        case (state, _)                         => state
       }
+      if (state.rev == rev) UIO.pure(state)
+      else IO.raiseError(RevisionNotFound(rev, events.size.toLong))
     }
 
   private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] =
