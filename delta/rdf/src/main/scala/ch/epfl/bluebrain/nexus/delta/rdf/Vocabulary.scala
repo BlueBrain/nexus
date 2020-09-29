@@ -126,6 +126,7 @@ object Vocabulary {
     def +(suffix: String) = iri"$base$suffix"
 
     val acls        = contexts + "acls.json"
+    val error       = contexts + "error.json"
     val identities  = contexts + "identities.json"
     val permissions = contexts + "permissions.json"
     val realms      = contexts + "realms.json"
