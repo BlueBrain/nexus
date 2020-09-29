@@ -1,0 +1,45 @@
+[
+  {
+    "@id": "californication",
+    "@context": "https://music.example.com/context",
+    "@type": "Album",
+    "title": "Californication",
+    "released": "1999-06-08",
+    "label": "Warner Bros.",
+    "by": "red_hot_chili_peppers"
+  },
+  {
+    "@id": "blood_sugar_sex_magic",
+    "@context": "https://music.example.com/context",
+    "@type": "Album",
+    "title": "Blood Sugar Sex Magik",
+    "released": "1991-09-24",
+    "label": "Warner Bros.",
+    "by": "red_hot_chili_peppers"
+  },
+  {
+    "@id": "black_holes_and_revelations",
+    "@context": "https://music.example.com/context",
+    "@type": "Album",
+    "title": "Black Holes & Revelations",
+    "released": "2006-07-03",
+    "label": [
+      "Helium-3",
+      "Warner Bros."
+    ],
+    "by": "muse"
+  },
+  {
+    "@id": "absolution",
+    "@context": "https://music.example.com/context",
+    "@type": "Album",
+    "title": "Absolution",
+    "released": "2003-09-15",
+    "label": [
+      "East West",
+      "Taste",
+      "Warner Bros."
+    ],
+    "by": "muse"
+  }
+]

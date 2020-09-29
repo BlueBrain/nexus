@@ -1,0 +1,4 @@
+{
+  "@context": "{{error-context}}",
+  "code" : "ParentResourceDoesNotExist"
+}

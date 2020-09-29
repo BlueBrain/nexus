@@ -1,0 +1,64 @@
+{
+  "@type": [
+    "nxv:ElasticSearchView",
+    "nxv:View"
+  ],
+  "resourceSchemas": [
+    "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+  ],
+  "resourceTypes": [
+    "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
+  ],
+  "includeDeprecated": false,
+  "mapping": {
+    "properties": {
+      "@id": {
+        "type": "keyword"
+      },
+      "@type": {
+        "type": "keyword"
+      },
+      "_project": {
+        "type": "keyword"
+      },
+      "brainRegion": {
+        "type": "nested",
+        "properties": {
+          "@id": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "label": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "shortName": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          }
+        }
+      },
+      "name": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      }
+    },
+    "dynamic": false
+  }
+}

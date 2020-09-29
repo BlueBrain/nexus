@@ -1,0 +1,15 @@
+{
+  "@type": "Subtract",
+  "acl": [
+    {
+      "identity": {
+        "@type": "User",
+        "realm": "{{realm}}",
+        "subject": "{{sub}}"
+      },
+      "permissions": [
+        "{{{perms}}}"
+      ]
+    }
+  ]
+}

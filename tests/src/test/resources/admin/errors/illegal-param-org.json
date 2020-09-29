@@ -1,0 +1,5 @@
+{
+  "@context": "{{error-context}}",
+  "code": "IllegalParam",
+  "message": "Predicate failed: \"123K=\".matches(\"[a-zA-Z0-9-_]{3,32}\")."
+}

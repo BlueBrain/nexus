@@ -1,0 +1,27 @@
+{
+    "@context": {
+        "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+        "brainRegion": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/brainRegion",
+        "hadMember": "http://www.w3.org/ns/prov#hadMember",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "name": "http://schema.org/name",
+        "prov": "http://www.w3.org/ns/prov#",
+        "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+        "providerId": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/providerId"
+    },
+    "@id": "local_7d1b68bc-e6a6-4272-a934-ca0f6681c03c",
+    "@type": [
+        "nsg:Collection"
+    ],
+    "hadMember": [
+        {
+            "@id": "local_26cd52ee-48ce-4221-96e0-c0e8f7676db9",
+            "@type": [
+                "nsg:PatchedCell",
+                "prov:Entity"
+            ]
+        }
+    ],
+    "name": "{{patchedcellcollection_name}}",
+    "providerId": "{{patchedcellcollection_providerId}}"
+}

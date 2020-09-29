@@ -1,0 +1,25 @@
+{
+  "_id": "{{id}}",
+  "_source": {
+    "@context": "{{core}}",
+    "@id": "{{id}}",
+    "@type": "nxv:Project",
+    "config": {
+      "maxAttachmentSize": 10
+    },
+    "description": "{{desc}}",
+    "name": "{{name}}",
+    "prefixMappings": [
+      {
+        "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+        "prefix": "{{nxv-prefix}}"
+      },
+      {
+        "namespace": "https://shapes-registry.org/commons/person",
+        "prefix": "{{person-prefix}}"
+      }
+    ],
+    "_rev": 1,
+    "_deprecated": false
+  }
+}

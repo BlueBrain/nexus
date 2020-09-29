@@ -1,0 +1,16 @@
+{
+  "@id": "http://example.com/id",
+  "@type": ["nxv:Resolver", "nxv:CrossProject"],
+  "resourceTypes": ["nxv:Schema"],
+  "projects": [
+    "{{project}}"
+  ],
+  "identities": [
+    {
+      "@type": "User",
+      "realm": "{{realm}}",
+      "subject": "{{user}}"
+    }
+  ],
+  "priority": 50
+}

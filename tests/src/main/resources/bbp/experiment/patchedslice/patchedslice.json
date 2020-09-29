@@ -1,0 +1,39 @@
+{
+  "@context": {
+    "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "brainLocation": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/brainLocation",
+    "brainRegion": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/brainRegion",
+    "hasPart": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/hasPart",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "name": "http://schema.org/name",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "providerId": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/providerId",
+    "wasRevisionOf": "http://www.w3.org/ns/prov#wasRevisionOf"
+  },
+  "@id": "local_8a7d134f-7b73-458f-bfdc-c1ef6d9b9297",
+  "@type": [
+    "prov:Entity",
+    "nsg:PatchedSlice"
+  ],
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "http://www.FIXME.org/whs_sd_ontology/0000004",
+      "label": "Somatosensory cortex hindlimb"
+    }
+  },
+  "hasPart": [
+    {
+      "@id": "local_7d1b68bc-e6a6-4272-a934-ca0f6681c03c",
+      "@type": "nsg:Collection"
+    }
+  ],
+  "name": "{{patchedslice_name}}",
+  "providerId": "{{patchedslice_providerId}}",
+  "wasRevisionOf": {
+    "@id": "local_e943969d-a3af-4bfb-90df-4f1197bbde02",
+    "@type": [
+      "nsg:Slice",
+      "prov:Entity"
+    ]
+  }
+}

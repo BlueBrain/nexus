@@ -60,7 +60,7 @@ class PermissionsRoutesSpec
     "fetch permissions" in {
       val expected = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
-        Map("{rev}" -> "0", "{permissions}" -> s""""${acls.read}","${acls.write}"""")
+        Map("rev" -> "0", "permissions" -> s""""${acls.read}","${acls.write}"""")
       )
       Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
@@ -74,7 +74,7 @@ class PermissionsRoutesSpec
 
       val expected = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
-        Map("{rev}" -> "1", "{permissions}" -> s""""${acls.read}","${acls.write}","${realms.read}"""")
+        Map("rev" -> "1", "permissions" -> s""""${acls.read}","${acls.write}","${realms.read}"""")
       )
       Get("/v1/permissions?rev=1") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
@@ -84,7 +84,7 @@ class PermissionsRoutesSpec
     }
 
     "replace permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("{rev}" -> "2"))
+      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "2"))
 
       val replace = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -96,7 +96,7 @@ class PermissionsRoutesSpec
     }
 
     "append permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("{rev}" -> "3"))
+      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "3"))
 
       val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
       Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -109,7 +109,7 @@ class PermissionsRoutesSpec
     }
 
     "subtract permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("{rev}" -> "4"))
+      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "4"))
 
       val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
       Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -121,7 +121,7 @@ class PermissionsRoutesSpec
     }
 
     "delete permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("{rev}" -> "5"))
+      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "5"))
 
       Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
@@ -136,7 +136,7 @@ class PermissionsRoutesSpec
       val err        = s"Expected value 'Replace' or 'Subtract' when using 'PATCH'."
 
       Patch("/v1/permissions?rev=5", wrongPatch.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", Map("{msg}" -> err))
+        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", Map("msg" -> err))
         response.status shouldEqual StatusCodes.BadRequest
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
@@ -147,7 +147,7 @@ class PermissionsRoutesSpec
       val err          = s"Expected value 'Replace' when using 'PUT'."
 
       Put("/v1/permissions?rev=5", wrongReplace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", Map("{msg}" -> err))
+        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", Map("msg" -> err))
         response.status shouldEqual StatusCodes.BadRequest
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
@@ -158,7 +158,7 @@ class PermissionsRoutesSpec
       Put("/v1/permissions?rev=6", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual jsonContentOf(
           "permissions/reject_incorrect_rev.jsonld",
-          Map("{provided}" -> "6", "{expected}" -> "5")
+          Map("provided" -> "6", "expected" -> "5")
         )
         response.status shouldEqual StatusCodes.Conflict
         response.entity.contentType shouldEqual `application/ld+json`.toContentType

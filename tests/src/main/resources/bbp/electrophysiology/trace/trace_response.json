@@ -1,0 +1,50 @@
+{
+  "@context": {
+    "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "channel": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/channel",
+    "dataUnit": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/dataUnit",
+    "providerId": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/providerId",
+    "projectName": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/projectName",
+    "retrievalDate": {
+      "@id": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/retrievalDate",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "citation": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/citation",
+    "description": "http://schema.org/description",
+    "name": "http://schema.org/name",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "originalFileName": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/originalFileName",
+    "qualifiedGeneration": "http://www.w3.org/ns/prov#qualifiedGeneration",
+    "timeStep": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/timeStep",
+    "unitText": "http://schema.org/unitText",
+    "value": "http://schema.org/value",
+    "wasGeneratedBy": "http://www.w3.org/ns/prov#wasGeneratedBy",
+    "prov": "http://www.w3.org/ns/prov#"
+  },
+  "@id": "local_14709aea-44ed-49f4-b842-847c04822934",
+  "@type": [
+    "prov:Entity",
+    "nsg:Trace",
+    "nsg:StimulationTrace"
+  ],
+  "name": "{{trace_response_name}}",
+  "providerId": "654363",
+  "description": "Stimulation trace",
+  "channel": 0,
+  "citation": "https://doi.org/10.1093/cercor/bhh092",
+  "projectName": "Somatosensory cortex project",
+  "retrievalDate": "2016-10-15T00:00:00",
+  "dataUnit": "pA",
+  "timeStep": {
+    "unitText": "seconds",
+    "value": 0.00005
+  },
+  "qualifiedGeneration": {
+    "@id": "local_e3ff4689-1065-4bda-8e9c-2534ba57be87",
+    "@type": "nsg:TraceGeneration"
+  },
+  "wasGeneratedBy": {
+    "@id": "local_e8691e3c-adb1-443c-9850-a8472d76629f",
+    "@type": "nsg:StimulusExperiment"
+  }
+}

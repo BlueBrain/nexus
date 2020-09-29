@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.testkit
 
 import io.circe.Json
 import io.circe.parser.parse
+import org.fusesource.scalate.TemplateEngine
 
 import scala.annotation.tailrec
 import scala.io.{Codec, Source}
@@ -10,6 +11,8 @@ import scala.util.Random
 trait TestHelpers {
 
   private val codec: Codec = Codec.UTF8
+
+  private val templateEngine = new TemplateEngine()
 
   /**
     * Generates an arbitrary string. Ported from nexus-commons
@@ -51,10 +54,12 @@ trait TestHelpers {
     * @param resourcePath the path of a resource available on the classpath
     * @return the content of the referenced resource as a string
     */
-  final def contentOf(resourcePath: String, replacements: Map[String, String]): String =
-    replacements.foldLeft(contentOf(resourcePath)) {
-      case (value, (regex, replacement)) => value.replace(regex, replacement)
-    }
+  final def contentOf(resourcePath: String, attributes: Map[String, Any]): String =
+    templateEngine.layout(
+      "dummy.template",
+      templateEngine.compileMoustache(contentOf(resourcePath)),
+      attributes
+    )
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of
@@ -63,8 +68,8 @@ trait TestHelpers {
    * @param resourcePath the path of a resource available on the classpath
     * @return the content of the referenced resource as a string
     */
-  final def contentOf(resourcePath: String, replacements: (String, String)*): String =
-    contentOf(resourcePath, replacements.toMap)
+  final def contentOf(resourcePath: String, attributes: (String, Any)*): String =
+    contentOf(resourcePath, attributes.toMap)
 
   /**
     * Loads the content of the argument classpath resource as a json value.
@@ -84,8 +89,8 @@ trait TestHelpers {
     * @return the content of the referenced resource as a json value
     */
   @SuppressWarnings(Array("TryGet"))
-  final def jsonContentOf(resourcePath: String, replacements: Map[String, String]): Json =
-    parse(contentOf(resourcePath, replacements)).toTry.get
+  final def jsonContentOf(resourcePath: String, attributes: Map[String, Any]): Json =
+    parse(contentOf(resourcePath, attributes)).toTry.get
 
 }
 

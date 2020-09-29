@@ -2,7 +2,7 @@
   "@context" : "https://bluebrain.github.io/nexus/contexts/resource.json",
   "@id" : "http://localhost/v1/permissions",
   "@type" : "Permissions",
-  "_rev" : {rev},
+  "_rev" : {{rev}},
   "_deprecated" : false,
   "_createdAt" : "1970-01-01T00:00:00Z",
   "_createdBy" : "http://localhost:8080/v1/anonymous",

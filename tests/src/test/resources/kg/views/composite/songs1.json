@@ -1,0 +1,83 @@
+[
+  {
+    "@id": "https://music.example.com/black_holes_and_revelations/1",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Take a Bow",
+    "length": 275,
+    "number": 1,
+    "on": "black_holes_and_revelations"
+  },
+  {
+    "@id": "https://music.example.com/black_holes_and_revelations/2",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Starlight",
+    "length": 239,
+    "number": 2,
+    "on": "black_holes_and_revelations"
+  },
+  {
+    "@id": "https://music.example.com/blood_sugar_sex_magic/1",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "The Power of Equality",
+    "length": 243,
+    "number": 1,
+    "on": "blood_sugar_sex_magic"
+  },
+  {
+    "@id": "https://music.example.com/blood_sugar_sex_magic/2",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "If You Have to Ask",
+    "length": 217,
+    "number": 2,
+    "on": "blood_sugar_sex_magic"
+  },
+  {
+    "@id": "https://music.example.com/californication/1",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Around the World",
+    "length": 238,
+    "number": 1,
+    "on": "californication"
+  },
+  {
+    "@id": "https://music.example.com/californication/2",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Parallel Universe",
+    "length": 270,
+    "number": 2,
+    "on": "californication"
+  },
+  {
+    "@id": "https://music.example.com/californication/3",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Scar Tissue",
+    "length": 217,
+    "number": 3,
+    "on": "californication"
+  },
+  {
+    "@id": "https://music.example.com/absolution/1",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Apocalypse Please",
+    "length": 252,
+    "number": 1,
+    "on": "absolution"
+  },
+  {
+    "@id": "https://music.example.com/absolution/2",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Time Is Running Out",
+    "length": 236,
+    "number": 2,
+    "on": "absolution"
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 2,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+        "https://bluebrain.github.io/nexus/vocabulary/View"
+      ],
+      "_incoming": "{{deltaUri}}/views/{{project-label}}/documents/incoming",
+      "_outgoing": "{{deltaUri}}/views/{{project-label}}/documents/outgoing",
+      "_self": "{{deltaUri}}/views/{{project-label}}/documents",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/View",
+        "https://bluebrain.github.io/nexus/vocabulary/SparqlView"
+      ],
+      "_incoming": "{{deltaUri}}/views/{{project-label}}/graph/incoming",
+      "_outgoing": "{{deltaUri}}/views/{{project-label}}/graph/outgoing",
+      "_self": "{{deltaUri}}/views/{{project-label}}/graph",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    }
+  ]
+}

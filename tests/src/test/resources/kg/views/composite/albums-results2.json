@@ -1,0 +1,26 @@
+[
+  {
+    "@id": "absolution",
+    "length": 782,
+    "name": "Absolution",
+    "numberOfSongs": 3
+  },
+  {
+    "@id": "black_holes_and_revelations",
+    "length": 723,
+    "name": "Black Holes & Revelations",
+    "numberOfSongs": 3
+  },
+  {
+    "@id": "blood_sugar_sex_magic",
+    "length": 755,
+    "name": "Blood Sugar Sex Magik",
+    "numberOfSongs": 3
+  },
+  {
+    "@id": "californication",
+    "length": 980,
+    "name": "Californication",
+    "numberOfSongs": 4
+  }
+]

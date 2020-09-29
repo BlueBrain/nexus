@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "@vocab": "https://music.example.com/",
+    "@base": "https://music.example.com/",
+    "on": {
+      "@type": "@id"
+    },
+    "by": {
+      "@type": "@id"
+    }
+  },
+  "@id": "https://music.example.com/context"
+}

@@ -1,0 +1,10 @@
+{
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/{{id}}",
+  "@type": "RemoteDiskStorage",
+  "endpoint": "{{endpoint}}",
+  "credentials": "{{cred}}",
+  "folder": "{{folder}}",
+  "default": false,
+  "readPermission": "{{read}}",
+  "writePermission": "{{write}}"
+}

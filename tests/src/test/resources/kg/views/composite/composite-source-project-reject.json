@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "InvalidResourceFormat",
+  "reason": "Resource 'https://music.example.com/sources/songs' has an invalid format.",
+  "details": "Wrong 'endpoint' and/or 'token' fields. Reason: The request did not complete successfully due to lack of access to the resource."
+}
