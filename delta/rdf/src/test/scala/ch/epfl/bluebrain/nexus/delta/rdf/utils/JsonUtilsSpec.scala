@@ -3,12 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.rdf.utils
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import io.circe.syntax._
+import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures {
-  "A Json" should {
+class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
+  "A Json" should {
     "remove top keys on a Json object" in {
       val json = json"""{"key": "value", "@context": {"@vocab": "${vocab.value}"}, "key2": {"key": "value"}}"""
       json.removeKeys("key", "@context") shouldEqual json"""{"key2": {"key": "value"}}"""
@@ -84,6 +85,30 @@ class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures {
               }"""
 
     }
+
+    "extract String value" in {
+      val list = List(json"""{"key": "value", "key2": "value2"}""", json"""{"key": ["value"], "key2": "value2"}""")
+      forAll(list) { json =>
+        json.getIgnoreSingleArray[String]("key").rightValue shouldEqual "value"
+        json.getIgnoreSingleArrayOr("key")("other").rightValue shouldEqual "value"
+        json.getIgnoreSingleArrayOr("key3")("other").rightValue shouldEqual "other"
+      }
+    }
   }
 
+  "A Json cursor" should {
+
+    "extract String value" in {
+      val list = List(
+        json"""{"k": {"key": "value"}, "key2": "value2"}""",
+        json"""{"k": {"key": ["value"] }, "key2": "value2"}"""
+      )
+      forAll(list) { json =>
+        val hc = json.hcursor
+        hc.downField("k").getIgnoreSingleArray[String]("key").rightValue shouldEqual "value"
+        hc.downField("k").getIgnoreSingleArrayOr("key")("other").rightValue shouldEqual "value"
+        hc.downField("k").getIgnoreSingleArrayOr("key3")("other").rightValue shouldEqual "other"
+      }
+    }
+  }
 }

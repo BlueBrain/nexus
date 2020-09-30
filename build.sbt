@@ -410,7 +410,7 @@ lazy val app = project
     name       := "delta-app",
     moduleName := "delta-app"
   )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.time.Instant
 
@@ -7,10 +7,11 @@ import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.SimpleResource
 import ch.epfl.bluebrain.nexus.delta.SimpleResource.{context, contextIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
@@ -19,12 +20,12 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 
-class DeltaMarshallingSpec
+class RdfMarshallingSpec
     extends TestKit(ActorSystem("DeltaMarshallingSpec"))
     with AnyWordSpecLike
     with Matchers
     with CirceLiteral
-    with DeltaMarshalling
+    with RdfMarshalling
     with IOValues
     with RouteHelpers
     with TestMatchers {

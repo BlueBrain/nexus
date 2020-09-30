@@ -1,12 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
-import cats.syntax.all._
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, RawJsonLdContext, RemoteContextResolution}
-import monix.bio.IO
+import io.circe.Encoder
+import io.circe.syntax._
+import monix.bio.{IO, UIO}
 
 trait JsonLdEncoder[A] {
 
@@ -87,6 +90,38 @@ trait JsonLdEncoder[A] {
 }
 
 object JsonLdEncoder {
+
+  /**
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
+    *
+   * @param id         the rootId
+    * @param iriContext the Iri context
+    */
+  def compactFromCirce[A: Encoder.AsObject](id: IriOrBNode, iriContext: Iri): JsonLdEncoder[A] =
+    compactFromCirce((_: A) => id, RawJsonLdContext(iriContext.asJson))
+
+  /**
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
+    *
+    * @param fId        the function to obtain the rootId
+    * @param iriContext the Iri context
+    */
+  def compactFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, iriContext: Iri): JsonLdEncoder[A] =
+    compactFromCirce(fId, RawJsonLdContext(iriContext.asJson))
+
+  /**
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
+    *
+    * @param fId     the function to obtain the rootId
+    * @param context the context
+    */
+  def compactFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, context: RawJsonLdContext): JsonLdEncoder[A] =
+    new JsonLdEncoder[A] {
+      override def apply(value: A): IO[RdfError, JsonLd] =
+        JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, fId(value)).pure[UIO]
+
+      override val defaultContext: RawJsonLdContext = context
+    }
 
   /**
     * Creates an encoder composing two different encoders and a decomposition function ''f''.

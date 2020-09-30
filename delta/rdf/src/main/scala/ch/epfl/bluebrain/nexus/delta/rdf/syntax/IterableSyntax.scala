@@ -15,4 +15,11 @@ final class IterableOps[A](private val sequence: Iterable[A]) extends AnyVal {
     */
   def singleEntryOr(onEmpty: => A): Option[A] =
     IterableUtils.singleEntryOr(sequence, onEmpty)
+
+  /**
+    * @return Some(entry) where ''entry'' is the only available element on the sequence,
+    *         None otherwise
+    */
+  def singleEntry: Option[A] =
+    IterableUtils.singleEntry(sequence)
 }
