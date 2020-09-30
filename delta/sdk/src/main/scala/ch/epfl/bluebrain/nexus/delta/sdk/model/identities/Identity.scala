@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 
 /**
   * Parent type for unique identities as recognized by the system. A client usually has multiple identities with the

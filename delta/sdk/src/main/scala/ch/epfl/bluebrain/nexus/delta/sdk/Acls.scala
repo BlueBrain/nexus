@@ -207,7 +207,7 @@ object Acls {
   }
 
   private[delta] def evaluate(
-      perms: UIO[Permissions]
+      perms: UIO[Permissions[_]]
   )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO] = IO.clock): IO[AclRejection, AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
+import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
@@ -15,7 +16,7 @@ class PermissionsDummySpec
     with IOFixedClock
     with TestHelpers {
 
-  override def create: Task[Permissions] =
+  override def create: Task[Permissions[Sequence]] =
     PermissionsDummy(PermissionsBehaviours.minimum)
 
   override def resourceId: Iri = PermissionsDummy.id
