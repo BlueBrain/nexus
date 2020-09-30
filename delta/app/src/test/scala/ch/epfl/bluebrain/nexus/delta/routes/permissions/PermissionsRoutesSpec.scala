@@ -164,6 +164,14 @@ class PermissionsRoutesSpec
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
     }
+
+    "reject on non existing resource endpoint" in {
+      Get("/v1/other") ~> Accept(`*/*`) ~> route ~> check {
+        response.asJson shouldEqual jsonContentOf("permissions/reject_endpoint_not_found.jsonld")
+        response.status shouldEqual StatusCodes.NotFound
+        response.entity.contentType shouldEqual `application/ld+json`.toContentType
+      }
+    }
   }
 
 }
