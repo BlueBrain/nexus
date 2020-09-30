@@ -24,7 +24,7 @@ class PermissionsImplSpec extends AbstractDBSpec("permissions-test.conf") with P
       case _                                                                                        => UIO.pure(None)
     }
 
-  override def create: Task[Permissions[Sequence]] = {
+  override def create: Task[Permissions.WithOffset[Sequence]] = {
     eventLog.flatMap { el =>
       PermissionsImpl(
         PermissionsBehaviours.minimum,

@@ -16,7 +16,12 @@ import monix.bio.{IO, Task, UIO}
 /**
   * Operations pertaining to managing permissions.
   */
-trait Permissions[Offset] {
+trait Permissions {
+
+  /**
+    * The supported offset type.
+    */
+  type Offset
 
   /**
     * @return the permissions singleton persistence id
@@ -110,6 +115,15 @@ trait Permissions[Offset] {
 }
 
 object Permissions {
+
+  /**
+    * Permissions with fixed Offset type.
+    *
+    * @tparam O the offset type
+    */
+  type WithOffset[O] = Permissions {
+    type Offset = O
+  }
 
   /**
     * ACLs permissions.

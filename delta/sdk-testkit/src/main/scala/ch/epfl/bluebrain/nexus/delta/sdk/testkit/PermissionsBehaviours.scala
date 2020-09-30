@@ -36,7 +36,7 @@ trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues 
   /**
     * Create a permissions instance. The instance will be memoized.
     */
-  def create: Task[Permissions[Sequence]]
+  def create: Task[Permissions.WithOffset[Sequence]]
 
   /**
     * The permissions resource id.

@@ -22,7 +22,9 @@ final class PermissionsImpl[O <: Offset] private (
     agg: PermissionsAggregate,
     eventLog: EventLog[Envelope[PermissionsEvent, O]],
     base: BaseUri
-) extends Permissions[O] {
+) extends Permissions {
+
+  override type Offset = O
 
   private val id: Iri = iri"${base.endpoint}/permissions"
 
@@ -119,7 +121,7 @@ object PermissionsImpl {
     * @param minimum         the minimum collection of permissions
     * @param aggregateConfig the aggregate configuration
     */
-  final def aggregate[O <: Offset](
+  final def aggregate(
       minimum: Set[Permission],
       aggregateConfig: AggregateConfig
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[PermissionsAggregate] = {
@@ -155,8 +157,8 @@ object PermissionsImpl {
       agg: PermissionsAggregate,
       eventLog: EventLog[Envelope[PermissionsEvent, O]],
       base: BaseUri
-  ): Permissions[O] =
-    new PermissionsImpl(minimum, agg, eventLog, base)
+  ): Permissions.WithOffset[O] =
+    new PermissionsImpl[O](minimum, agg, eventLog, base)
 
   /**
     *  Constructs a new [[Permissions]] instance backed by a sharded aggregate. It requires that the system has joined
@@ -172,7 +174,7 @@ object PermissionsImpl {
       base: BaseUri,
       aggregateConfig: AggregateConfig,
       eventLog: EventLog[Envelope[PermissionsEvent, O]]
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions[O]] =
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions.WithOffset[O]] =
     aggregate(minimum, aggregateConfig).map { agg =>
       apply(minimum, agg, eventLog, base)
     }

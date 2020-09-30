@@ -11,8 +11,9 @@ import monix.bio.{IO, Task, UIO}
   *
  * @param expected the expected result of fetching all the permissions
   */
-class PermissionsDummy(expected: PermissionsResource) extends Permissions[Nothing] {
+class PermissionsDummy(expected: PermissionsResource) extends Permissions {
   // format: off
+  override type Offset = Nothing
   override def persistenceId: String                                                                            = ???
   override def minimum: Set[Permission]                                                                         = ???
   override def fetchAt(rev: Long): IO[PermissionsRejection.RevisionNotFound, PermissionsResource]               = ???

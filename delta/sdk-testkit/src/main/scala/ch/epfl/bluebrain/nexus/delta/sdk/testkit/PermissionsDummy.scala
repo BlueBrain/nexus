@@ -31,7 +31,9 @@ final class PermissionsDummy private (
     journal: IORef[Vector[Envelope[PermissionsEvent, Sequence]]],
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO])
-    extends Permissions[Sequence] {
+    extends Permissions {
+
+  override type Offset = Sequence
 
   override val persistenceId: String = "permissions-permissions"
 

@@ -22,7 +22,7 @@ import monix.bio.{IO, UIO}
   * @param semaphore a semaphore for serializing write operations on the journal
   */
 final class AclsDummy private (
-    perms: UIO[Permissions[_]],
+    perms: UIO[Permissions],
     journal: IORef[AclsJournal],
     cache: IORef[AclCollection],
     semaphore: IOSemaphore
@@ -115,7 +115,7 @@ object AclsDummy {
    * @param perms the bundle of operations pertaining to managing permissions wrapped in an IO
     *
    */
-  final def apply(perms: UIO[Permissions[_]])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] =
+  final def apply(perms: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] =
     for {
       journalRef <- IORef.of[AclsJournal](Map.empty)
       cacheRef   <- IORef.of(AclCollection.empty)

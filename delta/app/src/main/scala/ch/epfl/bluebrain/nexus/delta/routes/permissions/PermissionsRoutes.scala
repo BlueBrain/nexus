@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes.permissions
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedFormFieldRejection, Route}
+import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -24,7 +25,7 @@ import monix.execution.Scheduler
   *
   * @param permissions the permissions operations bundle
   */
-final class PermissionsRoutes[Offset](permissions: Permissions[Offset])(implicit
+final class PermissionsRoutes[O <: Offset](permissions: Permissions.WithOffset[O])(implicit
     baseUri: BaseUri,
     s: Scheduler,
     cr: RemoteContextResolution,
@@ -79,7 +80,7 @@ object PermissionsRoutes {
   /**
     * @return the [[Route]] for the permission resources
     */
-  def apply[Offset](permissions: Permissions[Offset])(implicit
+  def apply[O <: Offset](permissions: Permissions.WithOffset[O])(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,

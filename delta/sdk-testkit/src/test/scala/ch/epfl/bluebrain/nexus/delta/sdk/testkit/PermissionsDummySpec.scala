@@ -16,7 +16,7 @@ class PermissionsDummySpec
     with IOFixedClock
     with TestHelpers {
 
-  override def create: Task[Permissions[Sequence]] =
+  override def create: Task[Permissions.WithOffset[Sequence]] =
     PermissionsDummy(PermissionsBehaviours.minimum)
 
   override def resourceId: Iri = PermissionsDummy.id
