@@ -10,11 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{DeltaRouteDirectives, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{PermissionsDummy, RemoteContextResolutionDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.{BaseUri, Permissions}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.execution.Scheduler
@@ -51,9 +50,9 @@ class PermissionsRoutesSpec
   implicit private val caller: Subject                    = Identity.Anonymous
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
 
-  private val minimum                  = Set(acls.read, acls.write)
-  private val permissions: Permissions = PermissionsDummy(minimum).accepted
-  private val route                    = Route.seal(PermissionsRoutes(permissions))
+  private val minimum     = Set(acls.read, acls.write)
+  private val permissions = PermissionsDummy(minimum).accepted
+  private val route       = Route.seal(PermissionsRoutes(permissions))
 
   "The permissions routes" should {
 
