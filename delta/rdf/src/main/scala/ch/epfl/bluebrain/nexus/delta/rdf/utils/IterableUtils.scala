@@ -13,6 +13,16 @@ trait IterableUtils {
       case head :: Nil => Some(head)
       case _           => None
     }
+
+  /**
+    * @return Some(entry) where ''entry'' is the only available element on the sequence,
+    *         None otherwise
+    */
+  def singleEntry[A](sequence: Iterable[A]): Option[A] =
+    sequence.take(2).toList match {
+      case head :: Nil => Some(head)
+      case _           => None
+    }
 }
 
 object IterableUtils extends IterableUtils

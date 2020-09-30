@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
+import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
@@ -23,7 +24,8 @@ final class PermissionsDummy private (
     override val minimum: Set[Permission],
     journal: IORef[Vector[PermissionsEvent]],
     semaphore: IOSemaphore
-) extends Permissions {
+)(implicit clock: Clock[UIO])
+    extends Permissions {
 
   override val persistenceId: String = "permissions-permissions"
 
@@ -92,7 +94,7 @@ object PermissionsDummy {
     *
     * @param minimum the minimum set of permissions
     */
-  final def apply(minimum: Set[Permission]): UIO[PermissionsDummy] =
+  final def apply(minimum: Set[Permission])(implicit clock: Clock[UIO] = IO.timer.clock): UIO[PermissionsDummy] =
     for {
       ref <- IORef.of(Vector.empty[PermissionsEvent])
       sem <- IOSemaphore(1L)

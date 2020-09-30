@@ -3,15 +3,12 @@ package ch.epfl.bluebrain.nexus.delta
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
-import monix.bio.IO
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
-import io.circe.{Json, JsonObject}
-import io.circe.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.syntax._
+import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 
 final case class SimpleResource(id: Iri, rev: Long, createdAt: Instant, name: String, age: Int)
 
@@ -23,22 +20,17 @@ object SimpleResource extends CirceLiteral {
   val context: Json =
     json"""{ "@context": {"_rev": "${nxv + "rev"}", "_createdAt": "${nxv + "createdAt"}", "@vocab": "${nxv.base}"} }"""
 
-  implicit val jsonLdEncoder: JsonLdEncoder[SimpleResource] = new JsonLdEncoder[SimpleResource] {
+  implicit private val simpleResourceEncoder: Encoder.AsObject[SimpleResource] =
+    Encoder.AsObject.instance { v =>
+      JsonObject.empty
+        .add("@id", v.id.asJson)
+        .add("name", v.name.asJson)
+        .add("age", v.name.asJson)
+        .add("_rev", v.rev.asJson)
+        .add("_createdAt", v.createdAt.asJson)
+    }
 
-    override def apply(v: SimpleResource): IO[RdfError, JsonLd] =
-      IO.pure {
-        JsonLd.compactedUnsafe(
-          JsonObject.empty
-            .add("@id", v.id.asJson)
-            .add("name", v.name.asJson)
-            .add("age", v.name.asJson)
-            .add("_rev", v.rev.asJson)
-            .add("_createdAt", v.createdAt.asJson),
-          defaultContext,
-          v.id
-        )
-      }
+  implicit val simpleResourceJsonLdEncoder: JsonLdEncoder[SimpleResource] =
+    JsonLdEncoder.compactFromCirce((v: SimpleResource) => v.id, contextIri)
 
-    override val defaultContext: RawJsonLdContext = RawJsonLdContext(contextIri.asJson)
-  }
 }

@@ -1,12 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta
 
+import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.Allow
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.routes.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -32,7 +35,7 @@ object SimpleRejection extends CirceLiteral {
 
   val context: Json = json"""{ "@context": {"@vocab": "${nxv.base}"} }"""
 
-  val bNode = BNode.random
+  val bNode: BNode = BNode.random
 
   implicit val jsonLdEncoderSimpleRejection: JsonLdEncoder[SimpleRejection] =
     new JsonLdEncoder[SimpleRejection] {
@@ -50,8 +53,9 @@ object SimpleRejection extends CirceLiteral {
       override val defaultContext: RawJsonLdContext = RawJsonLdContext(contextIri.asJson)
     }
 
-  implicit val statusFromSimpleRejection: StatusFrom[SimpleRejection] = StatusFrom {
-    case _: BadRequestRejection => StatusCodes.BadRequest
-    case _: ConflictRejection   => StatusCodes.Conflict
-  }
+  implicit val statusFromSimpleRejection: HttpResponseFields[SimpleRejection] =
+    HttpResponseFields.fromStatusAndHeaders {
+      case _: BadRequestRejection => (StatusCodes.BadRequest, Seq(Allow(GET)))
+      case _: ConflictRejection   => (StatusCodes.Conflict, Seq.empty)
+    }
 }

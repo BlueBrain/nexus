@@ -1,10 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import java.time.Instant
 
+import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.headers.{Accept, Allow, Cookie}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -12,15 +13,17 @@ import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.SimpleRejection.{badRequestRejection, conflictRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.{SimpleRejection, SimpleResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.http.scaladsl.model.StatusCodes._
 
 class DeltaRouteDirectivesSpec
     extends AnyWordSpecLike
@@ -49,16 +52,16 @@ class DeltaRouteDirectivesSpec
     get {
       concat(
         path("uio") {
-          completeUIO(StatusCodes.Accepted, UIO.pure(resource))
+          completeUIO(Accepted, UIO.pure(resource))
         },
         path("io") {
-          completeIO(StatusCodes.Accepted, IO.fromEither[SimpleRejection, SimpleResource](Right(resource)))
+          completeIO(Accepted, Seq(Cookie("k", "v")), IO.fromEither[SimpleRejection, SimpleResource](Right(resource)))
         },
         path("bad-request") {
-          completeIO(StatusCodes.Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(badRequestRejection)))
+          completeIO(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(badRequestRejection)))
         },
         path("conflict") {
-          completeIO(StatusCodes.Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(conflictRejection)))
+          completeIO(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(conflictRejection)))
         }
       )
     }
@@ -68,11 +71,22 @@ class DeltaRouteDirectivesSpec
     "return payload in compacted JSON-LD format" in {
       val compacted = resource.toCompactedJsonLd.accepted
 
-      forAll(List("/uio?format=compacted", "/uio", "/io?format=compacted", "/io")) { endpoint =>
+      forAll(List("/uio?format=compacted", "/uio")) { endpoint =>
         forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
           Get(endpoint) ~> accept ~> route ~> check {
             response.asJson shouldEqual compacted.json
-            response.status shouldEqual StatusCodes.Accepted
+            response.status shouldEqual Accepted
+            response.headers shouldEqual Seq.empty[HttpHeader]
+          }
+        }
+      }
+
+      forAll(List("/io?format=compacted", "/io")) { endpoint =>
+        forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
+          Get(endpoint) ~> accept ~> route ~> check {
+            response.asJson shouldEqual compacted.json
+            response.status shouldEqual Accepted
+            response.headers shouldEqual Seq(Cookie("k", "v"))
           }
         }
       }
@@ -81,12 +95,19 @@ class DeltaRouteDirectivesSpec
     "return payload in expanded JSON-LD format" in {
       val expanded = resource.toExpandedJsonLd.accepted
 
-      forAll(List("/uio?format=expanded", "/io?format=expanded")) { endpoint =>
-        forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
-          Get(endpoint) ~> accept ~> route ~> check {
-            response.asJson shouldEqual expanded.json
-            response.status shouldEqual StatusCodes.Accepted
-          }
+      forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
+        Get("/uio?format=expanded") ~> accept ~> route ~> check {
+          response.asJson shouldEqual expanded.json
+          response.status shouldEqual Accepted
+          response.headers shouldEqual Seq.empty[HttpHeader]
+        }
+      }
+
+      forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
+        Get("/io?format=expanded") ~> accept ~> route ~> check {
+          response.asJson shouldEqual expanded.json
+          response.status shouldEqual Accepted
+          response.headers shouldEqual Seq(Cookie("k", "v"))
         }
       }
     }
@@ -94,92 +115,118 @@ class DeltaRouteDirectivesSpec
     "return payload in Dot format" in {
       val dot = resource.toDot.accepted
 
-      forAll(List("/uio", "/io")) { endpoint =>
-        Get(endpoint) ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
-          response.asString should equalLinesUnordered(dot.value)
-          response.status shouldEqual StatusCodes.Accepted
-        }
+      Get("/uio") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
+        response.asString should equalLinesUnordered(dot.value)
+        response.status shouldEqual Accepted
+        response.headers shouldEqual Seq.empty[HttpHeader]
+      }
+
+      Get("/io") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
+        response.asString should equalLinesUnordered(dot.value)
+        response.status shouldEqual Accepted
+        response.headers shouldEqual Seq(Cookie("k", "v"))
       }
     }
 
     "return payload in NTriples format" in {
       val ntriples = resource.toNTriples.accepted
 
-      forAll(List("/uio", "/io")) { endpoint =>
-        Get(endpoint) ~> Accept(`application/n-triples`) ~> route ~> check {
-          response.asString should equalLinesUnordered(ntriples.value)
-          response.status shouldEqual StatusCodes.Accepted
-        }
+      Get("/uio") ~> Accept(`application/n-triples`) ~> route ~> check {
+        response.asString should equalLinesUnordered(ntriples.value)
+        response.status shouldEqual Accepted
+        response.headers shouldEqual Seq.empty[HttpHeader]
+      }
+
+      Get("/io") ~> Accept(`application/n-triples`) ~> route ~> check {
+        response.asString should equalLinesUnordered(ntriples.value)
+        response.status shouldEqual Accepted
+        response.headers shouldEqual Seq(Cookie("k", "v"))
       }
     }
 
-    "return rejection payload in compacted JSON-LD format" in {
+    "return bad request rejection in compacted JSON-LD format" in {
       val badRequestCompacted = badRequestRejection.toCompactedJsonLd.accepted
-      val conflictCompacted   = conflictRejection.toCompactedJsonLd.accepted
 
       forAll(List("/bad-request?format=compacted", "/bad-request")) { endpoint =>
         forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
           Get(endpoint) ~> accept ~> route ~> check {
             response.asJson shouldEqual badRequestCompacted.json
-            response.status shouldEqual StatusCodes.BadRequest
+            response.status shouldEqual BadRequest
+            response.headers shouldEqual Seq(Allow(GET))
           }
         }
       }
+    }
 
+    "return conflict rejection in compacted JSON-LD format" in {
+      val conflictCompacted = conflictRejection.toCompactedJsonLd.accepted
       forAll(List("/conflict?format=compacted", "/conflict")) { endpoint =>
         forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
           Get(endpoint) ~> accept ~> route ~> check {
             response.asJson shouldEqual conflictCompacted.json
-            response.status shouldEqual StatusCodes.Conflict
+            response.status shouldEqual Conflict
+            response.headers shouldEqual Seq.empty[HttpHeader]
           }
         }
       }
     }
 
-    "return rejection payload in expanded JSON-LD format" in {
+    "return bad request rejection in expanded JSON-LD format" in {
       val badRequestExpanded = badRequestRejection.toExpandedJsonLd.accepted
-      val conflictExpanded   = conflictRejection.toExpandedJsonLd.accepted
 
       forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
         Get("/bad-request?format=expanded") ~> accept ~> route ~> check {
           response.asJson shouldEqual badRequestExpanded.json
-          response.status shouldEqual StatusCodes.BadRequest
+          response.status shouldEqual BadRequest
+          response.headers shouldEqual Seq(Allow(GET))
         }
       }
+    }
 
+    "return conflict rejection in expanded JSON-LD format" in {
+      val conflictExpanded = conflictRejection.toExpandedJsonLd.accepted
       forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
         Get("/conflict?format=expanded") ~> accept ~> route ~> check {
           response.asJson shouldEqual conflictExpanded.json
-          response.status shouldEqual StatusCodes.Conflict
+          response.status shouldEqual Conflict
+          response.headers shouldEqual Seq.empty[HttpHeader]
         }
       }
     }
 
-    "return rejection payload in Dot format" in {
+    "return bad request rejection  in Dot format" in {
       Get("/bad-request") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
         val dot = badRequestRejection.toDot.accepted
         response.asString should equalLinesUnordered(dot.value)
-        response.status shouldEqual StatusCodes.BadRequest
-      }
-
-      Get("/conflict") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
-        val dot = conflictRejection.toDot.accepted
-        response.asString should equalLinesUnordered(dot.value)
-        response.status shouldEqual StatusCodes.Conflict
+        response.status shouldEqual BadRequest
+        response.headers shouldEqual Seq(Allow(GET))
       }
     }
 
-    "return rejection payload in NTriples format" in {
+    "return conflict rejection  in Dot format" in {
+      Get("/conflict") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
+        val dot = conflictRejection.toDot.accepted
+        response.asString should equalLinesUnordered(dot.value)
+        response.status shouldEqual Conflict
+        response.headers shouldEqual Seq.empty[HttpHeader]
+      }
+    }
+
+    "return bad request rejection in NTriples format" in {
       Get("/bad-request") ~> Accept(`application/n-triples`) ~> route ~> check {
         val ntriples = badRequestRejection.toNTriples.accepted
         response.asString should equalLinesUnordered(ntriples.value)
-        response.status shouldEqual StatusCodes.BadRequest
+        response.status shouldEqual BadRequest
+        response.headers shouldEqual Seq(Allow(GET))
       }
+    }
 
+    "return conflict rejection in NTriples format" in {
       Get("/conflict") ~> Accept(`application/n-triples`) ~> route ~> check {
         val ntriples = conflictRejection.toNTriples.accepted
         response.asString should equalLinesUnordered(ntriples.value)
-        response.status shouldEqual StatusCodes.Conflict
+        response.status shouldEqual Conflict
+        response.headers shouldEqual Seq.empty[HttpHeader]
       }
     }
 

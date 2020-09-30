@@ -1,17 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import io.circe.{Encoder, JsonObject}
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
+import io.circe.{Encoder, JsonObject}
 
 /**
   * Enumeration of Realm rejection types.
@@ -155,20 +151,13 @@ object RealmRejection {
   final case class UnexpectedInitialState(label: Label)
       extends RealmRejection(s"Unexpected initial state for realm '$label'.")
 
-  implicit final val realmRejectionJsonLdEncoder: JsonLdEncoder[RealmRejection] =
-    new JsonLdEncoder[RealmRejection] {
-      private val bnode = BNode.random
-
-      implicit private val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
-        Encoder.AsObject.instance { r =>
-          val tpe = r.getClass.getSimpleName.split('$').head
-          JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
-        }
-
-      override def apply(value: RealmRejection): IO[RdfError, JsonLd] =
-        JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, bnode).pure[UIO]
-
-      override val defaultContext: RawJsonLdContext = RawJsonLdContext(contexts.error.asJson)
+  implicit private val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = r.getClass.getSimpleName.split('$').head
+      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
+
+  implicit final val realmRejectionJsonLdEncoder: JsonLdEncoder[RealmRejection] =
+    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
 
 }
