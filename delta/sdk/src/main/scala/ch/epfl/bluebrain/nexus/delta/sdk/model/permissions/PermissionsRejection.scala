@@ -1,15 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import monix.bio.{IO, UIO}
 
 /**
   * Enumeration of Permissions rejection types.
@@ -89,19 +85,12 @@ object PermissionsRejection {
   final case class RevisionNotFound(provided: Long, current: Long)
       extends PermissionsRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
-  implicit final val permissionsRejectionJsonLdEncoder: JsonLdEncoder[PermissionsRejection] =
-    new JsonLdEncoder[PermissionsRejection] {
-      private val bnode = BNode.random
-
-      implicit private val permissionsRejectionEncoder: Encoder.AsObject[PermissionsRejection] =
-        Encoder.AsObject.instance { r =>
-          val tpe = r.getClass.getSimpleName.split('$').head
-          JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
-        }
-
-      override def apply(value: PermissionsRejection): IO[RdfError, JsonLd] =
-        JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, bnode).pure[UIO]
-
-      override val defaultContext: RawJsonLdContext = RawJsonLdContext(contexts.error.asJson)
+  implicit private val permissionsRejectionEncoder: Encoder.AsObject[PermissionsRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = r.getClass.getSimpleName.split('$').head
+      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
+
+  implicit final val permissionsRejectionJsonLdEncoder: JsonLdEncoder[PermissionsRejection] =
+    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
 }

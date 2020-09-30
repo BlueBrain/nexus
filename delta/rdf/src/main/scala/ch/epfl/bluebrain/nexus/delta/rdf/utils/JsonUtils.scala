@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
-import io.circe.{Encoder, Json, JsonObject}
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.IterableUtils.singleEntry
 import io.circe.syntax._
+import io.circe._
 
 trait JsonUtils {
 
@@ -90,6 +91,50 @@ trait JsonUtils {
 
     json.arrayOrObject[Json](json, arr => Json.fromValues(arr.map(sort)), obj => inner(obj).asJson)
   }
+
+  /**
+    * Extracts the value of the passed key and attempts to convert it to ''A''.
+    *
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
+    * that contains a single entry to an A
+    */
+  def getIgnoreSingleArray[A: Decoder](json: Json, key: String): Decoder.Result[A] =
+    getIgnoreSingleArray(json.hcursor, key)
+
+  /**
+    * Extracts the value of the passed key and attempts to convert it to ''A''.
+    *
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
+    * that contains a single entry to an A
+    * If the key does not exist, the passed ''defaultValue'' will be returned.
+    */
+  def getIgnoreSingleArrayOr[A: Decoder](json: Json, key: String)(defaultValue: => A): Decoder.Result[A] =
+    getIgnoreSingleArrayOr(json.hcursor, key)(defaultValue)
+
+  /**
+    * Extracts the value of the passed key and attempts to convert it to ''A''.
+    *
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
+    * that contains a single entry to an A
+    * If the key does not exist, the passed ''defaultValue'' will be returned.
+    */
+  def getIgnoreSingleArrayOr[A: Decoder](cursor: ACursor, key: String)(defaultValue: => A): Decoder.Result[A] =
+    cursor.getOrElse[A](key)(defaultValue) orElse
+      cursor
+        .getOrElse[Seq[A]](key)(Seq(defaultValue))
+        .flatMap(singleEntry(_).toRight(DecodingFailure("Expected a Json Array with a single entry", cursor.history)))
+
+  /**
+    * Extracts the value of the passed key and attempts to convert it to ''A''.
+    *
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
+    * that contains a single entry to an A
+    */
+  def getIgnoreSingleArray[A: Decoder](cursor: ACursor, key: String): Decoder.Result[A] =
+    cursor.get[A](key) orElse
+      cursor
+        .get[Seq[A]](key)
+        .flatMap(singleEntry(_).toRight(DecodingFailure("Expected a Json Array with a single entry", cursor.history)))
 }
 
 object JsonUtils extends JsonUtils

@@ -2,17 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import java.util.UUID
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import monix.bio.{IO, UIO}
 
 /**
   * Enumeration of organization rejection types.
@@ -70,20 +66,13 @@ object OrganizationRejection {
   final case class OrganizationIsDeprecated(label: Label)
       extends OrganizationRejection(s"Organization '$label' is deprecated.")
 
-  implicit final val orgRejectionJsonLdEncoder: JsonLdEncoder[OrganizationRejection] =
-    new JsonLdEncoder[OrganizationRejection] {
-      private val bnode = BNode.random
-
-      implicit private val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
-        Encoder.AsObject.instance { r =>
-          val tpe = r.getClass.getSimpleName.split('$').head
-          JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
-        }
-
-      override def apply(value: OrganizationRejection): IO[RdfError, JsonLd] =
-        JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, bnode).pure[UIO]
-
-      override val defaultContext: RawJsonLdContext = RawJsonLdContext(contexts.error.asJson)
+  implicit private val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = r.getClass.getSimpleName.split('$').head
+      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
+
+  implicit final val orgRejectionJsonLdEncoder: JsonLdEncoder[OrganizationRejection] =
+    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
 
 }

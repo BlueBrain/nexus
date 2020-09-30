@@ -2,17 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import java.util.UUID
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import io.circe.{Encoder, JsonObject}
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
+import io.circe.{Encoder, JsonObject}
 
 /**
   * Enumeration of Project rejection types.
@@ -94,19 +90,12 @@ object ProjectRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the project may have been updated since last seen."
       )
 
-  implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
-    new JsonLdEncoder[ProjectRejection] {
-      private val bnode = BNode.random
-
-      implicit private val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
-        Encoder.AsObject.instance { r =>
-          val tpe = r.getClass.getSimpleName.split('$').head
-          JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
-        }
-
-      override def apply(value: ProjectRejection): IO[RdfError, JsonLd] =
-        JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, bnode).pure[UIO]
-
-      override val defaultContext: RawJsonLdContext = RawJsonLdContext(contexts.error.asJson)
+  implicit private val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = r.getClass.getSimpleName.split('$').head
+      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
+
+  implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
+    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
 }

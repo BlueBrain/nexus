@@ -1,15 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
-import io.circe.{Encoder, JsonObject}
 import io.circe.syntax._
-import monix.bio.{IO, UIO}
+import io.circe.{Encoder, JsonObject}
 
 /**
   * Enumeration of token rejections.
@@ -52,20 +48,14 @@ object TokenRejection {
       extends TokenRejection(
         "The token is invalid; possible causes are: incorrect signature, the token is expired or the 'nbf' value was not met."
       )
-  implicit final val tokenRejectionJsonLdEncoder: JsonLdEncoder[TokenRejection] =
-    new JsonLdEncoder[TokenRejection] {
-      private val bnode = BNode.random
 
-      implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
-        Encoder.AsObject.instance { r =>
-          val tpe = r.getClass.getSimpleName.split('$').head
-          JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
-        }
-
-      override def apply(value: TokenRejection): IO[RdfError, JsonLd] =
-        JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, bnode).pure[UIO]
-
-      override val defaultContext: RawJsonLdContext = RawJsonLdContext(contexts.error.asJson)
+  implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
+    Encoder.AsObject.instance { r =>
+      val tpe = r.getClass.getSimpleName.split('$').head
+      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
+
+  implicit final val tokenRejectionJsonLdEncoder: JsonLdEncoder[TokenRejection] =
+    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
 
 }
