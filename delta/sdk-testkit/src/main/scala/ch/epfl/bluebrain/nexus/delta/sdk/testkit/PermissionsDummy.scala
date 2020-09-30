@@ -64,8 +64,8 @@ final class PermissionsDummy private (
 
   override def events(offset: Option[Sequence]): Stream[Task, Envelope[PermissionsEvent, Sequence]] = {
     def addNotSeen(queue: Queue[Task, Envelope[PermissionsEvent, Sequence]], seenCount: Int): Task[Unit] = {
-      journal.get.flatMap { eventVector =>
-        val delta = eventVector.drop(seenCount)
+      journal.get.flatMap { envelopes =>
+        val delta = envelopes.drop(seenCount)
         if (delta.isEmpty) Task.sleep(10.milliseconds) >> addNotSeen(queue, seenCount)
         else queue.offer1(delta.head) >> addNotSeen(queue, seenCount + 1)
       }
@@ -85,7 +85,7 @@ final class PermissionsDummy private (
   }
 
   override def currentEvents(offset: Option[Sequence]): Stream[Task, Envelope[PermissionsEvent, Sequence]] = {
-    val stream = Stream.eval(journal.get).flatMap(es => Stream.emits(es))
+    val stream = Stream.eval(journal.get).flatMap(envelopes => Stream.emits(envelopes))
     offset match {
       case Some(value) => stream.dropWhile(_.offset <= value)
       case None        => stream
@@ -93,36 +93,39 @@ final class PermissionsDummy private (
   }
 
   private def currentState: UIO[PermissionsState] =
-    journal.get.map { events =>
-      events.foldLeft[PermissionsState](Initial)((state, event) => Permissions.next(minimum)(state, event.event))
+    journal.get.map { envelopes =>
+      envelopes.foldLeft[PermissionsState](Initial)((state, envelope) =>
+        Permissions.next(minimum)(state, envelope.event)
+      )
     }
 
   private def stateAt(rev: Long): IO[RevisionNotFound, PermissionsState] =
-    journal.get.flatMap { events =>
-      val state = events.foldLeft[PermissionsState](Initial) {
-        case (state, event) if event.event.rev <= rev => Permissions.next(minimum)(state, event.event)
-        case (state, _)                               => state
+    journal.get.flatMap { envelopes =>
+      val state = envelopes.foldLeft[PermissionsState](Initial) {
+        case (state, envelope) if envelope.event.rev <= rev => Permissions.next(minimum)(state, envelope.event)
+        case (state, _)                                     => state
       }
       if (state.rev == rev) UIO.pure(state)
-      else IO.raiseError(RevisionNotFound(rev, events.size.toLong))
+      else IO.raiseError(RevisionNotFound(rev, envelopes.size.toLong))
     }
 
   private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] =
     semaphore.withPermit {
       for {
-        events <- journal.get
-        current =
-          events.foldLeft[PermissionsState](Initial)((state, event) => Permissions.next(minimum)(state, event.event))
-        event  <- Permissions.evaluate(minimum)(current, cmd)
-        _      <- journal.set(
-                    events :+ Envelope(
-                      event,
-                      Sequence((events.size + 1).toLong),
-                      persistenceId,
-                      (events.size + 1).toLong,
-                      event.instant.toEpochMilli
-                    )
-                  )
+        envelopes <- journal.get
+        current    = envelopes.foldLeft[PermissionsState](Initial)((state, envelope) =>
+                       Permissions.next(minimum)(state, envelope.event)
+                     )
+        event     <- Permissions.evaluate(minimum)(current, cmd)
+        _         <- journal.set(
+                       envelopes :+ Envelope(
+                         event,
+                         Sequence((envelopes.size + 1).toLong),
+                         persistenceId,
+                         (envelopes.size + 1).toLong,
+                         event.instant.toEpochMilli
+                       )
+                     )
       } yield Permissions.next(minimum)(current, event).toResource(id, minimum)
     }
 }
