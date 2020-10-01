@@ -1,0 +1,24 @@
+name: Continuous Integration RDF
+on:
+  pull_request:
+    paths:
+      - 'tests/**'
+      - 'build.sbt'
+      - 'project/**'
+jobs:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v4
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v5
+        with:
+          java-version: adopt@1.11
+      - name: Static Analysis
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" clean scalafmtCheck test:scalafmtCheck scapegoat
