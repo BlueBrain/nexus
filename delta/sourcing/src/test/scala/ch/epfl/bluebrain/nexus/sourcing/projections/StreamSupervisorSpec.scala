@@ -37,7 +37,7 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
       )
 
       eventually {
-        (Task.sleep(100.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
+        (Task.sleep(500.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
         list should not be empty
         finalizeHappened shouldBe true
       }
