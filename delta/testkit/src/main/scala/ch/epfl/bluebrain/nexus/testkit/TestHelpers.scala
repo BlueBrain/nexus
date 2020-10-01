@@ -92,6 +92,9 @@ trait TestHelpers {
   final def jsonContentOf(resourcePath: String, attributes: Map[String, Any]): Json =
     parse(contentOf(resourcePath, attributes)).toTry.get
 
+  final def jsonContentOf(resourcePath: String, attributes: (String, Any)*): Json =
+    jsonContentOf(resourcePath, attributes.toMap)
+
 }
 
 object TestHelpers extends TestHelpers

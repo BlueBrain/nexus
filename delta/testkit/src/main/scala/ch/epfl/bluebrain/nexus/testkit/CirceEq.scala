@@ -14,7 +14,7 @@ trait CirceEq {
       def canonicalJson(json: Json): Json =
         json.arrayOrObject[Json](
           json,
-          arr => Json.fromValues(arr.sortBy(_.hashCode()).map(canonicalJson)),
+          arr => Json.fromValues(arr.map(canonicalJson).sortBy(_.hashCode)),
           obj => sorted(obj).asJson
         )
 

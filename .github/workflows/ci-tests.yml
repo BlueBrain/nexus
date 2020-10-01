@@ -1,4 +1,4 @@
-name: Continuous Integration RDF
+name: Continuous Integration Tests
 on:
   pull_request:
     paths:
