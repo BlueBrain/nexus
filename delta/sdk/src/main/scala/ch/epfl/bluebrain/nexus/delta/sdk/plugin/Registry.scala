@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
-import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.DependencyNotFound
 import monix.bio.{IO, Task}
+
+import scala.reflect.ClassTag
 
 /**
   * Dependencies registry.
@@ -20,5 +21,5 @@ trait Registry {
     *
     * @return the dependency requested or error if not found.
     */
-  def lookup[A]: IO[DependencyNotFound, A]
+  def lookup[A](implicit T: ClassTag[A]): IO[Throwable, A]
 }

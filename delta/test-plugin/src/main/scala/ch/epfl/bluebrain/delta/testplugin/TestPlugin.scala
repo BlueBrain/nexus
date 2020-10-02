@@ -2,22 +2,23 @@ package ch.epfl.bluebrain.delta.testplugin
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginInfo}
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
-class TestPlugin(pluginDef: PluginInfo, kvStore: KVStore) extends Plugin {
+class TestPlugin(pluginDef: PluginInfo, permissions: Permissions) extends Plugin {
 
   /**
     * Optional routes provided by the plugin.
     */
   override def route: Option[Route] =
     Some(
-      pathPrefix("test-plugin" / Segment) { key =>
+      pathPrefix("test-plugin" / Segment) { seg =>
         concat(
-          get { complete(kvStore.get(key).runToFuture) },
-          (put & entity(as[String])) { value =>
-            complete(kvStore.update(key, value).runToFuture.map(_ => "updated"))
+          get {
+            println(seg)
+            complete(permissions.fetchPermissionSet.map(ps => s"$seg->${ps.mkString(",")}").runToFuture)
           }
         )
       }

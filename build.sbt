@@ -1,4 +1,3 @@
-
 /*
 scalafmt: {
   style = defaultWithAlign
@@ -158,7 +157,7 @@ lazy val scalaTest     = "org.scalatest"              %% "scalatest"            
 lazy val scalaReflect  = "org.scala-lang"              % "scala-reflect"           % scalaCompilerVersion
 lazy val streamz       = "com.github.krasserm"        %% "streamz-converter"       % streamzVersion
 lazy val topBraidShacl = "org.topbraid"                % "shacl"                   % topBraidVersion
-lazy val uuidGenerator = "com.fasterxml.uuid"         % "java-uuid-generator"      % uuidGeneratorVersion
+lazy val uuidGenerator = "com.fasterxml.uuid"          % "java-uuid-generator"     % uuidGeneratorVersion
 
 val javaSpecificationVersion = SettingKey[String](
   "java-specification-version",
@@ -424,11 +423,11 @@ lazy val service = project
   .settings(
     libraryDependencies ++= Seq(
       "org.scala-graph" %% "graph-core" % "1.13.2",
-      akkaSlf4j        % Test,
-      akkaTestKitTyped % Test,
-      h2               % Test,
-      logback          % Test,
-      scalaTest        % Test
+      akkaSlf4j          % Test,
+      akkaTestKitTyped   % Test,
+      h2,
+      logback            % Test,
+      scalaTest          % Test
     ),
     Test / fork          := true
   )
@@ -526,10 +525,10 @@ lazy val tests = project
   .settings(noPublish ++ dockerCompose)
   .settings(shared, compilation, coverage, release)
   .settings(
-    name                  := "tests",
-    moduleName            := "tests",
-    coverageFailOnMinimum := false,
-    libraryDependencies ++= Seq(
+    name                      := "tests",
+    moduleName                := "tests",
+    coverageFailOnMinimum     := false,
+    libraryDependencies      ++= Seq(
       akkaHttp,
       akkaStream,
       circeOptics,

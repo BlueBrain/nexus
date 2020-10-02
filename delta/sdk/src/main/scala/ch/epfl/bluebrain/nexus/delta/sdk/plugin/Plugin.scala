@@ -9,8 +9,8 @@ import monix.bio.Task
 trait Plugin {
 
   /**
-   * Plugin information
-   */
+    * Plugin information
+    */
   def info: PluginInfo
 
   /**
