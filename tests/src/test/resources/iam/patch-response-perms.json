@@ -1,0 +1,12 @@
+{
+  "@context": "{success-iam-context}",
+  "identity": {
+    "@id": "http://dev.nexus.ocp.bbp.epfl.ch/v1/realms/bbp-test/users/{{sub}}",
+    "@type": "UserRef",
+    "realm": "bbp-test",
+    "sub": "{{sub}}"
+  },
+  "permissions": [
+    "{{{perms}}}"
+  ]
+}

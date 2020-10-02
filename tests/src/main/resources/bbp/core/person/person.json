@@ -1,0 +1,14 @@
+{
+  "@context": {
+    "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "familyName": "http://schema.org/familyName",
+    "givenName": "http://schema.org/givenName",
+    "prov": "http://www.w3.org/ns/prov#",
+    "schema": "http://schema.org/",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/"
+  },
+  "@id": "local_b147cbfa-96f1-41a9-8ac6-8c049f158ef7",
+  "@type": "nsg:Person",
+  "familyName": "Lastname",
+  "givenName": "{{agent_givenName}}"
+}

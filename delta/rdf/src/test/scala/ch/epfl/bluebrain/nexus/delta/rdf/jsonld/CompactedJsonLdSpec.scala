@@ -129,7 +129,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     "be converted to graph" in {
       val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Skip).accepted
       val graph     = compacted.toGraph.accepted
-      val expected  = contentOf("ntriples.nt", "{bnode}" -> bNode(graph).rdfFormat, "{rootNode}" -> iri.rdfFormat)
+      val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
       graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
@@ -137,7 +137,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     "be converted to graph with a root blank node" in {
       val compacted = JsonLd.compact(expandedNoId, context, rootBNode, ContextFields.Skip).accepted
       val graph     = compacted.toGraph.accepted
-      val expected  = contentOf("ntriples.nt", "{bnode}" -> bNode(graph).rdfFormat, "{rootNode}" -> rootBNode.rdfFormat)
+      val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graph.rootNode shouldEqual rootBNode
       graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }

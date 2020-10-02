@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "RemoteFileNotFound",
+  "location": "{{endpointBucket}}/non/existent.png",
+  "reason": "The remote file was not found."
+}

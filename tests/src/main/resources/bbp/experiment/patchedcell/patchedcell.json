@@ -1,0 +1,37 @@
+{
+  "@context": {
+    "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "brainLocation": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/brainLocation",
+    "brainRegion": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/brainRegion",
+    "description": "http://schema.org/description",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "name": "http://schema.org/name",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "providerId": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/providerId",
+    "wasDerivedFrom": "http://www.w3.org/ns/prov#wasDerivedFrom",
+    "prov": "http://www.w3.org/ns/prov#"
+  },
+  "@id": "local_26cd52ee-48ce-4221-96e0-c0e8f7676db9",
+  "@type": [
+    "prov:Entity",
+    "nsg:PatchedCell"
+  ],
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "http://www.FIXME.org/whs_sd_ontology/0000014",
+      "label": "Somatosensory cortex hindlimb layer IV"
+    }
+  },
+  "description": "original layer information: L4; cellid: 73",
+  "name": "{{patchedcell_name}}",
+  "providerId": "73",
+  "wasDerivedFrom": [
+    {
+      "@id": "local_35b022e1-cc06-46b6-9a33-9bd5fd27444d",
+      "@type": [
+        "nsg:Subject",
+        "prov:Entity"
+      ]
+    }
+  ]
+}

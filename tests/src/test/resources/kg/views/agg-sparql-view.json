@@ -1,0 +1,15 @@
+{
+  "@type": [
+    "AggregateSparqlView"
+  ],
+  "views": [
+    {
+      "project": "{{project1}}",
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+    },
+    {
+      "project": "{{project2}}",
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/mystorage",
+  "@type": "DiskStorage",
+  "volume": "/tmp",
+  "default": false
+}

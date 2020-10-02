@@ -1,0 +1,23 @@
+{
+  "@id": "{{deltaUri}}/projects/{{id}}",
+  "@type": "Project",
+  "description": "{{projId}}",
+  "base": "http:example.com/{{projId}}/",
+  "vocab": "http:example.com/{{projId}}/vocab/",
+  "apiMappings": [
+    {
+      "prefix": "nxv-{{projId}}",
+      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+    },
+    {
+      "prefix": "person-{{projId}}",
+      "namespace": "https://shapes-registry.org/commons/person"
+    }
+  ],
+  "_label": "{{projId}}",
+  "_organizationLabel": "{{orgId}}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+}

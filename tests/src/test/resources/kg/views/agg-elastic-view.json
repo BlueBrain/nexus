@@ -1,0 +1,15 @@
+{
+  "@type": [
+    "AggregateElasticSearchView"
+  ],
+  "views": [
+    {
+      "project": "{{project1}}",
+      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
+    },
+    {
+      "project": "{{project2}}",
+      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
+    }
+  ]
+}

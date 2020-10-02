@@ -1,0 +1,97 @@
+{
+  "_shards": {
+    "failed": 0,
+    "skipped": 0,
+    "successful": 0,
+    "total": 0
+  },
+  "hits": {
+    "hits": [
+      {
+        "_id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/04e5f081-26fb-49ea-9d38-da7ef49d9e9f",
+        "_index": "{{index}}",
+        "_source": {
+          "@id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/04e5f081-26fb-49ea-9d38-da7ef49d9e9f",
+          "@type": "Cell",
+          "brainLocation": {
+            "brainRegion": {
+              "@id": "http://www.parcellation.org/0000013",
+              "label": "Somatosensory cortex hindlimb layer II/III"
+            }
+          },
+          "name": "C161001B2-MT-C1",
+          "nxv:deprecated": false
+        },
+        "_type": "_doc",
+        "sort": [
+          "C161001B2-MT-C1"
+        ]
+      },
+      {
+        "_id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/08825325-0a84-4924-839b-baabcd9bdbb8",
+        "_index": "{{index}}",
+        "_source": {
+          "@id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/08825325-0a84-4924-839b-baabcd9bdbb8",
+          "@type": "Cell",
+          "brainLocation": {
+            "brainRegion": {
+              "@id": "http://www.parcellation.org/0000004",
+              "label": "Somatosensory cortex hindlimb"
+            }
+          },
+          "name": "C230402B-MT-C1",
+          "nxv:deprecated": false
+        },
+        "_type": "_doc",
+        "sort": [
+          "C230402B-MT-C1"
+        ]
+      },
+      {
+        "_id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/048bf2a9-c3e4-4401-bb1e-61f5fcacb85b",
+        "_index": "{{index}}",
+        "_source": {
+          "@id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/048bf2a9-c3e4-4401-bb1e-61f5fcacb85b",
+          "@type": "Cell",
+          "brainLocation": {
+            "brainRegion": {
+              "@id": "http://www.parcellation.org/0000013",
+              "label": "Somatosensory cortex hindlimb layer II/III"
+            }
+          },
+          "name": "C240300A1-MT-C1",
+          "nxv:deprecated": false
+        },
+        "_type": "_doc",
+        "sort": [
+          "C240300A1-MT-C1"
+        ]
+      },
+      {
+        "_id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/03e9025f-35ab-42ca-ac4a-5da2701b93f3",
+        "_index": "{{index}}",
+        "_source": {
+          "@id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/03e9025f-35ab-42ca-ac4a-5da2701b93f3",
+          "@type": "Cell",
+          "brainLocation": {
+            "brainRegion": {
+              "@id": "http://www.parcellation.org/0000013",
+              "label": "Somatosensory cortex hindlimb layer II/III"
+            }
+          },
+          "name": "C251001B2-MT-C1",
+          "nxv:deprecated": false
+        },
+        "_type": "_doc",
+        "sort": [
+          "C251001B2-MT-C1"
+        ]
+      }
+    ],
+    "total": {
+      "relation": "eq",
+      "value": 4
+    }
+  },
+  "timed_out": false
+}

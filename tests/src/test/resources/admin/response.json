@@ -1,0 +1,12 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id" : "{{deltaUri}}/{{path}}/{{orgId}}",
+  "@type" : "{{type}}",
+  "_rev" : {{rev}},
+  "_deprecated" : {{deprecated}},
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+}

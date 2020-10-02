@@ -1,0 +1,9 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total": 0,
+  "_results": []
+}

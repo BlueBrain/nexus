@@ -1,0 +1,20 @@
+{
+  "@context": {
+    "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "datePublished": {
+      "@id": "http://schema.org/datePublished",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "description": "http://schema.org/description",
+    "identifier": "http://schema.org/identifier",
+    "name": "http://schema.org/name",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "prov": "http://www.w3.org/ns/prov#"
+  },
+  "@id": "local_3f427a96-a366-43d8-b39e-b85cb378d326",
+  "@type": "nsg:Protocol",
+  "datePublished": "2015-10-08T00:00:00",
+  "description": "Type of protocol used to generate neobase data",
+  "identifier": "https://doi.org/10.1016/j.cell.2015.09.029",
+  "name": "{{name_protocol}}"
+}

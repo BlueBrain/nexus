@@ -1,0 +1,10 @@
+{
+  "@context": "{{error-context}}",
+  "code": "ResourceValidationFailed",
+  "report": {
+    "@context": "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    "@type": "sh:ValidationReport",
+    "conforms": true,
+    "targetedNodes": 0
+  }
+}

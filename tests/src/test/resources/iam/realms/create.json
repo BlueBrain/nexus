@@ -1,0 +1,5 @@
+{
+  "name": "Nexus Test",
+  "openIdConfig": "{{realm}}/.well-known/openid-configuration",
+  "logo": "http://nexus.example.com/logo.png"
+}

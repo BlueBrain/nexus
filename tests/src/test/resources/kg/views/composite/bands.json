@@ -1,0 +1,30 @@
+[
+  {
+    "@id": "red_hot_chili_peppers",
+    "@context": "https://music.example.com/context",
+    "@type": "Band",
+    "name": "Red Hot Chili Peppers",
+    "start": 1983,
+    "genre": [
+      "funk rock",
+      "alternative rock",
+      "funk metal",
+      "rap rock"
+    ]
+  },
+  {
+    "@id": "muse",
+    "@context": "https://music.example.com/context",
+    "@type": "Band",
+    "name": "Muse",
+    "start": 1994,
+    "genre": [
+      "progressive rock",
+      "alternative rock",
+      "art rock",
+      "space rock",
+      "hard rock",
+      "electronica"
+    ]
+  }
+]

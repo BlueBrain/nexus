@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "OrganizationNotFound",
+  "msg": "Organization with label '{{orgId}}' not found.",
+  "reason": "Organization with label '{{orgId}}' not found."
+}
