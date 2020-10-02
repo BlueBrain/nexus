@@ -347,7 +347,6 @@ lazy val testPlugin = project
   .settings(
     assemblyOutputPath in assembly := target.value / "delta-test-plugin.jar",
     libraryDependencies           ++= Seq(
-      monixBio,
       akkaSlf4j   % Test,
       akkaTestKit % Test,
       logback     % Test,
@@ -380,7 +379,7 @@ lazy val rdf = project
   )
 
 lazy val sdk = project
-  .in(file("delta/sdk")) 
+  .in(file("delta/sdk"))
   .settings(
     name       := "delta-sdk",
     moduleName := "delta-sdk"
@@ -424,6 +423,7 @@ lazy val service = project
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
+      "org.scala-graph" %% "graph-core" % "1.13.2",
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
       h2               % Test,

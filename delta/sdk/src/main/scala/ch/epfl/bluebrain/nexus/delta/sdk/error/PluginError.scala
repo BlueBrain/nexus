@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginInfo
 
 /**
   * Parent error type for plugin errors.
@@ -18,13 +18,19 @@ object PluginError {
     *
    * @param dependencies  dependencies that couldn't be found.
     */
-  final case class DependencyNotFound(dependencies: Set[(Name, String)])
+  final case class DependencyNotFound(requiringPlugin: PluginInfo, dependencies: Set[PluginInfo])
       extends PluginError(
-        s"Following dependencies could not be found: ${dependencies
-          .map {
-            case (name, version) => s"${name.value}, version: $version"
+        s"Following dependencies required by plugin ${requiringPlugin.name.value}-${requiringPlugin.version} could not be found: ${dependencies
+          .map { info =>
+            s"${info.name.value}, version: ${info.version}"
           }
           .mkString(",")}.",
+        None
+      )
+
+  final case class DependencyGraphCycle(graph: String)
+      extends PluginError(
+        s"There is a cycle in the following dependency graph: $graph",
         None
       )
 }
