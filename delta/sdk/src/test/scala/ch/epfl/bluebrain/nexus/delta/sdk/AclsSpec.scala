@@ -4,7 +4,7 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.dummies.PermissionsDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.mocks.PermissionsMock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -33,7 +33,7 @@ class AclsSpec
     implicit val sc: Scheduler = Scheduler.global
     val permsIri               = iri"http://example.com/permissions"
     val currentPerms           = PermissionsState.Current(1L, rwx, epoch, subject, epoch, subject).toResource(permsIri, Set.empty)
-    val perms                  = IO.pure(new PermissionsDummy(currentPerms))
+    val perms                  = IO.pure(new PermissionsMock(currentPerms))
     val current                = Current(Root, userR_groupX, 1L, epoch, Anonymous, epoch, Anonymous)
     val time2                  = Instant.ofEpochMilli(10L)
 

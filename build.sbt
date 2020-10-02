@@ -373,6 +373,7 @@ lazy val sdk = project
       monixBio,
       akkaActor, // Needed to create Uri
       akkaHttp,
+      fs2,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector)
@@ -388,6 +389,7 @@ lazy val sdkTestkit = project
   .dependsOn(rdf, sdk, testkit)
   .settings(
     libraryDependencies ++= Seq(
+      akkaPersistenceQuery, // To have access to the Offset type
       scalaTest % Test
     )
   )

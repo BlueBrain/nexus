@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.sourcing
 
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
-import akka.persistence.query.{EventEnvelope, Offset, PersistenceQuery}
+import akka.persistence.query.{EventEnvelope, PersistenceQuery, Sequence, TimeBasedUUID, Offset => AkkaOffset}
 import fs2._
 import monix.bio.{Task, UIO}
 
@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
   * A log of ordered events for uniquely identifiable entities and independent from the storage layer
   *
   */
-trait EventLog[M] {
+trait EventLog[Offset <: AkkaOffset, M] {
 
   /**
     * [[akka.persistence.query.scaladsl.PersistenceIdsQuery#currentPersistenceIds]] in a fs2 stream
@@ -46,7 +46,6 @@ trait EventLog[M] {
 }
 object EventLog {
   import akka.actor.typed.ActorSystem
-  import akka.persistence.query.Offset
   import akka.persistence.query.scaladsl.{ReadJournal, _}
   import akka.stream.Materializer
   import akka.stream.scaladsl.Source
@@ -68,11 +67,11 @@ object EventLog {
     * @tparam RJ     the underlying journal typr (Cassandra / JDBC / ...)
     * @tparam M      the event type
     */
-  private class AkkaEventLog[RJ <: Journal, M](
+  private class AkkaEventLog[RJ <: Journal, Offset <: AkkaOffset, M](
       readJournal: RJ,
       f: EventEnvelope => UIO[Option[M]]
   )(implicit as: ActorSystem[Nothing])
-      extends EventLog[M] {
+      extends EventLog[Offset, M] {
 
     implicit val executionContext: ExecutionContext = as.executionContext
     implicit val materializer: Materializer         = Materializer.createMaterializer(as)
@@ -109,14 +108,18 @@ object EventLog {
     * Create an event log relying on akka-persistence-cassandra
     * @param f the transformation we want to apply to the [[EventEnvelope]]
     */
-  def cassandraEventLog[M](f: EventEnvelope => UIO[Option[M]])(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] =
+  def cassandraEventLog[M](
+      f: EventEnvelope => UIO[Option[M]]
+  )(implicit as: ActorSystem[Nothing]): Task[EventLog[TimeBasedUUID, M]] =
     eventLog(f, CassandraReadJournal.Identifier)
 
   /**
     * Create an event log relying on akka-persistence-jdbc
     * @param f the transformation we want to apply to the [[EventEnvelope]]
     */
-  def jdbcEventLog[M](f: EventEnvelope => UIO[Option[M]])(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] =
+  def jdbcEventLog[M](
+      f: EventEnvelope => UIO[Option[M]]
+  )(implicit as: ActorSystem[Nothing]): Task[EventLog[Sequence, M]] =
     eventLog(f, JdbcReadJournal.Identifier)
 
   /**
@@ -125,10 +128,10 @@ object EventLog {
     * @param f                 the transformation we want to apply to the [[EventEnvelope]]
     * @param journalIdentifier the journal identifier
     */
-  def eventLog[M, RJ <: Journal](
+  def eventLog[RJ <: Journal, Offset <: AkkaOffset, M](
       f: EventEnvelope => UIO[Option[M]],
       journalIdentifier: String
-  )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] =
+  )(implicit as: ActorSystem[Nothing]): Task[EventLog[Offset, M]] =
     Task.delay {
       new AkkaEventLog(PersistenceQuery(as).readJournalFor[RJ](journalIdentifier), f)
     }

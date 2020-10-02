@@ -4,7 +4,7 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.dummies.WellKnownResolverDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.mocks.WellKnownResolverMock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
@@ -47,7 +47,7 @@ class RealmsSpec
     val keys: Set[Json]        = Set(json"""{ "k": "v" }""")
     val wk                     = WellKnown(issuer, gt, keys, authUri, tokenUri, uiUri, None, Some(endUri))
     val wk2                    = WellKnown(issuer, gt, keys, authUri, token2Uri, ui2Uri, None, Some(endUri))
-    val wkResolution           = new WellKnownResolverDummy(Map(wellKnownUri -> wk, wellKnown2Uri -> wk2))
+    val wkResolution           = new WellKnownResolverMock(Map(wellKnownUri -> wk, wellKnown2Uri -> wk2))
     // format: off
     val current                = Current(label, 1L, deprecated = false, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, Anonymous, epoch, Anonymous)
     // format: on

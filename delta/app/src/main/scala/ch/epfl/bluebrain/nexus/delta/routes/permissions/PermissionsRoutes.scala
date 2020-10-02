@@ -2,18 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.routes.permissions
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedFormFieldRejection, Route}
+import akka.persistence.query.Offset
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions
-import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions
+import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions._
+import ch.epfl.bluebrain.nexus.delta.routes.{CirceUnmarshalling, DeltaRouteDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{BaseUri, Permissions}
-import ch.epfl.bluebrain.nexus.delta.routes.{CirceUnmarshalling, DeltaRouteDirectives}
 import io.circe.Decoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -23,7 +25,7 @@ import monix.execution.Scheduler
   *
   * @param permissions the permissions operations bundle
   */
-final class PermissionsRoutes(permissions: Permissions)(implicit
+final class PermissionsRoutes[O <: Offset](permissions: Permissions.WithOffset[O])(implicit
     baseUri: BaseUri,
     s: Scheduler,
     cr: RemoteContextResolution,
@@ -78,7 +80,7 @@ object PermissionsRoutes {
   /**
     * @return the [[Route]] for the permission resources
     */
-  def apply(permissions: Permissions)(implicit
+  def apply[O <: Offset](permissions: Permissions.WithOffset[O])(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,

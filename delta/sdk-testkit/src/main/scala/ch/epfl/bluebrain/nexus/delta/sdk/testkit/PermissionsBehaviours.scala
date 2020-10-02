@@ -2,16 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
 
+import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionSet}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviours._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
@@ -34,31 +36,12 @@ trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues 
   /**
     * Create a permissions instance. The instance will be memoized.
     */
-  def create: Task[Permissions]
+  def create: Task[Permissions.WithOffset[Sequence]]
 
   /**
     * The permissions resource id.
     */
   def resourceId: Iri
-
-  private def resourceFor(
-      rev: Long,
-      permissions: Set[Permission],
-      updatedAt: Instant,
-      updatedBy: Subject
-  ): PermissionsResource =
-    ResourceF(
-      id = resourceId,
-      rev = rev,
-      types = Set(nxv.Permissions),
-      deprecated = false,
-      createdAt = Instant.EPOCH,
-      createdBy = Identity.Anonymous,
-      updatedAt = updatedAt,
-      updatedBy = updatedBy,
-      schema = Latest(schemas.permissions),
-      value = PermissionSet(permissions)
-    )
 
   private def retryBackoff[E, A](source: IO[E, A], maxRetries: Int, firstDelay: FiniteDuration): IO[E, A] = {
     source.onErrorHandleWith { ex =>
@@ -94,7 +77,18 @@ trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues 
       permissions.accepted.fetchPermissionSet.accepted shouldEqual minimum
     }
     "return the minimum permissions resource" in {
-      val expected = resourceFor(0L, minimum, Instant.EPOCH, Anonymous)
+      val expected = ResourceF(
+        id = resourceId,
+        rev = 0L,
+        types = Set(nxv.Permissions),
+        deprecated = false,
+        createdAt = Instant.EPOCH,
+        createdBy = Identity.Anonymous,
+        updatedAt = Instant.EPOCH,
+        updatedBy = Identity.Anonymous,
+        schema = Latest(schemas.permissions),
+        value = PermissionSet(minimum)
+      )
       permissions.accepted.fetch.accepted shouldEqual expected
     }
     "fail to delete minimum when initial" in {
@@ -112,7 +106,7 @@ trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues 
       permissions.accepted.subtract(Set(perm2), 1L).rejected shouldEqual CannotSubtractUndefinedPermissions(Set(perm2))
     }
     "fail to subtract empty permissions" in {
-      permissions.accepted.subtract(Set(), 1L).rejected shouldEqual CannotSubtractEmptyCollection
+      permissions.accepted.subtract(Set.empty, 1L).rejected shouldEqual CannotSubtractEmptyCollection
     }
     "fail to subtract from minimum collection" in {
       permissions.accepted.subtract(Set(read), 1L).rejected shouldEqual CannotSubtractFromMinimumCollection(minimum)
@@ -132,13 +126,13 @@ trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues 
       permissions.accepted.append(Set(perm2), 3L).rejected shouldEqual CannotAppendEmptyCollection
     }
     "fail to append empty permissions" in {
-      permissions.accepted.append(Set(), 3L).rejected shouldEqual CannotAppendEmptyCollection
+      permissions.accepted.append(Set.empty, 3L).rejected shouldEqual CannotAppendEmptyCollection
     }
     "fail to replace with incorrect rev" in {
       permissions.accepted.replace(Set(perm3), 1L).rejected shouldEqual IncorrectRev(1L, 3L)
     }
     "fail to replace with empty permissions" in {
-      permissions.accepted.replace(Set(), 3L).rejected shouldEqual CannotReplaceWithEmptyCollection
+      permissions.accepted.replace(Set.empty, 3L).rejected shouldEqual CannotReplaceWithEmptyCollection
     }
     "fail to replace with subset of minimum" in {
       permissions.accepted.replace(Set(read), 3L).rejected shouldEqual CannotReplaceWithEmptyCollection
@@ -170,8 +164,62 @@ trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues 
     "return none for unknown rev" in {
       permissions.accepted.fetchAt(9999L).rejected shouldEqual RevisionNotFound(9999L, 5L)
     }
-  }
+    "return all the current events" in {
+      permissions.accepted.currentEvents().compile.toVector.accepted.map(_.event) shouldEqual Vector(
+        PermissionsAppended(1L, Set(perm1), Instant.EPOCH, subject),
+        PermissionsSubtracted(2L, Set(perm1), Instant.EPOCH, subject),
+        PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject),
+        PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject),
+        PermissionsDeleted(5L, Instant.EPOCH, subject)
+      )
+    }
 
+    "return some of the current events" in {
+      val persistenceId = permissions.accepted.persistenceId
+      // format: off
+      val envelopes = permissions.accepted.currentEvents(Some(Sequence(2L))).compile.toVector.accepted
+      envelopes.map(ee => ee.copy(timestamp = Instant.EPOCH.toEpochMilli)) shouldEqual Vector(
+        Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(3L), persistenceId, 3L, Instant.EPOCH.toEpochMilli),
+        Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), Sequence(4L), persistenceId, 4L, Instant.EPOCH.toEpochMilli),
+        Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), Sequence(5L), persistenceId, 5L, Instant.EPOCH.toEpochMilli)
+      )
+      // format: on
+    }
+
+    "return a complete non terminating stream of events" in {
+      val envelopes = for {
+        fiber     <- permissions.accepted.events().take(6L).compile.toVector.start
+        _         <- permissions.accepted.append(Set(perm1, perm2), 5L)
+        collected <- fiber.join
+      } yield collected
+      envelopes.accepted.map(_.event) shouldEqual Vector(
+        PermissionsAppended(1L, Set(perm1), Instant.EPOCH, subject),
+        PermissionsSubtracted(2L, Set(perm1), Instant.EPOCH, subject),
+        PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject),
+        PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject),
+        PermissionsDeleted(5L, Instant.EPOCH, subject),
+        PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject)
+      )
+    }
+
+    "return a partial non terminating stream of events" in {
+      val persistenceId = permissions.accepted.persistenceId
+      val envelopes     = for {
+        fiber     <- permissions.accepted.events(Some(Sequence(2L))).take(5L).compile.toVector.start
+        _         <- permissions.accepted.append(Set(perm3), 6L)
+        collected <- fiber.join
+      } yield collected
+      // format: off
+      envelopes.accepted.map(ee => ee.copy(timestamp = Instant.EPOCH.toEpochMilli)) shouldEqual Vector(
+        Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(3L), persistenceId, 3L, Instant.EPOCH.toEpochMilli),
+        Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), Sequence(4L), persistenceId, 4L, Instant.EPOCH.toEpochMilli),
+        Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), Sequence(5L), persistenceId, 5L, Instant.EPOCH.toEpochMilli),
+        Envelope(PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(6L), persistenceId, 6L, Instant.EPOCH.toEpochMilli),
+        Envelope(PermissionsAppended(7L, Set(perm3), Instant.EPOCH, subject), Sequence(7L), persistenceId, 7L, Instant.EPOCH.toEpochMilli)
+      )
+      // format: on
+    }
+  }
 }
 
 object PermissionsBehaviours {

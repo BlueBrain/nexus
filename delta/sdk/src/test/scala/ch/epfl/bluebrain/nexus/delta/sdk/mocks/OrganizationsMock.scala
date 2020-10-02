@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.dummies
+package ch.epfl.bluebrain.nexus.delta.sdk.mocks
 
 import java.util.UUID
 
@@ -15,7 +15,7 @@ import monix.bio.{IO, UIO}
   * @param expected the expected results as a map where the key is the organization label
   *                 and the value is the expected organization resource
   */
-class OrganizationsDummy(expected: Map[Label, OrganizationResource]) extends Organizations {
+class OrganizationsMock(expected: Map[Label, OrganizationResource]) extends Organizations {
   // format: off
   override def create(label: Label, description: Option[String])(implicit caller: Identity.Subject): IO[OrganizationRejection, OrganizationResource] = ???
   override def update(label: Label, description: Option[String], rev: Long)(implicit caller: Identity.Subject): IO[OrganizationRejection, OrganizationResource] = ???

@@ -3,18 +3,25 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import java.time.Instant
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import monix.bio.{IO, UIO}
+import fs2.Stream
+import monix.bio.{IO, Task, UIO}
 
 /**
   * Operations pertaining to managing permissions.
   */
 trait Permissions {
+
+  /**
+    * The supported offset type.
+    */
+  type Offset
 
   /**
     * @return the permissions singleton persistence id
@@ -90,9 +97,33 @@ trait Permissions {
     * @return the new resource or a description of why the change was rejected
     */
   def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
+
+  /**
+    * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def events(offset: Option[Offset] = None): Stream[Task, Envelope[PermissionsEvent, Offset]]
+
+  /**
+    * The current permissions events. The stream stops after emitting all known events.
+    *
+    * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(offset: Option[Offset] = None): Stream[Task, Envelope[PermissionsEvent, Offset]]
 }
 
 object Permissions {
+
+  /**
+    * Permissions with fixed Offset type.
+    *
+    * @tparam O the offset type
+    */
+  type WithOffset[O] = Permissions {
+    type Offset = O
+  }
 
   /**
     * ACLs permissions.
