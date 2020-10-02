@@ -1,0 +1,27 @@
+[
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+    "_source": {
+      "@context": {
+        "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+        "other": "https://some.other.prefix.com/"
+      },
+      "@id": "https://dev.nexus.test.com/simplified-resource/1",
+      "@type": "nxv:TestResource",
+      "other:priority": 3,
+      "other:projects": [
+        "testProject",
+        "testProject2"
+      ]
+    },
+    "_types": [
+      "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+    ],
+    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+    "_projectUuid": "{{projectUuid}}",
+    "_organizationUuid": "{{organizationUuid}}",
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  }
+]

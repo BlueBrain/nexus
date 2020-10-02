@@ -1,0 +1,59 @@
+{
+  "@context": {
+    "@vocab": "http://www.w3.org/ns/prov#",
+    "generated": "http://www.w3.org/ns/prov#generated",
+    "hadProtocol": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/hadProtocol",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "startedAtTime": {
+      "@id": "http://www.w3.org/ns/prov#startedAtTime",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    },
+    "used": "http://www.w3.org/ns/prov#used",
+    "wasAssociatedWith": "http://www.w3.org/ns/prov#wasAssociatedWith",
+    "wasStartedBy": "http://www.w3.org/ns/prov#wasStartedBy"
+  },
+  "@id": "local_40562901-27b0-4ec3-9053-7c2e767551b2",
+  "@type": [
+    "prov:Activity",
+    "nsg:WholeCellPatchClamp"
+  ],
+  "generated": [
+    {
+      "@id": "local_8a7d134f-7b73-458f-bfdc-c1ef6d9b9297",
+      "@type": [
+        "nsg:PatchedSlice",
+        "prov:Entity"
+      ]
+    }
+  ],
+  "hadProtocol": [
+    {
+      "@id": "local_3f427a96-a366-43d8-b39e-b85cb378d326",
+      "@type": [
+        "nsg:Protocol",
+        "prov:Entity"
+      ]
+    }
+  ],
+  "startedAtTime": "2000-06-01T00:00:00",
+  "used": [
+    {
+      "@id": "local_e943969d-a3af-4bfb-90df-4f1197bbde02",
+      "@type": [
+        "nsg:Slice",
+        "prov:Entity"
+      ]
+    }
+  ],
+  "wasAssociatedWith": {
+    "@id": "local_b147cbfa-96f1-41a9-8ac6-8c049f158ef7",
+    "@type": "prov:Agent"
+  },
+  "wasStartedBy": [
+    {
+      "@id": "local_b147cbfa-96f1-41a9-8ac6-8c049f158ef7",
+      "@type": "prov:Agent"
+    }
+  ]
+}

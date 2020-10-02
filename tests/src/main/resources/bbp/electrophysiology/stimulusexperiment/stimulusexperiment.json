@@ -1,0 +1,36 @@
+{
+  "@context": {
+    "@vocab": "http://www.w3.org/ns/prov#",
+    "EPST": "http://www.FIXME.org/ephys_stimuli/",
+    "hadProtocol": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/hadProtocol",
+    "hadRole": "http://www.w3.org/ns/prov#hadRole",
+    "label": "http://www.w3.org/2000/01/rdf-schema#label",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "startedAtTime": "http://www.w3.org/ns/prov#startedAtTime",
+    "stimulus": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/stimulus",
+    "stimulusType": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/stimulusType",
+    "used": "http://www.w3.org/ns/prov#used",
+    "wasAssociatedWith": "http://www.w3.org/ns/prov#wasAssociatedWith",
+    "wasStartedBy": "http://www.w3.org/ns/prov#wasStartedBy",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  },
+  "@id": "local_e8691e3c-adb1-443c-9850-a8472d76629f",
+  "@type": [
+    "prov:Activity",
+    "nsg:StimulusExperiment"
+  ],
+  "stimulus": {
+    "@type": "http://www.FIXME.org/ephys_stimuli/0000001"
+  },
+  "used": [
+    {
+      "@id": "local_26cd52ee-48ce-4221-96e0-c0e8f7676db9",
+      "@type": [
+        "nsg:PatchedCell",
+        "prov:Entity"
+      ]
+    }
+  ]
+}

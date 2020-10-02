@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "ArchiveElementNotFound",
+  "reason" : "Some of the resources in the archive were not found or you don't have the right permissions to fetch them."
+}

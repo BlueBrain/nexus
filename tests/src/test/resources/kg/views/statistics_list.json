@@ -1,0 +1,20 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/statistics.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@type": "ViewStatistics",
+      "totalEvents": {{total}},
+      "processedEvents": {{processed}},
+      "evaluatedEvents": {{evaluated}},
+      "remainingEvents": {{remaining}},
+      "discardedEvents": {{discarded}},
+      "failedEvents": 0,
+      "delayInSeconds": 0
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "@id": "{{id}}",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/view.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@type": [
+    "AggregateElasticSearchView",
+    "View"
+  ],
+  "views": [
+    {
+      "project": "{{project1}}",
+      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
+    },
+    {
+      "project": "{{project2}}",
+      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
+    }
+  ],
+  "_incoming": "{{resources}}/incoming",
+  "_outgoing": "{{resources}}/outgoing",
+  "_self": "{{resources}}",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+  "_project": "{{project-parent}}",
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_rev": 1,
+  "_deprecated": false
+}

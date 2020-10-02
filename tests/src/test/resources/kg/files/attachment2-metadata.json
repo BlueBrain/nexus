@@ -1,0 +1,25 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@id": "{{deltaUri}}/resources/{{projId}}/_/attachment2",
+  "@type": "File",
+  "_storage": {
+    "@id": "{{storageId}}",
+    "_rev": 1
+  },
+  "_bytes": 26,
+  "_digest": {
+    "_algorithm": "SHA-256",
+    "_value": "62ad07ee5e775552034186daafd7d77054620f2bc9fb8da629fd7af24b4c84e7"
+  },
+  "_filename": "attachment2",
+  "_mediaType": "text/plain; charset=UTF-8",
+  "_incoming": "{{deltaUri}}/files/{{projId}}/attachment:attachment2/incoming",
+  "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment:attachment2/outgoing",
+  "_self": "{{deltaUri}}/files/{{projId}}/attachment:attachment2",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
+  "_project": "{{project}}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+}

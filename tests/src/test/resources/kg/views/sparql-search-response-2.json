@@ -1,0 +1,17 @@
+{
+  "head": {
+    "vars": [
+      "s"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "s": {
+          "type": "uri",
+          "value": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/8b00acf8-e849-431b-8abc-a69e46b9c824"
+        }
+      }
+    ]
+  }
+}

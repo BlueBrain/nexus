@@ -1,0 +1,6 @@
+{
+  "@context": "https://dev.nexus.test.com/simplified-resource/context",
+  "@id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/other",
+  "name": "othername",
+  "@type": "Other"
+}

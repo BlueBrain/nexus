@@ -1,0 +1,34 @@
+{
+  "description": "{{name}} project",
+  "base": "{{base}}",
+  "apiMappings": [
+    {
+      "prefix": "attachment",
+      "namespace": "{{base}}"
+    },
+    {
+      "prefix": "nxv",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    {
+      "prefix": "test-schema",
+      "namespace": "https://dev.nexus.test.com/test-schema"
+    },
+    {
+      "prefix": "project",
+      "namespace": "http://admin.dev.nexus.ocp.bbp.epfl.ch/v1/static/schemas/project"
+    },
+    {
+      "prefix": "test-resource",
+      "namespace": "https://dev.nexus.test.com/simplified-resource/"
+    },
+    {
+      "prefix": "example-id",
+      "namespace": "http://example.com/id"
+    },
+    {
+      "prefix": "patchedcell",
+      "namespace": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/"
+    }
+  ]
+}

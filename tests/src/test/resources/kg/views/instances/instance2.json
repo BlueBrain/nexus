@@ -1,0 +1,13 @@
+{
+  "@context": "https://dev.nexus.test.com/simplified-resource/context",
+  "@id": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/03e9025f-35ab-42ca-ac4a-5da2701b93f3",
+  "brainLocation": {
+    "brainRegion": {
+      "@id": "http://www.parcellation.org/0000013",
+      "label": "Somatosensory cortex hindlimb layer II/III"
+    }
+  },
+  "name": "C251001B2-MT-C1",
+  "nxv:deprecated": false,
+  "@type": "Cell"
+}

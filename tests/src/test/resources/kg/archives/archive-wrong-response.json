@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "InvalidResource",
+  "reason": "Resource failed to validate against the constraints defined by 'https://bluebrain.github.io/nexus/schemas/archive.json'",
+  "schema": "https://bluebrain.github.io/nexus/schemas/archive.json"
+}

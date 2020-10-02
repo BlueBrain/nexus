@@ -1,0 +1,26 @@
+{
+  "base": "https://music.example.com/",
+  "vocab": "https://music.example.com/",
+  "apiMappings": [
+    {
+      "prefix": "local",
+      "namespace": "https://music.example.com/sources/local"
+    },
+    {
+      "prefix": "remote_songs",
+      "namespace": "https://music.example.com/sources/songs"
+    },
+    {
+      "prefix": "cross_albums",
+      "namespace": "https://music.example.com/sources/albums"
+    },
+    {
+      "prefix": "bands",
+      "namespace": "https://music.example.com/bands"
+    },
+    {
+      "prefix": "albums",
+      "namespace": "https://music.example.com/albums"
+    }
+  ]
+}

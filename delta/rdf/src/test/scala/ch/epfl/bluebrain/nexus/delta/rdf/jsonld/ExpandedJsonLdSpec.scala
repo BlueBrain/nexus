@@ -151,7 +151,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be converted to graph" in {
       val expanded = JsonLd.expand(compacted).accepted
       val graph    = expanded.toGraph.accepted
-      val expected = contentOf("ntriples.nt", "{bnode}" -> bNode(graph).rdfFormat, "{rootNode}" -> iri.rdfFormat)
+      val expected = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
       graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }

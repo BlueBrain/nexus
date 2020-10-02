@@ -1,0 +1,106 @@
+[
+  {
+    "@id": "muse",
+    "album": [
+      {
+        "@id": "black_holes_and_revelations",
+        "released": "2006-07-03",
+        "song": [
+          {
+            "@id": "black_holes_and_revelations/1",
+            "length": 275,
+            "number": 1,
+            "title": "Take a Bow"
+          },
+          {
+            "@id": "black_holes_and_revelations/2",
+            "length": 239,
+            "number": 2,
+            "title": "Starlight"
+          }
+        ]
+      },
+      {
+        "@id": "absolution",
+        "released": "2003-09-15",
+        "song": [
+          {
+            "@id": "absolution/2",
+            "title": "Time Is Running Out",
+            "length": 236,
+            "number": 2
+          },
+          {
+            "@id": "absolution/1",
+            "title": "Apocalypse Please",
+            "length": 252,
+            "number": 1
+          }
+        ]
+      }
+    ],
+    "genre": [
+      "progressive rock",
+      "alternative rock",
+      "hard rock",
+      "art rock",
+      "electronica",
+      "space rock"
+    ],
+    "name": "Muse"
+  },
+  {
+    "@id": "red_hot_chili_peppers",
+    "album": [
+      {
+        "@id": "californication",
+        "released": "1999-06-08",
+        "song": [
+          {
+            "@id": "californication/1",
+            "length": 238,
+            "number": 1,
+            "title": "Around the World"
+          },
+          {
+            "@id": "californication/2",
+            "length": 270,
+            "number": 2,
+            "title": "Parallel Universe"
+          },
+          {
+            "@id": "californication/3",
+            "length": 217,
+            "number": 3,
+            "title": "Scar Tissue"
+          }
+        ]
+      },
+      {
+        "@id": "blood_sugar_sex_magic",
+        "released": "1991-09-24",
+        "song": [
+          {
+            "@id": "blood_sugar_sex_magic/2",
+            "length": 217,
+            "number": 2,
+            "title": "If You Have to Ask"
+          },
+          {
+            "@id": "blood_sugar_sex_magic/1",
+            "length": 243,
+            "number": 1,
+            "title": "The Power of Equality"
+          }
+        ]
+      }
+    ],
+    "genre": [
+      "alternative rock",
+      "funk metal",
+      "funk rock",
+      "rap rock"
+    ],
+    "name": "Red Hot Chili Peppers"
+  }
+]

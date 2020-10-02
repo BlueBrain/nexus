@@ -71,35 +71,35 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "be converted to NTriples" in {
-      val expected = contentOf("ntriples.nt", "{bnode}" -> bnode.rdfFormat, "{rootNode}" -> iri.rdfFormat)
+      val expected = contentOf("ntriples.nt", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to NTriples with a root blank node" in {
-      val expected = contentOf("ntriples.nt", "{bnode}" -> bnodeNoId.rdfFormat, "{rootNode}" -> rootBNode.rdfFormat)
+      val expected = contentOf("ntriples.nt", "bnode" -> bnodeNoId.rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graphNoId.toNTriples.accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to dot without context" in {
-      val expected = contentOf("graph/dot-expanded.dot", "{bnode}" -> bnode.rdfFormat, "{rootNode}" -> iri.toString)
+      val expected = contentOf("graph/dot-expanded.dot", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.toString)
       graph.toDot().accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to dot without context with a root blank node" in {
       val expected =
-        contentOf("graph/dot-expanded.dot", "{bnode}" -> bnodeNoId.rdfFormat, "{rootNode}" -> rootBNode.rdfFormat)
+        contentOf("graph/dot-expanded.dot", "bnode" -> bnodeNoId.rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graphNoId.toDot().accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to dot with context" in {
-      val expected = contentOf("graph/dot-compacted.dot", "{bnode}" -> bnode.rdfFormat, "{rootNode}" -> "john-doé")
+      val expected = contentOf("graph/dot-compacted.dot", "bnode" -> bnode.rdfFormat, "rootNode" -> "john-doé")
       val context  = jsonContentOf("context.json")
       graph.toDot(context).accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to dot with context with a root blank node" in {
       val expected =
-        contentOf("graph/dot-compacted.dot", "{bnode}" -> bnodeNoId.rdfFormat, "{rootNode}" -> rootBNode.rdfFormat)
+        contentOf("graph/dot-compacted.dot", "bnode" -> bnodeNoId.rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       val context  = jsonContentOf("context.json")
       graphNoId.toDot(context).accepted.toString should equalLinesUnordered(expected)
     }

@@ -1,0 +1,145 @@
+[
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+    "_source": {
+      "@context": {
+        "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+        "other": "https://some.other.prefix.com/"
+      },
+      "@id": "https://dev.nexus.test.com/simplified-resource/1",
+      "@type": "nxv:TestResource",
+      "other:priority": 3,
+      "other:projects": [
+        "testProject",
+        "testProject2"
+      ]
+    },
+    "_types": [
+      "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+    ],
+    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+    "_projectUuid": "{{projectUuid}}",
+    "_organizationUuid": "{{organizationUuid}}",
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Created",
+    "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+    "_source": {
+      "@context": {
+        "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+        "other": "https://some.other.prefix.com/"
+      },
+      "@id": "https://dev.nexus.test.com/simplified-resource/1",
+      "@type": "nxv:TestResource",
+      "other:priority": 3,
+      "other:projects": [
+        "testProject",
+        "testProject2"
+      ]
+    },
+    "_types": [
+      "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+    ],
+    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+    "_projectUuid": "{{project2Uuid}}",
+    "_organizationUuid": "{{organization2Uuid}}",
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Updated",
+    "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+    "_source": {
+      "@context": {
+        "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+        "other": "https://some.other.prefix.com/"
+      },
+      "@id": "https://dev.nexus.test.com/simplified-resource/1",
+      "@type": "nxv:TestResource",
+      "other:priority": 5,
+      "other:projects": [
+        "testProject",
+        "testProject2"
+      ]
+    },
+    "_types": [
+      "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+    ],
+    "_projectUuid": "{{projectUuid}}",
+    "_organizationUuid": "{{organizationUuid}}",
+    "_rev": 2,
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "TagAdded",
+    "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+    "tag": "v1.0.0",
+    "targetRev": 1,
+    "_projectUuid": "{{projectUuid}}",
+    "_organizationUuid": "{{organizationUuid}}",
+    "_rev": 3,
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "Deprecated",
+    "_resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+    "_types": [
+      "https://bluebrain.github.io/nexus/vocabulary/TestResource"
+    ],
+    "_projectUuid": "{{projectUuid}}",
+    "_organizationUuid": "{{organizationUuid}}",
+    "_rev": 4,
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "FileCreated",
+    "_resourceId": "{{resources}}/_/attachment.json",
+    "_attributes": {
+      "_bytes": 47,
+      "_digest": {
+        "_algorithm": "SHA-256",
+        "_value": "00ff4b34e3f3695c3abcdec61cba72c2238ed172ef34ae1196bfad6a4ec23dda"
+      },
+      "_filename": "attachment.json",
+      "_mediaType": "application/json"
+    },
+    "_storage": {
+      "@type": "DiskStorageReference",
+      "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "_rev": 1
+    },
+    "_projectUuid": "{{projectUuid}}",
+    "_organizationUuid": "{{organizationUuid}}",
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  },
+  {
+    "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "@type": "FileUpdated",
+    "_resourceId": "{{resources}}/_/attachment.json",
+    "_attributes": {
+      "_bytes": 52,
+      "_digest": {
+        "_algorithm": "SHA-256",
+        "_value": "0e5ce4e33df07eb312e462d9b4646aebf44e7c4d758891e632dbb0533df85e3f"
+      },
+      "_filename": "attachment.json",
+      "_mediaType": "application/json"
+    },
+    "_storage": {
+      "@type": "DiskStorageReference",
+      "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "_rev": 1
+    },
+    "_projectUuid": "{{projectUuid}}",
+    "_organizationUuid": "{{organizationUuid}}",
+    "_rev": 2,
+    "_subject": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  }
+]

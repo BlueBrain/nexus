@@ -1,0 +1,41 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "this": "https://dev.nexus.test.com/test-schema/shapes/",
+      "other": "https://some.other.prefix.com/"
+    }
+  ],
+
+  "@id": "https://dev.nexus.test.com/test-schema",
+  "@type": "nxv:Schema",
+  "shapes": [
+    {
+      "@id": "this:TestSchemaShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": [
+        "nxv:TestResource"
+      ],
+      "property": [
+        {
+          "path": "other:priority",
+          "name": "Priority",
+          "description": "The priority of the resource.",
+          "datatype": "xsd:integer",
+          "minInclusive": 0,
+          "maxInclusive": 1000,
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "path": "other:projects",
+          "name": "Project UID",
+          "description": "The project UUID",
+          "datatype": "xsd:string",
+          "minCount": 1
+        }
+      ]
+    }
+  ]
+}

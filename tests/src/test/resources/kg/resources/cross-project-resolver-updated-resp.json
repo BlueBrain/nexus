@@ -1,0 +1,35 @@
+{
+  "@id": "http://example.com/id",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resolver.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@type": [
+    "Resolver",
+    "CrossProject"
+  ],
+  "resourceTypes": [
+    "nxv:Schema"
+  ],
+  "projects": [
+    "{{project}}"
+  ],
+  "identities": [
+    {
+      "@id": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "@type": "User",
+      "realm": "{{realm}}",
+      "subject": "{{user}}"
+    }
+  ],
+  "priority": 20,
+  "_incoming": "{{resources}}/example-id/incoming",
+  "_outgoing": "{{resources}}/example-id/outgoing",
+  "_self": "{{resources}}/example-id",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver.json",
+  "_project": "{{project-parent}}",
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_rev": 2,
+  "_deprecated": false
+}

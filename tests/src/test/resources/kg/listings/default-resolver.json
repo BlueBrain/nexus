@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultInProject",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/Resolver",
+        "https://bluebrain.github.io/nexus/vocabulary/InProject"
+      ],
+      "_incoming": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver/incoming",
+      "_outgoing": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver/outgoing",
+      "_self": "{{deltaUri}}/resolvers/{{project-label}}/defaultResolver",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver.json",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    }
+  ]
+}

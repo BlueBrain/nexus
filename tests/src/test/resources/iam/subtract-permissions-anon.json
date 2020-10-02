@@ -1,0 +1,13 @@
+{
+  "@type": "Subtract",
+  "acl": [
+    {
+      "identity": {
+        "@type": "Anonymous"
+      },
+      "permissions": [
+        "{{{perms}}}"
+      ]
+    }
+  ]
+}

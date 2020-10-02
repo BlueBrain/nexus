@@ -36,9 +36,8 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
         )
       )
 
-      (Task.sleep(100.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
-
       eventually {
+        (Task.sleep(500.millis) >> Task.delay { supervisor ! Stop }).runSyncUnsafe()
         list should not be empty
         finalizeHappened shouldBe true
       }
@@ -64,9 +63,8 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
         )
       )
 
-      (Task.sleep(60.millis) >> Task.delay { testKit.stop(supervisor) }).runSyncUnsafe()
-
       eventually {
+        (Task.sleep(60.millis) >> Task.delay { testKit.stop(supervisor) }).runSyncUnsafe()
         list should not be empty
         finalizeHappened shouldBe true
       }
@@ -151,5 +149,4 @@ class StreamSupervisorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLik
       }
     }
   }
-
 }

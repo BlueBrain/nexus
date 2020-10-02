@@ -1,0 +1,13 @@
+{
+  "@type": "Append",
+  "acl": [
+    {
+      "identity": {
+        "@type": "Anonymous"
+      },
+      "permissions": [
+        "{{{perms}}}"
+      ]
+    }
+  ]
+}
