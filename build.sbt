@@ -388,6 +388,7 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
+      distageCore,
       monixBio,
       akkaActor, // Needed to create Uri
       akkaHttp,
@@ -422,12 +423,11 @@ lazy val service = project
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
-      "org.scala-graph" %% "graph-core" % "1.13.2",
-      akkaSlf4j          % Test,
-      akkaTestKitTyped   % Test,
-      h2,
-      logback            % Test,
-      scalaTest          % Test
+      akkaSlf4j        % Test,
+      akkaTestKitTyped % Test,
+      h2               % Test,
+      logback          % Test,
+      scalaTest        % Test
     ),
     Test / fork          := true
   )

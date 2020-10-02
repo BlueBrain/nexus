@@ -7,27 +7,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginInfo}
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
-class TestPlugin(pluginDef: PluginInfo, permissions: Permissions) extends Plugin {
+class TestPlugin(permissions: Permissions) extends Plugin {
 
-  /**
-    * Optional routes provided by the plugin.
-    */
   override def route: Option[Route] =
     Some(
-      pathPrefix("test-plugin" / Segment) { seg =>
+      pathPrefix("test-plugin") {
         concat(
           get {
-            println(seg)
-            complete(permissions.fetchPermissionSet.map(ps => s"$seg->${ps.mkString(",")}").runToFuture)
+            complete(permissions.fetchPermissionSet.map(ps => s"${ps.mkString(",")}").runToFuture)
           }
         )
       }
     )
 
-  /**
-    * Stop the plugin. This should allow the plugin to terminate gracefully.
-    */
-  override def stop(): Task[Unit] = Task.pure(println(s"Stopping: $pluginDef"))
+  override def stop(): Task[Unit] = Task.pure(println(s"Stopping: $info"))
 
-  override def info: PluginInfo = pluginDef
+  override def info: PluginInfo = TestPluginDef.pluginInfo
 }

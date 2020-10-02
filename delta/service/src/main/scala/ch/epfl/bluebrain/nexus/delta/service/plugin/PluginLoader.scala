@@ -2,18 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.service.plugin
 
 import java.io.{File, FilenameFilter}
 
-import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{DependencyGraphCycle, DependencyNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef, PluginInfo, Registry}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{MultiplePluginDefClassesFound, PluginDefClassNotFound, PluginInitializationError}
+import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
+import distage.{Injector, Roots}
 import io.github.classgraph.ClassGraph
-import monix.bio.IO
-import scalax.collection.Graph
-import scalax.collection.GraphEdge.DiEdge
+import izumi.distage.model.definition.ModuleDef
+import monix.bio.{IO, Task}
 
 import scala.jdk.CollectionConverters._
 
 class PluginLoader(pluginConfig: PluginConfig) {
 
-  private def loadPluginDef(jar: File): IO[Throwable, PluginDef] = {
+  private def loadPluginDef(jar: File): IO[PluginError, PluginDef] = {
     val pluginClassLoader = new PluginClassLoader(jar.toURI.toURL, this.getClass.getClassLoader)
     val pluginDefClasses  = new ClassGraph()
       .overrideClassLoaders(pluginClassLoader)
@@ -27,18 +28,20 @@ class PluginLoader(pluginConfig: PluginConfig) {
     pluginDefClasses match {
       case pluginDef :: Nil =>
         IO.pure(pluginClassLoader.create[PluginDef](pluginDef, println)())
-      case Nil              => IO.raiseError(new IllegalArgumentException("Needs at least one plugin class"))
+      case Nil              => IO.raiseError(PluginDefClassNotFound(jar))
       case multiple         =>
-        IO.raiseError(new IllegalArgumentException(s"Too many plugin classes : ${multiple.mkString(",")}"))
+        IO.raiseError(MultiplePluginDefClassesFound(jar, multiple.toSet))
 
     }
   }
 
-  private def buildPluginDependencyGraph(pluginDeps: Map[PluginInfo, Set[PluginInfo]]): Graph[PluginInfo, DiEdge] =
-    Graph.from(pluginDeps.keys, pluginDeps.flatMap { case (plugin, deps) => deps.map(DiEdge(plugin, _)) })
-
-  //TODO refactor this a bit
-  def loadAndStartPlugins(registry: Registry): IO[Throwable, List[Plugin]] = {
+  /**
+    * Load and initialize plugins.
+    *
+    * @param serviceModule  distage module defining dependencies provided by the service
+    * @return List of initialized plugins.
+    */
+  def loadAndStartPlugins(serviceModule: ModuleDef): IO[PluginError, List[Plugin]] = {
 
     val pluginJars = pluginConfig.pluginDir match {
       case None      => List.empty
@@ -52,26 +55,16 @@ class PluginLoader(pluginConfig: PluginConfig) {
     }
 
     for {
-      pluginsDefs                        <- IO.sequence(pluginJars.map(loadPluginDef))
-      pluginDeps                          = pluginsDefs.map(pDef => pDef.info -> pDef.dependencies).toMap
-      _                                  <- IO.sequence(pluginDeps.map {
-                                              case (pDef, deps) =>
-                                                val unmet = deps.filterNot(pluginDeps.isDefinedAt)
-                                                if (unmet.isEmpty)
-                                                  IO.unit
-                                                else
-                                                  IO.raiseError(DependencyNotFound(pDef, unmet))
-                                            })
-      depGraph: Graph[PluginInfo, DiEdge] = buildPluginDependencyGraph(pluginDeps)
-      pluginInitOrder                    <-
-        depGraph
-          .topologicalSort[PluginDef]
-          .fold(_ => IO.raiseError(DependencyGraphCycle(depGraph.toString())), order => IO.pure(order.toOuter))
-      plugins                            <-
+      pluginsDefs <- IO.sequence(pluginJars.map(loadPluginDef))
+      moduleDefs   = pluginsDefs.map(_.module)
+      fullModule   = (serviceModule :: moduleDefs).merge
+      locator     <- Injector()
+                       .produceF[Task](fullModule, Roots.Everything)
+                       .unsafeGet()
+                       .mapError(e => PluginInitializationError(e.getMessage))
+      plugins     <-
         IO.sequence(
-          pluginInitOrder.map(pInfo =>
-            pluginsDefs.find(_.info == pInfo).getOrElse(throw new IllegalArgumentException()).initialise(registry)
-          )
+          pluginsDefs.map(pInfo => pInfo.initialise(locator).mapError(e => PluginInitializationError(e.getMessage)))
         )
     } yield plugins
 
