@@ -1,0 +1,74 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 5,
+  "_results": [
+    {
+      "@id": "https://dev.nexus.test.com/simplified-resource/1",
+      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "_incoming": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1/incoming",
+      "_outgoing": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1/outgoing",
+      "_self": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1",
+      "_constrainedBy": "https://dev.nexus.test.com/test-schema",
+      "_project": "{{project}}",
+      "_rev": 4,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    },
+    {
+      "@id": "https://dev.nexus.test.com/simplified-resource/2",
+      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "_incoming": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F2/incoming",
+      "_outgoing": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F2/outgoing",
+      "_self": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F2",
+      "_constrainedBy": "https://dev.nexus.test.com/test-schema",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    },
+    {
+      "@id": "https://dev.nexus.test.com/simplified-resource/3",
+      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "_incoming": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F3/incoming",
+      "_outgoing": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F3/outgoing",
+      "_self": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F3",
+      "_constrainedBy": "https://dev.nexus.test.com/test-schema",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    },
+    {
+      "@id": "https://dev.nexus.test.com/simplified-resource/4",
+      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "_incoming": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F4/incoming",
+      "_outgoing": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F4/outgoing",
+      "_self": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F4",
+      "_constrainedBy": "https://dev.nexus.test.com/test-schema",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    },
+    {
+      "@id": "https://dev.nexus.test.com/simplified-resource/5",
+      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "_incoming": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F5/incoming",
+      "_outgoing": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F5/outgoing",
+      "_self": "{{resources}}/https%3A%2F%2Fdev.nexus.test.com%2Ftest-schema/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F5",
+      "_constrainedBy": "https://dev.nexus.test.com/test-schema",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    }
+  ]
+}

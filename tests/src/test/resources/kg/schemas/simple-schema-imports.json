@@ -1,0 +1,33 @@
+{
+  "@context": {
+    "other": "https://some.other.prefix.com/"
+  },
+  "@id": "https://dev.nexus.test.com/test-schema-imports",
+  "imports": [
+    "https://dev.nexus.test.com/test-schema-prop-shape"
+  ],
+  "shapes": [
+    {
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": [
+        "nxv:TestResource"
+      ],
+      "property": [
+        {
+          "path": "other:priority",
+          "name": "Priority",
+          "description": "The priority of the resource.",
+          "datatype": "xsd:integer",
+          "minInclusive": 0,
+          "maxInclusive": 1000,
+          "minCount": 1,
+          "maxCount": 1
+        },
+        {
+          "@id": "https://dev.nexus.test.com/test-schema-prop-shape/shapes/myshape"
+        }
+      ]
+    }
+  ]
+}

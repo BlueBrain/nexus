@@ -1,0 +1,19 @@
+{
+  "resources" : [
+    {
+      "@type": "Resource",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/1",
+      "rev": 1
+    },
+    {
+      "@type": "File",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/logo",
+      "path": "some/other/nexus-logo.png"
+    },
+    {
+      "@type": "Resource",
+      "project": "{{project2}}",
+      "resourceId": "https://dev.nexus.test.com/simplified-resource/2"
+    }
+  ]
+}

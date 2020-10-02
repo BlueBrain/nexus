@@ -1,0 +1,29 @@
+{
+  "@id": "{{id}}",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/view.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@type": [
+    "SparqlView",
+    "View"
+  ],
+  "resourceSchemas": [
+    "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+  ],
+  "resourceTypes": [
+    "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
+  ],
+  "resourceTag": "one",
+  "includeDeprecated": true,
+  "includeMetadata": false,
+  "_incoming": "{{resources}}/incoming",
+  "_outgoing": "{{resources}}/outgoing",
+  "_self": "{{resources}}",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+  "_project": "{{project-parent}}",
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_rev": 1,
+  "_deprecated": false
+}

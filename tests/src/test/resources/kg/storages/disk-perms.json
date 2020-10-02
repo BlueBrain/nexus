@@ -1,0 +1,8 @@
+{
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/mystorage2",
+  "@type": "DiskStorage",
+  "volume": "/tmp",
+  "default": false,
+  "readPermission": "disk/read",
+  "writePermission": "disk/write"
+}

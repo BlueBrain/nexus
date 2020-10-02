@@ -1,0 +1,6 @@
+{
+  "@context": "{{error-context}}",
+  "code": "IllegalPayload",
+  "message": "Invalid 'prefixMappings' object",
+  "details": "The 'prefixMappings' values cannot be overridden but just new values can be appended."
+}

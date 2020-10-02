@@ -1,0 +1,25 @@
+{
+  "@context": {
+    "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "activity": "http://www.w3.org/ns/prov#activity",
+    "description": "http://schema.org/description",
+    "name": "http://schema.org/name",
+    "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+    "prov": "http://www.w3.org/ns/prov#",
+    "sweep": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/sweep"
+  },
+  "@id": "local_e3ff4689-1065-4bda-8e9c-2534ba57be87",
+  "@type": [
+    "prov:Generation",
+    "nsg:TraceGeneration"
+  ],
+  "name": "Trace Generation",
+  "sweep": 46,
+  "activity": {
+    "@id": "local_e8691e3c-adb1-443c-9850-a8472d76629f",
+    "@type": [
+      "nsg:StimulusExperiment",
+      "prov:Activity"
+    ]
+  }
+}

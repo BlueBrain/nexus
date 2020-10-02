@@ -1,0 +1,26 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@id": "{{deltaUri}}/resources/{{projId}}/_/logo.png",
+  "@type": "File",
+  "_storage": {
+    "@id": "nxv:mys3storage2",
+    "_rev": 1
+  },
+  "_bytes": 29625,
+  "_digest": {
+    "_value": "05bf442810213b9e5fecd5242eefeff1f3d207913861c96658c75ccf58997e87",
+    "_algorithm": "SHA-256"
+  },
+  "_filename": "logo.png",
+  "_location": "{{endpointBucket}}/{{key}}",
+  "_mediaType": "image/png",
+  "_incoming": "{{deltaUri}}/files/{{projId}}/attachment:logo.png/incoming",
+  "_outgoing": "{{deltaUri}}/files/{{projId}}/attachment:logo.png/outgoing",
+  "_self": "{{deltaUri}}/files/{{projId}}/attachment:logo.png",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/file.json",
+  "_project": "{{deltaUri}}/projects/{{projId}}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+}

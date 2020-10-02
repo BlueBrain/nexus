@@ -1,0 +1,137 @@
+{
+  "@type": ["Beta","CompositeView"],
+  "sources": [
+    {
+      "@id": "https://music.example.com/sources/local",
+      "@type": "ProjectEventStream"
+    },
+    {
+      "@id": "https://music.example.com/sources/albums",
+      "@type": "CrossProjectEventStream",
+      "project": "{{org}}/albums",
+      "identities": {
+        "realm": "{{realm}}",
+        "subject": "{{user}}"
+      }
+    },
+    {
+      "@id": "https://music.example.com/sources/songs",
+      "@type": "RemoteProjectEventStream",
+      "project": "{{org2}}/songs",
+      "endpoint": "{{remoteEndpoint}}",
+      "token": "{{token}}"
+    }
+  ],
+  "projections": [
+    {
+      "@id": "https://music.example.com/bands",
+      "@type": "ElasticSearchProjection",
+      "mapping": {
+        "properties": {
+          "@type": {
+            "type": "keyword",
+            "copy_to": "_all_fields"
+          },
+          "@id": {
+            "type": "keyword",
+            "copy_to": "_all_fields"
+          },
+          "name": {
+            "type": "keyword",
+            "copy_to": "_all_fields"
+          },
+          "genre": {
+            "type": "keyword",
+            "copy_to": "_all_fields"
+          },
+          "album": {
+            "type": "nested",
+            "properties": {
+              "title": {
+                "type": "keyword",
+                "copy_to": "_all_fields"
+              },
+              "released": {
+                "type": "date",
+                "copy_to": "_all_fields"
+              },
+              "song": {
+                "type": "nested",
+                "properties": {
+                  "title": {
+                    "type": "keyword",
+                    "copy_to": "_all_fields"
+                  },
+                  "number": {
+                    "type": "long",
+                    "copy_to": "_all_fields"
+                  },
+                  "length": {
+                    "type": "long",
+                    "copy_to": "_all_fields"
+                  }
+                }
+              }
+            }
+          },
+          "_all_fields": {
+            "type": "text"
+          }
+        },
+        "dynamic": false
+      },
+      "query": "prefix music: <https://music.example.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}   music:name       ?bandName ; music:genre      ?bandGenre ; music:album      ?albumId . ?albumId        music:released   ?albumReleaseDate ; music:song       ?songId . ?songId         music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } WHERE { {resource_id}   music:name       ?bandName ; music:genre      ?bandGenre . OPTIONAL { {resource_id} ^music:by        ?albumId . ?albumId        music:released   ?albumReleaseDate . OPTIONAL {?albumId         ^music:on        ?songId . ?songId          music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } } } ORDER BY(?songNumber)",
+      "context": {
+        "@base": "https://music.example.com/",
+        "@vocab": "https://music.example.com/"
+      },
+      "resourceTypes": [
+        "https://music.example.com/Band"
+      ]
+    },
+    {
+      "@id": "https://music.example.com/albums",
+      "@type": "ElasticSearchProjection",
+      "mapping": {
+        "properties": {
+          "@type": {
+            "type": "keyword",
+            "copy_to": "_all_fields"
+          },
+          "@id": {
+            "type": "keyword",
+            "copy_to": "_all_fields"
+          },
+          "name": {
+            "type": "keyword",
+            "copy_to": "_all_fields"
+          },
+          "length": {
+            "type": "long",
+            "copy_to": "_all_fields"
+          },
+          "numberOfSongs": {
+            "type": "long",
+            "copy_to": "_all_fields"
+          },
+          "_all_fields": {
+            "type": "text"
+          }
+        },
+        "dynamic": false
+      },
+      "query": "prefix music: <https://music.example.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(?songLength) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }",
+      "context": {
+        "@base": "https://music.example.com/",
+        "@vocab": "https://music.example.com/"
+      },
+      "resourceTypes": [
+        "https://music.example.com/Album"
+      ]
+    }
+  ],
+  "rebuildStrategy": {
+    "@type": "Interval",
+    "value": "30 seconds"
+  }
+}

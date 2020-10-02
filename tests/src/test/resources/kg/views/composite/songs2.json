@@ -1,0 +1,38 @@
+[
+  {
+    "@id": "https://music.example.com/black_holes_and_revelations/3",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Supermassive Black Hole",
+    "length": 209,
+    "number": 3,
+    "on": "black_holes_and_revelations"
+  },
+  {
+    "@id": "https://music.example.com/blood_sugar_sex_magic/3",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Breaking the Girl",
+    "length": 295,
+    "number": 3,
+    "on": "blood_sugar_sex_magic"
+  },
+  {
+    "@id": "https://music.example.com/californication/4",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Otherside",
+    "length": 255,
+    "number": 4,
+    "on": "californication"
+  },
+  {
+    "@id": "https://music.example.com/absolution/3",
+    "@context": "https://music.example.com/context",
+    "@type": "Song",
+    "title": "Sing for Absolution",
+    "length": 294,
+    "number": 3,
+    "on": "absolution"
+  }
+]

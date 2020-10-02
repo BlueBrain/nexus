@@ -1,0 +1,6 @@
+{
+  "@type": "Subtract",
+  "permissions": [
+    "{{{perms}}}"
+  ]
+}

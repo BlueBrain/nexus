@@ -1,0 +1,14 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/iam.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "{{deltaUri}}/realms/{{label}}",
+  "@type": "Realm",
+  "logo": "http://nexus.example.com/logo-updated.png",
+  "name": "Nexus Test Updated",
+  "openIdConfig": "{{realm}}/.well-known/openid-configuration",
+  "_label": "{{label}}",
+  "_rev": {{rev}},
+  "_deprecated": true
+}

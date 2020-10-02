@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/storage.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "{{id}}",
+  "@type": [
+    "Storage",
+    "DiskStorage"
+  ],
+  "default": false,
+  "maxFileSize" : {{maxFileSize}},
+  "volume": "/tmp",
+  "readPermission": "{{read}}",
+  "writePermission": "{{write}}",
+  "_algorithm": "SHA-256",
+  "_incoming": "{{deltaUri}}/storages/{{project}}/{{id}}/incoming",
+  "_outgoing": "{{deltaUri}}/storages/{{project}}/{{id}}/outgoing",
+  "_self": "{{deltaUri}}/storages/{{project}}/{{id}}",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storage.json",
+  "_project": "{{deltaUri}}/projects/{{project}}",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+}

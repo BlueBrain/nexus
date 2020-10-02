@@ -1,0 +1,6 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "InvalidResourceFormat",
+  "reason" : "Resource 'https://bluebrain.github.io/nexus/vocabulary/mystorage' has an invalid format.",
+  "details" : "Volume '{{volume}}' does not exist."
+}

@@ -1,0 +1,29 @@
+{
+  "head": {
+    "vars": [
+      "s"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "s": {
+          "type": "uri",
+          "value": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/03e9025f-35ab-42ca-ac4a-5da2701b93f3"
+        }
+      },
+      {
+        "s": {
+          "type": "uri",
+          "value": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/048bf2a9-c3e4-4401-bb1e-61f5fcacb85b"
+        }
+      },
+      {
+        "s": {
+          "type": "uri",
+          "value": "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/04e5f081-26fb-49ea-9d38-da7ef49d9e9f"
+        }
+      }
+    ]
+  }
+}

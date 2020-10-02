@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/Storage",
+        "https://bluebrain.github.io/nexus/vocabulary/DiskStorage"
+      ],
+      "_incoming": "{{deltaUri}}/storages/{{project-label}}/defaultStorage/incoming",
+      "_outgoing": "{{deltaUri}}/storages/{{project-label}}/defaultStorage/outgoing",
+      "_self": "{{deltaUri}}/storages/{{project-label}}/defaultStorage",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storage.json",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    }
+  ]
+}

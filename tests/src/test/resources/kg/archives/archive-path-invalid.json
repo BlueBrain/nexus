@@ -1,0 +1,6 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "InvalidResourceFormat",
+  "details" : "'path' field does not have the right format.",
+  "reason" : "Resource 'https://dev.nexus.test.com/simplified-resource/1' has an invalid format."
+}

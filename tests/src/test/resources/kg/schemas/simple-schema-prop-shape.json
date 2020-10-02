@@ -1,0 +1,18 @@
+{
+  "@context": {
+    "this": "https://dev.nexus.test.com/test-schema-prop-shape/shapes/",
+    "other": "https://some.other.prefix.com/"
+  },
+  "@id": "https://dev.nexus.test.com/test-schema-prop-shape",
+  "shapes": [
+    {
+      "@id": "this:myshape",
+      "@type": "sh:PropertyShape",
+      "path": "other:projects",
+      "name": "Project UID",
+      "description": "The project UUID",
+      "datatype": "xsd:string",
+      "minCount": 1
+    }
+  ]
+}

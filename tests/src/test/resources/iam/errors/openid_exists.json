@@ -1,0 +1,7 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "RealmOpenIdConfigAlreadyExists",
+  "label": "{{label}}",
+  "openIdConfig": "http://dev.nexus.ocp.bbp.epfl.ch/auth/realms/nexus-internal/.well-known/openid-configuration",
+  "reason": "Realm '{{label}}' with openIdConfig 'http://dev.nexus.ocp.bbp.epfl.ch/auth/realms/nexus-internal/.well-known/openid-configuration' already exists."
+}

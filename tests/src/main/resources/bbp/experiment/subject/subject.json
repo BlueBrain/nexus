@@ -1,0 +1,43 @@
+{
+    "@context": {
+        "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+        "age": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/age",
+        "label": "http://www.w3.org/2000/01/rdf-schema#label",
+        "name": "http://schema.org/name",
+        "nsg": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/",
+        "period": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/period",
+        "prov": "http://www.w3.org/ns/prov#",
+        "providerId": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/providerId",
+        "sex": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/sex",
+        "species": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/species",
+        "strain": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/strain",
+        "unitText": "http://schema.org/unitCode",
+        "value": "http://schema.org/value"
+    },
+    "@id": "local_8be74106-3c0c-4f55-adf6-5e03a9274086",
+    "@type": [
+        "prov:Entity",
+        "nsg:Subject"
+    ],
+    "age": {
+        "period": "Post-natal",
+        "value": {
+            "unitText": "days",
+            "value": "{{subject_age}}"
+        }
+    },
+    "name": "{{subject_name}}",
+    "providerId": "{{subject_providerId}}",
+    "sex": {
+        "@id": "http://www.FIXME.org/sex_ontology/0000002",
+        "label": "Female"
+    },
+    "species": {
+        "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+        "label": "Rattus norvegicus"
+    },
+    "strain": {
+        "@id": "http://www.FIXME.org/taxonomy_ontology/0000008",
+        "label": "Wistar Han"
+    }
+}

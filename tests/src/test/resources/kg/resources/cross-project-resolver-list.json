@@ -1,0 +1,41 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 2,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultInProject",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/Resolver",
+        "https://bluebrain.github.io/nexus/vocabulary/InProject"
+      ],
+      "_incoming": "{{deltaUri}}/resolvers/{{projId}}/defaultResolver/incoming",
+      "_outgoing": "{{deltaUri}}/resolvers/{{projId}}/defaultResolver/outgoing",
+      "_self": "{{deltaUri}}/resolvers/{{projId}}/defaultResolver",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver.json",
+      "_project": "{{project}}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    },
+    {
+      "@id": "http://example.com/id",
+      "@type": [
+        "https://bluebrain.github.io/nexus/vocabulary/CrossProject",
+        "https://bluebrain.github.io/nexus/vocabulary/Resolver"
+      ],
+      "_incoming": "{{deltaUri}}/resolvers/{{projId}}/http%3A%2F%2Fexample.com%2Fid/incoming",
+      "_outgoing": "{{deltaUri}}/resolvers/{{projId}}/http%3A%2F%2Fexample.com%2Fid/outgoing",
+      "_self": "{{deltaUri}}/resolvers/{{projId}}/http%3A%2F%2Fexample.com%2Fid",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolver.json",
+      "_project": "{{project}}",
+      "_rev": 2,
+      "_deprecated": false,
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "@context": "https://dev.nexus.test.com/simplified-resource/mycontext",
+  "@id": "myid",
+  "@type": "http://example.com/type"
+}

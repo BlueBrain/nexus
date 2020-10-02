@@ -1,0 +1,15 @@
+{
+  "@type": "Append",
+  "acl": [
+    {
+      "identity": {
+        "@type": "Group",
+        "realm": "{{realm}}",
+        "group": "{{group}}"
+      },
+      "permissions": [
+        "{{{perms}}}"
+      ]
+    }
+  ]
+}

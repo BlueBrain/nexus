@@ -1,0 +1,24 @@
+{
+  "@context": [
+    {
+      "other": "https://some.other.prefix.com/"
+    },
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "https://dev.nexus.test.com/simplified-resource/1",
+  "@type": "nxv:TestResource",
+  "other:projects": [
+    "testProject2",
+    "testProject"
+  ],
+  "other:priority": {{priority}},
+  "_incoming": "{{resources}}/test-schema/test-resource:1/incoming",
+  "_outgoing": "{{resources}}/test-schema/test-resource:1/outgoing",
+  "_self" : "{{resources}}/test-schema/test-resource:1",
+  "_project" : "{{project}}",
+  "_constrainedBy": "https://dev.nexus.test.com/test-schema",
+  "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_rev": {{rev}},
+  "_deprecated": false
+}
