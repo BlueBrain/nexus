@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 
 class PermissionsImplSpec extends AbstractDBSpec("permissions-test.conf") with PermissionsBehaviours {
 
-  private def eventLog: Task[EventLog[Envelope[PermissionsEvent, Sequence]]] =
+  private def eventLog: Task[EventLog[Sequence, Envelope[PermissionsEvent, Sequence]]] =
     EventLog.jdbcEventLog {
       case ee @ EventEnvelope(offset: Sequence, persistenceId, sequenceNr, value: PermissionsEvent) =>
         UIO.pure(Some(Envelope(value, offset, persistenceId, sequenceNr, ee.timestamp)))

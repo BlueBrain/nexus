@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.dummies
+package ch.epfl.bluebrain.nexus.delta.sdk.mocks
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -11,7 +11,7 @@ import monix.bio.{IO, Task, UIO}
   *
  * @param expected the expected result of fetching all the permissions
   */
-class PermissionsDummy(expected: PermissionsResource) extends Permissions {
+class PermissionsMock(expected: PermissionsResource) extends Permissions {
   // format: off
   override type Offset = Nothing
   override def persistenceId: String                                                                            = ???

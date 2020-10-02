@@ -20,7 +20,7 @@ import monix.bio.{IO, Task, UIO}
 final class PermissionsImpl[O <: Offset] private (
     override val minimum: Set[Permission],
     agg: PermissionsAggregate,
-    eventLog: EventLog[Envelope[PermissionsEvent, O]],
+    eventLog: EventLog[O, Envelope[PermissionsEvent, O]],
     base: BaseUri
 ) extends Permissions {
 
@@ -155,7 +155,7 @@ object PermissionsImpl {
   final def apply[O <: Offset](
       minimum: Set[Permission],
       agg: PermissionsAggregate,
-      eventLog: EventLog[Envelope[PermissionsEvent, O]],
+      eventLog: EventLog[O, Envelope[PermissionsEvent, O]],
       base: BaseUri
   ): Permissions.WithOffset[O] =
     new PermissionsImpl[O](minimum, agg, eventLog, base)
@@ -173,7 +173,7 @@ object PermissionsImpl {
       minimum: Set[Permission],
       base: BaseUri,
       aggregateConfig: AggregateConfig,
-      eventLog: EventLog[Envelope[PermissionsEvent, O]]
+      eventLog: EventLog[O, Envelope[PermissionsEvent, O]]
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions.WithOffset[O]] =
     aggregate(minimum, aggregateConfig).map { agg =>
       apply(minimum, agg, eventLog, base)

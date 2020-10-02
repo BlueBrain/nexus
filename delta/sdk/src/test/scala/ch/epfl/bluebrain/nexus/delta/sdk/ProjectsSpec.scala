@@ -6,7 +6,7 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.dummies.OrganizationsDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.mocks.OrganizationsMock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{Current => OrgCurrent}
@@ -49,7 +49,7 @@ class ProjectsSpec
     val current       = Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, am, base.value, vocab.value, epoch, Anonymous, epoch, Anonymous)
     // format: on
     val subject                = User("myuser", label)
-    val orgs                   = new OrganizationsDummy(Map(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value))
+    val orgs                   = new OrganizationsMock(Map(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value))
 
     "evaluating an incoming command" should {
 

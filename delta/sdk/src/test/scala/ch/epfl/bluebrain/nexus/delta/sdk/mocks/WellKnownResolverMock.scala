@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.dummies
+package ch.epfl.bluebrain.nexus.delta.sdk.mocks
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.WellKnownResolver
@@ -9,7 +9,7 @@ import monix.bio.IO
 /**
   * Dummy implementation of [[WellKnownResolver]] passing the expected results in a map
   */
-class WellKnownResolverDummy(expected: Map[Uri, WellKnown]) extends WellKnownResolver {
+class WellKnownResolverMock(expected: Map[Uri, WellKnown]) extends WellKnownResolver {
 
   override def apply(uri: Uri): IO[RealmRejection, WellKnown] =
     expected.get(uri) match {
