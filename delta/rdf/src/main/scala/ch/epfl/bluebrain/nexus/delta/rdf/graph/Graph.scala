@@ -138,7 +138,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       context: Json = Json.obj()
   )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, Dot] =
     for {
-      resolvedCtx <- api.context(context, ContextFields.Include)
+      resolvedCtx <- JsonLdContext(context)
       ctx          = dotContext(rootResource, resolvedCtx)
       string      <- tryOrConversionErr(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
     } yield Dot(string, rootNode)
@@ -149,13 +149,13 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
     *
     * Note: This is done in two steps, first transforming the graph to JSON-LD expanded format and then compacting it.
     */
-  def toCompactedJsonLd[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
+  def toCompactedJsonLd(context: Json)(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, CompactedJsonLd[Ctx]] =
+  ): IO[RdfError, CompactedJsonLd] =
     if (rootNode.isIri) {
-      api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, context, rootNode, f))
+      api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, context, rootNode))
     } else {
       // A new model is created where the rootNode is a fake Iri.
       // This is done in order to be able to perform the framing, since framing won't work on blank nodes.
@@ -164,7 +164,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       val newModel = replace(rootNode, fakeId).model
       for {
         expanded  <- api.fromRdf(newModel)
-        framed    <- JsonLd.frame(expanded.asJson, context, fakeId, f)
+        framed    <- JsonLd.frame(expanded.asJson, context, fakeId)
         fakeIdJson = fakeId.asJson
       } yield framed.copy(obj = framed.obj.filter { case (_, v) => v != fakeIdJson }, rootId = self.rootNode)
     }
@@ -179,7 +179,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
-    toCompactedJsonLd(Json.obj(), ContextFields.Skip).flatMap(_.toExpanded)
+    toCompactedJsonLd(Json.obj()).flatMap(_.toExpanded)
 
   private def copy(model: Model): Model =
     ModelFactory.createDefaultModel().add(model)
@@ -190,7 +190,6 @@ object Graph {
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.
     *
-    * @param root   the root Iri or blank node for the Graph
     * @param expanded the expanded JSON-LD input to transform into a Graph
     */
   final def apply(expanded: ExpandedJsonLd)(implicit

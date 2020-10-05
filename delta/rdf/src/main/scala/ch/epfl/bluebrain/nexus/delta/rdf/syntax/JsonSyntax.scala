@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonKeyOrdering, JsonUtils}
 import io.circe.{ACursor, Decoder, Encoder, Json}
 
@@ -40,12 +40,12 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * @return the value of the top @context key when found, an empty Json otherwise
     */
-  def topContextValueOrEmpty: Json = JsonLdContext.topContextValueOrEmpty(json)
+  def topContextValueOrEmpty: ContextValue = JsonLdContext.topContextValueOrEmpty(json)
 
   /**
     * @return the all the values with key @context
     */
-  def contextValues: Set[Json] = JsonLdContext.contextValues(json)
+  def contextValues: Set[ContextValue] = JsonLdContext.contextValues(json)
 
   /**
     * Merges the values of the key @context in both existing ''json'' and ''that'' Json documents.
@@ -60,14 +60,6 @@ final class JsonOps(private val json: Json) extends AnyVal {
     * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.
     */
   def addContext(iri: Iri): Json = JsonLdContext.addContext(json, iri)
-
-  /**
-    * Merge two context value objects.
-    * If a key is repeated in both jsons, the one in ''that'' will override the current one.
-    *
-    * @param that the value of the @context key
-    */
-  def merge(that: Json): Json = JsonLdContext.merge(json, that)
 
   /**
     * Removes the provided keys from the top object on the current json.

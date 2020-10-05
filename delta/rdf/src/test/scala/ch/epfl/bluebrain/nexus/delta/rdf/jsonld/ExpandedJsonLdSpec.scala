@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RootIriNotFound, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RootIriNotFound, UnexpectedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextFields
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import io.circe.Json
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -15,7 +13,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
   "An expanded Json-LD" should {
     val compacted        = jsonContentOf("compacted.json")
-    val context          = Json.obj(keywords.context -> compacted.topContextValueOrEmpty)
+    val context          = compacted.topContextValueOrEmpty.contextObj
     val expectedExpanded = jsonContentOf("expanded.json")
 
     "be constructed successfully" in {
@@ -129,7 +127,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be converted to compacted form" in {
       val expanded = JsonLd.expand(compacted).accepted
-      val result   = expanded.toCompacted(context, ContextFields.Skip).accepted
+      val result   = expanded.toCompacted(context).accepted
       result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
     }
 
@@ -138,7 +136,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val compacted = json"""{"@type": "Person", "name": "Me"}""".addContext(context)
 
       val expanded = JsonLd.expand(compacted, Some(bNode)).accepted
-      val result   = expanded.toCompacted(context, ContextFields.Skip).accepted
+      val result   = expanded.toCompacted(context).accepted
       result.rootId shouldEqual bNode
       result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
     }

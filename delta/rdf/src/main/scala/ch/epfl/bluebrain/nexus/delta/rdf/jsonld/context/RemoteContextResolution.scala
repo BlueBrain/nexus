@@ -23,9 +23,9 @@ trait RemoteContextResolution {
     * @return a Map where the keys are the IRIs resolved and the values the @context value
     *         from the payload of the resolved wrapped in an IO
     */
-  final def apply(json: Json): Result[Map[Iri, Json]] = {
+  final def apply(json: Json): Result[Map[Iri, ContextValue]] = {
 
-    def inner(ctx: Set[Json], resolved: Map[Iri, Json] = Map.empty): Result[Map[Iri, Json]] = {
+    def inner(ctx: Set[ContextValue], resolved: Map[Iri, ContextValue] = Map.empty): Result[Map[Iri, ContextValue]] = {
       val uris: Set[Iri] = ctx.flatMap(remoteIRIs)
       for {
         _               <- IO.fromEither(uris.find(resolved.keySet.contains).toLeft(uris).leftMap(RemoteContextCircularDependency))
@@ -39,8 +39,8 @@ trait RemoteContextResolution {
     inner(json.contextValues)
   }
 
-  private def remoteIRIs(ctxValue: Json): Set[Iri] =
-    (ctxValue.asArray, ctxValue.as[Iri].toOption) match {
+  private def remoteIRIs(ctxValue: ContextValue): Set[Iri] =
+    (ctxValue.value.asArray, ctxValue.value.as[Iri].toOption) match {
       case (Some(arr), _)    => arr.foldLeft(Set.empty[Iri]) { case (acc, c) => acc ++ c.as[Iri].toOption }
       case (_, Some(remote)) => Set(remote)
       case _                 => Set.empty[Iri]

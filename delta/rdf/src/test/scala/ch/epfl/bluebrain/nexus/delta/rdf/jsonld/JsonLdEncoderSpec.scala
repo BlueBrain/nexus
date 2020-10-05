@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.{Permissions, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RawJsonLdContext
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import org.scalatest.Inspectors
@@ -27,7 +26,7 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
       implicit val remoteResolution: RemoteContextResolutionDummy =
         RemoteContextResolutionDummy(contexts.permissions -> permissionsContext)
-      val mergedCtx                                               = RawJsonLdContext(permissionsContext.topContextValueOrEmpty)
+      val mergedCtx                                               = permissionsContext.topContextValueOrEmpty
 
       val compacted         = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
       val expanded          =
@@ -76,7 +75,7 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
     "dealing with a ResourceF of Permissions" should {
 
       val resourceContext               = json"""{ "@context": {"@vocab": "${nxv.base}"} }"""
-      val mergedCtx                     = RawJsonLdContext(permissionsContext.addContext(resourceContext).topContextValueOrEmpty)
+      val mergedCtx                     = permissionsContext.addContext(resourceContext).topContextValueOrEmpty
       val value: ResourceF[Permissions] = ResourceF(iri, 1L, deprecated = false, Instant.EPOCH, permissions)
       val compacted                     = jsonContentOf("encoder/compacted.json")
       val expanded                      = jsonContentOf("encoder/expanded.json")

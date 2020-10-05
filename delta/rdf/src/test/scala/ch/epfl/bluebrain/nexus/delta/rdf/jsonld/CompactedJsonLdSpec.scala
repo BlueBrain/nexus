@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, RawJsonLdContext}
 import io.circe.JsonObject
 import io.circe.syntax._
 import org.scalatest.Inspectors
@@ -24,44 +24,32 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     val rootBNode             = BNode.random
 
     "be constructed successfully" in {
-      forAll(List(ContextFields.Skip, ContextFields.Include)) { f =>
-        val compacted = JsonLd.compact(expanded, context, iri, f).accepted
-        compacted.json.removeKeys(keywords.context) shouldEqual expectedCompacted.removeKeys(keywords.context)
-        compacted.ctx.value shouldEqual context.topContextValueOrEmpty
-        compacted.rootId shouldEqual iri
-      }
+      val compacted = JsonLd.compact(expanded, context, iri).accepted
+      compacted.json.removeKeys(keywords.context) shouldEqual expectedCompacted.removeKeys(keywords.context)
+      compacted.ctx shouldEqual context.topContextValueOrEmpty
+      compacted.rootId shouldEqual iri
     }
 
     "be constructed successfully with a root blank node" in {
-      val compacted = JsonLd.compact(expandedNoId, context, rootBNode, ContextFields.Skip).accepted
+      val compacted = JsonLd.compact(expandedNoId, context, rootBNode).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual expectedCompactedNoId.removeKeys(keywords.context)
       compacted.rootId shouldEqual rootBNode
     }
 
-    "be constructed successfully with remote contexts" in {
-      val context = jsonContentOf("/jsonld/compacted/context-with-remotes.json")
-      forAll(List(ContextFields.Skip, ContextFields.Include)) { f =>
-        val compacted = JsonLd.compact(expanded, context, iri, f).accepted
-        compacted.json.removeKeys(keywords.context) shouldEqual expectedCompacted.removeKeys(keywords.context)
-        compacted.ctx.value shouldEqual context.topContextValueOrEmpty
-        compacted.rootId shouldEqual iri
-      }
-    }
-
     "fail to find the root Iri from a multi-root json" in {
       val input = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
-      JsonLd.compact(input, context, iri, ContextFields.Skip).rejectedWith[UnexpectedJsonLd]
+      JsonLd.compact(input, context, iri).rejectedWith[UnexpectedJsonLd]
     }
 
     "be constructed successfully from a multi-root json when using framing" in {
       val input     = jsonContentOf("/jsonld/compacted/input-multiple-roots.json")
-      val compacted = JsonLd.frame(input, context, iri, ContextFields.Skip).accepted
+      val compacted = JsonLd.frame(input, context, iri).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual json"""{"id": "john-doé", "@type": "Person"}"""
     }
 
     "add literals" in {
       val compacted =
-        CompactedJsonLd(JsonObject("@id" -> iri.asJson), RawJsonLdContext(context), iri, ContextFields.Skip)
+        CompactedJsonLd(JsonObject("@id" -> iri.asJson), ContextValue(context), iri)
       val result    = compacted.add("tags", "first").add("tags", 2).add("tags", 30L).add("tags", false)
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "tags": [ "first", 2, 30, false ]}"""
     }
@@ -69,65 +57,42 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     "add @type Iri to existing @type" in {
       val (person, hero) = (schema.Person, schema + "Hero")
       val obj            = json"""{"@id": "$iri", "@type": "$person"}""".asObject.value
-      val compacted      = CompactedJsonLd(obj, RawJsonLdContext(context), iri, ContextFields.Skip)
+      val compacted      = CompactedJsonLd(obj, ContextValue(context), iri)
       val result         = compacted.addType(hero)
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": ["$person", "$hero"]}"""
     }
 
     "add @type Iri" in {
       val obj       = json"""{"@id": "$iri"}""".asObject.value
-      val compacted = CompactedJsonLd(obj, RawJsonLdContext(context), iri, ContextFields.Skip)
+      val compacted = CompactedJsonLd(obj, ContextValue(context), iri)
       val result    = compacted.addType(schema.Person)
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": "${schema.Person}"}"""
     }
 
-    "get @context fields" in {
-      val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Include).accepted
-      compacted.base.value shouldEqual base.value
-      compacted.vocab.value shouldEqual vocab.value
-      compacted.aliases shouldEqual
-        Map(
-          "Person"     -> schema.Person,
-          "Person2"    -> schema.Person,
-          "deprecated" -> (schema + "deprecated"),
-          "customid"   -> (vocab + "customid")
-        )
-      compacted.prefixMappings shouldEqual Map("schema" -> schema.base, "xsd" -> xsd.base, "xsd2" -> xsd.base)
-    }
-
     "return self when attempted to convert again to compacted form with same values" in {
-      val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Include).accepted
-      compacted.toCompacted(context, ContextFields.Include).accepted should be theSameInstanceAs compacted
-    }
-
-    "recompute context when attempted to convert again to compacted form with different ContextFields" in {
-      val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Include).accepted
-      val result    = compacted.toCompacted(context, ContextFields.Skip).accepted
-      result.obj should be theSameInstanceAs compacted.obj
-      result.rootId should be theSameInstanceAs compacted.rootId
-      result.ctxFields shouldEqual ContextFields.Skip
-      result.ctx.value should be theSameInstanceAs compacted.ctx.value
+      val compacted = JsonLd.compact(expanded, context, iri).accepted
+      compacted.toCompacted(context).accepted should be theSameInstanceAs compacted
     }
 
     "recompute compacted form when attempted to convert again to compacted form with different @context" in {
-      val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Include).accepted
+      val compacted = JsonLd.compact(expanded, context, iri).accepted
       val context2  = context deepMerge json"""{"@context": {"other-something": {"@type": "@id"}}}"""
-      val result    = compacted.toCompacted(context2, ContextFields.Skip).accepted
+      val result    = compacted.toCompacted(context2).accepted
       result.json.removeKeys(keywords.context) shouldEqual compacted.json.removeKeys(keywords.context)
     }
 
     "be converted to expanded form" in {
-      val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Skip).accepted
+      val compacted = JsonLd.compact(expanded, context, iri).accepted
       compacted.toExpanded.accepted shouldEqual JsonLd.expandedUnsafe(expanded, iri)
     }
 
     "be converted to expanded form with a root blank node" in {
-      val compacted = JsonLd.compact(expandedNoId, context, rootBNode, ContextFields.Skip).accepted
+      val compacted = JsonLd.compact(expandedNoId, context, rootBNode).accepted
       compacted.toExpanded.accepted shouldEqual JsonLd.expandedUnsafe(expandedNoId, rootBNode)
     }
 
     "be converted to graph" in {
-      val compacted = JsonLd.compact(expanded, context, iri, ContextFields.Skip).accepted
+      val compacted = JsonLd.compact(expanded, context, iri).accepted
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
@@ -135,7 +100,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     }
 
     "be converted to graph with a root blank node" in {
-      val compacted = JsonLd.compact(expandedNoId, context, rootBNode, ContextFields.Skip).accepted
+      val compacted = JsonLd.compact(expandedNoId, context, rootBNode).accepted
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graph.rootNode shouldEqual rootBNode
