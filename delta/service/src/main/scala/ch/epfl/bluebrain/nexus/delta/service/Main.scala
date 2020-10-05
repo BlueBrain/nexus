@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy
 import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginConfig, PluginLoader}
-import com.typesafe.config.ConfigFactory
 import izumi.distage.model.definition.ModuleDef
 import monix.execution.Scheduler.Implicits.global
 
@@ -20,7 +19,7 @@ import scala.util.{Failure, Success}
 object Main {
   def main(args: Array[String]): Unit = {
 
-    implicit val as = ActorSystem("main", ConfigFactory.load("akka.conf"))
+    implicit val as = ActorSystem()
 
     val perms = PermissionsDummy(Set(Permission.unsafe("test")))
 
