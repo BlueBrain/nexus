@@ -4,7 +4,6 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.mocks.WellKnownResolverMock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -22,6 +21,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class RealmsSpec
     extends AnyWordSpecLike
     with Matchers
+    with TestHelpers
     with EitherValuable
     with Inspectors
     with IOFixedClock
@@ -47,7 +47,11 @@ class RealmsSpec
     val keys: Set[Json]        = Set(json"""{ "k": "v" }""")
     val wk                     = WellKnown(issuer, gt, keys, authUri, tokenUri, uiUri, None, Some(endUri))
     val wk2                    = WellKnown(issuer, gt, keys, authUri, token2Uri, ui2Uri, None, Some(endUri))
-    val wkResolution           = new WellKnownResolverMock(Map(wellKnownUri -> wk, wellKnown2Uri -> wk2))
+    val wkResolution           = ioFromMap(
+      Map(wellKnownUri -> wk, wellKnown2Uri -> wk2),
+      (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
+    )
+
     // format: off
     val current                = Current(label, 1L, deprecated = false, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, Anonymous, epoch, Anonymous)
     // format: on

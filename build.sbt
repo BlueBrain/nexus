@@ -418,6 +418,7 @@ lazy val service = project
   .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
+      nimbusJoseJwt,
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,

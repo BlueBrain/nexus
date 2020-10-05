@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.testkit
 
 import io.circe.Json
 import io.circe.parser.parse
+import monix.bio.IO
 import org.fusesource.scalate.TemplateEngine
 
 import scala.annotation.tailrec
@@ -46,6 +47,9 @@ trait TestHelpers {
     )
     Source.fromInputStream(is)(codec).mkString
   }
+
+  final def ioFromMap[A, B, C](map: Map[A, B], ifAbsent: A => C): A => IO[C, B] =
+    (a : A) => IO.fromOption(map.get(a), ifAbsent(a))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of

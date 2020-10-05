@@ -5,9 +5,9 @@ import java.time.Instant
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, Realm, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -49,7 +49,12 @@ class RealmsDummySpec
   val gitlabWk                 = WellKnown(gitlab.value, gt, glKeys, glOpenId, s"$glBase/token", s"$glBase/userinfo", None, None)
   // format: on
 
-  val dummy = RealmsDummy(Map(ghOpenId -> githubWk, glOpenId -> gitlabWk)).accepted
+  val dummy = RealmsDummy(
+    ioFromMap(
+      Map(ghOpenId -> githubWk, glOpenId -> gitlabWk),
+      (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
+    )
+  ).accepted
 
   def resourceFor(
       openIdConfig: Uri,

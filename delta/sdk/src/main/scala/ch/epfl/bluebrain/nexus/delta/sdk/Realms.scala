@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmCommand, RealmEvent, RealmRejection, RealmState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -115,7 +115,7 @@ object Realms {
     }
   }
 
-  private[delta] def evaluate(wellKnown: WellKnownResolver)(state: RealmState, cmd: RealmCommand)(implicit
+  private[delta] def evaluate(wellKnown: Uri => IO[RealmRejection, WellKnown])(state: RealmState, cmd: RealmCommand)(implicit
       clock: Clock[UIO] = IO.clock
   ): IO[RealmRejection, RealmEvent] = {
     // format: off
