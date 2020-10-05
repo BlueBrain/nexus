@@ -36,7 +36,18 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
               }
           }
       }
-
     }
 
+  /**
+    * Finds the resource with the given name. Returns the resource from the plugin's classpath, if exists
+    * Otherwise, uses parent classloader to load the resource
+    *
+    * @param name the name of the resource.
+    * @return the URL to the resource, [[null]] if the resource was not found.
+    */
+  override def getResource(name: String): URL =
+    Option(findResource(name)) match {
+      case Some(res) => res
+      case None      => super.getResource(name)
+    }
 }
