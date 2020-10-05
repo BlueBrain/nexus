@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import io.circe.Json
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -15,16 +14,12 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
     val context = jsonContentOf("context.json")
     val api     = implicitly[JsonLdApi]
 
-    "be constructed successfully skipping fields inspection" in {
-      api.context(context, ContextFields.Skip).accepted shouldBe a[RawJsonLdContext]
-    }
-
-    "be constructed successfully including fields inspection" in {
-      api.context(context, ContextFields.Include).accepted shouldBe a[ExtendedJsonLdContext]
+    "be constructed successfully" in {
+      api.context(context).accepted shouldBe a[JsonLdContext]
     }
 
     "get fields" in {
-      val result = api.context(context, ContextFields.Include).accepted
+      val result = api.context(context).accepted
       result.value shouldEqual context.topContextValueOrEmpty
       result.base.value shouldEqual base.value
       result.vocab.value shouldEqual vocab.value
@@ -46,31 +41,31 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
     }
 
     "compact an iri to its short form using an alias" in {
-      val result = api.context(context, ContextFields.Include).accepted
+      val result = api.context(context).accepted
       result.alias(schema.Person).value shouldEqual "Person"
       result.alias(schema.age) shouldEqual None
     }
 
     "compact an iri to a CURIE using a prefix mappings" in {
-      val result = api.context(context, ContextFields.Include).accepted
+      val result = api.context(context).accepted
       result.curie(schema.age).value shouldEqual "schema:age"
       result.curie(rdf.tpe) shouldEqual None
     }
 
     "compact an iri to its short form using the vocab" in {
-      val result = api.context(context, ContextFields.Include).accepted
+      val result = api.context(context).accepted
       result.compactVocab(vocab + "name").value shouldEqual "name"
       result.compactVocab(schema.age) shouldEqual None
     }
 
     "compact an iri to its short form using the base" in {
-      val result = api.context(context, ContextFields.Include).accepted
+      val result = api.context(context).accepted
       result.compactBase(base + "name").value shouldEqual "name"
       result.compactBase(schema.age) shouldEqual None
     }
 
     "compact an iri using aliases, vocab and prefix mappings" in {
-      val result = api.context(context, ContextFields.Include).accepted
+      val result = api.context(context).accepted
       val list   = List(
         vocab + "name" -> "name",
         schema.Person  -> "Person",
@@ -84,7 +79,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
     }
 
     "compact an iri using aliases, base and prefix mappings" in {
-      val result = api.context(context, ContextFields.Include).accepted
+      val result = api.context(context).accepted
       val list   = List(
         base + "name" -> "name",
         schema.Person -> "Person",
@@ -97,74 +92,47 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
       }
     }
 
-    "add simple alias with ContextFields.Include" in {
+    "add simple alias" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Include).accepted
-      result.addAlias("age", schema.age) shouldEqual ExtendedJsonLdContext(
-        value = json"""{"@base": "${base.value}", "age": "${schema.age}"}""",
+      val result  = api.context(context).accepted
+      result.addAlias("age", schema.age) shouldEqual JsonLdContext(
+        value = ContextValue(json"""{"@base": "${base.value}", "age": "${schema.age}"}"""),
         base = Some(base.value),
         aliases = Map("age" -> schema.age)
       )
     }
 
-    "add simple alias with ContextFields.Skip" in {
+    "add alias with dataType" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Skip).accepted
-      result.addAlias("age", schema.age) shouldEqual
-        RawJsonLdContext(json"""{"@base": "${base.value}", "age": "${schema.age}"}""")
-    }
-
-    "add alias with dataType and ContextFields.Include" in {
-      val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Include).accepted
-      result.addAlias("age", schema.age, xsd.integer) shouldEqual ExtendedJsonLdContext(
-        value = json"""{"@base": "${base.value}", "age": {"@type": "${xsd.integer}", "@id": "${schema.age}"}}""",
-        base = Some(base.value),
-        aliases = Map("age" -> schema.age)
-      )
-    }
-
-    "add alias with dataType and ContextFields.Skip" in {
-      val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Skip).accepted
-      result.addAlias("age", schema.age, xsd.integer) shouldEqual
-        RawJsonLdContext(
+      val result  = api.context(context).accepted
+      result.addAlias("age", schema.age, xsd.integer) shouldEqual JsonLdContext(
+        value = ContextValue(
           json"""{"@base": "${base.value}", "age": {"@type": "${xsd.integer}", "@id": "${schema.age}"}}"""
-        )
+        ),
+        base = Some(base.value),
+        aliases = Map("age" -> schema.age)
+      )
     }
 
-    "add alias with @type @id and ContextFields.Include" in {
+    "add alias with @type @id" in {
       val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Include).accepted
-      result.addAliasIdType("unit", schema.unitText) shouldEqual ExtendedJsonLdContext(
-        value = json"""{"@base": "${base.value}", "unit": {"@type": "@id", "@id": "${schema.unitText}"}}""",
+      val result  = api.context(context).accepted
+      result.addAliasIdType("unit", schema.unitText) shouldEqual JsonLdContext(
+        value =
+          ContextValue(json"""{"@base": "${base.value}", "unit": {"@type": "@id", "@id": "${schema.unitText}"}}"""),
         base = Some(base.value),
         aliases = Map("unit" -> schema.unitText)
       )
     }
 
-    "add alias with @type @id and ContextFields.Skip" in {
-      val context = json"""{"@context": {"@base": "${base.value}"} }"""
-      val result  = api.context(context, ContextFields.Skip).accepted
-      result.addAliasIdType("unit", schema.unitText) shouldEqual
-        RawJsonLdContext(json"""{"@base": "${base.value}", "unit": {"@type": "@id", "@id": "${schema.unitText}"}}""")
-    }
-
-    "add prefixMapping with ContextFields.Include" in {
+    "add prefixMapping" in {
       val context = json"""{"@context": [{"@base": "${base.value}"}] }"""
-      val result  = api.context(context, ContextFields.Include).accepted
-      result.addPrefix("xsd", xsd.base) shouldEqual ExtendedJsonLdContext(
-        value = json"""[{"@base": "${base.value}"}, {"xsd": "${xsd.base}"}]""",
+      val result  = api.context(context).accepted
+      result.addPrefix("xsd", xsd.base) shouldEqual JsonLdContext(
+        value = ContextValue(json"""[{"@base": "${base.value}"}, {"xsd": "${xsd.base}"}]"""),
         base = Some(base.value),
         prefixMappings = Map("xsd" -> xsd.base)
       )
-    }
-
-    "add prefixMapping with ContextFields.Skip" in {
-      val context = json"""{"@context": [{"@base": "${base.value}"}] }"""
-      val result  = api.context(context, ContextFields.Skip).accepted
-      result.addPrefix("xsd", xsd.base) shouldEqual
-        RawJsonLdContext(json"""[{"@base": "${base.value}"}, {"xsd": "${xsd.base}"}]""")
     }
 
     "add remote contexts Iri" in {
@@ -219,12 +187,6 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
       val json1 = context1Array deepMerge json"""{"@id": "$iri", "age": 30}"""
       json1.addContext(context2) shouldEqual expected.deepMerge(json"""{"@id": "$iri", "age": 30}""")
-    }
-
-    "fetch the @context value" in {
-      json"""[{"@context": {"@base": "${base.value}"}, "@id": "$iri", "age": 30}]""".topContextValueOrEmpty shouldEqual json"""{"@base": "${base.value}"}"""
-      json"""{"@context": {"@base": "${base.value}"}, "@id": "$iri", "age": 30}""".topContextValueOrEmpty shouldEqual json"""{"@base": "${base.value}"}"""
-      json"""{"@id": "$iri", "age": 30}""".topContextValueOrEmpty shouldEqual Json.obj()
     }
 
   }

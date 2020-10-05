@@ -4,10 +4,9 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, RootIriNotFound, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.CompactedJsonLdWithRawContext
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RawJsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.syntax._
@@ -77,11 +76,11 @@ trait JsonLd extends Product with Serializable {
     * @param context the context to use in order to compact the current JsonLd.
     *                E.g.: {"@context": {...}}
     */
-  def toCompacted[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
+  def toCompacted(context: Json)(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd[Ctx]]
+  ): IO[RdfError, CompactedJsonLd]
 
   def toExpanded(implicit
       opts: JsonLdOptions,
@@ -106,10 +105,10 @@ object JsonLd {
     */
   final def compactedUnsafe(
       compacted: JsonObject,
-      contextValue: RawJsonLdContext,
+      contextValue: ContextValue,
       rootId: IriOrBNode
-  ): CompactedJsonLdWithRawContext =
-    CompactedJsonLd(compacted, contextValue, rootId, ContextFields.Skip)
+  ): CompactedJsonLd =
+    CompactedJsonLd(compacted, contextValue, rootId)
 
   /**
     * Creates an [[ExpandedJsonLd]] unsafely.
@@ -163,21 +162,19 @@ object JsonLd {
     * This method does NOT verify the passed ''rootId'' is present in the compacted form. It just verifies the compacted
     * form has the expected format (a Json Object without a top @graph only key)
     */
-  final def compact[Ctx <: JsonLdContext](
+  final def compact(
       input: Json,
       context: Json,
-      rootId: IriOrBNode,
-      f: ContextFields[Ctx]
+      rootId: IriOrBNode
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, CompactedJsonLd[Ctx]] =
+  ): IO[RdfError, CompactedJsonLd] =
     for {
-      compactedWithCtx <- api.compact(input, context, f)
-      (compacted, ctx)  = compactedWithCtx
-      _                <- topGraphErr(compacted)
-    } yield CompactedJsonLd(compacted, ctx, rootId, f)
+      compacted <- api.compact(input, context)
+      _         <- topGraphErr(compacted)
+    } yield CompactedJsonLd(compacted, context.topContextValueOrEmpty, rootId)
 
   /**
     * Create compacted JSON-LD document using the passed ''input'' and ''context''.
@@ -186,23 +183,21 @@ object JsonLd {
     *
     * The ''rootId'' is enforced using a framing on it.
     */
-  final def frame[Ctx <: JsonLdContext](
+  final def frame(
       input: Json,
       context: Json,
-      rootId: IriOrBNode,
-      f: ContextFields[Ctx]
+      rootId: IriOrBNode
   )(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
-  ): IO[RdfError, CompactedJsonLd[Ctx]] = {
+  ): IO[RdfError, CompactedJsonLd] = {
     val jsonId = rootId.asIri.fold(Json.obj())(rootIri => Json.obj(keywords.id -> rootIri.asJson))
     val frame  = context.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
     for {
-      compactedWithCtx <- api.frame(input, frame, f)
-      (compacted, ctx)  = compactedWithCtx
-      _                <- topGraphErr(compacted)
-    } yield CompactedJsonLd(compacted, ctx, rootId, f)
+      compacted <- api.frame(input, frame)
+      _         <- topGraphErr(compacted)
+    } yield CompactedJsonLd(compacted, context.topContextValueOrEmpty, rootId)
   }
 
   private def topGraphErr(obj: JsonObject): IO[RdfError, Unit] =

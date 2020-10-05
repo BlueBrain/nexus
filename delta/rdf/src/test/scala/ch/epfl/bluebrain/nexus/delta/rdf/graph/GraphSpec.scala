@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextFields
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -123,7 +122,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be converted to compacted JSON-LD" in {
       val context   = jsonContentOf("context.json")
       val compacted = jsonContentOf("graph/compacted.json")
-      graph.toCompactedJsonLd(context, ContextFields.Skip).accepted.json shouldEqual compacted
+      graph.toCompactedJsonLd(context).accepted.json shouldEqual compacted
     }
 
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.
@@ -131,7 +130,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be converted to compacted JSON-LD with a root blank node" in {
       val context   = jsonContentOf("context.json")
       val compacted = jsonContentOf("graph/compacted.json").removeAll("id" -> "john-doé")
-      graphNoId.toCompactedJsonLd(context, ContextFields.Skip).accepted.json shouldEqual compacted
+      graphNoId.toCompactedJsonLd(context).accepted.json shouldEqual compacted
     }
   }
 }

@@ -53,8 +53,8 @@ trait DeltaDirectives {
       successStatus: => StatusCode
   )(implicit cr: RemoteContextResolution): Directive1[IO[RdfError, (StatusCode, JsonLd)]] =
     jsonLdFormat.map {
-      case JsonLdFormat.Compacted => io.flatMap(_.toCompactedJsonLd).map(v => successStatus -> v)
-      case JsonLdFormat.Expanded  => io.flatMap(_.toExpandedJsonLd).map(v => successStatus -> v)
+      case JsonLdFormat.Compacted => io.flatMap(_.toCompactedJsonLd).map[(StatusCode, JsonLd)](successStatus -> _)
+      case JsonLdFormat.Expanded  => io.flatMap(_.toExpandedJsonLd).map[(StatusCode, JsonLd)](successStatus -> _)
     }
 
   /**
@@ -74,13 +74,13 @@ trait DeltaDirectives {
     jsonLdFormat.map {
       case JsonLdFormat.Compacted =>
         io.attempt.flatMap {
-          case Left(err)    => err.toCompactedJsonLd.map(v => (err.status, err.headers, v))
-          case Right(value) => value.toCompactedJsonLd.map(v => (successStatus, successHeaders, v))
+          case Left(err)    => err.toCompactedJsonLd.map(v => (err.status, err.headers, v: JsonLd))
+          case Right(value) => value.toCompactedJsonLd.map(v => (successStatus, successHeaders, v: JsonLd))
         }
       case JsonLdFormat.Expanded  =>
         io.attempt.flatMap {
-          case Left(err)    => err.toExpandedJsonLd.map(v => (err.status, err.headers, v))
-          case Right(value) => value.toExpandedJsonLd.map(v => (successStatus, successHeaders, v))
+          case Left(err)    => err.toExpandedJsonLd.map(v => (err.status, err.headers, v: JsonLd))
+          case Right(value) => value.toExpandedJsonLd.map(v => (successStatus, successHeaders, v: JsonLd))
         }
     }
 

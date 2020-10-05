@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, RawJsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.Encoder
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
@@ -19,24 +19,24 @@ trait JsonLdEncoder[A] {
   def apply(value: A): IO[RdfError, JsonLd]
 
   /**
-    * The default [[RawJsonLdContext]] used when compacting
+    * The default [[ContextValue]] used when compacting
     */
-  def defaultContext: RawJsonLdContext
+  def defaultContext: ContextValue
 
   /**
     * Converts a value of type ''A'' to [[CompactedJsonLd]] format.
     *
     * @param value    the value to be converted into a JSON-LD compacted document
-    * @param context  the context to use. If not provided, ''contextValue'' will be used
+    * @param context  the context value to use. If not provided, ''defaultContext'' will be used
     */
-  def compact(value: A, context: RawJsonLdContext = defaultContext)(implicit
+  def compact(value: A, context: ContextValue = defaultContext)(implicit
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd[RawJsonLdContext]] =
+  ): IO[RdfError, CompactedJsonLd] =
     for {
       jsonld    <- apply(value)
-      compacted <- jsonld.toCompacted(context.contextObj, ContextFields.Skip)
+      compacted <- jsonld.toCompacted(context.contextObj)
     } yield compacted
 
   /**
@@ -58,9 +58,9 @@ trait JsonLdEncoder[A] {
     * Converts a value of type ''A'' to [[Dot]] format.
     *
     * @param value    the value to be converted to Dot format
-    * @param context  the context to use. If not provided, ''contextValue'' will be used
+    * @param context  the context value to use. If not provided, ''defaultContext'' will be used
     */
-  def dot(value: A, context: RawJsonLdContext = defaultContext)(implicit
+  def dot(value: A, context: ContextValue = defaultContext)(implicit
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
@@ -98,7 +98,7 @@ object JsonLdEncoder {
     * @param iriContext the Iri context
     */
   def compactFromCirce[A: Encoder.AsObject](id: IriOrBNode, iriContext: Iri): JsonLdEncoder[A] =
-    compactFromCirce((_: A) => id, RawJsonLdContext(iriContext.asJson))
+    compactFromCirce((_: A) => id, ContextValue(iriContext))
 
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
@@ -107,7 +107,7 @@ object JsonLdEncoder {
     * @param iriContext the Iri context
     */
   def compactFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, iriContext: Iri): JsonLdEncoder[A] =
-    compactFromCirce(fId, RawJsonLdContext(iriContext.asJson))
+    compactFromCirce(fId, ContextValue(iriContext))
 
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
@@ -115,12 +115,12 @@ object JsonLdEncoder {
     * @param fId     the function to obtain the rootId
     * @param context the context
     */
-  def compactFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, context: RawJsonLdContext): JsonLdEncoder[A] =
+  def compactFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, context: ContextValue): JsonLdEncoder[A] =
     new JsonLdEncoder[A] {
       override def apply(value: A): IO[RdfError, JsonLd] =
         JsonLd.compactedUnsafe(value.asJsonObject, defaultContext, fId(value)).pure[UIO]
 
-      override val defaultContext: RawJsonLdContext = context
+      override val defaultContext: ContextValue = context
     }
 
   /**
@@ -145,21 +145,18 @@ object JsonLdEncoder {
       def apply(value: C): IO[RdfError, JsonLd] = {
         val (a, b, rootId) = f(value)
         val jsonLdResult   = (A.apply(a), B.apply(b)).mapN {
-          case (ExpandedJsonLd(aObj, _), ExpandedJsonLd(bObj, _)) =>
+          case (ExpandedJsonLd(aObj, _), ExpandedJsonLd(bObj, _))               =>
             Some(ExpandedJsonLd(bObj.deepMerge(aObj), rootId))
 
-          case (
-                CompactedJsonLd(aObj, aCtx @ RawJsonLdContext(_), _, _),
-                CompactedJsonLd(bObj, bCtx @ RawJsonLdContext(_), _, _)
-              ) =>
-            Some(CompactedJsonLd(aObj.deepMerge(bObj), aCtx.merge(bCtx), rootId, ContextFields.Skip))
+          case (CompactedJsonLd(aObj, aCtx, _), CompactedJsonLd(bObj, bCtx, _)) =>
+            Some(CompactedJsonLd(aObj.deepMerge(bObj), aCtx.merge(bCtx), rootId))
 
-          case _                                                  => None
+          case _                                                                => None
         }
         jsonLdResult
           .flatMap(IO.fromOption(_, UnexpectedJsonLd("Both JsonLdEncoders must produce the same JsonLd output format")))
       }
 
-      val defaultContext: RawJsonLdContext = A.defaultContext merge B.defaultContext
+      val defaultContext: ContextValue = A.defaultContext merge B.defaultContext
     }
 }

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextFields, JsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
@@ -18,7 +18,8 @@ import monix.bio.IO
   */
 final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrBNode) extends JsonLd { self =>
 
-  type This                = ExpandedJsonLd
+  override type This = ExpandedJsonLd
+
   protected type Predicate = Iri
 
   private lazy val hc = obj.asJson.hcursor
@@ -76,12 +77,12 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
   def types: List[Iri] =
     hc.get[List[Iri]](keywords.tpe).getOrElse(List.empty)
 
-  def toCompacted[Ctx <: JsonLdContext](context: Json, f: ContextFields[Ctx])(implicit
+  def toCompacted(context: Json)(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd[Ctx]] =
-    JsonLd.compact(json, context, rootId, f)
+  ): IO[RdfError, CompactedJsonLd] =
+    JsonLd.compact(json, context, rootId)
 
   override def toExpanded(implicit
       opts: JsonLdOptions,

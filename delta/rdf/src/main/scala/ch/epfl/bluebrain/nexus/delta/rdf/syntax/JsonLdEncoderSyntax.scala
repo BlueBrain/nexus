@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 import ch.epfl.bluebrain.nexus.delta.rdf._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{RawJsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLdEncoder}
 import monix.bio.IO
 
@@ -21,18 +21,18 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd[RawJsonLdContext]] =
+  ): IO[RdfError, CompactedJsonLd] =
     encoder.compact(value)
 
   /**
     * Converts a value of type ''A'' to [[CompactedJsonLd]] format using the provided ''context'' value.
     */
-  def toCompactedJsonLd(context: RawJsonLdContext)(implicit
+  def toCompactedJsonLd(context: ContextValue)(implicit
       encoder: JsonLdEncoder[A],
       options: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd[RawJsonLdContext]] = encoder.compact(value, context)
+  ): IO[RdfError, CompactedJsonLd] = encoder.compact(value, context)
 
   /**
     * Converts a value of type ''A'' to [[ExpandedJsonLd]] format.
@@ -57,7 +57,7 @@ final class JsonLdEncoderOpts[A](private val value: A) extends AnyVal {
   /**
     * Converts a value of type ''A'' to [[Dot]] format using the provided ''context'' value.
     */
-  def toDot(context: RawJsonLdContext)(implicit
+  def toDot(context: ContextValue)(implicit
       encoder: JsonLdEncoder[A],
       options: JsonLdOptions,
       api: JsonLdApi,

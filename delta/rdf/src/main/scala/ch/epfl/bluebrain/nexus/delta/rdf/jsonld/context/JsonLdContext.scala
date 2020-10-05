@@ -1,39 +1,91 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.Json
 import io.circe.syntax._
+import monix.bio.IO
 
-trait JsonLdContext extends Product with Serializable {
-  type This >: this.type <: JsonLdContext
+/**
+  * A Json-LD context with its relevant fields.
+  *
+  * @param value          the value of the @context key
+  * @param base           the Iri value of the @base key if present
+  * @param vocab          the Iri value of the @vocab key if present
+  * @param aliases        the @context aliases used to compact or shorten keys/values
+  * @param prefixMappings the @context prefix mappings used to form CURIES
+  */
+final case class JsonLdContext(
+    value: ContextValue,
+    base: Option[Iri] = None,
+    vocab: Option[Iri] = None,
+    aliases: Map[String, Iri] = Map.empty,
+    prefixMappings: Map[String, Iri] = Map.empty
+) {
+
+  /**
+    * The inverse of the aliases. When a same Iri has multiple prefixes, the first alphabetically is chosen
+    */
+  lazy val aliasesInv: Map[Iri, String] = aliases.foldLeft(Map.empty[Iri, String]) {
+    case (acc, (prefix, iri)) => acc.updatedWith(iri)(_.fold(Some(prefix))(cur => Some(min(cur, prefix))))
+  }
+
+  /**
+    * The inverse of the prefix mappings. When a same Iri has multiple prefixes, the first alphabetically is chosen
+    */
+  lazy val prefixMappingsInv: Map[Iri, String] = prefixMappings.foldLeft(Map.empty[Iri, String]) {
+    case (acc, (prefix, iri)) => acc.updatedWith(iri)(_.fold(Some(prefix))(cur => Some(min(cur, prefix))))
+  }
+
+  /**
+    * Attempts to construct a short form alias from the passed ''iri'' using the aliases.
+    */
+  def alias(iri: Iri): Option[String] =
+    aliasesInv.get(iri)
+
+  /**
+    * Attempts to construct a CURIE from the passed ''iri'' using the prefixMappings.
+    */
+  def curie(iri: Iri): Option[String] =
+    prefixMappingsInv.collectFirst {
+      case (iriPm, prefix) if iri.startsWith(iriPm) => s"$prefix:${iri.stripPrefix(iriPm)}"
+    }
+
+  /**
+    * Attempts to shorten the passed ''iri'' when it starts with the ''vocab''
+    */
+  def compactVocab(iri: Iri): Option[String] =
+    vocab.collect { case v if iri.startsWith(v) => iri.stripPrefix(v) }
+
+  /**
+    * Attempts to shorten the passed ''iri'' when it starts with the ''base''
+    */
+  def compactBase(iri: Iri): Option[String]  =
+    base.collect { case b if iri.startsWith(b) => iri.stripPrefix(b) }
+
+  /**
+    * Compact the ''passed'' iri:
+    * 1. Attempt compacting using the aliases
+    * 2. Attempt compacting using the vocab or base
+    * 3. Attempt compacting using the prefix mappings to create a CURIE
+    */
+  def compact(iri: Iri, useVocab: Boolean): String = {
+    lazy val compactedVocabOrBase = if (useVocab) compactVocab(iri) else compactBase(iri)
+    alias(iri).orElse(compactedVocabOrBase).orElse(curie(iri)).getOrElse(iri.toString)
+  }
 
   /**
     * @return true if the current context value is empty, false otherwise
     */
-  def isEmpty: Boolean =
-    value == Json.obj() || value == Json.arr() || value == Json.fromString("")
-
-  /**
-    * Combines the current [[This]] context with a passed [[This]] context.
-    * If a key inside the @context is repeated in both contexts, the one in ''that'' will override the current one.
-    *
-    * @param that another context to be merged with the current
-    * @return the merged context
-    */
-  def merge(that: This): This
-
-  /**
-    * The value inside the key @context. It must be a Json Array or a Json Object
-    */
-  def value: Json
+  def isEmpty: Boolean = value.isEmpty
 
   /**
     * The context object. E.g.: {"@context": {...}}
     */
-  def contextObj: Json =
-    Json.obj(keywords.context -> value)
+  def contextObj: Json = value.contextObj
 
   /**
     * Add a prefix mapping to the current context.
@@ -41,7 +93,24 @@ trait JsonLdContext extends Product with Serializable {
     * @param prefix the prefix that can be used to create curies
     * @param iri    the iri which replaces the ''prefix'' when expanding JSON-LD
     */
-  def addPrefix(prefix: String, iri: Iri): This
+  def addPrefix(prefix: String, iri: Iri): JsonLdContext =
+    copy(value = add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))
+
+  /**
+    * Combines the current [[JsonLdContext]] context with a passed [[JsonLdContext]] context.
+    * If a keys are is repeated in both contexts, the one in ''that'' will override the current one.
+    *
+   * @param that another context to be merged with the current
+    * @return the merged context
+    */
+  def merge(that: JsonLdContext): JsonLdContext          =
+    JsonLdContext(
+      value.merge(that.value),
+      that.base.orElse(base),
+      that.vocab.orElse(vocab),
+      aliases ++ that.aliases,
+      prefixMappings ++ that.prefixMappings
+    )
 
   /**
     * Add an alias to the current context.
@@ -49,7 +118,7 @@ trait JsonLdContext extends Product with Serializable {
     * @param prefix the prefix which replces the ''iri'' when compacting JSON-LD
     * @param iri    the iri which replaces the ''prefix'' when expanding JSON-LD
     */
-  def addAlias(prefix: String, iri: Iri): This =
+  def addAlias(prefix: String, iri: Iri): JsonLdContext =
     addAlias(prefix, iri, None)
 
   /**
@@ -59,7 +128,7 @@ trait JsonLdContext extends Product with Serializable {
     * @param iri     the iri which replaces the ''prefix'' when expanding JSON-LD
     * @param dataType the @type Iri value
     */
-  def addAlias(prefix: String, iri: Iri, dataType: Iri): This =
+  def addAlias(prefix: String, iri: Iri, dataType: Iri): JsonLdContext =
     addAlias(prefix, iri, Some(dataType.toString))
 
   /**
@@ -68,20 +137,33 @@ trait JsonLdContext extends Product with Serializable {
     * @param prefix  the prefix which replces the ''iri'' when compacting JSON-LD
     * @param iri     the iri which replaces the ''prefix'' when expanding JSON-LD
     */
-  def addAliasIdType(prefix: String, iri: Iri): This =
+  def addAliasIdType(prefix: String, iri: Iri): JsonLdContext =
     addAlias(prefix, iri, Some(keywords.id))
 
-  protected def addAlias(prefix: String, iri: Iri, dataType: Option[String]): This
+  private def addAlias(prefix: String, iri: Iri, dataType: Option[String]): JsonLdContext =
+    copy(
+      value = add(prefix, dataType.fold(iri.asJson)(dt => expandedTermDefinition(dt, iri))),
+      aliases = aliases + (prefix -> iri)
+    )
 
-  protected def add(key: String, v: Json): Json                    =
-    value.arrayOrObject(Json.obj(key -> v), arr => (arr :+ Json.obj(key -> v)).asJson, _.add(key, v).asJson)
+  private def add(key: String, v: Json): ContextValue =
+    ContextValue(
+      value.value.arrayOrObject(Json.obj(key -> v), arr => (arr :+ Json.obj(key -> v)).asJson, _.add(key, v).asJson)
+    )
 
-  protected def expandedTermDefinition(dt: String, iri: Iri): Json =
+  private def expandedTermDefinition(dt: String, iri: Iri): Json =
     Json.obj(keywords.tpe -> dt.asJson, keywords.id -> iri.asJson)
 
+  private def min(a: String, b: String): String                  =
+    if (a.compareTo(b) > 0) b else a
 }
 
 object JsonLdContext {
+
+  /**
+    * An empty [[JsonLdContext]] with no fields
+    */
+  val empty: JsonLdContext = JsonLdContext(ContextValue.empty)
 
   object keywords {
     val context = "@context"
@@ -94,22 +176,34 @@ object JsonLdContext {
   }
 
   /**
+    * Construct a [[JsonLdContext]] from the passed ''context'' using the JsonLd api
+    */
+  def apply(
+      context: Json
+  )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, JsonLdContext] =
+    api.context(context)
+
+  /**
     * @return the value of the top @context key when found, an empty Json otherwise
     */
-  def topContextValueOrEmpty(json: Json): Json =
-    json
-      .arrayOrObject(
-        None,
-        arr => arr.singleEntryOr(Json.obj()).flatMap(_.asObject).flatMap(_(keywords.context)),
-        obj => obj(keywords.context)
-      )
-      .getOrElse(Json.obj())
+  def topContextValueOrEmpty(json: Json): ContextValue =
+    ContextValue(
+      json
+        .arrayOrObject(
+          None,
+          arr => arr.singleEntryOr(Json.obj()).flatMap(_.asObject).flatMap(_(keywords.context)),
+          obj => obj(keywords.context)
+        )
+        .getOrElse(Json.obj())
+    )
 
   /**
     * @return the all the values with key @context
     */
-  def contextValues(json: Json): Set[Json] =
-    json.extractValuesFrom(keywords.context)
+  def contextValues(json: Json): Set[ContextValue] =
+    json.extractValuesFrom(keywords.context).map { ctxValue =>
+      topContextValueOrEmpty(Json.obj(keywords.context -> ctxValue))
+    }
 
   /**
     * Merges the values of the key @context in both passed ''json'' and ''that'' Json documents.
@@ -120,7 +214,7 @@ object JsonLdContext {
     *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
   def addContext(json: Json, that: Json): Json =
-    json deepMerge Json.obj(keywords.context -> merge(topContextValueOrEmpty(json), topContextValueOrEmpty(that)))
+    json deepMerge topContextValueOrEmpty(json).merge(topContextValueOrEmpty(that)).contextObj
 
   /**
     * Adds a context Iri to an existing @context, or creates an @context with the Iri as a value.
@@ -150,28 +244,4 @@ object JsonLdContext {
       case None      => json
     }
   }
-
-  /**
-    * Merge two context value objects.
-    * If a key inside is repeated in both passed jsons, the one in ''that'' will override the one in ''json''
-    *
-    * @param json the value of the @context key
-    * @param that the value of the @context key
-    */
-  def merge(json: Json, that: Json): Json =
-    (json.asArray, that.asArray, json.asString, that.asString) match {
-      case (Some(arr), Some(thatArr), _, _) => arrOrObj(removeEmpty(arr ++ thatArr))
-      case (_, Some(thatArr), _, _)         => arrOrObj(removeEmpty(json +: thatArr))
-      case (Some(arr), _, _, _)             => arrOrObj(removeEmpty(arr :+ that))
-      case (_, _, Some(str), Some(thatStr)) => arrOrObj(removeEmpty(Seq(str.asJson, thatStr.asJson)))
-      case (_, _, Some(str), _)             => arrOrObj(removeEmpty(Seq(str.asJson, that)))
-      case (_, _, _, Some(thatStr))         => arrOrObj(removeEmpty(Seq(json, thatStr.asJson)))
-      case _                                => json deepMerge that
-    }
-
-  private def removeEmpty(arr: Seq[Json]): Seq[Json] =
-    arr.filter(j => j != Json.obj() && j != Json.fromString("") && j != Json.arr())
-
-  private def arrOrObj(arr: Seq[Json]): Json =
-    arr.singleEntryOr(Json.obj()).getOrElse(Json.fromValues(arr))
 }

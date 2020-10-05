@@ -18,19 +18,18 @@ import monix.bio.IO
   * The addition operations do not guarantee the proper compaction of those fields, neither guarantee the addition of
   * any necessary information into the context. This task is left to the developer to explicitly update the context
   */
-final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
+final case class CompactedJsonLd private[jsonld] (
     obj: JsonObject,
-    ctx: Ctx,
-    rootId: IriOrBNode,
-    ctxFields: ContextFields[Ctx]
+    ctx: ContextValue,
+    rootId: IriOrBNode
 ) extends JsonLd { self =>
 
-  type This                = CompactedJsonLd[Ctx]
+  override type This = CompactedJsonLd
+
   protected type Predicate = String
 
-  lazy val json: Json                  =
-    if (ctx.isEmpty) obj.asJson
-    else obj.asJson.addContext(Json.obj(keywords.context -> ctx.value))
+  lazy val json: Json =
+    obj.asJson.addContext(ctx.contextObj)
 
   def add(key: String, iri: Iri): This =
     add(key, iri.asJson)
@@ -53,35 +52,13 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
   def add(key: String, literal: Double): This =
     add(key, literal.asJson)
 
-  def base(implicit ev: Ctx =:= ExtendedJsonLdContext): Option[Iri] =
-    ctx.base
-
-  def vocab(implicit ev: Ctx =:= ExtendedJsonLdContext): Option[Iri] =
-    ctx.vocab
-
-  def aliases(implicit ev: Ctx =:= ExtendedJsonLdContext): Map[String, Iri] =
-    ctx.aliases
-
-  def prefixMappings(implicit ev: Ctx =:= ExtendedJsonLdContext): Map[String, Iri] =
-    ctx.prefixMappings
-
-  @SuppressWarnings(Array("ComparingUnrelatedTypes"))
-  def toCompacted[C <: JsonLdContext](context: Json, f: ContextFields[C])(implicit
+  def toCompacted(context: Json)(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd[C]] = {
-    lazy val ctxValue = context.topContextValueOrEmpty
-    if (ctxValue == ctx.value) {
-      if (f == self.ctxFields)
-        IO.pure(self.asInstanceOf[CompactedJsonLd[C]])
-      else if (ctxFields == ContextFields.Include && f == ContextFields.Skip)
-        IO.pure(self.copy(ctx = RawJsonLdContext(ctx.value).asInstanceOf[C], ctxFields = f))
-      else
-        api.context(Json.obj(keywords.context -> ctx.value), f).map(ctx => self.copy(ctx = ctx, ctxFields = f))
-    } else
-      JsonLd.compact(json, context, rootId, f)
-  }
+  ): IO[RdfError, CompactedJsonLd] =
+    if (context.topContextValueOrEmpty == ctx) IO.pure(self)
+    else JsonLd.compact(json, context, rootId)
 
   override def toExpanded(implicit
       opts: JsonLdOptions,
@@ -110,9 +87,4 @@ final case class CompactedJsonLd[Ctx <: JsonLdContext] private[jsonld] (
     copy(obj = newObj)
   }
 
-}
-
-object CompactedJsonLd {
-  type CompactedJsonLdWithRawContext      = CompactedJsonLd[RawJsonLdContext]
-  type CompactedJsonLdWithExtendedContext = CompactedJsonLd[ExtendedJsonLdContext]
 }
