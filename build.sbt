@@ -337,7 +337,7 @@ lazy val sourcing = project
 
 lazy val testPlugin = project
   .in(file("delta/test-plugin"))
-  .dependsOn(sdk % "provided", testkit % "test->compile")
+  .dependsOn(sdk % "provided", testkit % "provided")
   .settings(shared, compilation)
   .settings(
     name       := "delta-test-plugin",
@@ -421,6 +421,7 @@ lazy val service = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
+  .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
       akkaSlf4j        % Test,

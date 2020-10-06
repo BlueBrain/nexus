@@ -1,6 +1,6 @@
-package ch.epfl.bluebrain.delta.testplugin
+package ch.epfl.bluebrain.nexus.delta.testplugin
 
-import ch.epfl.bluebrain.delta.testplugin.TestPluginDef.pluginInfo
+import TestPluginDef.pluginInfo
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef, PluginInfo}
 import izumi.distage.model.Locator

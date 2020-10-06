@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.delta.testplugin
+package ch.epfl.bluebrain.nexus.delta.testplugin
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
