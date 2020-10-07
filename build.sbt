@@ -426,6 +426,7 @@ lazy val service = project
     libraryDependencies ++= Seq(
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
       h2               % Test,
       logback          % Test,
       scalaTest        % Test

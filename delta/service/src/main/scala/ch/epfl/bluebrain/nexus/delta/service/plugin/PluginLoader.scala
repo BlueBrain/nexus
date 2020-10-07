@@ -5,6 +5,7 @@ import java.io.{File, FilenameFilter}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{MultiplePluginDefClassesFound, PluginDefClassNotFound, PluginInitializationError}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
+import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginLoader.PluginLoaderConfig
 import distage.{Injector, Roots}
 import io.github.classgraph.ClassGraph
 import izumi.distage.model.definition.ModuleDef
@@ -12,7 +13,7 @@ import monix.bio.{IO, Task}
 
 import scala.jdk.CollectionConverters._
 
-class PluginLoader(pluginConfig: PluginConfig) {
+class PluginLoader(loaderConfig: PluginLoaderConfig) {
 
   private def loadPluginDef(jar: File): IO[PluginError, PluginDef] = {
     val pluginClassLoader = new PluginClassLoader(jar.toURI.toURL, this.getClass.getClassLoader)
@@ -43,7 +44,7 @@ class PluginLoader(pluginConfig: PluginConfig) {
     */
   def loadAndStartPlugins(serviceModule: ModuleDef): IO[PluginError, List[Plugin]] = {
 
-    val pluginJars = pluginConfig.pluginDir match {
+    val pluginJars = loaderConfig.pluginDir match {
       case None      => List.empty
       case Some(dir) =>
         val pluginDir = new File(dir)
@@ -72,4 +73,9 @@ class PluginLoader(pluginConfig: PluginConfig) {
 
 }
 
-case class PluginConfig(pluginDir: Option[String])
+object PluginLoader {
+
+  def apply(loaderConfig: PluginLoaderConfig): PluginLoader = new PluginLoader(loaderConfig)
+
+  final case class PluginLoaderConfig(pluginDir: Option[String])
+}
