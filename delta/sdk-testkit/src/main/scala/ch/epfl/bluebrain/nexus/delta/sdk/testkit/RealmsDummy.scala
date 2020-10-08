@@ -125,7 +125,9 @@ object RealmsDummy {
     *
     * @param resolveWellKnown the well known configuration for an OIDC provider resolver
     */
-  final def apply(resolveWellKnown: Uri => IO[RealmRejection, WellKnown])(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
+  final def apply(
+      resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
+  )(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
     for {
       journalRef <- IORef.of[RealmsJournal](Map.empty)
       cacheRef   <- IORef.of[RealmsCache](Map.empty)

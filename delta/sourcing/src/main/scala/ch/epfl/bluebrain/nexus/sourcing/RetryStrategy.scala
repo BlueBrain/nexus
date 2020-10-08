@@ -53,43 +53,43 @@ sealed trait RetryStrategyConfig extends Product with Serializable {
 }
 
 object RetryStrategyConfig {
+
   /**
-   * Fails without retry
-   */
+    * Fails without retry
+    */
   case object AlwaysGiveUp extends RetryStrategyConfig {
     override def toPolicy: RetryPolicy[Task] = alwaysGiveUp[Task]
   }
 
   /**
-   * Retry at a constant interval
-   * @param constant the interval before a retry will be attempted
-   * @param maxRetries the maximum number of retries
-   */
+    * Retry at a constant interval
+    * @param constant the interval before a retry will be attempted
+    * @param maxRetries the maximum number of retries
+    */
   final case class ConstantStrategyConfig(constant: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
     override def toPolicy: RetryPolicy[Task] =
       constantDelay[Task](constant) join limitRetries(maxRetries)
   }
 
   /**
-   * Retry exactly once
-   * @param constant the interval before the retry will be attempted
-   */
+    * Retry exactly once
+    * @param constant the interval before the retry will be attempted
+    */
   final case class OnceStrategyConfig(constant: FiniteDuration) extends RetryStrategyConfig {
     override def toPolicy: RetryPolicy[Task] =
       constantDelay[Task](constant) join limitRetries(1)
   }
 
   /**
-   * Retry with an exponential delay after a failure
-   * @param initialDelay the initial delay after the first failure
-   * @param maxDelay     the maximum delay to not exceed
-   * @param maxRetries   the maximum number of retries
-   */
+    * Retry with an exponential delay after a failure
+    * @param initialDelay the initial delay after the first failure
+    * @param maxDelay     the maximum delay to not exceed
+    * @param maxRetries   the maximum number of retries
+    */
   final case class ExponentialStrategyConfig(initialDelay: FiniteDuration, maxDelay: FiniteDuration, maxRetries: Int)
-    extends RetryStrategyConfig {
+      extends RetryStrategyConfig {
     override def toPolicy: RetryPolicy[Task] =
       capDelay[Task](maxDelay, fullJitter(initialDelay)) join limitRetries(maxRetries)
   }
 
 }
-

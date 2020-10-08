@@ -22,8 +22,9 @@ import monix.bio.{IO, UIO}
 final class RealmsImpl[O <: Offset] private (
     agg: RealmsAggregate,
     eventLog: EventLog[O, Envelope[RealmEvent, O]],
-    index: RealmsCache)
-    (implicit base: BaseUri) extends Realms {
+    index: RealmsCache
+)(implicit base: BaseUri)
+    extends Realms {
 
   override def create(label: Label, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit
       caller: Identity.Subject
@@ -150,9 +151,9 @@ object RealmsImpl {
     )
   }
 
-  def apply[O <: Offset](agg: RealmsAggregate,
-                         eventLog: EventLog[O, Envelope[RealmEvent, O]],
-                         index: RealmsCache)(implicit base: BaseUri) =
+  def apply[O <: Offset](agg: RealmsAggregate, eventLog: EventLog[O, Envelope[RealmEvent, O]], index: RealmsCache)(
+      implicit base: BaseUri
+  ) =
     new RealmsImpl(agg, eventLog, index)
 
   def apply[O <: Offset](
