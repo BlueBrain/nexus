@@ -19,7 +19,7 @@ trait PluginDef {
   /**
     * Initialize the plugin.
     *
-    * @param locator  distage dependencies locator
+    * @param locator  distage dependencies [[Locator]]
     *
     * @return [[Plugin]] instance.
     */

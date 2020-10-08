@@ -7,6 +7,8 @@ import scala.util.{Failure, Success, Try}
 
 /**
   * Wrapper around URLClassloader that tries to load the classes from the JAR first.
+  *
+  * Inspired by https://github.com/pf4j/pf4j/blob/master/pf4j/src/main/java/org/pf4j/PluginClassLoader.java
   */
 class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Seq(url), parent) {
 
@@ -16,9 +18,8 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
     * It loads Java classes using the system classloader and delegates loading of all `scala.` classes to the parent
     * classloader.
     *
-    * @param className
-    *          The <a href="#binary-name">binary name</a> of the class
-    * @return The resulting [[Class]] object
+    * @param className The binary name of the class
+    * @return           The resulting [[Class]] object
     */
   override def loadClass(className: String): Class[_] =
     getClassLoadingLock(className).synchronized {

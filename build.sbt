@@ -338,19 +338,13 @@ lazy val sourcing = project
 lazy val testPlugin = project
   .in(file("delta/test-plugin"))
   .dependsOn(sdk % "provided", testkit % "provided")
-  .settings(shared, compilation)
+  .settings(shared, compilation, noPublish)
   .settings(
     name       := "delta-test-plugin",
     moduleName := "delta-test-plugin"
   )
   .settings(
     assemblyOutputPath in assembly := target.value / "delta-test-plugin.jar",
-    libraryDependencies           ++= Seq(
-      akkaSlf4j   % Test,
-      akkaTestKit % Test,
-      logback     % Test,
-      scalaTest   % Test
-    ),
     Test / fork                    := true
   )
 

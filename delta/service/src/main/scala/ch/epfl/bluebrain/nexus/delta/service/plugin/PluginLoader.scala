@@ -13,6 +13,14 @@ import monix.bio.{IO, Task}
 
 import scala.jdk.CollectionConverters._
 
+/**
+  * Class responsible for loading [[Plugin]]s.
+  *
+  * It looks for jar files in directory specified in [[loaderConfig]] and tries to load a [[Plugin]]
+  * from each jar file found.
+  *
+  * @param loaderConfig [[PluginLoader]] configuration
+  */
 class PluginLoader(loaderConfig: PluginLoaderConfig) {
 
   private def loadPluginDef(jar: File): IO[PluginError, PluginDef] = {
@@ -21,7 +29,7 @@ class PluginLoader(loaderConfig: PluginLoaderConfig) {
       .overrideClassLoaders(pluginClassLoader)
       .enableAllInfo()
       .scan()
-      .getClassesImplementing("ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef")
+      .getClassesImplementing(classOf[PluginDef].getName)
       .getNames
       .asScala
       .toList
@@ -39,8 +47,11 @@ class PluginLoader(loaderConfig: PluginLoaderConfig) {
   /**
     * Load and initialize plugins.
     *
-    * @param serviceModule  distage module defining dependencies provided by the service
-    * @return List of initialized plugins.
+    * Look for jar files in directory specified in [[loaderConfig]] and try to load a [[Plugin]]
+    * from each jar file found.
+    *
+    * @param serviceModule  distage [[ModuleDef]] defining dependencies provided by the service
+    * @return List of initialized plugins
     */
   def loadAndStartPlugins(serviceModule: ModuleDef): IO[PluginError, List[Plugin]] = {
 
@@ -65,7 +76,7 @@ class PluginLoader(loaderConfig: PluginLoaderConfig) {
                        .mapError(e => PluginInitializationError(e.getMessage))
       plugins     <-
         IO.sequence(
-          pluginsDefs.map(pInfo => pInfo.initialise(locator).mapError(e => PluginInitializationError(e.getMessage)))
+          pluginsDefs.map(pDef => pDef.initialise(locator).mapError(e => PluginInitializationError(e.getMessage)))
         )
     } yield plugins
 
@@ -75,7 +86,18 @@ class PluginLoader(loaderConfig: PluginLoaderConfig) {
 
 object PluginLoader {
 
+  /**
+    * Construct a new [[PluginLoader]] instance.
+    *
+    * @param loaderConfig [[PluginLoader]] configuration.
+    * @return an instance of [[PluginLoader]]
+    */
   def apply(loaderConfig: PluginLoaderConfig): PluginLoader = new PluginLoader(loaderConfig)
 
+  /**
+    * [[PluginLoader]] configuration.
+    *
+    * @param pluginDir  optional directory to load [[Plugin]]s from.
+    */
   final case class PluginLoaderConfig(pluginDir: Option[String])
 }

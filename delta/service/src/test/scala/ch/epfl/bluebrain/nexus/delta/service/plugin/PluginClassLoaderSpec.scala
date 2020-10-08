@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.plugin
 
 import java.nio.file.Path
 
+import ch.epfl.bluebrain.nexus.delta.testplugin.ClassLoaderTestClassImpl
 import ch.epfl.bluebrain.nexus.testkit.ShouldMatchers.convertToAnyShouldWrapper
 import ch.epfl.bluebrain.nexus.testkit.plugin.ClassLoaderTestClass
 import org.scalatest.BeforeAndAfterAll
@@ -28,7 +29,7 @@ class PluginClassLoaderSpec extends AnyWordSpecLike with Matchers with BeforeAnd
     "load class from plugin classpath first" in {
 
       cl.create[ClassLoaderTestClass](
-          "ch.epfl.bluebrain.nexus.delta.testplugin.ClassLoaderTestClassImpl",
+          classOf[ClassLoaderTestClassImpl].getName,
           println
         )()
         .loadedFrom shouldEqual "plugin classpath"

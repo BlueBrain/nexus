@@ -8,4 +8,4 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
   * @param name    plugin name
   * @param version plugin version
   */
-final case class PluginInfo(name: Name, version: String) extends Product with Serializable
+final case class PluginInfo(name: Name, version: String)
