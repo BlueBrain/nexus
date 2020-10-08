@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service
 
+import java.util.UUID
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
 import cats.implicits._
@@ -16,8 +18,20 @@ import slick.jdbc.JdbcBackend.Database
 
 import scala.concurrent.duration._
 
-abstract class AbstractDBSpec(configName: String)
-    extends ScalaTestWithActorTestKit(ConfigFactory.load(configName))
+abstract class AbstractDBSpec
+    extends ScalaTestWithActorTestKit(
+      ConfigFactory
+        .parseString(
+          s"""test-database = "${UUID.randomUUID()}""""
+        )
+        .withFallback(
+          ConfigFactory.parseResources("akka-persistence-test.conf")
+        )
+        .withFallback(
+          ConfigFactory.load()
+        )
+        .resolve()
+    )
     with AnyWordSpecLike
     with BeforeAndAfterAll
     with Matchers

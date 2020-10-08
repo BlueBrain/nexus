@@ -16,23 +16,24 @@ import scala.util.Try
 object WellKnownResolver {
 
   final private case class Endpoints(
-                                      authorization_endpoint: Uri,
-                                      token_endpoint: Uri,
-                                      userinfo_endpoint: Uri,
-                                      revocation_endpoint: Option[Uri],
-                                      end_session_endpoint: Option[Uri])
+      authorization_endpoint: Uri,
+      token_endpoint: Uri,
+      userinfo_endpoint: Uri,
+      revocation_endpoint: Option[Uri],
+      end_session_endpoint: Option[Uri]
+  )
   private object Endpoints {
     implicit val endpointsDecoder: Decoder[Endpoints] =
       deriveDecoder[Endpoints]
   }
 
   /**
-   * Constructs a WellKnown instance from an uri
-   */
+    * Constructs a WellKnown instance from an uri
+    */
   def apply(fetch: Uri => IO[HttpClientError, Json])(configUri: Uri): IO[RealmRejection, WellKnown] = {
     import GrantType.Snake._
 
-    def issuer(json: Json): Either[RealmRejection, String]                =
+    def issuer(json: Json): Either[RealmRejection, String] =
       json.hcursor
         .get[String]("issuer")
         .leftMap(df => IllegalIssuerFormat(configUri, CursorOp.opsToPath(df.history)))
@@ -41,32 +42,34 @@ object WellKnownResolver {
           case iss                     => Right(iss)
         }
 
-    def grantTypes(json: Json): Either[RealmRejection, Set[GrantType]]    =
+    def grantTypes(json: Json): Either[RealmRejection, Set[GrantType]] =
       json.hcursor
         .get[Option[Set[GrantType]]]("grant_types_supported")
         .map(_.getOrElse(Set.empty))
         .leftMap(df => IllegalGrantTypeFormat(configUri, CursorOp.opsToPath(df.history)))
 
-    def jwksUri(json: Json): Either[RealmRejection, Uri]                  =
+    def jwksUri(json: Json): Either[RealmRejection, Uri] =
       for {
-        value <-  json.hcursor.get[String]("jwks_uri").leftMap(df => IllegalJwksUriFormat(configUri, CursorOp.opsToPath(df.history)))
-        uri   <-  value.toUri.leftMap(_ => IllegalJwksUriFormat(configUri, ".jwks_uri"))
-        _     <-  Either.cond(uri.isAbsolute, uri, IllegalJwksUriFormat(configUri, ".jwks_uri"))
+        value <- json.hcursor
+                   .get[String]("jwks_uri")
+                   .leftMap(df => IllegalJwksUriFormat(configUri, CursorOp.opsToPath(df.history)))
+        uri   <- value.toUri.leftMap(_ => IllegalJwksUriFormat(configUri, ".jwks_uri"))
+        _     <- Either.cond(uri.isAbsolute, uri, IllegalJwksUriFormat(configUri, ".jwks_uri"))
       } yield uri
 
-    def endpoints(json: Json): Either[RealmRejection, Endpoints]          =
+    def endpoints(json: Json): Either[RealmRejection, Endpoints] =
       Endpoints
         .endpointsDecoder(json.hcursor)
         .leftMap(df => IllegalEndpointFormat(configUri, CursorOp.opsToPath(df.history)))
 
     def fetchJwkKeys(jwkUri: Uri): IO[RealmRejection, Set[Json]] =
       for {
-        json    <- fetch(jwkUri).mapError( _ => UnsuccessfulJwksResponse(jwkUri))
-        keysJson <- IO.fromEither(
-          json.hcursor
-            .get[Set[Json]]("keys")
-            .leftMap(_ => IllegalJwkFormat(jwkUri))
-        )
+        json      <- fetch(jwkUri).mapError(_ => UnsuccessfulJwksResponse(jwkUri))
+        keysJson  <- IO.fromEither(
+                       json.hcursor
+                         .get[Set[Json]]("keys")
+                         .leftMap(_ => IllegalJwkFormat(jwkUri))
+                     )
         validKeys <- {
           val validKeys = keysJson.foldLeft(Set.empty[Json]) {
             case (valid, key) =>

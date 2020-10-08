@@ -17,11 +17,12 @@ import org.scalatest.wordspec.AsyncWordSpecLike
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
-class KeyValueStoreSpec extends ScalaTestWithActorTestKit
-  with AsyncWordSpecLike
-  with Matchers
-  with IOValues
-  with OptionValues {
+class KeyValueStoreSpec
+    extends ScalaTestWithActorTestKit
+    with AsyncWordSpecLike
+    with Matchers
+    with IOValues
+    with OptionValues {
 
   type RevisionChange = KeyValueStoreSubscriber.KeyValueStoreChange[String, RevisionedValue[String]]
 
@@ -43,7 +44,8 @@ class KeyValueStoreSpec extends ScalaTestWithActorTestKit
   val onChange: OnKeyValueStoreChange[String, RevisionedValue[String]] =
     (value: KeyValueStoreChanges[String, RevisionedValue[String]]) => IO.pure(changes += value)
 
-  private val subscriber: ActorRef[KeyValueStoreSubscriber.SubscriberCommand] = spawn(KeyValueStoreSubscriber("spec", onChange), "subscriber")
+  private val subscriber: ActorRef[KeyValueStoreSubscriber.SubscriberCommand] =
+    spawn(KeyValueStoreSubscriber("spec", onChange), "subscriber")
 
   private val store = KeyValueStore.distributed[String, RevisionedValue[String]](
     "spec",
@@ -102,9 +104,9 @@ class KeyValueStoreSpec extends ScalaTestWithActorTestKit
 
     "return all entries" in {
       for {
-        p <- store.putIfAbsent("b", RevisionedValue(1, "b"))
+        p       <- store.putIfAbsent("b", RevisionedValue(1, "b"))
         entries <- store.entries
-        _ <- store.flushChanges
+        _       <- store.flushChanges
       } yield {
         p shouldEqual true
         entries shouldEqual Map(
@@ -189,7 +191,7 @@ class KeyValueStoreSpec extends ScalaTestWithActorTestKit
       for {
         _       <- store.remove("a")
         entries <- store.entries
-        _ <- store.flushChanges
+        _       <- store.flushChanges
       } yield {
         entries shouldEqual Map("b" -> RevisionedValue(1, "b"))
       }
@@ -208,10 +210,10 @@ class KeyValueStoreSpec extends ScalaTestWithActorTestKit
       for {
         _ <- store.flushChanges
         _ <- IO {
-          changes.foldLeft(Set.empty[RevisionChange]) {
-            case (acc, change) => acc ++ change.values
-          } should contain theSameElementsAs expectedChanges
-        }
+               changes.foldLeft(Set.empty[RevisionChange]) {
+                 case (acc, change) => acc ++ change.values
+               } should contain theSameElementsAs expectedChanges
+             }
       } yield succeed
     }
 

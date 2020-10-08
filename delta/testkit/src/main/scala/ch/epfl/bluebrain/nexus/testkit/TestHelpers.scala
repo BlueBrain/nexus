@@ -49,7 +49,7 @@ trait TestHelpers {
   }
 
   final def ioFromMap[A, B, C](map: Map[A, B], ifAbsent: A => C): A => IO[C, B] =
-    (a : A) => IO.fromOption(map.get(a), ifAbsent(a))
+    (a: A) => IO.fromOption(map.get(a), ifAbsent(a))
 
   /**
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of

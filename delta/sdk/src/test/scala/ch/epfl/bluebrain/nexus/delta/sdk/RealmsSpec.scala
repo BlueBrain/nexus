@@ -4,15 +4,16 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, WellKnown}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.WellKnown
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.testkit._
-import io.circe.Json
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -28,47 +29,89 @@ class RealmsSpec
     with IOValues
     with CirceLiteral {
 
+  import RealmsSpec._
+
   "The Realm state machine" when {
     implicit val sc: Scheduler = Scheduler.global
     val epoch: Instant         = Instant.EPOCH
     val time2                  = Instant.ofEpochMilli(10L)
-    val wellKnownUri: Uri      = "https://example.com/auth/realms/myrealm/.well-known/openid-configuration"
-    val wellKnown2Uri: Uri     = "https://example.com/auth/realms/myrealm/.well-known/openid-configuration2"
-    val authUri: Uri           = "https://example.com/auth/realms/myrealm/protocol/openid-connect/auth"
-    val tokenUri: Uri          = "https://example.com/auth/realms/myrealm/protocol/openid-connect/token"
-    val token2Uri: Uri         = "https://example.com/auth/realms/myrealm/protocol/openid-connect/token2"
-    val uiUri: Uri             = "https://example.com/auth/realms/myrealm/protocol/openid-connect/userinfo"
-    val ui2Uri: Uri            = "https://example.com/auth/realms/myrealm/protocol/openid-connect/userinfo2"
-    val endUri: Uri            = "https://example.com/auth/realms/myrealm/protocol/openid-connect/logout"
     val issuer: String         = "myrealm"
     val label: Label           = Label.unsafe(issuer)
-    val name: Name             = Name.unsafe(issuer)
-    val gt: Set[GrantType]     = Set(GrantType.AuthorizationCode, GrantType.Implicit)
-    val keys: Set[Json]        = Set(json"""{ "k": "v" }""")
-    val wk                     = WellKnown(issuer, gt, keys, authUri, tokenUri, uiUri, None, Some(endUri))
-    val wk2                    = WellKnown(issuer, gt, keys, authUri, token2Uri, ui2Uri, None, Some(endUri))
+    val name: Name             = Name.unsafe(s"$issuer-name")
+    val (wellKnownUri, wk)     = WellKnownGen.create(issuer)
+    val (wellKnown2Uri, wk2)   = WellKnownGen.create("myrealm2")
     val wkResolution           = ioFromMap(
       Map(wellKnownUri -> wk, wellKnown2Uri -> wk2),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
     )
 
     // format: off
-    val current                = Current(label, 1L, deprecated = false, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, Anonymous, epoch, Anonymous)
+    val current =  RealmGen.currentState(wellKnownUri, wk, 1L)
     // format: on
-    val subject                = User("myuser", label)
+    val subject = User("myuser", label)
     "evaluating an incoming command" should {
 
-      "create a new event" in {
-        // format: off
-        evaluate(wkResolution)(Initial, CreateRealm(label, name, wellKnownUri, None, subject)).accepted shouldEqual
-          RealmCreated(label, 1L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), epoch, subject)
+      val noExistingRealm = IO.pure(Set.empty[RealmResource])
 
-        evaluate(wkResolution)(current, UpdateRealm(label, 1L, name, wellKnown2Uri, None, subject)).accepted shouldEqual
-          RealmUpdated(label, 2L, name, wellKnown2Uri, issuer, keys, gt, None, authUri, token2Uri, ui2Uri, None, Some(endUri), epoch, subject)
+      def existingRealm(l: Label, o: Uri) =
+        IO.pure(
+          Set(
+            RealmGen.resourceFor(
+              RealmGen
+                .realm(
+                  wellKnownUri,
+                  wk,
+                  None
+                )
+                .copy(label = l, openIdConfig = o),
+              1L,
+              subject
+            )
+          )
+        )
+
+      val anotherLabel = Label.unsafe("anotherRealm")
+
+      "reject creation as openId is already used" in {
+        evaluate(wkResolution, existingRealm(anotherLabel, wellKnownUri))(
+          Initial,
+          CreateRealm(label, name, wellKnownUri, None, subject)
+        ).rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
+          RealmOpenIdConfigAlreadyExists(label, wellKnownUri)
+      }
+
+      "create, update and deprecate a realm" in {
+        // format: off
+        evaluate(wkResolution, existingRealm(anotherLabel, wellKnown2Uri))(
+          Initial,
+          CreateRealm(label, name, wellKnownUri, None, subject)
+        ).accepted shouldEqual
+          createEvent(label, name, None, wellKnownUri, wk, epoch, subject)
+
+        evaluate(wkResolution, existingRealm(anotherLabel, wellKnownUri))(
+          current,
+          UpdateRealm(label, 1L, name, wellKnown2Uri, None, subject)
+        ).accepted shouldEqual
+          updateEvent(label, 2L, name, None, wellKnown2Uri, wk2, epoch, subject)
+
+        val updatedName = Name.unsafe("updatedName")
+        evaluate(wkResolution, existingRealm(label, wellKnown2Uri))(
+          current,
+          UpdateRealm(label, 1L, updatedName, wellKnown2Uri, None, subject)
+        ).accepted shouldEqual
+          updateEvent(label, 2L, updatedName, None, wellKnown2Uri, wk2, epoch, subject)
         // format: on
 
-        evaluate(wkResolution)(current, DeprecateRealm(label, 1L, subject)).accepted shouldEqual
+        evaluate(wkResolution, noExistingRealm)(current, DeprecateRealm(label, 1L, subject)).accepted shouldEqual
           RealmDeprecated(label, 2L, epoch, subject)
+      }
+
+      "reject update as openId is already used" in {
+        evaluate(wkResolution, existingRealm(anotherLabel, wellKnown2Uri))(
+          current,
+          UpdateRealm(label, 1L, name, wellKnown2Uri, None, subject)
+        ).rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
+          RealmOpenIdConfigAlreadyExists(label, wellKnown2Uri)
       }
 
       "reject with IncorrectRev" in {
@@ -77,12 +120,12 @@ class RealmsSpec
           current -> DeprecateRealm(label, 2L, subject)
         )
         forAll(list) {
-          case (state, cmd) => evaluate(wkResolution)(state, cmd).rejectedWith[IncorrectRev]
+          case (state, cmd) => evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[IncorrectRev]
         }
       }
 
       "reject with RealmAlreadyExists" in {
-        evaluate(wkResolution)(current, CreateRealm(label, name, wellKnownUri, None, subject))
+        evaluate(wkResolution, noExistingRealm)(current, CreateRealm(label, name, wellKnownUri, None, subject))
           .rejectedWith[RealmAlreadyExists]
       }
 
@@ -92,12 +135,12 @@ class RealmsSpec
           Initial -> DeprecateRealm(label, 1L, subject)
         )
         forAll(list) {
-          case (state, cmd) => evaluate(wkResolution)(state, cmd).rejectedWith[RealmNotFound]
+          case (state, cmd) => evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[RealmNotFound]
         }
       }
 
       "reject with RealmAlreadyDeprecated" in {
-        evaluate(wkResolution)(current.copy(deprecated = true), DeprecateRealm(label, 1L, subject))
+        evaluate(wkResolution, noExistingRealm)(current.copy(deprecated = true), DeprecateRealm(label, 1L, subject))
           .rejectedWith[RealmAlreadyDeprecated]
       }
 
@@ -108,7 +151,8 @@ class RealmsSpec
           current -> UpdateRealm(label, 1L, name, wellKnownWrongUri, None, subject)
         )
         forAll(list) {
-          case (state, cmd) => evaluate(wkResolution)(state, cmd).rejectedWith[UnsuccessfulOpenIdConfigResponse]
+          case (state, cmd) =>
+            evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[UnsuccessfulOpenIdConfigResponse]
         }
       }
 
@@ -117,22 +161,22 @@ class RealmsSpec
     "producing next state" should {
 
       "create a new RealmCreated state" in {
-        // format: off
-        next(Initial, RealmCreated(label, 1L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), time2, subject)) shouldEqual
+        val created = createEvent(label, name, None, wellKnownUri, wk, time2, subject)
+
+        next(Initial, created) shouldEqual
           current.copy(createdAt = time2, createdBy = subject, updatedAt = time2, updatedBy = subject)
 
-        next(current, RealmCreated(label, 1L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), time2, subject)) shouldEqual
+        next(current, created) shouldEqual
           current
-        // format: on
       }
 
       "create a new RealmUpdated state" in {
         // format: off
-        next(Initial, RealmUpdated(label, 2L, name, wellKnownUri, issuer, keys, gt, None, authUri, tokenUri, uiUri, None, Some(endUri), time2, subject)) shouldEqual
+        next(Initial, updateEvent(label, 2L, name, None, wellKnownUri, wk, time2, subject)) shouldEqual
           Initial
 
-        next(current, RealmUpdated(label, 2L, name, wellKnown2Uri, issuer, keys, gt, None, authUri, token2Uri, ui2Uri, None, Some(endUri), time2, subject)) shouldEqual
-          Current(label, 2L, deprecated = false, name, wellKnown2Uri, issuer, keys, gt, None, authUri, token2Uri, ui2Uri, None, Some(endUri), epoch, Anonymous, time2, subject)
+        next(current, updateEvent(label, 2L, name, None, wellKnown2Uri, wk2, time2, subject)) shouldEqual
+          Current(label, 2L, deprecated = false, name, wellKnown2Uri, wk2.issuer, wk2.keys, wk2.grantTypes, None, wk2.authorizationEndpoint, wk2.tokenEndpoint, wk2.userInfoEndpoint, wk2.revocationEndpoint, wk2.endSessionEndpoint, epoch, Anonymous, time2, subject)
         // format: on
       }
 
@@ -143,5 +187,65 @@ class RealmsSpec
           current.copy(rev = 2L, deprecated = true, updatedAt = time2, updatedBy = subject)
       }
     }
+
   }
+}
+
+object RealmsSpec {
+
+  def createEvent(
+      label: Label,
+      name: Name,
+      logo: Option[Uri],
+      openIdConfig: Uri,
+      wk: WellKnown,
+      instant: Instant,
+      subject: Subject
+  ): RealmCreated =
+    RealmCreated(
+      label,
+      1L,
+      name,
+      openIdConfig,
+      wk.issuer,
+      wk.keys,
+      wk.grantTypes,
+      logo,
+      wk.authorizationEndpoint,
+      wk.tokenEndpoint,
+      wk.userInfoEndpoint,
+      wk.revocationEndpoint,
+      wk.endSessionEndpoint,
+      instant,
+      subject
+    )
+
+  def updateEvent(
+      label: Label,
+      rev: Long,
+      name: Name,
+      logo: Option[Uri],
+      openIdConfig: Uri,
+      wk: WellKnown,
+      instant: Instant,
+      subject: Subject
+  ): RealmUpdated =
+    RealmUpdated(
+      label,
+      rev,
+      name,
+      openIdConfig,
+      wk.issuer,
+      wk.keys,
+      wk.grantTypes,
+      logo,
+      wk.authorizationEndpoint,
+      wk.tokenEndpoint,
+      wk.userInfoEndpoint,
+      wk.revocationEndpoint,
+      wk.endSessionEndpoint,
+      instant,
+      subject
+    )
+
 }

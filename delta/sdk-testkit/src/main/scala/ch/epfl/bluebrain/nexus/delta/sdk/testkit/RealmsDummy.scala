@@ -108,7 +108,7 @@ final class RealmsDummy private (
       for {
         lbEvents <- journal.get
         state     = lbEvents.get(cmd.label).fold[RealmState](Initial)(_.foldLeft[RealmState](Initial)(Realms.next))
-        event    <- Realms.evaluate(resolveWellKnown)(state, cmd)
+        event    <- Realms.evaluate(resolveWellKnown, cache.get.map(_.values.toSet))(state, cmd)
         _        <- journal.set(lbEvents.updatedWith(cmd.label)(_.fold(Some(Vector(event)))(events => Some(events :+ event))))
         res      <- IO.fromEither(Realms.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
       } yield res

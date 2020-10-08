@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.sourcing
 
 import ch.epfl.bluebrain.nexus.sourcing.processor.EvaluationIO
-import monix.bio.Task
+import monix.bio.{IO, UIO}
 
 /**
   * An aggregate based on event sourcing that can be controlled through commands;
@@ -19,7 +19,19 @@ trait Aggregate[Id, State, Command, Event, Rejection] {
     * Get the current state for the entity with the given __id__
     * @param id the entity identifier
     */
-  def state(id: Id): Task[State]
+  def state(id: Id): UIO[State]
+
+  /**
+   * Get the current state for the entity with the given __id__
+   * at the given revision
+   *
+   */
+  def stateAt[R <: Rejection](id: Id,
+              rev: Long,
+              initialState: State,
+              eventRevision: Event => Long,
+              stateRevision: State => Long,
+              revisionRejection: (Long, Long) => R): IO[R, State]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.

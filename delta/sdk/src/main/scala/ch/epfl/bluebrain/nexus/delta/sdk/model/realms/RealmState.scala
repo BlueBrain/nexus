@@ -17,8 +17,8 @@ import io.circe.Json
 sealed trait RealmState extends Product with Serializable {
 
   /**
-   * @return the current state revision
-   */
+    * @return the current state revision
+    */
   def rev: Long
 
   /**

@@ -76,9 +76,9 @@ trait KeyValueStore[K, V] {
   def entries: UIO[Map[K, V]]
 
   /**
-   * Notify subscribers of changes now, otherwise they will be notified periodically
-   * with the configured `notify-subscribers-interval`.
-   */
+    * Notify subscribers of changes now, otherwise they will be notified periodically
+    * with the configured `notify-subscribers-interval`.
+    */
   def flushChanges: UIO[Unit]
 
   /**
@@ -146,14 +146,16 @@ object KeyValueStore {
     */
   final def distributed[K, V](
       id: String,
-      clock: (Long, V) => Long,
+      clock: (Long, V) => Long
   )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] = {
     val retryStrategy = RetryStrategy(
       config.retry,
       worthRetryingOnWriteErrors,
-      (err, details) => Task {
-        log.warn(s"Retrying on cache with id '$id' on retry details '$details'", err)
-      })
+      (err, details) =>
+        Task {
+          log.warn(s"Retrying on cache with id '$id' on retry details '$details'", err)
+        }
+    )
     new DDataKeyValueStore[K, V](id, clock, retryStrategy, config.askTimeout, config.consistencyTimeout)
   }
 
@@ -168,51 +170,62 @@ object KeyValueStore {
 
     import retryStrategy._
 
-    implicit private val node: Cluster                  = Cluster(as)
-    private val uniqueAddr: SelfUniqueAddress           = SelfUniqueAddress(node.selfMember.uniqueAddress)
-    implicit private val registerClock: Clock[V]        = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
-    implicit private val timeout: Timeout               = Timeout(askTimeout)
+    implicit private val node: Cluster           = Cluster(as)
+    private val uniqueAddr: SelfUniqueAddress    = SelfUniqueAddress(node.selfMember.uniqueAddress)
+    implicit private val registerClock: Clock[V] = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
+    implicit private val timeout: Timeout        = Timeout(askTimeout)
 
     private val replicator              = DistributedData(as).replicator
     private val mapKey                  = LWWMapKey[K, V](id)
     private val consistencyTimeoutError = ReadWriteConsistencyTimeout(consistencyTimeout)
     private val distributeWriteError    = DistributedDataError("The update couldn't be performed")
-    private val dataDeletedError        = DistributedDataError("The update couldn't be performed because the entry has been deleted")
+    private val dataDeletedError        = DistributedDataError(
+      "The update couldn't be performed because the entry has been deleted"
+    )
 
     override def put(key: K, value: V): UIO[Unit] = {
-      val msg    =
+      val msg =
         Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.put(uniqueAddr, key, value, registerClock))
-      IO.deferFuture(replicator ? msg).flatMap {
-          case _: UpdateSuccess[_] => IO.unit
+      IO.deferFuture(replicator ? msg)
+        .flatMap {
+          case _: UpdateSuccess[_]     => IO.unit
           // $COVERAGE-OFF$
           case _: UpdateTimeout[_]     => IO.raiseError(consistencyTimeoutError)
           case _: UpdateFailure[_]     => IO.raiseError(distributeWriteError)
           case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
           // $COVERAGE-ON$
-        }.retryingOnSomeErrors(retryWhen).hideErrors
+        }
+        .retryingOnSomeErrors(retryWhen)
+        .hideErrors
     }
 
     override def remove(key: K): UIO[Unit] = {
-      val msg    = Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.remove(uniqueAddr, key))
-      IO.deferFuture(replicator ? msg).flatMap {
-          case _: UpdateSuccess[_] => IO.unit
+      val msg = Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.remove(uniqueAddr, key))
+      IO.deferFuture(replicator ? msg)
+        .flatMap {
+          case _: UpdateSuccess[_]     => IO.unit
           // $COVERAGE-OFF$
           case _: UpdateTimeout[_]     => IO.raiseError(consistencyTimeoutError)
           case _: UpdateFailure[_]     => IO.raiseError(distributeWriteError)
           case _: UpdateDataDeleted[_] => IO.raiseError(dataDeletedError)
           // $COVERAGE-ON$
-        }.retryingOnSomeErrors(retryWhen).hideErrors
+        }
+        .retryingOnSomeErrors(retryWhen)
+        .hideErrors
     }
 
     override def entries: UIO[Map[K, V]] = {
-      val msg    = Get(mapKey, ReadLocal)
-      IO.deferFuture(replicator ? msg).flatMap {
-          case g @ GetSuccess(`mapKey`)    => IO.pure(g.get(mapKey).entries)
-          case _: NotFound[_]              => IO.pure(Map.empty[K, V])
+      val msg = Get(mapKey, ReadLocal)
+      IO.deferFuture(replicator ? msg)
+        .flatMap {
+          case g @ GetSuccess(`mapKey`) => IO.pure(g.get(mapKey).entries)
+          case _: NotFound[_]           => IO.pure(Map.empty[K, V])
           // $COVERAGE-OFF$
-          case _: GetFailure[_]            => IO.raiseError(consistencyTimeoutError)
+          case _: GetFailure[_]         => IO.raiseError(consistencyTimeoutError)
           // $COVERAGE-ON$
-        }.retryingOnSomeErrors(retryWhen).hideErrors
+        }
+        .retryingOnSomeErrors(retryWhen)
+        .hideErrors
     }
 
     override def flushChanges: UIO[Unit] = IO.pure(replicator ! FlushChanges)

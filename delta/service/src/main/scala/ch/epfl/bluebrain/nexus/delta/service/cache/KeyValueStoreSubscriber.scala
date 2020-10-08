@@ -32,9 +32,11 @@ object OnKeyValueStoreChange {
   def noEffect[K, V]: OnKeyValueStoreChange[K, V] =
     (_: KeyValueStoreChanges[K, V]) => IO.unit
 
-  def apply[K, V](onCreate: (K, V) => UIO[Unit],
-                  onUpdate: (K, V) => UIO[Unit],
-                  onRemove: (K, V) => UIO[Unit]): OnKeyValueStoreChange[K, V] =
+  def apply[K, V](
+      onCreate: (K, V) => UIO[Unit],
+      onUpdate: (K, V) => UIO[Unit],
+      onRemove: (K, V) => UIO[Unit]
+  ): OnKeyValueStoreChange[K, V] =
     (value: KeyValueStoreChanges[K, V]) =>
       value.values.toList match {
         case Nil    => IO.unit
@@ -55,7 +57,8 @@ object KeyValueStoreSubscriber {
 
   object SubscriberCommand {
 
-    final case class SubscribeResponse[K, V](change: Replicator.SubscribeResponse[LWWMap[K, V]]) extends SubscriberCommand
+    final case class SubscribeResponse[K, V](change: Replicator.SubscribeResponse[LWWMap[K, V]])
+        extends SubscriberCommand
 
     case object Unsubscribe extends SubscriberCommand
 
@@ -108,43 +111,44 @@ object KeyValueStoreSubscriber {
     * @tparam K the key type
     * @tparam V the value type
     */
-  final def apply[K, V](cacheId: String, onChange: OnKeyValueStoreChange[K, V])
-                       (implicit scheduler: Scheduler): Behavior[SubscriberCommand] =
+  final def apply[K, V](cacheId: String, onChange: OnKeyValueStoreChange[K, V])(implicit
+      scheduler: Scheduler
+  ): Behavior[SubscriberCommand] =
     Behaviors.setup { context =>
-
       DistributedData.withReplicatorMessageAdapter[SubscriberCommand, LWWMap[K, V]] { replicator =>
-        val key = LWWMapKey[K, V](cacheId)
+        val key    = LWWMapKey[K, V](cacheId)
         val keyAny = LWWMapKey[Any, Any](cacheId)
         replicator.subscribe(key, SubscribeResponse.apply)
 
-        def run(previous: Map[K, V]): Behavior[SubscriberCommand] = Behaviors.receiveMessage[SubscriberCommand] {
-          case Unsubscribe =>
-            replicator.unsubscribe(key)
-            Behaviors.stopped
-          case SubscribeResponse(change @ Replicator.Changed(`keyAny`)) =>
-            def diff(recent: Map[K, V]): KeyValueStoreChanges[K, V] = {
-              val added   = (recent -- previous.keySet).map { case (k, v) => ValueAdded(k, v) }.toSet
-              val removed = (previous -- recent.keySet).map { case (k, v) => ValueRemoved(k, v) }.toSet
+        def run(previous: Map[K, V]): Behavior[SubscriberCommand] =
+          Behaviors.receiveMessage[SubscriberCommand] {
+            case Unsubscribe                                              =>
+              replicator.unsubscribe(key)
+              Behaviors.stopped
+            case SubscribeResponse(change @ Replicator.Changed(`keyAny`)) =>
+              def diff(recent: Map[K, V]): KeyValueStoreChanges[K, V] = {
+                val added   = (recent -- previous.keySet).map { case (k, v) => ValueAdded(k, v) }.toSet
+                val removed = (previous -- recent.keySet).map { case (k, v) => ValueRemoved(k, v) }.toSet
 
-              val modified = (recent -- added.map(_.key)).foldLeft(Set.empty[KeyValueStoreChange[K, V]]) {
-                case (acc, (k, v)) =>
-                  previous.get(k).filter(_ == v) match {
-                    case None => acc + ValueModified(k, v)
-                    case _    => acc
-                  }
+                val modified = (recent -- added.map(_.key)).foldLeft(Set.empty[KeyValueStoreChange[K, V]]) {
+                  case (acc, (k, v)) =>
+                    previous.get(k).filter(_ == v) match {
+                      case None => acc + ValueModified(k, v)
+                      case _    => acc
+                    }
+                }
+                KeyValueStoreChanges(added ++ modified ++ removed)
               }
-              KeyValueStoreChanges(added ++ modified ++ removed)
-            }
-            val recent  = change.get(key).entries
-            val changes = diff(recent)
-            if (changes.values.nonEmpty)
-              onChange(changes).runAsyncAndForget
-            context.log.debug("Received a Changed message from the key value store. Values changed: '{}'", changes)
-            run(recent)
-          case other =>
-            context.log.error("Skipping received a message different from Changed. Message: '{}'", other)
-            Behaviors.unhandled
-        }
+              val recent  = change.get(key).entries
+              val changes = diff(recent)
+              if (changes.values.nonEmpty)
+                onChange(changes).runAsyncAndForget
+              context.log.debug("Received a Changed message from the key value store. Values changed: '{}'", changes)
+              run(recent)
+            case other                                                    =>
+              context.log.error("Skipping received a message different from Changed. Message: '{}'", other)
+              Behaviors.unhandled
+          }
 
         run(Map.empty[K, V])
       }

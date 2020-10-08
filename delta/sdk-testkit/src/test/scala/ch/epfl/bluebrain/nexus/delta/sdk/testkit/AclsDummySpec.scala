@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, G
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviours.minimum
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors.minimum
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers

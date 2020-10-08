@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviours
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors
 import ch.epfl.bluebrain.nexus.delta.service.AbstractDBSpec
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
@@ -15,7 +15,7 @@ import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration._
 
-class PermissionsImplSpec extends AbstractDBSpec("permissions-test.conf") with PermissionsBehaviours {
+class PermissionsImplSpec extends AbstractDBSpec with PermissionsBehaviors {
 
   private def eventLog: Task[EventLog[Sequence, Envelope[PermissionsEvent, Sequence]]] =
     EventLog.jdbcEventLog {
@@ -27,7 +27,7 @@ class PermissionsImplSpec extends AbstractDBSpec("permissions-test.conf") with P
   override def create: Task[Permissions.WithOffset[Sequence]] = {
     eventLog.flatMap { el =>
       PermissionsImpl(
-        PermissionsBehaviours.minimum,
+        PermissionsBehaviors.minimum,
         BaseUri("http://localhost:8080/v1"),
         AggregateConfig(
           askTimeout = Timeout(5.seconds),

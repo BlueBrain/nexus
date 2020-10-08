@@ -14,12 +14,12 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
 class WellKnownResolverSpec
-  extends AnyWordSpecLike
-  with IOValues
-  with Inspectors
-  with OptionValues
-  with TestHelpers
-  with Matchers {
+    extends AnyWordSpecLike
+    with IOValues
+    with Inspectors
+    with OptionValues
+    with TestHelpers
+    with Matchers {
 
   import WellKnownResolverSpec._
 
@@ -43,7 +43,6 @@ class WellKnownResolverSpec
           (_: Uri) => HttpUnexpectedError(HttpRequest(), "Failed")
         )
       )(openIdUri)
-
 
     "be constructed correctly" when {
       "the openid config is valid" in {
@@ -176,11 +175,7 @@ class WellKnownResolverSpec
     }
 
     "the openid does not contain required endpoints" in {
-      forAll(
-        List(
-          "authorization_endpoint",
-          "token_endpoint",
-          "userinfo_endpoint")) { key =>
+      forAll(List("authorization_endpoint", "token_endpoint", "userinfo_endpoint")) { key =>
         val rej = resolveWellKnown(
           fullOpenIdConfig.hcursor.downField(key).delete.top.value,
           validJwks
@@ -194,7 +189,7 @@ class WellKnownResolverSpec
 
     "the client returns a bad response for the jwks document" in {
       val invalidJwksUri = Uri("https://localhost/invalid")
-      val rej = resolveWellKnown(
+      val rej            = resolveWellKnown(
         validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromString(invalidJwksUri.toString()))),
         validJwks
       ).rejectedWith[UnsuccessfulJwksResponse]
@@ -234,9 +229,9 @@ class WellKnownResolverSpec
 
 object WellKnownResolverSpec extends EitherValuable {
 
-  private val openIdUri       = Uri("https://localhost/auth/realms/master/.well-known/openid-configuration")
-  private val jwksUri         = Uri("https://localhost/auth/realms/master/protocol/openid-connect/certs")
-  private val issuer          = "https://localhost/auth/realms/master"
+  private val openIdUri = Uri("https://localhost/auth/realms/master/.well-known/openid-configuration")
+  private val jwksUri   = Uri("https://localhost/auth/realms/master/protocol/openid-connect/certs")
+  private val issuer    = "https://localhost/auth/realms/master"
 
   private val authorizationUri = Uri("https://localhost/auth")
   private val tokenUri         = Uri("https://localhost/auth/token")
@@ -287,7 +282,9 @@ object WellKnownResolverSpec extends EitherValuable {
   private val publicKey =
     new RSAKeyGenerator(2048)
       .keyID("123")
-      .generate().toPublicJWK.toJSONString
+      .generate()
+      .toPublicJWK
+      .toJSONString
 
   private val publicKeyJson = parse(publicKey).rightValue
 

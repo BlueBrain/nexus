@@ -15,46 +15,50 @@ import scala.reflect.ClassTag
 
 trait HttpClient {
 
-  def apply[A](req: HttpRequest)(implicit A: ClassTag[A],
-                                 um: FromEntityUnmarshaller[A]): IO[HttpClientError, A]
+  def apply[A](req: HttpRequest)(implicit A: ClassTag[A], um: FromEntityUnmarshaller[A]): IO[HttpClientError, A]
 
 }
 
 object HttpClient {
 
-  def apply(implicit as: ActorSystem,
-            materializer: Materializer,
-            scheduler: Scheduler): HttpClient =
+  def apply(implicit as: ActorSystem, materializer: Materializer, scheduler: Scheduler): HttpClient =
     new HttpClient {
       private val client: HttpExt = Http()
 
-      override def apply[A](req: HttpRequest)
-                           (implicit A: ClassTag[A],
-                            um: FromEntityUnmarshaller[A]): IO[HttpClientError, A] =
-        Task.deferFuture(
-          client.singleRequest(req)
-        ).mapError {
-          case e: TimeoutException => HttpTimeoutError(req, e.getMessage)
-          case e: Throwable        => HttpUnexpectedError(req, e.getMessage)
-        }.flatMap { res =>
-          if(res.status.isSuccess()) {
-            Task.deferFuture {
-              um(res.entity)
-            }.onErrorHandleWith {
-              err =>
-                IO.raiseError(
-                  HttpSerializationError(req, err.getMessage, A.runtimeClass.getSimpleName)
+      override def apply[A](
+          req: HttpRequest
+      )(implicit A: ClassTag[A], um: FromEntityUnmarshaller[A]): IO[HttpClientError, A] =
+        Task
+          .deferFuture(
+            client.singleRequest(req)
+          )
+          .mapError {
+            case e: TimeoutException => HttpTimeoutError(req, e.getMessage)
+            case e: Throwable        => HttpUnexpectedError(req, e.getMessage)
+          }
+          .flatMap { res =>
+            if (res.status.isSuccess()) {
+              Task
+                .deferFuture {
+                  um(res.entity)
+                }
+                .onErrorHandleWith { err =>
+                  IO.raiseError(
+                    HttpSerializationError(req, err.getMessage, A.runtimeClass.getSimpleName)
+                  )
+                }
+            } else {
+              Task
+                .deferFuture(
+                  res.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
                 )
-            }
-          } else {
-            Task.deferFuture(
-              res.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)
-            ).mapError {
-              e => HttpUnexpectedError(req, e.getMessage)
-            }.flatMap { err =>
-              IO.raiseError(HttpClientError.unsafe(req, res.status, err))
+                .mapError { e =>
+                  HttpUnexpectedError(req, e.getMessage)
+                }
+                .flatMap { err =>
+                  IO.raiseError(HttpClientError.unsafe(req, res.status, err))
+                }
             }
           }
-        }
     }
 }

@@ -13,16 +13,19 @@ import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 trait IOValues extends Assertions {
-  implicit def taskToFutureAssertion(task: Task[Assertion])
-                                    (implicit s: Scheduler = Scheduler.global): Future[Assertion] =
+  implicit def taskToFutureAssertion(
+      task: Task[Assertion]
+  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
     task.runToFuture
 
-  implicit def taskListToFutureAssertion(task: Task[List[Assertion]])
-                                        (implicit s: Scheduler = Scheduler.global): Future[Assertion] =
+  implicit def taskListToFutureAssertion(
+      task: Task[List[Assertion]]
+  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
     task.runToFuture.map(_ => succeed)
 
-  implicit def futureListToFutureAssertion(future: Future[List[Assertion]])
-                                          (implicit s: Scheduler = Scheduler.global): Future[Assertion] =
+  implicit def futureListToFutureAssertion(
+      future: Future[List[Assertion]]
+  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
     future.map(_ => succeed)
 
   implicit final def ioValuesSyntax[E: ClassTag, A](io: IO[E, A]): IOValuesOps[E, A] = new IOValuesOps(io)

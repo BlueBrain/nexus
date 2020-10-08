@@ -115,14 +115,17 @@ object Realms {
     }
   }
 
-  private[delta] def evaluate(wellKnown: Uri => IO[RealmRejection, WellKnown])(state: RealmState, cmd: RealmCommand)(implicit
+  private[delta] def evaluate(
+      wellKnown: Uri => IO[RealmRejection, WellKnown],
+      existingRealms: UIO[Set[RealmResource]]
+  )(state: RealmState, cmd: RealmCommand)(implicit
       clock: Clock[UIO] = IO.clock
   ): IO[RealmRejection, RealmEvent] = {
     // format: off
     def create(c: CreateRealm) =
       state match {
         case Initial =>
-          (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
+          openIdAlreadyExists(c.label, c.openIdConfig, existingRealms) >> (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
             case (wk, instant) =>
               RealmCreated(c.label, 1L, c.name, c.openIdConfig, wk.issuer, wk.keys, wk.grantTypes, c.logo, wk.authorizationEndpoint, wk.tokenEndpoint, wk.userInfoEndpoint, wk.revocationEndpoint, wk.endSessionEndpoint, instant, c.subject)
           }
@@ -136,7 +139,7 @@ object Realms {
         case s: Current if s.rev != c.rev =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current                   =>
-          (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
+          openIdAlreadyExists(c.label, c.openIdConfig, existingRealms) >> (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
             case (wk, instant) =>
               RealmUpdated(c.label, s.rev + 1, c.name, c.openIdConfig, wk.issuer, wk.keys, wk.grantTypes, c.logo, wk.authorizationEndpoint, wk.tokenEndpoint, wk.userInfoEndpoint, wk.revocationEndpoint, wk.endSessionEndpoint, instant, c.subject)
           }
@@ -157,5 +160,25 @@ object Realms {
       case c: DeprecateRealm => deprecate(c)
     }
   }
+
+  /**
+    * An openId config must not be present for an active or deprecated realms
+    */
+  private def openIdAlreadyExists(
+      excludeLabel: Label,
+      matchOpenIdConfig: Uri,
+      existingRealms: UIO[Set[RealmResource]]
+  ): IO[RealmOpenIdConfigAlreadyExists, Unit] =
+    existingRealms.flatMap { resources =>
+      val alreadyExists = resources.exists { resource =>
+        resource.value.label != excludeLabel && resource.value.openIdConfig == matchOpenIdConfig
+      }
+      if (alreadyExists)
+        IO.raiseError(
+          RealmOpenIdConfigAlreadyExists(excludeLabel, matchOpenIdConfig)
+        )
+      else
+        IO.unit
+    }
 
 }

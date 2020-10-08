@@ -29,7 +29,7 @@ object SnapshotStrategy {
     * @param keepNSnapshots         the number of snapshots we need to keep
     * @param deleteEventsOnSnapshot if we need to delete old events
     */
-  final case class SnapshotEvery(numberOfEvents: Int, keepNSnapshots: Int, deleteEventsOnSnapshot: Boolean = false)
+  final case class SnapshotEvery(numberOfEvents: Int, keepNSnapshots: Int, deleteEventsOnSnapshot: Boolean)
       extends SnapshotStrategy
 
   /**
