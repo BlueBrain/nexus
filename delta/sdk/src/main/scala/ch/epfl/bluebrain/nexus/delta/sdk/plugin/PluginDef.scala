@@ -1,31 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import izumi.distage.model.Locator
+import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
 
 trait PluginDef {
 
   /**
-    * Plugin name.
+    * Distage module definition for this plugin.
     */
-  def name: Name
+  def module: ModuleDef
 
   /**
-    * Plugin version.
+    * Plugin information
     */
-  def version: String
-
-  /**
-    * Plugin dependencies.
-    */
-  def dependencies: Set[PluginDef]
+  def info: PluginInfo
 
   /**
     * Initialize the plugin.
     *
-    * @param registry dependencies registry
+    * @param locator  distage dependencies [[Locator]]
     *
     * @return [[Plugin]] instance.
     */
-  def initialise(registry: Registry): Task[Plugin]
+  def initialise(locator: Locator): Task[Plugin]
 }

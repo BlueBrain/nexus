@@ -1,4 +1,3 @@
-
 /*
 scalafmt: {
   style = defaultWithAlign
@@ -158,7 +157,7 @@ lazy val scalaTest     = "org.scalatest"              %% "scalatest"            
 lazy val scalaReflect  = "org.scala-lang"              % "scala-reflect"           % scalaCompilerVersion
 lazy val streamz       = "com.github.krasserm"        %% "streamz-converter"       % streamzVersion
 lazy val topBraidShacl = "org.topbraid"                % "shacl"                   % topBraidVersion
-lazy val uuidGenerator = "com.fasterxml.uuid"         % "java-uuid-generator"      % uuidGeneratorVersion
+lazy val uuidGenerator = "com.fasterxml.uuid"          % "java-uuid-generator"     % uuidGeneratorVersion
 
 val javaSpecificationVersion = SettingKey[String](
   "java-specification-version",
@@ -336,6 +335,19 @@ lazy val sourcing = project
     Test / fork          := true
   )
 
+lazy val testPlugin = project
+  .in(file("delta/test-plugin"))
+  .dependsOn(sdk % "provided", testkit % "provided")
+  .settings(shared, compilation, noPublish)
+  .settings(
+    name       := "delta-test-plugin",
+    moduleName := "delta-test-plugin"
+  )
+  .settings(
+    assemblyOutputPath in assembly := target.value / "delta-test-plugin.jar",
+    Test / fork                    := true
+  )
+
 lazy val rdf = project
   .in(file("delta/rdf"))
   .dependsOn(testkit % "test->compile")
@@ -360,7 +372,7 @@ lazy val rdf = project
   )
 
 lazy val sdk = project
-  .in(file("delta/sdk")) 
+  .in(file("delta/sdk"))
   .settings(
     name       := "delta-sdk",
     moduleName := "delta-sdk"
@@ -370,6 +382,7 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
+      distageCore,
       monixBio,
       akkaActor, // Needed to create Uri
       akkaHttp,
@@ -402,10 +415,12 @@ lazy val service = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
+  .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
       h2               % Test,
       logback          % Test,
       scalaTest        % Test
@@ -506,10 +521,10 @@ lazy val tests = project
   .settings(noPublish ++ dockerCompose)
   .settings(shared, compilation, coverage, release)
   .settings(
-    name                  := "tests",
-    moduleName            := "tests",
-    coverageFailOnMinimum := false,
-    libraryDependencies ++= Seq(
+    name                      := "tests",
+    moduleName                := "tests",
+    coverageFailOnMinimum     := false,
+    libraryDependencies      ++= Seq(
       akkaHttp,
       akkaStream,
       circeOptics,
