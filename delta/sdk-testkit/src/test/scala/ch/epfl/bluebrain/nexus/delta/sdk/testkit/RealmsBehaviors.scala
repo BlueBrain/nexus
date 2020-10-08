@@ -40,7 +40,7 @@ trait RealmsBehaviors {
 
   val realms = create.accepted
 
-  "A dummy Realms implementation" should {
+  "Realms implementation" should {
 
     "create a realm" in {
       realms.create(github, githubName, githubOpenId, None).accepted shouldEqual

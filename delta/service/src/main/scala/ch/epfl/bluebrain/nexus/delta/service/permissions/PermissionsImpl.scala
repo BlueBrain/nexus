@@ -35,18 +35,22 @@ final class PermissionsImpl[O <: Offset] private (
   }
 
   override def fetchAt(rev: Long): IO[PermissionsRejection.RevisionNotFound, PermissionsResource] =
-    agg
-      .stateAt(
-        entityId,
-        rev,
-        PermissionsState.Initial,
-        (e: PermissionsEvent) => e.rev,
-        (s: PermissionsState) => s.rev,
-        (provided: Long, current: Long) => RevisionNotFound(provided, current)
-      )
-      .map {
-        _.toResource(id, minimum)
-      }
+    if (rev == 0L) UIO.pure(PermissionsState.Initial.toResource(id, minimum))
+    else
+      eventLog
+        .currentEventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
+        .takeWhile(_.event.rev <= rev)
+        .fold[PermissionsState](PermissionsState.Initial) {
+          case (state, event) => Permissions.next(minimum)(state, event.event)
+        }
+        .compile
+        .last
+        .hideErrors
+        .flatMap {
+          case Some(state) if state.rev == rev => UIO.pure(state.toResource(id, minimum))
+          case Some(_)                         => fetch.flatMap(res => IO.raiseError(RevisionNotFound(rev, res.rev)))
+          case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
+        }
 
   override def replace(
       permissions: Set[Permission],
