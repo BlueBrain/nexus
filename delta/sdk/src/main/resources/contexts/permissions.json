@@ -1,6 +1,11 @@
 {
   "@context": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "permissions": "nxv:permissions"
+    "permissions": "nxv:permissions",
+    "Permissions": "nxv:Permissions",
+    "PermissionsAppended": "nxv:PermissionsAppended",
+    "PermissionsSubtracted": "nxv:PermissionsSubtracted",
+    "PermissionsReplaced": "nxv:PermissionsReplaced",
+    "PermissionsDeleted": "nxv:PermissionsDeleted"
   }
 }

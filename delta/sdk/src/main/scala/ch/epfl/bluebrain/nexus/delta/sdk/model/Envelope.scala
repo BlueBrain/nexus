@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.persistence.query.Offset
 
+import scala.reflect.ClassTag
+
 /**
   * A typed event envelope.
   *
@@ -11,10 +13,16 @@ import akka.persistence.query.Offset
   * @param sequenceNr    the event sequence number
   * @param timestamp     the event timestamp
   */
-final case class Envelope[E <: Event](
+final case class Envelope[E <: Event: ClassTag](
     event: E,
     offset: Offset,
     persistenceId: String,
     sequenceNr: Long,
     timestamp: Long
-)
+) {
+
+  /**
+    * The event type.
+    */
+  lazy val eventType: String = implicitly[ClassTag[E]].runtimeClass.getName
+}
