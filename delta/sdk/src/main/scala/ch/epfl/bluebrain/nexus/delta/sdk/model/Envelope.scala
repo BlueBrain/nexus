@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import akka.persistence.query.Offset
+
 /**
   * A typed event envelope.
   *
@@ -9,7 +11,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
   * @param sequenceNr    the event sequence number
   * @param timestamp     the event timestamp
   */
-final case class Envelope[E <: Event, Offset](
+final case class Envelope[E <: Event](
     event: E,
     offset: Offset,
     persistenceId: String,

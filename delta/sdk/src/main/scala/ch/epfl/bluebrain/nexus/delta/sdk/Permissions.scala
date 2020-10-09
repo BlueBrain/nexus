@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
 
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -17,11 +18,6 @@ import monix.bio.{IO, Task, UIO}
   * Operations pertaining to managing permissions.
   */
 trait Permissions {
-
-  /**
-    * The supported offset type.
-    */
-  type Offset
 
   /**
     * @return the permissions singleton persistence id
@@ -104,26 +100,17 @@ trait Permissions {
     *
     * @param offset the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Option[Offset] = None): Stream[Task, Envelope[PermissionsEvent, Offset]]
+  def events(offset: Offset = NoOffset): Stream[Task, Envelope[PermissionsEvent]]
 
   /**
     * The current permissions events. The stream stops after emitting all known events.
     *
     * @param offset the last seen event offset; it will not be emitted by the stream
     */
-  def currentEvents(offset: Option[Offset] = None): Stream[Task, Envelope[PermissionsEvent, Offset]]
+  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[PermissionsEvent]]
 }
 
 object Permissions {
-
-  /**
-    * Permissions with fixed Offset type.
-    *
-    * @tparam O the offset type
-    */
-  type WithOffset[O] = Permissions {
-    type Offset = O
-  }
 
   /**
     * ACLs permissions.

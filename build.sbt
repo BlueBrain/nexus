@@ -118,7 +118,7 @@ lazy val circeGenericExtras      = "io.circe"              %% "circe-generic-ext
 lazy val circeLiteral            = "io.circe"              %% "circe-literal"                       % circeVersion
 lazy val circeOptics             = "io.circe"              %% "circe-optics"                        % circeVersion
 lazy val circeParser             = "io.circe"              %% "circe-parser"                        % circeVersion
-lazy val classgraph              = "io.github.classgraph"  %  "classgraph"                          % classgraphVersion
+lazy val classgraph              = "io.github.classgraph"   % "classgraph"                          % classgraphVersion
 lazy val decline                 = "com.monovore"          %% "decline"                             % declineVersion
 lazy val distageCore             = "io.7mind.izumi"        %% "distage-core"                        % distageVersion
 lazy val distageDocker           = "io.7mind.izumi"        %% "distage-framework-docker"            % distageVersion
@@ -384,11 +384,12 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
-      distageCore,
-      monixBio,
-      akkaActor, // Needed to create Uri
+      akkaActor,            // Needed to create Uri
       akkaHttp,
+      akkaPersistenceQuery, // To have access to the Offset type
+      distageCore,
       fs2,
+      monixBio,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector)
@@ -404,7 +405,6 @@ lazy val sdkTestkit = project
   .dependsOn(rdf, sdk % "compile->compile;test->test", testkit)
   .settings(
     libraryDependencies ++= Seq(
-      akkaPersistenceQuery, // To have access to the Offset type
       scalaTest % Test
     )
   )

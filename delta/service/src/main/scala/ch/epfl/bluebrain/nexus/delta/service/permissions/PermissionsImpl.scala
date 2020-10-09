@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.permissions
 
 import akka.actor.typed.ActorSystem
-import akka.persistence.query.Offset
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
@@ -17,14 +17,12 @@ import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, ShardedAggre
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
-final class PermissionsImpl[O <: Offset] private (
+final class PermissionsImpl private (
     override val minimum: Set[Permission],
     agg: PermissionsAggregate,
-    eventLog: EventLog[O, Envelope[PermissionsEvent, O]],
+    eventLog: EventLog[Envelope[PermissionsEvent]],
     base: BaseUri
 ) extends Permissions {
-
-  override type Offset = O
 
   private val id: Iri = iri"${base.endpoint}/permissions"
 
@@ -73,16 +71,17 @@ final class PermissionsImpl[O <: Offset] private (
   override def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(DeletePermissions(rev, caller))
 
-  override def events(offset: Option[O]): Stream[Task, Envelope[PermissionsEvent, O]] =
+  override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
     offset match {
-      case Some(value) => eventLog.eventsByTag(permissionsTag, value)
-      case None        => eventLog.eventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
+      case NoOffset => eventLog.eventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
+      case _        => eventLog.eventsByTag(permissionsTag, offset)
     }
+  }
 
-  override def currentEvents(offset: Option[O]): Stream[Task, Envelope[PermissionsEvent, O]] =
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
     offset match {
-      case Some(value) => eventLog.currentEventsByTag(permissionsTag, value)
-      case None        => eventLog.currentEventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
+      case NoOffset => eventLog.currentEventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
+      case _        => eventLog.currentEventsByTag(permissionsTag, offset)
     }
 
   private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] =
@@ -152,13 +151,13 @@ object PermissionsImpl {
     * @param eventLog the permissions event log
     * @param base     the base uri of the system API
     */
-  final def apply[O <: Offset](
+  final def apply(
       minimum: Set[Permission],
       agg: PermissionsAggregate,
-      eventLog: EventLog[O, Envelope[PermissionsEvent, O]],
+      eventLog: EventLog[Envelope[PermissionsEvent]],
       base: BaseUri
-  ): Permissions.WithOffset[O] =
-    new PermissionsImpl[O](minimum, agg, eventLog, base)
+  ): Permissions =
+    new PermissionsImpl(minimum, agg, eventLog, base)
 
   /**
     *  Constructs a new [[Permissions]] instance backed by a sharded aggregate. It requires that the system has joined
@@ -169,12 +168,12 @@ object PermissionsImpl {
     * @param aggregateConfig the aggregate configuration
     * @param eventLog        an event log instance for events of type [[PermissionsEvent]]
     */
-  final def apply[O <: Offset](
+  final def apply(
       minimum: Set[Permission],
       base: BaseUri,
       aggregateConfig: AggregateConfig,
-      eventLog: EventLog[O, Envelope[PermissionsEvent, O]]
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions.WithOffset[O]] =
+      eventLog: EventLog[Envelope[PermissionsEvent]]
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions] =
     aggregate(minimum, aggregateConfig).map { agg =>
       apply(minimum, agg, eventLog, base)
     }
