@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
@@ -148,8 +148,19 @@ trait RealmsBehaviors {
       realms.create(github, githubName, githubOpenId, None).rejectedWith[RealmAlreadyExists]
     }
 
+    "fail to create with an existing openIdCongig" in {
+      val label = Label.unsafe("duplicate")
+      realms.create(label, githubName, githubOpenId, None).rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
+        RealmOpenIdConfigAlreadyExists(label, githubOpenId)
+    }
+
     "fail to update a realm with incorrect rev" in {
       realms.update(gitlab, 3L, gitlabName, gitlabOpenId, None).rejected shouldEqual IncorrectRev(3L, 1L)
+    }
+
+    "fail to update a realm a already used openId config" in {
+      realms.update(gitlab, 1L, githubName, githubOpenId, Some(githubLogo)).rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
+        RealmOpenIdConfigAlreadyExists(gitlab, githubOpenId)
     }
 
     "fail to deprecate a realm with incorrect rev" in {
