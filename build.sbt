@@ -32,6 +32,7 @@ val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.2.0"
 val circeVersion                    = "0.13.0"
+val classgraphVersion               = "4.8.90"
 val declineVersion                  = "1.3.0"
 val distageVersion                  = "0.10.19"
 val dockerTestKitVersion            = "0.9.9"
@@ -117,6 +118,7 @@ lazy val circeGenericExtras      = "io.circe"              %% "circe-generic-ext
 lazy val circeLiteral            = "io.circe"              %% "circe-literal"                       % circeVersion
 lazy val circeOptics             = "io.circe"              %% "circe-optics"                        % circeVersion
 lazy val circeParser             = "io.circe"              %% "circe-parser"                        % circeVersion
+lazy val classgraph              = "io.github.classgraph"  %  "classgraph"                          % classgraphVersion
 lazy val decline                 = "com.monovore"          %% "decline"                             % declineVersion
 lazy val distageCore             = "io.7mind.izumi"        %% "distage-core"                        % distageVersion
 lazy val distageDocker           = "io.7mind.izumi"        %% "distage-framework-docker"            % distageVersion
@@ -418,6 +420,7 @@ lazy val service = project
   .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
+      classgraph,
       nimbusJoseJwt,
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
