@@ -1,22 +1,32 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
+import java.util.UUID
+
+import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
+import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{HttpHeader, MediaType, StatusCode, StatusCodes}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
+import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.delta.JsonLdFormat
 import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
 import ch.epfl.bluebrain.nexus.delta.syntax._
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
+import streamz.converter._
 
-trait DeltaDirectives {
+import scala.util.Try
+
+trait DeltaDirectives extends RdfMarshalling {
 
   private val mediaTypes =
     Seq(`application/ld+json`, `application/n-triples`, `application/vnd.graphviz`)
@@ -100,11 +110,25 @@ trait DeltaDirectives {
         case None        => reject(UnacceptedResponseContentTypeRejection(mediaTypes.map(mt => Alternative(mt)).toSet))
       }
     }
-}
 
-object DeltaDirectives extends DeltaDirectives
-
-trait DeltaRouteDirectives extends DeltaDirectives with RdfMarshalling {
+  def lastEventId: Directive1[Offset] = {
+    optionalHeaderValueByType(`Last-Event-ID`).flatMap {
+      case Some(value) =>
+        val timeBasedUUID = Try(TimeBasedUUID(UUID.fromString(value.id))).toOption
+        val sequence      = value.id.toLongOption.map(Sequence)
+        timeBasedUUID orElse sequence match {
+          case Some(value) => provide(value)
+          case None        =>
+            reject(
+              MalformedHeaderRejection(
+                `Last-Event-ID`.name,
+                s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected either a Long value or a TimeBasedUUID."
+              )
+            )
+        }
+      case None        => provide(NoOffset)
+    }
+  }
 
   private val jsonMediaTypes =
     Seq(`application/ld+json`, `application/json`)
@@ -275,6 +299,26 @@ trait DeltaRouteDirectives extends DeltaDirectives with RdfMarshalling {
       ordering: JsonKeyOrdering
   ): Route =
     completeIO(StatusCodes.OK, Seq.empty, io)
+
+  def completeStream[E <: Event: JsonLdEncoder](
+      stream: fs2.Stream[Task, Envelope[E]]
+  )(implicit s: Scheduler, ordering: JsonKeyOrdering, cr: RemoteContextResolution): Route = {
+    def encode(envelope: Envelope[E]): IO[RdfError, ServerSentEvent] =
+      envelope.event.toCompactedJsonLd.map { jsonLd =>
+        val id: String = envelope.offset match {
+          case TimeBasedUUID(value) => value.toString
+          case Sequence(value)      => value.toString
+          case NoOffset             => -1L.toString
+        }
+        ServerSentEvent(
+          data = jsonLd.json.sort.spaces2,
+          eventType = Some(envelope.eventType),
+          id = Some(id)
+        )
+      }
+
+    complete(Source.fromGraph[ServerSentEvent, Any](stream.evalMap(encode).toSource))
+  }
 }
 
-object DeltaRouteDirectives extends DeltaRouteDirectives
+object DeltaDirectives extends DeltaDirectives

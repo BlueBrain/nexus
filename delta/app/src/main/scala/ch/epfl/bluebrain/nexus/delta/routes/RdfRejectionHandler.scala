@@ -18,7 +18,7 @@ import monix.execution.Scheduler
 
 // $COVERAGE-OFF$
 @SuppressWarnings(Array("UnsafeTraversableMethods"))
-object RdfRejectionHandler extends DeltaRouteDirectives {
+object RdfRejectionHandler extends DeltaDirectives {
 
   /**
     * Adapted from [[akka.http.scaladsl.server.RejectionHandler.default]]

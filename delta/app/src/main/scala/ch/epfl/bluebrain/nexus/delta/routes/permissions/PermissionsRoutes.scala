@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions
 import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions._
-import ch.epfl.bluebrain.nexus.delta.routes.{CirceUnmarshalling, DeltaRouteDirectives}
+import ch.epfl.bluebrain.nexus.delta.routes.{CirceUnmarshalling, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -29,7 +29,7 @@ final class PermissionsRoutes(permissions: Permissions)(implicit
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends DeltaRouteDirectives
+) extends DeltaDirectives
     with CirceUnmarshalling {
   private val prefixSegment = baseUri.prefix.fold("")(p => s"/$p")
 
@@ -37,37 +37,50 @@ final class PermissionsRoutes(permissions: Permissions)(implicit
   implicit private val caller: Subject = Identity.Anonymous
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & pathPrefix("permissions") & pathEndOrSingleSlash) {
-      operationName(s"$prefixSegment/permissions") {
-//        extractCaller { implicit caller =>
-        concat(
-          get { // Fetch permissions
-            parameter("rev".as[Long].?) {
-              case Some(rev) => completeIO(permissions.fetchAt(rev).leftMap[PermissionsRejection](identity))
-              case None      => completeUIO(permissions.fetch)
-            }
-          },
-          (put & parameter("rev" ? 0L)) { rev => // Replace permissions
-            entity(as[PatchPermissions]) {
-              case Replace(set) => completeIO(permissions.replace(set, rev).map(_.void))
-              case _            => reject(malformedFormField(keywords.tpe, s"Expected value 'Replace' when using 'PUT'."))
-            }
-          },
-          (patch & parameter("rev" ? 0L)) { rev => // Append or Subtract permissions
-            entity(as[PatchPermissions]) {
-              case Append(set)   => completeIO(permissions.append(set, rev).map(_.void))
-              case Subtract(set) => completeIO(permissions.subtract(set, rev).map(_.void))
-              case _             =>
-                reject(malformedFormField(keywords.tpe, s"Expected value 'Replace' or 'Subtract' when using 'PATCH'."))
-            }
-          },
-          delete { // Delete permissions
-            parameter("rev".as[Long]) { rev =>
-              completeIO(permissions.delete(rev).map(_.void))
+    baseUriPrefix(baseUri.prefix) {
+//  extractCaller { implicit caller =>
+      concat(
+        (pathPrefix("permissions") & pathEndOrSingleSlash) {
+          operationName(s"$prefixSegment/permissions") {
+            concat(
+              get { // Fetch permissions
+                parameter("rev".as[Long].?) {
+                  case Some(rev) => completeIO(permissions.fetchAt(rev).leftMap[PermissionsRejection](identity))
+                  case None      => completeUIO(permissions.fetch)
+                }
+              },
+              (put & parameter("rev" ? 0L)) { rev => // Replace permissions
+                entity(as[PatchPermissions]) {
+                  case Replace(set) => completeIO(permissions.replace(set, rev).map(_.void))
+                  case _            => reject(malformedFormField(keywords.tpe, s"Expected value 'Replace' when using 'PUT'."))
+                }
+              },
+              (patch & parameter("rev" ? 0L)) { rev => // Append or Subtract permissions
+                entity(as[PatchPermissions]) {
+                  case Append(set)   => completeIO(permissions.append(set, rev).map(_.void))
+                  case Subtract(set) => completeIO(permissions.subtract(set, rev).map(_.void))
+                  case _             =>
+                    reject(
+                      malformedFormField(keywords.tpe, s"Expected value 'Replace' or 'Subtract' when using 'PATCH'.")
+                    )
+                }
+              },
+              delete { // Delete permissions
+                parameter("rev".as[Long]) { rev =>
+                  completeIO(permissions.delete(rev).map(_.void))
+                }
+              }
+            )
+          }
+        },
+        (pathPrefix("permissions" / "events") & pathEndOrSingleSlash) {
+          operationName(s"$prefixSegment/permissions/events") {
+            lastEventId { offset =>
+              completeStream(permissions.events(offset))
             }
           }
-        )
-      }
+        }
+      )
     }
 
   private def malformedFormField(field: String, details: String) =

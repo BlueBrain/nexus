@@ -25,12 +25,12 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.http.scaladsl.model.StatusCodes._
 
-class DeltaRouteDirectivesSpec
+class DeltaDirectivesSpec
     extends AnyWordSpecLike
     with ScalatestRouteTest
     with Matchers
     with CirceLiteral
-    with DeltaRouteDirectives
+    with DeltaDirectives
     with IOValues
     with RouteHelpers
     with TestMatchers

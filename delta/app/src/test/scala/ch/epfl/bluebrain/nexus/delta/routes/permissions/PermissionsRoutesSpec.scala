@@ -8,7 +8,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.{DeltaRouteDirectives, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.routes.{DeltaDirectives, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -26,7 +26,7 @@ class PermissionsRoutesSpec
     with ScalatestRouteTest
     with Matchers
     with CirceLiteral
-    with DeltaRouteDirectives
+    with DeltaDirectives
     with IOFixedClock
     with IOValues
     with RouteHelpers
