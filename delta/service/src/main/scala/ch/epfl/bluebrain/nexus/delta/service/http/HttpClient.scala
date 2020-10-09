@@ -13,14 +13,25 @@ import monix.execution.Scheduler
 import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
 
+/**
+  * Http client based on the akka http model.
+  */
 trait HttpClient {
 
+  /**
+    * Execute the argument request and unmarshal the response into an A.
+    *
+   * @param req the request to execute
+    */
   def apply[A](req: HttpRequest)(implicit A: ClassTag[A], um: FromEntityUnmarshaller[A]): IO[HttpClientError, A]
 
 }
 
 object HttpClient {
 
+  /**
+    * Construct the Http client using an underlying akka http client
+    */
   def apply(implicit as: ActorSystem, materializer: Materializer, scheduler: Scheduler): HttpClient =
     new HttpClient {
       private val client: HttpExt = Http()

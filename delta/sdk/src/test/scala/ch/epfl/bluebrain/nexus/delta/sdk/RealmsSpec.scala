@@ -145,7 +145,7 @@ class RealmsSpec
       }
 
       "reject with wellKnown resolution error UnsuccessfulOpenIdConfigResponse" in {
-        val wellKnownWrongUri: Uri = "https://example.com/auth/realms/myrealmwrong"
+        val wellKnownWrongUri: Uri = "https://localhost/auth/realms/myrealmwrong"
         val list                   = List(
           Initial -> CreateRealm(label, name, wellKnownWrongUri, None, subject),
           current -> UpdateRealm(label, 1L, name, wellKnownWrongUri, None, subject)

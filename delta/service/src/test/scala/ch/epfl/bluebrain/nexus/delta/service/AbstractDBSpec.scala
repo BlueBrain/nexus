@@ -28,6 +28,9 @@ abstract class AbstractDBSpec
           ConfigFactory.parseResources("akka-persistence-test.conf")
         )
         .withFallback(
+          ConfigFactory.parseResources("akka-test.conf")
+        )
+        .withFallback(
           ConfigFactory.load()
         )
         .resolve()

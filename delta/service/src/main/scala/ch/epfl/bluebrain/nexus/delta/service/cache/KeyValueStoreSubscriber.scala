@@ -7,10 +7,14 @@ import akka.cluster.ddata.{LWWMap, LWWMapKey}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChange.{ValueAdded, ValueModified, ValueRemoved}
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.SubscriberCommand.{SubscribeResponse, Unsubscribe}
+import ch.epfl.bluebrain.nexus.delta.service.cache.SubscriberCommand.{SubscribeResponse, Unsubscribe}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
+/**
+  * Used with a [[KeyValueStoreSubscriber]] actor to trigger an
+  * action when a change on a [[KeyValueStore]] occurs
+  */
 trait OnKeyValueStoreChange[K, V] {
 
   /**
@@ -32,6 +36,9 @@ object OnKeyValueStoreChange {
   def noEffect[K, V]: OnKeyValueStoreChange[K, V] =
     (_: KeyValueStoreChanges[K, V]) => IO.unit
 
+  /**
+    * Apply the given option for every type of event
+    */
   def apply[K, V](
       onCreate: (K, V) => UIO[Unit],
       onUpdate: (K, V) => UIO[Unit],
@@ -52,17 +59,6 @@ object OnKeyValueStoreChange {
 }
 
 object KeyValueStoreSubscriber {
-
-  sealed trait SubscriberCommand
-
-  object SubscriberCommand {
-
-    final case class SubscribeResponse[K, V](change: Replicator.SubscribeResponse[LWWMap[K, V]])
-        extends SubscriberCommand
-
-    case object Unsubscribe extends SubscriberCommand
-
-  }
 
   /**
     * Enumeration of types related to changes to the key value store.
@@ -116,16 +112,15 @@ object KeyValueStoreSubscriber {
   ): Behavior[SubscriberCommand] =
     Behaviors.setup { context =>
       DistributedData.withReplicatorMessageAdapter[SubscriberCommand, LWWMap[K, V]] { replicator =>
-        val key    = LWWMapKey[K, V](cacheId)
-        val keyAny = LWWMapKey[Any, Any](cacheId)
+        val key = LWWMapKey[K, V](cacheId)
         replicator.subscribe(key, SubscribeResponse.apply)
 
         def run(previous: Map[K, V]): Behavior[SubscriberCommand] =
           Behaviors.receiveMessage[SubscriberCommand] {
-            case Unsubscribe                                              =>
+            case Unsubscribe                                      =>
               replicator.unsubscribe(key)
               Behaviors.stopped
-            case SubscribeResponse(change @ Replicator.Changed(`keyAny`)) =>
+            case SubscribeResponse(change: Replicator.Changed[_]) =>
               def diff(recent: Map[K, V]): KeyValueStoreChanges[K, V] = {
                 val added   = (recent -- previous.keySet).map { case (k, v) => ValueAdded(k, v) }.toSet
                 val removed = (previous -- recent.keySet).map { case (k, v) => ValueRemoved(k, v) }.toSet
@@ -145,7 +140,7 @@ object KeyValueStoreSubscriber {
                 onChange(changes).runAsyncAndForget
               context.log.debug("Received a Changed message from the key value store. Values changed: '{}'", changes)
               run(recent)
-            case other                                                    =>
+            case other                                            =>
               context.log.error("Skipping received a message different from Changed. Message: '{}'", other)
               Behaviors.unhandled
           }

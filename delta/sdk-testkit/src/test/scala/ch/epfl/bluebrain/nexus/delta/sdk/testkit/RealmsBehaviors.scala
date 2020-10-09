@@ -31,7 +31,7 @@ trait RealmsBehaviors {
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
 
-  val githubLogo: Uri = "https://example.com/ghlogo"
+  val githubLogo: Uri = "https://localhost/ghlogo"
 
   val (githubOpenId, githubWk) = WellKnownGen.create(github.value)
   val (gitlabOpenId, gitlabWk) = WellKnownGen.create(gitlab.value)

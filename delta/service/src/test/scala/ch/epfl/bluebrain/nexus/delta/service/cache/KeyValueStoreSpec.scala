@@ -5,9 +5,10 @@ import akka.actor.typed.ActorRef
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSpec.RevisionedValue
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChange.{ValueAdded, ValueModified, ValueRemoved}
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.KeyValueStoreChanges
-import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreSubscriber.SubscriberCommand.Unsubscribe
+import ch.epfl.bluebrain.nexus.delta.service.cache.SubscriberCommand.Unsubscribe
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.testkit.IOValues
+import com.typesafe.config.ConfigFactory
 import monix.bio.IO
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.OptionValues
@@ -18,7 +19,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 
 class KeyValueStoreSpec
-    extends ScalaTestWithActorTestKit
+    extends ScalaTestWithActorTestKit(ConfigFactory.load("akka-test.conf"))
     with AsyncWordSpecLike
     with Matchers
     with IOValues
@@ -44,7 +45,7 @@ class KeyValueStoreSpec
   val onChange: OnKeyValueStoreChange[String, RevisionedValue[String]] =
     (value: KeyValueStoreChanges[String, RevisionedValue[String]]) => IO.pure(changes += value)
 
-  private val subscriber: ActorRef[KeyValueStoreSubscriber.SubscriberCommand] =
+  private val subscriber: ActorRef[SubscriberCommand] =
     spawn(KeyValueStoreSubscriber("spec", onChange), "subscriber")
 
   private val store = KeyValueStore.distributed[String, RevisionedValue[String]](

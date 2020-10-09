@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.Decoder
 
 /**
   * OAuth2 grant type enumeration.
@@ -57,15 +57,6 @@ object GrantType {
 
   object Snake {
 
-    implicit final val grantTypeEncoder: Encoder[GrantType] = Encoder.instance {
-      case AuthorizationCode => Json.fromString("authorization_code")
-      case Implicit          => Json.fromString("implicit")
-      case Password          => Json.fromString("password")
-      case ClientCredentials => Json.fromString("client_credentials")
-      case DeviceCode        => Json.fromString("device_code")
-      case RefreshToken      => Json.fromString("refresh_token")
-    }
-
     implicit final val grantTypeDecoder: Decoder[GrantType] = Decoder.decodeString.emap {
       case "authorization_code" => Right(AuthorizationCode)
       case "implicit"           => Right(Implicit)
@@ -74,27 +65,6 @@ object GrantType {
       case "device_code"        => Right(DeviceCode)
       case "refresh_token"      => Right(RefreshToken)
       case other                => Left(s"Unknown grant type '$other'")
-    }
-  }
-
-  object Camel {
-    implicit final val grantTypeEncoder: Encoder[GrantType] = Encoder.instance {
-      case AuthorizationCode => Json.fromString("authorizationCode")
-      case Implicit          => Json.fromString("implicit")
-      case Password          => Json.fromString("password")
-      case ClientCredentials => Json.fromString("clientCredentials")
-      case DeviceCode        => Json.fromString("deviceCode")
-      case RefreshToken      => Json.fromString("refreshToken")
-    }
-
-    implicit final val grantTypeDecoder: Decoder[GrantType] = Decoder.decodeString.emap {
-      case "authorizationCode" => Right(AuthorizationCode)
-      case "implicit"          => Right(Implicit)
-      case "password"          => Right(Password)
-      case "clientCredentials" => Right(ClientCredentials)
-      case "deviceCode"        => Right(DeviceCode)
-      case "refreshToken"      => Right(RefreshToken)
-      case other               => Left(s"Unknown grant type '$other'")
     }
   }
 }

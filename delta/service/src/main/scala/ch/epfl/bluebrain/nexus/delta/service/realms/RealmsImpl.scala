@@ -116,13 +116,13 @@ object RealmsImpl {
   /**
     * Creates a new realm index.
     */
-  def index(realmsConfig: RealmsConfig)(implicit as: ActorSystem[Nothing]): RealmsCache = {
+  private def index(realmsConfig: RealmsConfig)(implicit as: ActorSystem[Nothing]): RealmsCache = {
     implicit val cfg: KeyValueStoreConfig    = realmsConfig.keyValueStore
     val clock: (Long, RealmResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed("realms", clock)
   }
 
-  final def aggregate(
+  private def aggregate(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       existingRealms: UIO[Set[RealmResource]],
       realmsConfig: RealmsConfig
@@ -151,12 +151,31 @@ object RealmsImpl {
     )
   }
 
-  def apply[O <: Offset](agg: RealmsAggregate, eventLog: EventLog[O, Envelope[RealmEvent, O]], index: RealmsCache)(
-      implicit base: BaseUri
+  /**
+    * Constructs a [[Realms]] instance
+    * @param agg the sharded aggregate
+    * @param eventLog the event log
+    * @param index the index
+    * @param base the base uri of the system api
+    */
+  final def apply[O <: Offset](
+      agg: RealmsAggregate,
+      eventLog: EventLog[O, Envelope[RealmEvent, O]],
+      index: RealmsCache
+  )(implicit
+      base: BaseUri
   ) =
     new RealmsImpl(agg, eventLog, index)
 
-  def apply[O <: Offset](
+  /**
+    * Constructs a [[Realms]] instance
+    * @param realmsConfig the realm configuration
+    * @param resolveWellKnown how to resolve the [[WellKnown]]
+    * @param eventLog the event log for [[RealmEvent]]
+    * @param base the base uri of the system api
+    * @return
+    */
+  final def apply[O <: Offset](
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[O, Envelope[RealmEvent, O]]
