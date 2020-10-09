@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.mocks
 
+import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent, PermissionsRejection}
@@ -13,7 +14,6 @@ import monix.bio.{IO, Task, UIO}
   */
 class PermissionsMock(expected: PermissionsResource) extends Permissions {
   // format: off
-  override type Offset = Nothing
   override def persistenceId: String                                                                            = ???
   override def minimum: Set[Permission]                                                                         = ???
   override def fetchAt(rev: Long): IO[PermissionsRejection.RevisionNotFound, PermissionsResource]               = ???
@@ -21,8 +21,8 @@ class PermissionsMock(expected: PermissionsResource) extends Permissions {
   override def append(permissions: Set[Permission], rev: Long)(implicit caller: Identity.Subject): IO[PermissionsRejection, PermissionsResource] = ???
   override def subtract(permissions: Set[Permission], rev: Long)(implicit caller: Identity.Subject): IO[PermissionsRejection, PermissionsResource] = ???
   override def delete(rev: Long)(implicit caller: Identity.Subject): IO[PermissionsRejection, PermissionsResource] = ???
-  override def events(offset: Option[Nothing]): fs2.Stream[Task, Envelope[PermissionsEvent, Nothing]] = ???
-  override def currentEvents(offset: Option[Nothing]): fs2.Stream[Task, Envelope[PermissionsEvent, Nothing]] = ???
+  override def events(offset: Offset): fs2.Stream[Task, Envelope[PermissionsEvent]] = ???
+  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[PermissionsEvent]] = ???
   // format: on
   override def fetch: UIO[PermissionsResource]                                                                                                     =
     IO.pure(expected)

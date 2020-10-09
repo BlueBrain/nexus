@@ -19,7 +19,7 @@ import scala.concurrent.duration._
 
 class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with OptionValues {
 
-  private def eventLog: Task[EventLog[Sequence, Envelope[RealmEvent, Sequence]]] =
+  private def eventLog: Task[EventLog[Envelope[RealmEvent]]] =
     EventLog.jdbcEventLog {
       case ee @ EventEnvelope(offset: Sequence, persistenceId, sequenceNr, value: RealmEvent) =>
         UIO.pure(Some(Envelope(value, offset, persistenceId, sequenceNr, ee.timestamp)))

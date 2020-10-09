@@ -36,7 +36,7 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
   /**
     * Create a permissions instance. The instance will be memoized.
     */
-  def create: Task[Permissions.WithOffset[Sequence]]
+  def create: Task[Permissions]
 
   /**
     * The permissions resource id.
@@ -177,7 +177,7 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
     "return some of the current events" in {
       val persistenceId = permissions.accepted.persistenceId
       // format: off
-      val envelopes = permissions.accepted.currentEvents(Some(Sequence(2L))).compile.toVector.accepted
+      val envelopes = permissions.accepted.currentEvents(Sequence(2L)).compile.toVector.accepted
       envelopes.map(ee => ee.copy(timestamp = Instant.EPOCH.toEpochMilli)) shouldEqual Vector(
         Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(3L), persistenceId, 3L, Instant.EPOCH.toEpochMilli),
         Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), Sequence(4L), persistenceId, 4L, Instant.EPOCH.toEpochMilli),
@@ -205,7 +205,7 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
     "return a partial non terminating stream of events" in {
       val persistenceId = permissions.accepted.persistenceId
       val envelopes     = for {
-        fiber     <- permissions.accepted.events(Some(Sequence(2L))).take(5L).compile.toVector.start
+        fiber     <- permissions.accepted.events(Sequence(2L)).take(5L).compile.toVector.start
         _         <- permissions.accepted.append(Set(perm3), 6L)
         collected <- fiber.join
       } yield collected

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.service.realms
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
-import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -19,9 +18,9 @@ import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import monix.bio.{IO, UIO}
 
-final class RealmsImpl[O <: Offset] private (
+final class RealmsImpl private (
     agg: RealmsAggregate,
-    eventLog: EventLog[O, Envelope[RealmEvent, O]],
+    eventLog: EventLog[Envelope[RealmEvent]],
     index: RealmsCache
 )(implicit base: BaseUri)
     extends Realms {
@@ -158,13 +157,13 @@ object RealmsImpl {
     * @param index the index
     * @param base the base uri of the system api
     */
-  final def apply[O <: Offset](
+  final def apply(
       agg: RealmsAggregate,
-      eventLog: EventLog[O, Envelope[RealmEvent, O]],
+      eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache
   )(implicit
       base: BaseUri
-  ) =
+  ): RealmsImpl =
     new RealmsImpl(agg, eventLog, index)
 
   /**
@@ -175,10 +174,10 @@ object RealmsImpl {
     * @param base the base uri of the system api
     * @return
     */
-  final def apply[O <: Offset](
+  final def apply(
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
-      eventLog: EventLog[O, Envelope[RealmEvent, O]]
+      eventLog: EventLog[Envelope[RealmEvent]]
   )(implicit base: BaseUri, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Realms] = {
     val i = index(realmsConfig)
     aggregate(

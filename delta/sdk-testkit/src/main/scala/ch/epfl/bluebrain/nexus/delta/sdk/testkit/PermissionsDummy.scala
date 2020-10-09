@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import akka.persistence.query.Sequence
+import akka.persistence.query.{NoOffset, Offset, Sequence}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
@@ -28,12 +28,10 @@ import scala.concurrent.duration.DurationInt
   */
 final class PermissionsDummy private (
     override val minimum: Set[Permission],
-    journal: IORef[Vector[Envelope[PermissionsEvent, Sequence]]],
+    journal: IORef[Vector[Envelope[PermissionsEvent]]],
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO])
     extends Permissions {
-
-  override type Offset = Sequence
 
   override val persistenceId: String = "permissions-permissions"
 
@@ -64,8 +62,8 @@ final class PermissionsDummy private (
   override def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(DeletePermissions(rev, caller))
 
-  override def events(offset: Option[Sequence]): Stream[Task, Envelope[PermissionsEvent, Sequence]] = {
-    def addNotSeen(queue: Queue[Task, Envelope[PermissionsEvent, Sequence]], seenCount: Int): Task[Unit] = {
+  override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
+    def addNotSeen(queue: Queue[Task, Envelope[PermissionsEvent]], seenCount: Int): Task[Unit] = {
       journal.get.flatMap { envelopes =>
         val delta = envelopes.drop(seenCount)
         if (delta.isEmpty) Task.sleep(10.milliseconds) >> addNotSeen(queue, seenCount)
@@ -74,23 +72,33 @@ final class PermissionsDummy private (
     }
 
     val streamF = for {
-      queue <- Queue.unbounded[Task, Envelope[PermissionsEvent, Sequence]]
+      queue <- Queue.unbounded[Task, Envelope[PermissionsEvent]]
       fiber <- addNotSeen(queue, 0).start
       stream = queue.dequeue.onFinalize(fiber.cancel)
     } yield stream
 
     val stream = Stream.eval(streamF).flatten
-    offset match {
-      case Some(value) => stream.dropWhile(_.offset <= value)
-      case None        => stream
+    stream.flatMap { envelope =>
+      (envelope.offset, offset) match {
+        case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
+          if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
+          else Stream(envelope)
+        case (_, NoOffset)                                         => Stream(envelope)
+        case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+      }
     }
   }
 
-  override def currentEvents(offset: Option[Sequence]): Stream[Task, Envelope[PermissionsEvent, Sequence]] = {
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
     val stream = Stream.eval(journal.get).flatMap(envelopes => Stream.emits(envelopes))
-    offset match {
-      case Some(value) => stream.dropWhile(_.offset <= value)
-      case None        => stream
+    stream.flatMap { envelope =>
+      (envelope.offset, offset) match {
+        case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
+          if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
+          else Stream(envelope)
+        case (_, NoOffset)                                         => Stream(envelope)
+        case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+      }
     }
   }
 
@@ -146,7 +154,7 @@ object PermissionsDummy {
     */
   final def apply(minimum: Set[Permission])(implicit clock: Clock[UIO]): UIO[PermissionsDummy] =
     for {
-      ref <- IORef.of(Vector.empty[Envelope[PermissionsEvent, Sequence]])
+      ref <- IORef.of(Vector.empty[Envelope[PermissionsEvent]])
       sem <- IOSemaphore(1L)
     } yield new PermissionsDummy(minimum, ref, sem)
 }

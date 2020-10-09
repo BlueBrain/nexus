@@ -13,6 +13,7 @@ target/
 .bloop
 .metals
 project/.bloop
+.bsp
 
 # IDE
 .settings

@@ -354,11 +354,12 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
-      distageCore,
-      monixBio,
-      akkaActorTyped, // Needed to create Uri
+      akkaActorTyped,       // Needed to create Uri
       akkaHttp,
+      akkaPersistenceQuery, // To have access to the Offset type
+      distageCore,
       fs2,
+      monixBio,
       scalaTest % Test
     ),
     addCompilerPlugin(kindProjector)
@@ -374,7 +375,6 @@ lazy val sdkTestkit = project
   .dependsOn(rdf, sdk % "compile->compile;test->test", testkit)
   .settings(
     libraryDependencies ++= Seq(
-      akkaPersistenceQuery, // To have access to the Offset type
       scalaTest % Test
     )
   )
