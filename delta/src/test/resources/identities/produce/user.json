@@ -1,6 +1,0 @@
-{
-  "@id": "http://nexus.example.com/v1/realms/myrealm/users/mysubject",
-  "@type": "User",
-  "realm": "myrealm",
-  "subject": "mysubject"
-}

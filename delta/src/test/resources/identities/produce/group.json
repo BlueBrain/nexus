@@ -1,6 +1,0 @@
-{
-  "@id": "http://nexus.example.com/v1/realms/myrealm/groups/mygroup",
-  "@type": "Group",
-  "realm": "myrealm",
-  "group": "mygroup"
-}

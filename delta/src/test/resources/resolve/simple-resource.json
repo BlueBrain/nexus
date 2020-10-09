@@ -1,7 +1,0 @@
-{
-  "@context": {
-    "schema": "http://schema.org/"
-  },
-  "@id": "{id}",
-  "schema:description": "simple test resource: {random}"
-}
