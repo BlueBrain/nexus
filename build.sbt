@@ -18,14 +18,11 @@ val scalaCompilerVersion   = "2.13.3"
 
 val akkaHttpVersion                 = "10.2.0"
 val akkaHttpCirceVersion            = "1.33.0"
-val akkaCorsVersion                 = "1.0.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
-val akkaPersistenceInMemVersion     = "2.5.15.2"
 val akkaPersistenceJdbcVersion      = "4.0.0"
 val akkaVersion                     = "2.6.9"
 val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
-val asmVersion                      = "7.3.1"
 val awsSdkVersion                   = "2.10.23"
 val byteBuddyAgentVersion           = "1.10.15"
 val catsEffectVersion               = "2.1.3"
@@ -39,10 +36,8 @@ val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.9.2"
 val flywayVersion                   = "6.5.2"
 val fs2Version                      = "2.4.4"
-val guavaVersion                    = "29.0-jre"
 val http4sVersion                   = "0.21.7"
 val h2Version                       = "1.4.200"
-val iamVersion                      = "1.3.0"
 val jenaVersion                     = "3.15.0"
 val jsonldjavaVersion               = "0.13.2"
 val kamonVersion                    = "2.1.6"
@@ -50,43 +45,30 @@ val kanelaAgentVersion              = "1.0.6"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
-val log4jVersion                    = "2.13.3"
-val magnoliaVersion                 = "0.16.0"
 val mockitoVersion                  = "1.15.0"
 val monixVersion                    = "3.2.2"
 val monixBioVersion                 = "1.0.0"
 val nimbusJoseJwtVersion            = "8.19"
-val parboiledVersion                = "2.2.0"
 val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalateVersion                  = "1.9.6"
 val scalaTestVersion                = "3.2.2"
 val slickVersion                    = "3.3.2"
 val streamzVersion                  = "0.12"
-val topBraidVersion                 = "1.3.2"
 val uuidGeneratorVersion            = "3.2.0"
-
-lazy val akkaActor           = "com.typesafe.akka" %% "akka-actor"            % akkaVersion
-lazy val akkaCluster         = "com.typesafe.akka" %% "akka-cluster"          % akkaVersion
-lazy val akkaClusterSharding = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
 
 lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
 lazy val akkaClusterTyped         = "com.typesafe.akka" %% "akka-cluster-typed"          % akkaVersion
 lazy val akkaClusterShardingTyped = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
-lazy val akkaHttpXml     = "com.typesafe.akka" %% "akka-http-xml"     % akkaHttpVersion
-lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCorsVersion
 lazy val akkaHttpCirce   = "de.heikoseeberger" %% "akka-http-circe"   % akkaHttpCirceVersion
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
-
-lazy val akkaPersistence = "com.typesafe.akka" %% "akka-persistence" % akkaVersion
 
 lazy val akkaPersistenceTyped   = "com.typesafe.akka" %% "akka-persistence-typed"   % akkaVersion
 lazy val akkaPersistenceTestKit = "com.typesafe.akka" %% "akka-persistence-testkit" % akkaVersion
 
-lazy val akkaPersistenceCassandra = "com.typesafe.akka"   %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceInMem     = "com.github.dnvriend" %% "akka-persistence-inmemory"  % akkaPersistenceInMemVersion
+lazy val akkaPersistenceCassandra = "com.typesafe.akka" %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
 
 lazy val akkaPersistenceJdbc = Seq(
   "com.lightbend.akka" %% "akka-persistence-jdbc" % akkaPersistenceJdbcVersion,
@@ -94,36 +76,32 @@ lazy val akkaPersistenceJdbc = Seq(
   "com.typesafe.slick" %% "slick-hikaricp"        % slickVersion
 )
 
-lazy val akkaPersistenceLauncher = "com.typesafe.akka"     %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceQuery    = "com.typesafe.akka"     %% "akka-persistence-query"              % akkaVersion
-lazy val akkaSlf4j               = "com.typesafe.akka"     %% "akka-slf4j"                          % akkaVersion
-lazy val akkaStream              = "com.typesafe.akka"     %% "akka-stream"                         % akkaVersion
-lazy val akkaTestKit             = "com.typesafe.akka"     %% "akka-testkit"                        % akkaVersion
-lazy val akkaTestKitTyped        = "com.typesafe.akka"     %% "akka-actor-testkit-typed"            % akkaVersion
-lazy val alleycatsCore           = "org.typelevel"         %% "alleycats-core"                      % catsVersion
-lazy val alpakkaFiles            = "com.lightbend.akka"    %% "akka-stream-alpakka-file"            % alpakkaVersion
-lazy val alpakkaSse              = "com.lightbend.akka"    %% "akka-stream-alpakka-sse"             % alpakkaVersion
-lazy val alpakkaS3               = "com.lightbend.akka"    %% "akka-stream-alpakka-s3"              % alpakkaVersion
-lazy val apacheCompress          = "org.apache.commons"     % "commons-compress"                    % apacheCompressVersion
-lazy val asm                     = "org.ow2.asm"            % "asm"                                 % asmVersion
-lazy val awsSdk                  = "software.amazon.awssdk" % "s3"                                  % awsSdkVersion
-lazy val byteBuddyAgent          = "net.bytebuddy"          % "byte-buddy-agent"                    % byteBuddyAgentVersion
-lazy val catsCore                = "org.typelevel"         %% "cats-core"                           % catsVersion
-lazy val catsEffect              = "org.typelevel"         %% "cats-effect"                         % catsEffectVersion
-lazy val catsEffectRetry         = "com.github.cb372"      %% "cats-retry-cats-effect"              % catsRetryVersion
-lazy val catsRetry               = "com.github.cb372"      %% "cats-retry-core"                     % catsRetryVersion
-lazy val circeCore               = "io.circe"              %% "circe-core"                          % circeVersion
-lazy val circeGeneric            = "io.circe"              %% "circe-generic"                       % circeVersion
-lazy val circeGenericExtras      = "io.circe"              %% "circe-generic-extras"                % circeVersion
-lazy val circeLiteral            = "io.circe"              %% "circe-literal"                       % circeVersion
-lazy val circeOptics             = "io.circe"              %% "circe-optics"                        % circeVersion
-lazy val circeParser             = "io.circe"              %% "circe-parser"                        % circeVersion
-lazy val classgraph              = "io.github.classgraph"  %  "classgraph"                          % classgraphVersion
-lazy val decline                 = "com.monovore"          %% "decline"                             % declineVersion
-lazy val distageCore             = "io.7mind.izumi"        %% "distage-core"                        % distageVersion
-lazy val distageDocker           = "io.7mind.izumi"        %% "distage-framework-docker"            % distageVersion
-lazy val distageTestkit          = "io.7mind.izumi"        %% "distage-testkit-scalatest"           % distageVersion
-lazy val doobiePostgres          = "org.tpolecat"          %% "doobie-postgres"                     % doobieVersion
+lazy val akkaPersistenceQuery = "com.typesafe.akka"     %% "akka-persistence-query"    % akkaVersion
+lazy val akkaSlf4j            = "com.typesafe.akka"     %% "akka-slf4j"                % akkaVersion
+lazy val akkaStream           = "com.typesafe.akka"     %% "akka-stream"               % akkaVersion
+lazy val akkaTestKit          = "com.typesafe.akka"     %% "akka-testkit"              % akkaVersion
+lazy val akkaTestKitTyped     = "com.typesafe.akka"     %% "akka-actor-testkit-typed"  % akkaVersion
+lazy val alpakkaFiles         = "com.lightbend.akka"    %% "akka-stream-alpakka-file"  % alpakkaVersion
+lazy val alpakkaSse           = "com.lightbend.akka"    %% "akka-stream-alpakka-sse"   % alpakkaVersion
+lazy val apacheCompress       = "org.apache.commons"     % "commons-compress"          % apacheCompressVersion
+lazy val awsSdk               = "software.amazon.awssdk" % "s3"                        % awsSdkVersion
+lazy val byteBuddyAgent       = "net.bytebuddy"          % "byte-buddy-agent"          % byteBuddyAgentVersion
+lazy val catsCore             = "org.typelevel"         %% "cats-core"                 % catsVersion
+lazy val catsEffect           = "org.typelevel"         %% "cats-effect"               % catsEffectVersion
+lazy val catsEffectRetry      = "com.github.cb372"      %% "cats-retry-cats-effect"    % catsRetryVersion
+lazy val catsRetry            = "com.github.cb372"      %% "cats-retry-core"           % catsRetryVersion
+lazy val circeCore            = "io.circe"              %% "circe-core"                % circeVersion
+lazy val circeGeneric         = "io.circe"              %% "circe-generic"             % circeVersion
+lazy val circeGenericExtras   = "io.circe"              %% "circe-generic-extras"      % circeVersion
+lazy val circeLiteral         = "io.circe"              %% "circe-literal"             % circeVersion
+lazy val circeOptics          = "io.circe"              %% "circe-optics"              % circeVersion
+lazy val circeParser          = "io.circe"              %% "circe-parser"              % circeVersion
+lazy val classgraph           = "io.github.classgraph"   % "classgraph"                % classgraphVersion
+lazy val decline              = "com.monovore"          %% "decline"                   % declineVersion
+lazy val distageCore          = "io.7mind.izumi"        %% "distage-core"              % distageVersion
+lazy val distageDocker        = "io.7mind.izumi"        %% "distage-framework-docker"  % distageVersion
+lazy val distageTestkit       = "io.7mind.izumi"        %% "distage-testkit-scalatest" % distageVersion
+lazy val doobiePostgres       = "org.tpolecat"          %% "doobie-postgres"           % doobieVersion
 
 lazy val dockerTestKit = Seq(
   "com.whisk" %% "docker-testkit-scalatest"    % dockerTestKitVersion,
@@ -136,29 +114,21 @@ lazy val h2            = "com.h2database"              % "h2"                   
 lazy val http4sCirce   = "org.http4s"                 %% "http4s-circe"            % http4sVersion
 lazy val http4sClient  = "org.http4s"                 %% "http4s-blaze-client"     % http4sVersion
 lazy val http4sDsl     = "org.http4s"                 %% "http4s-dsl"              % http4sVersion
-lazy val guava         = "com.google.guava"            % "guava"                   % guavaVersion
-lazy val iamClient     = "ch.epfl.bluebrain.nexus"    %% "iam-client"              % iamVersion
 lazy val jenaArq       = "org.apache.jena"             % "jena-arq"                % jenaVersion
 lazy val jsonldjava    = "com.github.jsonld-java"      % "jsonld-java"             % jsonldjavaVersion
 lazy val kanelaAgent   = "io.kamon"                    % "kanela-agent"            % kanelaAgentVersion
 lazy val kindProjector = "org.typelevel"              %% "kind-projector"          % kindProjectorVersion cross CrossVersion.full
 lazy val kryo          = "io.altoo"                   %% "akka-kryo-serialization" % kryoVersion
 lazy val logback       = "ch.qos.logback"              % "logback-classic"         % logbackVersion
-lazy val log4jCore     = "org.apache.logging.log4j"    % "log4j-core"              % log4jVersion
-lazy val log4jApi      = "org.apache.logging.log4j"    % "log4j-api"               % log4jVersion
-lazy val magnolia      = "com.propensive"             %% "magnolia"                % magnoliaVersion
 lazy val mockito       = "org.mockito"                %% "mockito-scala"           % mockitoVersion
 lazy val monixBio      = "io.monix"                   %% "monix-bio"               % monixBioVersion
 lazy val monixEval     = "io.monix"                   %% "monix-eval"              % monixVersion
 lazy val nimbusJoseJwt = "com.nimbusds"                % "nimbus-jose-jwt"         % nimbusJoseJwtVersion
-lazy val parboiled2    = "org.parboiled"              %% "parboiled"               % parboiledVersion
 lazy val pureconfig    = "com.github.pureconfig"      %% "pureconfig"              % pureconfigVersion
 lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"           % scalaLoggingVersion
 lazy val scalate       = "org.scalatra.scalate"       %% "scalate-core"            % scalateVersion
 lazy val scalaTest     = "org.scalatest"              %% "scalatest"               % scalaTestVersion
-lazy val scalaReflect  = "org.scala-lang"              % "scala-reflect"           % scalaCompilerVersion
 lazy val streamz       = "com.github.krasserm"        %% "streamz-converter"       % streamzVersion
-lazy val topBraidShacl = "org.topbraid"                % "shacl"                   % topBraidVersion
 lazy val uuidGenerator = "com.fasterxml.uuid"          % "java-uuid-generator"     % uuidGeneratorVersion
 
 val javaSpecificationVersion = SettingKey[String](
@@ -386,7 +356,7 @@ lazy val sdk = project
     libraryDependencies  ++= Seq(
       distageCore,
       monixBio,
-      akkaActor, // Needed to create Uri
+      akkaActorTyped, // Needed to create Uri
       akkaHttp,
       fs2,
       scalaTest % Test

@@ -1,7 +1,0 @@
-{
-  "@id": "http://example.com/id",
-  "@type": [
-    "View",
-    "SparqlView"
-  ]
-}

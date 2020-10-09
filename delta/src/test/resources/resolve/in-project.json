@@ -1,8 +1,0 @@
-{
-  "@id": "http://example.com/id",
-  "@type": [
-    "Resolver",
-    "InProject"
-  ],
-  "priority": 10
-}
