@@ -159,7 +159,9 @@ trait RealmsBehaviors {
     }
 
     "fail to update a realm a already used openId config" in {
-      realms.update(gitlab, 1L, githubName, githubOpenId, Some(githubLogo)).rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
+      realms
+        .update(gitlab, 1L, githubName, githubOpenId, Some(githubLogo))
+        .rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
         RealmOpenIdConfigAlreadyExists(gitlab, githubOpenId)
     }
 

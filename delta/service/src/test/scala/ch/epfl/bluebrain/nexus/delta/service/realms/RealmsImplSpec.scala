@@ -23,7 +23,7 @@ class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with OptionValu
     EventLog.jdbcEventLog {
       case ee @ EventEnvelope(offset: Sequence, persistenceId, sequenceNr, value: RealmEvent) =>
         UIO.pure(Some(Envelope(value, offset, persistenceId, sequenceNr, ee.timestamp)))
-      case _                                                                                        => UIO.pure(None)
+      case _                                                                                  => UIO.pure(None)
     }
 
   implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")

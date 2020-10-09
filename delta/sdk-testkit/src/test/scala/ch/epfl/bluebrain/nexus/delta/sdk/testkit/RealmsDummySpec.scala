@@ -19,13 +19,14 @@ class RealmsDummySpec
     with OptionValues
     with Inspectors {
 
-  override def create: Task[Realms] = RealmsDummy(
-    ioFromMap(
-      Map(
-        githubOpenId -> githubWk,
-        gitlabOpenId -> gitlabWk
-      ),
-      (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
+  override def create: Task[Realms] =
+    RealmsDummy(
+      ioFromMap(
+        Map(
+          githubOpenId -> githubWk,
+          gitlabOpenId -> gitlabWk
+        ),
+        (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
+      )
     )
-  )
 }
