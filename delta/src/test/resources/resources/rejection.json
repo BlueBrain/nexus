@@ -1,5 +1,0 @@
-{
-  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "InvalidResourceIri",
-  "message" : "Provided IRI does not match any service endpoint"
-}
