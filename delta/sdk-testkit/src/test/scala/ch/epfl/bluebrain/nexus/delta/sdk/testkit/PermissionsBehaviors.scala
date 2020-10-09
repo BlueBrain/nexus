@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionSet}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviours._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors._
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
@@ -27,7 +27,7 @@ import scala.concurrent.duration._
 /**
   * The collection of behaviours for permissions.
   */
-trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock =>
+trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock =>
 
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
@@ -222,7 +222,7 @@ trait PermissionsBehaviours { this: AnyWordSpecLike with Matchers with IOValues 
   }
 }
 
-object PermissionsBehaviours {
+object PermissionsBehaviors {
 
   import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{schemas, _}
 

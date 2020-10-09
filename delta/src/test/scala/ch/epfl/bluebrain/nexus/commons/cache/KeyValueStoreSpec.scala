@@ -1,8 +1,5 @@
 package ch.epfl.bluebrain.nexus.commons.cache
 
-import akka.testkit.TestProbe
-import cats.effect.IO
-import cats.effect.IO.timer
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStore.Subscription
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSpec._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreSubscriber.KeyValueStoreChange._

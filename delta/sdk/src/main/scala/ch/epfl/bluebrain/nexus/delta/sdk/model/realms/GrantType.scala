@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
+import io.circe.Decoder
+
 /**
   * OAuth2 grant type enumeration.
   */
@@ -52,4 +54,17 @@ object GrantType {
     * @see https://tools.ietf.org/html/rfc6749#section-1.5
     */
   final case object RefreshToken extends GrantType
+
+  object Snake {
+
+    implicit final val grantTypeDecoder: Decoder[GrantType] = Decoder.decodeString.emap {
+      case "authorization_code" => Right(AuthorizationCode)
+      case "implicit"           => Right(Implicit)
+      case "password"           => Right(Password)
+      case "client_credentials" => Right(ClientCredentials)
+      case "device_code"        => Right(DeviceCode)
+      case "refresh_token"      => Right(RefreshToken)
+      case other                => Left(s"Unknown grant type '$other'")
+    }
+  }
 }

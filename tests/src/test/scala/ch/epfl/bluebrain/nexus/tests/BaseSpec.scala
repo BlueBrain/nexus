@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity._
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
@@ -26,7 +26,6 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 trait BaseSpec
@@ -36,6 +35,7 @@ trait BaseSpec
     with TestHelpers
     with ScalatestRouteTest
     with Eventually
+    with IOValues
     with OptionValues
     with ScalaFutures
     with Matchers {
@@ -59,15 +59,6 @@ trait BaseSpec
   val kgDsl         = new KgDsl(config)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
-
-  implicit def taskToFutureAssertion(task: Task[Assertion]): Future[Assertion] =
-    task.runToFuture
-
-  implicit def taskListToFutureAssertion(task: Task[List[Assertion]]): Future[Assertion] =
-    task.runToFuture.map(_ => succeed)(global)
-
-  implicit def futureListToFutureAssertion(future: Future[List[Assertion]]): Future[Assertion] =
-    future.map(_ => succeed)(global)
 
   def eventually(t: Task[Assertion]): Assertion =
     eventually {

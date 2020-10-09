@@ -10,14 +10,14 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class PermissionsDummySpec
     extends AnyWordSpecLike
-    with PermissionsBehaviours
+    with PermissionsBehaviors
     with Matchers
     with IOValues
     with IOFixedClock
     with TestHelpers {
 
   override def create: Task[Permissions.WithOffset[Sequence]] =
-    PermissionsDummy(PermissionsBehaviours.minimum)
+    PermissionsDummy(PermissionsBehaviors.minimum)
 
   override def resourceId: Iri = PermissionsDummy.id
 }

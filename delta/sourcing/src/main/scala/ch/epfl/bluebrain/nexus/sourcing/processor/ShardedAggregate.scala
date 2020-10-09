@@ -20,8 +20,8 @@ import scala.reflect.ClassTag
   *
   * @param entityTypeKey the key of an entity type, unique
   * @param clusterSharding the sharding for this aggregate
-  * @param retryStrategy the retry strategy to adopt
-  * @param askTimeout the ask timeout
+  * @param retryStrategy   the retry strategy to adopt
+  * @param askTimeout      the ask timeout
   */
 private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     entityTypeKey: EntityTypeKey[ProcessorCommand],
@@ -41,8 +41,8 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     * @param id the entity identifier
     * @return the state for the given id
     */
-  override def state(id: String): Task[State] =
-    send(id, { askTo: ActorRef[StateReply[State]] => RequestState(id, askTo) }).map(_.value)
+  override def state(id: String): UIO[State] =
+    send(id, { askTo: ActorRef[StateReply[State]] => RequestState(id, askTo) }).map(_.value).hideErrors
 
   private def toEvaluationIO(result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
     result.hideErrors.flatMap {

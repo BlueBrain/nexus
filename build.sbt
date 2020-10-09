@@ -32,6 +32,7 @@ val catsEffectVersion               = "2.1.3"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.2.0"
 val circeVersion                    = "0.13.0"
+val classgraphVersion               = "4.8.90"
 val declineVersion                  = "1.3.0"
 val distageVersion                  = "0.10.19"
 val dockerTestKitVersion            = "0.9.9"
@@ -93,35 +94,36 @@ lazy val akkaPersistenceJdbc = Seq(
   "com.typesafe.slick" %% "slick-hikaricp"        % slickVersion
 )
 
-lazy val akkaPersistenceLauncher = "com.typesafe.akka"      %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceQuery    = "com.typesafe.akka"      %% "akka-persistence-query"              % akkaVersion
-lazy val akkaSlf4j               = "com.typesafe.akka"      %% "akka-slf4j"                          % akkaVersion
-lazy val akkaStream              = "com.typesafe.akka"      %% "akka-stream"                         % akkaVersion
-lazy val akkaTestKit             = "com.typesafe.akka"      %% "akka-testkit"                        % akkaVersion
-lazy val akkaTestKitTyped        = "com.typesafe.akka"      %% "akka-actor-testkit-typed"            % akkaVersion
-lazy val alleycatsCore           = "org.typelevel"          %% "alleycats-core"                      % catsVersion
-lazy val alpakkaFiles            = "com.lightbend.akka"     %% "akka-stream-alpakka-file"            % alpakkaVersion
-lazy val alpakkaSse              = "com.lightbend.akka"     %% "akka-stream-alpakka-sse"             % alpakkaVersion
-lazy val alpakkaS3               = "com.lightbend.akka"     %% "akka-stream-alpakka-s3"              % alpakkaVersion
-lazy val apacheCompress          = "org.apache.commons"      % "commons-compress"                    % apacheCompressVersion
-lazy val asm                     = "org.ow2.asm"             % "asm"                                 % asmVersion
-lazy val awsSdk                  = "software.amazon.awssdk"  % "s3"                                  % awsSdkVersion
-lazy val byteBuddyAgent          = "net.bytebuddy"           % "byte-buddy-agent"                    % byteBuddyAgentVersion
-lazy val catsCore                = "org.typelevel"          %% "cats-core"                           % catsVersion
-lazy val catsEffect              = "org.typelevel"          %% "cats-effect"                         % catsEffectVersion
-lazy val catsEffectRetry         = "com.github.cb372"       %% "cats-retry-cats-effect"              % catsRetryVersion
-lazy val catsRetry               = "com.github.cb372"       %% "cats-retry-core"                     % catsRetryVersion
-lazy val circeCore               = "io.circe"               %% "circe-core"                          % circeVersion
-lazy val circeGeneric            = "io.circe"               %% "circe-generic"                       % circeVersion
-lazy val circeGenericExtras      = "io.circe"               %% "circe-generic-extras"                % circeVersion
-lazy val circeLiteral            = "io.circe"               %% "circe-literal"                       % circeVersion
-lazy val circeOptics             = "io.circe"               %% "circe-optics"                        % circeVersion
-lazy val circeParser             = "io.circe"               %% "circe-parser"                        % circeVersion
-lazy val decline                 = "com.monovore"           %% "decline"                             % declineVersion
-lazy val distageCore             = "io.7mind.izumi"         %% "distage-core"                        % distageVersion
-lazy val distageDocker           = "io.7mind.izumi"         %% "distage-framework-docker"            % distageVersion
-lazy val distageTestkit          = "io.7mind.izumi"         %% "distage-testkit-scalatest"           % distageVersion
-lazy val doobiePostgres          = "org.tpolecat"           %% "doobie-postgres"                     % doobieVersion
+lazy val akkaPersistenceLauncher = "com.typesafe.akka"     %% "akka-persistence-cassandra-launcher" % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceQuery    = "com.typesafe.akka"     %% "akka-persistence-query"              % akkaVersion
+lazy val akkaSlf4j               = "com.typesafe.akka"     %% "akka-slf4j"                          % akkaVersion
+lazy val akkaStream              = "com.typesafe.akka"     %% "akka-stream"                         % akkaVersion
+lazy val akkaTestKit             = "com.typesafe.akka"     %% "akka-testkit"                        % akkaVersion
+lazy val akkaTestKitTyped        = "com.typesafe.akka"     %% "akka-actor-testkit-typed"            % akkaVersion
+lazy val alleycatsCore           = "org.typelevel"         %% "alleycats-core"                      % catsVersion
+lazy val alpakkaFiles            = "com.lightbend.akka"    %% "akka-stream-alpakka-file"            % alpakkaVersion
+lazy val alpakkaSse              = "com.lightbend.akka"    %% "akka-stream-alpakka-sse"             % alpakkaVersion
+lazy val alpakkaS3               = "com.lightbend.akka"    %% "akka-stream-alpakka-s3"              % alpakkaVersion
+lazy val apacheCompress          = "org.apache.commons"     % "commons-compress"                    % apacheCompressVersion
+lazy val asm                     = "org.ow2.asm"            % "asm"                                 % asmVersion
+lazy val awsSdk                  = "software.amazon.awssdk" % "s3"                                  % awsSdkVersion
+lazy val byteBuddyAgent          = "net.bytebuddy"          % "byte-buddy-agent"                    % byteBuddyAgentVersion
+lazy val catsCore                = "org.typelevel"         %% "cats-core"                           % catsVersion
+lazy val catsEffect              = "org.typelevel"         %% "cats-effect"                         % catsEffectVersion
+lazy val catsEffectRetry         = "com.github.cb372"      %% "cats-retry-cats-effect"              % catsRetryVersion
+lazy val catsRetry               = "com.github.cb372"      %% "cats-retry-core"                     % catsRetryVersion
+lazy val circeCore               = "io.circe"              %% "circe-core"                          % circeVersion
+lazy val circeGeneric            = "io.circe"              %% "circe-generic"                       % circeVersion
+lazy val circeGenericExtras      = "io.circe"              %% "circe-generic-extras"                % circeVersion
+lazy val circeLiteral            = "io.circe"              %% "circe-literal"                       % circeVersion
+lazy val circeOptics             = "io.circe"              %% "circe-optics"                        % circeVersion
+lazy val circeParser             = "io.circe"              %% "circe-parser"                        % circeVersion
+lazy val classgraph              = "io.github.classgraph"  %  "classgraph"                          % classgraphVersion
+lazy val decline                 = "com.monovore"          %% "decline"                             % declineVersion
+lazy val distageCore             = "io.7mind.izumi"        %% "distage-core"                        % distageVersion
+lazy val distageDocker           = "io.7mind.izumi"        %% "distage-framework-docker"            % distageVersion
+lazy val distageTestkit          = "io.7mind.izumi"        %% "distage-testkit-scalatest"           % distageVersion
+lazy val doobiePostgres          = "org.tpolecat"          %% "doobie-postgres"                     % doobieVersion
 
 lazy val dockerTestKit = Seq(
   "com.whisk" %% "docker-testkit-scalatest"    % dockerTestKitVersion,
@@ -399,7 +401,7 @@ lazy val sdkTestkit = project
     moduleName := "delta-sdk-testkit"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(rdf, sdk, testkit)
+  .dependsOn(rdf, sdk % "compile->compile;test->test", testkit)
   .settings(
     libraryDependencies ++= Seq(
       akkaPersistenceQuery, // To have access to the Offset type
@@ -414,10 +416,12 @@ lazy val service = project
     moduleName := "delta-service"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sourcing, rdf, sdk, sdkTestkit, testkit % "test->compile", sdkTestkit % "test->compile")
+  .dependsOn(sourcing, rdf, sdk, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
   .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(
+      classgraph,
+      nimbusJoseJwt,
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,

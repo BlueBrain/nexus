@@ -17,6 +17,11 @@ import io.circe.Json
 sealed trait RealmState extends Product with Serializable {
 
   /**
+    * @return the current state revision
+    */
+  def rev: Long
+
+  /**
     * @return the current deprecation status
     */
   def deprecated: Boolean
@@ -49,6 +54,7 @@ object RealmState {
     * Initial state for realms.
     */
   final case object Initial extends RealmState {
+    override val rev: Long = 0L
 
     /**
       * @return the current deprecation status

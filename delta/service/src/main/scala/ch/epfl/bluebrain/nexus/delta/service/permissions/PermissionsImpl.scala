@@ -31,7 +31,7 @@ final class PermissionsImpl[O <: Offset] private (
   override val persistenceId: String = s"$entityType-$entityId"
 
   override def fetch: UIO[PermissionsResource] = {
-    agg.state(entityId).map(_.toResource(id, minimum)).hideErrors
+    agg.state(entityId).map(_.toResource(id, minimum))
   }
 
   override def fetchAt(rev: Long): IO[PermissionsRejection.RevisionNotFound, PermissionsResource] =

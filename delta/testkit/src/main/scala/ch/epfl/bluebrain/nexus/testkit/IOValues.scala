@@ -2,15 +2,32 @@ package ch.epfl.bluebrain.nexus.testkit
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
-import monix.bio.IO
+import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 import org.scalactic.source
 import org.scalatest.matchers.should.Matchers.fail
+import org.scalatest.{Assertion, Assertions}
 
+import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-trait IOValues {
+trait IOValues extends Assertions {
+  implicit def taskToFutureAssertion(
+      task: Task[Assertion]
+  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
+    task.runToFuture
+
+  implicit def taskListToFutureAssertion(
+      task: Task[List[Assertion]]
+  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
+    task.runToFuture.map(_ => succeed)
+
+  implicit def futureListToFutureAssertion(
+      future: Future[List[Assertion]]
+  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
+    future.map(_ => succeed)
+
   implicit final def ioValuesSyntax[E: ClassTag, A](io: IO[E, A]): IOValuesOps[E, A] = new IOValuesOps(io)
 }
 
