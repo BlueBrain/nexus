@@ -111,6 +111,10 @@ trait DeltaDirectives extends RdfMarshalling {
       }
     }
 
+  /**
+    * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[NoOffset]]. An invalid value will
+    * result in an [[MalformedHeaderRejection]].
+    */
   def lastEventId: Directive1[Offset] = {
     optionalHeaderValueByType(`Last-Event-ID`).flatMap {
       case Some(value) =>
