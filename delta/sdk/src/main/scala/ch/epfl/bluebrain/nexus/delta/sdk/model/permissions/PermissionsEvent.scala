@@ -2,8 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
+import io.circe.Encoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of Permissions event types.
@@ -70,4 +80,29 @@ object PermissionsEvent {
       subject: Subject
   ) extends PermissionsEvent
 
+  @nowarn("cat=unused")
+  implicit final def permissionsEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[PermissionsEvent] = {
+    implicit val subjectEncoder: Encoder[Subject] =
+      Encoder.encodeString.contramap(_.id.toString)
+
+    implicit val derivationConfiguration: Configuration =
+      Configuration(
+        transformMemberNames = {
+          case "rev"     => "_rev"
+          case "instant" => "_instant"
+          case "subject" => "_subject"
+          case other     => other
+        },
+        transformConstructorNames = identity,
+        useDefaults = false,
+        discriminator = Some(keywords.tpe),
+        strictDecoding = false
+      )
+
+    implicit val encoder: Encoder.AsObject[PermissionsEvent] =
+      deriveConfiguredEncoder[PermissionsEvent]
+
+    val context = ContextValue(contexts.resource, contexts.permissions)
+    JsonLdEncoder.compactFromCirce[PermissionsEvent]((_: PermissionsEvent) => BNode.random, context)
+  }
 }

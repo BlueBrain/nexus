@@ -17,6 +17,8 @@
       "@id": "nxv:constrainedBy",
       "@type": "@id"
     },
+    "_instant": "nxv:instant",
+    "_subject": "nxv:subject",
     "AccessControlList": "nxv:AccessControlList",
     "Organization": "nxv:Organization",
     "Permissions": "nxv:Permissions",

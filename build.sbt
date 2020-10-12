@@ -357,6 +357,7 @@ lazy val sdk = project
       akkaActorTyped,       // Needed to create Uri
       akkaHttp,
       akkaPersistenceQuery, // To have access to the Offset type
+      circeGenericExtras,
       distageCore,
       fs2,
       monixBio,
