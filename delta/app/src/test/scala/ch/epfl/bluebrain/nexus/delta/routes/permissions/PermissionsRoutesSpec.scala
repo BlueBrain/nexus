@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.routes.permissions
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.{RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -20,6 +22,9 @@ import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class PermissionsRoutesSpec
     extends AnyWordSpecLike
@@ -169,6 +174,42 @@ class PermissionsRoutesSpec
         response.asJson shouldEqual jsonContentOf("permissions/reject_endpoint_not_found.jsonld")
         response.status shouldEqual StatusCodes.NotFound
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
+      }
+    }
+
+    "return the event stream when no offset is provided" in {
+      val dummy = PermissionsDummy(Set.empty, 5L).accepted
+      val route = Route.seal(PermissionsRoutes(dummy))
+      dummy.append(Set(acls.read), 0L).accepted
+      dummy.subtract(Set(acls.read), 1L).accepted
+      dummy.replace(Set(acls.write), 2L).accepted
+      dummy.delete(3L).accepted
+      dummy.append(Set(acls.read), 4L).accepted
+      dummy.append(Set(realms.write), 5L).accepted
+      dummy.subtract(Set(realms.write), 6L).accepted
+      Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
+        mediaType shouldBe `text/event-stream`
+        val value    = Await.result(responseEntity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String), 3.seconds)
+        val expected = contentOf("/permissions/eventstream-0-5.txt")
+        value shouldEqual expected
+      }
+    }
+
+    "return the event stream when an offset is provided" in {
+      val dummy = PermissionsDummy(Set.empty, 5L).accepted
+      val route = Route.seal(PermissionsRoutes(dummy))
+      dummy.append(Set(acls.read), 0L).accepted
+      dummy.subtract(Set(acls.read), 1L).accepted
+      dummy.replace(Set(acls.write), 2L).accepted
+      dummy.delete(3L).accepted
+      dummy.append(Set(acls.read), 4L).accepted
+      dummy.append(Set(realms.write), 5L).accepted
+      dummy.subtract(Set(realms.write), 6L).accepted
+      Get("/v1/permissions/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> route ~> check {
+        mediaType shouldBe `text/event-stream`
+        val value    = Await.result(responseEntity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String), 3.seconds)
+        val expected = contentOf("/permissions/eventstream-2-7.txt")
+        value shouldEqual expected
       }
     }
   }

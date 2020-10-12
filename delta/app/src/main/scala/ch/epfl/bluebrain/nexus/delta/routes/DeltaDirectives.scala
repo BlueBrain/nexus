@@ -300,6 +300,11 @@ trait DeltaDirectives extends RdfMarshalling {
   ): Route =
     completeIO(StatusCodes.OK, Seq.empty, io)
 
+  /**
+    * Completes a stream of envelopes of events using the implicitly available [[JsonLdEncoder]].
+    *
+    * @param stream the stream to complete
+    */
   def completeStream[E <: Event: JsonLdEncoder](
       stream: fs2.Stream[Task, Envelope[E]]
   )(implicit s: Scheduler, ordering: JsonKeyOrdering, cr: RemoteContextResolution): Route = {
@@ -311,7 +316,7 @@ trait DeltaDirectives extends RdfMarshalling {
           case NoOffset             => -1L.toString
         }
         ServerSentEvent(
-          data = jsonLd.json.sort.spaces2,
+          data = jsonLd.json.sort.noSpaces,
           eventType = Some(envelope.eventType),
           id = Some(id)
         )

@@ -29,7 +29,8 @@ import scala.concurrent.duration.DurationInt
 final class PermissionsDummy private (
     override val minimum: Set[Permission],
     journal: IORef[Vector[Envelope[PermissionsEvent]]],
-    semaphore: IOSemaphore
+    semaphore: IOSemaphore,
+    maxStreamSize: Long
 )(implicit clock: Clock[UIO])
     extends Permissions {
 
@@ -78,28 +79,32 @@ final class PermissionsDummy private (
     } yield stream
 
     val stream = Stream.eval(streamF).flatten
-    stream.flatMap { envelope =>
-      (envelope.offset, offset) match {
-        case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
-          if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
-          else Stream(envelope)
-        case (_, NoOffset)                                         => Stream(envelope)
-        case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+    stream
+      .flatMap { envelope =>
+        (envelope.offset, offset) match {
+          case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
+            if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
+            else Stream(envelope)
+          case (_, NoOffset)                                         => Stream(envelope)
+          case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+        }
       }
-    }
+      .take(maxStreamSize)
   }
 
   override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
     val stream = Stream.eval(journal.get).flatMap(envelopes => Stream.emits(envelopes))
-    stream.flatMap { envelope =>
-      (envelope.offset, offset) match {
-        case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
-          if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
-          else Stream(envelope)
-        case (_, NoOffset)                                         => Stream(envelope)
-        case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+    stream
+      .flatMap { envelope =>
+        (envelope.offset, offset) match {
+          case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
+            if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
+            else Stream(envelope)
+          case (_, NoOffset)                                         => Stream(envelope)
+          case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+        }
       }
-    }
+      .take(maxStreamSize)
   }
 
   private def currentState: UIO[PermissionsState] =
@@ -130,6 +135,7 @@ final class PermissionsDummy private (
         _         <- journal.set(
                        envelopes :+ Envelope(
                          event,
+                         event.getClass.getSimpleName,
                          Sequence((envelopes.size + 1).toLong),
                          persistenceId,
                          (envelopes.size + 1).toLong,
@@ -150,11 +156,15 @@ object PermissionsDummy {
   /**
     * Creates a new dummy Permissions implementation.
     *
-    * @param minimum the minimum set of permissions
+    * @param minimum       the minimum set of permissions
+    * @param maxStreamSize truncate event stream after this size
     */
-  final def apply(minimum: Set[Permission])(implicit clock: Clock[UIO]): UIO[PermissionsDummy] =
+  final def apply(
+      minimum: Set[Permission],
+      maxStreamSize: Long = Long.MaxValue
+  )(implicit clock: Clock[UIO]): UIO[PermissionsDummy] =
     for {
       ref <- IORef.of(Vector.empty[Envelope[PermissionsEvent]])
       sem <- IOSemaphore(1L)
-    } yield new PermissionsDummy(minimum, ref, sem)
+    } yield new PermissionsDummy(minimum, ref, sem, maxStreamSize)
 }

@@ -20,7 +20,7 @@ class PermissionsImplSpec extends AbstractDBSpec with PermissionsBehaviors {
   private def eventLog: Task[EventLog[Envelope[PermissionsEvent]]] =
     EventLog.jdbcEventLog {
       case ee @ EventEnvelope(offset: Sequence, persistenceId, sequenceNr, value: PermissionsEvent) =>
-        UIO.pure(Some(Envelope(value, offset, persistenceId, sequenceNr, ee.timestamp)))
+        UIO.pure(Some(Envelope(value, value.getClass.getSimpleName, offset, persistenceId, sequenceNr, ee.timestamp)))
       case _                                                                                        => UIO.pure(None)
     }
 
