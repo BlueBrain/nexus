@@ -361,7 +361,8 @@ lazy val sdk = project
       distageCore,
       fs2,
       monixBio,
-      scalaTest % Test
+      akkaHttpTestKit % Test,
+      scalaTest       % Test
     ),
     addCompilerPlugin(kindProjector)
   )
