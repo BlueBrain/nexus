@@ -49,6 +49,22 @@ object TokenRejection {
         "The token is invalid; possible causes are: incorrect signature, the token is expired or the 'nbf' value was not met."
       )
 
+  /**
+    * Rejection for cases where we couldn't fetch the groups from the OIDC provider
+    */
+  final case object GetGroupsFromOidcError
+      extends TokenRejection(
+        "Token groups couldn't be written in cache."
+      )
+
+  /**
+    * Rejection for cases where we couldn't write the groups in cache failed
+    */
+  final case object WritingInCacheError
+      extends TokenRejection(
+        "The token is invalid; possible causes are: the OIDC provider is unreachable."
+      )
+
   implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = r.getClass.getSimpleName.split('$').head

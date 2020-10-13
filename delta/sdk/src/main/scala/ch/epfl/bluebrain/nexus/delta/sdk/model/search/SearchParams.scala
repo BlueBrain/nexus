@@ -23,12 +23,14 @@ object SearchParams {
   /**
     * Search parameters to filter realm resources.
     *
+    * @param issuer     the optional issuer of the realm resource
     * @param deprecated the optional deprecation status of the realm resources
     * @param rev        the optional revision of the realm resources
     * @param createdBy  the optional subject who created the realm resource
     * @param updatedBy  the optional subject who updated the realm resource
     */
   final case class RealmSearchParams(
+      issuer: Option[String] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,

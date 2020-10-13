@@ -69,3 +69,31 @@ final case class TransientEventDefinition[State, Command, Event, Rejection](
     evaluate: (State, Command) => IO[Rejection, Event],
     stopStrategy: TransientStopStrategy = TransientStopStrategy.never
 ) extends EventDefinition[State, Command, Event, Rejection]
+
+object TransientEventDefinition {
+
+  /**
+    * Create a transient definition where describes a cache, where
+    * evaluation results directly in a new state
+    * which overwrites the former one
+    *
+   * @param entityType the entity type
+    * @param initialState the initial state
+    * @param evaluate the evaluation method
+    * @param stopStrategy the stop strategy
+    */
+  def cache[State, Command, Rejection](
+      entityType: String,
+      initialState: State,
+      evaluate: (State, Command) => IO[Rejection, State],
+      stopStrategy: TransientStopStrategy = TransientStopStrategy.never
+  ): TransientEventDefinition[State, Command, State, Rejection] =
+    TransientEventDefinition(
+      entityType,
+      initialState,
+      (_: State, newState: State) => newState,
+      evaluate,
+      stopStrategy
+    )
+
+}

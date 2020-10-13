@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
   *
  * @param value the string representation of the token
   */
-final case class AuthToken private (value: String)
+final case class AuthToken private (value: String) extends AnyVal
 
 object AuthToken {
 

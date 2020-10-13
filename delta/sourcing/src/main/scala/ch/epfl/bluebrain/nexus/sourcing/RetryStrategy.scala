@@ -3,8 +3,10 @@ package ch.epfl.bluebrain.nexus.sourcing
 import monix.bio.Task
 import retry.RetryPolicies._
 import retry.{RetryDetails, RetryPolicy}
+import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 
 /**
   * Strategy to apply when an action fails
@@ -40,6 +42,16 @@ object RetryStrategy {
       RetryStrategyConfig.ConstantStrategyConfig(constant, maxRetries),
       retryWhen,
       retry.noop[Task, Throwable]
+    )
+
+  def retryOnNonFatal(config: RetryStrategyConfig, logger: Logger): RetryStrategy =
+    RetryStrategy(
+      config,
+      (t: Throwable) => NonFatal(t),
+      (t: Throwable, d: RetryDetails) =>
+        Task {
+          logger.error(s"Retrying after the following error with details $d", t)
+        }
     )
 
 }
