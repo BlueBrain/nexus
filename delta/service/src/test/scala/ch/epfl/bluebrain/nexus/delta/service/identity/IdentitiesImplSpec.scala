@@ -93,7 +93,7 @@ class IdentitiesImplSpec
       stashSize = 100
     ),
     RetryStrategyConfig.AlwaysGiveUp,
-    None
+    2.minutes
   )
 
   private val identities: IdentitiesImpl = IdentitiesImpl(

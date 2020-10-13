@@ -69,12 +69,11 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
     }
 
     for {
-      parsedToken <- IO.fromEither(ParsedToken.fromToken(token))
-      activeRealm <- findActiveRealm(parsedToken.issuer).flatMap { r =>
-                       IO.fromOption(r, UnknownAccessTokenIssuer)
-                     }
-      _           <- validate(parsedToken.jwtToken, realmKeyset(activeRealm))
-      groups      <- fetchGroups(parsedToken, activeRealm)
+      parsedToken       <- IO.fromEither(ParsedToken.fromToken(token))
+      activeRealmOption <- findActiveRealm(parsedToken.issuer)
+      activeRealm       <- IO.fromOption(activeRealmOption, UnknownAccessTokenIssuer)
+      _                 <- validate(parsedToken.jwtToken, realmKeyset(activeRealm))
+      groups            <- fetchGroups(parsedToken, activeRealm)
     } yield {
       val user = User(parsedToken.subject, activeRealm.label)
       Caller(user, groups.toSet[Identity] + Anonymous + user + Authenticated(activeRealm.label))
@@ -88,11 +87,16 @@ object IdentitiesImpl {
 
   val logger: Logger = Logger[this.type]
 
+  /**
+    * Unique command for the group aggregate to fetch groups from the OIDC provider
+    * @param token the raw token
+    * @param realm the realm containing the user endpoint to fetch stuff from
+    */
   final case class FetchGroups(token: String, realm: Realm)
 
   private def evaluate(
       getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json]
-  )(fetchGroups: FetchGroups): IO[TokenRejection, Some[Set[Group]]] = {
+  )(fetchGroups: FetchGroups): IO[TokenRejection, Option[Set[Group]]] = {
     def fromSet(cursor: HCursor): Decoder.Result[Set[String]] =
       cursor.get[Set[String]]("groups").map(_.map(_.trim).filterNot(_.isEmpty))
     def fromCsv(cursor: HCursor): Decoder.Result[Set[String]] =
@@ -120,7 +124,7 @@ object IdentitiesImpl {
       entityType = "groups",
       None,
       (_: Option[Set[Group]], f: FetchGroups) => evaluate(getUserInfo)(f),
-      TransientStopStrategy(config.maxAfterLastInteraction)
+      TransientStopStrategy(Some(config.passivateAfter))
     )
 
     ShardedAggregate.transientSharded(

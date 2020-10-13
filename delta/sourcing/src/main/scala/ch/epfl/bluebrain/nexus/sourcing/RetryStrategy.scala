@@ -44,6 +44,13 @@ object RetryStrategy {
       retry.noop[Task, Throwable]
     )
 
+  /**
+    * Retry strategy which retries on all non fatal errors and just outputs a log
+    * when an error occurs
+    *
+   * @param config the retry configuration
+    * @param logger the logger to use
+    */
   def retryOnNonFatal(config: RetryStrategyConfig, logger: Logger): RetryStrategy =
     RetryStrategy(
       config,

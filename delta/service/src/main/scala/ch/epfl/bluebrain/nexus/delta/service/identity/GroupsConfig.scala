@@ -5,8 +5,14 @@ import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+  * Configuration for groups
+  * @param aggregate the aggregate configuration
+  * @param retryConfig the retry configuration
+  * @param passivateAfter duration after passivation must occur
+  */
 final case class GroupsConfig(
     aggregate: AggregateConfig,
     retryConfig: RetryStrategyConfig,
-    maxAfterLastInteraction: Option[FiniteDuration]
-) {}
+    passivateAfter: FiniteDuration
+)

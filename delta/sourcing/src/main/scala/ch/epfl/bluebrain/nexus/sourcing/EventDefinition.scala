@@ -73,7 +73,7 @@ final case class TransientEventDefinition[State, Command, Event, Rejection](
 object TransientEventDefinition {
 
   /**
-    * Create a transient definition where describes a cache, where
+    * Create a transient definition which describes a cache, where
     * evaluation results directly in a new state
     * which overwrites the former one
     *

@@ -3,12 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.service.identity
 import java.time.Instant
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, InvalidAccessTokenFormat}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, TokenRejection}
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
 
 import scala.util.Try
 
+/**
+  * Token where we extracted and validated the information needed from the [[jwtToken]]
+  */
 final case class ParsedToken private (
     rawToken: String,
     subject: String,
