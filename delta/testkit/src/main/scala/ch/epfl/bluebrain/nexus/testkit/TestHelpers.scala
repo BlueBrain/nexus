@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.testkit
 
 import io.circe.Json
 import io.circe.parser.parse
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import org.fusesource.scalate.TemplateEngine
 
 import scala.annotation.tailrec
@@ -47,6 +47,13 @@ trait TestHelpers {
     )
     Source.fromInputStream(is)(codec).mkString
   }
+
+  /**
+    * Convert a map to an function returning an IO
+    * @param values (key/value) giving the expected result for the given parameter
+    */
+  final def ioFromMap[A, B](values: (A, B)*): A => UIO[Option[B]] =
+    (a: A) => IO.pure(values.toMap.get(a))
 
   /**
     * Convert a map to an function returning an IO
