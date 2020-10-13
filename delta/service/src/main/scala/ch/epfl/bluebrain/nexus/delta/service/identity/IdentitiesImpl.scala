@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.service.identity
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, TokenRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError.HttpClientStatusError
@@ -76,7 +76,7 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
       groups            <- fetchGroups(parsedToken, activeRealm)
     } yield {
       val user = User(parsedToken.subject, activeRealm.label)
-      Caller(user, groups.toSet[Identity] + Anonymous + user + Authenticated(activeRealm.label))
+      Caller(user, groups ++ Set(Anonymous, user, Authenticated(activeRealm.label)))
     }
   }
 }
