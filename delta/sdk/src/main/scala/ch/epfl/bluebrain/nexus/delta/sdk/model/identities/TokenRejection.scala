@@ -54,7 +54,7 @@ object TokenRejection {
     */
   final case object GetGroupsFromOidcError
       extends TokenRejection(
-        "Token groups couldn't be written in cache."
+        "The token is invalid; possible causes are: the OIDC provider is unreachable."
       )
 
   /**
@@ -62,7 +62,7 @@ object TokenRejection {
     */
   final case object WritingInCacheError
       extends TokenRejection(
-        "The token is invalid; possible causes are: the OIDC provider is unreachable."
+        "Token groups couldn't be written in cache."
       )
 
   implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
