@@ -22,13 +22,12 @@
     </root>
 
     <logger name="ch.epfl.bluebrain.nexus" additivity="false" level="${LOG_LEVEL:-INFO}">
-        <appender-ref ref="TRACED" />
+        <appender-ref ref="STDOUT" />
     </logger>
 
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="akka.remote" level="WARN" />
     <logger name="akka.cluster" level="WARN" />
-    <logger name="es.weso.shacl" level="WARN" />
-    <logger name="es.weso.schema" level="WARN" />
+    <logger name="com.datastax.oss.driver" level="WARN" />
 
 </configuration>

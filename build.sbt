@@ -18,6 +18,7 @@ val scalaCompilerVersion   = "2.13.3"
 
 val akkaHttpVersion                 = "10.2.0"
 val akkaHttpCirceVersion            = "1.33.0"
+val akkaCorsVersion                 = "1.1.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceJdbcVersion      = "4.0.0"
 val akkaVersion                     = "2.6.10"
@@ -65,6 +66,7 @@ lazy val akkaDistributedData      = "com.typesafe.akka" %% "akka-distributed-dat
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
 lazy val akkaHttpCirce   = "de.heikoseeberger" %% "akka-http-circe"   % akkaHttpCirceVersion
+lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCorsVersion
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
 
 lazy val akkaPersistenceTyped   = "com.typesafe.akka" %% "akka-persistence-typed"   % akkaVersion
@@ -418,6 +420,7 @@ lazy val app = project
   .settings(
     libraryDependencies ++= Seq(
       akkaDistributedData,
+      akkaHttpCors,
       akkaSlf4j,
       logback,
       postgresql,
