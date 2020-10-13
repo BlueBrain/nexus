@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.syntax
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode}
-import ch.epfl.bluebrain.nexus.delta.routes.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields
 
 trait HttpResponseFieldsSyntax {
   implicit final def httpResponseFieldsSyntax[A](value: A): HttpResponseFieldsOps[A] = new HttpResponseFieldsOps(value)

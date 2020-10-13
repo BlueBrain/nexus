@@ -226,7 +226,7 @@ object Permissions {
       def withPermissions(permissions: Set[Permission], instant: Instant, subject: Subject): PermissionsState =
         s match {
           case Initial    => Current(s.rev + 1L, permissions, instant, subject, instant, subject)
-          case s: Current => Current(s.rev + 1L, permissions, s.createdAt, s.createdBy, instant, subject)
+          case c: Current => Current(c.rev + 1L, permissions, c.createdAt, c.createdBy, instant, subject)
         }
 
       def permissions: Set[Permission] =

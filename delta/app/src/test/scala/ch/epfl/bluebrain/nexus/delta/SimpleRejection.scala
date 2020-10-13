@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.headers.Allow
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.routes.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import io.circe.generic.extras.Configuration

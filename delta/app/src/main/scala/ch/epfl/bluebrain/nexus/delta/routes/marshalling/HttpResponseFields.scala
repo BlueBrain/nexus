@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes
+package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection

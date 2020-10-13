@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.permissions
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{MalformedFormFieldRejection, Route}
@@ -6,9 +6,9 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions
-import ch.epfl.bluebrain.nexus.delta.routes.permissions.PermissionsRoutes.PatchPermissions._
-import ch.epfl.bluebrain.nexus.delta.routes.{CirceUnmarshalling, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
+import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -100,9 +100,9 @@ object PermissionsRoutes {
   ): Route =
     new PermissionsRoutes(permissions).routes
 
-  sealed private[permissions] trait PatchPermissions extends Product with Serializable
+  sealed private[routes] trait PatchPermissions extends Product with Serializable
 
-  private[permissions] object PatchPermissions {
+  private[routes] object PatchPermissions {
 
     final case class Append(permissions: Set[Permission])   extends PatchPermissions
     final case class Subtract(permissions: Set[Permission]) extends PatchPermissions

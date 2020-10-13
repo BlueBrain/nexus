@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.headers.{Accept, Allow, Cookie}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.SimpleRejection.{badRequestRejection, conflictRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering

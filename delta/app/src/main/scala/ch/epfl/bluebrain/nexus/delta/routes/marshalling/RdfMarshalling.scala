@@ -1,12 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.routes
+package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.{ContentType, HttpEntity}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.Printer
 

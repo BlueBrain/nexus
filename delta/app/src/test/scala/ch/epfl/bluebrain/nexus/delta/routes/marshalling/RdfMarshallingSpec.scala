@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes
+package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import java.time.Instant
 
@@ -6,13 +6,13 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.SimpleResource
 import ch.epfl.bluebrain.nexus.delta.SimpleResource.{context, contextIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.syntax._
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RemoteContextResolutionDummy
+import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
 import org.scalatest.matchers.should.Matchers

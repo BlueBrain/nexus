@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes
+package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ContentRange, EntityStreamSizeException, StatusCodes}
@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.DeltaDirectives
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}

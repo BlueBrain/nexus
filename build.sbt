@@ -20,7 +20,7 @@ val akkaHttpVersion                 = "10.2.0"
 val akkaHttpCirceVersion            = "1.33.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceJdbcVersion      = "4.0.0"
-val akkaVersion                     = "2.6.9"
+val akkaVersion                     = "2.6.10"
 val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
 val awsSdkVersion                   = "2.10.23"
@@ -49,6 +49,7 @@ val mockitoVersion                  = "1.15.0"
 val monixVersion                    = "3.2.2"
 val monixBioVersion                 = "1.0.0"
 val nimbusJoseJwtVersion            = "8.19"
+val postgresqlVersion               = "42.2.17"
 val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalateVersion                  = "1.9.6"
@@ -60,6 +61,7 @@ val uuidGeneratorVersion            = "3.2.0"
 lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
 lazy val akkaClusterTyped         = "com.typesafe.akka" %% "akka-cluster-typed"          % akkaVersion
 lazy val akkaClusterShardingTyped = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
+lazy val akkaDistributedData      = "com.typesafe.akka" %% "akka-distributed-data"       % akkaVersion
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
 lazy val akkaHttpCirce   = "de.heikoseeberger" %% "akka-http-circe"   % akkaHttpCirceVersion
@@ -124,6 +126,7 @@ lazy val mockito       = "org.mockito"                %% "mockito-scala"        
 lazy val monixBio      = "io.monix"                   %% "monix-bio"               % monixBioVersion
 lazy val monixEval     = "io.monix"                   %% "monix-eval"              % monixVersion
 lazy val nimbusJoseJwt = "com.nimbusds"                % "nimbus-jose-jwt"         % nimbusJoseJwtVersion
+lazy val postgresql    = "org.postgresql"              % "postgresql"              % postgresqlVersion
 lazy val pureconfig    = "com.github.pureconfig"      %% "pureconfig"              % pureconfigVersion
 lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"           % scalaLoggingVersion
 lazy val scalate       = "org.scalatra.scalate"       %% "scalate-core"            % scalateVersion
@@ -409,14 +412,24 @@ lazy val app = project
     name       := "delta-app",
     moduleName := "delta-app"
   )
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
+  .dependsOn(sourcing, rdf, sdk, service, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
+      akkaDistributedData,
+      akkaSlf4j,
+      logback,
+      postgresql,
+      pureconfig,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
       scalaTest       % Test
-    )
+    ),
+    run / fork           := true,
+    buildInfoKeys        := Seq[BuildInfoKey](version),
+    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config",
+    Docker / packageName := "nexus-delta"
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")

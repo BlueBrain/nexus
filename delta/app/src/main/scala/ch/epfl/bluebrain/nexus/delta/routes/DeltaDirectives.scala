@@ -12,12 +12,12 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.stream.scaladsl.Source
-import ch.epfl.bluebrain.nexus.delta.JsonLdFormat
-import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{HttpResponseFields, JsonLdFormat, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import monix.bio.{IO, Task, UIO}

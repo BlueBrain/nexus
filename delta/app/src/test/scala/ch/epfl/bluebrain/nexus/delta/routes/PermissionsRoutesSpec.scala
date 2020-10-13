@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.permissions
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
@@ -7,10 +7,10 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.{RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.{DeltaDirectives, RdfRejectionHandler}
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject

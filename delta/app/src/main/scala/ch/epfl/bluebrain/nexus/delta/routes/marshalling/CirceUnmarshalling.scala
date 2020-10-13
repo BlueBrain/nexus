@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta.routes
+package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{ContentTypeRange, MediaType}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes.`application/ld+json`
 import io.circe.{jawn, Decoder, Json}
 
 import scala.collection.immutable.Seq
