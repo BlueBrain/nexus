@@ -14,6 +14,7 @@ import monix.bio.UIO
 /**
   * Permissions module wiring config.
   */
+// $COVERAGE-OFF$
 object PermissionsModule extends AbstractModule {
 
   make[EventLog[Envelope[PermissionsEvent]]].fromEffect { (cfg: AppConfig, as: ActorSystem[Nothing]) =>
@@ -38,3 +39,4 @@ object PermissionsModule extends AbstractModule {
   make[PermissionsRoutes]
 
 }
+// $COVERAGE-ON$

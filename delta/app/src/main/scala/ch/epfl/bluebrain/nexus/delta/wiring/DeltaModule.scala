@@ -28,6 +28,7 @@ import scala.io.{Codec, Source}
   * @param appCfg the application configuration
   * @param config the raw merged and resolved configuration
   */
+// $COVERAGE-OFF$
 class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
 
   make[AppConfig].from(appCfg)
@@ -81,3 +82,4 @@ object DeltaModule {
   final def apply(appCfg: AppConfig, config: Config): DeltaModule =
     new DeltaModule(appCfg, config)
 }
+// $COVERAGE-ON$

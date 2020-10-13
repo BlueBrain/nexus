@@ -26,20 +26,21 @@ object AppConfig {
 
   /**
     * Loads the application in two steps:<br/>
-    * 1. loads the default application.conf and identifies the database configuration<br/>
+    * 1. loads the default default.conf and identifies the database configuration<br/>
     * 2. reloads the config using the selected database configuration
     */
   def load(): IO[ConfigReaderFailures, (AppConfig, Config)] = {
     for {
-      default   <- UIO.delay(ConfigSource.default.at("app").load[AppConfig])
-      flavour   <- IO.fromEither(default.map(_.database.flavour))
-      file       = flavour match {
-                     case DatabaseFlavour.Postgres  => "application-postgresql.conf"
-                     case DatabaseFlavour.Cassandra => "application-cassandra.conf"
-                   }
-      config    <- UIO.delay(ConfigFactory.load(file))
-      loaded    <- UIO.delay(ConfigSource.fromConfig(config).at("app").load[AppConfig])
-      appConfig <- IO.fromEither(loaded)
+      defaultConfig <- UIO.delay(ConfigFactory.load("default.conf"))
+      default       <- UIO.delay(ConfigSource.fromConfig(defaultConfig).at("app").load[AppConfig])
+      flavour       <- IO.fromEither(default.map(_.database.flavour))
+      file           = flavour match {
+                         case DatabaseFlavour.Postgres  => "application-postgresql.conf"
+                         case DatabaseFlavour.Cassandra => "application-cassandra.conf"
+                       }
+      config        <- UIO.delay(ConfigFactory.load(file))
+      loaded        <- UIO.delay(ConfigSource.fromConfig(config).at("app").load[AppConfig])
+      appConfig     <- IO.fromEither(loaded)
     } yield (appConfig, config)
   }
 }

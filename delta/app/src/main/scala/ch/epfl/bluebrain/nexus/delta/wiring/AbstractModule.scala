@@ -7,6 +7,7 @@ import monix.bio.UIO
 
 import scala.reflect.ClassTag
 
+// $COVERAGE-OFF$
 abstract class AbstractModule extends ModuleDef {
 
   /**
@@ -26,3 +27,4 @@ abstract class AbstractModule extends ModuleDef {
     }
 
 }
+// $COVERAGE-ON$

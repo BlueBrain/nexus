@@ -25,6 +25,7 @@ import pureconfig.error.ConfigReaderFailures
 
 import scala.concurrent.duration.DurationInt
 
+// $COVERAGE-OFF$
 object Main extends BIOApp {
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
@@ -109,3 +110,4 @@ object Main extends BIOApp {
     UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
   }
 }
+// $COVERAGE-ON$
