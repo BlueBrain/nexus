@@ -90,8 +90,9 @@ final class RealmsImpl private (
 
   private def filter(resources: Set[RealmResource], params: SearchParams.RealmSearchParams): Set[RealmResource] =
     resources.filter {
-      case ResourceF(_, rev, types, deprecated, _, createdBy, _, updatedBy, _, _) =>
-        params.createdBy.forall(_.id == createdBy.id) &&
+      case ResourceF(_, rev, types, deprecated, _, createdBy, _, updatedBy, _, realm) =>
+        params.issuer.forall(_ == realm.issuer) &&
+          params.createdBy.forall(_.id == createdBy.id) &&
           params.updatedBy.forall(_.id == updatedBy.id) &&
           params.rev.forall(_ == rev) &&
           params.types.subsetOf(types) &&
