@@ -414,6 +414,7 @@ lazy val app = project
   .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
+      logback,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
       scalaTest       % Test

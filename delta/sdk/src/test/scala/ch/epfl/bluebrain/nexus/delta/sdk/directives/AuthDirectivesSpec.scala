@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{ExceptionHandler, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectivesSpec._
-import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -31,15 +30,8 @@ class AuthDirectivesSpec
   private def asString(response: HttpResponse) =
     response.entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String)(global).futureValue
 
-  private val exceptionHandler: ExceptionHandler = ExceptionHandler {
-    case AuthenticationFailed =>
-      complete(StatusCodes.Forbidden)
-    case _: InvalidToken      =>
-      complete(StatusCodes.Unauthorized)
-  }
-
   private val route: Route =
-    handleExceptions(exceptionHandler) {
+    handleExceptions(IdentityError.exceptionHandler) {
       path("user") {
         extractCaller { implicit caller =>
           get {

@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Directives.{authenticateOAuth2Async, extractCre
 import akka.http.scaladsl.server.directives.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import monix.execution.Scheduler
 
@@ -39,4 +40,8 @@ abstract class AuthDirectives(identities: Identities)(implicit val s: Scheduler)
   def extractCaller: Directive1[Caller] =
     isBearerToken.tflatMap(_ => authenticateOAuth2Async("*", authenticator).withAnonymousUser(Caller.Anonymous))
 
+  /**
+    * Attempts to extract the Credentials from the HTTP call and generate a [[Subject]] from it.
+    */
+  def extractSubject: Directive1[Subject] = extractCaller.map(_.subject)
 }

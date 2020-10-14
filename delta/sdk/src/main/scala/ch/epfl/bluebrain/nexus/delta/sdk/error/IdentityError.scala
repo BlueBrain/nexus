@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives.complete
+import akka.http.scaladsl.server.ExceptionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 
 /**
@@ -21,4 +24,10 @@ object IdentityError {
 
   final case class InvalidToken(rejection: TokenRejection) extends IdentityError(rejection.reason)
 
+  val exceptionHandler: ExceptionHandler = ExceptionHandler {
+    case AuthenticationFailed =>
+      complete(StatusCodes.Forbidden)
+    case _: InvalidToken      =>
+      complete(StatusCodes.Unauthorized)
+  }
 }

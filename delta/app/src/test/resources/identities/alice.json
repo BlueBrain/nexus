@@ -1,0 +1,29 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/identities.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "identities": [
+    {
+      "@id": "http://localhost/v1/realms/wonderland/users/alice",
+      "@type": "User",
+      "realm": "wonderland",
+      "subject": "alice"
+    },
+    {
+      "@id": "http://localhost/v1/realms/wonderland/authenticated",
+      "@type": "Authenticated",
+      "realm": "wonderland"
+    },
+    {
+      "@id": "http://localhost/v1/realms/wonderland/groups/group",
+      "@type": "Group",
+      "group": "group",
+      "realm": "wonderland"
+    },
+    {
+      "@id": "http://localhost/v1/anonymous",
+      "@type": "Anonymous"
+    }
+  ]
+}

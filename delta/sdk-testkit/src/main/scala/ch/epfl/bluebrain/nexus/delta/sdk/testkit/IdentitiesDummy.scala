@@ -8,8 +8,18 @@ import monix.bio.IO
 /**
   * Dummy implementation of [[Identities]] passing the expected results in a map
   */
-class IdentitiesDummy(expected: Map[AuthToken, Caller]) extends Identities {
+class IdentitiesDummy private (expected: Map[AuthToken, Caller]) extends Identities {
 
   override def exchange(token: AuthToken): IO[TokenRejection, Caller] =
     IO.fromEither(expected.get(token).toRight(InvalidAccessToken))
+}
+
+object IdentitiesDummy {
+
+  /**
+    * Create a new dummy Identities implementation
+    */
+  def apply(expected: Map[AuthToken, Caller]): Identities =
+    new IdentitiesDummy(expected)
+
 }

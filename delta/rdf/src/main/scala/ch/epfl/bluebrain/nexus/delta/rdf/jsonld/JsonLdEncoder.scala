@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -108,6 +108,15 @@ object JsonLdEncoder {
     */
   def compactFromCirce[A: Encoder.AsObject](fId: A => IriOrBNode, iriContext: Iri): JsonLdEncoder[A] =
     compactFromCirce(fId, ContextValue(iriContext))
+
+  /**
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD
+    * where ''A'' doesn't have a rootId
+    *
+   * @param context the context
+    */
+  def compactFromCirce[A: Encoder.AsObject](context: ContextValue): JsonLdEncoder[A] =
+    compactFromCirce((_: A) => BNode.random, context)
 
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
