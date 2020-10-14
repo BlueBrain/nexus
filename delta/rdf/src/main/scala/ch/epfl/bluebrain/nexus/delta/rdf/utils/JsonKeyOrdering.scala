@@ -7,6 +7,8 @@ trait JsonKeyOrdering extends Ordering[String]
 
 object JsonKeyOrdering {
 
+  val alphabetical = apply(Seq.empty, Seq.empty)
+
   /**
     * Ordering based on passed keys sequences. Any json key will be sorted as the order on the ''topKeys'' plus ''bottomKeys''.
     * If the keys to order do not exist in the passed ''topKeys'' or ''bottomKeys'' sequence, they will be positioned

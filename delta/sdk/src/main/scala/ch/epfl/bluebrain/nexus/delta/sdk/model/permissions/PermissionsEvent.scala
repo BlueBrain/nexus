@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -80,6 +79,8 @@ object PermissionsEvent {
       subject: Subject
   ) extends PermissionsEvent
 
+  private val context = ContextValue(contexts.resource, contexts.permissions)
+
   @nowarn("cat=unused")
   implicit final def permissionsEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[PermissionsEvent] = {
     implicit val subjectEncoder: Encoder[Subject] =
@@ -102,7 +103,6 @@ object PermissionsEvent {
     implicit val encoder: Encoder.AsObject[PermissionsEvent] =
       deriveConfiguredEncoder[PermissionsEvent]
 
-    val context = ContextValue(contexts.resource, contexts.permissions)
-    JsonLdEncoder.compactFromCirce[PermissionsEvent]((_: PermissionsEvent) => BNode.random, context)
+    JsonLdEncoder.compactFromCirce[PermissionsEvent](context)
   }
 }

@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalLabelFormatError
+import io.circe.{Decoder, Encoder}
 
 import scala.util.matching.Regex
 
@@ -36,5 +38,11 @@ object Label {
     */
   def unsafe(value: String): Label =
     new Label(value)
+
+  implicit final val labelEncoder: Encoder[Label] =
+    Encoder.encodeString.contramap(_.value)
+
+  implicit final val labelDecoder: Decoder[Label] =
+    Decoder.decodeString.emap(str => Label(str).leftMap(_.getMessage))
 
 }
