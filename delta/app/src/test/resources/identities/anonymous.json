@@ -1,0 +1,12 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/identities.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "identities": [
+    {
+      "@id": "http://localhost/v1/anonymous",
+      "@type": "Anonymous"
+    }
+  ]
+}

@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{PermissionsDummy, RemoteContextResolutionDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, PermissionsDummy, RemoteContextResolutionDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.execution.Scheduler
@@ -56,8 +56,9 @@ class PermissionsRoutesSpec
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
 
   private val minimum     = Set(acls.read, acls.write)
+  private val identities  = IdentitiesDummy(Map.empty)
   private val permissions = PermissionsDummy(minimum).accepted
-  private val route       = Route.seal(PermissionsRoutes(permissions))
+  private val route       = Route.seal(PermissionsRoutes(identities, permissions))
 
   "The permissions routes" should {
 
@@ -179,7 +180,7 @@ class PermissionsRoutesSpec
 
     "return the event stream when no offset is provided" in {
       val dummy = PermissionsDummy(Set.empty, 5L).accepted
-      val route = Route.seal(PermissionsRoutes(dummy))
+      val route = Route.seal(PermissionsRoutes(identities, dummy))
       dummy.append(Set(acls.read), 0L).accepted
       dummy.subtract(Set(acls.read), 1L).accepted
       dummy.replace(Set(acls.write), 2L).accepted
@@ -197,7 +198,7 @@ class PermissionsRoutesSpec
 
     "return the event stream when an offset is provided" in {
       val dummy = PermissionsDummy(Set.empty, 5L).accepted
-      val route = Route.seal(PermissionsRoutes(dummy))
+      val route = Route.seal(PermissionsRoutes(identities, dummy))
       dummy.append(Set(acls.read), 0L).accepted
       dummy.subtract(Set(acls.read), 1L).accepted
       dummy.replace(Set(acls.write), 2L).accepted
