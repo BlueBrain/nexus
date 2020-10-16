@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.persistence.query.Sequence
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.sourcing.projections.config.PersistProgressConfig
 import fs2.{Chunk, Stream}
 import io.circe.Json
 import monix.bio.Task

@@ -218,7 +218,7 @@ APT, YUM/DNF, ...)
 
 #### Installation
 
-Follow the @link:[installation instructions](https://kubernetes.io/docs/tasks/tools/install-minikube/){ open=new } from 
+Follow the @link:[installation instructions](https://minikube.sigs.k8s.io/docs/start/){ open=new } from 
 the official Kubernetes documentation.
 
 #### Run Minikube

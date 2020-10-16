@@ -18,9 +18,10 @@ val scalaCompilerVersion   = "2.13.3"
 
 val akkaHttpVersion                 = "10.2.0"
 val akkaHttpCirceVersion            = "1.33.0"
+val akkaCorsVersion                 = "1.1.0"
 val akkaPersistenceCassandraVersion = "1.0.1"
 val akkaPersistenceJdbcVersion      = "4.0.0"
-val akkaVersion                     = "2.6.9"
+val akkaVersion                     = "2.6.10"
 val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
 val awsSdkVersion                   = "2.10.23"
@@ -34,7 +35,6 @@ val declineVersion                  = "1.3.0"
 val distageVersion                  = "0.10.19"
 val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.9.2"
-val flywayVersion                   = "6.5.2"
 val fs2Version                      = "2.4.4"
 val http4sVersion                   = "0.21.7"
 val h2Version                       = "1.4.200"
@@ -60,9 +60,11 @@ val uuidGeneratorVersion            = "3.2.0"
 lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
 lazy val akkaClusterTyped         = "com.typesafe.akka" %% "akka-cluster-typed"          % akkaVersion
 lazy val akkaClusterShardingTyped = "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion
+lazy val akkaDistributedData      = "com.typesafe.akka" %% "akka-distributed-data"       % akkaVersion
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
 lazy val akkaHttpCirce   = "de.heikoseeberger" %% "akka-http-circe"   % akkaHttpCirceVersion
+lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCorsVersion
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
 
 lazy val akkaPersistenceTyped   = "com.typesafe.akka" %% "akka-persistence-typed"   % akkaVersion
@@ -109,7 +111,6 @@ lazy val dockerTestKit = Seq(
 )
 
 lazy val fs2           = "co.fs2"                     %% "fs2-core"                % fs2Version
-lazy val flyway        = "org.flywaydb"                % "flyway-core"             % flywayVersion
 lazy val h2            = "com.h2database"              % "h2"                      % h2Version
 lazy val http4sCirce   = "org.http4s"                 %% "http4s-circe"            % http4sVersion
 lazy val http4sClient  = "org.http4s"                 %% "http4s-blaze-client"     % http4sVersion
@@ -294,7 +295,6 @@ lazy val sourcing = project
       distageCore,
       doobiePostgres,
       fs2,
-      flyway,
       kryo,
       monixBio,
       scalaLogging,
@@ -410,15 +410,24 @@ lazy val app = project
     name       := "delta-app",
     moduleName := "delta-app"
   )
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sourcing, rdf, sdk, sdkTestkit, service, testkit % "test->compile", sdkTestkit % "test->compile")
+  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
+      akkaDistributedData,
+      akkaHttpCors,
+      akkaSlf4j,
       logback,
+      pureconfig,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,
       scalaTest       % Test
-    )
+    ),
+    run / fork           := true,
+    buildInfoKeys        := Seq[BuildInfoKey](version),
+    buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config",
+    Docker / packageName := "nexus-delta"
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")

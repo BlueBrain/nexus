@@ -4,6 +4,7 @@ import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.testkit.{ShouldMatchers, TestHelpers}
+import monix.bio.Task
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers.{contain, empty}
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -12,12 +13,13 @@ trait ProjectionSpec extends AnyWordSpecLike with BeforeAndAfterAll with TestHel
 
   import monix.execution.Scheduler.Implicits.global
 
-  def schemaMigration: SchemaMigration
+  def configureSchema: Task[Unit]
+
   def projections: Projection[SomeEvent]
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    schemaMigration.migrate().runSyncUnsafe()
+    configureSchema.runSyncUnsafe()
   }
 
   override def afterAll(): Unit = {

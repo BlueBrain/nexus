@@ -62,7 +62,7 @@ class IdentitiesRoutesSpec
 
     "return unauthorized" in {
       Get("/v1/identities") ~> addCredentials(BasicHttpCredentials("fail")) ~> route ~> check {
-        status shouldEqual StatusCodes.Forbidden
+        status shouldEqual StatusCodes.Unauthorized
       }
     }
 
