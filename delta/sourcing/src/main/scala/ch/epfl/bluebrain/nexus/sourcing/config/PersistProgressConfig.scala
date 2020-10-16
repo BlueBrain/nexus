@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections.config
+package ch.epfl.bluebrain.nexus.sourcing.config
 
 import scala.concurrent.duration.FiniteDuration
 

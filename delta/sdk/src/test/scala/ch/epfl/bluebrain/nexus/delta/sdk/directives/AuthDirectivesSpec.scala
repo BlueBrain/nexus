@@ -70,7 +70,7 @@ class AuthDirectivesSpec
 
     "fail with invalid credentials" in {
       Get("/user") ~> addCredentials(BasicHttpCredentials("alice")) ~> route ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
+        response.status shouldEqual StatusCodes.Unauthorized
       }
     }
 

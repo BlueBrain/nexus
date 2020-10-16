@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.persistence.query.Offset
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcing.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.sourcing.projections.config.PersistProgressConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}

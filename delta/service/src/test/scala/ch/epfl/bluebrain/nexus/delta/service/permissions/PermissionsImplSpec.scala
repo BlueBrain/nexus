@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.service.permissions
 
-import akka.persistence.query.{EventEnvelope, Sequence}
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
@@ -9,20 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors
 import ch.epfl.bluebrain.nexus.delta.service.AbstractDBSpec
+import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
-import monix.bio.{Task, UIO}
+import monix.bio.Task
 
 import scala.concurrent.duration._
 
 class PermissionsImplSpec extends AbstractDBSpec with PermissionsBehaviors {
 
   private def eventLog: Task[EventLog[Envelope[PermissionsEvent]]] =
-    EventLog.jdbcEventLog {
-      case ee @ EventEnvelope(offset: Sequence, persistenceId, sequenceNr, value: PermissionsEvent) =>
-        UIO.pure(Some(Envelope(value, value.getClass.getSimpleName, offset, persistenceId, sequenceNr, ee.timestamp)))
-      case _                                                                                        => UIO.pure(None)
-    }
+    EventLog.postgresEventLog(EventLogUtils.toEnvelope)
 
   override def create: Task[Permissions] = {
     eventLog.flatMap { el =>

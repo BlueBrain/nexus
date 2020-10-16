@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.config
+package ch.epfl.bluebrain.nexus.sourcing.config
 
 /**
   * The cassandra database config.

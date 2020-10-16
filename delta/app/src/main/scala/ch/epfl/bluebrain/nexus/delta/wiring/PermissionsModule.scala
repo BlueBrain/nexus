@@ -8,19 +8,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl
+import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils.toEnvelope
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
+import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 
 /**
   * Permissions module wiring config.
   */
 // $COVERAGE-OFF$
-object PermissionsModule extends AbstractModule {
+object PermissionsModule extends ModuleDef {
 
   make[EventLog[Envelope[PermissionsEvent]]].fromEffect { (cfg: AppConfig, as: ActorSystem[Nothing]) =>
     cfg.database.flavour match {
       case DatabaseFlavour.Postgres  =>
-        EventLog.jdbcEventLog(toEnvelope[PermissionsEvent])(as)
+        EventLog.postgresEventLog(toEnvelope[PermissionsEvent])(as)
       case DatabaseFlavour.Cassandra =>
         EventLog.cassandraEventLog(toEnvelope[PermissionsEvent])(as)
     }

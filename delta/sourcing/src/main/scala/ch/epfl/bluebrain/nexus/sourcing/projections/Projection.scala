@@ -5,9 +5,9 @@ import java.io.{PrintWriter, StringWriter}
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.Cassandra.CassandraConfig
-import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.{Cassandra, CassandraProjection}
-import ch.epfl.bluebrain.nexus.sourcing.projections.jdbc.{JdbcConfig, JdbcProjection}
+import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PostgresConfig}
+import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.CassandraProjection
+import ch.epfl.bluebrain.nexus.sourcing.projections.postgres.PostgresProjection
 import fs2.Stream
 import io.circe.parser.decode
 import io.circe.{Decoder, Encoder}
@@ -84,7 +84,7 @@ object Projection {
     * Create a projection for Cassandra
     */
   def cassandra[A: Encoder: Decoder](config: CassandraConfig)(implicit as: ActorSystem[Nothing]): Task[Projection[A]] =
-    Cassandra.session(as).map {
+    CassandraProjection.session(as).map {
       new CassandraProjection[A](
         _,
         config,
@@ -95,8 +95,8 @@ object Projection {
   /**
     * Create a projection for PostgreSQL
     */
-  def jdbc[A: Encoder: Decoder](jdbcConfig: JdbcConfig): Task[Projection[A]] =
+  def postgres[A: Encoder: Decoder](postgresConfig: PostgresConfig): Task[Projection[A]] =
     Task.delay {
-      new JdbcProjection[A](jdbcConfig.transactor)
+      new PostgresProjection[A](postgresConfig.transactor)
     }
 }

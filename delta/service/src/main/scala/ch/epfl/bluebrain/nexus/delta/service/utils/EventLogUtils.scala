@@ -1,14 +1,15 @@
-package ch.epfl.bluebrain.nexus.delta.wiring
+package ch.epfl.bluebrain.nexus.delta.service.utils
 
 import akka.persistence.query.{EventEnvelope, Offset}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import izumi.distage.model.definition.ModuleDef
+import com.typesafe.scalalogging.Logger
 import monix.bio.UIO
 
 import scala.reflect.ClassTag
 
-// $COVERAGE-OFF$
-abstract class AbstractModule extends ModuleDef {
+object EventLogUtils {
+
+  private val logger: Logger = Logger("EventLog")
 
   /**
     * Attempts to convert a generic event envelope to a type one.
@@ -20,11 +21,9 @@ abstract class AbstractModule extends ModuleDef {
         UIO.pure(Some(Envelope(value, value.getClass.getSimpleName, offset, persistenceId, sequenceNr, ee.timestamp)))
       case _                                                                           =>
         UIO(
-          println(
+          logger.warn(
             s"Failed to match envelope value '${envelope.event}' to class '${Event.runtimeClass.getCanonicalName}'"
           )
         ) >> UIO.pure(None)
     }
-
 }
-// $COVERAGE-ON$

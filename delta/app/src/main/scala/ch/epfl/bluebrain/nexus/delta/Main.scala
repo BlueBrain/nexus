@@ -12,6 +12,7 @@ import akka.http.scaladsl.server.{RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -47,8 +48,10 @@ object Main extends BIOApp {
       .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
     cors(corsSettings) {
-      handleRejections(locator.get[RejectionHandler]) {
-        locator.get[PermissionsRoutes].routes
+      handleExceptions(IdentityError.exceptionHandler) {
+        handleRejections(locator.get[RejectionHandler]) {
+          locator.get[PermissionsRoutes].routes
+        }
       }
     }
   }

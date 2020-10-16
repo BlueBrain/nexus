@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.sourcing.projections.jdbc
+package ch.epfl.bluebrain.nexus.sourcing.projections.postgres
 
 import akka.persistence.query.Offset
 import cats.implicits._
@@ -12,9 +12,9 @@ import io.circe.{Decoder, Encoder}
 import monix.bio.Task
 
 /**
-  * Jdbc implementation of [[Projection]]
+  * Postgres implementation of [[Projection]]
   */
-private[projections] class JdbcProjection[A: Encoder: Decoder](xa: Transactor[Task]) extends Projection[A] {
+private[projections] class PostgresProjection[A: Encoder: Decoder](xa: Transactor[Task]) extends Projection[A] {
 
   /**
     * Records progress against a projection identifier.

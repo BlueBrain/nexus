@@ -35,7 +35,6 @@ val declineVersion                  = "1.3.0"
 val distageVersion                  = "0.10.19"
 val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.9.2"
-val flywayVersion                   = "6.5.2"
 val fs2Version                      = "2.4.4"
 val http4sVersion                   = "0.21.7"
 val h2Version                       = "1.4.200"
@@ -50,7 +49,6 @@ val mockitoVersion                  = "1.15.0"
 val monixVersion                    = "3.2.2"
 val monixBioVersion                 = "1.0.0"
 val nimbusJoseJwtVersion            = "8.19"
-val postgresqlVersion               = "42.2.17"
 val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalateVersion                  = "1.9.6"
@@ -113,7 +111,6 @@ lazy val dockerTestKit = Seq(
 )
 
 lazy val fs2           = "co.fs2"                     %% "fs2-core"                % fs2Version
-lazy val flyway        = "org.flywaydb"                % "flyway-core"             % flywayVersion
 lazy val h2            = "com.h2database"              % "h2"                      % h2Version
 lazy val http4sCirce   = "org.http4s"                 %% "http4s-circe"            % http4sVersion
 lazy val http4sClient  = "org.http4s"                 %% "http4s-blaze-client"     % http4sVersion
@@ -128,7 +125,6 @@ lazy val mockito       = "org.mockito"                %% "mockito-scala"        
 lazy val monixBio      = "io.monix"                   %% "monix-bio"               % monixBioVersion
 lazy val monixEval     = "io.monix"                   %% "monix-eval"              % monixVersion
 lazy val nimbusJoseJwt = "com.nimbusds"                % "nimbus-jose-jwt"         % nimbusJoseJwtVersion
-lazy val postgresql    = "org.postgresql"              % "postgresql"              % postgresqlVersion
 lazy val pureconfig    = "com.github.pureconfig"      %% "pureconfig"              % pureconfigVersion
 lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"           % scalaLoggingVersion
 lazy val scalate       = "org.scalatra.scalate"       %% "scalate-core"            % scalateVersion
@@ -299,7 +295,6 @@ lazy val sourcing = project
       distageCore,
       doobiePostgres,
       fs2,
-      flyway,
       kryo,
       monixBio,
       scalaLogging,
@@ -417,14 +412,13 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sourcing, rdf, sdk, service, testkit % "test->compile", sdkTestkit % "test->compile")
+  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile")
   .settings(
     libraryDependencies ++= Seq(
       akkaDistributedData,
       akkaHttpCors,
       akkaSlf4j,
       logback,
-      postgresql,
       pureconfig,
       akkaHttpTestKit % Test,
       akkaTestKit     % Test,

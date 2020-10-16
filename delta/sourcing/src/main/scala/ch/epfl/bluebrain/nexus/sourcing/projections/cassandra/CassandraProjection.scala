@@ -3,10 +3,11 @@ package ch.epfl.bluebrain.nexus.sourcing.projections.cassandra
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import akka.stream.Materializer
-import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
+import akka.stream.alpakka.cassandra.CassandraSessionSettings
+import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.sourcing.config.CassandraConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.sourcing.projections.cassandra.Cassandra.CassandraConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
 import ch.epfl.bluebrain.nexus.sourcing.projections.{FailureMessage, Projection, ProjectionId, ProjectionProgress}
 import fs2.Stream
@@ -92,4 +93,18 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
           (row.getString("value"), row.getString("offset"), row.getString("error_type"))
         )
       }
+}
+
+object CassandraProjection {
+
+  /**
+    * @param as the underlying actor system
+    * @return a cassandra session from the actor system registry
+    */
+  def session(as: ActorSystem[Nothing]): Task[CassandraSession] =
+    Task.delay {
+      CassandraSessionRegistry
+        .get(as)
+        .sessionFor(CassandraSessionSettings("akka.persistence.cassandra"))
+    }
 }

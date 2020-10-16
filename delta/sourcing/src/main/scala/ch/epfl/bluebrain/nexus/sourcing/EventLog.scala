@@ -118,7 +118,7 @@ object EventLog {
     * Create an event log relying on akka-persistence-jdbc
     * @param f the transformation we want to apply to the [[EventEnvelope]]
     */
-  def jdbcEventLog[M](
+  def postgresEventLog[M](
       f: EventEnvelope => UIO[Option[M]]
   )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] =
     eventLog(f, JdbcReadJournal.Identifier)
