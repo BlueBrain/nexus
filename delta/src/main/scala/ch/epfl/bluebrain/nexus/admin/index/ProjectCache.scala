@@ -128,8 +128,10 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
   ): F[Subscription] =
     store.subscribe {
       OnKeyValueStoreChange(
-        onCreate = (_, project) => onAdded(project),
-        onUpdate = (_, project) => if (project.deprecated) onDeprecated(project) else onUpdated(project),
+        onCreateOrUpdate = (_, project) =>
+          if (project.rev == 1L) onAdded(project)
+          else if (project.deprecated) onDeprecated(project)
+          else onUpdated(project),
         onRemove = (_, _) => F.unit
       )
     }

@@ -356,7 +356,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
       case Stop(_)                                                         =>
         children.foreach {
           case (view, coordinator) =>
-            logStop(view, "deprecated organization")
+            logStop(view, "deprecated project or parent organization")
             stopView(view, coordinator, deleteIndices = false)
         }
 
