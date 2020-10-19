@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.client.{DeltaClient, DeltaClientConfig}
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.iam.acls.{AccessControlList, Acls}
 import ch.epfl.bluebrain.nexus.iam.types.Caller
-import ch.epfl.bluebrain.nexus.kg.IdStats
+import ch.epfl.bluebrain.nexus.kg.{IdOffset, IdStats}
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor.Msg._
 import ch.epfl.bluebrain.nexus.kg.async.ProjectViewCoordinatorActor._
 import ch.epfl.bluebrain.nexus.kg.cache.ViewCache
@@ -81,6 +81,13 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
       children ++= accessibleViews.map(view => view -> startCoordinator(view, project, restart = false))
       startProjectStreamFromDB(project)
       unstashAll()
+
+    case FetchOffset(_, _)                      =>
+      sender() ! Set.empty[IdOffset] // added in order to prevent timeouts
+
+    case FetchStatistics(_, _)                  =>
+      sender() ! Set.empty[IdStats] // added in order to prevent timeouts
+
     case other                                  =>
       log.debug("Received non Start message '{}', stashing until the actor is initialized", other)
       stash()
@@ -356,7 +363,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
       case Stop(_)                                                         =>
         children.foreach {
           case (view, coordinator) =>
-            logStop(view, "deprecated organization")
+            logStop(view, "deprecated project or parent organization")
             stopView(view, coordinator, deleteIndices = false)
         }
 

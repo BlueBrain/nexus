@@ -82,8 +82,10 @@ class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource
   ): F[Subscription] =
     store.subscribe {
       OnKeyValueStoreChange(
-        onCreate = (_, org) => onAdded(org),
-        onUpdate = (_, org) => if (org.deprecated) onDeprecated(org) else onUpdated(org),
+        onCreateOrUpdate = (_, org) =>
+          if (org.rev == 1L) onAdded(org)
+          else if (org.deprecated) onDeprecated(org)
+          else onUpdated(org),
         onRemove = (_, _) => F.unit
       )
     }

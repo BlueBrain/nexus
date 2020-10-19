@@ -32,7 +32,13 @@ object OnKeyValueStoreChange {
   def noEffect[F[_], K, V](implicit F: Applicative[F]): OnKeyValueStoreChange[F, K, V] =
     (_: KeyValueStoreChanges[K, V]) => F.unit
 
-  def apply[F[_], K, V](onCreate: (K, V) => F[Unit], onUpdate: (K, V) => F[Unit], onRemove: (K, V) => F[Unit])(implicit
+  /**
+    * Creates an [[OnKeyValueStoreChange]] with a function to execute on create/update entries and another on remove entries
+    *
+    * @param onCreateOrUpdate the function to execute on create/update entries to the store
+    * @param onRemove         the function to execute on remove entries to the store
+    */
+  def apply[F[_], K, V](onCreateOrUpdate: (K, V) => F[Unit], onRemove: (K, V) => F[Unit])(implicit
       F: Applicative[F]
   ): OnKeyValueStoreChange[F, K, V] =
     (value: KeyValueStoreChanges[K, V]) =>
@@ -41,8 +47,8 @@ object OnKeyValueStoreChange {
         case values =>
           values
             .traverse {
-              case ValueAdded(k, v)    => onCreate(k, v)
-              case ValueModified(k, v) => onUpdate(k, v)
+              case ValueAdded(k, v)    => onCreateOrUpdate(k, v)
+              case ValueModified(k, v) => onCreateOrUpdate(k, v)
               case ValueRemoved(k, v)  => onRemove(k, v)
             }
             .as(())
