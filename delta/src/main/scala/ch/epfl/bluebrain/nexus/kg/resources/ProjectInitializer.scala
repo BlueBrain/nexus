@@ -150,6 +150,6 @@ object ProjectInitializer {
       fileAttributesCoordinator: ProjectAttributesCoordinator[F]
   )(implicit F: Effect[F], cache: Caches[F], config: AppConfig, as: ActorSystem): F[Unit] = {
     val initializer = new ProjectInitializer[F](storages, views, resolvers, viewCoordinator, fileAttributesCoordinator)
-    cache.project.subscribe(onAdded = initializer.apply).as(())
+    cache.project.subscribe(onAdded = initializer.apply, onUpdated = initializer.apply).as(())
   }
 }
