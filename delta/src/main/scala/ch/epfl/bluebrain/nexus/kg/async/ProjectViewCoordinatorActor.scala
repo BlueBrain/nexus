@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.Source.{CrossProje
 import ch.epfl.bluebrain.nexus.kg.indexing.View.CompositeView.{Source => CompositeSource}
 import ch.epfl.bluebrain.nexus.kg.indexing.View._
 import ch.epfl.bluebrain.nexus.kg.indexing._
-import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.ProjectRef
+import ch.epfl.bluebrain.nexus.kg.resources.ProjectIdentifier.{ProjectLabel, ProjectRef}
 import ch.epfl.bluebrain.nexus.kg.resources.syntax._
 import ch.epfl.bluebrain.nexus.kg.resources.{Event, ProjectIdentifier, Resources}
 import ch.epfl.bluebrain.nexus.kg.routes.Clients
@@ -79,7 +79,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
         case (acc, v: SingleView)    => acc + v
       }
       children ++= accessibleViews.map(view => view -> startCoordinator(view, project, restart = false))
-      startProjectStreamFromDB(project)
+      startProjectStreamFromDB(ProjectRef(project.uuid), Some(project.value.projectLabel))
       unstashAll()
 
     case FetchOffset(_, _)                      =>
@@ -149,66 +149,54 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
       if (readPerms) inaccessible else inaccessible + current
     }
 
-  private def startCrossProjectStreamFromDB(projectRef: ProjectRef): Unit = {
-    val progressId                                   = projectStreamId()
+  private def startProjectStreamFromDB(projectRef: ProjectRef, label: Option[ProjectLabel] = None): Unit = {
+    val progressId                                   = projectStreamId(projectRef.show)
     val sourceF: Task[Source[ProjectionProgress, _]] = projections.progress(progressId).map { initial =>
-      PersistenceQuery(as)
+      val s = PersistenceQuery(as)
         .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
         .eventsByTag(s"project=${projectRef.id}", initial.minProgress.offset)
         .map[PairMsg[Any]](e => Right(Message(e, progressId)))
-        .via(projectStreamFlow(initial))
+        .via(projectStreamFlow(initial, progressId))
+      label.fold(s)(lb => s.via(kamonProjectMetricsFlow(metricsPrefix, lb)))
     }
     val coordinator                                  = ViewCoordinator(StreamSupervisor.start(sourceF, progressId, context.actorOf))
     projectsStream += projectRef -> coordinator
   }
 
-  private def startProjectStreamFromDB(project: ProjectResource): Unit = {
-    val progressId                                   = projectStreamId()
-    val sourceF: Task[Source[ProjectionProgress, _]] = projections.progress(progressId).map { initial =>
-      PersistenceQuery(as)
-        .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
-        .eventsByTag(s"project=${project.uuid}", initial.minProgress.offset)
-        .map[PairMsg[Any]](e => Right(Message(e, progressId)))
-        .via(projectStreamFlow(initial))
-        .via(kamonProjectMetricsFlow(metricsPrefix, project.value.projectLabel))
-
-    }
-    val coordinator                                  = ViewCoordinator(StreamSupervisor.start(sourceF, progressId, context.actorOf))
-    projectsStream += ProjectRef(project.uuid) -> coordinator
-  }
-
   private def startProjectStreamSource(source: CompositeSource): Unit =
     source match {
-      case CrossProjectEventStream(_, _, ref: ProjectRef, _) => startCrossProjectStreamFromDB(ref)
+      case CrossProjectEventStream(_, _, ref: ProjectRef, _) => startProjectStreamFromDB(ref)
       case s: RemoteProjectEventStream                       => startProjectStreamFromSSE(s)
       case _                                                 => ()
     }
 
   private def startProjectStreamFromSSE(remoteSource: RemoteProjectEventStream): Unit = {
-    val progressId                                   = projectStreamId()
+    val progressId                                   = projectStreamId(remoteSource.project.value)
     val clientCfg                                    = DeltaClientConfig(remoteSource.endpoint)
     val client                                       = DeltaClient[Task](clientCfg)
     val sourceF: Task[Source[ProjectionProgress, _]] = projections.progress(progressId).map { initial =>
       val source = client
         .events(remoteSource.project, initial.minProgress.offset)(remoteSource.token)
         .map[PairMsg[Any]](e => Right(Message(e, progressId)))
-      source.via(projectStreamFlow(initial)).via(kamonProjectMetricsFlow(metricsPrefix, remoteSource.project))
+      source
+        .via(projectStreamFlow(initial, progressId))
+        .via(kamonProjectMetricsFlow(metricsPrefix, remoteSource.project))
     }
     val coordinator                                  = ViewCoordinator(StreamSupervisor.start(sourceF, progressId, context.actorOf))
     projectsStream += remoteSource.project -> coordinator
   }
 
-  private def projectStreamFlow(initial: ProjectionProgress) = {
+  private def projectStreamFlow(initial: ProjectionProgress, progressId: String) = {
     implicit val indexing: IndexingConfig = config.elasticSearch.indexing
     ProgressFlowElem[Task, Any]
       .collectCast[Event]
       .groupedWithin(indexing.batch, indexing.batchTimeout)
       .distinct()
       .mergeEmit()
-      .toProgress(initial)
+      .toPersistedProgress(progressId, initial)
   }
 
-  private def projectStreamId(): String = s"project-event-${UUID.randomUUID()}"
+  private def projectStreamId(identifier: String): String = s"project-event-$identifier"
 
   /**
     * Triggered in order to build an indexer actor for a provided view
@@ -282,7 +270,7 @@ abstract private class ProjectViewCoordinatorActor(viewCache: ViewCache[Task])(i
       logStart(view, s"restart: '$restart'")
       children += view -> startCoordinator(view, project, restart, prevRestart)
       view match {
-        case v: CompositeView => v.sources.foreach(startProjectStreamSource(_))
+        case v: CompositeView => v.sources.foreach(startProjectStreamSource)
         case _                => ()
       }
     }
