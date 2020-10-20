@@ -148,7 +148,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
         }
         val stateActor = context.spawn(
           behavior,
-          s"${entityId}_state"
+          s"${URLEncoder.encode(entityId, "UTF-8")}_state"
         )
 
         // Make sure that the message has been correctly routed to the appropriated actor
