@@ -210,6 +210,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-4-2-20-10-2020-" class="header">v1.4.2 (20.10.2020)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-4-1-24-08-2020-" class="header">v1.4.1 (24.08.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-0-14-08-2020-" class="header">v1.4.0 (14.08.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-3-0-25-02-2020-" class="header">v1.3.0 (25.02.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-2-1-07-10-2019-" class="header">v1.2.1 (07.10.2019)</a></li>
@@ -226,7 +228,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> d28a0573
+<i class="md-icon" title="Version">label_outline</i> c0481662
 </label>
 </li>
 </ul>
@@ -241,6 +243,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-4-2-20-10-2020-" class="header">v1.4.2 (20.10.2020)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-4-1-24-08-2020-" class="header">v1.4.1 (24.08.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-0-14-08-2020-" class="header">v1.4.0 (14.08.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-3-0-25-02-2020-" class="header">v1.3.0 (25.02.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-2-1-07-10-2019-" class="header">v1.2.1 (07.10.2019)</a></li>
@@ -261,7 +265,26 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.4.0</strong> released on <strong>14.08.2020</strong>.</p>
+<p>The latest stable release is <strong>v1.4.2</strong> released on <strong>20.10.2020</strong>.</p>
+<h2><a href="#v1-4-2-20-10-2020-" name="v1-4-2-20-10-2020-" class="anchor"><span class="anchor-link"></span></a>v1.4.2 (20.10.2020)</h2>
+<p>This is a bugfix release, addressing the following issues related to views lifecycle:</p>
+<ul>
+  <li>Persist project statistics to avoid starting from NoOffset when service restarts or view collapses.</li>
+  <li>Prevent a deprecated organization/project from starting its views.</li>
+</ul>
+<h2><a href="#v1-4-1-24-08-2020-" name="v1-4-1-24-08-2020-" class="anchor"><span class="anchor-link"></span></a>v1.4.1 (24.08.2020)</h2>
+<p>This is a bugfix release, addressing the following issues:</p>
+<ul>
+  <li>Project tag reported as a metric with Kamon is inconsistent</li>
+  <li>File Attribute computation is no longer exposed as a metric</li>
+  <li>The path prefix read from the app.http.public-uri is applied twice for KG specific routes</li>
+  <li>Parallelize the v1.3.x to v1.4.x migration script</li>
+  <li>Support a retry mechanism for the v1.3.x to v1.4.x migration</li>
+  <li>Add email address in footer</li>
+  <li>Add CONP and SWITCH logos on product page</li>
+  <li>Add SEO metadata to product pages</li>
+  <li>Add SEO headers</li>
+</ul>
 <h2><a href="#v1-4-0-14-08-2020-" name="v1-4-0-14-08-2020-" class="anchor"><span class="anchor-link"></span></a>v1.4.0 (14.08.2020)</h2>
 <p>The release is backwards compatible with v1.x.y releases in terms of API. If you&rsquo;re upgrading from v1.3.x please visit the <a href="v1.3-to-v1.4-migration.html">migration instructions</a>.</p>
 <p>Summary of the significant changes:</p>
@@ -391,7 +414,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-d28a0573
+c0481662
 </span>
 </div>
 </article>
