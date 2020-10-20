@@ -1,7 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Query
 import cats.Functor
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 
 /**
   * Defines the signature for a collection of search results with their metadata
@@ -65,7 +77,7 @@ object SearchResults {
         fa.copy(results = fa.results.map(qr => F.map(qr)(f)))
     }
 
-  implicit final def unsscoredSearchResultsFunctor(implicit F: Functor[ResultEntry]): Functor[UnscoredSearchResults] =
+  implicit final def unscoredSearchResultsFunctor(implicit F: Functor[ResultEntry]): Functor[UnscoredSearchResults] =
     new Functor[UnscoredSearchResults] {
       override def map[A, B](fa: UnscoredSearchResults[A])(f: A => B): UnscoredSearchResults[B] =
         fa.copy(results = fa.results.map(qr => F.map(qr)(f)))
@@ -99,4 +111,57 @@ object SearchResults {
     */
   final def apply[A](total: Long, results: Seq[ResultEntry[A]]): SearchResults[A] =
     UnscoredSearchResults[A](total, results)
+
+  private def encodeResults[A: Encoder.AsObject](
+      next: SearchResults[A] => Option[Uri]
+  ): Encoder.AsObject[SearchResults[A]] =
+    Encoder.AsObject.instance { r =>
+      val common = JsonObject(
+        nxv.total.prefix   -> Json.fromLong(r.total),
+        nxv.results.prefix -> Json.fromValues(r.results.map(_.asJson)),
+        nxv.next.prefix    -> next(r).asJson
+      )
+      r match {
+        case ScoredSearchResults(_, maxScore, _, _) => common.add(nxv.maxScore.prefix, maxScore.asJson)
+        case _                                      => common
+      }
+    }
+
+  def searchResultsEncoder[A: Encoder.AsObject](pagination: FromPagination, searchUri: Uri)(implicit
+      baseUri: BaseUri
+  ): Encoder.AsObject[SearchResults[A]] = {
+    def next(pagination: FromPagination, searchUri: Uri)(implicit baseUri: BaseUri): SearchResults[_] => Option[Uri] =
+      (results: SearchResults[_]) => {
+        val nextFrom = pagination.from + pagination.size
+        Option.when(nextFrom < results.total.toInt) {
+          val params = searchUri.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
+          toPublic(searchUri).withQuery(Query(params))
+        }
+      }
+
+    encodeResults(next(pagination, searchUri))
+  }
+
+  def searchResultsResourceEncoder[Id, A](pagination: FromPagination, searchUri: Uri)(implicit
+      baseUri: BaseUri,
+      iriResolver: IriResolver[Id],
+      R: Encoder.AsObject[ResourceF[Iri, A]]
+  ): Encoder.AsObject[SearchResults[ResourceF[Id, A]]] = {
+    Encoder.AsObject.instance { s =>
+      searchResultsEncoder(pagination, searchUri).encodeObject(
+        s.map { r => r.copy(id = iriResolver.resolve(r.id)) }
+      )
+    }
+  }
+
+  private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
+    uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)
+
+  private val context                = ContextValue(contexts.resource, contexts.search)
+  implicit def searchResultsJsonLdEncoder[A](implicit
+      S: Encoder.AsObject[SearchResults[A]],
+      additionalContext: ContextValue
+  ): JsonLdEncoder[SearchResults[A]] =
+    JsonLdEncoder.compactFromCirce(context.merge(additionalContext))
+
 }

@@ -1,0 +1,5 @@
+{
+  "name": "{{name}}",
+  "openIdConfig": "{{openID}}",
+  "logo": "{{logo}}"
+}

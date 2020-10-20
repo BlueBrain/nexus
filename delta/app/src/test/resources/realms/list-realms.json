@@ -1,0 +1,12 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/realms.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total": 2,
+  "_results": [
+    {{{github}}},
+    {{{gitlab}}}
+  ]
+}

@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.service.realms
 import akka.http.scaladsl.model.Uri
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsBehaviors
 import ch.epfl.bluebrain.nexus.delta.service.AbstractDBSpec
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
@@ -21,8 +21,6 @@ class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with OptionValu
 
   private def eventLog: Task[EventLog[Envelope[RealmEvent]]] =
     EventLog.postgresEventLog(EventLogUtils.toEnvelope)
-
-  implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")
 
   override def create: Task[Realms] =
     eventLog.flatMap { el =>

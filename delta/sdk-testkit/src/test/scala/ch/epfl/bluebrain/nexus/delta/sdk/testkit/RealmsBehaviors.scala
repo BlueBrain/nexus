@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -27,6 +27,8 @@ trait RealmsBehaviors {
   val epoch: Instant                = Instant.EPOCH
   implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
   implicit val scheduler: Scheduler = Scheduler.global
+
+  implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
@@ -135,7 +137,12 @@ trait RealmsBehaviors {
       realms.list(FromPagination(0, 10)).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(ghRes), UnscoredResultEntry(glRes)))
       val filter =
-        RealmSearchParams(deprecated = Some(true), rev = Some(3), createdBy = Some(subject), updatedBy = Some(subject))
+        RealmSearchParams(
+          deprecated = Some(true),
+          rev = Some(3),
+          createdBy = Some(subject.id),
+          updatedBy = Some(subject.id)
+        )
       realms.list(FromPagination(0, 10), filter).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(ghRes)))
     }

@@ -2,6 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
 import cats.Functor
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
 
 /**
   * Defines the signature for a single instance result entry
@@ -52,5 +55,12 @@ object ResultEntry {
     new Functor[UnscoredResultEntry] {
       override def map[A, B](fa: UnscoredResultEntry[A])(f: A => B): UnscoredResultEntry[B] =
         fa.copy(source = f(fa.source))
+    }
+
+  implicit def resultEntryEncoder[A: Encoder.AsObject]: Encoder.AsObject[ResultEntry[A]] =
+    Encoder.AsObject.instance {
+      case ScoredResultEntry(score, source) =>
+        source.asJsonObject.+:(nxv.score.prefix -> Json.fromFloatOrNull(score))
+      case UnscoredResultEntry(source)      => source.asJsonObject
     }
 }

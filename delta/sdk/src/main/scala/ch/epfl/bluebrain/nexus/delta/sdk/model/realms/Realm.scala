@@ -1,8 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import io.circe._
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
 /**
   * A realm representation.
@@ -34,3 +39,30 @@ final case class Realm(
     endSessionEndpoint: Option[Uri],
     keys: Set[Json]
 )
+
+object Realm {
+  import GrantType.Camel._
+  import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+
+  implicit private[Realm] val config: Configuration = Configuration.default.copy(transformMemberNames = {
+    case "authorizationEndpoint" => nxv.authorizationEndpoint.prefix
+    case "endSessionEndpoint"    => nxv.endSessionEndpoint.prefix
+    case "grantTypes"            => nxv.grantTypes.prefix
+    case "issuer"                => nxv.issuer.prefix
+    case "label"                 => nxv.label.prefix
+    case "revocationEndpoint"    => nxv.revocationEndpoint.prefix
+    case "tokenEndpoint"         => nxv.tokenEndpoint.prefix
+    case "userInfoEndpoint"      => nxv.userInfoEndpoint.prefix
+    case other                   => other
+  })
+
+  implicit val realmEncoder: Encoder.AsObject[Realm] = {
+    deriveConfiguredEncoder[Realm].mapJsonObject(
+      _.remove("keys")
+    )
+  }
+
+  val context: ContextValue                             = ContextValue(contexts.realms)
+  implicit val realmJsonLdEncoder: JsonLdEncoder[Realm] =
+    JsonLdEncoder.compactFromCirce(context)
+}

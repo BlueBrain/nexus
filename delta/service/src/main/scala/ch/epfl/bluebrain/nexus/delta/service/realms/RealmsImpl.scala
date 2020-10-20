@@ -92,8 +92,8 @@ final class RealmsImpl private (
     resources.filter {
       case ResourceF(_, rev, types, deprecated, _, createdBy, _, updatedBy, _, realm) =>
         params.issuer.forall(_ == realm.issuer) &&
-          params.createdBy.forall(_.id == createdBy.id) &&
-          params.updatedBy.forall(_.id == updatedBy.id) &&
+          params.createdBy.forall(_ == createdBy.id) &&
+          params.updatedBy.forall(_ == updatedBy.id) &&
           params.rev.forall(_ == rev) &&
           params.types.subsetOf(types) &&
           params.deprecated.forall {

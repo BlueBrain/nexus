@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
-import io.circe.Decoder
+import io.circe.{Decoder, Encoder, Json}
 
 /**
   * OAuth2 grant type enumeration.
@@ -65,6 +65,17 @@ object GrantType {
       case "device_code"        => Right(DeviceCode)
       case "refresh_token"      => Right(RefreshToken)
       case other                => Left(s"Unknown grant type '$other'")
+    }
+  }
+
+  object Camel {
+    implicit final val grantTypeEncoder: Encoder[GrantType] = Encoder.instance {
+      case AuthorizationCode => Json.fromString("authorizationCode")
+      case Implicit          => Json.fromString("implicit")
+      case Password          => Json.fromString("password")
+      case ClientCredentials => Json.fromString("clientCredentials")
+      case DeviceCode        => Json.fromString("deviceCode")
+      case RefreshToken      => Json.fromString("refreshToken")
     }
   }
 }

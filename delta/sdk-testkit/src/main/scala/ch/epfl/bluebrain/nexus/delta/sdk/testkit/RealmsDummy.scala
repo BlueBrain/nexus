@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy.{RealmsCache, RealmsJournal}
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
@@ -31,7 +31,7 @@ final class RealmsDummy private (
     journal: IORef[RealmsJournal],
     cache: IORef[RealmsCache],
     semaphore: IOSemaphore
-)(implicit clock: Clock[UIO])
+)(implicit clock: Clock[UIO], base: BaseUri)
     extends Realms {
 
   override def create(
@@ -64,10 +64,11 @@ final class RealmsDummy private (
     cache.get.map { resources =>
       val filtered = resources.values
         .filter { resource =>
+          params.issuer.forall(_ == resource.value.issuer) &&
           params.rev.forall(_ == resource.rev) &&
           params.deprecated.forall(_ && resource.deprecated) &&
-          params.createdBy.forall(_ == resource.createdBy) &&
-          params.updatedBy.forall(_ == resource.updatedBy)
+          params.createdBy.forall(_ == resource.createdBy.id) &&
+          params.updatedBy.forall(_ == resource.updatedBy.id)
         }
         .toVector
         .sortBy(_.createdAt)
@@ -127,7 +128,7 @@ object RealmsDummy {
     */
   final def apply(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
-  )(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
+  )(implicit clock: Clock[UIO], base: BaseUri): UIO[RealmsDummy] =
     for {
       journalRef <- IORef.of[RealmsJournal](Map.empty)
       cacheRef   <- IORef.of[RealmsCache](Map.empty)

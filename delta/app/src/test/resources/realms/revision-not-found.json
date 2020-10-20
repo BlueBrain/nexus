@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "RevisionNotFound",
+  "reason" : "Revision requested '{{provided}}' not found, last known revision is '{{current}}'."
+}
