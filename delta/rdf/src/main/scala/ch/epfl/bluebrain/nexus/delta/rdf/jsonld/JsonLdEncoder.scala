@@ -103,11 +103,11 @@ object JsonLdEncoder {
     compactFromCirce(randomRootNode, ContextValue(iriContext))
 
   /**
-   * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
-   *
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
+    *
    * @param id         the rootId
-   * @param iriContext the Iri context
-   */
+    * @param iriContext the Iri context
+    */
   def compactFromCirce[A: Encoder.AsObject](id: IriOrBNode, iriContext: Iri): JsonLdEncoder[A] =
     compactFromCirce((_: A) => id, ContextValue(iriContext))
 

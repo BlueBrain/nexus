@@ -95,7 +95,7 @@ object Vocabulary {
     * Nexus vocabulary
     */
   object nxv {
-    implicit val base              = iri"https://bluebrain.github.io/nexus/vocabulary/"
+    implicit val base     = iri"https://bluebrain.github.io/nexus/vocabulary/"
     def +(suffix: String) = iri"$base$suffix"
 
     // Metadata vocabulary
@@ -159,22 +159,22 @@ object Vocabulary {
   }
 
   /**
-   * Metadata vocabulary.
-   *
+    * Metadata vocabulary.
+    *
    * @param prefix the prefix associated to this term, used in the Json-LD context
-   * @param value  the fully expanded [[Iri]] to what the ''prefix'' resolves
-   * @param name   the name of the metadata
-   */
+    * @param value  the fully expanded [[Iri]] to what the ''prefix'' resolves
+    * @param name   the name of the metadata
+    */
   final case class Metadata(prefix: String, value: Iri, name: String)
 
   object Metadata {
 
     /**
-     * Constructs a [[Metadata]] vocabulary term from the given ''base'' and the provided ''lastSegment''.
-     *
+      * Constructs a [[Metadata]] vocabulary term from the given ''base'' and the provided ''lastSegment''.
+      *
      * @param lastSegment the last segment to append to the ''base'' to build the metadata
-     *                    vocabulary term
-     */
+      *                    vocabulary term
+      */
     def apply(lastSegment: String)(implicit base: Iri): Metadata =
       Metadata("_" + lastSegment, iri"$base$lastSegment}", lastSegment)
   }
