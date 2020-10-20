@@ -19,7 +19,7 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     *
    * @param filter the ACL address filter
     */
-  def fetch(filter: AclAddressFilter): AclCollection              =
+  def fetch(filter: AclAddressFilter): AclCollection =
     AclCollection(value.filter { case (address, _) => filter.matches(address) })
 
   /**
@@ -27,7 +27,7 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     *
     * @param acls the acls to be added
     */
-  def ++(acls: AclCollection): AclCollection                      =
+  def ++(acls: AclCollection): AclCollection         =
     AclCollection(acls.value.foldLeft(value) {
       case (acc, (address, aclToAdd)) if aclToAdd.id != address => acc // should not happen, ignore it
       case (acc, (address, aclToAdd))                           =>
