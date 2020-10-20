@@ -23,14 +23,6 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     AclCollection(value.filter { case (address, _) => filter.matches(address) })
 
   /**
-    * Fetch the [[AclCollection]] for all [[AclAddress]] that match the passed ''filter'' including ancestors.
-    *
-   * @param filter the ACL address filter
-    */
-  def fetchWithAncestors(filter: AclAddressFilter): AclCollection =
-    AclCollection(value.filter { case (address, _) => filter.matchesWithAncestors(address) })
-
-  /**
     * Adds the provided ''acls'' to the current ''value'' and returns a new [[AclCollection]] with the added ACLs.
     *
     * @param acls the acls to be added
