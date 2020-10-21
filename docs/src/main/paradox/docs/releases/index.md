@@ -15,7 +15,28 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.4.0** released on **14.08.2020**.
+The latest stable release is **v1.4.2** released on **20.10.2020**.
+
+## v1.4.2 (20.10.2020)
+
+This is a bugfix release, addressing the following issues related to views lifecycle:
+
+- Persist project statistics to avoid starting from NoOffset when service restarts or view collapses.
+- Prevent a deprecated organization/project from starting its views.
+
+## v1.4.1 (24.08.2020)
+
+This is a bugfix release, addressing the following issues:
+
+- Project tag reported as a metric with Kamon is inconsistent
+- File Attribute computation is no longer exposed as a metric
+- The path prefix read from the app.http.public-uri is applied twice for KG specific routes
+- Parallelize the v1.3.x to v1.4.x migration script
+- Support a retry mechanism for the v1.3.x to v1.4.x migration
+- Add email address in footer
+- Add CONP and SWITCH logos on product page
+- Add SEO metadata to product pages
+- Add SEO headers
 
 ## v1.4.0 (14.08.2020)
 

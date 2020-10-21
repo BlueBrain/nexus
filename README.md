@@ -38,15 +38,15 @@ A scalable and secure service to store and leverage all your data, neatly organi
 
 The Nexus ecosystem leverages a set of smaller open-source utilities.
 
-@ref:[Discover the utilities](https://bluebrainnexus.io/docs/utilities/index.html)
+[Discover the utilities](https://bluebrainnexus.io/docs/utilities/index.html)
 
 ## Quick Start Guide
 
-Do you know know what a knowledge graph is? Or want to deepen your understanding? Follow our @ref:[introduction](https://bluebrainnexus.io/docs/getting-started/understanding-knowledge-graphs.html).
+Do you know what a knowledge graph is? Or want to deepen your understanding? Follow our [introduction](https://bluebrainnexus.io/docs/getting-started/understanding-knowledge-graphs.html).
 
-Want to get started with Nexus right away? We provide a @ref:[tutorial](https://bluebrainnexus.io/docs/getting-started/try-nexus.html) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
+Want to get started with Nexus right away? We provide a [tutorial](https://bluebrainnexus.io/docs/getting-started/try-nexus.html) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
 
-Ready to deploy your own instance of Nexus? Follow our @ref:[guide](https://bluebrainnexus.io/docs/getting-started/running-nexus.html).
+Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrainnexus.io/docs/getting-started/running-nexus.html).
 
 ## Roadmap
 
@@ -60,7 +60,7 @@ and the current [roadmap].
 Please head over to the [getting started] section for a description of various options on running Nexus and
 introductory material to [Linked Data] and the [Shapes Constraint Language].
 
-For more details, you can talk with the development team directly on [Gitter].
+For more details, you can talk with the development team directly on [Gitter] or [contact them by email][nexus-team-email].
 
 [architecture]: https://bluebrainnexus.io/docs/delta/architecture.html
 [documentation]: https://bluebrainnexus.io/docs/
@@ -68,13 +68,11 @@ For more details, you can talk with the development team directly on [Gitter].
 [getting started]: https://bluebrainnexus.io/docs/getting-started/index.html
 [api reference]: https://bluebrainnexus.io/docs/delta/api/current/index.html
 [roadmap]: https://bluebrainnexus.io/docs/roadmap.html
-
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/
-
+[nexus-team-email]: mailto:bbp-nexus-support@groupes.epfl.ch
 [Gitter]: https://gitter.im/BlueBrain/nexus
 
 ## Getting involved
- There are several channels provided to address different issues:
-- **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the [list of open feature requests](https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature). In case there isn't already one, please [open a feature request](https://github.com/BlueBrain/nexus/issues/new?labels=feature) describing your feature with as much detail as possible.
-- **Bug report**: If you have found a bug while using some of the Nexus services, please create an issue [here](https://github.com/BlueBrain/nexus/issues/new?labels=bug).
+
+Please refer to the [CONTRIBUTING](CONTRIBUTING.md) page in order to know how to report issues/bugs or how to contribute to the project.

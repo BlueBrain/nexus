@@ -98,4 +98,4 @@ to be accepted. Please contact the [Blue Brain Nexus team][nexus-team-email] to 
 instructions.
 
 [nexus-team-email]: mailto:bbp-nexus-support@groupes.epfl.ch
-[github]: https://github.com/Blue Brain/nexus
+[github]: https://github.com/BlueBrain/nexus
