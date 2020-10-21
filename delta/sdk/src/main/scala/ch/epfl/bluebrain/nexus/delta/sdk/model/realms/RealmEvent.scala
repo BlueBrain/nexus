@@ -3,9 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label, Name}
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label, Name}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of Realm event types.
@@ -108,4 +117,46 @@ object RealmEvent {
       instant: Instant,
       subject: Subject
   ) extends RealmEvent
+
+  import GrantType.Camel._
+  import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+
+  private val context = ContextValue(contexts.resource, contexts.realms)
+
+  implicit private[realms] val config: Configuration = Configuration.default
+    .withDiscriminator("@type")
+    .copy(transformMemberNames = {
+      case "id"                    => nxv.label.prefix
+      case "rev"                   => nxv.rev.prefix
+      case "instant"               => nxv.instant.prefix
+      case "subject"               => nxv.eventSubject.prefix
+      case "issuer"                => nxv.issuer.prefix
+      case "grantTypes"            => nxv.grantTypes.prefix
+      case "authorizationEndpoint" => nxv.authorizationEndpoint.prefix
+      case "tokenEndpoint"         => nxv.tokenEndpoint.prefix
+      case "userInfoEndpoint"      => nxv.userInfoEndpoint.prefix
+      case "revocationEndpoint"    => nxv.revocationEndpoint.prefix
+      case "endSessionEndpoint"    => nxv.endSessionEndpoint.prefix
+      case other                   => other
+    })
+
+  @nowarn("cat=unused")
+  implicit def realmEventJsonLdEncoder(implicit
+      baseUri: BaseUri,
+      iriResolver: IriResolver[Label]
+  ): JsonLdEncoder[RealmEvent] = {
+    implicit val subjectEncoder: Encoder[Subject]      = Identity.subjectIdEncoder
+    implicit val encoder: Encoder.AsObject[RealmEvent] = Encoder.AsObject.instance { ev =>
+      deriveConfiguredEncoder[RealmEvent]
+        .mapJsonObject { json =>
+          json
+            .add("@id", Json.fromString(iriResolver.resolve(ev.label).toString))
+            .remove("keys")
+        }
+        .encodeObject(ev)
+    }
+
+    JsonLdEncoder.compactFromCirce[RealmEvent](context)
+  }
+
 }

@@ -50,6 +50,9 @@ trait DeltaDirectives extends RdfMarshalling {
       case None                       => tprovide(())
     }
 
+  /**
+    * Parse a segment in a label
+    */
   def label: Directive1[Label] =
     pathPrefix(Segment).flatMap { str =>
       Label(str) match {
@@ -239,6 +242,11 @@ trait DeltaDirectives extends RdfMarshalling {
   )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     completeUIOOpt(io.map(Some(_)))
 
+  /**
+    * Completes a passed [[UIO]] of search results of ''A'' with the desired output format
+    * @param io the search result to be returned, wrapped in an [[UIO]]
+    * @param additionalContext a context related to ''A''
+    */
   def completeSearch[A](
       io: UIO[SearchResults[A]]
   )(implicit

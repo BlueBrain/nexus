@@ -1,6 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
+import akka.http.scaladsl.model.MediaRanges.`*/*`
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -17,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, RealmsDummy, 
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -61,7 +67,8 @@ class RealmsRoutesSpec
     ioFromMap(
       Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
-    )
+    ),
+    2L
   ).accepted
 
   private val realm  = Label.unsafe("wonderland")
@@ -144,6 +151,26 @@ class RealmsRoutesSpec
       }
     }
 
+    "fail when creating another realm with the same openIdConfig" in {
+      val input = Json.obj(
+        "name"         -> Json.fromString("duplicate"),
+        "openIdConfig" -> Json.fromString(githubOpenId.toString())
+      )
+
+      val expected = Json.obj(
+        "@context" -> Json.fromString("https://bluebrain.github.io/nexus/contexts/error.json"),
+        "@type"    -> Json.fromString("RealmOpenIdConfigAlreadyExists"),
+        "reason"   -> Json.fromString(
+          "Realm 'duplicate' with openIdConfig 'https://localhost/auth/github/protocol/openid-connect/' already exists."
+        )
+      )
+
+      Put("/v1/realms/duplicate", input.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual expected
+      }
+    }
+
     "create another realm with an authenticated user" in {
       val input = Json.obj(
         "name"         -> Json.fromString(gitlabName.value),
@@ -191,14 +218,47 @@ class RealmsRoutesSpec
       }
     }
 
+    def expectedResults(results: Json*): Json =
+      Json.obj(
+        "@context" -> Json.arr(
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/resource.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/realms.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json")
+        ),
+        "_total"   -> Json.fromInt(results.size),
+        "_results" -> Json.arr(results: _*)
+      )
+
     "list realms" in {
       Get("/v1/realms") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf(
-            "/realms/list-realms.json",
-            "github" -> githubUpdated.removeKeys("@context"),
-            "gitlab" -> gitlabCreated.removeKeys("@context")
+          expectedResults(
+            githubUpdated.removeKeys("@context"),
+            gitlabCreated.removeKeys("@context")
+          )
+        )
+      }
+    }
+
+    "list realms with revision 2" in {
+      Get("/v1/realms?rev=2") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(
+          expectedResults(
+            githubUpdated.removeKeys("@context")
+          )
+        )
+      }
+    }
+
+    "list realms created by alice" in {
+      val aliceJson = alice.id.asJson
+      Get(s"/v1/realms?createdBy=${URLEncoder.encode(aliceJson.noSpaces, StandardCharsets.UTF_8)}") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(
+          expectedResults(
+            gitlabCreated.removeKeys("@context")
           )
         )
       }
@@ -208,6 +268,13 @@ class RealmsRoutesSpec
       Delete("/v1/realms/gitlab?rev=1") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(gitlabDeprecated)
+      }
+    }
+
+    "get the events stream with an offset" in {
+      Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
+        mediaType shouldBe `text/event-stream`
+        response.asString shouldEqual contentOf("/realms/eventstream-2-4.txt")
       }
     }
   }

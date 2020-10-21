@@ -64,8 +64,15 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
                 completeSearch(realms.list(pagination, params))
               }
             },
+            (pathPrefix("events") & pathEndOrSingleSlash) {
+              operationName(s"$prefixSegment/realms/events") {
+                lastEventId { offset =>
+                  completeStream(realms.events(offset))
+                }
+              }
+            },
             (label & pathEndOrSingleSlash) { id =>
-              operationName(s"/$prefixSegment/realms/{}") {
+              operationName(s"$prefixSegment/realms/{}") {
                 concat(
                   put {
                     parameter("rev".as[Long].?) {

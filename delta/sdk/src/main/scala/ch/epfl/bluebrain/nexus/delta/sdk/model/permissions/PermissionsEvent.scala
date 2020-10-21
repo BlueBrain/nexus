@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
 import io.circe.Encoder
@@ -83,8 +84,7 @@ object PermissionsEvent {
 
   @nowarn("cat=unused")
   implicit final def permissionsEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[PermissionsEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] =
-      Encoder.encodeString.contramap(_.id.toString)
+    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     implicit val derivationConfiguration: Configuration =
       Configuration(

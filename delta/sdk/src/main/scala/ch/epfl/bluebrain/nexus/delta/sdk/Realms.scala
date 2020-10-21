@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.http.scaladsl.model.Uri
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -12,9 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
-import monix.bio.{IO, UIO}
+import fs2.Stream
+import monix.bio.{IO, Task, UIO}
 
 /**
   * Operations pertaining to managing realms.
@@ -89,6 +91,14 @@ trait Realms {
       pagination: FromPagination,
       params: RealmSearchParams = RealmSearchParams.none
   ): UIO[UnscoredSearchResults[RealmResource]]
+
+  /**
+    * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+   * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]]
 
 }
 
