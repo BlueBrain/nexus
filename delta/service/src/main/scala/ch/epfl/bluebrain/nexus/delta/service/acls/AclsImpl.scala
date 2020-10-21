@@ -116,7 +116,7 @@ object AclsImpl {
   private def cache(aclsConfig: AclsConfig)(implicit as: ActorSystem[Nothing]): AclsCache = {
     implicit val cfg: KeyValueStoreConfig  = aclsConfig.keyValueStore
     val clock: (Long, AclResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed("realms", clock)
+    KeyValueStore.distributed("acls", clock)
   }
 
   /**
