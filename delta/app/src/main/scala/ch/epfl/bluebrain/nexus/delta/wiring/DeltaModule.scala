@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.server.RejectionHandler
+import akka.stream.{Materializer, SystemMaterializer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import com.typesafe.config.Config
 import io.circe.Json
 import io.circe.parser._
@@ -49,12 +51,19 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
     })
   )
   make[ActorSystem[Nothing]].from(ActorSystem[Nothing](Behaviors.empty, "delta", config))
+  make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
   make[RejectionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
     RdfRejectionHandler(s, cr, ordering)
   }
 
+  make[HttpClient].from { (as: ActorSystem[Nothing], mt: Materializer, sc: Scheduler) =>
+    HttpClient(as.classicSystem, mt, sc)
+  }
+
   include(PermissionsModule)
+  include(RealmsModule)
+  include(IdentitiesModule)
 
   private def load(resourcePath: String, iri: Iri): IO[RemoteContextResolutionError, Json] =
     for {

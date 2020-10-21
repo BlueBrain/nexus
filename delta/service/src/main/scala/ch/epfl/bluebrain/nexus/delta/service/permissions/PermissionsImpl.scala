@@ -4,12 +4,12 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.{entityId, entityType, permissionsTag, PermissionsAggregate}
 import ch.epfl.bluebrain.nexus.sourcing._
@@ -24,17 +24,20 @@ final class PermissionsImpl private (
     base: BaseUri
 ) extends Permissions {
 
-  private val id: Iri = iri"${base.endpoint}/permissions"
+  private val id: Iri           = iri"${base.endpoint}/permissions"
+  private val component: String = "permissions"
 
   override val persistenceId: String = s"$entityType-$entityId"
 
-  override def fetch: UIO[PermissionsResource] = {
-    agg.state(entityId).map(_.toResource(id, minimum))
-  }
+  override def fetch: UIO[PermissionsResource] =
+    agg.state(entityId).map(_.toResource(id, minimum)).named("fetchPermissions", component)
 
   override def fetchAt(rev: Long): IO[PermissionsRejection.RevisionNotFound, PermissionsResource] =
-    if (rev == 0L) UIO.pure(PermissionsState.Initial.toResource(id, minimum))
-    else
+    if (rev == 0L)
+      UIO
+        .pure(PermissionsState.Initial.toResource(id, minimum))
+        .named("fetchPermissionsAt", component, Map("rev" -> rev))
+    else {
       eventLog
         .currentEventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
         .takeWhile(_.event.rev <= rev)
@@ -49,27 +52,29 @@ final class PermissionsImpl private (
           case Some(_)                         => fetch.flatMap(res => IO.raiseError(RevisionNotFound(rev, res.rev)))
           case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
         }
+        .named("fetchPermissionsAt", component, Map("rev" -> rev))
+    }
 
   override def replace(
       permissions: Set[Permission],
       rev: Long
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
-    eval(ReplacePermissions(rev, permissions, caller))
+    eval(ReplacePermissions(rev, permissions, caller)).named("replacePermissions", component)
 
   override def append(
       permissions: Set[Permission],
       rev: Long
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
-    eval(AppendPermissions(rev, permissions, caller))
+    eval(AppendPermissions(rev, permissions, caller)).named("appendPermissions", component)
 
   override def subtract(
       permissions: Set[Permission],
       rev: Long
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
-    eval(SubtractPermissions(rev, permissions, caller))
+    eval(SubtractPermissions(rev, permissions, caller)).named("subtractPermissions", component)
 
   override def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
-    eval(DeletePermissions(rev, caller))
+    eval(DeletePermissions(rev, caller)).named("deletePermissions", component)
 
   override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
     offset match {

@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
+import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import com.typesafe.config.{Config, ConfigFactory}
 import monix.bio.{IO, UIO}
-import pureconfig.ConfigSource
 import pureconfig.error.ConfigReaderFailures
-import pureconfig.generic.auto._
+import pureconfig.generic.semiauto.deriveReader
+import pureconfig.{ConfigReader, ConfigSource}
 
 /**
   * Main application configuration.
@@ -12,17 +13,21 @@ import pureconfig.generic.auto._
   * @param http        the http config
   * @param cluster     the cluster config
   * @param database    the database config
+  * @param identities  the identities config
   * @param permissions the permissions config
+  * @param realms      the realms config
   */
 final case class AppConfig(
     description: DescriptionConfig,
     http: HttpConfig,
     cluster: ClusterConfig,
     database: DatabaseConfig,
-    permissions: PermissionsConfig
+    identities: IdentitiesConfig,
+    permissions: PermissionsConfig,
+    realms: RealmsConfig
 )
 
-object AppConfig {
+object AppConfig extends ConfigReaderInstances {
 
   /**
     * Loads the application in two steps:<br/>
@@ -43,4 +48,7 @@ object AppConfig {
       appConfig     <- IO.fromEither(loaded)
     } yield (appConfig, config)
   }
+
+  implicit final val appConfigReader: ConfigReader[AppConfig] =
+    deriveReader[AppConfig]
 }

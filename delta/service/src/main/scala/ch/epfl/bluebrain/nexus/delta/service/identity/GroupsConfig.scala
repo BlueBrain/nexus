@@ -7,12 +7,12 @@ import scala.concurrent.duration.FiniteDuration
 
 /**
   * Configuration for groups
-  * @param aggregate the aggregate configuration
-  * @param retryConfig the retry configuration
+  * @param aggregate      the aggregate configuration
+  * @param retryStrategy  the retry configuration
   * @param passivateAfter duration after passivation must occur
   */
 final case class GroupsConfig(
     aggregate: AggregateConfig,
-    retryConfig: RetryStrategyConfig,
+    retryStrategy: RetryStrategyConfig,
     passivateAfter: FiniteDuration
 )

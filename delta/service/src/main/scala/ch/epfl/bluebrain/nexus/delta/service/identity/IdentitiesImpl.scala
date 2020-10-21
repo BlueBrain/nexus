@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
@@ -28,6 +29,8 @@ import monix.bio.{IO, UIO}
 import scala.util.Try
 
 class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], groups: GroupsCache) extends Identities {
+
+  private val component: String = "identities"
 
   override def exchange(token: AuthToken): IO[TokenRejection, Caller] = {
     def realmKeyset(realm: Realm) = {
@@ -55,20 +58,23 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
           IO.pure(s.map(Group(_, realm.label)))
         }
         .getOrElse {
-          groups.state(parsedToken.rawToken).flatMap {
-            case Some(set) => IO.pure(set)
-            case None      =>
-              groups
-                .evaluate(parsedToken.rawToken, FetchGroups(parsedToken.rawToken, realm))
-                .map { r =>
-                  r.state.getOrElse(Set.empty)
-                }
-                .mapError(_.value)
-          }
+          groups
+            .state(parsedToken.rawToken)
+            .flatMap {
+              case Some(set) => IO.pure(set)
+              case None      =>
+                groups
+                  .evaluate(parsedToken.rawToken, FetchGroups(parsedToken.rawToken, realm))
+                  .map { r =>
+                    r.state.getOrElse(Set.empty)
+                  }
+                  .mapError(_.value)
+            }
+            .named("fetchGroups", component)
         }
     }
 
-    for {
+    val result = for {
       parsedToken       <- IO.fromEither(ParsedToken.fromToken(token))
       activeRealmOption <- findActiveRealm(parsedToken.issuer)
       activeRealm       <- IO.fromOption(activeRealmOption, UnknownAccessTokenIssuer)
@@ -78,6 +84,7 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
       val user = User(parsedToken.subject, activeRealm.label)
       Caller(user, groups ++ Set(Anonymous, user, Authenticated(activeRealm.label)))
     }
+    result.named("exchangeToken", component)
   }
 }
 
@@ -130,7 +137,7 @@ object IdentitiesImpl {
     ShardedAggregate.transientSharded(
       definition,
       config.aggregate,
-      RetryStrategy.retryOnNonFatal(config.retryConfig, logger)
+      RetryStrategy.retryOnNonFatal(config.retryStrategy, logger)
       // TODO: configure the number of shards
     )
   }
