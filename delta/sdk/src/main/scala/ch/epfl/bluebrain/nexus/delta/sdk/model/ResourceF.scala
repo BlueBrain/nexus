@@ -93,7 +93,7 @@ object ResourceF {
       A: Encoder.AsObject[A]
   ): Encoder.AsObject[ResourceF[Iri, A]] =
     Encoder.AsObject.instance { r =>
-      resourceFUnitEncoder.encodeObject(r.void).deepMerge(A.encodeObject(r.value))
+      r.void.asJsonObject deepMerge r.value.asJsonObject
     }
 
   implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Iri, Unit]] =

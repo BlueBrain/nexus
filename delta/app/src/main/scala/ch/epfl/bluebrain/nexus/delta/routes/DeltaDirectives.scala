@@ -5,9 +5,9 @@ import java.util.UUID
 import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
-import akka.http.scaladsl.model.{HttpHeader, MediaType, StatusCode, StatusCodes}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -15,7 +15,7 @@ import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NTriples}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.DeltaDirectives.Result
@@ -23,7 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{HttpResponseFields, JsonLdFormat, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import monix.bio.{IO, Task, UIO}
@@ -34,10 +35,8 @@ import scala.util.Try
 
 trait DeltaDirectives extends RdfMarshalling {
 
-  private val defaultMediaType = `application/json`
-
   private val jsonMediaTypes =
-    Seq(defaultMediaType, `application/ld+json`)
+    Seq(`application/json`, `application/ld+json`)
 
   private val mediaTypes = jsonMediaTypes ++
     Seq(`application/n-triples`, `application/vnd.graphviz`)
@@ -62,7 +61,7 @@ trait DeltaDirectives extends RdfMarshalling {
   /**
     * Extracts pagination specific query params from the request or defaults to the preconfigured values.
     *
-   * @param qs the preconfigured query settings
+    * @param qs the preconfigured query settings
     */
   def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
     (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tmap {
@@ -133,16 +132,13 @@ trait DeltaDirectives extends RdfMarshalling {
   def requestMediaType: Directive1[MediaType] =
     extractRequest.flatMap { req =>
       val ct = new MediaTypeNegotiator(req.headers)
-      if (ct.acceptedMediaRanges.isEmpty)
-        provide(defaultMediaType)
-      else
-        ct.acceptedMediaRanges.foldLeft[Option[MediaType]](None) {
-          case (s @ Some(_), _) => s
-          case (None, mr)       => mediaTypes.find(mt => mr.matches(mt))
-        } match {
-          case Some(value) => provide(value)
-          case None        => reject(UnacceptedResponseContentTypeRejection(mediaTypes.map(mt => Alternative(mt)).toSet))
-        }
+      (ct.acceptedMediaRanges :+ MediaRanges.`*/*`).foldLeft[Option[MediaType]](None) {
+        case (s @ Some(_), _) => s
+        case (None, mr)       => mediaTypes.find(mt => mr.matches(mt))
+      } match {
+        case Some(value) => provide(value)
+        case None        => reject(UnacceptedResponseContentTypeRejection(mediaTypes.map(mt => Alternative(mt)).toSet))
+      }
     }
 
   /**
@@ -212,7 +208,7 @@ trait DeltaDirectives extends RdfMarshalling {
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * If the normal channel doesn't hold any value, a not found output is produced
     *
-   * @param status the returned HTTP status code
+    * @param status the returned HTTP status code
     * @param io     the value to be returned, wrapped in an [[UIO]]
     */
   def completeUIOOpt[A: JsonLdEncoder](status: => StatusCode, io: UIO[Option[A]])(implicit
@@ -236,12 +232,23 @@ trait DeltaDirectives extends RdfMarshalling {
   /**
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     *
-   * @param io  the value to be returned, wrapped in an [[UIO]]
+    * @param io  the value to be returned, wrapped in an [[UIO]]
     */
   def completeUIO[A: JsonLdEncoder](
       io: UIO[A]
   )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     completeUIOOpt(io.map(Some(_)))
+
+  def completeSearch[A](
+      io: UIO[SearchResults[A]]
+  )(implicit
+      s: Scheduler,
+      cr: RemoteContextResolution,
+      ordering: JsonKeyOrdering,
+      S: SearchEncoder[A],
+      additionalContext: ContextValue
+  ): Route =
+    completeUIO(io)
 
   /**
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
@@ -268,7 +275,7 @@ trait DeltaDirectives extends RdfMarshalling {
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Before returning the response, the request data bytes will be discarded.
     *
-   * @param status the returned HTTP status code
+    * @param status the returned HTTP status code
     * @param headers the returned HTTP Headers
     * @param io     the value to be returned, wrapped in an [[UIO]]
     */
@@ -297,7 +304,7 @@ trait DeltaDirectives extends RdfMarshalling {
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Before returning the response, the request data bytes will be discarded.
     *
-   * @param status the returned HTTP status code
+    * @param status the returned HTTP status code
     * @param io     the value to be returned, wrapped in an [[UIO]]
     */
   def discardEntityAndCompleteUIO[A: JsonLdEncoder](
@@ -366,7 +373,7 @@ trait DeltaDirectives extends RdfMarshalling {
     * Completes a passed [[IO]] of ''E'' and ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Both error channel and normal channel are converted to the desired output format.
     *
-   * @param status  the returned HTTP status code
+    * @param status  the returned HTTP status code
     * @param headers the returned HTTP Headers
     * @param io      the value to be returned, wrapped in an [[IO]]
     */
@@ -400,7 +407,7 @@ trait DeltaDirectives extends RdfMarshalling {
     * Completes a passed [[IO]] of ''E'' and ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Both error channel and normal channel are converted to the desired output format.
     *
-   * @param status the returned HTTP status code
+    * @param status the returned HTTP status code
     * @param io     the value to be returned, wrapped in an [[IO]]
     */
   def completeIO[E: JsonLdEncoder, A: JsonLdEncoder](status: => StatusCode, io: IO[E, A])(implicit
@@ -432,7 +439,7 @@ trait DeltaDirectives extends RdfMarshalling {
     * Completes a passed [[IO]] of ''E'' and ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Both error channel and normal channel are converted to the desired output format.
     *
-   * @param io  the value to be returned, wrapped in an [[IO]]
+    * @param io  the value to be returned, wrapped in an [[IO]]
     */
   def completeIO[E: JsonLdEncoder, A: JsonLdEncoder](io: IO[E, A])(implicit
       s: Scheduler,
@@ -474,8 +481,11 @@ object DeltaDirectives {
 
   private[routes] case class Result[C](statusCode: StatusCode, hearders: Seq[HttpHeader], content: C)
 
-  object Result {
+  private[routes] object Result {
 
+    /**
+      * Constructs a result encoding the value as a [[CompactedJsonLd]]
+      */
     def compactedJsonLd[A: JsonLdEncoder](value: Option[A], successStatus: StatusCode, successHeaders: Seq[HttpHeader])(
         implicit cr: RemoteContextResolution
     ): IO[RdfError, Result[JsonLd]] =
@@ -483,6 +493,9 @@ object DeltaDirectives {
         r.toCompactedJsonLd.map { v => Result(successStatus, successHeaders, v) }
       }
 
+    /**
+      * Constructs a result encoding the value as a [[ExpandedJsonLd]]
+      */
     def expandedJsonLd[A: JsonLdEncoder](value: Option[A], successStatus: StatusCode, successHeaders: Seq[HttpHeader])(
         implicit cr: RemoteContextResolution
     ): IO[RdfError, Result[JsonLd]] =
@@ -490,6 +503,9 @@ object DeltaDirectives {
         r.toExpandedJsonLd.map { v => Result(successStatus, successHeaders, v) }
       }
 
+    /**
+      * Constructs a result encoding the value as a [[NTriples]]
+      */
     def nTriples[A: JsonLdEncoder](value: Option[A], successStatus: StatusCode, successHeaders: Seq[HttpHeader])(
         implicit cr: RemoteContextResolution
     ): IO[RdfError, Result[NTriples]] =
@@ -497,6 +513,9 @@ object DeltaDirectives {
         r.toNTriples.map { v => Result(successStatus, successHeaders, v) }
       }
 
+    /**
+      * Constructs a result encoding the value as a [[Dot]]
+      */
     def dot[A: JsonLdEncoder](value: Option[A], successStatus: StatusCode, successHeaders: Seq[HttpHeader])(implicit
         cr: RemoteContextResolution
     ): IO[RdfError, Result[Dot]] =

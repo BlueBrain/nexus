@@ -60,7 +60,7 @@ object ResultEntry {
   implicit def resultEntryEncoder[A: Encoder.AsObject]: Encoder.AsObject[ResultEntry[A]] =
     Encoder.AsObject.instance {
       case ScoredResultEntry(score, source) =>
-        source.asJsonObject.+:(nxv.score.prefix -> Json.fromFloatOrNull(score))
+        source.asJsonObject.add(nxv.score.prefix, Json.fromFloatOrNull(score))
       case UnscoredResultEntry(source)      => source.asJsonObject
     }
 }

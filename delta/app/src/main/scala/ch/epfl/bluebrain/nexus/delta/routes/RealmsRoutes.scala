@@ -11,18 +11,17 @@ import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, IriResolver, RealmResource, Realms}
 import io.circe.generic.semiauto.deriveDecoder
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 class RealmsRoutes(identities: Identities, realms: Realms)(implicit
@@ -61,10 +60,8 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
           concat(
             (get & extractUri & paginated & searchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/realms") {
-                implicit val searchResultEncoder: Encoder.AsObject[SearchResults[RealmResource]] =
-                  searchResultsResourceEncoder(pagination, uri)
-                val results: UIO[SearchResults[RealmResource]]                                   = realms.list(pagination, params)
-                completeUIO(results)
+                implicit val searchEncoder: SearchEncoder[RealmResource] = searchResourceEncoder(pagination, uri)
+                completeSearch(realms.list(pagination, params))
               }
             },
             (label & pathEndOrSingleSlash) { id =>
@@ -115,6 +112,9 @@ object RealmsRoutes {
     implicit val realmDecoder: Decoder[RealmInput] = deriveDecoder[RealmInput]
   }
 
+  /**
+    * @return the [[Route]] for realms
+    */
   def apply(identities: Identities, realms: Realms)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,

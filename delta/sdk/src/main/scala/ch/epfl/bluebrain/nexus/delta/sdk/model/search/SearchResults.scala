@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -36,6 +36,8 @@ sealed trait SearchResults[A] extends Product with Serializable {
 }
 
 object SearchResults {
+
+  type SearchEncoder[A] = Encoder.AsObject[SearchResults[A]]
 
   /**
     * A collection of search results with score including pagination.
@@ -114,7 +116,7 @@ object SearchResults {
 
   private def encodeResults[A: Encoder.AsObject](
       next: SearchResults[A] => Option[Uri]
-  ): Encoder.AsObject[SearchResults[A]] =
+  ): SearchEncoder[A] =
     Encoder.AsObject.instance { r =>
       val common = JsonObject(
         nxv.total.prefix   -> Json.fromLong(r.total),
@@ -129,7 +131,7 @@ object SearchResults {
 
   def searchResultsEncoder[A: Encoder.AsObject](pagination: FromPagination, searchUri: Uri)(implicit
       baseUri: BaseUri
-  ): Encoder.AsObject[SearchResults[A]] = {
+  ): SearchEncoder[A] = {
     def next(pagination: FromPagination, searchUri: Uri)(implicit baseUri: BaseUri): SearchResults[_] => Option[Uri] =
       (results: SearchResults[_]) => {
         val nextFrom = pagination.from + pagination.size
@@ -142,11 +144,11 @@ object SearchResults {
     encodeResults(next(pagination, searchUri))
   }
 
-  def searchResultsResourceEncoder[Id, A](pagination: FromPagination, searchUri: Uri)(implicit
+  def searchResourceEncoder[Id, A](pagination: FromPagination, searchUri: Uri)(implicit
       baseUri: BaseUri,
       iriResolver: IriResolver[Id],
       R: Encoder.AsObject[ResourceF[Iri, A]]
-  ): Encoder.AsObject[SearchResults[ResourceF[Id, A]]] = {
+  ): SearchEncoder[ResourceF[Id, A]] = {
     Encoder.AsObject.instance { s =>
       searchResultsEncoder(pagination, searchUri).encodeObject(
         s.map { r => r.copy(id = iriResolver.resolve(r.id)) }
@@ -159,7 +161,7 @@ object SearchResults {
 
   private val context                = ContextValue(contexts.resource, contexts.search)
   implicit def searchResultsJsonLdEncoder[A](implicit
-      S: Encoder.AsObject[SearchResults[A]],
+      S: SearchEncoder[A],
       additionalContext: ContextValue
   ): JsonLdEncoder[SearchResults[A]] =
     JsonLdEncoder.compactFromCirce(context.merge(additionalContext))
