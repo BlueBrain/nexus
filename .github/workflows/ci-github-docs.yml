@@ -1,0 +1,22 @@
+name: Continuous Integration CONTRUBUTING and README
+on:
+  pull_request:
+    paths:
+      - 'CONTRIBUTING.md'
+      - 'README.md'
+
+jobs:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Markdown link checks
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          folder-path: '.'
+          max-depth: 1
+          use-verbose-mode: yes
