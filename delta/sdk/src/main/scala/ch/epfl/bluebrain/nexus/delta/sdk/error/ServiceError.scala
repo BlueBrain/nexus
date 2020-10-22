@@ -25,8 +25,8 @@ object ServiceError {
 
   @nowarn("cat=unused")
   implicit val serviceErrorEncoder: Encoder.AsObject[ServiceError] = {
-    implicit val configuration = Configuration.default.withDiscriminator("@type")
-    val enc                    = deriveConfiguredEncoder[ServiceError]
+    implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
+    val enc                                   = deriveConfiguredEncoder[ServiceError]
     Encoder.AsObject.instance[ServiceError] { r =>
       enc.encodeObject(r).+:("reason" -> Json.fromString(r.reason))
     }

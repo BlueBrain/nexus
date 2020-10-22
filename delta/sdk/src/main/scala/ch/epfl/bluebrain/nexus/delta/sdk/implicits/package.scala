@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.KamonSyntax
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.TripleInstances
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.UriInstances
@@ -17,3 +18,4 @@ package object implicits
     with UriSyntax
     with IriUriSyntax
     with IterableSyntax
+    with KamonSyntax

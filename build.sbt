@@ -16,17 +16,17 @@ scalafmt: {
 val scalacScapegoatVersion = "1.4.5"
 val scalaCompilerVersion   = "2.13.3"
 
-val akkaHttpVersion                 = "10.2.0"
-val akkaHttpCirceVersion            = "1.33.0"
+val akkaHttpVersion                 = "10.2.1"
+val akkaHttpCirceVersion            = "1.35.0"
 val akkaCorsVersion                 = "1.1.0"
-val akkaPersistenceCassandraVersion = "1.0.1"
+val akkaPersistenceCassandraVersion = "1.0.3"
 val akkaPersistenceJdbcVersion      = "4.0.0"
 val akkaVersion                     = "2.6.10"
 val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
 val awsSdkVersion                   = "2.10.23"
-val byteBuddyAgentVersion           = "1.10.15"
-val catsEffectVersion               = "2.1.3"
+val byteBuddyAgentVersion           = "1.10.17"
+val catsEffectVersion               = "2.2.0"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.2.0"
 val circeVersion                    = "0.13.0"
@@ -36,24 +36,24 @@ val distageVersion                  = "0.10.19"
 val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.9.2"
 val fs2Version                      = "2.4.4"
-val http4sVersion                   = "0.21.7"
+val http4sVersion                   = "0.21.8"
 val h2Version                       = "1.4.200"
-val jenaVersion                     = "3.15.0"
+val jenaVersion                     = "3.16.0"
 val jsonldjavaVersion               = "0.13.2"
-val kamonVersion                    = "2.1.6"
-val kanelaAgentVersion              = "1.0.6"
+val kamonVersion                    = "2.1.8"
+val kanelaAgentVersion              = "1.0.7"
 val kindProjectorVersion            = "0.11.0"
 val kryoVersion                     = "1.1.5"
 val logbackVersion                  = "1.2.3"
-val mockitoVersion                  = "1.15.0"
+val mockitoVersion                  = "1.16.0"
 val monixVersion                    = "3.2.2"
 val monixBioVersion                 = "1.0.0"
-val nimbusJoseJwtVersion            = "8.19"
+val nimbusJoseJwtVersion            = "9.0.1"
 val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalateVersion                  = "1.9.6"
 val scalaTestVersion                = "3.2.2"
-val slickVersion                    = "3.3.2"
+val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
 val uuidGeneratorVersion            = "3.2.0"
 
@@ -117,6 +117,7 @@ lazy val http4sClient  = "org.http4s"                 %% "http4s-blaze-client"  
 lazy val http4sDsl     = "org.http4s"                 %% "http4s-dsl"              % http4sVersion
 lazy val jenaArq       = "org.apache.jena"             % "jena-arq"                % jenaVersion
 lazy val jsonldjava    = "com.github.jsonld-java"      % "jsonld-java"             % jsonldjavaVersion
+lazy val kamonCore     = "io.kamon"                   %% "kamon-core"              % kamonVersion
 lazy val kanelaAgent   = "io.kamon"                    % "kanela-agent"            % kanelaAgentVersion
 lazy val kindProjector = "org.typelevel"              %% "kind-projector"          % kindProjectorVersion cross CrossVersion.full
 lazy val kryo          = "io.altoo"                   %% "akka-kryo-serialization" % kryoVersion
@@ -220,6 +221,18 @@ lazy val docs = project
     ghpagesBranch                     := "gh-pages"
   )
 
+lazy val kernel = project
+  .in(file("delta/kernel"))
+  .settings(name := "delta-kernel", moduleName := "delta-kernel")
+  .settings(shared, compilation, coverage, release)
+  .settings(
+    libraryDependencies  ++= Seq(
+      monixBio,
+      kamonCore
+    ),
+    coverageFailOnMinimum := false
+  )
+
 lazy val testkit = project
   .in(file("delta/testkit"))
   .settings(name := "delta-testkit", moduleName := "delta-testkit")
@@ -271,7 +284,7 @@ lazy val cli = project
 
 lazy val sourcing = project
   .in(file("delta/sourcing"))
-  .dependsOn(testkit % "test->compile")
+  .dependsOn(kernel, testkit % "test->compile")
   .settings(
     name       := "delta-sourcing",
     moduleName := "delta-sourcing"
@@ -349,7 +362,7 @@ lazy val sdk = project
     name       := "delta-sdk",
     moduleName := "delta-sdk"
   )
-  .dependsOn(rdf % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(kernel, rdf % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
@@ -410,7 +423,7 @@ lazy val app = project
     name       := "delta-app",
     moduleName := "delta-app"
   )
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
@@ -442,7 +455,7 @@ def docsFilesFilter(repo: File) =
 
 lazy val storage = project
   .in(file("storage"))
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin, BuildInfoPlugin)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, storageAssemblySettings, coverage, release, servicePackaging)
   .dependsOn(rdf)
   .settings(cargo := {
@@ -535,7 +548,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, testkit, storage, sourcing, rdf, sdk, sdkTestkit, service, app)
+  .aggregate(docs, cli, kernel, testkit, storage, sourcing, rdf, sdk, sdkTestkit, service, app)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -560,20 +573,20 @@ lazy val shared = Seq(
 
 lazy val kamonSettings = Seq(
   libraryDependencies ++= Seq(
-    byteBuddyAgent,
-    kanelaAgent,
-    "io.kamon" %% "kamon-status-page"            % kamonVersion,
-    "io.kamon" %% "kamon-instrumentation-common" % kamonVersion,
-    "io.kamon" %% "kamon-executors"              % kamonVersion,
-    "io.kamon" %% "kamon-scala-future"           % kamonVersion,
-    "io.kamon" %% "kamon-akka"                   % kamonVersion,
-    "io.kamon" %% "kamon-logback"                % kamonVersion,
-    "io.kamon" %% "kamon-system-metrics"         % kamonVersion,
-    "io.kamon" %% "kamon-core"                   % kamonVersion,
-    "io.kamon" %% "kamon-akka-http"              % kamonVersion,
-    "io.kamon" %% "kamon-prometheus"             % kamonVersion,
-    "io.kamon" %% "kamon-jaeger"                 % kamonVersion
-  )
+    "io.kamon" %% "kamon-akka"           % kamonVersion,
+    "io.kamon" %% "kamon-akka-http"      % kamonVersion,
+    // "io.kamon" %% "kamon-cassandra"      % kamonVersion, // does not support v4.x of the cassandra driver
+    "io.kamon" %% "kamon-core"           % kamonVersion,
+    "io.kamon" %% "kamon-executors"      % kamonVersion,
+    "io.kamon" %% "kamon-jaeger"         % kamonVersion,
+    "io.kamon" %% "kamon-jdbc"           % kamonVersion,
+    "io.kamon" %% "kamon-logback"        % kamonVersion,
+    "io.kamon" %% "kamon-prometheus"     % kamonVersion,
+    "io.kamon" %% "kamon-scala-future"   % kamonVersion,
+    "io.kamon" %% "kamon-status-page"    % kamonVersion,
+    "io.kamon" %% "kamon-system-metrics" % kamonVersion
+  ),
+  javaAgents           += kanelaAgent
 )
 
 lazy val storageAssemblySettings = Seq(
@@ -648,16 +661,7 @@ lazy val servicePackaging = {
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(
-    // package the kanela agent as a fixed name jar
-    mappings in Universal := {
-      val universalMappings = (mappings in Universal).value
-      universalMappings.foldLeft(Vector.empty[(File, String)]) {
-        case (acc, (file, filename)) if filename.contains("kanela-agent") =>
-          acc :+ (file -> "lib/instrumentation-agent.jar")
-        case (acc, other)                                                 =>
-          acc :+ other
-      } :+ (WaitForIt.download(target.value) -> "bin/wait-for-it.sh")
-    },
+    mappings in Universal += (WaitForIt.download(target.value) -> "bin/wait-for-it.sh"),
     // docker publishing settings
     Docker / maintainer   := "Nexus Team <noreply@epfl.ch>",
     Docker / version      := {

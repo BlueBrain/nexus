@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.config
 
 import akka.actor.{ActorSystem, Address, AddressFromURIString}
 import akka.cluster.Cluster
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
 
 /**
   * The cluster configuration.
@@ -22,5 +24,9 @@ final case class ClusterConfig(
       case Nil      => List(Cluster(as).selfAddress)
       case nonEmpty => nonEmpty
     }
+}
 
+object ClusterConfig {
+  implicit final val clusterConfigReader: ConfigReader[ClusterConfig] =
+    deriveReader[ClusterConfig]
 }
