@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -30,51 +30,51 @@ trait OrganizationsBehaviors {
   implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
   implicit val scheduler: Scheduler = Scheduler.global
 
-  def create: Task[Organizations]
-
-  val orgs         = create.accepted
   val description  = Some("my description")
   val description2 = Some("my other description")
   val label        = Label.unsafe("myorg")
   val label2       = Label.unsafe("myorg2")
+  val uuid         = UUID.randomUUID()
+
+  implicit val uuidGenerator: UIO[UUID] = UIO.pure(uuid)
+
+  def create: Task[Organizations]
+
+  val orgs = create.accepted
 
   "Organizations implementation" should {
 
     "create an organization" in {
-      val result = orgs.create(label, description).accepted
-      result shouldEqual resourceFor(organization("myorg", result.value.uuid, description), 1L, subject)
+      orgs.create(label, description).accepted shouldEqual
+        resourceFor(organization("myorg", uuid, description), 1L, subject)
     }
 
     "update an organization" in {
-      val result = orgs.update(label, description2, 1L).accepted
-      result shouldEqual resourceFor(organization("myorg", result.value.uuid, description2), 2L, subject)
+      orgs.update(label, description2, 1L).accepted shouldEqual
+        resourceFor(organization("myorg", uuid, description2), 2L, subject)
     }
 
     "deprecate an organization" in {
-      val result = orgs.deprecate(label, 2L).accepted
-      result shouldEqual
-        resourceFor(organization("myorg", result.value.uuid, description2), 3L, subject, deprecated = true)
+      orgs.deprecate(label, 2L).accepted shouldEqual
+        resourceFor(organization("myorg", uuid, description2), 3L, subject, deprecated = true)
     }
 
     "fetch an organization" in {
-      val result = orgs.fetch(label).accepted.value
-      result shouldEqual
-        resourceFor(organization("myorg", result.value.uuid, description2), 3L, subject, deprecated = true)
+      orgs.fetch(label).accepted.value shouldEqual
+        resourceFor(organization("myorg", uuid, description2), 3L, subject, deprecated = true)
     }
 
     "fetch an organization by uuid" in {
-      val result = orgs.fetch(label).accepted.value
-      orgs.fetch(result.value.uuid).accepted.value shouldEqual result
+      orgs.fetch(uuid).accepted.value shouldEqual orgs.fetch(label).accepted.value
     }
 
     "fetch an organization at specific revision" in {
-      val result = orgs.fetchAt(label, 1L).accepted.value
-      result shouldEqual resourceFor(organization("myorg", result.value.uuid, description), 1L, subject)
+      orgs.fetchAt(label, 1L).accepted.value shouldEqual
+        resourceFor(organization("myorg", uuid, description), 1L, subject)
     }
 
     "fetch an organization at specific revision by uuid" in {
-      val result = orgs.fetchAt(label, 1L).accepted.value
-      orgs.fetchAt(result.value.uuid, 1L).accepted.value shouldEqual result
+      orgs.fetchAt(uuid, 1L).accepted.value shouldEqual orgs.fetchAt(label, 1L).accepted.value
     }
 
     "fetch a non existing organization" in {

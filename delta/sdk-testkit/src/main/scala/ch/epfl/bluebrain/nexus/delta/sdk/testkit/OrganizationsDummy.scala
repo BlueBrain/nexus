@@ -37,7 +37,7 @@ final class OrganizationsDummy private (
     uuidToLabel: IORef[UUIDToLabel],
     semaphore: IOSemaphore,
     maxStreamSize: Long
-)(implicit clock: Clock[UIO])
+)(implicit clock: Clock[UIO], uuidGenerator: UIO[UUID])
     extends Organizations {
 
   private val offsetMax = new AtomicLong()
@@ -54,7 +54,9 @@ final class OrganizationsDummy private (
       label: Label,
       description: Option[String]
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    eval(CreateOrganization(label, UUID.randomUUID(), description, caller)).flatMap(setUuid)
+    uuidGenerator.flatMap { uuid =>
+      eval(CreateOrganization(label, uuid, description, caller)).flatMap(setUuid)
+    }
 
   override def update(
       label: Label,
@@ -162,7 +164,10 @@ object OrganizationsDummy {
     *
     * @param maxStreamSize    truncate event stream after this size
     */
-  final def apply(maxStreamSize: Long = Long.MaxValue)(implicit clock: Clock[UIO] = IO.clock): UIO[OrganizationsDummy] =
+  final def apply(maxStreamSize: Long = Long.MaxValue)(implicit
+      uuidGenerator: UIO[UUID] = UIO.pure(UUID.randomUUID()),
+      clock: Clock[UIO] = IO.clock
+  ): UIO[OrganizationsDummy] =
     for {
       journalRef  <- IORef.of[OrganizationsJournal](Vector.empty)
       uuidToLabel <- IORef.of[UUIDToLabel](Map.empty)

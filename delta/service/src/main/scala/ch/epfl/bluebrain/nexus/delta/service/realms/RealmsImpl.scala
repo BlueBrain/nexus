@@ -90,7 +90,7 @@ final class RealmsImpl private (
     }
 
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
-    eventLog.currentEventsByTag(entityType, offset)
+    eventLog.eventsByTag(entityType, offset)
 
 }
 
