@@ -2,7 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.service.acls
 
 import java.net.URLEncoder
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorSystem, SupervisorStrategy}
+import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
@@ -10,11 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{entityType, AclsAggregate, AclsCache}
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache, entityType}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, ShardedAggregate, StopStrategy}
 import ch.epfl.bluebrain.nexus.sourcing._
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, ShardedAggregate, StopStrategy}
+import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import monix.bio.{IO, Task, UIO}
+import monix.execution.Scheduler.Implicits.global
 
 final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)
     extends Acls {
@@ -119,6 +124,35 @@ object AclsImpl {
     KeyValueStore.distributed("acls", clock)
   }
 
+  private def startIndexing(config: AclsConfig, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache, acls: Acls)(
+      implicit as: ActorSystem[Nothing]
+  ) = {
+    val singletonManager = ClusterSingleton(as)
+    singletonManager.init(
+      SingletonActor(
+        Behaviors
+          .supervise(
+            StreamSupervisor.behavior(
+              Task.delay(
+                eventLog
+                  .eventsByTag(aclTag, Offset.noOffset)
+                  .mapAsync(config.indexing.concurrency)(envelope =>
+                    acls.fetch(envelope.event.address).flatMap {
+                      case Some(acl) =>
+                        index.put(acl.id, acl)
+                      case None      => UIO.unit
+                    }
+                  )
+              ),
+              config.indexing.retryStrategy
+            )
+          )
+          .onFailure[Exception](SupervisorStrategy.restart),
+        "AclsIndex"
+      )
+    )
+  }
+
   /**
     * Constructs an [[AclsImpl]] instance.
     *
@@ -144,6 +178,12 @@ object AclsImpl {
   )(implicit
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
-  ): UIO[AclsImpl] =
-    aggregate(permissions, config.aggregate).map(AclsImpl.apply(_, eventLog, cache(config)))
+  ): UIO[AclsImpl] = {
+    val index = cache(config)
+    aggregate(permissions, config.aggregate).map { agg =>
+      val acls = AclsImpl.apply(agg, eventLog, cache(config))
+      startIndexing(config, eventLog, index, acls)
+      acls
+    }
+  }
 }
