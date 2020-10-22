@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsBehaviors
-import ch.epfl.bluebrain.nexus.delta.service.AbstractDBSpec
+import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
@@ -42,6 +42,10 @@ class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with OptionValu
             defaultSize = 30,
             sizeLimit = 100,
             fromLimit = 10000
+          ),
+          IndexingConfig(
+            1,
+            RetryStrategyConfig.ConstantStrategyConfig(1.second, 10)
           )
         ),
         ioFromMap(

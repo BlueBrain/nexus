@@ -6,8 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsBehaviors, PermissionsDummy}
-import ch.epfl.bluebrain.nexus.delta.service.AbstractDBSpec
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig.IndexingConfig
+import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
@@ -40,7 +39,7 @@ class AclsImplSpec extends AbstractDBSpec with AclsBehaviors with OptionValues w
           ),
           IndexingConfig(
             1,
-            RetryStrategy.constant(1.second, 10, _ => true)
+            RetryStrategyConfig.ConstantStrategyConfig(1.second, 10)
           )
         ),
         PermissionsDummy(minimum),

@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler.Implicits.global
@@ -120,6 +121,8 @@ object RealmsImpl {
 
   final val realmTag = "realms"
 
+  private val logger: Logger = Logger[RealmsImpl]
+
   private def index(realmsConfig: RealmsConfig)(implicit as: ActorSystem[Nothing]): RealmsCache = {
     implicit val cfg: KeyValueStoreConfig    = realmsConfig.keyValueStore
     val clock: (Long, RealmResource) => Long = (_, resource) => resource.rev
@@ -150,7 +153,7 @@ object RealmsImpl {
                     }
                   )
               ),
-              config.indexing.retryStrategy
+              RetryStrategy(config.indexing.retryStrategy, _ => true, RetryStrategy.logError(logger, "realms indexing"))
             )
           )
           .onFailure[Exception](SupervisorStrategy.restart),

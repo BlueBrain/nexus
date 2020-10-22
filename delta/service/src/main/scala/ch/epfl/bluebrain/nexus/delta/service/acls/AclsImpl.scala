@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStore
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor._
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler.Implicits.global
 
@@ -104,6 +105,8 @@ object AclsImpl {
 
   final val aclTag = "acl"
 
+  private val logger: Logger = Logger[AclsImpl]
+
   private def aggregate(
       permissions: UIO[Permissions],
       aggregateConfig: AggregateConfig
@@ -152,7 +155,7 @@ object AclsImpl {
                     }
                   )
               ),
-              config.indexing.retryStrategy
+              RetryStrategy(config.indexing.retryStrategy, _ => true, RetryStrategy.logError(logger, "acls indexing"))
             )
           )
           .onFailure[Exception](SupervisorStrategy.restart),
