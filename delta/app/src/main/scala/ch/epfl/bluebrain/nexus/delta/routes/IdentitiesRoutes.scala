@@ -16,7 +16,7 @@ import monix.execution.Scheduler
 /**
   * The identities routes
   */
-private class IdentitiesRoutes(identities: Identities)(implicit
+class IdentitiesRoutes(identities: Identities)(implicit
     override val s: Scheduler,
     baseUri: BaseUri,
     cr: RemoteContextResolution,

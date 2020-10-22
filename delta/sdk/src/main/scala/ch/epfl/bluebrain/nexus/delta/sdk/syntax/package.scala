@@ -1,4 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
+
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax.KamonSyntax
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax}
 
 /**
@@ -11,3 +13,4 @@ package object syntax
     with UriSyntax
     with IriUriSyntax
     with IterableSyntax
+    with KamonSyntax

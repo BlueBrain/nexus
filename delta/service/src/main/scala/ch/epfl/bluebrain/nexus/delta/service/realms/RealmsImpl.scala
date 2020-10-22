@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RevisionNotFound, UnexpectedInitialState}
@@ -26,24 +27,26 @@ final class RealmsImpl private (
     index: RealmsCache
 ) extends Realms {
 
+  private val component: String = "realms"
+
   override def create(label: Label, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit
       caller: Identity.Subject
   ): IO[RealmRejection, RealmResource] = {
     val command = CreateRealm(label, name, openIdConfig, logo, caller)
-    eval(command)
+    eval(command).named("createRealm", component)
   }
 
   override def update(label: Label, rev: Long, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit
       caller: Identity.Subject
   ): IO[RealmRejection, RealmResource] = {
     val command = UpdateRealm(label, rev, name, openIdConfig, logo, caller)
-    eval(command)
+    eval(command).named("updateRealm", component)
   }
 
   override def deprecate(label: Label, rev: Long)(implicit
       caller: Identity.Subject
   ): IO[RealmRejection, RealmResource] =
-    eval(DeprecateRealm(label, rev, caller))
+    eval(DeprecateRealm(label, rev, caller)).named("deprecateRealm", component)
 
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
     for {
@@ -56,10 +59,10 @@ final class RealmsImpl private (
     } yield resource
 
   override def fetch(label: Label): UIO[Option[RealmResource]] =
-    agg.state(label.value).map(_.toResource)
+    agg.state(label.value).map(_.toResource).named("fetchRealm", component)
 
   override def fetchAt(label: Label, rev: Long): IO[RealmRejection.RevisionNotFound, Option[RealmResource]] =
-    if (rev == 0L) UIO.pure(RealmState.Initial.toResource)
+    if (rev == 0L) UIO.pure(RealmState.Initial.toResource).named("fetchRealmAt", component, Map("rev" -> rev))
     else {
       eventLog
         .currentEventsByPersistenceId(s"$entityType-$label", Long.MinValue, Long.MaxValue)
@@ -75,6 +78,7 @@ final class RealmsImpl private (
           case Some(_)                         => fetch(label).flatMap(res => IO.raiseError(RevisionNotFound(rev, res.fold(0L)(_.rev))))
           case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
         }
+        .named("fetchRealmAt", component, Map("rev" -> rev))
     }
 
   override def list(
@@ -87,7 +91,7 @@ final class RealmsImpl private (
         results.size.toLong,
         results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
       )
-    }
+    }.named("listRealms", component)
 
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
     eventLog.eventsByTag(entityType, offset)

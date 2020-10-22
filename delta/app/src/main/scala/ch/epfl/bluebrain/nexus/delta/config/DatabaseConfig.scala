@@ -1,6 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.sourcing.config.{CassandraConfig, PostgresConfig}
+import pureconfig.ConfigReader
+import pureconfig.generic.semiauto.deriveReader
+
+import scala.annotation.nowarn
 
 /**
   * The database config.
@@ -14,3 +18,13 @@ final case class DatabaseConfig(
     postgres: PostgresConfig,
     cassandra: CassandraConfig
 )
+
+object DatabaseConfig {
+
+  @nowarn("cat=unused")
+  implicit final val databaseConfigReader: ConfigReader[DatabaseConfig] = {
+    implicit val postgresConfigReader: ConfigReader[PostgresConfig]   = deriveReader[PostgresConfig]
+    implicit val cassandraConfigReader: ConfigReader[CassandraConfig] = deriveReader[CassandraConfig]
+    deriveReader[DatabaseConfig]
+  }
+}

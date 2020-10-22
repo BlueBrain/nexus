@@ -6,19 +6,17 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.cluster.Cluster
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.server.{RejectionHandler, Route, RouteResult}
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
-import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
+import ch.epfl.bluebrain.nexus.delta.routes.{IdentitiesRoutes, PermissionsRoutes, RealmsRoutes}
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import distage.{Injector, Roots}
 import izumi.distage.model.Locator
+import kamon.Kamon
 import monix.bio.{BIOApp, Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
@@ -34,23 +32,26 @@ object Main extends BIOApp {
       .load()
       .flatMap {
         case (cfg: AppConfig, config: Config) =>
-          Injector()
-            .produceF[Task](DeltaModule(cfg, config), Roots.Everything)
-            .use(bootstrap)
-            .hideErrors >> UIO.pure(ExitCode.Success)
+          initializeKamon(config) >>
+            Injector()
+              .produceF[Task](DeltaModule(cfg, config), Roots.Everything)
+              .use(bootstrap)
+              .hideErrors >>
+            UIO.pure(ExitCode.Success)
       }
       .onErrorHandleWith(configReaderErrorHandler)
   }
 
   private def routes(locator: Locator): Route = {
     import akka.http.scaladsl.server.Directives._
-    val corsSettings = CorsSettings.defaultSettings
-      .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
-      .withExposedHeaders(List(Location.name))
-    cors(corsSettings) {
-      handleExceptions(IdentityError.exceptionHandler) {
+    cors(locator.get[CorsSettings]) {
+      handleExceptions(locator.get[ExceptionHandler]) {
         handleRejections(locator.get[RejectionHandler]) {
-          locator.get[PermissionsRoutes].routes
+          concat(
+            locator.get[IdentitiesRoutes].routes,
+            locator.get[PermissionsRoutes].routes,
+            locator.get[RealmsRoutes].routes
+          )
         }
       }
     }
@@ -86,7 +87,7 @@ object Main extends BIOApp {
               s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}",
               th
             )
-          ) >> terminateActorSystem()
+          ) >> terminateKamon >> terminateActorSystem()
         }
 
       cluster.registerOnMemberUp {
@@ -97,8 +98,19 @@ object Main extends BIOApp {
       cluster.joinSeedNodes(cfg.cluster.seedList)
     }
 
+  private def kamonEnabled: Boolean =
+    sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
+
+  private def initializeKamon(config: Config): UIO[Unit] =
+    if (kamonEnabled) UIO.delay(Kamon.init(config))
+    else UIO.unit
+
+  private def terminateKamon: Task[Unit] =
+    if (kamonEnabled) Task.deferFuture(Kamon.stopModules()).timeout(15.seconds).onErrorRecover(_ => ()) >> Task.unit
+    else Task.unit
+
   private def terminateActorSystem()(implicit as: ActorSystemClassic): Task[Unit] =
-    Task.fromFutureLike(Task.delay(as.terminate())).timeout(15.seconds) >> Task.unit
+    Task.deferFuture(as.terminate()).timeout(15.seconds) >> Task.unit
 
   private def configReaderErrorHandler(failures: ConfigReaderFailures): UIO[ExitCode] = {
     val lines =

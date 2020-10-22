@@ -5,6 +5,7 @@ import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.StateReply
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
@@ -28,10 +29,11 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     clusterSharding: ClusterSharding,
     retryStrategy: RetryStrategy,
     askTimeout: Timeout
-)(implicit State: ClassTag[State], Event: ClassTag[Event], Rejection: ClassTag[Rejection])
+)(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection])
     extends Aggregate[String, State, Command, Event, Rejection] {
 
   implicit private val timeout: Timeout = askTimeout
+  private val component: String         = "aggregate"
 
   import retryStrategy._
 
@@ -42,7 +44,10 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     * @return the state for the given id
     */
   override def state(id: String): UIO[State] =
-    send(id, { askTo: ActorRef[StateReply[State]] => RequestState(id, askTo) }).map(_.value).hideErrors
+    send(id, { askTo: ActorRef[StateReply[State]] => RequestState(id, askTo) })
+      .map(_.value)
+      .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name, "entity.id" -> id))
+      .hideErrors
 
   private def toEvaluationIO(result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
     result.hideErrors.flatMap {
@@ -65,6 +70,15 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
   override def evaluate(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
     toEvaluationIO(
       send(id, { askTo: ActorRef[EvaluationResult] => Evaluate(id, command, askTo) })
+        .named(
+          "evaluate",
+          component,
+          Map(
+            "entity.type" -> entityTypeKey.name,
+            "entity.id"   -> id,
+            "command"     -> Command.runtimeClass.getCanonicalName
+          )
+        )
     )
 
   /**
@@ -79,6 +93,14 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
   override def dryRun(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
     toEvaluationIO(
       send(id, { askTo: ActorRef[DryRunResult] => DryRun(id, command, askTo) }).map(_.result)
+    ).named(
+      "dryRun",
+      component,
+      Map(
+        "entity.type" -> entityTypeKey.name,
+        "entity.id"   -> id,
+        "command"     -> Command.runtimeClass.getCanonicalName
+      )
     )
 
   private def send[A](entityId: String, askTo: ActorRef[A] => ProcessorCommand): Task[A] = {
@@ -97,7 +119,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
 
 object ShardedAggregate {
 
-  private def sharded[State: ClassTag, Command, Event: ClassTag, Rejection: ClassTag](
+  private def sharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityTypeKey: EntityTypeKey[ProcessorCommand],
       eventSourceProcessor: EntityContext[ProcessorCommand] => EventSourceProcessor[State, Command, Event, Rejection],
       retryStrategy: RetryStrategy,
