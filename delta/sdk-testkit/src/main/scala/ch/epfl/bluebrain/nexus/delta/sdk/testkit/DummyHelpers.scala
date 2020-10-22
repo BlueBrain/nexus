@@ -13,6 +13,28 @@ object DummyHelpers {
   /**
     * Constructs a stream of events from a sequence of envelopes
     */
+  def currentEventsFromJournal[E <: Event](
+      envelopes: UIO[Seq[Envelope[E]]],
+      offset: Offset,
+      maxStreamSize: Long
+  ): Stream[Task, Envelope[E]] =
+    Stream
+      .eval(envelopes)
+      .flatMap(envelopes => Stream.emits(envelopes))
+      .flatMap { envelope =>
+        (envelope.offset, offset) match {
+          case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
+            if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
+            else Stream(envelope)
+          case (_, NoOffset)                                         => Stream(envelope)
+          case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+        }
+      }
+      .take(maxStreamSize)
+
+  /**
+    * Constructs a stream of events from a sequence of envelopes
+    */
   def eventsFromJournal[E <: Event](
       envelopes: UIO[Seq[Envelope[E]]],
       offset: Offset,

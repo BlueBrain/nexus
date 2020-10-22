@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
@@ -87,7 +88,7 @@ object AclRejection {
 
   implicit private val aclRejectionEncoder: Encoder.AsObject[AclRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = r.getClass.getSimpleName.split('$').head
+      val tpe = ClassUtils.simpleName(r)
       JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
 

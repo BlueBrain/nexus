@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
@@ -153,7 +154,7 @@ object RealmRejection {
 
   implicit private val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = r.getClass.getSimpleName.split('$').head
+      val tpe = ClassUtils.simpleName(r)
       JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
 

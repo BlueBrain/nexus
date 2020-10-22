@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.sourcing.processor
 
-import java.net.URLEncoder
-
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
@@ -148,7 +147,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
         }
         val stateActor = context.spawn(
           behavior,
-          s"${URLEncoder.encode(entityId, "UTF-8")}_state"
+          s"${UrlUtils.encode(entityId)}_state"
         )
 
         // Make sure that the message has been correctly routed to the appropriated actor
@@ -287,7 +286,7 @@ object EventSourceProcessor {
     * @return persistence ID for the entity
     */
   def persistenceId(entityType: String, entityId: String): String =
-    s"$entityType-${URLEncoder.encode(entityId, "UTF-8")}"
+    s"$entityType-${UrlUtils.encode(entityId)}"
 
   /**
     * To add our Snapshot strategy to an EventSourcedBehavior in a more concise way

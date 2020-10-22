@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.{IllegalIdentityIriFormatError, IllegalSubjectIriFormatError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Decoder.Result
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -39,6 +40,22 @@ object Identity {
     def id(implicit base: BaseUri): Iri
   }
 
+  object Subject {
+
+    /**
+      * Attempts to convert an ''iri'' into a [[Subject]].
+      *
+      * @param iri  the iri
+      * @param base the base uri
+      */
+    final def unsafe(iri: Iri)(implicit base: BaseUri): Either[FormatError, Subject] =
+      iri.stripPrefix(base.iriEndpoint) match {
+        case "/anonymous"              => Right(Anonymous)
+        case userRegex(realm, subject) => Right(User(subject, Label.unsafe(realm)))
+        case _                         => Left(IllegalSubjectIriFormatError(iri))
+      }
+  }
+
   /**
     * The Anonymous type.
     */
@@ -48,7 +65,7 @@ object Identity {
     * The Anonymous singleton identity.
     */
   final case object Anonymous extends Subject {
-    override def id(implicit base: BaseUri): Iri = base.endpoint.toIri / "anonymous"
+    override def id(implicit base: BaseUri): Iri = base.iriEndpoint / "anonymous"
   }
 
   /**
@@ -58,7 +75,7 @@ object Identity {
     * @param realm   the associated realm that asserts this identity
     */
   final case class User(subject: String, realm: Label) extends Subject {
-    override def id(implicit base: BaseUri): Iri = base.endpoint.toIri / "realms" / realm.value / "users" / subject
+    override def id(implicit base: BaseUri): Iri = base.iriEndpoint / "realms" / realm.value / "users" / subject
   }
 
   /**
@@ -70,7 +87,7 @@ object Identity {
   final case class Group(group: String, realm: Label) extends Identity {
 
     def id(implicit base: BaseUri): Iri =
-      base.endpoint.toIri / "realms" / realm.value / "groups" / group
+      base.iriEndpoint / "realms" / realm.value / "groups" / group
 
   }
 
@@ -81,8 +98,27 @@ object Identity {
     */
   final case class Authenticated(realm: Label) extends Identity {
     def id(implicit base: BaseUri): Iri =
-      base.endpoint.toIri / "realms" / realm.value / "authenticated"
+      base.iriEndpoint / "realms" / realm.value / "authenticated"
   }
+
+  /**
+    * Attempts to convert an ''iri'' into an [[Identity]].
+    *
+   * @param iri  the iri
+    * @param base the base uri
+    */
+  final def unsafe(iri: Iri)(implicit base: BaseUri): Either[FormatError, Identity] =
+    iri.stripPrefix(base.iriEndpoint) match {
+      case "/anonymous"              => Right(Anonymous)
+      case userRegex(realm, subject) => Right(User(subject, Label.unsafe(realm)))
+      case groupRegex(realm, group)  => Right(Group(group, Label.unsafe(realm)))
+      case authenticatedRegex(realm) => Right(Authenticated(Label.unsafe(realm)))
+      case _                         => Left(IllegalIdentityIriFormatError(iri))
+    }
+
+  private[identities] val userRegex          = s"^/realms\\/(${Label.regex})\\/users\\/([^\\/]+)$$".r
+  private[identities] val groupRegex         = s"^/realms\\/(${Label.regex})\\/groups\\/([^\\/]+)$$".r
+  private[identities] val authenticatedRegex = s"^/realms\\/(${Label.regex})\\/authenticated$$".r
 
   implicit private[Identity] val config: Configuration = Configuration.default.withDiscriminator("@type")
 

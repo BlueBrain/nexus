@@ -4,13 +4,13 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{CirceUnmarshalling, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
@@ -32,7 +32,8 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities)
     with DeltaDirectives
-    with CirceUnmarshalling {
+    with CirceUnmarshalling
+    with QueryParamsUnmarshalling {
 
   import baseUri._
 
@@ -47,8 +48,8 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
   def searchParams: Directive1[RealmSearchParams] =
     (parameter("deprecated".as[Boolean].?) &
       parameter("rev".as[Long].?) &
-      parameter("createdBy".as[Iri].?) &
-      parameter("updatedBy".as[Iri].?)).tmap {
+      parameter("createdBy".as[Subject].?) &
+      parameter("updatedBy".as[Subject].?)).tmap {
       case (deprecated, rev, createdBy, updatedBy) =>
         RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
     }

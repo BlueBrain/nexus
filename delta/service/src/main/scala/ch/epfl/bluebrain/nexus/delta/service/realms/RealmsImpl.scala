@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.service.realms
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorSystem, SupervisorStrategy}
+import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RevisionNotFound, UnexpectedInitialState}
@@ -13,20 +14,23 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl.{entityType, RealmsAggregate, RealmsCache}
+import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+import monix.execution.Scheduler.Implicits.global
 
 final class RealmsImpl private (
     agg: RealmsAggregate,
     eventLog: EventLog[Envelope[RealmEvent]],
     index: RealmsCache
-)(implicit base: BaseUri)
-    extends Realms {
+) extends Realms {
 
   private val component: String = "realms"
 
@@ -66,7 +70,7 @@ final class RealmsImpl private (
     if (rev == 0L) UIO.pure(RealmState.Initial.toResource).named("fetchRealmAt", component, Map("rev" -> rev))
     else {
       eventLog
-        .currentEventsByPersistenceId(s"realms-${label.value}", Long.MinValue, Long.MaxValue)
+        .currentEventsByPersistenceId(s"$entityType-$label", Long.MinValue, Long.MaxValue)
         .takeWhile(_.event.rev <= rev)
         .fold[RealmState](RealmState.Initial) {
           case (state, event) => Realms.next(state, event.event)
@@ -87,8 +91,8 @@ final class RealmsImpl private (
       params: SearchParams.RealmSearchParams
   ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] =
     index.values
-      .map { set =>
-        val results = filter(set, params).toList.sortBy(_.createdAt.toEpochMilli)
+      .map { resources =>
+        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
         UnscoredSearchResults(
           results.size.toLong,
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
@@ -96,21 +100,12 @@ final class RealmsImpl private (
       }
       .named("listRealms", component)
 
-  private def filter(resources: Set[RealmResource], params: SearchParams.RealmSearchParams): Set[RealmResource] =
-    resources.filter {
-      case ResourceF(_, rev, types, deprecated, _, createdBy, _, updatedBy, _, realm) =>
-        params.issuer.forall(_ == realm.issuer) &&
-          params.createdBy.forall(_ == createdBy.id) &&
-          params.updatedBy.forall(_ == updatedBy.id) &&
-          params.rev.forall(_ == rev) &&
-          params.types.subsetOf(types) &&
-          params.deprecated.forall {
-            _ == deprecated
-          }
-    }
+  override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
+    eventLog.eventsByTag(entityType, offset)
 
-  def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[RealmEvent]] =
     eventLog.currentEventsByTag(entityType, offset)
+
 }
 
 object RealmsImpl {
@@ -124,13 +119,47 @@ object RealmsImpl {
     */
   final val entityType: String = "realms"
 
-  /**
-    * Creates a new realm index.
-    */
+  final val realmTag = "realms"
+
+  private val logger: Logger = Logger[RealmsImpl]
+
   private def index(realmsConfig: RealmsConfig)(implicit as: ActorSystem[Nothing]): RealmsCache = {
     implicit val cfg: KeyValueStoreConfig    = realmsConfig.keyValueStore
     val clock: (Long, RealmResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed("realms", clock)
+  }
+
+  private def startIndexing(
+      config: RealmsConfig,
+      eventLog: EventLog[Envelope[RealmEvent]],
+      index: RealmsCache,
+      realms: Realms
+  )(implicit
+      as: ActorSystem[Nothing]
+  ) = {
+    val singletonManager = ClusterSingleton(as)
+    singletonManager.init(
+      SingletonActor(
+        Behaviors
+          .supervise(
+            StreamSupervisor.behavior(
+              Task.delay(
+                eventLog
+                  .eventsByTag(realmTag, Offset.noOffset)
+                  .mapAsync(config.indexing.concurrency)(envelope =>
+                    realms.fetch(envelope.event.label).flatMap {
+                      case Some(acl) => index.put(acl.id, acl)
+                      case None      => UIO.unit
+                    }
+                  )
+              ),
+              RetryStrategy(config.indexing.retryStrategy, _ => true, RetryStrategy.logError(logger, "realms indexing"))
+            )
+          )
+          .onFailure[Exception](SupervisorStrategy.restart),
+        "RealmsIndex"
+      )
+    )
   }
 
   private def aggregate(
@@ -164,39 +193,36 @@ object RealmsImpl {
 
   /**
     * Constructs a [[Realms]] instance
-    * @param agg the sharded aggregate
+    *
+    * @param agg      the sharded aggregate
     * @param eventLog the event log
-    * @param index the index
-    * @param base the base uri of the system api
+    * @param index    the index
     */
   final def apply(
       agg: RealmsAggregate,
       eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache
-  )(implicit
-      base: BaseUri
   ): RealmsImpl =
     new RealmsImpl(agg, eventLog, index)
 
   /**
     * Constructs a [[Realms]] instance
-    * @param realmsConfig the realm configuration
+    *
+    * @param realmsConfig     the realm configuration
     * @param resolveWellKnown how to resolve the [[WellKnown]]
-    * @param eventLog the event log for [[RealmEvent]]
-    * @param base the base uri of the system api
-    * @return
+    * @param eventLog         the event log for [[RealmEvent]]
     */
   final def apply(
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[Envelope[RealmEvent]]
-  )(implicit base: BaseUri, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Realms] = {
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Realms] = {
     val i = index(realmsConfig)
-    aggregate(
-      resolveWellKnown,
-      i.values,
-      realmsConfig
-    ).map(apply(_, eventLog, i))
+    for {
+      agg   <- aggregate(resolveWellKnown, i.values, realmsConfig)
+      realms = apply(agg, eventLog, i)
+      _     <- UIO.delay(startIndexing(realmsConfig, eventLog, i, realms))
+    } yield realms
   }
 
 }

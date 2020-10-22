@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
@@ -82,17 +83,17 @@ object ProjectRejection {
   /**
     * Signals that a project update cannot be performed due to an incorrect revision provided.
     *
-    * @param expected   latest know revision
     * @param provided the provided revision
+    * @param expected   latest know revision
     */
-  final case class IncorrectRev(expected: Long, provided: Long)
+  final case class IncorrectRev(provided: Long, expected: Long)
       extends ProjectRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the project may have been updated since last seen."
       )
 
   implicit private val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = r.getClass.getSimpleName.split('$').head
+      val tpe = ClassUtils.simpleName(r)
       JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
 

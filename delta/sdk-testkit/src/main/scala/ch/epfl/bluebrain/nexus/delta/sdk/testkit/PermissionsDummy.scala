@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import akka.persistence.query.{NoOffset, Offset, Sequence}
+import akka.persistence.query.{Offset, Sequence}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -63,20 +64,8 @@ final class PermissionsDummy private (
   override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
     DummyHelpers.eventsFromJournal(journal.get, offset, maxStreamSize)
 
-  override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
-    val stream = Stream.eval(journal.get).flatMap(envelopes => Stream.emits(envelopes))
-    stream
-      .flatMap { envelope =>
-        (envelope.offset, offset) match {
-          case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
-            if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
-            else Stream(envelope)
-          case (_, NoOffset)                                         => Stream(envelope)
-          case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
-        }
-      }
-      .take(maxStreamSize)
-  }
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
+    DummyHelpers.currentEventsFromJournal(journal.get, offset, maxStreamSize)
 
   private def currentState: UIO[PermissionsState] =
     journal.get.map { envelopes =>
@@ -106,7 +95,7 @@ final class PermissionsDummy private (
         _         <- journal.set(
                        envelopes :+ Envelope(
                          event,
-                         event.getClass.getSimpleName,
+                         ClassUtils.simpleName(event),
                          Sequence((envelopes.size + 1).toLong),
                          persistenceId,
                          (envelopes.size + 1).toLong,

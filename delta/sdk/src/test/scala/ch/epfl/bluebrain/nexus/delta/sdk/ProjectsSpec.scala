@@ -1,20 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
-import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.mocks.OrganizationsMock
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{Current => OrgCurrent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.PrefixIRI
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -35,19 +34,27 @@ class ProjectsSpec
     implicit val sc: Scheduler = Scheduler.global
     val epoch                  = Instant.EPOCH
     val time2                  = Instant.ofEpochMilli(10L)
-    val (orgUuid, orgLabel)    = (UUID.randomUUID(), Label.unsafe("org"))
-    val (org2Uuid, org2Label)  = (UUID.randomUUID(), Label.unsafe("org2"))
-    val (uuid, label)          = (UUID.randomUUID(), Label.unsafe("proj"))
     val am                     = Map("xsd" -> xsd.base, "Person" -> schema.Person)
     val base                   = PrefixIRI.unsafe(iri"http://example.com/base/")
     val vocab                  = PrefixIRI.unsafe(iri"http://example.com/vocab/")
-    val desc: Option[String]   = Some("desc")
-    val desc2: Option[String]  = Some("desc2")
-    val org1                   = OrgCurrent(orgLabel, orgUuid, 1L, deprecated = false, None, epoch, Anonymous, epoch, Anonymous)
-    val org2                   = OrgCurrent(org2Label, org2Uuid, 1L, deprecated = true, None, epoch, Anonymous, epoch, Anonymous)
-    // format: off
-    val current       = Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, am, base.value, vocab.value, epoch, Anonymous, epoch, Anonymous)
-    // format: on
+    val org1                   = OrganizationGen.currentState("org", 1L)
+    val org2                   = OrganizationGen.currentState("org2", 1L, deprecated = true)
+    val current                = ProjectGen.currentState(
+      "org",
+      "proj",
+      1L,
+      description = Some("desc"),
+      mappings = am,
+      base = base.value,
+      vocab = vocab.value
+    )
+    val label                  = current.label
+    val uuid                   = current.uuid
+    val orgLabel               = current.organizationLabel
+    val orgUuid                = current.organizationUuid
+    val desc                   = current.description
+    val desc2                  = Some("desc2")
+    val org2Label              = org2.label
     val subject                = User("myuser", label)
     val orgs                   = new OrganizationsMock(Map(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value))
 

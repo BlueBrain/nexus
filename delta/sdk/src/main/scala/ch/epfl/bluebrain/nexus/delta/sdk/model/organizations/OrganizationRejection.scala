@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
@@ -41,10 +42,10 @@ object OrganizationRejection {
   /**
     * Signals that the provided revision does not match the latest revision
     *
-    * @param expected latest know revision
     * @param provided provided revision
+    * @param expected latest know revision
     */
-  final case class IncorrectRev(expected: Long, provided: Long)
+  final case class IncorrectRev(provided: Long, expected: Long)
       extends OrganizationRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the organization may have been updated since last seen."
       )
@@ -66,9 +67,16 @@ object OrganizationRejection {
   final case class OrganizationIsDeprecated(label: Label)
       extends OrganizationRejection(s"Organization '$label' is deprecated.")
 
+  /**
+    * Rejection returned when the state is the initial after a Organizations.evaluation plus a Organizations.next
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    */
+  final case class UnexpectedInitialState(label: Label)
+      extends OrganizationRejection(s"Unexpected initial state for organization '$label'.")
+
   implicit private val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = r.getClass.getSimpleName.split('$').head
+      val tpe = ClassUtils.simpleName(r)
       JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
 

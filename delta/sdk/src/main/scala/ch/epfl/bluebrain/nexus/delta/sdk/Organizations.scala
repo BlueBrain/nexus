@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.util.UUID
 
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
@@ -14,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
-import monix.bio.{IO, UIO}
+import fs2.Stream
+import monix.bio.{IO, Task, UIO}
 
 /**
   * Operations pertaining to managing organizations.
@@ -105,6 +107,21 @@ trait Organizations {
       params: OrganizationSearchParams = OrganizationSearchParams.none
   ): UIO[UnscoredSearchResults[OrganizationResource]]
 
+  /**
+    * A non terminating stream of events for organizations. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def events(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
+
+  /**
+    * The current organization events. The stream stops after emitting all known events.
+    *
+   * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
+
 }
 
 object Organizations {
@@ -135,7 +152,7 @@ object Organizations {
     def update(c: UpdateOrganization) =
       state match {
         case Initial                      => IO.raiseError(OrganizationNotFound(c.label))
-        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(s.rev, c.rev))
+        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
           IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
         case s: Current                   => instant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
@@ -144,7 +161,7 @@ object Organizations {
     def deprecate(c: DeprecateOrganization) =
       state match {
         case Initial                      => IO.raiseError(OrganizationNotFound(c.label))
-        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(s.rev, c.rev))
+        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   => IO.raiseError(OrganizationIsDeprecated(s.label))
         case s: Current                   => instant.map(OrganizationDeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
       }

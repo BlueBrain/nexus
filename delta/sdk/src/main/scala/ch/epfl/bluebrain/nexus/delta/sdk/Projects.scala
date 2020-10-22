@@ -149,7 +149,7 @@ object Projects {
         case Initial                      =>
           IO.raiseError(ProjectNotFound(ProjectRef(c.organizationLabel, c.label)))
         case s: Current if c.rev != s.rev =>
-          IO.raiseError(IncorrectRev(s.rev, c.rev))
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
           IO.raiseError(ProjectIsDeprecated(ProjectRef(c.organizationLabel, c.label)))
         case s: Current                   =>
@@ -164,7 +164,7 @@ object Projects {
         case Initial                      =>
           IO.raiseError(ProjectNotFound(ProjectRef(c.organizationLabel, c.label)))
         case s: Current if c.rev != s.rev =>
-          IO.raiseError(IncorrectRev(s.rev, c.rev))
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
           IO.raiseError(ProjectIsDeprecated(ProjectRef(c.organizationLabel, c.label)))
         case s: Current                   =>

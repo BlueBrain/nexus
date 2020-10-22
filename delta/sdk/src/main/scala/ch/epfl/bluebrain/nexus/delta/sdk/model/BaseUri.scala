@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 /**
@@ -20,6 +21,11 @@ final case class BaseUri private (base: Uri, prefix: Option[Label]) {
     * The platform endpoint with base / prefix
     */
   val endpoint: Uri = prefix.fold(base)(p => base / p.value)
+
+  /**
+    * The platform endpoint with base / prefix
+    */
+  val iriEndpoint: Iri = endpoint.toIri
 
   /**
     * Scheme of the underlying uri

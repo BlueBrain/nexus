@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
@@ -22,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, RealmsDummy, 
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -50,10 +48,10 @@ class RealmsRoutesSpec
       contexts.realms   -> jsonContentOf("contexts/realms.json")
     )
 
-  implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
-  implicit private val baseUri: BaseUri          = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val paginationConfig          = PaginationConfig(5, 10, 5)
-  implicit private val s: Scheduler              = Scheduler.global
+  implicit private val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
+  implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
+  implicit private val s: Scheduler                       = Scheduler.global
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
@@ -71,15 +69,12 @@ class RealmsRoutesSpec
     2L
   ).accepted
 
-  private val realm  = Label.unsafe("wonderland")
-  private val alice  = User("alice", realm)
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val realm                                       = Label.unsafe("wonderland")
+  private val alice                                       = User("alice", realm)
+  private val caller                                      = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
 
-  private val identities = IdentitiesDummy(
-    Map(
-      AuthToken("alice") -> caller
-    )
-  )
+  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
   private val routes = Route.seal(RealmsRoutes(identities, realms).routes)
 
@@ -253,14 +248,21 @@ class RealmsRoutesSpec
     }
 
     "list realms created by alice" in {
-      val aliceJson = alice.id.asJson
-      Get(s"/v1/realms?createdBy=${URLEncoder.encode(aliceJson.noSpaces, StandardCharsets.UTF_8)}") ~> routes ~> check {
+      Get(s"/v1/realms?createdBy=${UrlUtils.encode(alice.id.toString)}") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
             gitlabCreated.removeKeys("@context")
           )
         )
+      }
+    }
+
+    "failed list realms created by a group" in {
+      val group = Group("mygroup", Label.unsafe("myrealm"))
+      Get(s"/v1/realms?createdBy=${UrlUtils.encode(group.id.toString)}") ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("realms/malformed-query-param.json")
       }
     }
 

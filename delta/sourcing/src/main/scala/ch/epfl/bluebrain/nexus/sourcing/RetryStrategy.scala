@@ -4,6 +4,7 @@ import monix.bio.Task
 import retry.RetryPolicies._
 import retry.{RetryDetails, RetryPolicy}
 import com.typesafe.scalalogging.Logger
+import retry.RetryDetails.{GivingUp, WillDelayAndRetry}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -24,6 +25,25 @@ final case class RetryStrategy(
 }
 
 object RetryStrategy {
+
+  /**
+    * Log errors when retrying
+    */
+  def logError(logger: Logger, action: String): (Throwable, RetryDetails) => Task[Unit] = {
+    case (err, WillDelayAndRetry(nextDelay, retriesSoFar, _)) =>
+      Task.delay(logger.warn(s"""Error occurred while $action:
+                         |
+                         |${err.getMessage}
+                         |
+                         |Will retry in ${nextDelay.toMillis}ms ... (retries so far: $retriesSoFar)""".stripMargin))
+    case (err, GivingUp(totalRetries, _))                     =>
+      Task.delay(logger.warn(s"""Error occurred while $action:
+                         |
+                         |${err.getMessage}
+                         |
+                         |Giving up ... (total retries: $totalRetries)""".stripMargin))
+
+  }
 
   /**
     * Fail without retry
