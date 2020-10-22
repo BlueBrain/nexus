@@ -17,7 +17,7 @@ import izumi.distage.model.definition.ModuleDef
 import monix.bio.{IO, UIO}
 
 /**
-  * Permissions module wiring config.
+  * Identities module wiring config.
   */
 // $COVERAGE-OFF$
 object IdentitiesModule extends ModuleDef {

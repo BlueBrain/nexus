@@ -19,7 +19,7 @@ import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
 
 /**
-  * Permissions module wiring config.
+  * Realms module wiring config.
   */
 // $COVERAGE-OFF$
 object RealmsModule extends ModuleDef {

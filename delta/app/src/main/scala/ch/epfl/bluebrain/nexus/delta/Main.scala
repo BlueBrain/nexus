@@ -6,13 +6,10 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.cluster.Cluster
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.server.{RejectionHandler, Route, RouteResult}
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.routes.{IdentitiesRoutes, PermissionsRoutes, RealmsRoutes}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -47,11 +44,8 @@ object Main extends BIOApp {
 
   private def routes(locator: Locator): Route = {
     import akka.http.scaladsl.server.Directives._
-    val corsSettings = CorsSettings.defaultSettings
-      .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
-      .withExposedHeaders(List(Location.name))
-    cors(corsSettings) {
-      handleExceptions(IdentityError.exceptionHandler) {
+    cors(locator.get[CorsSettings]) {
+      handleExceptions(locator.get[ExceptionHandler]) {
         handleRejections(locator.get[RejectionHandler]) {
           concat(
             locator.get[IdentitiesRoutes].routes,

@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
-import akka.http.scaladsl.server.RejectionHandler
+import akka.http.scaladsl.model.HttpMethods._
+import akka.http.scaladsl.model.headers.Location
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
@@ -12,8 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionE
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{RemoteContextResolution, RemoteContextResolutionError}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
+import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import io.circe.Json
 import io.circe.parser._
@@ -56,6 +60,12 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
   make[RejectionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
     RdfRejectionHandler(s, cr, ordering)
   }
+  make[ExceptionHandler].from(IdentityError.exceptionHandler)
+  make[CorsSettings].from(
+    CorsSettings.defaultSettings
+      .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
+      .withExposedHeaders(List(Location.name))
+  )
 
   make[HttpClient].from { (as: ActorSystem[Nothing], mt: Materializer, sc: Scheduler) =>
     HttpClient(as.classicSystem, mt, sc)
