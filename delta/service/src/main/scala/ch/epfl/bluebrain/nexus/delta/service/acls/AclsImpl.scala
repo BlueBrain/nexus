@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
-import java.net.URLEncoder
-
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, SupervisorStrategy}
 import akka.cluster.typed.{ClusterSingleton, SingletonActor}
@@ -13,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache, entityType}
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{entityType, AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, ShardedAggregate, StopStrategy}
+import ch.epfl.bluebrain.nexus.sourcing.processor._
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler.Implicits.global
@@ -31,7 +29,7 @@ final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[Ac
     else
       eventLog
         .currentEventsByPersistenceId(
-          s"$entityType-${URLEncoder.encode(address.string, "UTF-8")}",
+          EventSourceProcessor.persistenceId(entityType, address.string),
           Long.MinValue,
           Long.MaxValue
         )

@@ -36,7 +36,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     config: AggregateConfig
 )(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection]) {
 
-  protected val id = s"${definition.entityType}-${URLEncoder.encode(entityId, "UTF-8")}"
+  protected val id = persistenceId(definition.entityType, entityId)
 
   /**
     * The behavior of the underlying state actor when we opted for persisting the events
@@ -277,6 +277,17 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
 }
 
 object EventSourceProcessor {
+
+  /**
+    * Create persistence id for an entity.
+    *
+    * @param entityType entity type
+    * @param entityId   entity id
+    *
+    * @return persistence ID for the entity
+    */
+  def persistenceId(entityType: String, entityId: String): String =
+    s"$entityType-${URLEncoder.encode(entityId, "UTF-8")}"
 
   /**
     * To add our Snapshot strategy to an EventSourcedBehavior in a more concise way
