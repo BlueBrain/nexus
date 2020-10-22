@@ -5,8 +5,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
+/**
+  * Unmarshallers from String to ''A''
+  */
 trait QueryParamsUnmarshalling {
 
+  /**
+    * Unmarsaller to transform a String to Iri
+    */
   implicit def iriFromStringUnmarshaller: Unmarshaller[String, Iri] =
     Unmarshaller.strict[String, Iri] { string =>
       Iri(string) match {
@@ -15,6 +21,9 @@ trait QueryParamsUnmarshalling {
       }
     }
 
+  /**
+    * Unmarsaller to transform an Iri to a Subject
+    */
   implicit def subjectFromIriUnmarshaller(implicit base: BaseUri): Unmarshaller[Iri, Subject] =
     Unmarshaller.strict[Iri, Subject] { iri =>
       Subject.unsafe(iri) match {
@@ -23,6 +32,9 @@ trait QueryParamsUnmarshalling {
       }
     }
 
+  /**
+    * Unmarsaller to transform a String to a Subject
+    */
   implicit def subjectFromStringUnmarshaller(implicit base: BaseUri): Unmarshaller[String, Subject] =
     iriFromStringUnmarshaller.andThen(subjectFromIriUnmarshaller)
 

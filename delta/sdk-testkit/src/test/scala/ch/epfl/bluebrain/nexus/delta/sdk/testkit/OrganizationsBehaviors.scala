@@ -36,7 +36,7 @@ trait OrganizationsBehaviors {
   val label2       = Label.unsafe("myorg2")
   val uuid         = UUID.randomUUID()
 
-  implicit val uuidGenerator: UIO[UUID] = UIO.pure(uuid)
+  implicit val uuidGenerator: () => UIO[UUID] = () => UIO.pure(uuid)
 
   def create: Task[Organizations]
 
