@@ -177,9 +177,9 @@ object AclsImpl {
       clock: Clock[UIO]
   ): UIO[AclsImpl] =
     for {
-      agg <- aggregate(permissions, config.aggregate)
+      agg  <- aggregate(permissions, config.aggregate)
       index = cache(config)
-      acls = AclsImpl.apply(agg, eventLog, cache(config))
-      _ <- UIO.delay(startIndexing(config, eventLog, index, acls))
+      acls  = AclsImpl.apply(agg, eventLog, cache(config))
+      _    <- UIO.delay(startIndexing(config, eventLog, index, acls))
     } yield acls
 }
