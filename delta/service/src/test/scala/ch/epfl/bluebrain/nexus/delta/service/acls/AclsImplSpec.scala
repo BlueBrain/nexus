@@ -6,11 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsBehaviors, PermissionsDummy}
-import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, IndexingConfig}
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
-import ch.epfl.bluebrain.nexus.sourcing.{EventLog, RetryStrategy, RetryStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.{EventLog, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.Task
 import org.scalatest.{Inspectors, OptionValues}

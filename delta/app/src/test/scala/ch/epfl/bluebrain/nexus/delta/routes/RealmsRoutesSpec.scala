@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
-
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
@@ -250,7 +248,7 @@ class RealmsRoutesSpec
     }
 
     "list realms created by alice" in {
-      Get(s"/v1/realms?createdBy=${URLEncoder.encode(alice.id.toString, StandardCharsets.UTF_8)}") ~> routes ~> check {
+      Get(s"/v1/realms?createdBy=${UrlUtils.encode(alice.id.toString)}") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
@@ -262,7 +260,7 @@ class RealmsRoutesSpec
 
     "failed list realms created by a group" in {
       val group = Group("mygroup", Label.unsafe("myrealm"))
-      Get(s"/v1/realms?createdBy=${URLEncoder.encode(group.id.toString, StandardCharsets.UTF_8)}") ~> routes ~> check {
+      Get(s"/v1/realms?createdBy=${UrlUtils.encode(group.id.toString)}") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("realms/malformed-query-param.json")
       }
