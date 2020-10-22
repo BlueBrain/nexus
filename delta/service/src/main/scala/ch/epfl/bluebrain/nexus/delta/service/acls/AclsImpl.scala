@@ -10,8 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{entityType, AclsAggregate, AclsCache}
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache, entityType}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor._
@@ -22,10 +23,13 @@ import monix.execution.Scheduler.Implicits.global
 final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)
     extends Acls {
 
-  override def fetch(address: AclAddress): UIO[Option[AclResource]] = agg.state(address.string).map(_.toResource)
+  private val component: String = "acls"
+
+  override def fetch(address: AclAddress): UIO[Option[AclResource]] =
+    agg.state(address.string).map(_.toResource).named("fetchAcl", component)
 
   override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.RevisionNotFound, Option[AclResource]] =
-    if (rev == 0L) UIO.pure(None)
+    if (rev == 0L) UIO.pure(None).named("fetchAclsAt", component, Map("rev" -> rev))
     else
       eventLog
         .currentEventsByPersistenceId(
@@ -46,30 +50,37 @@ final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[Ac
             fetch(address).flatMap(res => IO.raiseError(RevisionNotFound(rev, res.map(_.rev).getOrElse(0L))))
           case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
         }
+        .named("fetchAclsAt", component, Map("rev" -> rev))
 
-  override def list(filter: AclAddressFilter): UIO[AclCollection] = {
-    index.values.map(as => AclCollection(as.toSeq: _*).fetch(filter))
+  override def list(filter: AclAddressFilter): UIO[AclCollection]                                              =
+    index.values
+      .map(as => AclCollection(as.toSeq: _*).fetch(filter))
+      .named("listAcls", component, Map("withAncestors" -> filter.withAncestors))
 
-  }
-
-  override def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection] =
-    list(filter).map(_.filter(caller.identities))
+  override def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection]                 =
+    list(filter)
+      .map(_.filter(caller.identities))
+      .named("listSelfAcls", component, Map("withAncestors" -> filter.withAncestors))
 
   override def replace(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Identity.Subject
-  ): IO[AclRejection, AclResource] = eval(ReplaceAcl(address, acl, rev, caller))
+  ): IO[AclRejection, AclResource]                                                                             =
+    eval(ReplaceAcl(address, acl, rev, caller)).named("replaceAcls", component)
 
   override def append(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Identity.Subject
-  ): IO[AclRejection, AclResource] = eval(AppendAcl(address, acl, rev, caller))
+  ): IO[AclRejection, AclResource] =
+    eval(AppendAcl(address, acl, rev, caller)).named("appendAcls", component)
 
   override def subtract(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Identity.Subject
-  ): IO[AclRejection, AclResource] = eval(SubtractAcl(address, acl, rev, caller))
+  ): IO[AclRejection, AclResource] =
+    eval(SubtractAcl(address, acl, rev, caller)).named("subtractAcls", component)
 
   override def delete(address: AclAddress, rev: Long)(implicit
       caller: Identity.Subject
-  ): IO[AclRejection, AclResource] = eval(DeleteAcl(address, rev, caller))
+  ): IO[AclRejection, AclResource] =
+    eval(DeleteAcl(address, rev, caller)).named("deleteAcls", component)
 
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
     for {
