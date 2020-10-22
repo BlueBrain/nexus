@@ -117,9 +117,7 @@ trait OrganizationsBehaviors {
     "get the different events from start" in {
       val events = orgs
         .events()
-        .map { e =>
-          (e.event.label, e.eventType, e.offset)
-        }
+        .map { e => (e.event.label, e.eventType, e.offset) }
         .take(4L)
         .compile
         .toList
@@ -130,10 +128,28 @@ trait OrganizationsBehaviors {
     "get the different events from offset 2" in {
       val events = orgs
         .events(Sequence(2L))
-        .map { e =>
-          (e.event.label, e.eventType, e.offset)
-        }
+        .map { e => (e.event.label, e.eventType, e.offset) }
         .take(2L)
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents.drop(2)
+    }
+
+    "get the different current events from start" in {
+      val events = orgs
+        .currentEvents()
+        .map { e => (e.event.label, e.eventType, e.offset) }
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents
+    }
+
+    "get the different current events from offset 2" in {
+      val events = orgs
+        .currentEvents(Sequence(2L))
+        .map { e => (e.event.label, e.eventType, e.offset) }
         .compile
         .toList
 

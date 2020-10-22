@@ -195,10 +195,18 @@ trait RealmsBehaviors {
     "get the different events from start" in {
       val events = realms
         .events()
-        .map { e =>
-          (e.event.label, e.eventType, e.offset)
-        }
+        .map { e => (e.event.label, e.eventType, e.offset) }
         .take(4L)
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents
+    }
+
+    "get the different current events from start" in {
+      val events = realms
+        .currentEvents()
+        .map { e => (e.event.label, e.eventType, e.offset) }
         .compile
         .toList
 
@@ -208,10 +216,18 @@ trait RealmsBehaviors {
     "get the different events from offset 2" in {
       val events = realms
         .events(Sequence(2L))
-        .map { e =>
-          (e.event.label, e.eventType, e.offset)
-        }
+        .map { e => (e.event.label, e.eventType, e.offset) }
         .take(2L)
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents.drop(2)
+    }
+
+    "get the different current events from offset 2" in {
+      val events = realms
+        .currentEvents(Sequence(2L))
+        .map { e => (e.event.label, e.eventType, e.offset) }
         .compile
         .toList
 

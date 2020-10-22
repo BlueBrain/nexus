@@ -25,7 +25,7 @@ class OrganizationsMock(expected: Map[Label, OrganizationResource]) extends Orga
   override def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection.RevisionNotFound, Option[OrganizationResource]] = ???
   override def list(pagination: Pagination.FromPagination, params: SearchParams.OrganizationSearchParams): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] = ???
   override def events(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] = ???
-
+  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] = ???
   // format: on
 
   override def fetch(uuid: UUID): UIO[Option[OrganizationResource]]   =

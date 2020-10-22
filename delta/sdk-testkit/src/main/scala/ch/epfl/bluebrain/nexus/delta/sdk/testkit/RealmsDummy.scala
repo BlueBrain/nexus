@@ -86,11 +86,10 @@ final class RealmsDummy private (
     }
 
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
-    DummyHelpers.eventsFromJournal(
-      journal.get,
-      offset,
-      maxStreamSize
-    )
+    DummyHelpers.eventsFromJournal(journal.get, offset, maxStreamSize)
+
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[RealmEvent]] =
+    DummyHelpers.currentEventsFromJournal(journal.get, offset, maxStreamSize)
 
   private def setToCache(resource: RealmResource): UIO[RealmResource]         =
     cache.update(_ + (resource.id -> resource)).as(resource)

@@ -110,6 +110,9 @@ final class OrganizationsDummy private (
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]] =
     DummyHelpers.eventsFromJournal(journal.get, offset, maxStreamSize)
 
+  override def currentEvents(offset: Offset): Stream[Task, Envelope[OrganizationEvent]] =
+    DummyHelpers.currentEventsFromJournal(journal.get, offset, maxStreamSize)
+
   private def setToCache(resource: OrganizationResource): UIO[Unit]              =
     cache.update(_ + (resource.value.label -> resource))
 

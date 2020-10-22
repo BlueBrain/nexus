@@ -100,6 +100,13 @@ trait Realms {
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]]
 
+  /**
+    * The current realm events. The stream stops after emitting all known events.
+    *
+   * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]]
+
 }
 
 object Realms {

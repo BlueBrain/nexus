@@ -115,6 +115,13 @@ trait Organizations {
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
 
+  /**
+    * The current organization events. The stream stops after emitting all known events.
+    *
+   * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
+
 }
 
 object Organizations {
