@@ -123,18 +123,16 @@ trait Acls {
     * Fetches the [[AclCollection]] of the provided ''filter'' address.
     *
     * @param filter    the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
-    * @param ancestors flag to decide whether or not ancestor addresses should be included in the response
     */
-  def list(filter: AclAddressFilter, ancestors: Boolean): UIO[AclCollection]
+  def list(filter: AclAddressFilter): UIO[AclCollection]
 
   /**
     * Fetches the [[AclCollection]] of the provided ''filter'' address with identities present in the ''caller''.
     *
     * @param filter    the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
-    * @param ancestors flag to decide whether or not ancestor addresses should be included in the response
     * @param caller    the caller that contains the provided identities
     */
-  def listSelf(filter: AclAddressFilter, ancestors: Boolean)(implicit caller: Caller): UIO[AclCollection]
+  def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection]
 
   /**
     * Overrides ''acl'' on a the passed ''address''.
