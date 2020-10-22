@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.http.scaladsl.model.Uri
-import akka.persistence.query.{NoOffset, Offset, Sequence}
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
@@ -26,9 +26,10 @@ import monix.bio.{IO, Task, UIO}
   * A dummy Realms implementation that uses a synchronized in memory journal.
   *
   * @param resolveWellKnown get the well known configuration for an OIDC provider resolver
-  * @param journal   a ref to the journal containing all the events discriminated by label
-  * @param cache     a ref to the cache containing all the current realm resources
-  * @param semaphore a semaphore for serializing write operations on the journal
+  * @param journal          a ref to the journal containing all the events discriminated by label
+  * @param cache            a ref to the cache containing all the current realm resources
+  * @param semaphore        a semaphore for serializing write operations on the journal
+  * @param maxStreamSize    truncate event stream after this size
   */
 final class RealmsDummy private (
     resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
@@ -36,7 +37,7 @@ final class RealmsDummy private (
     cache: IORef[RealmsCache],
     semaphore: IOSemaphore,
     maxStreamSize: Long
-)(implicit clock: Clock[UIO], base: BaseUri)
+)(implicit clock: Clock[UIO])
     extends Realms {
 
   private val offsetMax = new AtomicLong()
@@ -77,23 +78,14 @@ final class RealmsDummy private (
 
   override def list(pagination: FromPagination, params: RealmSearchParams): UIO[UnscoredSearchResults[RealmResource]] =
     cache.get.map { resources =>
-      val filtered = resources.values
-        .filter { resource =>
-          params.issuer.forall(_ == resource.value.issuer) &&
-          params.rev.forall(_ == resource.rev) &&
-          params.deprecated.forall(_ && resource.deprecated) &&
-          params.createdBy.forall(_ == resource.createdBy.id) &&
-          params.updatedBy.forall(_ == resource.updatedBy.id)
-        }
-        .toVector
-        .sortBy(_.createdAt)
+      val filtered = resources.values.filter(params.matches).toVector.sortBy(_.createdAt)
       UnscoredSearchResults(
         filtered.length.toLong,
         filtered.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
       )
     }
 
-  def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
+  override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
     DummyHelpers.eventsFromJournal(
       journal.get,
       offset,
@@ -134,21 +126,10 @@ final class RealmsDummy private (
         lbEvents <- journal.get
         state    <- currentState(cmd.label).map(_.getOrElse(Initial))
         event    <- Realms.evaluate(resolveWellKnown, cache.get.map(_.values.toSet))(state, cmd)
-        _        <- journal.set(lbEvents :+ makeEnvelope(event))
+        _        <- journal.set(lbEvents :+ makeEnvelope(event, s"$entityType-${event.label}", offsetMax))
         res      <- IO.fromEither(Realms.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
       } yield res
     }
-
-  private def makeEnvelope(event: RealmEvent): Envelope[RealmEvent] = {
-    Envelope(
-      event,
-      event.getClass.getSimpleName,
-      Sequence(offsetMax.incrementAndGet()),
-      s"$entityType-${event.label}",
-      event.rev,
-      event.instant.toEpochMilli
-    )
-  }
 
 }
 
@@ -163,12 +144,12 @@ object RealmsDummy {
     * Creates a new dummy Realms implementation.
     *
     * @param resolveWellKnown the well known configuration for an OIDC provider resolver
-    * @param maxStreamSize truncate event stream after this size
+    * @param maxStreamSize    truncate event stream after this size
     */
   final def apply(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       maxStreamSize: Long = Long.MaxValue
-  )(implicit clock: Clock[UIO], base: BaseUri): UIO[RealmsDummy] =
+  )(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
     for {
       journalRef <- IORef.of[RealmsJournal](Vector.empty)
       cacheRef   <- IORef.of[RealmsCache](Map.empty)

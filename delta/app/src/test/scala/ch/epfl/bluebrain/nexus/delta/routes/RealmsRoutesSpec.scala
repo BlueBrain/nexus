@@ -22,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, RealmsDummy, 
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -50,10 +49,10 @@ class RealmsRoutesSpec
       contexts.realms   -> jsonContentOf("contexts/realms.json")
     )
 
-  implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
-  implicit private val baseUri: BaseUri          = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val paginationConfig          = PaginationConfig(5, 10, 5)
-  implicit private val s: Scheduler              = Scheduler.global
+  implicit private val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
+  implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
+  implicit private val s: Scheduler                       = Scheduler.global
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
@@ -253,8 +252,7 @@ class RealmsRoutesSpec
     }
 
     "list realms created by alice" in {
-      val aliceJson = alice.id.asJson
-      Get(s"/v1/realms?createdBy=${URLEncoder.encode(aliceJson.noSpaces, StandardCharsets.UTF_8)}") ~> routes ~> check {
+      Get(s"/v1/realms?createdBy=${URLEncoder.encode(alice.id.toString, StandardCharsets.UTF_8)}") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(

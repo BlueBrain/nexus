@@ -23,7 +23,7 @@ class OrganizationRejectionsSpec
     implicit val rcr: RemoteContextResolutionDummy =
       RemoteContextResolutionDummy(contexts.error -> jsonContentOf("/contexts/error.json"))
 
-    val incorrectRev                               = IncorrectRev(3L, 2L)
+    val incorrectRev                               = IncorrectRev(2L, 3L)
     val alreadyExists                              = OrganizationAlreadyExists(Label.unsafe("org"))
 
     "be converted to compacted JSON-LD" in {

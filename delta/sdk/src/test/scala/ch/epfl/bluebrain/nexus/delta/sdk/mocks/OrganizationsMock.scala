@@ -2,12 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.mocks
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import akka.persistence.query.Offset
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationEvent, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
 
 /**
   * Partial dummy implementation, that only implements the fetch of an organization
@@ -23,6 +24,8 @@ class OrganizationsMock(expected: Map[Label, OrganizationResource]) extends Orga
   override def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.RevisionNotFound, Option[OrganizationResource]] = ???
   override def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection.RevisionNotFound, Option[OrganizationResource]] = ???
   override def list(pagination: Pagination.FromPagination, params: SearchParams.OrganizationSearchParams): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] = ???
+  override def events(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] = ???
+
   // format: on
 
   override def fetch(uuid: UUID): UIO[Option[OrganizationResource]]   =

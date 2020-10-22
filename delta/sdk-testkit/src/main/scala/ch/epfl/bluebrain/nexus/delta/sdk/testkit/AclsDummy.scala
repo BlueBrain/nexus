@@ -58,7 +58,7 @@ final class AclsDummy private (
     eval(SubtractAcl(address, acl, rev, caller)).flatMap(subtractFromCache)
 
   override def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
-    eval(DeleteAcl(address, rev, caller)).flatMap(deleteFromCache(address, _))
+    eval(DeleteAcl(address, rev, caller)).flatMap(deleteFromCache)
 
   private def setToCache(resource: AclResource): UIO[AclResource]    =
     cache.update(c => c.copy(c.value + (resource.id -> resource))).as(resource)
@@ -69,8 +69,8 @@ final class AclsDummy private (
   private def subtractFromCache(resource: AclResource): UIO[AclResource] =
     cache.update(_ - resource).as(resource)
 
-  private def deleteFromCache(address: AclAddress, resource: AclResource): UIO[AclResource] =
-    cache.update(_ - address).as(resource)
+  private def deleteFromCache(resource: AclResource): UIO[AclResource] =
+    cache.update(_ - resource.id).as(resource)
 
   private def currentState(address: AclAddress): UIO[Option[AclState]] =
     journal.get.map { labelsEvents =>

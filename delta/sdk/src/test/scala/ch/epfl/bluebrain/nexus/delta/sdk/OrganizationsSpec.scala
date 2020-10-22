@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
-import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
@@ -26,15 +25,12 @@ class OrganizationsSpec
     with CirceLiteral {
 
   "The Organizations state machine" when {
-    implicit val sc: Scheduler = Scheduler.global
-    val epoch: Instant         = Instant.EPOCH
-    val time2: Instant         = Instant.ofEpochMilli(10L)
-    val label: Label           = Label.unsafe("org")
-    val uuid: UUID             = UUID.randomUUID()
-    val desc: Option[String]   = Some("desc")
-    val desc2: Option[String]  = Some("desc2")
-    val current: Current       = Current(label, uuid, 1L, deprecated = false, desc, epoch, Anonymous, epoch, Anonymous)
-    val subject: User          = User("myuser", label)
+    implicit val sc: Scheduler     = Scheduler.global
+    val epoch: Instant             = Instant.EPOCH
+    val time2: Instant             = Instant.ofEpochMilli(10L)
+    val current: Current           = OrganizationGen.currentState("org", 1L, description = Some("desc"))
+    val (label, uuid, desc, desc2) = (current.label, current.uuid, current.description, Some("other"))
+    val subject: User              = User("myuser", label)
 
     "evaluating an incoming command" should {
 
@@ -42,17 +38,17 @@ class OrganizationsSpec
         evaluate(Initial, CreateOrganization(label, uuid, desc, subject)).accepted shouldEqual
           OrganizationCreated(label, uuid, 1L, desc, epoch, subject)
 
-        evaluate(current, UpdateOrganization(label, uuid, 1L, desc2, subject)).accepted shouldEqual
+        evaluate(current, UpdateOrganization(label, 1L, desc2, subject)).accepted shouldEqual
           OrganizationUpdated(label, uuid, 2L, desc2, epoch, subject)
 
-        evaluate(current, DeprecateOrganization(label, uuid, 1L, subject)).accepted shouldEqual
+        evaluate(current, DeprecateOrganization(label, 1L, subject)).accepted shouldEqual
           OrganizationDeprecated(label, uuid, 2L, epoch, subject)
       }
 
       "reject with IncorrectRev" in {
         val list = List(
-          current -> UpdateOrganization(label, uuid, 2L, desc2, subject),
-          current -> DeprecateOrganization(label, uuid, 2L, subject)
+          current -> UpdateOrganization(label, 2L, desc2, subject),
+          current -> DeprecateOrganization(label, 2L, subject)
         )
         forAll(list) {
           case (state, cmd) => evaluate(state, cmd).rejectedWith[IncorrectRev]
@@ -65,8 +61,8 @@ class OrganizationsSpec
 
       "reject with OrganizationIsDeprecated" in {
         val list = List(
-          current.copy(deprecated = true) -> UpdateOrganization(label, uuid, 1L, desc2, subject),
-          current.copy(deprecated = true) -> DeprecateOrganization(label, uuid, 1L, subject)
+          current.copy(deprecated = true) -> UpdateOrganization(label, 1L, desc2, subject),
+          current.copy(deprecated = true) -> DeprecateOrganization(label, 1L, subject)
         )
         forAll(list) {
           case (state, cmd) => evaluate(state, cmd).rejectedWith[OrganizationIsDeprecated]
@@ -75,8 +71,8 @@ class OrganizationsSpec
 
       "reject with OrganizationNotFound" in {
         val list = List(
-          Initial -> UpdateOrganization(label, uuid, 1L, desc2, subject),
-          Initial -> DeprecateOrganization(label, uuid, 1L, subject)
+          Initial -> UpdateOrganization(label, 1L, desc2, subject),
+          Initial -> DeprecateOrganization(label, 1L, subject)
         )
         forAll(list) {
           case (state, cmd) => evaluate(state, cmd).rejectedWith[OrganizationNotFound]

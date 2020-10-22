@@ -93,7 +93,7 @@ trait Realms {
   ): UIO[UnscoredSearchResults[RealmResource]]
 
   /**
-    * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events
+    * A non terminating stream of events for realms. After emitting all known events it sleeps until new events
     * are recorded.
     *
     * @param offset the last seen event offset; it will not be emitted by the stream

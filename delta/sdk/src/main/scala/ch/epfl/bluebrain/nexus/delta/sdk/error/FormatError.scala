@@ -58,6 +58,22 @@ object FormatError {
       extends FormatError(s"The provided iri '$iri' does not end with '/' or '#'", details)
 
   /**
+    * Identity iri formatting error, returned in cases where an Identity could not be constructed from an Iri.
+    *
+   * @param details possible additional details that may be interesting to provide to the caller
+    */
+  final case class IllegalIdentityIriFormatError(iri: Iri, details: Option[String] = None)
+      extends FormatError(s"The provided iri '$iri' does not represent an identity", details)
+
+  /**
+    * Subject iri formatting error, returned in cases where an Subject could not be constructed from an Iri.
+    *
+   * @param details possible additional details that may be interesting to provide to the caller
+    */
+  final case class IllegalSubjectIriFormatError(iri: Iri, details: Option[String] = None)
+      extends FormatError(s"The provided iri '$iri' does not represent a subject", details)
+
+  /**
     * Iri formatting error, returned in cases where a Iri could not be constructed from an string.
     *
    * @param details possible additional details that may be interesting to provide to the caller

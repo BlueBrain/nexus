@@ -16,11 +16,6 @@ sealed trait OrganizationCommand extends Product with Serializable {
   def label: Label
 
   /**
-    * @return UUID of the organization
-    */
-  def uuid: UUID
-
-  /**
     * @return the subject which created this command
     */
   def subject: Subject
@@ -46,14 +41,12 @@ object OrganizationCommand {
     * An intent to create an organization.
     *
     * @param label        the organization label
-    * @param uuid         the UUID of the organization
     * @param rev          the revision to update
     * @param description  an optional description of the organization
     * @param subject      the subject which created this command.
     */
   final case class UpdateOrganization(
       label: Label,
-      uuid: UUID,
       rev: Long,
       description: Option[String],
       subject: Subject
@@ -63,13 +56,11 @@ object OrganizationCommand {
     * An intent to deprecate an organization.
     *
     * @param label        the organization label
-    * @param uuid         the UUID of the organization
     * @param rev          the revision to deprecate
     * @param subject      the subject which created this command.
     */
   final case class DeprecateOrganization(
       label: Label,
-      uuid: UUID,
       rev: Long,
       subject: Subject
   ) extends OrganizationCommand

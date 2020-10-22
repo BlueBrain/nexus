@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
-import java.util.regex.Pattern
 
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.Sequence
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -139,13 +139,7 @@ trait RealmsBehaviors {
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(ghRes)))
       realms.list(FromPagination(0, 10)).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(ghRes), UnscoredResultEntry(glRes)))
-      val filter =
-        RealmSearchParams(
-          deprecated = Some(true),
-          rev = Some(3),
-          createdBy = Some(subject.id),
-          updatedBy = Some(subject.id)
-        )
+      val filter = RealmSearchParams(deprecated = Some(true), rev = Some(3), createdBy = Some(subject))
       realms.list(FromPagination(0, 10), filter).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(ghRes)))
     }
@@ -154,7 +148,7 @@ trait RealmsBehaviors {
       realms.fetchAt(github, 10L).rejected shouldEqual RevisionNotFound(10L, 3L)
     }
 
-    "fail to create a real already created" in {
+    "fail to create a realm already created" in {
       realms.create(github, githubName, githubOpenId, None).rejectedWith[RealmAlreadyExists]
     }
 
@@ -191,12 +185,11 @@ trait RealmsBehaviors {
       realms.deprecate(github, 3L).rejectedWith[RealmAlreadyDeprecated]
     }
 
-    val quote     = Pattern.quote("$")
     val allEvents = List(
-      (github, RealmCreated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(1L)),
-      (github, RealmUpdated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(2L)),
-      (github, RealmDeprecated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(3L)),
-      (gitlab, RealmCreated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(4L))
+      (github, ClassUtils.simpleName(RealmCreated), Sequence(1L)),
+      (github, ClassUtils.simpleName(RealmUpdated), Sequence(2L)),
+      (github, ClassUtils.simpleName(RealmDeprecated), Sequence(3L)),
+      (gitlab, ClassUtils.simpleName(RealmCreated), Sequence(4L))
     )
 
     "get the different events from start" in {

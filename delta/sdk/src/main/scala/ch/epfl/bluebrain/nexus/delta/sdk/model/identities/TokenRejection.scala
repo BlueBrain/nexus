@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.ClassUtils
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -67,7 +68,7 @@ object TokenRejection {
 
   implicit private val tokenRejectionEncoder: Encoder.AsObject[TokenRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = r.getClass.getSimpleName.split('$').head
+      val tpe = ClassUtils.simpleName(r)
       JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
     }
 

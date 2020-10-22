@@ -3,18 +3,36 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas => nxvschemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 
 /**
   * Enumeration of the possible Search Parameters
   */
-sealed trait SearchParams {
+sealed trait SearchParams[Id, A] {
   def deprecated: Option[Boolean]
   def rev: Option[Long]
-  def createdBy: Option[Iri]
-  def updatedBy: Option[Iri]
+  def createdBy: Option[Subject]
+  def updatedBy: Option[Subject]
   def types: Set[Iri]
-  def schemas: Set[ResourceRef]
+  def schema: Option[ResourceRef]
+
+  /**
+    * Checks whether a ''resource'' matches the current [[SearchParams]].
+    *
+   * @param resource a resource
+    */
+  def matches(resource: ResourceF[Id, A]): Boolean =
+    rev.forall(_ == resource.rev) &&
+      deprecated.forall(_ == resource.deprecated) &&
+      createdBy.forall(_ == resource.createdBy) &&
+      updatedBy.forall(_ == resource.updatedBy) &&
+      schema.forall(_ == resource.schema) &&
+      types.subsetOf(resource.types)
+
 }
 
 object SearchParams {
@@ -32,11 +50,15 @@ object SearchParams {
       issuer: Option[String] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
-      createdBy: Option[Iri] = None,
-      updatedBy: Option[Iri] = None
-  ) extends SearchParams {
-    override val types: Set[Iri]           = Set(nxv.Realm)
-    override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.realms))
+      createdBy: Option[Subject] = None,
+      updatedBy: Option[Subject] = None
+  ) extends SearchParams[Label, Realm] {
+    override val types: Set[Iri]             = Set(nxv.Realm)
+    override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.realms))
+
+    override def matches(resource: ResourceF[Label, Realm]): Boolean =
+      super.matches(resource) &&
+        issuer.forall(_ == resource.value.issuer)
   }
 
   object RealmSearchParams {
@@ -58,11 +80,11 @@ object SearchParams {
   final case class OrganizationSearchParams(
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
-      createdBy: Option[Iri] = None,
-      updatedBy: Option[Iri] = None
-  ) extends SearchParams {
-    override val types: Set[Iri]           = Set(nxv.Organization)
-    override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.organizations))
+      createdBy: Option[Subject] = None,
+      updatedBy: Option[Subject] = None
+  ) extends SearchParams[Label, Organization] {
+    override val types: Set[Iri]             = Set(nxv.Organization)
+    override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.organizations))
   }
 
   object OrganizationSearchParams {
@@ -86,11 +108,15 @@ object SearchParams {
       organization: Option[Label] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
-      createdBy: Option[Iri] = None,
-      updatedBy: Option[Iri] = None
-  ) extends SearchParams {
-    override val types: Set[Iri]           = Set(nxv.Project)
-    override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.projects))
+      createdBy: Option[Subject] = None,
+      updatedBy: Option[Subject] = None
+  ) extends SearchParams[ProjectRef, Project] {
+    override val types: Set[Iri]             = Set(nxv.Project)
+    override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.projects))
+
+    override def matches(resource: ResourceF[ProjectRef, Project]): Boolean =
+      super.matches(resource) &&
+        organization.forall(_ == resource.value.organizationLabel)
   }
 
   object ProjectSearchParams {

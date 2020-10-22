@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Init
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import fs2.Stream
@@ -106,7 +107,7 @@ final class PermissionsDummy private (
         _         <- journal.set(
                        envelopes :+ Envelope(
                          event,
-                         event.getClass.getSimpleName,
+                         ClassUtils.simpleName(event),
                          Sequence((envelopes.size + 1).toLong),
                          persistenceId,
                          (envelopes.size + 1).toLong,
