@@ -31,7 +31,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions)(
 ) extends AuthDirectives(identities)
     with DeltaDirectives
     with CirceUnmarshalling {
-  private val prefixSegment = baseUri.prefix.fold("")(p => s"/$p")
+
+  import baseUri._
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {

@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -60,6 +61,15 @@ object ResourceF {
   implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[Iri, A]] =
     JsonLdEncoder.compose(rf => (rf.void, rf.value, rf.id))
 
+  implicit def resourceFIdAJsonLdEncoder[Id, A: JsonLdEncoder](implicit
+      base: BaseUri,
+      iriResolver: IriResolver[Id]
+  ): JsonLdEncoder[ResourceF[Id, A]] =
+    JsonLdEncoder.compose { rf =>
+      val rfi = rf.copy(id = iriResolver.resolve(rf.id))
+      (rfi.void, rfi.value, rfi.id)
+    }
+
   implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Iri, Unit]] =
     Encoder.AsObject.instance { r =>
       val obj = JsonObject.empty
@@ -76,6 +86,14 @@ object ResourceF {
         case head :: Nil => obj.add(keywords.tpe, head.stripPrefix(nxv.base).asJson)
         case _           => obj.add(keywords.tpe, r.types.map(_.stripPrefix(nxv.base)).asJson)
       }
+    }
+
+  implicit def resourceFAEncoder[A](implicit
+      base: BaseUri,
+      A: Encoder.AsObject[A]
+  ): Encoder.AsObject[ResourceF[Iri, A]] =
+    Encoder.AsObject.instance { r =>
+      r.void.asJsonObject deepMerge r.value.asJsonObject
     }
 
   implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Iri, Unit]] =

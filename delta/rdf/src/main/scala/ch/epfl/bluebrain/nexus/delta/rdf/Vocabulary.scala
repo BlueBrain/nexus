@@ -1,4 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 
 // $COVERAGE-OFF$
@@ -94,9 +95,34 @@ object Vocabulary {
     * Nexus vocabulary
     */
   object nxv {
-    val base              = iri"https://bluebrain.github.io/nexus/vocabulary/"
+    implicit val base     = iri"https://bluebrain.github.io/nexus/vocabulary/"
     def +(suffix: String) = iri"$base$suffix"
 
+    // Metadata vocabulary
+    val authorizationEndpoint = Metadata("authorizationEndpoint")
+    val createdAt             = Metadata("createdAt")
+    val createdBy             = Metadata("createdBy")
+    val deprecated            = Metadata("deprecated")
+    val endSessionEndpoint    = Metadata("endSessionEndpoint")
+    val eventSubject          = Metadata("subject")
+    val grantTypes            = Metadata("grantTypes")
+    val instant               = Metadata("instant")
+    val issuer                = Metadata("issuer")
+    val maxScore              = Metadata("maxScore")
+    val next                  = Metadata("next")
+    val label                 = Metadata("label")
+    val results               = Metadata("results")
+    val rev                   = Metadata("rev")
+    val revocationEndpoint    = Metadata("revocationEndpoint")
+    val score                 = Metadata("score")
+    val tokenEndpoint         = Metadata("tokenEndpoint")
+    val total                 = Metadata("total")
+    val updatedAt             = Metadata("updatedAt")
+    val updatedBy             = Metadata("updatedBy")
+    val userInfoEndpoint      = Metadata("userInfoEndpoint")
+    val uuid                  = Metadata("uuid")
+
+    // Resource types
     val AccessControlList = nxv + "AccessControlList"
     val Organization      = nxv + "Organization"
     val Permissions       = nxv + "Permissions"
@@ -131,6 +157,28 @@ object Vocabulary {
     val permissions = contexts + "permissions.json"
     val realms      = contexts + "realms.json"
     val resource    = contexts + "resource.json"
+    val search      = contexts + "search.json"
+  }
+
+  /**
+    * Metadata vocabulary.
+    *
+    * @param prefix the prefix associated to this term, used in the Json-LD context
+    * @param value  the fully expanded [[Iri]] to what the ''prefix'' resolves
+    * @param name   the name of the metadata
+    */
+  final case class Metadata(prefix: String, value: Iri, name: String)
+
+  object Metadata {
+
+    /**
+      * Constructs a [[Metadata]] vocabulary term from the given ''base'' and the provided ''lastSegment''.
+      *
+      * @param lastSegment the last segment to append to the ''base'' to build the metadata
+      *                    vocabulary term
+      */
+    def apply(lastSegment: String)(implicit base: Iri): Metadata =
+      Metadata("_" + lastSegment, iri"$base$lastSegment}", lastSegment)
   }
 }
 // $COVERAGE-ON$

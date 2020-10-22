@@ -17,6 +17,11 @@ trait Pagination {
 
 object Pagination {
 
+  // Keywords used in directives and serialization for pagination
+  val from: String  = "from"
+  val size: String  = "size"
+  val after: String = "after"
+
   /**
     * Request pagination data type using `from`.
     *
