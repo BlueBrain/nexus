@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy.{RealmsCache, RealmsJournal}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import fs2.Stream
@@ -41,7 +41,7 @@ final class RealmsDummy private (
 
   private val offsetMax = new AtomicLong()
 
-  private def journalMap: IO[Nothing, Map[Label, Vector[Envelope[RealmEvent]]]] =
+  private def journalMap: UIO[Map[Label, RealmsJournal]] =
     journal.get.map { v =>
       v.groupBy(_.event.label).map {
         case (k, v) =>
@@ -110,10 +110,7 @@ final class RealmsDummy private (
     journalMap.map { labelsEvents =>
       labelsEvents
         .get(label)
-        .map(_.foldLeft[RealmState](Initial) {
-          case (s, e) =>
-            Realms.next(s, e.event)
-        })
+        .map(_.foldLeft[RealmState](Initial) { (s, e) => Realms.next(s, e.event) })
     }
 
   private def stateAt(label: Label, rev: Long): IO[RevisionNotFound, Option[RealmState]] =
@@ -147,7 +144,7 @@ final class RealmsDummy private (
       event,
       event.getClass.getSimpleName,
       Sequence(offsetMax.incrementAndGet()),
-      s"realms-${event.label}",
+      s"$entityType-${event.label}",
       event.rev,
       event.instant.toEpochMilli
     )
@@ -159,6 +156,8 @@ object RealmsDummy {
 
   type RealmsJournal = Vector[Envelope[RealmEvent]]
   type RealmsCache   = Map[Label, RealmResource]
+
+  val entityType: String = "realms"
 
   /**
     * Creates a new dummy Realms implementation.

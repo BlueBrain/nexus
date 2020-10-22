@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -124,7 +125,7 @@ object RealmEvent {
   private val context = ContextValue(contexts.resource, contexts.realms)
 
   implicit private[realms] val config: Configuration = Configuration.default
-    .withDiscriminator("@type")
+    .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "id"                    => nxv.label.prefix
       case "rev"                   => nxv.rev.prefix

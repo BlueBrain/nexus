@@ -10,6 +10,9 @@ import scala.concurrent.duration._
 
 object DummyHelpers {
 
+  /**
+   * Constructs a stream of events from a sequence of envelopes
+   */
   def eventsFromJournal[E <: Event](
       envelopes: UIO[Seq[Envelope[E]]],
       offset: Offset,

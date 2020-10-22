@@ -96,7 +96,7 @@ trait Realms {
     * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events
     * are recorded.
     *
-   * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]]
 
