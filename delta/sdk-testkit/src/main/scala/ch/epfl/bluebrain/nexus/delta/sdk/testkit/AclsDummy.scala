@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import cats.effect.Clock
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AclsDummy.AclsJournal
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
@@ -35,12 +35,11 @@ final class AclsDummy private (
   override def fetchAt(address: AclAddress, rev: Long): IO[RevisionNotFound, Option[AclResource]] =
     stateAt(address, rev).map(_.flatMap(_.toResource))
 
-  override def list(filter: AclAddressFilter, ancestors: Boolean): UIO[AclCollection] =
-    if (ancestors) cache.get.map(_.fetchWithAncestors(filter))
-    else cache.get.map(_.fetch(filter))
+  override def list(filter: AclAddressFilter): UIO[AclCollection] =
+    cache.get.map(_.fetch(filter))
 
-  override def listSelf(filter: AclAddressFilter, ancestors: Boolean)(implicit caller: Caller): UIO[AclCollection] =
-    list(filter, ancestors).map(_.filter(caller.identities))
+  override def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection] =
+    list(filter).map(_.filter(caller.identities))
 
   override def replace(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Subject
