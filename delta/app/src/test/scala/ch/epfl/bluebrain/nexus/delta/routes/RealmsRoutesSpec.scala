@@ -7,10 +7,11 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
@@ -70,15 +71,12 @@ class RealmsRoutesSpec
     2L
   ).accepted
 
-  private val realm  = Label.unsafe("wonderland")
-  private val alice  = User("alice", realm)
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val realm                                       = Label.unsafe("wonderland")
+  private val alice                                       = User("alice", realm)
+  private val caller                                      = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
 
-  private val identities = IdentitiesDummy(
-    Map(
-      AuthToken("alice") -> caller
-    )
-  )
+  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
   private val routes = Route.seal(RealmsRoutes(identities, realms).routes)
 
@@ -259,6 +257,14 @@ class RealmsRoutesSpec
             gitlabCreated.removeKeys("@context")
           )
         )
+      }
+    }
+
+    "failed list realms created by a group" in {
+      val group = Group("mygroup", Label.unsafe("myrealm"))
+      Get(s"/v1/realms?createdBy=${URLEncoder.encode(group.id.toString, StandardCharsets.UTF_8)}") ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("realms/malformed-query-param.json")
       }
     }
 
