@@ -388,7 +388,7 @@ lazy val service = project
     moduleName := "delta-service"
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sourcing, rdf, sdk, sourcing, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
+  .dependsOn(sourcing, rdf, sdk, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
   .settings(compile in Test := (compile in Test).dependsOn(assembly in testPlugin).value)
   .settings(
     libraryDependencies ++= Seq(

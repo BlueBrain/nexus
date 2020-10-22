@@ -157,7 +157,6 @@ object AclsImpl {
     * @param agg      the sharded aggregate
     * @param eventLog the event log
     * @param cache    the cache
-    * @return
     */
   final def apply(agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], cache: AclsCache): AclsImpl =
     new AclsImpl(agg, eventLog, cache)
