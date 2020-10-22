@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.realms
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -14,10 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl.{RealmsAggregate, RealmsCache}
+import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl.{entityType, RealmsAggregate, RealmsCache}
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import monix.bio.{IO, UIO}
+import fs2.Stream
+import monix.bio.{IO, Task, UIO}
 
 final class RealmsImpl private (
     agg: RealmsAggregate,
@@ -98,14 +100,17 @@ final class RealmsImpl private (
     resources.filter {
       case ResourceF(_, rev, types, deprecated, _, createdBy, _, updatedBy, _, realm) =>
         params.issuer.forall(_ == realm.issuer) &&
-          params.createdBy.forall(_.id == createdBy.id) &&
-          params.updatedBy.forall(_.id == updatedBy.id) &&
+          params.createdBy.forall(_ == createdBy.id) &&
+          params.updatedBy.forall(_ == updatedBy.id) &&
           params.rev.forall(_ == rev) &&
           params.types.subsetOf(types) &&
           params.deprecated.forall {
             _ == deprecated
           }
     }
+
+  def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
+    eventLog.currentEventsByTag(entityType, offset)
 }
 
 object RealmsImpl {

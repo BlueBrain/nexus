@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalNameFormatError
+import io.circe.{Decoder, Encoder}
 
 import scala.util.matching.Regex
 
@@ -34,5 +36,11 @@ object Name {
     */
   def unsafe(value: String): Name =
     new Name(value)
+
+  implicit final val nameEncoder: Encoder[Name] =
+    Encoder.encodeString.contramap(_.value)
+
+  implicit final val nameDecoder: Decoder[Name] =
+    Decoder.decodeString.emap(str => Name(str).leftMap(_.getMessage))
 
 }

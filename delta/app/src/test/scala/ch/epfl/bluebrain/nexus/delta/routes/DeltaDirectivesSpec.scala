@@ -24,6 +24,7 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.http.scaladsl.model.StatusCodes._
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 
 class DeltaDirectivesSpec
     extends AnyWordSpecLike
@@ -45,8 +46,9 @@ class DeltaDirectivesSpec
   implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
   implicit private val s: Scheduler              = Scheduler.global
 
-  private val id       = nxv + "myresource"
-  private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val id                                       = nxv + "myresource"
+  private val resource                                 = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val resourceNotFound: Option[SimpleResource] = None
 
   private val route: Route =
     get {
@@ -54,8 +56,19 @@ class DeltaDirectivesSpec
         path("uio") {
           completeUIO(Accepted, UIO.pure(resource))
         },
+        path("uio-opt") {
+
+          completeUIOOpt(Accepted, Seq(Cookie("k", "v")), UIO.pure(resourceNotFound))
+        },
         path("io") {
           completeIO(Accepted, Seq(Cookie("k", "v")), IO.fromEither[SimpleRejection, SimpleResource](Right(resource)))
+        },
+        path("io-opt") {
+          completeIOOpt(
+            Accepted,
+            Seq(Cookie("k", "v")),
+            IO.fromEither[SimpleRejection, Option[SimpleResource]](Right(resourceNotFound))
+          )
         },
         path("bad-request") {
           completeIO(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(badRequestRejection)))
@@ -67,6 +80,22 @@ class DeltaDirectivesSpec
     }
 
   "A route" should {
+
+    val notFound: ServiceError = ServiceError.NotFound
+
+    "return a 404 when the resource is missing" in {
+      val notFoundCompacted = notFound.toCompactedJsonLd.accepted
+
+      forAll(List("/uio-opt", "/io-opt")) { endpoint =>
+        forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
+          Get(endpoint) ~> accept ~> route ~> check {
+            response.asJson shouldEqual notFoundCompacted.json
+            response.status shouldEqual NotFound
+            response.headers shouldEqual Seq.empty[HttpHeader]
+          }
+        }
+      }
+    }
 
     "return payload in compacted JSON-LD format" in {
       val compacted = resource.toCompactedJsonLd.accepted

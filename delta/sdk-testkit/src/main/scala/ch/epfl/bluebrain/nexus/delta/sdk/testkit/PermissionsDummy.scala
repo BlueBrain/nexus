@@ -14,10 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import fs2.Stream
-import fs2.concurrent.Queue
 import monix.bio.{IO, Task, UIO}
-
-import scala.concurrent.duration.DurationInt
 
 /**
   * A dummy Permissions implementation that uses a synchronized in memory journal.
@@ -63,34 +60,8 @@ final class PermissionsDummy private (
   override def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(DeletePermissions(rev, caller))
 
-  override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
-    def addNotSeen(queue: Queue[Task, Envelope[PermissionsEvent]], seenCount: Int): Task[Unit] = {
-      journal.get.flatMap { envelopes =>
-        val delta = envelopes.drop(seenCount)
-        if (delta.isEmpty) Task.sleep(10.milliseconds) >> addNotSeen(queue, seenCount)
-        else queue.offer1(delta.head) >> addNotSeen(queue, seenCount + 1)
-      }
-    }
-
-    val streamF = for {
-      queue <- Queue.unbounded[Task, Envelope[PermissionsEvent]]
-      fiber <- addNotSeen(queue, 0).start
-      stream = queue.dequeue.onFinalize(fiber.cancel)
-    } yield stream
-
-    val stream = Stream.eval(streamF).flatten
-    stream
-      .flatMap { envelope =>
-        (envelope.offset, offset) match {
-          case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
-            if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
-            else Stream(envelope)
-          case (_, NoOffset)                                         => Stream(envelope)
-          case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
-        }
-      }
-      .take(maxStreamSize)
-  }
+  override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
+    DummyHelpers.eventsFromJournal(journal.get, offset, maxStreamSize)
 
   override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
     val stream = Stream.eval(journal.get).flatMap(envelopes => Stream.emits(envelopes))

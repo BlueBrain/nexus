@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -30,7 +29,7 @@ class IdentitiesRoutes(identities: Identities)(implicit
       (pathPrefix("identities") & pathEndOrSingleSlash) {
         operationName(s"/${baseUri.prefix}/identities") {
           (extractCaller & get) { caller =>
-            completeUIO(StatusCodes.OK, IO.pure(caller))
+            completeUIO(IO.pure(caller))
           }
         }
       }

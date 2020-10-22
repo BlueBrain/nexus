@@ -1,19 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
+import java.util.regex.Pattern
 
 import akka.http.scaladsl.model.Uri
+import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -27,6 +30,8 @@ trait RealmsBehaviors {
   val epoch: Instant                = Instant.EPOCH
   implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
   implicit val scheduler: Scheduler = Scheduler.global
+
+  implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
@@ -135,7 +140,12 @@ trait RealmsBehaviors {
       realms.list(FromPagination(0, 10)).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(ghRes), UnscoredResultEntry(glRes)))
       val filter =
-        RealmSearchParams(deprecated = Some(true), rev = Some(3), createdBy = Some(subject), updatedBy = Some(subject))
+        RealmSearchParams(
+          deprecated = Some(true),
+          rev = Some(3),
+          createdBy = Some(subject.id),
+          updatedBy = Some(subject.id)
+        )
       realms.list(FromPagination(0, 10), filter).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(ghRes)))
     }
@@ -179,6 +189,40 @@ trait RealmsBehaviors {
 
     "fail to deprecate an already deprecated realm" in {
       realms.deprecate(github, 3L).rejectedWith[RealmAlreadyDeprecated]
+    }
+
+    val quote     = Pattern.quote("$")
+    val allEvents = List(
+      (github, RealmCreated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(1L)),
+      (github, RealmUpdated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(2L)),
+      (github, RealmDeprecated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(3L)),
+      (gitlab, RealmCreated.getClass.getSimpleName.replaceAll(quote, ""), Sequence(4L))
+    )
+
+    "get the different events from start" in {
+      val events = realms
+        .events()
+        .map { e =>
+          (e.event.label, e.eventType, e.offset)
+        }
+        .take(4L)
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents
+    }
+
+    "get the different events from offset 2" in {
+      val events = realms
+        .events(Sequence(2L))
+        .map { e =>
+          (e.event.label, e.eventType, e.offset)
+        }
+        .take(2L)
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents.drop(2)
     }
 
   }

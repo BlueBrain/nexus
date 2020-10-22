@@ -1,0 +1,40 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "logo": {
+      "@type": "@id",
+      "@id": "nxv:logo"
+    },
+    "openIdConfig": {
+      "@id": "nxv:openIdConfig",
+      "@type": "@id"
+    },
+    "name": "nxv:name",
+    "_label": "nxv:label",
+    "_grantTypes": "nxv:grantTypes",
+    "_issuer": "nxv:issuer",
+    "_authorizationEndpoint": {
+      "@id": "nxv:authorizationEndpoint",
+      "@type": "@id"
+    },
+    "_tokenEndpoint": {
+      "@id": "nxv:tokenEndpoint",
+      "@type": "@id"
+    },
+    "_userInfoEndpoint": {
+      "@id": "nxv:userInfoEndpoint",
+      "@type": "@id"
+    },
+    "_revocationEndpoint": {
+      "@id": "nxv:revocationEndpoint",
+      "@type": "@id"
+    },
+    "_endSessionEndpoint": {
+      "@id": "nxv:endSessionEndpoint",
+      "@type": "@id"
+    },
+    "realm": "nxv:realm",
+    "Realm": "nxv:Realm"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/realms.json"
+}

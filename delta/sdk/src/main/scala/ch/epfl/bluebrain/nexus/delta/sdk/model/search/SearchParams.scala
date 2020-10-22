@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas => nxvschemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 
 /**
@@ -12,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 sealed trait SearchParams {
   def deprecated: Option[Boolean]
   def rev: Option[Long]
-  def createdBy: Option[Subject]
-  def updatedBy: Option[Subject]
+  def createdBy: Option[Iri]
+  def updatedBy: Option[Iri]
   def types: Set[Iri]
   def schemas: Set[ResourceRef]
 }
@@ -33,8 +32,8 @@ object SearchParams {
       issuer: Option[String] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
-      createdBy: Option[Subject] = None,
-      updatedBy: Option[Subject] = None
+      createdBy: Option[Iri] = None,
+      updatedBy: Option[Iri] = None
   ) extends SearchParams {
     override val types: Set[Iri]           = Set(nxv.Realm)
     override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.realms))
@@ -59,8 +58,8 @@ object SearchParams {
   final case class OrganizationSearchParams(
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
-      createdBy: Option[Subject] = None,
-      updatedBy: Option[Subject] = None
+      createdBy: Option[Iri] = None,
+      updatedBy: Option[Iri] = None
   ) extends SearchParams {
     override val types: Set[Iri]           = Set(nxv.Organization)
     override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.organizations))
@@ -87,8 +86,8 @@ object SearchParams {
       organization: Option[Label] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
-      createdBy: Option[Subject] = None,
-      updatedBy: Option[Subject] = None
+      createdBy: Option[Iri] = None,
+      updatedBy: Option[Iri] = None
   ) extends SearchParams {
     override val types: Set[Iri]           = Set(nxv.Project)
     override val schemas: Set[ResourceRef] = Set(Latest(nxvschemas.projects))

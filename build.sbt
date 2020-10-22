@@ -425,7 +425,7 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile")
+  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
     libraryDependencies ++= Seq(
       akkaDistributedData,

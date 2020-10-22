@@ -91,6 +91,17 @@ trait JsonLdEncoder[A] {
 
 object JsonLdEncoder {
 
+  private def randomRootNode[A]: A => BNode = (_: A) => BNode.random
+
+  /**
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
+    * where ''A'' doesn't have a rootId
+    *
+    * @param iriContext the Iri context
+    */
+  def compactFromCirce[A: Encoder.AsObject](iriContext: Iri): JsonLdEncoder[A] =
+    compactFromCirce(randomRootNode, ContextValue(iriContext))
+
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
     *
@@ -116,7 +127,7 @@ object JsonLdEncoder {
    * @param context the context
     */
   def compactFromCirce[A: Encoder.AsObject](context: ContextValue): JsonLdEncoder[A] =
-    compactFromCirce((_: A) => BNode.random, context)
+    compactFromCirce(randomRootNode, context)
 
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.

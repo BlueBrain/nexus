@@ -12,9 +12,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 final case class BaseUri private (base: Uri, prefix: Option[Label]) {
 
   /**
+    * Formats the prefix segment
+    */
+  val prefixSegment: String = prefix.fold("")(p => s"/$p")
+
+  /**
     * The platform endpoint with base / prefix
     */
   val endpoint: Uri = prefix.fold(base)(p => base / p.value)
+
+  /**
+    * Scheme of the underlying uri
+    */
+  def scheme: String = base.scheme
+
+  /**
+    * Authority of the underlying uri
+    */
+  def authority: Uri.Authority = base.authority
 }
 
 object BaseUri {

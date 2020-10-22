@@ -10,7 +10,7 @@ object WellKnownGen extends CirceLiteral {
       issuer: String,
       grantTypes: Set[GrantType] = Set(GrantType.AuthorizationCode, GrantType.Implicit)
   ): (Uri, WellKnown) = {
-    val baseUri = s"https://localhost/auth/$issuer/github/protocol/openid-connect/"
+    val baseUri = s"https://localhost/auth/$issuer/protocol/openid-connect/"
     Uri(baseUri) ->
       WellKnown(
         issuer,
