@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ContentRange, EntityStreamSizeException, StatusCodes}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
@@ -384,7 +385,7 @@ object RdfRejectionHandler extends DeltaDirectives {
 
   private def jsonObj[A <: Rejection](value: A, reason: String, details: Option[String] = None): JsonObject =
     JsonObject.fromIterable(
-      List(keywords.tpe                            -> value.getClass.getSimpleName.split('$').head.asJson) ++
+      List(keywords.tpe                            -> ClassUtils.simpleName(value).asJson) ++
         Option.when(reason.trim.nonEmpty)("reason" -> reason.asJson) ++
         details.collect { case d if d.trim.nonEmpty => "details" -> d.asJson }
     )

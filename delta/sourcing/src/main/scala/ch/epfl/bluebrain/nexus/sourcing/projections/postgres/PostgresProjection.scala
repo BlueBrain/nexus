@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.sourcing.projections.postgres
 
 import akka.persistence.query.Offset
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
 import ch.epfl.bluebrain.nexus.sourcing.projections.{FailureMessage, Projection, ProjectionId, ProjectionProgress}
@@ -63,7 +64,7 @@ private[projections] class PostgresProjection[A: Encoder: Decoder](xa: Transacto
          |value, error_type, error)
          |VALUES (${id.value}, ${failureMessage.offset.asJson.noSpaces}, ${failureMessage.persistenceId},
          |${failureMessage.sequenceNr}, ${failureMessage.value.asJson.noSpaces},
-         |${failureMessage.throwable.getClass.getSimpleName}, ${f(failureMessage.throwable)})
+         |${ClassUtils.simpleName(failureMessage.throwable)}, ${f(failureMessage.throwable)})
          |ON CONFLICT DO NOTHING""".stripMargin.update.run.transact(xa).map(_ => ())
 
   /**

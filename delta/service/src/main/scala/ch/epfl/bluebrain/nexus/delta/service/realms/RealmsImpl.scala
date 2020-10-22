@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.service.realms
 
-import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorSystem, SupervisorStrategy}
+import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RevisionNotFound, UnexpectedInitialState}
@@ -13,13 +14,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+import monix.execution.Scheduler.Implicits.global
 
 final class RealmsImpl private (
     agg: RealmsAggregate,
@@ -85,13 +89,15 @@ final class RealmsImpl private (
       pagination: Pagination.FromPagination,
       params: SearchParams.RealmSearchParams
   ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] =
-    index.values.map { resources =>
-      val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
-      UnscoredSearchResults(
-        results.size.toLong,
-        results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
-      )
-    }.named("listRealms", component)
+    index.values
+      .map { resources =>
+        val results = resources.filter(params.matches).toVector.sortBy(_.createdAt)
+        UnscoredSearchResults(
+          results.size.toLong,
+          results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
+        )
+      }
+      .named("listRealms", component)
 
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
     eventLog.eventsByTag(entityType, offset)
@@ -112,13 +118,45 @@ object RealmsImpl {
     */
   final val entityType: String = "realms"
 
-  /**
-    * Creates a new realm index.
-    */
+  final val realmTag = "realms"
+
   private def index(realmsConfig: RealmsConfig)(implicit as: ActorSystem[Nothing]): RealmsCache = {
     implicit val cfg: KeyValueStoreConfig    = realmsConfig.keyValueStore
     val clock: (Long, RealmResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed("realms", clock)
+  }
+
+  private def startIndexing(
+      config: RealmsConfig,
+      eventLog: EventLog[Envelope[RealmEvent]],
+      index: RealmsCache,
+      realms: Realms
+  )(implicit
+      as: ActorSystem[Nothing]
+  ) = {
+    val singletonManager = ClusterSingleton(as)
+    singletonManager.init(
+      SingletonActor(
+        Behaviors
+          .supervise(
+            StreamSupervisor.behavior(
+              Task.delay(
+                eventLog
+                  .eventsByTag(realmTag, Offset.noOffset)
+                  .mapAsync(config.indexing.concurrency)(envelope =>
+                    realms.fetch(envelope.event.label).flatMap {
+                      case Some(acl) => index.put(acl.id, acl)
+                      case None      => UIO.unit
+                    }
+                  )
+              ),
+              config.indexing.retryStrategy
+            )
+          )
+          .onFailure[Exception](SupervisorStrategy.restart),
+        "RealmsIndex"
+      )
+    )
   }
 
   private def aggregate(
@@ -177,11 +215,11 @@ object RealmsImpl {
       eventLog: EventLog[Envelope[RealmEvent]]
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Realms] = {
     val i = index(realmsConfig)
-    aggregate(
-      resolveWellKnown,
-      i.values,
-      realmsConfig
-    ).map(apply(_, eventLog, i))
+    for {
+      agg   <- aggregate(resolveWellKnown, i.values, realmsConfig)
+      realms = apply(agg, eventLog, i)
+      _     <- UIO.delay(startIndexing(realmsConfig, eventLog, i, realms))
+    } yield realms
   }
 
 }

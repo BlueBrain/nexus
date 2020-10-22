@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig.IndexingConfig
+import ch.epfl.bluebrain.nexus.delta.service.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategy
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
 
 /** Configuration for the ACLs module
@@ -16,15 +15,3 @@ final case class AclsConfig(
     keyValueStore: KeyValueStoreConfig,
     indexing: IndexingConfig
 )
-
-object AclsConfig {
-
-  /**
-    * Configuration for ACLs indexing process.
-    *
-    * @param concurrency    indexing concurrency
-    * @param retryStrategy  indexing retry strategy
-    */
-  final case class IndexingConfig(concurrency: Int, retryStrategy: RetryStrategy)
-
-}

@@ -5,17 +5,20 @@ import akka.util.Timeout
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.service.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig._
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
+import com.typesafe.scalalogging.Logger
 import monix.execution.Scheduler
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 import pureconfig.generic.semiauto._
 
+import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
@@ -75,6 +78,18 @@ trait ConfigReaderInstances {
                     }
       } yield strategy
     }
+  }
+
+  implicit final val indexingConfigReader: ConfigReader[IndexingConfig] = {
+    val logger: Logger = Logger[IndexingConfig]
+
+    @nowarn("cat=unused")
+    implicit val retryStrategyConfig: ConfigReader[RetryStrategy] =
+      retryStrategyConfigReader.map(config =>
+        RetryStrategy(config, _ => false, RetryStrategy.logError(logger, "indexing"))
+      )
+
+    deriveReader[IndexingConfig]
   }
 
   implicit final val groupsConfigReader: ConfigReader[GroupsConfig] =

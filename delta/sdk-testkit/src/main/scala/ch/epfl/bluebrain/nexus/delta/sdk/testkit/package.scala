@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.persistence.query.Sequence
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.ClassUtils
 
 package object testkit {
 

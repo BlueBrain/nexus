@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.persistence.query.Sequence
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler

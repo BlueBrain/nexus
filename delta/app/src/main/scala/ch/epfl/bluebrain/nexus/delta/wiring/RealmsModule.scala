@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsConfig, RealmsImpl, WellKnownResolver}
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils.toEnvelope
@@ -41,11 +41,10 @@ object RealmsModule extends ModuleDef {
         cfg: RealmsConfig,
         eventLog: EventLog[Envelope[RealmEvent]],
         as: ActorSystem[Nothing],
-        bu: BaseUri,
         hc: HttpClient
     ) =>
       val wellKnownResolver = WellKnownResolver((uri: Uri) => hc[Json](HttpRequest(uri = uri))) _
-      RealmsImpl(cfg, wellKnownResolver, eventLog)(bu, as, Clock[UIO])
+      RealmsImpl(cfg, wellKnownResolver, eventLog)(as, Clock[UIO])
   }
 
   make[RealmsRoutes]

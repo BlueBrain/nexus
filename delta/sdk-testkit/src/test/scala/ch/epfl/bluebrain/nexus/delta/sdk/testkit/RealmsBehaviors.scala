@@ -4,6 +4,7 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.Sequence
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
@@ -16,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler

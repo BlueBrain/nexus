@@ -147,8 +147,7 @@ object AclsImpl {
                   .eventsByTag(aclTag, Offset.noOffset)
                   .mapAsync(config.indexing.concurrency)(envelope =>
                     acls.fetch(envelope.event.address).flatMap {
-                      case Some(acl) =>
-                        index.put(acl.id, acl)
+                      case Some(acl) => index.put(acl.id, acl)
                       case None      => UIO.unit
                     }
                   )

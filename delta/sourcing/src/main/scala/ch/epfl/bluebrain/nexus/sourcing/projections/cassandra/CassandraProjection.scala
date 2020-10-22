@@ -6,6 +6,7 @@ import akka.stream.Materializer
 import akka.stream.alpakka.cassandra.CassandraSessionSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.sourcing.config.CassandraConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.sourcing.projections.instances._
@@ -79,7 +80,7 @@ private[projections] class CassandraProjection[A: Encoder: Decoder](
         failureMessage.persistenceId,
         failureMessage.sequenceNr: java.lang.Long,
         failureMessage.value.asJson.noSpaces,
-        failureMessage.throwable.getClass.getSimpleName,
+        ClassUtils.simpleName(failureMessage.throwable),
         f(failureMessage.throwable)
       )
     ) >> Task.unit
