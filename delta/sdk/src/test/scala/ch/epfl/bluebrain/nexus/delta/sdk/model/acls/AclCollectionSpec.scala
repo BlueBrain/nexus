@@ -99,8 +99,8 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       val org2Address   = Organization(org2)
       val proj12Address = Project(org, proj2)
       val proj22Address = Project(org2, proj2)
-      val any           = AnyOrganizationAnyProject
-      val anyOrg        = AnyOrganization
+      val any           = AnyOrganizationAnyProject(false)
+      val anyOrg        = AnyOrganization(false)
 
       val orgAcl: AclResource    = acl2.copy(id = orgAddress)
       val org2Acl: AclResource   = acl3.copy(id = org2Address)
@@ -110,7 +110,7 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       val acls                   = AclCollection(acl, orgAcl, org2Acl, projAcl, proj12Acl, proj22Acl)
 
       acls.fetch(any) shouldEqual AclCollection(projAcl, proj12Acl, proj22Acl)
-      acls.fetch(AnyProject(org)) shouldEqual AclCollection(projAcl, proj12Acl)
+      acls.fetch(AnyProject(org, withAncestors = false)) shouldEqual AclCollection(projAcl, proj12Acl)
       acls.fetch(anyOrg) shouldEqual AclCollection(orgAcl, org2Acl)
     }
 
@@ -120,8 +120,8 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       val org2Address   = Organization(org2)
       val proj12Address = Project(org, proj2)
       val proj22Address = Project(org2, proj2)
-      val any           = AnyOrganizationAnyProject
-      val anyOrg        = AnyOrganization
+      val any           = AnyOrganizationAnyProject(true)
+      val anyOrg        = AnyOrganization(true)
 
       val orgAcl: AclResource    = acl2.copy(id = orgAddress)
       val org2Acl: AclResource   = acl3.copy(id = org2Address)
@@ -130,9 +130,9 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       val proj22Acl: AclResource = acl.copy(id = proj22Address)
       val acls                   = AclCollection(acl, orgAcl, org2Acl, projAcl, proj12Acl, proj22Acl)
 
-      acls.fetchWithAncestors(any) shouldEqual acls
-      acls.fetchWithAncestors(AnyProject(org)) shouldEqual AclCollection(acl, orgAcl, projAcl, proj12Acl)
-      acls.fetchWithAncestors(anyOrg) shouldEqual AclCollection(acl, orgAcl, org2Acl)
+      acls.fetch(any) shouldEqual acls
+      acls.fetch(AnyProject(org, withAncestors = true)) shouldEqual AclCollection(acl, orgAcl, projAcl, proj12Acl)
+      acls.fetch(anyOrg) shouldEqual AclCollection(acl, orgAcl, org2Acl)
     }
   }
 
