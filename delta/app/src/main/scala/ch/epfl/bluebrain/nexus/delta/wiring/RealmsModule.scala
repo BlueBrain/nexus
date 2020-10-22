@@ -4,9 +4,11 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, DatabaseFlavour}
+import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsConfig, RealmsImpl, WellKnownResolver}
@@ -23,6 +25,7 @@ import monix.bio.UIO
 object RealmsModule extends ModuleDef {
 
   make[RealmsConfig].from((cfg: AppConfig) => cfg.realms)
+  make[PaginationConfig].from((cfg: RealmsConfig) => cfg.pagination)
 
   make[EventLog[Envelope[RealmEvent]]].fromEffect { (cfg: AppConfig, as: ActorSystem[Nothing]) =>
     cfg.database.flavour match {
@@ -44,6 +47,8 @@ object RealmsModule extends ModuleDef {
       val wellKnownResolver = WellKnownResolver((uri: Uri) => hc[Json](HttpRequest(uri = uri))) _
       RealmsImpl(cfg, wellKnownResolver, eventLog)(bu, as, Clock[UIO])
   }
+
+  make[RealmsRoutes]
 
 }
 // $COVERAGE-ON$

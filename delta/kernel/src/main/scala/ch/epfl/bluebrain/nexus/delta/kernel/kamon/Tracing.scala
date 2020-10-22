@@ -13,7 +13,7 @@ object Tracing {
     * Wraps the `io` effect in a new span with the provided name and tags. The created span is marked as finished after
     * the effect is completed or cancelled.
     *
-   * @param name                 the span name
+    * @param name                 the span name
     * @param component            the component name
     * @param tags                 the collection of tags to apply to the span
     * @param takeSamplingDecision if true, it ensures that a Sampling Decision is taken in case none has been taken so far

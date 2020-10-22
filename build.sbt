@@ -575,7 +575,7 @@ lazy val kamonSettings = Seq(
   libraryDependencies ++= Seq(
     "io.kamon" %% "kamon-akka"           % kamonVersion,
     "io.kamon" %% "kamon-akka-http"      % kamonVersion,
-    "io.kamon" %% "kamon-cassandra"      % kamonVersion,
+    // "io.kamon" %% "kamon-cassandra"      % kamonVersion, // does not support v4.x of the cassandra driver
     "io.kamon" %% "kamon-core"           % kamonVersion,
     "io.kamon" %% "kamon-executors"      % kamonVersion,
     "io.kamon" %% "kamon-jaeger"         % kamonVersion,

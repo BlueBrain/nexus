@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.routes.{IdentitiesRoutes, PermissionsRoutes}
+import ch.epfl.bluebrain.nexus.delta.routes.{IdentitiesRoutes, PermissionsRoutes, RealmsRoutes}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
@@ -55,7 +55,8 @@ object Main extends BIOApp {
         handleRejections(locator.get[RejectionHandler]) {
           concat(
             locator.get[IdentitiesRoutes].routes,
-            locator.get[PermissionsRoutes].routes
+            locator.get[PermissionsRoutes].routes,
+            locator.get[RealmsRoutes].routes
           )
         }
       }
@@ -104,7 +105,7 @@ object Main extends BIOApp {
     }
 
   private def kamonEnabled: Boolean =
-    sys.env.getOrElse("KAMON_ENABLED", "false").toBooleanOption.getOrElse(false)
+    sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
 
   private def initializeKamon(config: Config): UIO[Unit] =
     if (kamonEnabled) UIO.delay(Kamon.init(config))

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.util.Timeout
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
@@ -43,16 +44,11 @@ trait ConfigReaderInstances {
       } yield AggregateConfig(Timeout(askTimeout), evaluationMaxDuration, Scheduler.global, stashSize)
     }
 
-  final private val onceRetryStrategyConfigReader: ConfigReader[OnceStrategyConfig] =
-    deriveReader[OnceStrategyConfig]
+  implicit final val retryStrategyConfigReader: ConfigReader[RetryStrategyConfig] = {
+    val onceRetryStrategy: ConfigReader[OnceStrategyConfig]               = deriveReader[OnceStrategyConfig]
+    val constantRetryStrategy: ConfigReader[ConstantStrategyConfig]       = deriveReader[ConstantStrategyConfig]
+    val exponentialRetryStrategy: ConfigReader[ExponentialStrategyConfig] = deriveReader[ExponentialStrategyConfig]
 
-  final private val constantRetryStrategyConfigReader: ConfigReader[ConstantStrategyConfig] =
-    deriveReader[ConstantStrategyConfig]
-
-  final private val exponentialRetryStrategyConfigReader: ConfigReader[ExponentialStrategyConfig] =
-    deriveReader[ExponentialStrategyConfig]
-
-  implicit final val retryStrategyConfigReader: ConfigReader[RetryStrategyConfig] =
     ConfigReader.fromCursor { cursor =>
       for {
         obj      <- cursor.asObjectCursor
@@ -60,9 +56,9 @@ trait ConfigReaderInstances {
         retry    <- ConfigReader[String].from(rc)
         strategy <- retry match {
                       case "never"       => Right(AlwaysGiveUp)
-                      case "once"        => onceRetryStrategyConfigReader.from(obj)
-                      case "constant"    => constantRetryStrategyConfigReader.from(obj)
-                      case "exponential" => exponentialRetryStrategyConfigReader.from(obj)
+                      case "once"        => onceRetryStrategy.from(obj)
+                      case "constant"    => constantRetryStrategy.from(obj)
+                      case "exponential" => exponentialRetryStrategy.from(obj)
                       case other         =>
                         Left(
                           ConfigReaderFailures(
@@ -79,12 +75,16 @@ trait ConfigReaderInstances {
                     }
       } yield strategy
     }
+  }
 
   implicit final val groupsConfigReader: ConfigReader[GroupsConfig] =
     deriveReader[GroupsConfig]
 
   implicit final val keyValueStoreConfigReader: ConfigReader[KeyValueStoreConfig] =
     deriveReader[KeyValueStoreConfig]
+
+  implicit final val paginationConfigReader: ConfigReader[PaginationConfig] =
+    deriveReader[PaginationConfig]
 
   implicit final val realmsConfigReader: ConfigReader[RealmsConfig] =
     deriveReader[RealmsConfig]
