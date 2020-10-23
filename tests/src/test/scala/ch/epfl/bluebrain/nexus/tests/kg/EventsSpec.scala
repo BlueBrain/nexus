@@ -228,22 +228,22 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by organization 2" taggedAs EventsTag in {
       for {
         uuids <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, timestampUuid, takeWithin = 2.seconds) {
-                   seq =>
-                     val projectEvents = seq.drop(4)
-                     projectEvents.size shouldEqual 1
-                     projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("Created")
-                     val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                     json shouldEqual jsonContentOf(
-                       "/kg/events/events2.json",
-                       replacements(
-                         BugsBunny,
-                         "resources"        -> s"${config.deltaUri}/resources/$id",
-                         "organizationUuid" -> uuids._1,
-                         "projectUuid"      -> uuids._2
-                       )
-                     )
-                 }
+        _     <-
+          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, timestampUuid, takeWithin = 2.seconds) { seq =>
+            val projectEvents = seq.drop(4)
+            projectEvents.size shouldEqual 1
+            projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("Created")
+            val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+            json shouldEqual jsonContentOf(
+              "/kg/events/events2.json",
+              replacements(
+                BugsBunny,
+                "resources"        -> s"${config.deltaUri}/resources/$id",
+                "organizationUuid" -> uuids._1,
+                "projectUuid"      -> uuids._2
+              )
+            )
+          }
       } yield succeed
     }
 

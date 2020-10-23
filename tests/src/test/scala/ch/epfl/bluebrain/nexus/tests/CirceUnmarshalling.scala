@@ -30,7 +30,7 @@ trait CirceUnmarshalling {
   /**
     * HTTP entity => `Json`
     *
-   * @return unmarshaller for `Json`
+    * @return unmarshaller for `Json`
     */
   implicit final val jsonUnmarshaller: FromEntityUnmarshaller[Json] =
     Unmarshaller.byteStringUnmarshaller
@@ -43,7 +43,7 @@ trait CirceUnmarshalling {
   /**
     * HTTP entity => `Json` => `A`
     *
-   * @return unmarshaller for `A`
+    * @return unmarshaller for `A`
     */
   implicit final def decoderUnmarshaller[A: Decoder]: FromEntityUnmarshaller[A] =
     jsonUnmarshaller

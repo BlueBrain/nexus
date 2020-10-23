@@ -26,9 +26,8 @@ class PermissionDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling 
       )
       if (!list.toSet.subsetOf(permissions.permissions)) {
         cl.patch[Json](s"/permissions?rev=${permissions._rev}", body, Identity.ServiceAccount) { (_, response) =>
-            response.status shouldEqual StatusCodes.OK
-          }
-          .runSyncUnsafe()
+          response.status shouldEqual StatusCodes.OK
+        }.runSyncUnsafe()
       } else {
         succeed
       }

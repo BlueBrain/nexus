@@ -364,11 +364,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       )
 
       for {
-        _ <- deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1?tag=v1.0.1", Rick) {
-               (json, response) =>
-                 response.status shouldEqual StatusCodes.OK
-                 filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag1)
-             }
+        _ <-
+          deltaClient.get[Json](s"/resources/$id1/test-schema/test-resource:1?tag=v1.0.1", Rick) { (json, response) =>
+            response.status shouldEqual StatusCodes.OK
+            filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag1)
+          }
         _ <- deltaClient.get[Json](s"/resources/$id1/_/test-resource:1?tag=v1.0.0", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag2)
@@ -392,12 +392,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "storages"  -> jsonContentOf("/kg/listings/default-storage.json", mapping)
       )
 
-      resources.traverse {
-        case (segment, expected) =>
-          deltaClient.get[Json](s"/$segment/$id1", Rick) { (json, response) =>
-            response.status shouldEqual StatusCodes.OK
-            filterSearchMetadata(json) shouldEqual expected
-          }
+      resources.traverse { case (segment, expected) =>
+        deltaClient.get[Json](s"/$segment/$id1", Rick) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) shouldEqual expected
+        }
       }
     }
 

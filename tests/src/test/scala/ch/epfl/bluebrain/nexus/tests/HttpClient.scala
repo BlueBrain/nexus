@@ -258,7 +258,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
     Task
       .deferFuture {
         EventSource(s"$baseUrl$url", send, initialLastEventId = Some(initialLastEventId.toString))
-        //drop resolver, views and storage events
+          //drop resolver, views and storage events
           .take(take)
           .takeWithin(takeWithin)
           .runWith(Sink.seq)

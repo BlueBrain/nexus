@@ -91,13 +91,12 @@ class AclsSpec extends BaseSpec {
     }
 
     "add permissions for user on /orgpath/projectpath1 and /orgpath/projectpath2" taggedAs AclsTag in {
-      crossProduct.traverse {
-        case (org, project) =>
-          aclDsl.addPermissions(
-            s"/$org/$project",
-            Marge,
-            defaultPermissions
-          )
+      crossProduct.traverse { case (org, project) =>
+        aclDsl.addPermissions(
+          s"/$org/$project",
+          Marge,
+          defaultPermissions
+        )
       }
     }
 
@@ -112,9 +111,8 @@ class AclsSpec extends BaseSpec {
     "list permissions on /*/*" taggedAs AclsTag in {
       deltaClient.get[AclListing]("/acls/*/*", Marge) { (acls, response) =>
         response.status shouldEqual StatusCodes.OK
-        crossProduct.foreach {
-          case (org, project) =>
-            assertPermissions(acls, org, project, defaultPermissions)
+        crossProduct.foreach { case (org, project) =>
+          assertPermissions(acls, org, project, defaultPermissions)
         }
         succeed
       }
@@ -154,9 +152,8 @@ class AclsSpec extends BaseSpec {
             .permissions shouldEqual defaultPermissions
         }
 
-        crossProduct.foreach {
-          case (org, project) =>
-            assertPermissions(acls, org, project, defaultPermissions)
+        crossProduct.foreach { case (org, project) =>
+          assertPermissions(acls, org, project, defaultPermissions)
         }
 
         succeed

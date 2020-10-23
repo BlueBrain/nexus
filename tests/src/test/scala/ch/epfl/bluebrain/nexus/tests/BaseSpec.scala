@@ -67,9 +67,8 @@ trait BaseSpec
 
   def runTask[A](t: Task[A]): Assertion =
     t.map { _ =>
-        succeed
-      }
-      .runSyncUnsafe()
+      succeed
+    }.runSyncUnsafe()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
