@@ -19,21 +19,20 @@ class AbstractInfluxSpec extends AbstractCliSpec {
   override def testModule: ModuleDef =
     new ModuleDef {
       make[AppConfig].fromEffect { host: InfluxHostConfig =>
-        copyConfigs.flatMap {
-          case (envFile, _, influxFile) =>
-            AppConfig.load[IO](Some(envFile), influxConfigFile = Some(influxFile)).flatMap {
-              case Left(value)  => IO.raiseError(value)
-              case Right(value) =>
-                val influxOffsetFile = influxFile.getParent.resolve("influx.offset")
-                val cfg              = value.copy(influx =
-                  value.influx.copy(
-                    endpoint = host.endpoint,
-                    offsetFile = influxOffsetFile,
-                    offsetSaveInterval = 100.milliseconds
-                  )
+        copyConfigs.flatMap { case (envFile, _, influxFile) =>
+          AppConfig.load[IO](Some(envFile), influxConfigFile = Some(influxFile)).flatMap {
+            case Left(value)  => IO.raiseError(value)
+            case Right(value) =>
+              val influxOffsetFile = influxFile.getParent.resolve("influx.offset")
+              val cfg              = value.copy(influx =
+                value.influx.copy(
+                  endpoint = host.endpoint,
+                  offsetFile = influxOffsetFile,
+                  offsetSaveInterval = 100.milliseconds
                 )
-                IO.pure(cfg)
-            }
+              )
+              IO.pure(cfg)
+          }
         }
       }
       make[InfluxClient[IO]].fromResource {

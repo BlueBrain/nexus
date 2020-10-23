@@ -9,7 +9,7 @@ import io.circe.{Encoder, Json}
 /**
   * Defines the signature for a single instance result entry
   *
- * @tparam A the type of the result
+  * @tparam A the type of the result
   */
 sealed trait ResultEntry[A] extends Product with Serializable {
 
@@ -24,7 +24,7 @@ object ResultEntry {
   /**
     * A result entry with a score
     *
-   * @param score  the resulting score for the entry
+    * @param score  the resulting score for the entry
     * @param source the query result value
     */
   final case class ScoredResultEntry[A](score: Float, source: A) extends ResultEntry[A]
@@ -32,7 +32,7 @@ object ResultEntry {
   /**
     * A result entry without a score
     *
-   * @param source the query result value
+    * @param source the query result value
     */
   final case class UnscoredResultEntry[A](source: A) extends ResultEntry[A]
 

@@ -23,9 +23,8 @@ class TestEventStreamClient[F[_]](events: List[Event], projectClient: ProjectCli
 
   private def eventsFrom(lastEventIdCache: Ref[F, Option[Offset]]): F[Seq[(Offset, Event)]]         =
     lastEventIdCache.get.map(lastEventId =>
-      offsetEvents.dropWhile {
-        case (offset, _) =>
-          offset.value.getMostSignificantBits <= lastEventId.getOrElse(noOffset).value.getMostSignificantBits
+      offsetEvents.dropWhile { case (offset, _) =>
+        offset.value.getMostSignificantBits <= lastEventId.getOrElse(noOffset).value.getMostSignificantBits
       }
     )
 

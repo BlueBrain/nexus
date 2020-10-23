@@ -59,7 +59,6 @@ object Rejection {
       )
 
   /**
-    *
     * Signals a missing.
     * @param name the storage bucket name
     */

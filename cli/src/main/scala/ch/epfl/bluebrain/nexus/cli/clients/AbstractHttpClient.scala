@@ -44,8 +44,8 @@ class AbstractHttpClient[F[_]: Timer](client: Client[F], env: EnvConfig)(implici
     client
       .run(req)
       .use(ClientError.errorOr[F, A](r => f(r)))
-      .recoverWith {
-        case NonFatal(err) => F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
+      .recoverWith { case NonFatal(err) =>
+        F.delay(Left(Unexpected(Option(err.getMessage).getOrElse("").take(30))))
       }
       .retryingM(successCondition[A])
 }

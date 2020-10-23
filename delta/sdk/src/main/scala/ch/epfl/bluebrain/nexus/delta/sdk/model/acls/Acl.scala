@@ -15,8 +15,8 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
     * @param acl the acl to be added
     */
   def ++(acl: Acl): Acl =
-    Acl(acl.value.foldLeft(value) {
-      case (acc, (id, permsToAdd)) => acc.updatedWith(id)(perms => Some(perms.fold(permsToAdd)(_ ++ permsToAdd)))
+    Acl(acl.value.foldLeft(value) { case (acc, (id, permsToAdd)) =>
+      acc.updatedWith(id)(perms => Some(perms.fold(permsToAdd)(_ ++ permsToAdd)))
     })
 
   /**
@@ -25,8 +25,8 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
     * @param acl the acl to be subtracted
     */
   def --(acl: Acl): Acl =
-    Acl(acl.value.foldLeft(value) {
-      case (acc, (id, permsToDelete)) => acc.updatedWith(id)(_.map(_ -- permsToDelete).filter(_.nonEmpty))
+    Acl(acl.value.foldLeft(value) { case (acc, (id, permsToDelete)) =>
+      acc.updatedWith(id)(_.map(_ -- permsToDelete).filter(_.nonEmpty))
     })
 
   /**
@@ -73,8 +73,8 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
     * @return true if at least one of the provided identities has the provided permission
     */
   def hasPermission(identities: Set[Identity], permission: Permission): Boolean =
-    value.exists {
-      case (id, perms) => identities.contains(id) && perms.contains(permission)
+    value.exists { case (id, perms) =>
+      identities.contains(id) && perms.contains(permission)
     }
 }
 

@@ -1,15 +1,12 @@
 /*
 scalafmt: {
-  style = defaultWithAlign
   maxColumn = 150
-  align.preset = most
   align.tokens.add = [
     { code = ":=", owner = "Term.ApplyInfix" }
     { code = "+=", owner = "Term.ApplyInfix" }
     { code = "++=", owner = "Term.ApplyInfix" }
     { code = "~=", owner = "Term.ApplyInfix" }
   ]
-  version = 2.5.3
 }
  */
 

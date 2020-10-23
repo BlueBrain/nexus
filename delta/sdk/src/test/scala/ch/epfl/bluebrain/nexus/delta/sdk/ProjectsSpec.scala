@@ -82,8 +82,8 @@ class ProjectsSpec
           current -> UpdateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, 2L, subject),
           current -> DeprecateProject(label, uuid, orgLabel, orgUuid, 2L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(orgs)(state, cmd).rejectedWith[IncorrectRev]
+        forAll(list) { case (state, cmd) =>
+          evaluate(orgs)(state, cmd).rejectedWith[IncorrectRev]
         }
       }
 
@@ -93,8 +93,8 @@ class ProjectsSpec
           current -> UpdateProject(label, uuid, org2Label, orgUuid, desc, am, base, vocab, 1L, subject),
           current -> DeprecateProject(label, uuid, org2Label, orgUuid, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(orgs)(state, cmd).rejectedWith[OrganizationIsDeprecated]
+        forAll(list) { case (state, cmd) =>
+          evaluate(orgs)(state, cmd).rejectedWith[OrganizationIsDeprecated]
         }
       }
 
@@ -105,8 +105,8 @@ class ProjectsSpec
           current -> UpdateProject(label, uuid, orgNotFound, orgUuid, desc, am, base, vocab, 1L, subject),
           current -> DeprecateProject(label, uuid, orgNotFound, orgUuid, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(orgs)(state, cmd).rejectedWith[OrganizationNotFound]
+        forAll(list) { case (state, cmd) =>
+          evaluate(orgs)(state, cmd).rejectedWith[OrganizationNotFound]
         }
       }
 
@@ -116,8 +116,8 @@ class ProjectsSpec
           cur -> UpdateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, 1L, subject),
           cur -> DeprecateProject(label, uuid, orgLabel, orgUuid, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(orgs)(state, cmd).rejectedWith[ProjectIsDeprecated]
+        forAll(list) { case (state, cmd) =>
+          evaluate(orgs)(state, cmd).rejectedWith[ProjectIsDeprecated]
         }
       }
 
@@ -126,8 +126,8 @@ class ProjectsSpec
           Initial -> UpdateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, 1L, subject),
           Initial -> DeprecateProject(label, uuid, orgLabel, orgUuid, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(orgs)(state, cmd).rejectedWith[ProjectNotFound]
+        forAll(list) { case (state, cmd) =>
+          evaluate(orgs)(state, cmd).rejectedWith[ProjectNotFound]
         }
       }
 

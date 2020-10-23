@@ -21,8 +21,8 @@ class AclAddressFilterSpec extends AnyWordSpecLike with Matchers with AclFixture
 
     "return its string representation" in {
       val list = List(anyFilter -> "/*/*", anyOrgFilter -> "/*", AnyProject(org, withAncestors = false) -> "/org/*")
-      forAll(list) {
-        case (address, expectedString) => address.string shouldEqual expectedString
+      forAll(list) { case (address, expectedString) =>
+        address.string shouldEqual expectedString
       }
     }
 
@@ -35,9 +35,8 @@ class AclAddressFilterSpec extends AnyWordSpecLike with Matchers with AclFixture
         anyFilter                              -> proj12Address,
         anyFilter                              -> proj22Address
       )
-      forAll(list) {
-        case (filter, address) =>
-          filter.matches(address) shouldEqual true
+      forAll(list) { case (filter, address) =>
+        filter.matches(address) shouldEqual true
       }
     }
 
@@ -51,9 +50,8 @@ class AclAddressFilterSpec extends AnyWordSpecLike with Matchers with AclFixture
         anyFilter                              -> AclAddress.Root,
         anyFilter                              -> orgAddress
       )
-      forAll(list) {
-        case (filter, address) =>
-          filter.matches(address) shouldEqual false
+      forAll(list) { case (filter, address) =>
+        filter.matches(address) shouldEqual false
       }
     }
 
@@ -74,9 +72,8 @@ class AclAddressFilterSpec extends AnyWordSpecLike with Matchers with AclFixture
         anyFilterWithAncestors                -> proj12Address,
         anyFilterWithAncestors                -> proj22Address
       )
-      forAll(list) {
-        case (filter, address) =>
-          filter.matches(address) shouldEqual true
+      forAll(list) { case (filter, address) =>
+        filter.matches(address) shouldEqual true
       }
     }
 
@@ -86,9 +83,8 @@ class AclAddressFilterSpec extends AnyWordSpecLike with Matchers with AclFixture
         AnyProject(org, false) -> org2Address,
         AnyProject(org, false) -> proj22Address
       )
-      forAll(list) {
-        case (filter, address) =>
-          filter.matches(address) shouldEqual false
+      forAll(list) { case (filter, address) =>
+        filter.matches(address) shouldEqual false
       }
     }
   }

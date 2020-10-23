@@ -35,18 +35,16 @@ trait RdfMarshalling {
     * NTriples -> HttpEntity
     */
   implicit val ntriplesMarshaller: ToEntityMarshaller[NTriples] =
-    Marshaller.withFixedContentType(ContentType(`application/n-triples`)) {
-      case NTriples(value, _) =>
-        HttpEntity(`application/n-triples`, value)
+    Marshaller.withFixedContentType(ContentType(`application/n-triples`)) { case NTriples(value, _) =>
+      HttpEntity(`application/n-triples`, value)
     }
 
   /**
     * Dot -> HttpEntity
     */
   implicit val dotMarshaller: ToEntityMarshaller[Dot] =
-    Marshaller.withFixedContentType(ContentType(`application/vnd.graphviz`)) {
-      case Dot(value, _) =>
-        HttpEntity(`application/vnd.graphviz`, value)
+    Marshaller.withFixedContentType(ContentType(`application/vnd.graphviz`)) { case Dot(value, _) =>
+      HttpEntity(`application/vnd.graphviz`, value)
     }
 }
 

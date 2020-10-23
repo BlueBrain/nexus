@@ -12,15 +12,15 @@ class AclAddressSpec extends AnyWordSpecLike with Matchers with AclFixtures {
 
     "return its string representation" in {
       val list = List(Root -> "/", orgAddress -> "/org", projAddress -> "/org/proj")
-      forAll(list) {
-        case (address, expectedString) => address.string shouldEqual expectedString
+      forAll(list) { case (address, expectedString) =>
+        address.string shouldEqual expectedString
       }
     }
 
     "return its parents" in {
       val list = List(Root -> None, orgAddress -> Some(Root), projAddress -> Some(orgAddress))
-      forAll(list) {
-        case (address, parent) => address.parent shouldEqual parent
+      forAll(list) { case (address, parent) =>
+        address.parent shouldEqual parent
       }
     }
   }

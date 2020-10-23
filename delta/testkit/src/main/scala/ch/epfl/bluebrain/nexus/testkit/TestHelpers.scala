@@ -81,7 +81,7 @@ trait TestHelpers {
     * Loads the content of the argument classpath resource as a string and replaces all the key matches of
     * the ''replacements'' with their values.
     *
-   * @param resourcePath the path of a resource available on the classpath
+    * @param resourcePath the path of a resource available on the classpath
     * @return the content of the referenced resource as a string
     */
   final def contentOf(resourcePath: String, attributes: (String, Any)*): String =

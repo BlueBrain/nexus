@@ -17,7 +17,7 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
   /**
     * Fetch the [[AclCollection]] for all [[AclAddress]] that match the passed ''filter''.
     *
-   * @param filter the ACL address filter
+    * @param filter the ACL address filter
     */
   def fetch(filter: AclAddressFilter): AclCollection =
     AclCollection(value.filter { case (address, _) => filter.matches(address) })
@@ -67,8 +67,8 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     * @param identities the identities to be filtered
     */
   def filter(identities: Set[Identity]): AclCollection =
-    value.foldLeft(AclCollection.empty) {
-      case (acc, (_, aclResource)) => acc + aclResource.map(_.filter(identities))
+    value.foldLeft(AclCollection.empty) { case (acc, (_, aclResource)) =>
+      acc + aclResource.map(_.filter(identities))
     }
 
   /**
@@ -93,9 +93,8 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     * @return true if the conditions are met, false otherwise
     */
   def exists(identities: Set[Identity], permission: Permission, address: AclAddress): Boolean =
-    filter(identities).value.exists {
-      case (curAddress, aclResource) =>
-        curAddress == address && aclResource.value.permissions.contains(permission)
+    filter(identities).value.exists { case (curAddress, aclResource) =>
+      curAddress == address && aclResource.value.permissions.contains(permission)
     } || address.parent.fold(false)(exists(identities, permission, _))
 }
 

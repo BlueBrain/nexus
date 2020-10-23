@@ -14,7 +14,7 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of organization rejection types.
   *
- * @param reason a descriptive message as to why the rejection occurred
+  * @param reason a descriptive message as to why the rejection occurred
   */
 sealed abstract class OrganizationRejection(val reason: String) extends Product with Serializable
 
@@ -53,7 +53,7 @@ object OrganizationRejection {
   /**
     * Signals an attempt to retrieve an organization at a specific revision when the provided revision does not exist.
     *
-   * @param provided the provided revision
+    * @param provided the provided revision
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
@@ -62,7 +62,7 @@ object OrganizationRejection {
   /**
     * Signals and attempt to update/deprecate an organization that is already deprecated.
     *
-   * @param label the label of the organization
+    * @param label the label of the organization
     */
   final case class OrganizationIsDeprecated(label: Label)
       extends OrganizationRejection(s"Organization '$label' is deprecated.")

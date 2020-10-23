@@ -88,31 +88,28 @@ class AttributesCacheSpec
       }
       val time = System.currentTimeMillis()
 
-      forAll(list) {
-        case (path, attr) =>
-          computation(path, config.algorithm) shouldReturn
-            Task.deferFuture(Future {
-              Thread.sleep(1000)
-              counter.incrementAndGet()
-              attr
-            })
-          attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+      forAll(list) { case (path, attr) =>
+        computation(path, config.algorithm) shouldReturn
+          Task.deferFuture(Future {
+            Thread.sleep(1000)
+            counter.incrementAndGet()
+            attr
+          })
+        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
       }
 
       eventually(counter.get() shouldEqual 10)
 
-      forAll(list) {
-        case (path, _) =>
-          eventually(computation(path, config.algorithm) wasCalled once)
+      forAll(list) { case (path, _) =>
+        eventually(computation(path, config.algorithm) wasCalled once)
       }
 
       val diff = System.currentTimeMillis() - time
       diff should be > 4000L
       diff should be < 6500L
 
-      forAll(list) {
-        case (path, attr) =>
-          attributesCache.get(path).runToFuture.futureValue shouldEqual attr
+      forAll(list) { case (path, attr) =>
+        attributesCache.get(path).runToFuture.futureValue shouldEqual attr
       }
     }
 
@@ -123,23 +120,20 @@ class AttributesCacheSpec
         path -> FileAttributes(path.toAkkaUri, i.toLong, digest, `image/jpeg`)
       }
 
-      forAll(list) {
-        case (path, attr) =>
-          computation(path, config.algorithm) shouldReturn
-            Task { counter.incrementAndGet(); attr }
-          attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+      forAll(list) { case (path, attr) =>
+        computation(path, config.algorithm) shouldReturn
+          Task { counter.incrementAndGet(); attr }
+        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
       }
 
       eventually(counter.get() shouldEqual 20)
 
-      forAll(list.takeRight(10)) {
-        case (path, attr) =>
-          attributesCache.get(path).runToFuture.futureValue shouldEqual attr
+      forAll(list.takeRight(10)) { case (path, attr) =>
+        attributesCache.get(path).runToFuture.futureValue shouldEqual attr
       }
 
-      forAll(list.take(10)) {
-        case (path, _) =>
-          attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+      forAll(list.take(10)) { case (path, _) =>
+        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
       }
     }
 
@@ -150,19 +144,17 @@ class AttributesCacheSpec
         path -> FileAttributes(path.toAkkaUri, i.toLong, digest, `image/jpeg`)
       }
 
-      forAll(list) {
-        case (path, attr) =>
-          if (attr.bytes == 0L)
-            computation(path, config.algorithm) shouldReturn Task.raiseError(new RuntimeException)
-          else
-            computation(path, config.algorithm) shouldReturn Task(attr)
+      forAll(list) { case (path, attr) =>
+        if (attr.bytes == 0L)
+          computation(path, config.algorithm) shouldReturn Task.raiseError(new RuntimeException)
+        else
+          computation(path, config.algorithm) shouldReturn Task(attr)
 
-          attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
+        attributesCache.get(path).runToFuture.futureValue shouldEqual attributesEmpty(path)
       }
 
-      forAll(list.drop(1)) {
-        case (path, attr) =>
-          eventually(attributesCache.get(path).runToFuture.futureValue shouldEqual attr)
+      forAll(list.drop(1)) { case (path, attr) =>
+        eventually(attributesCache.get(path).runToFuture.futureValue shouldEqual attr)
       }
     }
   }

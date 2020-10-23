@@ -31,9 +31,8 @@ final case class Offset(value: UUID) {
       )
     pipeF
       .flatMap(write => Stream(asString).through(text.utf8Encode).through(write).compile.drain)
-      .recoverWith {
-        case NonFatal(err) =>
-          console.println(s"""Failed to write offset '${asString}' to file '$path'.
+      .recoverWith { case NonFatal(err) =>
+        console.println(s"""Failed to write offset '${asString}' to file '$path'.
                              |Error message: '${Option(err.getMessage).getOrElse("no message")}'
                              |The operation will NOT be retried.""".stripMargin)
       }
@@ -61,10 +60,9 @@ object Offset {
             .map(apply)
         else F.pure(None)
       }
-      .recoverWith {
-        case NonFatal(err) =>
-          // fail when there's an error reading the offset
-          console.println(s"""Failed to read offset from file '${path.toString}'.
+      .recoverWith { case NonFatal(err) =>
+        // fail when there's an error reading the offset
+        console.println(s"""Failed to read offset from file '${path.toString}'.
                            |Error message: '${Option(err.getMessage).getOrElse("no message")}'
                            |The operation will NOT be retried.""".stripMargin) >> F.raiseError(err)
       }

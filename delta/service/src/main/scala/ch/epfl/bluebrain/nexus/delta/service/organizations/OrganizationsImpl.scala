@@ -66,8 +66,8 @@ final class OrganizationsImpl private (
       eventLog
         .currentEventsByPersistenceId(s"$entityType-$label", Long.MinValue, Long.MaxValue)
         .takeWhile(_.event.rev <= rev)
-        .fold[OrganizationState](OrganizationState.Initial) {
-          case (state, event) => Organizations.next(state, event.event)
+        .fold[OrganizationState](OrganizationState.Initial) { case (state, event) =>
+          Organizations.next(state, event.event)
         }
         .compile
         .last

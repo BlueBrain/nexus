@@ -21,7 +21,7 @@ trait JsonUtils {
   /**
     * Extract all the values found from the passed ''keys''
     *
-   * @param json the target json
+    * @param json the target json
     * @param keys the keys from where to extract the Json values
     */
   def extractValuesFrom(json: Json, keys: String*): Set[Json] = {
@@ -47,8 +47,8 @@ trait JsonUtils {
   def removeAll[A: Encoder](json: Json, keyValues: (String, A)*): Json =
     removeNested(
       json,
-      keyValues.map {
-        case (k, v) => (kk => kk == k, vv => vv == v.asJson)
+      keyValues.map { case (k, v) =>
+        (kk => kk == k, vv => vv == v.asJson)
       }
     )
 

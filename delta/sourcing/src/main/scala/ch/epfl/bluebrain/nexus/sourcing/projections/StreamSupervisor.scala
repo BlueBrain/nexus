@@ -92,11 +92,10 @@ object StreamSupervisor {
 
       def running(interrupter: SignallingRef[Task, Boolean]): Behavior[SupervisorCommand] =
         Behaviors
-          .receiveMessage[SupervisorCommand] {
-            case Stop =>
-              log.debug("Stop has been requested, stopping the stream", self.path.name)
-              interruptStream(interrupter)
-              Behaviors.stopped
+          .receiveMessage[SupervisorCommand] { case Stop =>
+            log.debug("Stop has been requested, stopping the stream", self.path.name)
+            interruptStream(interrupter)
+            Behaviors.stopped
           }
           .receiveSignal {
             case (_, PostStop)   =>

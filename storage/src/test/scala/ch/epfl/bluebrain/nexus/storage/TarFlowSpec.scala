@@ -55,8 +55,8 @@ class TarFlowSpec
       val file3        = dir2.resolve("file3.txt")
       val file3Content = genString()
       val files        = List(file1 -> file1Content, file2 -> file2Content, file3 -> file3Content)
-      forAll(files) {
-        case (file, content) => Source.single(ByteString(content)).runWith(FileIO.toPath(file)).futureValue
+      forAll(files) { case (file, content) =>
+        Source.single(ByteString(content)).runWith(FileIO.toPath(file)).futureValue
       }
       val byteString   = Directory.walk(basePath).via(TarFlow.writer(basePath)).runReduce(_ ++ _).futureValue
       val bytes        = new ByteArrayInputStream(byteString.toArray)

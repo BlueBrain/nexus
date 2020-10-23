@@ -41,11 +41,10 @@ class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F
   private val selfRef = self
 
   private val attributesComputation: Flow[Compute, Option[Put], NotUsed] =
-    Flow[Compute].mapAsyncUnordered(config.concurrentComputations) {
-      case Compute(filePath) =>
-        log.debug("Computing attributes for file '{}'.", filePath)
-        val future = computation(filePath, config.algorithm).toIO.unsafeToFuture()
-        future.map(attributes => Option(Put(filePath, attributes))).recover(logAndSkip(filePath))
+    Flow[Compute].mapAsyncUnordered(config.concurrentComputations) { case Compute(filePath) =>
+      log.debug("Computing attributes for file '{}'.", filePath)
+      val future = computation(filePath, config.algorithm).toIO.unsafeToFuture()
+      future.map(attributes => Option(Put(filePath, attributes))).recover(logAndSkip(filePath))
     }
 
   private val sendMessage = Sink.foreach[Put](putMsg => selfRef ! putMsg)
@@ -58,16 +57,15 @@ class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F
       .toMat(sendMessage)(Keep.left)
       .run()
 
-  private def logAndSkip(filePath: Path): PartialFunction[Throwable, Option[Put]] = {
-    case e =>
-      log.error(e, "Attributes computation for file '{}' failed", filePath)
-      None
+  private def logAndSkip(filePath: Path): PartialFunction[Throwable, Option[Put]] = { case e =>
+    log.error(e, "Attributes computation for file '{}' failed", filePath)
+    None
   }
 
   override def receive: Receive = {
-    case Get(filePath)               =>
+    case Get(filePath) =>
       map.get(filePath.toString) match {
-        case Some(Right(attributes))                   =>
+        case Some(Right(attributes)) =>
           log.debug("Attributes for file '{}' fetched from the cache.", filePath)
           sender() ! attributes
 
@@ -79,7 +77,7 @@ class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F
           )
           sender() ! emptyAttributes(filePath)
 
-        case Some(Left(_))                             =>
+        case Some(Left(_)) =>
           log.warning(
             "Attributes for file '{}' is being computed but the elapsed time of '{}' expired.",
             filePath,
@@ -88,13 +86,13 @@ class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F
           sender() ! emptyAttributes(filePath)
           self ! Compute(filePath)
 
-        case _                                         =>
+        case _ =>
           log.debug("Attributes for file '{}' not found in the cache.", filePath)
           sender() ! emptyAttributes(filePath)
           self ! Compute(filePath)
       }
 
-    case Put(filePath, attributes)   =>
+    case Put(filePath, attributes) =>
       map += filePath.toString -> Right(attributes)
 
       val diff = Math.max((map.size - config.maxInMemory).toInt, 0)
@@ -109,7 +107,7 @@ class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F
         val _ = queue.offer(compute).map(logQueue(compute, _))
       }
 
-    case msg                         =>
+    case msg =>
       log.error("Received a message '{}' incompatible with the expected", msg)
 
   }

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 /**
   * Top level error type that represents issues related to authentication and identities
   *
- * @param reason a human readable message for why the error occurred
+  * @param reason a human readable message for why the error occurred
   */
 sealed abstract class IdentityError(reason: String) extends SDKError {
 
@@ -29,8 +29,7 @@ object IdentityError {
     */
   final case class InvalidToken(rejection: TokenRejection) extends IdentityError(rejection.reason)
 
-  val exceptionHandler: ExceptionHandler = ExceptionHandler {
-    case AuthenticationFailed | _: InvalidToken =>
-      complete(StatusCodes.Unauthorized)
+  val exceptionHandler: ExceptionHandler = ExceptionHandler { case AuthenticationFailed | _: InvalidToken =>
+    complete(StatusCodes.Unauthorized)
   }
 }

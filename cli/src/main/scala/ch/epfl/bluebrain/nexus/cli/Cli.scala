@@ -39,8 +39,8 @@ class Cli[F[_]: TagK: Parallel: ContextShift: Timer](locatorOpt: Option[LocatorR
       Config[F](locatorOpt).subcommand orElse Postgres[F](locatorOpt).subcommand orElse Influx[F](locatorOpt).subcommand
     }.parse(args, env)
       .fold(help => printHelp(help), identity)
-      .recoverWith {
-        case err: CliError => console.println(err.show).as(ExitCode.Error)
+      .recoverWith { case err: CliError =>
+        console.println(err.show).as(ExitCode.Error)
       }
 }
 

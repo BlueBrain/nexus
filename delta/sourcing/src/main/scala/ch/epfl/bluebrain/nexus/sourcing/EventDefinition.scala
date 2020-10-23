@@ -77,7 +77,7 @@ object TransientEventDefinition {
     * evaluation results directly in a new state
     * which overwrites the former one
     *
-   * @param entityType the entity type
+    * @param entityType the entity type
     * @param initialState the initial state
     * @param evaluate the evaluation method
     * @param stopStrategy the stop strategy

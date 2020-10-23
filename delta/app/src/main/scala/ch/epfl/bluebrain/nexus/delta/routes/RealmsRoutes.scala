@@ -49,9 +49,8 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
     (parameter("deprecated".as[Boolean].?) &
       parameter("rev".as[Long].?) &
       parameter("createdBy".as[Subject].?) &
-      parameter("updatedBy".as[Subject].?)).tmap {
-      case (deprecated, rev, createdBy, updatedBy) =>
-        RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
+      parameter("updatedBy".as[Subject].?)).tmap { case (deprecated, rev, createdBy, updatedBy) =>
+      RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
     }
 
   def routes: Route =
@@ -78,14 +77,12 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
                   put {
                     parameter("rev".as[Long].?) {
                       case Some(rev) =>
-                        entity(as[RealmInput]) {
-                          case RealmInput(name, openIdConfig, logo) =>
-                            completeIO(realms.update(id, rev, name, openIdConfig, logo))
+                        entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
+                          completeIO(realms.update(id, rev, name, openIdConfig, logo))
                         }
                       case None      =>
-                        entity(as[RealmInput]) {
-                          case RealmInput(name, openIdConfig, logo) =>
-                            completeIO(StatusCodes.Created, realms.create(id, name, openIdConfig, logo))
+                        entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
+                          completeIO(StatusCodes.Created, realms.create(id, name, openIdConfig, logo))
                         }
                     }
                   },

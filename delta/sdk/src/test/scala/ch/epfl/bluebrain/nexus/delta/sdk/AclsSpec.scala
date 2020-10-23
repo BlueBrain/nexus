@@ -68,8 +68,8 @@ class AclsSpec
           current -> SubtractAcl(Root, groupR, 2L, subject),
           current -> DeleteAcl(Root, 2L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[IncorrectRev]
+        forAll(list) { case (state, cmd) =>
+          evaluate(perms)(state, cmd).rejectedWith[IncorrectRev]
         }
       }
 
@@ -82,8 +82,8 @@ class AclsSpec
           Initial -> SubtractAcl(Root, groupR, 0L, subject),
           Initial -> DeleteAcl(Root, 0L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[AclNotFound]
+        forAll(list) { case (state, cmd) =>
+          evaluate(perms)(state, cmd).rejectedWith[AclNotFound]
         }
       }
 
@@ -96,8 +96,8 @@ class AclsSpec
           current -> AppendAcl(Root, someEmptyPerms, 1L, subject),
           current -> SubtractAcl(Root, someEmptyPerms, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[AclCannotContainEmptyPermissionCollection]
+        forAll(list) { case (state, cmd) =>
+          evaluate(perms)(state, cmd).rejectedWith[AclCannotContainEmptyPermissionCollection]
         }
       }
 
@@ -106,8 +106,8 @@ class AclsSpec
           current -> AppendAcl(Root, userR_groupX, 1L, subject),
           current -> SubtractAcl(Root, anonR, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[NothingToBeUpdated]
+        forAll(list) { case (state, cmd) =>
+          evaluate(perms)(state, cmd).rejectedWith[NothingToBeUpdated]
         }
       }
 
@@ -119,8 +119,8 @@ class AclsSpec
           current -> ReplaceAcl(Root, unknownPerms, 1L, subject),
           current -> AppendAcl(Root, unknownPerms, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(perms)(state, cmd).rejectedWith[UnknownPermissions]
+        forAll(list) { case (state, cmd) =>
+          evaluate(perms)(state, cmd).rejectedWith[UnknownPermissions]
         }
       }
 

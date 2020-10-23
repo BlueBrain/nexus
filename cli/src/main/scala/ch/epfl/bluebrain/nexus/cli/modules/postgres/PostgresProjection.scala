@@ -70,19 +70,18 @@ class PostgresProjection[F[_]: ContextShift](
           case Left(err)              => Left(err)
         }
         .through(printEventProgress(console))
-        .evalMap {
-          case (pc, tc, ev, org, proj) =>
-            tc.queries
-              .map { qc =>
-                val query = qc.query
-                  .replace("{resource_id}", ev.resourceId.renderString)
-                  .replace("{resource_type}", tc.tpe)
-                  .replace("{resource_project}", s"${org.show}/${proj.show}")
-                  .replace("{event_rev}", ev.rev.toString)
-                spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
-              }
-              .sequence
-              .map(_.sequence)
+        .evalMap { case (pc, tc, ev, org, proj) =>
+          tc.queries
+            .map { qc =>
+              val query = qc.query
+                .replace("{resource_id}", ev.resourceId.renderString)
+                .replace("{resource_type}", tc.tpe)
+                .replace("{resource_project}", s"${org.show}/${proj.show}")
+                .replace("{event_rev}", ev.rev.toString)
+              spc.query(org, proj, pc.sparqlView, query).flatMap(res => insert(qc, res))
+            }
+            .sequence
+            .map(_.sequence)
         }
         .through(printProjectionProgress(console))
         .attempt

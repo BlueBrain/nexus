@@ -55,7 +55,7 @@ object DeltaIdentitiesClient {
   /**
     * The client caller. It contains the subject and the list of identities (which contains the subject again)
     *
-   * @param subject    the identity that performed the call
+    * @param subject    the identity that performed the call
     * @param identities the set of other identities associated to the ''subject''. E.g.: groups, anonymous, authenticated
     */
   final case class Caller(subject: Subject, identities: Set[Identity])
@@ -72,8 +72,8 @@ object DeltaIdentitiesClient {
         cursor
           .get[Set[Identity]]("identities")
           .flatMap { identities =>
-            identities.collectFirst { case u: User => u } orElse identities.collectFirst {
-              case Anonymous => Anonymous
+            identities.collectFirst { case u: User => u } orElse identities.collectFirst { case Anonymous =>
+              Anonymous
             } match {
               case Some(subject: Subject) => Right(Caller(subject, identities))
               case _                      =>
@@ -87,7 +87,7 @@ object DeltaIdentitiesClient {
   /**
     * A data structure which represents an access token
     *
-   * @param value the token value
+    * @param value the token value
     */
   final case class AccessToken(value: String)
 
@@ -113,7 +113,7 @@ object DeltaIdentitiesClient {
     /**
       * The User subject
       *
-     * @param subject unique user name
+      * @param subject unique user name
       * @param realm   user realm
       */
     final case class User(subject: String, realm: String) extends Subject
@@ -121,7 +121,7 @@ object DeltaIdentitiesClient {
     /**
       * The Group identity
       *
-     * @param group the group
+      * @param group the group
       * @param realm group realm
       */
     final case class Group(group: String, realm: String) extends Identity
@@ -129,7 +129,7 @@ object DeltaIdentitiesClient {
     /**
       * The Authenticated identity
       *
-     * @param realm the realm
+      * @param realm the realm
       */
     final case class Authenticated(realm: String) extends Identity
 
@@ -140,13 +140,13 @@ object DeltaIdentitiesClient {
       }
 
     private def decodeUser(hc: HCursor): Result[Subject] =
-      (hc.get[String]("subject"), hc.get[String]("realm")).mapN {
-        case (subject, realm) => User(subject, realm)
+      (hc.get[String]("subject"), hc.get[String]("realm")).mapN { case (subject, realm) =>
+        User(subject, realm)
       }
 
     private def decodeGroup(hc: HCursor): Result[Identity] =
-      (hc.get[String]("group"), hc.get[String]("realm")).mapN {
-        case (group, realm) => Group(group, realm)
+      (hc.get[String]("group"), hc.get[String]("realm")).mapN { case (group, realm) =>
+        Group(group, realm)
       }
 
     private def decodeAuthenticated(hc: HCursor): Result[Identity] =

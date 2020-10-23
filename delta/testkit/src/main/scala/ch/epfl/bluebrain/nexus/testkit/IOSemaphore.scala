@@ -35,7 +35,7 @@ trait IOSemaphore {
     * `s: Semaphore[F]` with 2 permits available, an `acquireN(3)` will
     * always be satisfied before a later call to `acquireN(1)`.
     *
-   * @param n number of permits to acquire - must be >= 0
+    * @param n number of permits to acquire - must be >= 0
     */
   def acquireN(n: Long): UIO[Unit]
 

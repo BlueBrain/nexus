@@ -45,9 +45,8 @@ final class OrganizationsDummy private (
 
   private def journalMap: UIO[Map[Label, OrganizationsJournal]] =
     journal.get.map { v =>
-      v.groupBy(_.event.label).map {
-        case (k, v) =>
-          k -> v.sortBy(_.sequenceNr)
+      v.groupBy(_.event.label).map { case (k, v) =>
+        k -> v.sortBy(_.sequenceNr)
       }
     }
 

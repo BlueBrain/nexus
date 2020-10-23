@@ -26,7 +26,7 @@ object ParsedToken {
   /**
     * Parse token and try to extract expected information from it
     *
-   * @param token the raw token
+    * @param token the raw token
     */
   private[identity] def fromToken(token: AuthToken): Either[TokenRejection, ParsedToken] = {
 

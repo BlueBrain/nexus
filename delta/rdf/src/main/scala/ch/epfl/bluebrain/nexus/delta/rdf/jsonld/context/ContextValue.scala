@@ -19,7 +19,7 @@ final case class ContextValue private[jsonld] (value: Json) {
     * Combines the current [[ContextValue]] context with a passed [[ContextValue]] context.
     * If a keys are is repeated in both contexts, the one in ''that'' will override the current one.
     *
-   * @param that another context to be merged with the current
+    * @param that another context to be merged with the current
     * @return the merged context
     */
   def merge(that: ContextValue): ContextValue =

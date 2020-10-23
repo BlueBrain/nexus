@@ -30,14 +30,13 @@ object Main extends BIOApp {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
     AppConfig
       .load()
-      .flatMap {
-        case (cfg: AppConfig, config: Config) =>
-          initializeKamon(config) >>
-            Injector()
-              .produceF[Task](DeltaModule(cfg, config), Roots.Everything)
-              .use(bootstrap)
-              .hideErrors >>
-            UIO.pure(ExitCode.Success)
+      .flatMap { case (cfg: AppConfig, config: Config) =>
+        initializeKamon(config) >>
+          Injector()
+            .produceF[Task](DeltaModule(cfg, config), Roots.Everything)
+            .use(bootstrap)
+            .hideErrors >>
+          UIO.pure(ExitCode.Success)
       }
       .onErrorHandleWith(configReaderErrorHandler)
   }

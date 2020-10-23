@@ -28,7 +28,7 @@ trait Acls {
   /**
     * Fetches the ACL resource for an ''address'' and its ancestors on the current revision.
     *
-   * @param address the ACL address
+    * @param address the ACL address
     */
   def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
     fetch(address).map(_.fold(AclCollection.empty)(res => AclCollection(res))).flatMap { cur =>
@@ -49,7 +49,7 @@ trait Acls {
   /**
     * Fetches the ACL resource with the passed address ''address'' and its ancestors on the passed revision.
     *
-   * @param address the ACL address
+    * @param address the ACL address
     * @param rev    the revision to fetch
     */
   def fetchAtWithAncestors(address: AclAddress, rev: Long): IO[RevisionNotFound, AclCollection] =
@@ -73,7 +73,7 @@ trait Acls {
     * Fetches the ACL resource with the passed ''address'' and its ancestors on the current revision.
     * The response only contains ACL with identities present in the provided ''caller''.
     *
-   * @param address the ACL address
+    * @param address the ACL address
     */
   def fetchSelfWithAncestors(address: AclAddress)(implicit caller: Caller): UIO[AclCollection] =
     fetchWithAncestors(address).map(_.filter(caller.identities))
@@ -94,7 +94,7 @@ trait Acls {
     * Fetches the ACL resource with the passed ''address'' and ancestors on the passed revision.
     * The response only contains ACL with identities present in the provided ''caller''.
     *
-   * @param address the ACL address
+    * @param address the ACL address
     * @param rev    the revision to fetch
     */
   def fetchSelfAtWithAncestors(address: AclAddress, rev: Long)(implicit
@@ -114,7 +114,7 @@ trait Acls {
     * Fetches the ACL with the passed ''address''. If ACL does not exist, return an empty [[Acl]]
     * The response only contains ACL with identities present in the provided ''caller''.
     *
-   * @param address the ACL address
+    * @param address the ACL address
     */
   final def fetchSelfAcl(address: AclAddress)(implicit caller: Caller): UIO[Acl] =
     fetchSelf(address).map(_.fold(Acl.empty)(_.value))

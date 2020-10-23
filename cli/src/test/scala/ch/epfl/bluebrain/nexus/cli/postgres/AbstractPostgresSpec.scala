@@ -18,22 +18,21 @@ class AbstractPostgresSpec extends AbstractCliSpec {
   override def testModule: ModuleDef =
     new ModuleDef {
       make[AppConfig].fromEffect { host: PostgresHostConfig =>
-        copyConfigs.flatMap {
-          case (envFile, postgresFile, _) =>
-            AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
-              case Left(value)  => IO.raiseError(value)
-              case Right(value) =>
-                val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
-                val cfg                = value.copy(postgres =
-                  value.postgres.copy(
-                    host = host.host,
-                    port = host.port,
-                    offsetFile = postgresOffsetFile,
-                    offsetSaveInterval = 100.milliseconds
-                  )
+        copyConfigs.flatMap { case (envFile, postgresFile, _) =>
+          AppConfig.load[IO](Some(envFile), Some(postgresFile)).flatMap {
+            case Left(value)  => IO.raiseError(value)
+            case Right(value) =>
+              val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
+              val cfg                = value.copy(postgres =
+                value.postgres.copy(
+                  host = host.host,
+                  port = host.port,
+                  offsetFile = postgresOffsetFile,
+                  offsetSaveInterval = 100.milliseconds
                 )
-                IO.pure(cfg)
-            }
+              )
+              IO.pure(cfg)
+          }
         }
       }
       make[Transactor[IO]].fromEffect { (_: PostgresDocker.Container, cfg: AppConfig) =>

@@ -119,8 +119,8 @@ class RealmsSpec
           current -> UpdateRealm(label, 2L, name, wellKnownUri, None, subject),
           current -> DeprecateRealm(label, 2L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[IncorrectRev]
+        forAll(list) { case (state, cmd) =>
+          evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[IncorrectRev]
         }
       }
 
@@ -134,8 +134,8 @@ class RealmsSpec
           Initial -> UpdateRealm(label, 1L, name, wellKnownUri, None, subject),
           Initial -> DeprecateRealm(label, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[RealmNotFound]
+        forAll(list) { case (state, cmd) =>
+          evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[RealmNotFound]
         }
       }
 
@@ -150,9 +150,8 @@ class RealmsSpec
           Initial -> CreateRealm(label, name, wellKnownWrongUri, None, subject),
           current -> UpdateRealm(label, 1L, name, wellKnownWrongUri, None, subject)
         )
-        forAll(list) {
-          case (state, cmd) =>
-            evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[UnsuccessfulOpenIdConfigResponse]
+        forAll(list) { case (state, cmd) =>
+          evaluate(wkResolution, noExistingRealm)(state, cmd).rejectedWith[UnsuccessfulOpenIdConfigResponse]
         }
       }
 

@@ -50,8 +50,8 @@ class OrganizationsSpec
           current -> UpdateOrganization(label, 2L, desc2, subject),
           current -> DeprecateOrganization(label, 2L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(state, cmd).rejectedWith[IncorrectRev]
+        forAll(list) { case (state, cmd) =>
+          evaluate(state, cmd).rejectedWith[IncorrectRev]
         }
       }
 
@@ -64,8 +64,8 @@ class OrganizationsSpec
           current.copy(deprecated = true) -> UpdateOrganization(label, 1L, desc2, subject),
           current.copy(deprecated = true) -> DeprecateOrganization(label, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(state, cmd).rejectedWith[OrganizationIsDeprecated]
+        forAll(list) { case (state, cmd) =>
+          evaluate(state, cmd).rejectedWith[OrganizationIsDeprecated]
         }
       }
 
@@ -74,8 +74,8 @@ class OrganizationsSpec
           Initial -> UpdateOrganization(label, 1L, desc2, subject),
           Initial -> DeprecateOrganization(label, 1L, subject)
         )
-        forAll(list) {
-          case (state, cmd) => evaluate(state, cmd).rejectedWith[OrganizationNotFound]
+        forAll(list) { case (state, cmd) =>
+          evaluate(state, cmd).rejectedWith[OrganizationNotFound]
         }
       }
     }

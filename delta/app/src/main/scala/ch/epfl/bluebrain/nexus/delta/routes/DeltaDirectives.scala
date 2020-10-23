@@ -67,8 +67,8 @@ trait DeltaDirectives extends RdfMarshalling {
     * @param qs the preconfigured query settings
     */
   def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
-    (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tmap {
-      case (from, size) => FromPagination(from.max(0).min(qs.fromLimit), size.max(1).min(qs.sizeLimit))
+    (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tmap { case (from, size) =>
+      FromPagination(from.max(0).min(qs.fromLimit), size.max(1).min(qs.sizeLimit))
     }
 
   /**
@@ -180,7 +180,7 @@ trait DeltaDirectives extends RdfMarshalling {
       io: UIO[Option[A]]
   )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     requestMediaType {
-      case mediaType if jsonMediaTypes.contains(mediaType)   =>
+      case mediaType if jsonMediaTypes.contains(mediaType) =>
         jsonldFormat(io, status, headers).apply { formatted =>
           onSuccess(formatted.runToFuture) { case Result(status, headers, jsonLd) => complete(status, headers, jsonLd) }
         }
@@ -348,11 +348,10 @@ trait DeltaDirectives extends RdfMarshalling {
       io: IO[E, Option[A]]
   )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     requestMediaType {
-      case mediaType if jsonMediaTypes.contains(mediaType)   =>
+      case mediaType if jsonMediaTypes.contains(mediaType) =>
         jsonldFormat(io, status, headers).apply { formatted =>
-          onSuccess(formatted.runToFuture) {
-            case Result(status, headers, jsonLd) =>
-              complete(status, headers, jsonLd)
+          onSuccess(formatted.runToFuture) { case Result(status, headers, jsonLd) =>
+            complete(status, headers, jsonLd)
           }
         }
 
@@ -361,19 +360,17 @@ trait DeltaDirectives extends RdfMarshalling {
           case Left(err)    => err.toNTriples.map(v => Result(err.status, err.headers, v))
           case Right(value) => Result.nTriples(value, status, headers)
         }
-        onSuccess(formatted.runToFuture) {
-          case Result(status, headers, ntriples) =>
-            complete(status, headers, ntriples)
+        onSuccess(formatted.runToFuture) { case Result(status, headers, ntriples) =>
+          complete(status, headers, ntriples)
         }
 
-      case _                                                 => // `application/vnd.graphviz`
+      case _ => // `application/vnd.graphviz`
         val formatted = io.attempt.flatMap {
           case Left(err)    => err.toDot.map(v => Result(err.status, err.headers, v))
           case Right(value) => Result.dot(value, status, headers)
         }
-        onSuccess(formatted.runToFuture) {
-          case Result(status, headers, dot) =>
-            complete(status, headers, dot)
+        onSuccess(formatted.runToFuture) { case Result(status, headers, dot) =>
+          complete(status, headers, dot)
         }
     }
 

@@ -105,7 +105,7 @@ object JsonLdEncoder {
   /**
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD.
     *
-   * @param id         the rootId
+    * @param id         the rootId
     * @param iriContext the Iri context
     */
   def compactFromCirce[A: Encoder.AsObject](id: IriOrBNode, iriContext: Iri): JsonLdEncoder[A] =
@@ -124,7 +124,7 @@ object JsonLdEncoder {
     * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to a compacted Json-LD
     * where ''A'' doesn't have a rootId
     *
-   * @param context the context
+    * @param context the context
     */
   def compactFromCirce[A: Encoder.AsObject](context: ContextValue): JsonLdEncoder[A] =
     compactFromCirce(randomRootNode, context)
@@ -152,7 +152,6 @@ object JsonLdEncoder {
     * If there are keys present in both the resulting encoding of ''A'' and ''B'', the keys will be overiden with the
     * values of ''B''.
     *
-    *
     * @param f  the function to decomposed the value of the target encoder into values the passed encoders and its IriOrBNode
     * @tparam A the generic type for values of the first passed encoder
     * @tparam B the generic type for values of the second passed encoder
@@ -165,13 +164,13 @@ object JsonLdEncoder {
       def apply(value: C): IO[RdfError, JsonLd] = {
         val (a, b, rootId) = f(value)
         val jsonLdResult   = (A.apply(a), B.apply(b)).mapN {
-          case (ExpandedJsonLd(aObj, _), ExpandedJsonLd(bObj, _))               =>
+          case (ExpandedJsonLd(aObj, _), ExpandedJsonLd(bObj, _)) =>
             Some(ExpandedJsonLd(bObj.deepMerge(aObj), rootId))
 
           case (CompactedJsonLd(aObj, aCtx, _), CompactedJsonLd(bObj, bCtx, _)) =>
             Some(CompactedJsonLd(aObj.deepMerge(bObj), aCtx.merge(bCtx), rootId))
 
-          case _                                                                => None
+          case _ => None
         }
         jsonLdResult
           .flatMap(IO.fromOption(_, UnexpectedJsonLd("Both JsonLdEncoders must produce the same JsonLd output format")))

@@ -15,18 +15,17 @@ trait IOValues extends ScalaFutures {
     def failed[Ex <: Throwable: ClassTag](implicit config: PatienceConfig, pos: source.Position): Ex = {
       val Ex = implicitly[ClassTag[Ex]]
       io.redeemWith(
-          {
-            case Ex(ex) => IO.pure(ex)
-            case other  =>
-              IO(
-                fail(
-                  s"Wrong throwable type caught, expected: '${Ex.runtimeClass.getName}', actual: '${other.getClass.getName}'"
-                )
+        {
+          case Ex(ex) => IO.pure(ex)
+          case other  =>
+            IO(
+              fail(
+                s"Wrong throwable type caught, expected: '${Ex.runtimeClass.getName}', actual: '${other.getClass.getName}'"
               )
-          },
-          a => IO(fail(s"The IO did not fail as expected, but computed the value '$a'"))
-        )
-        .ioValue(config, pos)
+            )
+        },
+        a => IO(fail(s"The IO did not fail as expected, but computed the value '$a'"))
+      ).ioValue(config, pos)
     }
 
     def ioValue(implicit config: PatienceConfig, pos: source.Position): A =

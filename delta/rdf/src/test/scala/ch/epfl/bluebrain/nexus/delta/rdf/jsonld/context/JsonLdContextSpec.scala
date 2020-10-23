@@ -73,8 +73,8 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
         rdf.tpe        -> rdf.tpe.toString
       )
 
-      forAll(list) {
-        case (iri, expected) => result.compact(iri, useVocab = true) shouldEqual expected
+      forAll(list) { case (iri, expected) =>
+        result.compact(iri, useVocab = true) shouldEqual expected
       }
     }
 
@@ -87,8 +87,8 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
         rdf.tpe       -> rdf.tpe.toString
       )
 
-      forAll(list) {
-        case (iri, expected) => result.compact(iri, useVocab = false) shouldEqual expected
+      forAll(list) { case (iri, expected) =>
+        result.compact(iri, useVocab = false) shouldEqual expected
       }
     }
 
@@ -147,9 +147,8 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
         json"""{"@context":{"@vocab":"${vocab.value}","@base":"${base.value}"},"@id":"$iri","age": 30}"""                     -> json"""{"@context":[{"@vocab":"${vocab.value}","@base":"${base.value}"},"$remoteCtx"],"@id":"$iri","age": 30}""",
         json"""{"@context":[{"@vocab":"${vocab.value}","@base":"${base.value}"},"http://ex.com/1"],"@id":"$iri","age": 30}""" -> json"""{"@context":[{"@vocab":"${vocab.value}","@base":"${base.value}"}, "http://ex.com/1", "$remoteCtx"],"@id":"$iri","age": 30}"""
       )
-      forAll(list) {
-        case (input, expected) =>
-          input.addContext(remoteCtx) shouldEqual expected
+      forAll(list) { case (input, expected) =>
+        input.addContext(remoteCtx) shouldEqual expected
       }
     }
 

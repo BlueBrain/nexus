@@ -23,7 +23,7 @@ sealed trait SearchParams[Id, A] {
   /**
     * Checks whether a ''resource'' matches the current [[SearchParams]].
     *
-   * @param resource a resource
+    * @param resource a resource
     */
   def matches(resource: ResourceF[Id, A]): Boolean =
     rev.forall(_ == resource.rev) &&

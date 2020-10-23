@@ -9,8 +9,8 @@ object CompatibleJavaVersion extends VersionNumberCompatibility {
   override def isCompatible(current: VersionNumber, required: VersionNumber): Boolean =
     current.numbers
       .zip(required.numbers)
-      .foldRight(required.numbers.size <= current.numbers.size) {
-        case ((curr, req), acc) => (curr > req) || (curr == req && acc)
+      .foldRight(required.numbers.size <= current.numbers.size) { case ((curr, req), acc) =>
+        (curr > req) || (curr == req && acc)
       }
 
   def apply(current: VersionNumber, required: VersionNumber): Boolean =

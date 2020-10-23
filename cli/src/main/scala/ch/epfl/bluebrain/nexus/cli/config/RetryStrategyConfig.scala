@@ -57,13 +57,11 @@ object RetryStrategyConfig {
 
   implicit final val retryStrategyConfigConvertUnitCondition: ConfigConvert[RetryStrategyConfig[Unit]] =
     UnitRetryStrategyConfig.configConvert.xmap(
-      {
-        case UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries) =>
-          RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, ())
+      { case UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries) =>
+        RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, ())
       },
-      {
-        case RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, _) =>
-          UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries)
+      { case RetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries, _) =>
+        UnitRetryStrategyConfig(strategy, initialDelay, maxDelay, maxRetries)
       }
     )
 

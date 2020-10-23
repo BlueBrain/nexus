@@ -27,7 +27,7 @@ trait PrefixDirectives {
     * Creates a path matcher from the argument ''uri'' by stripping the slashes at the end of its path.  The matcher
     * is applied directly to the prefix of the unmatched path.
     *
-   * @param uri the uri to use as a prefix
+    * @param uri the uri to use as a prefix
     */
   final def uriPrefix(uri: Uri): Directive0 =
     rawPathPrefix(PathMatcher(stripTrailingSlashes(uri.path), ()))

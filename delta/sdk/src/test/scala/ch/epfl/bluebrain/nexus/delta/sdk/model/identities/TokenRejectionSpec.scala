@@ -30,8 +30,8 @@ class TokenRejectionSpec
         noIssuer      -> json"""{"@type": "AccessTokenDoesNotContainSubject", "reason": "${noIssuer.reason}"}""",
         invalidFormat -> json"""{"@type": "InvalidAccessTokenFormat", "reason": "${invalidFormat.reason}"}"""
       )
-      forAll(list) {
-        case (rejection, json) => rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
+      forAll(list) { case (rejection, json) =>
+        rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
       }
     }
 
@@ -40,8 +40,8 @@ class TokenRejectionSpec
         noIssuer      -> json"""[{"@type": ["${nxv + "AccessTokenDoesNotContainSubject"}"], "${nxv + "reason"}": [{"@value": "${noIssuer.reason}"} ] } ]""",
         invalidFormat -> json"""[{"@type": ["${nxv + "InvalidAccessTokenFormat"}"], "${nxv + "reason"}": [{"@value": "${invalidFormat.reason}"} ] } ]"""
       )
-      forAll(list) {
-        case (rejection, json) => rejection.toExpandedJsonLd.accepted.json shouldEqual json
+      forAll(list) { case (rejection, json) =>
+        rejection.toExpandedJsonLd.accepted.json shouldEqual json
       }
     }
   }

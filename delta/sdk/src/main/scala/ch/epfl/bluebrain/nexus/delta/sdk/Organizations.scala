@@ -118,7 +118,7 @@ trait Organizations {
   /**
     * The current organization events. The stream stops after emitting all known events.
     *
-   * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
 
@@ -130,13 +130,13 @@ object Organizations {
       case (Initial, OrganizationCreated(label, uuid, _, desc, instant, identity)) =>
         Current(label, uuid, 1L, deprecated = false, desc, instant, identity, instant, identity)
 
-      case (c: Current, OrganizationUpdated(_, _, rev, desc, instant, subject))    =>
+      case (c: Current, OrganizationUpdated(_, _, rev, desc, instant, subject)) =>
         c.copy(rev = rev, description = desc, updatedAt = instant, updatedBy = subject)
 
-      case (c: Current, OrganizationDeprecated(_, _, rev, instant, subject))       =>
+      case (c: Current, OrganizationDeprecated(_, _, rev, instant, subject)) =>
         c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
 
-      case (s, _)                                                                  => s
+      case (s, _) => s
     }
 
   private[delta] def evaluate(state: OrganizationState, command: OrganizationCommand)(implicit

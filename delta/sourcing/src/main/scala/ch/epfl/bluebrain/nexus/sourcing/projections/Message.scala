@@ -24,8 +24,7 @@ sealed trait SkippedMessage extends Message[Nothing]
 /**
   * Message when its processing failed at a point of the projection
   * See [[FailureMessage]] and [[CastFailedMessage]]
-  *
- */
+  */
 sealed trait ErrorMessage extends SkippedMessage
 
 /**

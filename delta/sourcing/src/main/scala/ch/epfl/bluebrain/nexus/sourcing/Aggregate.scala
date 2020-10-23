@@ -11,7 +11,6 @@ import monix.bio.UIO
   *
   * Unsuccessful commands result in rejections returned to the caller
   * context without any events being generated or state transitions applied.
-  *
   */
 trait Aggregate[Id, State, Command, Event, Rejection] {
 

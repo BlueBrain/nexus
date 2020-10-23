@@ -14,7 +14,7 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of Project rejection types.
   *
- * @param reason a descriptive message as to why the rejection occurred
+  * @param reason a descriptive message as to why the rejection occurred
   */
 sealed abstract class ProjectRejection(val reason: String) extends Product with Serializable
 
@@ -24,7 +24,7 @@ object ProjectRejection {
     * Rejection returned when a subject intends to retrieve a project at a specific revision, but the provided revision
     * does not exist.
     *
-   * @param provided the provided revision
+    * @param provided the provided revision
     * @param current  the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)

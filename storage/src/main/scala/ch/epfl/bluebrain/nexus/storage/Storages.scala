@@ -159,14 +159,13 @@ object Storages {
           F.fromTry(Try(MessageDigest.getInstance(digestConfig.algorithm))).flatMap { msgDigest =>
             source
               .alsoToMat(sinkDigest(msgDigest))(Keep.right)
-              .toMat(FileIO.toPath(absFilePath)) {
-                case (digFuture, ioFuture) =>
-                  digFuture.zipWith(ioFuture) {
-                    case (digest, io) if absFilePath.toFile.exists() =>
-                      Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, detectMediaType(absFilePath)))
-                    case _                                           =>
-                      Future.failed(InternalError(s"I/O error writing file to path '$relativeFilePath'"))
-                  }
+              .toMat(FileIO.toPath(absFilePath)) { case (digFuture, ioFuture) =>
+                digFuture.zipWith(ioFuture) {
+                  case (digest, io) if absFilePath.toFile.exists() =>
+                    Future(FileAttributes(absFilePath.toAkkaUri, io.count, digest, detectMediaType(absFilePath)))
+                  case _                                           =>
+                    Future.failed(InternalError(s"I/O error writing file to path '$relativeFilePath'"))
+                }
               }
               .run()
               .flatten

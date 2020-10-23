@@ -50,7 +50,7 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Merges the values of the key @context in both existing ''json'' and ''that'' Json documents.
     *
-   * @param that the context to append to this json. E.g.: {"@context": {...}}
+    * @param that the context to append to this json. E.g.: {"@context": {...}}
     * @return a new Json with the original json and the merged context of both passed jsons.
     *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
@@ -84,14 +84,14 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Extract all the values found from the passed ''keys'' in the current json.
     *
-   * @param keys the keys from where to extract the Json values
+    * @param keys the keys from where to extract the Json values
     */
   def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(json, keys: _*)
 
   /**
     * Sort all the keys in the current json.
     *
-   * @param ordering the sorting strategy
+    * @param ordering the sorting strategy
     */
   def sort(implicit ordering: JsonKeyOrdering): Json = JsonUtils.sort(json)
 

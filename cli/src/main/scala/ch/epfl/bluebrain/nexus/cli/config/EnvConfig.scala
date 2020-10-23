@@ -27,8 +27,8 @@ final case class EnvConfig(
     * Converts the Bearer Token to the HTTP Header Authorization header
     */
   lazy val authorizationHeader: Option[Authorization] =
-    token.map {
-      case BearerToken(value) => Authorization(Credentials.Token(AuthScheme.Bearer, value))
+    token.map { case BearerToken(value) =>
+      Authorization(Credentials.Token(AuthScheme.Bearer, value))
     }
 
   /**

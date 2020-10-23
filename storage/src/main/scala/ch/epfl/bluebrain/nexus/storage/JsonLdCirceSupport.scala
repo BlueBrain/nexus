@@ -14,7 +14,7 @@ import scala.collection.immutable.Seq
 /**
   * Json-LD specific akka http circe support.
   *
- * It uses [[ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`]] as the default content
+  * It uses [[ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes.`application/ld+json`]] as the default content
   * type for encoding json trees into http request payloads.
   */
 trait JsonLdCirceSupport extends FailFastCirceSupport {
@@ -25,7 +25,7 @@ trait JsonLdCirceSupport extends FailFastCirceSupport {
   /**
     * `A` => HTTP entity
     *
-   * @tparam A type to encode
+    * @tparam A type to encode
     * @return marshaller for any `A` value
     */
   implicit final def marshallerHttp[A](implicit
@@ -38,7 +38,7 @@ trait JsonLdCirceSupport extends FailFastCirceSupport {
   /**
     * `Json` => HTTP entity
     *
-   * @return marshaller for JSON-LD value
+    * @return marshaller for JSON-LD value
     */
   implicit final def jsonLdMarshaller(implicit
       printer: Printer = Printer.noSpaces.copy(dropNullValues = true),
@@ -55,7 +55,7 @@ object JsonLdCirceSupport extends JsonLdCirceSupport {
   /**
     * Data type which holds the ordering for the JSON-LD keys.
     *
-   * @param keys list of strings which defines the ordering for the JSON-LD keys
+    * @param keys list of strings which defines the ordering for the JSON-LD keys
     */
   final case class OrderedKeys(keys: List[String]) {
     lazy val withPosition: Map[String, Int] = keys.zipWithIndex.toMap

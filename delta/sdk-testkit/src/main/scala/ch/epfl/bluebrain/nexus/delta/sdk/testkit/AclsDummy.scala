@@ -111,9 +111,8 @@ object AclsDummy {
   /**
     * Creates a new dummy Acls implementation.
     *
-   * @param perms the bundle of operations pertaining to managing permissions wrapped in an IO
-    *
-   */
+    * @param perms the bundle of operations pertaining to managing permissions wrapped in an IO
+    */
   final def apply(perms: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] =
     for {
       journalRef <- IORef.of[AclsJournal](Map.empty)

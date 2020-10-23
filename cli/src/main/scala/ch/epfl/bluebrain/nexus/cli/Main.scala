@@ -13,8 +13,8 @@ object Main extends TaskApp {
     implicit val cs: ContextShift[Task] = SchedulerEffect.contextShift[Task](scheduler)
     implicit val tm: Timer[Task]        = SchedulerEffect.timer[Task](scheduler)
     implicit val pl: Parallel[Task]     = Task.catsParallel
-    Cli(args, sys.env).recoverWith {
-      case err: CliError => Task.delay(println(err.show)).as(ExitCode.Error)
+    Cli(args, sys.env).recoverWith { case err: CliError =>
+      Task.delay(println(err.show)).as(ExitCode.Error)
     }
   }
 

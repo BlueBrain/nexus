@@ -53,7 +53,7 @@ object RemoteContextResolution {
   /**
     * Helper method to construct a [[RemoteContextResolution]] .
     *
-   * @param f a function from an [[Iri]] to a [[Result]] of [[Json]]
+    * @param f a function from an [[Iri]] to a [[Result]] of [[Json]]
     */
   final def apply(f: Iri => Result[Json]): RemoteContextResolution = (iri: Iri) => f(iri)
 }
