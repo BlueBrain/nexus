@@ -114,6 +114,14 @@ trait RealmsBehaviors {
         )
     }
 
+    "fetch a non existing realm" in {
+      realms.fetch(Label.unsafe("non-existing")).accepted shouldEqual None
+    }
+
+    "fetch a non existing realm at specific revision" in {
+      realms.fetchAt(Label.unsafe("non-existing"), 1L).accepted shouldEqual None
+    }
+
     "list realms" in {
       realms.create(gitlab, gitlabName, gitlabOpenId, None).accepted
       val ghRes  = resourceFor(

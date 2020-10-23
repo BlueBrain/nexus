@@ -135,6 +135,16 @@ trait AclsBehaviors {
       acls.fetchSelfAt(orgTarget, 1L).accepted.value shouldEqual resourceFor(orgTarget, userR, 1L)
     }
 
+    "fetch a non existing acl" in {
+      val targetNotExist = Organization(Label.unsafe("other"))
+      acls.fetch(targetNotExist).accepted shouldEqual None
+    }
+
+    "fetch a non existing acl at specific revision" in {
+      val targetNotExist = Organization(Label.unsafe("other"))
+      acls.fetchAt(targetNotExist, 1L).accepted shouldEqual None
+    }
+
     "list ACLs" in {
       acls.append(AclAddress.Root, groupR, 4L).accepted
       acls.append(projectTarget, anonR, 0L).accepted

@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import io.circe.Json
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
+import monix.execution.Scheduler
 
 /**
   * Realms module wiring config.
@@ -41,10 +42,11 @@ object RealmsModule extends ModuleDef {
         cfg: RealmsConfig,
         eventLog: EventLog[Envelope[RealmEvent]],
         as: ActorSystem[Nothing],
+        scheduler: Scheduler,
         hc: HttpClient
     ) =>
       val wellKnownResolver = WellKnownResolver((uri: Uri) => hc[Json](HttpRequest(uri = uri))) _
-      RealmsImpl(cfg, wellKnownResolver, eventLog)(as, Clock[UIO])
+      RealmsImpl(cfg, wellKnownResolver, eventLog)(as, scheduler, Clock[UIO])
   }
 
   make[RealmsRoutes]

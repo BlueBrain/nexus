@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorSystem, SupervisorStrategy}
-import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
@@ -19,7 +17,7 @@ import ch.epfl.bluebrain.nexus.sourcing.processor._
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
-import monix.execution.Scheduler.Implicits.global
+import monix.execution.Scheduler
 
 final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)
     extends Acls {
@@ -48,7 +46,10 @@ final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[Ac
         .flatMap {
           case Some(state) if state.rev == rev => UIO.pure(state.toResource)
           case Some(_)                         =>
-            fetch(address).flatMap(res => IO.raiseError(RevisionNotFound(rev, res.map(_.rev).getOrElse(0L))))
+            fetch(address).flatMap {
+              case Some(res) => IO.raiseError(RevisionNotFound(rev, res.rev))
+              case None      => IO.pure(None)
+            }
           case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
         }
         .named("fetchAclsAt", component, Map("rev" -> rev))
@@ -136,42 +137,32 @@ object AclsImpl {
     KeyValueStore.distributed("acls", clock)
   }
 
-  private def startIndexing(config: AclsConfig, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache, acls: Acls)(
-      implicit as: ActorSystem[Nothing]
-  ) = {
-    val singletonManager = ClusterSingleton(as)
-    singletonManager.init(
-      SingletonActor(
-        Behaviors
-          .supervise(
-            StreamSupervisor.behavior(
-              Task.delay(
-                eventLog
-                  .eventsByTag(aclTag, Offset.noOffset)
-                  .mapAsync(config.indexing.concurrency)(envelope =>
-                    acls.fetch(envelope.event.address).flatMap {
-                      case Some(acl) => index.put(acl.id, acl)
-                      case None      => UIO.unit
-                    }
-                  )
-              ),
-              RetryStrategy(config.indexing.retryStrategy, _ => true, RetryStrategy.logError(logger, "acls indexing"))
-            )
+  private def startIndexing(
+      config: AclsConfig,
+      eventLog: EventLog[Envelope[AclEvent]],
+      index: AclsCache,
+      acls: Acls
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+    StreamSupervisor.runAsSingleton(
+      "AclsIndex",
+      streamTask = Task.delay(
+        eventLog
+          .eventsByTag(aclTag, Offset.noOffset)
+          .mapAsync(config.indexing.concurrency)(envelope =>
+            acls.fetch(envelope.event.address).flatMap {
+              case Some(acl) => index.put(acl.id, acl)
+              case None      => UIO.unit
+            }
           )
-          .onFailure[Exception](SupervisorStrategy.restart),
-        "AclsIndex"
+      ),
+      retryStrategy = RetryStrategy(
+        config.indexing.retryStrategy,
+        _ => true,
+        RetryStrategy.logError(logger, "acls indexing")
       )
     )
-  }
 
-  /**
-    * Constructs an [[AclsImpl]] instance.
-    *
-    * @param agg      the sharded aggregate
-    * @param eventLog the event log
-    * @param cache    the cache
-    */
-  final def apply(agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], cache: AclsCache): AclsImpl =
+  private def apply(agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], cache: AclsCache): AclsImpl =
     new AclsImpl(agg, eventLog, cache)
 
   /**
@@ -187,12 +178,13 @@ object AclsImpl {
       eventLog: EventLog[Envelope[AclEvent]]
   )(implicit
       as: ActorSystem[Nothing],
+      sc: Scheduler,
       clock: Clock[UIO]
   ): UIO[AclsImpl] =
     for {
       agg  <- aggregate(permissions, config.aggregate)
       index = cache(config)
-      acls  = AclsImpl.apply(agg, eventLog, cache(config))
+      acls  = AclsImpl.apply(agg, eventLog, index)
       _    <- UIO.delay(startIndexing(config, eventLog, index, acls))
     } yield acls
 }
