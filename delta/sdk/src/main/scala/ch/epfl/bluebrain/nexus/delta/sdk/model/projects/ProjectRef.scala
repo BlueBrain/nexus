@@ -11,3 +11,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 final case class ProjectRef(organization: Label, project: Label) {
   override def toString: String = s"$organization/$project"
 }
+
+object ProjectRef {
+
+  /**
+    * Constructs a ProjectRef from strings without validation.
+    */
+  def unsafe(organization: String, project: String): ProjectRef =
+    ProjectRef(Label.unsafe(organization), Label.unsafe(project))
+
+}

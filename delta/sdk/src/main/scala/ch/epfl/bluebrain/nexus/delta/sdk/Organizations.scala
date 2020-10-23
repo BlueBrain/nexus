@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -140,12 +141,17 @@ object Organizations {
     }
 
   private[delta] def evaluate(state: OrganizationState, command: OrganizationCommand)(implicit
-      clock: Clock[UIO] = IO.clock
+      clock: Clock[UIO] = IO.clock,
+      uuidf: UUIDF
   ): IO[OrganizationRejection, OrganizationEvent] = {
 
     def create(c: CreateOrganization) =
       state match {
-        case Initial => instant.map(OrganizationCreated(c.label, c.uuid, 1L, c.description, _, c.subject))
+        case Initial =>
+          for {
+            uuid <- uuidf()
+            now  <- instant
+          } yield OrganizationCreated(c.label, uuid, 1L, c.description, now, c.subject)
         case _       => IO.raiseError(OrganizationAlreadyExists(c.label))
       }
 

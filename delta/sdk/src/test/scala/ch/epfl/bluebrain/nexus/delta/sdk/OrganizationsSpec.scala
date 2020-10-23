@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -32,10 +33,12 @@ class OrganizationsSpec
     val (label, uuid, desc, desc2) = (current.label, current.uuid, current.description, Some("other"))
     val subject: User              = User("myuser", label)
 
+    implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
+
     "evaluating an incoming command" should {
 
       "create a new event" in {
-        evaluate(Initial, CreateOrganization(label, uuid, desc, subject)).accepted shouldEqual
+        evaluate(Initial, CreateOrganization(label, desc, subject)).accepted shouldEqual
           OrganizationCreated(label, uuid, 1L, desc, epoch, subject)
 
         evaluate(current, UpdateOrganization(label, 1L, desc2, subject)).accepted shouldEqual
@@ -56,7 +59,7 @@ class OrganizationsSpec
       }
 
       "reject with OrganizationAlreadyExists" in {
-        evaluate(current, CreateOrganization(label, uuid, desc, subject)).rejectedWith[OrganizationAlreadyExists]
+        evaluate(current, CreateOrganization(label, desc, subject)).rejectedWith[OrganizationAlreadyExists]
       }
 
       "reject with OrganizationIsDeprecated" in {

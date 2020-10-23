@@ -8,8 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 
 object ProjectGen {
 
@@ -40,6 +40,23 @@ object ProjectGen {
       Anonymous,
       Instant.EPOCH,
       Anonymous
+    )
+
+  def projectFromRef(
+      ref: ProjectRef,
+      uuid: UUID = UUID.randomUUID(),
+      orgUuid: UUID = UUID.randomUUID(),
+      projectFields: ProjectFields
+  )(implicit baseUri: BaseUri): Project =
+    Project(
+      ref.project,
+      uuid,
+      ref.organization,
+      orgUuid,
+      projectFields.description,
+      projectFields.apiMappings,
+      projectFields.baseOrGenerated(ref).value,
+      projectFields.vocabOrGenerated(ref).value
     )
 
   def project(

@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.UriSyntax.uri
 
 import scala.util.Try
@@ -40,6 +42,20 @@ final class UriOps(private val uri: Uri) extends AnyVal {
     * Constructs an [[Iri]] from a [[Uri]]
     */
   def toIri: Iri = Iri.unsafe(uri.toString)
+
+  /**
+    * Adds a segment to the end of the Uri
+    */
+  def /(segment: Label): Uri = /(segment.value)
+
+  /**
+    * Add a final slash to the uri
+    */
+  def finalSlash(): Uri =
+    if (uri.path.endsWithSlash)
+      uri
+    else
+      uri.copy(path = uri.path ++ Path./)
 
   /**
     * Adds a segment to the end of the Uri

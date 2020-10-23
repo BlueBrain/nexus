@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -63,10 +63,10 @@ object ResourceF {
 
   implicit def resourceFIdAJsonLdEncoder[Id, A: JsonLdEncoder](implicit
       base: BaseUri,
-      iriResolver: IriResolver[Id]
+      iriLens: Lens[Id, Iri]
   ): JsonLdEncoder[ResourceF[Id, A]] =
     JsonLdEncoder.compose { rf =>
-      val rfi = rf.copy(id = iriResolver.resolve(rf.id))
+      val rfi = rf.copy(id = iriLens.get(rf.id))
       (rfi.void, rfi.value, rfi.id)
     }
 
