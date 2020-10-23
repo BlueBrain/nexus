@@ -73,6 +73,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
 
   include(PermissionsModule)
   include(RealmsModule)
+  include(OrganizationsModule)
   include(IdentitiesModule)
 
   private def load(resourcePath: String, iri: Iri): IO[RemoteContextResolutionError, Json] =

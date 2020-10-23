@@ -4,12 +4,13 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.Realms
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsConfig, RealmsImpl, WellKnownResolver}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
@@ -25,7 +26,6 @@ import monix.execution.Scheduler
 object RealmsModule extends ModuleDef {
 
   make[RealmsConfig].from((cfg: AppConfig) => cfg.realms)
-  make[PaginationConfig].from((cfg: RealmsConfig) => cfg.pagination)
 
   make[EventLog[Envelope[RealmEvent]]].fromEffect { databaseEventLog[RealmEvent](_, _) }
 
@@ -41,7 +41,18 @@ object RealmsModule extends ModuleDef {
       RealmsImpl(cfg, wellKnownResolver, eventLog)(as, scheduler, Clock[UIO])
   }
 
-  make[RealmsRoutes]
+  make[RealmsRoutes].from {
+    (
+        identities: Identities,
+        realms: Realms,
+        baseUri: BaseUri,
+        cfg: RealmsConfig,
+        s: Scheduler,
+        cr: RemoteContextResolution,
+        ordering: JsonKeyOrdering
+    ) =>
+      new RealmsRoutes(identities, realms)(baseUri, cfg.pagination, s, cr, ordering)
+  }
 
 }
 // $COVERAGE-ON$
