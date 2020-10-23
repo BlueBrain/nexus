@@ -16,8 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.{Task, UIO}
+import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -36,7 +37,7 @@ trait OrganizationsBehaviors {
   val label2       = Label.unsafe("myorg2")
   val uuid         = UUID.randomUUID()
 
-  implicit val uuidGenerator: () => UIO[UUID] = () => UIO.pure(uuid)
+  implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   def create: Task[Organizations]
 

@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import fs2.Stream
@@ -37,7 +38,7 @@ final class OrganizationsDummy private (
     uuidToLabel: IORef[UUIDToLabel],
     semaphore: IOSemaphore,
     maxStreamSize: Long
-)(implicit clock: Clock[UIO], uuidGenerator: () => UIO[UUID])
+)(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Organizations {
 
   private val offsetMax = new AtomicLong()
@@ -54,7 +55,7 @@ final class OrganizationsDummy private (
       label: Label,
       description: Option[String]
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    uuidGenerator().flatMap { uuid =>
+    uuidF().flatMap { uuid =>
       eval(CreateOrganization(label, uuid, description, caller)).flatMap(setUuid)
     }
 
@@ -168,7 +169,7 @@ object OrganizationsDummy {
     * @param maxStreamSize    truncate event stream after this size
     */
   final def apply(maxStreamSize: Long = Long.MaxValue)(implicit
-      uuidGenerator: () => UIO[UUID] = () => UIO.pure(UUID.randomUUID()),
+      uuidF: UUIDF = UUIDF.random,
       clock: Clock[UIO] = IO.clock
   ): UIO[OrganizationsDummy] =
     for {

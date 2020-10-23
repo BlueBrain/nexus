@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
-import monix.execution.Scheduler.Implicits.global
+import monix.execution.Scheduler
 
 final class RealmsImpl private (
     agg: RealmsAggregate,
@@ -67,7 +67,7 @@ final class RealmsImpl private (
     agg.state(label.value).map(_.toResource).named("fetchRealm", component)
 
   override def fetchAt(label: Label, rev: Long): IO[RealmRejection.RevisionNotFound, Option[RealmResource]] =
-    if (rev == 0L) UIO.pure(RealmState.Initial.toResource).named("fetchRealmAt", component, Map("rev" -> rev))
+    if (rev == 0L) UIO.pure(None).named("fetchRealmAt", component, Map("rev" -> rev))
     else {
       eventLog
         .currentEventsByPersistenceId(s"$entityType-$label", Long.MinValue, Long.MaxValue)
@@ -80,7 +80,11 @@ final class RealmsImpl private (
         .hideErrors
         .flatMap {
           case Some(state) if state.rev == rev => UIO.pure(state.toResource)
-          case Some(_)                         => fetch(label).flatMap(res => IO.raiseError(RevisionNotFound(rev, res.fold(0L)(_.rev))))
+          case Some(_)                         =>
+            fetch(label).flatMap {
+              case Some(res) => IO.raiseError(RevisionNotFound(rev, res.rev))
+              case None      => IO.pure(None)
+            }
           case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
         }
         .named("fetchRealmAt", component, Map("rev" -> rev))
@@ -119,7 +123,10 @@ object RealmsImpl {
     */
   final val entityType: String = "realms"
 
-  final val realmTag = "realms"
+  /**
+    * The realms tag name.
+    */
+  final val realmTag = "realm"
 
   private val logger: Logger = Logger[RealmsImpl]
 
@@ -134,9 +141,7 @@ object RealmsImpl {
       eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache,
       realms: Realms
-  )(implicit
-      as: ActorSystem[Nothing]
-  ) = {
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
     val singletonManager = ClusterSingleton(as)
     singletonManager.init(
       SingletonActor(
@@ -191,14 +196,7 @@ object RealmsImpl {
     )
   }
 
-  /**
-    * Constructs a [[Realms]] instance
-    *
-    * @param agg      the sharded aggregate
-    * @param eventLog the event log
-    * @param index    the index
-    */
-  final def apply(
+  private def apply(
       agg: RealmsAggregate,
       eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache
@@ -216,7 +214,7 @@ object RealmsImpl {
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[Envelope[RealmEvent]]
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Realms] = {
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): UIO[Realms] = {
     val i = index(realmsConfig)
     for {
       agg   <- aggregate(resolveWellKnown, i.values, realmsConfig)
