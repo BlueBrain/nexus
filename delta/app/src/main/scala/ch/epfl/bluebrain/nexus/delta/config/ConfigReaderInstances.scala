@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.service.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
+import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig._
@@ -103,6 +104,9 @@ trait ConfigReaderInstances {
 
   implicit final val realmsConfigReader: ConfigReader[RealmsConfig] =
     deriveReader[RealmsConfig]
+
+  implicit final val orgsConfigReader: ConfigReader[OrganizationsConfig] =
+    deriveReader[OrganizationsConfig]
 
 }
 

@@ -153,7 +153,7 @@ object RealmsImpl {
           )
       ),
       retryStrategy = RetryStrategy(
-        config.indexing.retryStrategy,
+        config.indexing.retry,
         _ => true,
         RetryStrategy.logError(logger, "realms indexing")
       )

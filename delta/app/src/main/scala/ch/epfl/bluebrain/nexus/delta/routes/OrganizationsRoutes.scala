@@ -22,7 +22,13 @@ import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
-class OrganizationsRoutes(identities: Identities, organizations: Organizations)(implicit
+/**
+  * The organization routes.
+  *
+  * @param identities    the identities operations bundle
+  * @param organizations the organizations operations bundle
+  */
+final class OrganizationsRoutes(identities: Identities, organizations: Organizations)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
