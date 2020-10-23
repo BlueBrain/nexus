@@ -166,7 +166,7 @@ object OrganizationsImpl {
       config: OrganizationsConfig,
       eventLog: EventLog[Envelope[OrganizationEvent]],
       index: OrganizationsCache,
-      realms: Organizations
+      organizations: Organizations
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
     val singletonManager = ClusterSingleton(as)
     singletonManager.init(
@@ -178,8 +178,8 @@ object OrganizationsImpl {
                 eventLog
                   .eventsByTag(organizationTag, Offset.noOffset)
                   .mapAsync(config.indexing.concurrency)(envelope =>
-                    realms.fetch(envelope.event.label).flatMap {
-                      case Some(acl) => index.put(acl.id, acl)
+                    organizations.fetch(envelope.event.label).flatMap {
+                      case Some(org) => index.put(org.id, org)
                       case None      => UIO.unit
                     }
                   )
