@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.realms
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorSystem, SupervisorStrategy}
-import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
@@ -141,31 +139,25 @@ object RealmsImpl {
       eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache,
       realms: Realms
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
-    val singletonManager = ClusterSingleton(as)
-    singletonManager.init(
-      SingletonActor(
-        Behaviors
-          .supervise(
-            StreamSupervisor.behavior(
-              Task.delay(
-                eventLog
-                  .eventsByTag(realmTag, Offset.noOffset)
-                  .mapAsync(config.indexing.concurrency)(envelope =>
-                    realms.fetch(envelope.event.label).flatMap {
-                      case Some(acl) => index.put(acl.id, acl)
-                      case None      => UIO.unit
-                    }
-                  )
-              ),
-              RetryStrategy(config.indexing.retryStrategy, _ => true, RetryStrategy.logError(logger, "realms indexing"))
-            )
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+    StreamSupervisor.runAsSingleton(
+      "RealmsIndex",
+      streamTask = Task.delay(
+        eventLog
+          .eventsByTag(realmTag, Offset.noOffset)
+          .mapAsync(config.indexing.concurrency)(envelope =>
+            realms.fetch(envelope.event.label).flatMap {
+              case Some(realm) => index.put(realm.id, realm)
+              case None        => UIO.unit
+            }
           )
-          .onFailure[Exception](SupervisorStrategy.restart),
-        "RealmsIndex"
+      ),
+      retryStrategy = RetryStrategy(
+        config.indexing.retryStrategy,
+        _ => true,
+        RetryStrategy.logError(logger, "realms indexing")
       )
     )
-  }
 
   private def aggregate(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],

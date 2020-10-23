@@ -2,9 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.organizations
 
 import java.util.UUID
 
-import akka.actor.typed.{ActorSystem, SupervisorStrategy}
-import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -167,35 +165,25 @@ object OrganizationsImpl {
       eventLog: EventLog[Envelope[OrganizationEvent]],
       index: OrganizationsCache,
       organizations: Organizations
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
-    val singletonManager = ClusterSingleton(as)
-    singletonManager.init(
-      SingletonActor(
-        Behaviors
-          .supervise(
-            StreamSupervisor.behavior(
-              Task.delay(
-                eventLog
-                  .eventsByTag(organizationTag, Offset.noOffset)
-                  .mapAsync(config.indexing.concurrency)(envelope =>
-                    organizations.fetch(envelope.event.label).flatMap {
-                      case Some(org) => index.put(org.id, org)
-                      case None      => UIO.unit
-                    }
-                  )
-              ),
-              RetryStrategy(
-                config.indexing.retryStrategy,
-                _ => true,
-                RetryStrategy.logError(logger, "organizations indexing")
-              )
-            )
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+    StreamSupervisor.runAsSingleton(
+      "OrganizationsIndex",
+      streamTask = Task.delay(
+        eventLog
+          .eventsByTag(organizationTag, Offset.noOffset)
+          .mapAsync(config.indexing.concurrency)(envelope =>
+            organizations.fetch(envelope.event.label).flatMap {
+              case Some(org) => index.put(org.id, org)
+              case None      => UIO.unit
+            }
           )
-          .onFailure[Exception](SupervisorStrategy.restart),
-        "OrganizationsIndex"
+      ),
+      retryStrategy = RetryStrategy(
+        config.indexing.retryStrategy,
+        _ => true,
+        RetryStrategy.logError(logger, "organizations indexing")
       )
     )
-  }
 
   private def aggregate(
       config: OrganizationsConfig

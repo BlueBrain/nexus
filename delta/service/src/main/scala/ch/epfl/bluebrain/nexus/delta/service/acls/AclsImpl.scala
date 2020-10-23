@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorSystem, SupervisorStrategy}
-import akka.cluster.typed.{ClusterSingleton, SingletonActor}
+import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
@@ -144,31 +142,25 @@ object AclsImpl {
       eventLog: EventLog[Envelope[AclEvent]],
       index: AclsCache,
       acls: Acls
-  )(implicit as: ActorSystem[Nothing], sc: Scheduler) = {
-    val singletonManager = ClusterSingleton(as)
-    singletonManager.init(
-      SingletonActor(
-        Behaviors
-          .supervise(
-            StreamSupervisor.behavior(
-              Task.delay(
-                eventLog
-                  .eventsByTag(aclTag, Offset.noOffset)
-                  .mapAsync(config.indexing.concurrency)(envelope =>
-                    acls.fetch(envelope.event.address).flatMap {
-                      case Some(acl) => index.put(acl.id, acl)
-                      case None      => UIO.unit
-                    }
-                  )
-              ),
-              RetryStrategy(config.indexing.retryStrategy, _ => true, RetryStrategy.logError(logger, "acls indexing"))
-            )
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
+    StreamSupervisor.runAsSingleton(
+      "AclsIndex",
+      streamTask = Task.delay(
+        eventLog
+          .eventsByTag(aclTag, Offset.noOffset)
+          .mapAsync(config.indexing.concurrency)(envelope =>
+            acls.fetch(envelope.event.address).flatMap {
+              case Some(acl) => index.put(acl.id, acl)
+              case None      => UIO.unit
+            }
           )
-          .onFailure[Exception](SupervisorStrategy.restart),
-        "AclsIndex"
+      ),
+      retryStrategy = RetryStrategy(
+        config.indexing.retryStrategy,
+        _ => true,
+        RetryStrategy.logError(logger, "acls indexing")
       )
     )
-  }
 
   private def apply(agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], cache: AclsCache): AclsImpl =
     new AclsImpl(agg, eventLog, cache)

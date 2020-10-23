@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.sourcing.projections
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{Behavior, PostStop, PreRestart}
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, PostStop, PreRestart, SupervisorStrategy}
+import akka.cluster.typed.{ClusterSingleton, SingletonActor}
 import cats.effect.syntax.all._
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategy
 import fs2.Stream
@@ -27,10 +28,32 @@ object StreamSupervisor {
   case object Stop extends SupervisorCommand
 
   /**
-    * Creates a StreamSupervisor and start the embedded stream
-    * @param streamTask the embedded stream
+    * Runs a StreamSupervisor as a [[ClusterSingleton]].
+    *
+    * @param name          the unique name for the singleton
+    * @param streamTask    the embedded stream
     * @param retryStrategy the strategy when the stream fails
-    * @param onTerminate Additional action when we stop the stream
+    * @param onTerminate   Additional action when we stop the stream
+    */
+  def runAsSingleton[A](
+      name: String,
+      streamTask: Task[Stream[Task, A]],
+      retryStrategy: RetryStrategy,
+      onTerminate: Option[Task[Unit]] = None
+  )(implicit as: ActorSystem[Nothing], scheduler: Scheduler): ActorRef[SupervisorCommand] = {
+    val singletonManager = ClusterSingleton(as)
+    val behavior         = StreamSupervisor.behavior(streamTask, retryStrategy, onTerminate)
+    singletonManager.init {
+      SingletonActor(Behaviors.supervise(behavior).onFailure[Exception](SupervisorStrategy.restart), name)
+    }
+  }
+
+  /**
+    * Creates a StreamSupervisor and start the embedded stream
+    *
+    * @param streamTask    the embedded stream
+    * @param retryStrategy the strategy when the stream fails
+    * @param onTerminate   Additional action when we stop the stream
     */
   def behavior[A](
       streamTask: Task[Stream[Task, A]],
