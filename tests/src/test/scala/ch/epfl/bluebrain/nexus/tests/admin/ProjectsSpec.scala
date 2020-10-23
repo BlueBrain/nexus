@@ -313,17 +313,16 @@ class ProjectsSpec extends BaseSpec {
 
     def projectListingResults(ids: Seq[(String, String)], target: Authenticated): Json = {
       Json.arr(
-        ids.map {
-          case (orgId, projectId) =>
-            jsonContentOf(
-              "/admin/projects/listing-item.json",
-              replacements(
-                target,
-                "id"     -> s"$orgId/$projectId",
-                "projId" -> projectId,
-                "orgId"  -> orgId
-              )
+        ids.map { case (orgId, projectId) =>
+          jsonContentOf(
+            "/admin/projects/listing-item.json",
+            replacements(
+              target,
+              "id"     -> s"$orgId/$projectId",
+              "projId" -> projectId,
+              "orgId"  -> orgId
             )
+          )
         }: _*
       )
     }
@@ -335,20 +334,19 @@ class ProjectsSpec extends BaseSpec {
                "Description",
                Bojack
              )
-        _ <- projectIds.traverse {
-               case (orgId, projId) =>
-                 adminDsl.createProject(
-                   orgId,
-                   projId,
-                   adminDsl.projectPayload(
-                     nxv = s"nxv-$projId",
-                     person = s"person-$projId",
-                     description = projId,
-                     base = s"http:example.com/$projId/",
-                     vocab = s"http:example.com/$projId/vocab/"
-                   ),
-                   Bojack
-                 )
+        _ <- projectIds.traverse { case (orgId, projId) =>
+               adminDsl.createProject(
+                 orgId,
+                 projId,
+                 adminDsl.projectPayload(
+                   nxv = s"nxv-$projId",
+                   person = s"person-$projId",
+                   description = projId,
+                   base = s"http:example.com/$projId/",
+                   vocab = s"http:example.com/$projId/vocab/"
+                 ),
+                 Bojack
+               )
              }
       } yield succeed
     }
@@ -383,13 +381,12 @@ class ProjectsSpec extends BaseSpec {
       )
 
       for {
-        _ <- projectsToList.traverse {
-               case (orgId, projectId) =>
-                 aclDsl.addPermission(
-                   s"/$orgId/$projectId",
-                   PrincessCarolyn,
-                   Projects.Read
-                 )
+        _ <- projectsToList.traverse { case (orgId, projectId) =>
+               aclDsl.addPermission(
+                 s"/$orgId/$projectId",
+                 PrincessCarolyn,
+                 Projects.Read
+               )
              }
         _ <- deltaClient.get[Json](s"/projects/$orgId", PrincessCarolyn) { (json, response) =>
                response.status shouldEqual StatusCodes.OK

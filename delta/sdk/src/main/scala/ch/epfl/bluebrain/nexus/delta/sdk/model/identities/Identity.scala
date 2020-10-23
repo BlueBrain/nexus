@@ -20,7 +20,7 @@ sealed trait Identity extends Product with Serializable {
   /**
     * A [[Identity]] expressed as an Iri
     *
-   * @param base the platform [[BaseUri]]
+    * @param base the platform [[BaseUri]]
     */
   def id(implicit base: BaseUri): Iri
 }
@@ -35,7 +35,7 @@ object Identity {
     /**
       * A [[Subject]] expressed as an Iri
       *
-     * @param base the platform [[BaseUri]]
+      * @param base the platform [[BaseUri]]
       */
     def id(implicit base: BaseUri): Iri
   }
@@ -71,7 +71,7 @@ object Identity {
   /**
     * A user identity. It represents a unique person or a service account.
     *
-   * @param subject the subject name (usually the preferred_username claim)
+    * @param subject the subject name (usually the preferred_username claim)
     * @param realm   the associated realm that asserts this identity
     */
   final case class User(subject: String, realm: Label) extends Subject {
@@ -81,7 +81,7 @@ object Identity {
   /**
     * A group identity. It asserts that the caller belongs to a certain group of callers.
     *
-   * @param group the group name (asserted by one entry in the groups claim)
+    * @param group the group name (asserted by one entry in the groups claim)
     * @param realm the associated realm that asserts this identity
     */
   final case class Group(group: String, realm: Label) extends Identity {
@@ -104,7 +104,7 @@ object Identity {
   /**
     * Attempts to convert an ''iri'' into an [[Identity]].
     *
-   * @param iri  the iri
+    * @param iri  the iri
     * @param base the base uri
     */
   final def unsafe(iri: Iri)(implicit base: BaseUri): Either[FormatError, Identity] =
@@ -134,13 +134,13 @@ object Identity {
     }
 
   private def decodeUser(hc: HCursor): Result[Subject] =
-    (hc.get[String]("subject"), hc.get[Label]("realm")).mapN {
-      case (subject, realm) => User(subject, realm)
+    (hc.get[String]("subject"), hc.get[Label]("realm")).mapN { case (subject, realm) =>
+      User(subject, realm)
     }
 
   private def decodeGroup(hc: HCursor): Result[Identity] =
-    (hc.get[String]("group"), hc.get[Label]("realm")).mapN {
-      case (group, realm) => Group(group, realm)
+    (hc.get[String]("group"), hc.get[Label]("realm")).mapN { case (group, realm) =>
+      Group(group, realm)
     }
 
   private def decodeAuthenticated(hc: HCursor): Result[Identity] =

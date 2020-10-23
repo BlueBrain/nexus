@@ -37,8 +37,8 @@ final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[Ac
           Long.MaxValue
         )
         .takeWhile(_.event.rev <= rev)
-        .fold[AclState](AclState.Initial) {
-          case (state, event) => Acls.next(state, event.event)
+        .fold[AclState](AclState.Initial) { case (state, event) =>
+          Acls.next(state, event.event)
         }
         .compile
         .last

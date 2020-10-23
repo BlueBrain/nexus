@@ -33,7 +33,7 @@ sealed trait ClientRetryCondition {
   /**
     * Decide whether it is worth to avoid retrying or not depending on the passed [[ClientError]].
     * The actual retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
-
+    *
     * @param error the client error
     * @return true = do not retry; false = retry
     */

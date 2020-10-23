@@ -36,38 +36,35 @@ class StorageRoutes()(implicit storages: Storages[Task, AkkaSource], hc: HttpCon
         // Consume files
         (pathPrefix("files") & extractRelativePath(name)) { relativePath =>
           operationName(s"/${hc.prefix}/buckets/{}/files/{}") {
-            bucketExists(name).apply {
-              implicit bucketExistsEvidence =>
-                concat(
-                  put {
-                    pathNotExists(name, relativePath).apply { implicit pathNotExistEvidence =>
-                      // Upload file
-                      fileUpload("file") {
-                        case (_, source) =>
-                          complete(Created -> storages.createFile(name, relativePath, source).runToFuture)
-                      }
-                    }
-                  },
-                  put {
-                    // Link file/dir
-                    entity(as[LinkFile]) {
-                      case LinkFile(source) =>
-                        validatePath(name, source) {
-                          complete(storages.moveFile(name, source, relativePath).runWithStatus(OK))
-                        }
-                    }
-                  },
-                  // Get file
-                  get {
-                    pathExists(name, relativePath).apply { implicit pathExistsEvidence =>
-                      storages.getFile(name, relativePath) match {
-                        case Right((source, Some(_))) => complete(HttpEntity(`application/octet-stream`, source))
-                        case Right((source, None))    => complete(HttpEntity(`application/x-tar`, source))
-                        case Left(err)                => complete(err)
-                      }
+            bucketExists(name).apply { implicit bucketExistsEvidence =>
+              concat(
+                put {
+                  pathNotExists(name, relativePath).apply { implicit pathNotExistEvidence =>
+                    // Upload file
+                    fileUpload("file") { case (_, source) =>
+                      complete(Created -> storages.createFile(name, relativePath, source).runToFuture)
                     }
                   }
-                )
+                },
+                put {
+                  // Link file/dir
+                  entity(as[LinkFile]) { case LinkFile(source) =>
+                    validatePath(name, source) {
+                      complete(storages.moveFile(name, source, relativePath).runWithStatus(OK))
+                    }
+                  }
+                },
+                // Get file
+                get {
+                  pathExists(name, relativePath).apply { implicit pathExistsEvidence =>
+                    storages.getFile(name, relativePath) match {
+                      case Right((source, Some(_))) => complete(HttpEntity(`application/octet-stream`, source))
+                      case Right((source, None))    => complete(HttpEntity(`application/x-tar`, source))
+                      case Left(err)                => complete(err)
+                    }
+                  }
+                }
+              )
             }
           }
         },

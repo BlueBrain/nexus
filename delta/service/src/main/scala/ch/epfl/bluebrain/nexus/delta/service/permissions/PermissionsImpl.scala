@@ -41,8 +41,8 @@ final class PermissionsImpl private (
       eventLog
         .currentEventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
         .takeWhile(_.event.rev <= rev)
-        .fold[PermissionsState](PermissionsState.Initial) {
-          case (state, event) => Permissions.next(minimum)(state, event.event)
+        .fold[PermissionsState](PermissionsState.Initial) { case (state, event) =>
+          Permissions.next(minimum)(state, event.event)
         }
         .compile
         .last

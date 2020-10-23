@@ -138,8 +138,8 @@ object IORef {
       override def get: UIO[A]                                           = ref.get.hideErrors
       override def set(a: A): UIO[Unit]                                  = ref.set(a).hideErrors
       override def access: UIO[(A, A => UIO[Boolean])]                   =
-        ref.access.hideErrors.map {
-          case (a, f) => (a, a1 => f(a1).hideErrors)
+        ref.access.hideErrors.map { case (a, f) =>
+          (a, a1 => f(a1).hideErrors)
         }
       override def tryUpdate(f: A => A): UIO[Boolean]                    = ref.tryUpdate(f).hideErrors
       override def tryModify[B](f: A => (A, B)): UIO[Option[B]]          = ref.tryModify(f).hideErrors

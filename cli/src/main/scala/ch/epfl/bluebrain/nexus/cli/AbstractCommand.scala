@@ -24,27 +24,26 @@ abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locato
     locatorOpt match {
       case Some(value) => Opts(Resource.make(F.delay(value.get))(_ => F.unit))
       case None        =>
-        (envConfig.orNone, postgresConfig.orNone, influxConfig.orNone, token.orNone).mapN {
-          case (e, p, i, t) =>
-            val res: Resource[F, Module] = Resource.make({
-              AppConfig.load[F](e, p, i, t).flatMap[Module] {
-                case Left(err)    => F.raiseError(err)
-                case Right(value) =>
-                  val effects  = EffectModule[F]
-                  val cli      = CliModule[F]
-                  val config   = ConfigModule[F]
-                  val postgres = PostgresModule[F]
-                  val influx   = InfluxModule[F]
-                  val modules  = effects ++ cli ++ config ++ postgres ++ influx ++ new ModuleDef {
-                    make[AppConfig].from(value)
-                  }
-                  F.pure(modules)
-              }
-            })(_ => F.unit)
-
-            res.flatMap { modules =>
-              Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, Roots.Everything).toCats
+        (envConfig.orNone, postgresConfig.orNone, influxConfig.orNone, token.orNone).mapN { case (e, p, i, t) =>
+          val res: Resource[F, Module] = Resource.make({
+            AppConfig.load[F](e, p, i, t).flatMap[Module] {
+              case Left(err)    => F.raiseError(err)
+              case Right(value) =>
+                val effects  = EffectModule[F]
+                val cli      = CliModule[F]
+                val config   = ConfigModule[F]
+                val postgres = PostgresModule[F]
+                val influx   = InfluxModule[F]
+                val modules  = effects ++ cli ++ config ++ postgres ++ influx ++ new ModuleDef {
+                  make[AppConfig].from(value)
+                }
+                F.pure(modules)
             }
+          })(_ => F.unit)
+
+          res.flatMap { modules =>
+            Injector(Activation(Repo -> Repo.Prod)).produceF[F](modules, Roots.Everything).toCats
+          }
         }
     }
 }

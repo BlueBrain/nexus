@@ -10,7 +10,6 @@ import scala.concurrent.ExecutionContext
 
 /**
   * A log of ordered events for uniquely identifiable entities and independent from the storage layer
-  *
   */
 trait EventLog[M] {
 

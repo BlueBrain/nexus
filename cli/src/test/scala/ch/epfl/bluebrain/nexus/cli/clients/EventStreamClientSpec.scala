@@ -27,16 +27,14 @@ class EventStreamClientSpec extends AbstractCliSpec with Http4sExtras with Optio
         val uuid = new UUID(ev.instant.toEpochMilli, 0)
         (ev, uuid)
       }
-      .dropWhile {
-        case (_, uuid) =>
-          offset match {
-            case Some(value) => uuid.getMostSignificantBits <= value.value.getMostSignificantBits
-            case None        => false
-          }
+      .dropWhile { case (_, uuid) =>
+        offset match {
+          case Some(value) => uuid.getMostSignificantBits <= value.value.getMostSignificantBits
+          case None        => false
+        }
       }
-      .map {
-        case (ev, uuid) =>
-          s"""data: ${ev.raw.noSpaces}
+      .map { case (ev, uuid) =>
+        s"""data: ${ev.raw.noSpaces}
              |event: ${ev.eventType.getClass.getSimpleName}
              |id: $uuid
              |

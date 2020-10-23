@@ -70,8 +70,8 @@ final class RealmsImpl private (
       eventLog
         .currentEventsByPersistenceId(s"$entityType-$label", Long.MinValue, Long.MaxValue)
         .takeWhile(_.event.rev <= rev)
-        .fold[RealmState](RealmState.Initial) {
-          case (state, event) => Realms.next(state, event.event)
+        .fold[RealmState](RealmState.Initial) { case (state, event) =>
+          Realms.next(state, event.event)
         }
         .compile
         .last

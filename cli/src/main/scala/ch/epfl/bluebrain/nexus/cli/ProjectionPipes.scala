@@ -24,15 +24,14 @@ object ProjectionPipes {
       case ((success, skip, errors), v @ Left(err))      =>
         console.printlnErr(err.asString).as(((success, skip, errors + 1), v))
     }.evalMap {
-        case ((success, skip, errors), v)
-            if cfg.progressInterval
-              .exists(interval => (success + skip + errors) % interval == 0) && (success + skip + errors) != 0L =>
-          console
-            .println(s"Read ${success + skip + errors} events (success: $success, skip: $skip, errors: $errors)")
-            .as(v)
-        case ((_, _, _), v) => F.pure(v)
-      }
-      .collect { case Right(Some(v)) => v }
+      case ((success, skip, errors), v)
+          if cfg.progressInterval
+            .exists(interval => (success + skip + errors) % interval == 0) && (success + skip + errors) != 0L =>
+        console
+          .println(s"Read ${success + skip + errors} events (success: $success, skip: $skip, errors: $errors)")
+          .as(v)
+      case ((_, _, _), v) => F.pure(v)
+    }.collect { case Right(Some(v)) => v }
 
   /**
     * Print the progress of the evaluated projection through the passed ''console''.
@@ -49,11 +48,10 @@ object ProjectionPipes {
       case ((success, errors), v @ Left(err)) =>
         console.printlnErr(err.asString).as(((success, errors + 1), v))
     }.evalMap {
-        case ((successes, errors), v)
-            if cfg.progressInterval
-              .exists(interval => (successes + errors) % interval == 0) && (successes + errors) != 0L =>
-          console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)").as(v)
-        case ((_, _), v) => F.pure(v)
-      }
-      .collect { case Right(v) => v }
+      case ((successes, errors), v)
+          if cfg.progressInterval
+            .exists(interval => (successes + errors) % interval == 0) && (successes + errors) != 0L =>
+        console.println(s"Processed ${successes + errors} events (success: $successes, errors: $errors)").as(v)
+      case ((_, _), v) => F.pure(v)
+    }.collect { case Right(v) => v }
 }

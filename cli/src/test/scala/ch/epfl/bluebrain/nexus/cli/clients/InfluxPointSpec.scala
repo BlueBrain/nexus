@@ -78,8 +78,8 @@ class InfluxPointSpec extends AnyWordSpecLike with Matchers with Resources with 
         pointNoTag -> s"m2 bytes=2345 ${toNano(updated)}"
       )
 
-      forAll(list) {
-        case (point, str) => writeToString(point) shouldEqual str
+      forAll(list) { case (point, str) =>
+        writeToString(point) shouldEqual str
       }
     }
   }

@@ -37,19 +37,18 @@ class StreamOpsSpec extends AnyWordSpecLike with Matchers {
       .emits(
         List
           .tabulate(numberOfEvents) { event =>
-            List.tabulate(numberOfRevisions) {
-              revision =>
-                val offset = event * numberOfRevisions + revision
-                val value  = s"$event-$revision"
-                (discardedIndex.contains(event -> revision), errorIndex.contains(event -> revision)) match {
-                  case (true, true)   => throw new IllegalArgumentException("It can't be both")
-                  case (true, false)  =>
-                    (offset, event, revision).discarded
-                  case (false, true)  =>
-                    (offset, event, revision, value).failed
-                  case (false, false) =>
-                    (offset, event, revision, value).success
-                }
+            List.tabulate(numberOfRevisions) { revision =>
+              val offset = event * numberOfRevisions + revision
+              val value  = s"$event-$revision"
+              (discardedIndex.contains(event -> revision), errorIndex.contains(event -> revision)) match {
+                case (true, true)   => throw new IllegalArgumentException("It can't be both")
+                case (true, false)  =>
+                  (offset, event, revision).discarded
+                case (false, true)  =>
+                  (offset, event, revision, value).failed
+                case (false, false) =>
+                  (offset, event, revision, value).success
+              }
             }
           }
           .flatten

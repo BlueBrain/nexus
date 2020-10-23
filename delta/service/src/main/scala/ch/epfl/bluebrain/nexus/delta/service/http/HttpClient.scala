@@ -21,7 +21,7 @@ trait HttpClient {
   /**
     * Execute the argument request and unmarshal the response into an A.
     *
-   * @param req the request to execute
+    * @param req the request to execute
     */
   def apply[A](req: HttpRequest)(implicit A: ClassTag[A], um: FromEntityUnmarshaller[A]): IO[HttpClientError, A]
 

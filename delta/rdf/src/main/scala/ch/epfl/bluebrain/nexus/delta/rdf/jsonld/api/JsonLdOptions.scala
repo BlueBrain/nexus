@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 /**
   * Json-LD Options defined by https://www.w3.org/TR/json-ld11-api/#dom-jsonldoptions
   *
- * Note that some there are some fields from JSON-LD 1.0 and some from JSON-LD 1.1 since the
+  * Note that some there are some fields from JSON-LD 1.0 and some from JSON-LD 1.1 since the
   * JSON-LD implementaiton does not fully support 1.1 yet
   */
 final case class JsonLdOptions(

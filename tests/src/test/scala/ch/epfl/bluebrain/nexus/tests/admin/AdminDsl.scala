@@ -96,17 +96,16 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       response.status shouldEqual StatusCodes.OK
       val rev = admin._rev.getOption(json).value
       cl.delete[Json](s"/orgs/$id?rev=$rev", authenticated) { (deleteJson, deleteResponse) =>
-          deleteResponse.status shouldEqual StatusCodes.OK
-          filterMetadataKeys(deleteJson) shouldEqual createRespJson(
-            id,
-            rev + 1L,
-            "orgs",
-            "Organization",
-            authenticated,
-            deprecated = true
-          )
-        }
-        .runSyncUnsafe()
+        deleteResponse.status shouldEqual StatusCodes.OK
+        filterMetadataKeys(deleteJson) shouldEqual createRespJson(
+          id,
+          rev + 1L,
+          "orgs",
+          "Organization",
+          authenticated,
+          deprecated = true
+        )
+      }.runSyncUnsafe()
     }
 
   private[tests] val startPool = Vector.range('a', 'z')

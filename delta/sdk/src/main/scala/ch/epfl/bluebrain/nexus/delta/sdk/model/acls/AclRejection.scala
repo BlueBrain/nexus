@@ -12,7 +12,7 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of ACLS rejection types.
   *
- * @param reason a descriptive message as to why the rejection occurred
+  * @param reason a descriptive message as to why the rejection occurred
   */
 sealed abstract class AclRejection(val reason: String) extends Product with Serializable
 

@@ -99,20 +99,19 @@ abstract class AbstractCliSpec
   def testModule: ModuleDef =
     new ModuleDef {
       make[AppConfig].fromEffect {
-        copyConfigs.flatMap {
-          case (envFile, postgresFile, influxFile) =>
-            val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
-            val influxOffsetFile   = influxFile.getParent.resolve("influx.offset")
-            AppConfig.load[IO](Some(envFile), Some(postgresFile), Some(influxFile)).flatMap {
-              case Left(value)  => IO.raiseError(value)
-              case Right(value) =>
-                IO.pure(
-                  value.copy(
-                    postgres = value.postgres.copy(offsetFile = postgresOffsetFile),
-                    influx = value.influx.copy(offsetFile = influxOffsetFile)
-                  )
+        copyConfigs.flatMap { case (envFile, postgresFile, influxFile) =>
+          val postgresOffsetFile = postgresFile.getParent.resolve("postgres.offset")
+          val influxOffsetFile   = influxFile.getParent.resolve("influx.offset")
+          AppConfig.load[IO](Some(envFile), Some(postgresFile), Some(influxFile)).flatMap {
+            case Left(value)  => IO.raiseError(value)
+            case Right(value) =>
+              IO.pure(
+                value.copy(
+                  postgres = value.postgres.copy(offsetFile = postgresOffsetFile),
+                  influx = value.influx.copy(offsetFile = influxOffsetFile)
                 )
-            }
+              )
+          }
         }
       }
       make[EnvConfig].from { cfg: AppConfig => cfg.env }

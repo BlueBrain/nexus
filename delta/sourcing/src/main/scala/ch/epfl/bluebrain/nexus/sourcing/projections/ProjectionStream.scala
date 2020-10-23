@@ -241,18 +241,17 @@ object ProjectionStream {
           Task.pure(chunk)
         } else {
           (f(successMessages.map(_.value)) >> Task.pure(chunk))
-            .recoverWith {
-              case NonFatal(err) =>
-                log.error(
-                  s"An exception occurred while running 'runAsync' on elements $successMessages for projection $projectionId",
-                  err
-                )
-                Task.pure(
-                  chunk.map {
-                    case s: SuccessMessage[A] => s.failed(err)
-                    case m                    => m
-                  }
-                )
+            .recoverWith { case NonFatal(err) =>
+              log.error(
+                s"An exception occurred while running 'runAsync' on elements $successMessages for projection $projectionId",
+                err
+              )
+              Task.pure(
+                chunk.map {
+                  case s: SuccessMessage[A] => s.failed(err)
+                  case m                    => m
+                }
+              )
             }
         }
       }

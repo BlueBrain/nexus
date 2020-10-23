@@ -41,7 +41,7 @@ object FormatError {
   /**
     * Permission formatting error, returned in cases where a Permission could not be constructed from a String.
     *
-   * @param details possible additional details that may be interesting to provide to the caller
+    * @param details possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalPermissionFormatError(details: Option[String] = None)
       extends FormatError(
@@ -60,7 +60,7 @@ object FormatError {
   /**
     * Identity iri formatting error, returned in cases where an Identity could not be constructed from an Iri.
     *
-   * @param details possible additional details that may be interesting to provide to the caller
+    * @param details possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalIdentityIriFormatError(iri: Iri, details: Option[String] = None)
       extends FormatError(s"The provided iri '$iri' does not represent an identity", details)
@@ -68,7 +68,7 @@ object FormatError {
   /**
     * Subject iri formatting error, returned in cases where an Subject could not be constructed from an Iri.
     *
-   * @param details possible additional details that may be interesting to provide to the caller
+    * @param details possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalSubjectIriFormatError(iri: Iri, details: Option[String] = None)
       extends FormatError(s"The provided iri '$iri' does not represent a subject", details)
@@ -76,7 +76,7 @@ object FormatError {
   /**
     * Iri formatting error, returned in cases where a Iri could not be constructed from an string.
     *
-   * @param details possible additional details that may be interesting to provide to the caller
+    * @param details possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalIRIFormatError(value: String, details: Option[String] = None)
       extends FormatError(s"The provided '$value' is not an Iri", details)

@@ -83,8 +83,8 @@ object AttributesComputation {
             source
               .alsoToMat(sinkSize)(Keep.right)
               .toMat(sinkDigest(msgDigest)) { (bytesF, digestF) =>
-                (bytesF, digestF).mapN {
-                  case (bytes, digest) => FileAttributes(path.toAkkaUri, bytes, digest, detectMediaType(path, isDir))
+                (bytesF, digestF).mapN { case (bytes, digest) =>
+                  FileAttributes(path.toAkkaUri, bytes, digest, detectMediaType(path, isDir))
                 }
               }
               .run()

@@ -29,9 +29,9 @@ class PluginClassLoaderSpec extends AnyWordSpecLike with Matchers with BeforeAnd
     "load class from plugin classpath first" in {
 
       cl.create[ClassLoaderTestClass](
-          classOf[ClassLoaderTestClassImpl].getName,
-          println
-        )()
+        classOf[ClassLoaderTestClassImpl].getName,
+        println
+      )()
         .loadedFrom shouldEqual "plugin classpath"
     }
     "load resource from plugin classpath first" in {

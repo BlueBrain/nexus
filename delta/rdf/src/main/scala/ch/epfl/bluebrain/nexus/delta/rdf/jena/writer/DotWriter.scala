@@ -82,7 +82,7 @@ object DotWriter {
   /**
     * The Jena [[Context]] to be passed to the [[WriterGraphRIOT]]
     *
-   * @param rootResource the top graph node
+    * @param rootResource the top graph node
     * @param context      the resolved context
     * @return the Jena context
     */

@@ -98,21 +98,20 @@ abstract class EventSourceProcessorSpec(config: Config)
     val probe      = testKit.createTestProbe[EvaluationResult]()
     val probeState = testKit.createTestProbe[StateReply[TestState]]()
 
-    evaluate.foreach {
-      case (command, result) =>
-        processorWithoutStop ! Evaluate(entityId, command, probe.ref)
+    evaluate.foreach { case (command, result) =>
+      processorWithoutStop ! Evaluate(entityId, command, probe.ref)
 
-        result match {
-          case Left(rejection)       =>
-            expectNothingPersisted()
-            probe.expectMessage(EvaluationRejection(rejection))
-          case Right((event, state)) =>
-            expectNextPersisted(event)
-            probe.expectMessage(EvaluationSuccess(event, state))
+      result match {
+        case Left(rejection)       =>
+          expectNothingPersisted()
+          probe.expectMessage(EvaluationRejection(rejection))
+        case Right((event, state)) =>
+          expectNextPersisted(event)
+          probe.expectMessage(EvaluationSuccess(event, state))
 
-            processorWithoutStop ! RequestState(entityId, probeState.ref)
-            probeState.expectMessage(StateReply(state))
-        }
+          processorWithoutStop ! RequestState(entityId, probeState.ref)
+          probeState.expectMessage(StateReply(state))
+      }
 
     }
   }
@@ -124,20 +123,19 @@ abstract class EventSourceProcessorSpec(config: Config)
     val probe      = testKit.createTestProbe[DryRunResult]()
     val probeState = testKit.createTestProbe[StateReply[TestState]]()
 
-    evaluate.foreach {
-      case (command, result) =>
-        processorWithoutStop ! DryRun(entityId, command, probe.ref)
-        expectNothingPersisted()
+    evaluate.foreach { case (command, result) =>
+      processorWithoutStop ! DryRun(entityId, command, probe.ref)
+      expectNothingPersisted()
 
-        result match {
-          case Left(rejection)       =>
-            probe.expectMessage(DryRunResult(EvaluationRejection(rejection)))
-          case Right((event, state)) =>
-            probe.expectMessage(DryRunResult(EvaluationSuccess(event, state)))
-        }
+      result match {
+        case Left(rejection)       =>
+          probe.expectMessage(DryRunResult(EvaluationRejection(rejection)))
+        case Right((event, state)) =>
+          probe.expectMessage(DryRunResult(EvaluationSuccess(event, state)))
+      }
 
-        processorWithoutStop ! RequestState(entityId, probeState.ref)
-        probeState.expectMessage(StateReply(initialState))
+      processorWithoutStop ! RequestState(entityId, probeState.ref)
+      probeState.expectMessage(StateReply(initialState))
 
     }
   }

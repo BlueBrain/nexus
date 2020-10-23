@@ -19,13 +19,12 @@ object Optics extends Optics {
     def inner(jsonObject: JsonObject): JsonObject = {
       val filtered = keys.foldLeft(jsonObject) { (o, k) => o.remove(k) }
       JsonObject.fromIterable(
-        filtered.toList.map {
-          case (k, v) =>
-            v.asObject.fold(k -> v) { o =>
-              k -> Json.fromJsonObject(
-                inner(o)
-              )
-            }
+        filtered.toList.map { case (k, v) =>
+          v.asObject.fold(k -> v) { o =>
+            k -> Json.fromJsonObject(
+              inner(o)
+            )
+          }
         }
       )
     }

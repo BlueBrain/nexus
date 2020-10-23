@@ -71,12 +71,11 @@ object WellKnownResolver {
                          .leftMap(_ => IllegalJwkFormat(jwkUri))
                      )
         validKeys <- {
-          val validKeys = keysJson.foldLeft(Set.empty[Json]) {
-            case (valid, key) =>
-              valid ++
-                Try(JWK.parse(key.noSpaces))
-                  .find(_.getKeyType == KeyType.RSA)
-                  .map(_ => key)
+          val validKeys = keysJson.foldLeft(Set.empty[Json]) { case (valid, key) =>
+            valid ++
+              Try(JWK.parse(key.noSpaces))
+                .find(_.getKeyType == KeyType.RSA)
+                .map(_ => key)
 
           }
           if (validKeys.isEmpty)

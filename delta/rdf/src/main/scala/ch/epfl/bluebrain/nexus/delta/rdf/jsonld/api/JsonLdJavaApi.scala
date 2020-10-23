@@ -97,8 +97,8 @@ object JsonLdJavaApi extends JsonLdApi {
     IO.parTraverseUnordered(jsons)(resolution(_))
       .leftMap(RemoteContextError)
       .map {
-        _.foldLeft(Map.empty[Iri, ContextValue])(_ ++ _).foldLeft(new DocumentLoader()) {
-          case (dl, (iri, ctx)) => dl.addInjectedDoc(iri.toString, ctx.contextObj.noSpaces)
+        _.foldLeft(Map.empty[Iri, ContextValue])(_ ++ _).foldLeft(new DocumentLoader()) { case (dl, (iri, ctx)) =>
+          dl.addInjectedDoc(iri.toString, ctx.contextObj.noSpaces)
         }
       }
 

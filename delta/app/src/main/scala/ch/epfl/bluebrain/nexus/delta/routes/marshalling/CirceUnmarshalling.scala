@@ -43,7 +43,7 @@ trait CirceUnmarshalling {
   /**
     * HTTP entity => `Json` => `A`
     *
-   * @return unmarshaller for `A`
+    * @return unmarshaller for `A`
     */
   implicit final def decoderUnmarshaller[A: Decoder]: FromEntityUnmarshaller[A] =
     jsonUnmarshaller

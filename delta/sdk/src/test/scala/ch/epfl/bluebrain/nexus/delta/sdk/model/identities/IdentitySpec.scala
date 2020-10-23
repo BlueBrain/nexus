@@ -24,16 +24,14 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
   "An Identity" should {
 
     "be converted to an Iri" in {
-      forAll(list) {
-        case (iri, identity) =>
-          identity.id shouldEqual iri
+      forAll(list) { case (iri, identity) =>
+        identity.id shouldEqual iri
       }
     }
 
     "be created from an Iri" in {
-      forAll(list) {
-        case (iri, identity) =>
-          Identity.unsafe(iri).rightValue shouldEqual identity
+      forAll(list) { case (iri, identity) =>
+        Identity.unsafe(iri).rightValue shouldEqual identity
       }
     }
 
@@ -52,16 +50,14 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
   "An Subject" should {
 
     "be converted to an Iri" in {
-      forAll(list.take(2)) {
-        case (iri, identity) =>
-          identity.id shouldEqual iri
+      forAll(list.take(2)) { case (iri, identity) =>
+        identity.id shouldEqual iri
       }
     }
 
     "be created from an Iri" in {
-      forAll(list.take(2)) {
-        case (iri, identity) =>
-          Subject.unsafe(iri).rightValue shouldEqual identity.asInstanceOf[Subject]
+      forAll(list.take(2)) { case (iri, identity) =>
+        Subject.unsafe(iri).rightValue shouldEqual identity.asInstanceOf[Subject]
       }
     }
 

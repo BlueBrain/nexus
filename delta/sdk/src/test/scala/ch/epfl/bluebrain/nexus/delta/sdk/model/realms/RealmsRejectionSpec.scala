@@ -31,8 +31,8 @@ class RealmsRejectionSpec
         alreadyExists -> json"""{"@type": "RealmAlreadyExists", "reason": "${alreadyExists.reason}"}""",
         incorrectRev  -> json"""{"@type": "IncorrectRev", "reason": "${incorrectRev.reason}"}"""
       )
-      forAll(list) {
-        case (rejection, json) => rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
+      forAll(list) { case (rejection, json) =>
+        rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
       }
     }
 
@@ -41,8 +41,8 @@ class RealmsRejectionSpec
         alreadyExists -> json"""[{"@type": ["${nxv + "RealmAlreadyExists"}"], "${nxv + "reason"}": [{"@value": "${alreadyExists.reason}"} ] } ]""",
         incorrectRev  -> json"""[{"@type": ["${nxv + "IncorrectRev"}"], "${nxv + "reason"}": [{"@value": "${incorrectRev.reason}"} ] } ]"""
       )
-      forAll(list) {
-        case (rejection, json) => rejection.toExpandedJsonLd.accepted.json shouldEqual json
+      forAll(list) { case (rejection, json) =>
+        rejection.toExpandedJsonLd.accepted.json shouldEqual json
       }
     }
   }

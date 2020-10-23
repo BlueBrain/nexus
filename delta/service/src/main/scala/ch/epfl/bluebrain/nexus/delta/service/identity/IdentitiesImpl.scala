@@ -34,8 +34,8 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
 
   override def exchange(token: AuthToken): IO[TokenRejection, Caller] = {
     def realmKeyset(realm: Realm) = {
-      val jwks = realm.keys.foldLeft(Set.empty[JWK]) {
-        case (acc, e) => Try(JWK.parse(e.noSpaces)).map(acc + _).getOrElse(acc)
+      val jwks = realm.keys.foldLeft(Set.empty[JWK]) { case (acc, e) =>
+        Try(JWK.parse(e.noSpaces)).map(acc + _).getOrElse(acc)
       }
       import scala.jdk.CollectionConverters._
       new JWKSet(jwks.toList.asJava)

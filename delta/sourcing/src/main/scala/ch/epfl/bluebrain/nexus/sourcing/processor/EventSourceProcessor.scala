@@ -26,7 +26,6 @@ import scala.util.control.NonFatal
   * @param stopAfterInactivity The function to apply when the actor is being stopped,
   *                            implies passivation for sharded actors
   * @param config              The configuration
-  *
   */
 private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     entityId: String,
@@ -264,11 +263,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             tellResult(EvaluationCommandTimeout(cmd, config.evaluationMaxDuration))
         }
       )
-      .onError {
-        case NonFatal(th) =>
-          IO.shift(context.executionContext) >>
-            IO.delay(context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)) >>
-            tellResult(EvaluationCommandError(cmd, Option(th.getMessage)))
+      .onError { case NonFatal(th) =>
+        IO.shift(context.executionContext) >>
+          IO.delay(context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)) >>
+          tellResult(EvaluationCommandError(cmd, Option(th.getMessage)))
       }
 
     io.runAsyncAndForget

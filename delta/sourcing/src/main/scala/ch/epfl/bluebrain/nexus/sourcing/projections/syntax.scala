@@ -44,7 +44,7 @@ object OffsetSyntax extends OffsetOrderingInstances {
       *
       * @param offset the offset to compare against the ''value''
       * @return true when ''value'' is greater than the passed ''offset'' or when offset is ''NoOffset'', false otherwise
-      **/
+      */
     def gt(offset: Offset): Boolean =
       offset == NoOffset || value > offset
   }

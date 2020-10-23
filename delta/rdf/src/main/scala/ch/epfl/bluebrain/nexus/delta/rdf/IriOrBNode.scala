@@ -43,7 +43,7 @@ object IriOrBNode {
   /**
     * A simple [[Iri]] representation backed up by Jena [[IRI]].
     *
-   * @param value the underlying Jena [[IRI]]
+    * @param value the underlying Jena [[IRI]]
     */
   final case class Iri private (private val value: IRI) extends IriOrBNode {
 
@@ -96,15 +96,13 @@ object IriOrBNode {
       toString.endsWith("/") || toString.endsWith("#")
 
     /**
-      *
-     * @return true if the Iri is empty, false otherwise
+      * @return true if the Iri is empty, false otherwise
       */
     def isEmpty: Boolean =
       toString.isEmpty
 
     /**
-      *
-     * @return true if the Iri is not empty, false otherwise
+      * @return true if the Iri is not empty, false otherwise
       */
     def nonEmpty: Boolean =
       toString.nonEmpty
@@ -196,7 +194,7 @@ object IriOrBNode {
     /**
       * Unsafely creates a [[BNode]]
       *
-     * @param anonId the string value of the bnode
+      * @param anonId the string value of the bnode
       */
     def unsafe(anonId: String): BNode =
       BNode(anonId)

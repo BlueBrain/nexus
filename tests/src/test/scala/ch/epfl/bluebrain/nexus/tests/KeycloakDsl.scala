@@ -61,12 +61,11 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
                         entity = HttpEntity(ContentTypes.`application/json`, json.noSpaces)
                       )
                     ).tapError { t =>
-                        Task { logger.error(s"Error while importing realm: ${realm.name}", t) }
-                      }
-                      .map { res =>
-                        logger.info(s"${realm.name} has been imported with code: ${res.status}")
-                        res.status
-                      }
+                      Task { logger.error(s"Error while importing realm: ${realm.name}", t) }
+                    }.map { res =>
+                      logger.info(s"${realm.name} has been imported with code: ${res.status}")
+                      res.status
+                    }
     } yield status
   }
 
@@ -133,19 +132,17 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
           .toEntity
       )
     ).flatMap { res =>
-        Task.deferFuture { um(res.entity) }
-      }
-      .tapError { t =>
-        Task { logger.error(s"Error while getting user token for realm: ${client.realm} and client: $client", t) }
-      }
-      .map { response =>
-        keycloak.access_token
-          .getOption(response)
-          .getOrElse(
-            throw new IllegalArgumentException(
-              s"Couldn't get a token for client ${client.id}, we got response: $response"
-            )
+      Task.deferFuture { um(res.entity) }
+    }.tapError { t =>
+      Task { logger.error(s"Error while getting user token for realm: ${client.realm} and client: $client", t) }
+    }.map { response =>
+      keycloak.access_token
+        .getOption(response)
+        .getOrElse(
+          throw new IllegalArgumentException(
+            s"Couldn't get a token for client ${client.id}, we got response: $response"
           )
-      }
+        )
+    }
   }
 }

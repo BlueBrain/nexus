@@ -211,8 +211,8 @@ class KeyValueStoreSpec
       for {
         _ <- store.flushChanges
         _ <- IO {
-               changes.foldLeft(Set.empty[RevisionChange]) {
-                 case (acc, change) => acc ++ change.values
+               changes.foldLeft(Set.empty[RevisionChange]) { case (acc, change) =>
+                 acc ++ change.values
                } should contain theSameElementsAs expectedChanges
              }
       } yield succeed

@@ -33,8 +33,8 @@ trait Resources {
     * @return the content of the referenced resource as a string
     */
   final def contentOf(resourcePath: String, replacements: Map[String, String]): String =
-    replacements.foldLeft(contentOf(resourcePath)) {
-      case (value, (regex, replacement)) => value.replaceAll(regex, replacement)
+    replacements.foldLeft(contentOf(resourcePath)) { case (value, (regex, replacement)) =>
+      value.replaceAll(regex, replacement)
     }
 
   /**

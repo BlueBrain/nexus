@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 /**
   * Typeclass definition for ''A''s from which the HttpHeaders and StatusCode can be ontained.
   *
- * @tparam A generic type parameter
+  * @tparam A generic type parameter
   */
 trait HttpResponseFields[A] {
 
@@ -25,7 +25,7 @@ trait HttpResponseFields[A] {
   /**
     * Computes a sequence of [[HttpHeader]] from the argument value.
     *
-   * @param value the input value
+    * @param value the input value
     */
   def headersFrom(value: A): Seq[HttpHeader]
 }
@@ -48,7 +48,7 @@ object HttpResponseFields {
   /**
     * Constructor helper to build a [[HttpResponseFields]].
     *
-   * @param f function from A to a tuple StatusCode and Seq[HttpHeader]
+    * @param f function from A to a tuple StatusCode and Seq[HttpHeader]
     * @tparam A type parameter to map to HttpResponseFields
     */
   def fromStatusAndHeaders[A](f: A => (StatusCode, Seq[HttpHeader])): HttpResponseFields[A] =

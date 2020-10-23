@@ -22,7 +22,6 @@ object ProcessorCommand {
   /**
     * Command sent to the [[EventSourceProcessor]] by an other component.
     * The id has to match the entity id of the instance of the eventProcessor
-    *
     */
   sealed trait InputCommand extends ConsistentHashable with ProcessorCommand {
 

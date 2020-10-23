@@ -40,58 +40,55 @@ object RdfRejectionHandler extends DeltaDirectives {
       .handleAll[MethodRejection] { rejections =>
         discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
       }
-      .handle {
-        case AuthorizationFailedRejection =>
-          val r = AuthorizationFailedRejection
-          discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case AuthorizationFailedRejection =>
+        val r = AuthorizationFailedRejection
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MalformedFormFieldRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MalformedFormFieldRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MalformedHeaderRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MalformedHeaderRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MalformedQueryParamRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MalformedQueryParamRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MalformedRequestContentRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MalformedRequestContentRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MissingCookieRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MissingCookieRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MissingFormFieldRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MissingFormFieldRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MissingHeaderRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MissingHeaderRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MissingAttributeRejection[_] => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MissingAttributeRejection[_] =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: InvalidOriginRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: InvalidOriginRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: MissingQueryParamRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: MissingQueryParamRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: InvalidRequiredValueForQueryParamRejection =>
-          discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: InvalidRequiredValueForQueryParamRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case RequestEntityExpectedRejection =>
-          val r = RequestEntityExpectedRejection
-          discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case RequestEntityExpectedRejection =>
+        val r = RequestEntityExpectedRejection
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: TooManyRangesRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: TooManyRangesRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: CircuitBreakerOpenRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: CircuitBreakerOpenRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
-      .handle {
-        case r: UnsatisfiableRangeRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: UnsatisfiableRangeRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
       .handleAll[AuthenticationFailedRejection] { rejections =>
         discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
@@ -108,16 +105,15 @@ object RdfRejectionHandler extends DeltaDirectives {
       .handleAll[UnsupportedRequestEncodingRejection] { rejections =>
         discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
       }
-      .handle {
-        case ExpectedWebSocketRequestRejection =>
-          val r = ExpectedWebSocketRequestRejection
-          discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case ExpectedWebSocketRequestRejection =>
+        val r = ExpectedWebSocketRequestRejection
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
       .handleAll[UnsupportedWebSocketSubprotocolRejection] { rejections =>
         discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
       }
-      .handle {
-        case r: ValidationRejection => discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
+      .handle { case r: ValidationRejection =>
+        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
       }
       .handleNotFound {
         discardEntityAndCompleteUIO(StatusCodes.NotFound, UIO.pure(ResourceNotFound))
@@ -221,27 +217,24 @@ object RdfRejectionHandler extends DeltaDirectives {
     HttpResponseFields(_ => StatusCodes.Forbidden)
 
   implicit private val malformedFormFieldEncoder: Encoder.AsObject[MalformedFormFieldRejection] =
-    Encoder.AsObject.instance {
-      case r @ MalformedFormFieldRejection(name, msg, _) =>
-        jsonObj(r, s"The form field '$name' was malformed", Some(msg))
+    Encoder.AsObject.instance { case r @ MalformedFormFieldRejection(name, msg, _) =>
+      jsonObj(r, s"The form field '$name' was malformed", Some(msg))
     }
 
   implicit private val malformedFormFieldResponseFields: HttpResponseFields[MalformedFormFieldRejection] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val malformedHeaderEncoder: Encoder.AsObject[MalformedHeaderRejection] =
-    Encoder.AsObject.instance {
-      case r @ MalformedHeaderRejection(headerName, msg, _) =>
-        jsonObj(r, s"The value of HTTP header '$headerName' was malformed", Some(msg))
+    Encoder.AsObject.instance { case r @ MalformedHeaderRejection(headerName, msg, _) =>
+      jsonObj(r, s"The value of HTTP header '$headerName' was malformed", Some(msg))
     }
 
   implicit private val malformedHeaderEncoderResponseFields: HttpResponseFields[MalformedHeaderRejection] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val malformedQueryParamEncoder: Encoder.AsObject[MalformedQueryParamRejection] =
-    Encoder.AsObject.instance {
-      case r @ MalformedQueryParamRejection(name, msg, _) =>
-        jsonObj(r, s"The query parameter '$name' was malformed", Some(msg))
+    Encoder.AsObject.instance { case r @ MalformedQueryParamRejection(name, msg, _) =>
+      jsonObj(r, s"The query parameter '$name' was malformed", Some(msg))
     }
 
   implicit private val malformedQueryParamResponseFields: HttpResponseFields[MalformedQueryParamRejection] =
@@ -262,72 +255,64 @@ object RdfRejectionHandler extends DeltaDirectives {
     }
 
   implicit private val missingCookieEncoder: Encoder.AsObject[MissingCookieRejection] =
-    Encoder.AsObject.instance {
-      case r @ MissingCookieRejection(cookieName) =>
-        jsonObj(r, s"Request is missing required cookie '$cookieName'")
+    Encoder.AsObject.instance { case r @ MissingCookieRejection(cookieName) =>
+      jsonObj(r, s"Request is missing required cookie '$cookieName'")
     }
 
   implicit private val missingCookieResponseFields: HttpResponseFields[MissingCookieRejection] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val missingFormFieldEncoder: Encoder.AsObject[MissingFormFieldRejection] =
-    Encoder.AsObject.instance {
-      case r @ MissingFormFieldRejection(fieldName) =>
-        jsonObj(r, s"Request is missing required form field '$fieldName'")
+    Encoder.AsObject.instance { case r @ MissingFormFieldRejection(fieldName) =>
+      jsonObj(r, s"Request is missing required form field '$fieldName'")
     }
 
   implicit private val missingFormFieldResponseFields: HttpResponseFields[MissingFormFieldRejection] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val missingHeaderEncoder: Encoder.AsObject[MissingHeaderRejection] =
-    Encoder.AsObject.instance {
-      case r @ MissingHeaderRejection(headerName) =>
-        jsonObj(r, s"Request is missing required HTTP header '$headerName'")
+    Encoder.AsObject.instance { case r @ MissingHeaderRejection(headerName) =>
+      jsonObj(r, s"Request is missing required HTTP header '$headerName'")
     }
 
   implicit private val missingHeaderResponseFields: HttpResponseFields[MissingHeaderRejection] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val invalidOriginEncoder: Encoder.AsObject[InvalidOriginRejection] =
-    Encoder.AsObject.instance {
-      case r @ InvalidOriginRejection(allowedOrigins) =>
-        jsonObj(r, s"Allowed `Origin` header values: ${allowedOrigins.mkString(", ")}")
+    Encoder.AsObject.instance { case r @ InvalidOriginRejection(allowedOrigins) =>
+      jsonObj(r, s"Allowed `Origin` header values: ${allowedOrigins.mkString(", ")}")
     }
 
   implicit private val invalidOriginResponseFields: HttpResponseFields[InvalidOriginRejection] =
     HttpResponseFields(_ => StatusCodes.Forbidden)
 
   implicit private val missingQueryParamEncoder: Encoder.AsObject[MissingQueryParamRejection] =
-    Encoder.AsObject.instance {
-      case r @ MissingQueryParamRejection(paramName) =>
-        jsonObj(r, s"Request is missing required query parameter '$paramName'")
+    Encoder.AsObject.instance { case r @ MissingQueryParamRejection(paramName) =>
+      jsonObj(r, s"Request is missing required query parameter '$paramName'")
     }
 
   implicit private val missingQueryParamResponseFields: HttpResponseFields[MissingQueryParamRejection] =
     HttpResponseFields(_ => StatusCodes.NotFound)
 
   implicit private val invalidValueForQPEncoder: Encoder.AsObject[InvalidRequiredValueForQueryParamRejection] =
-    Encoder.AsObject.instance {
-      case r @ InvalidRequiredValueForQueryParamRejection(paramName, requiredValue, _) =>
-        jsonObj(r, s"Request is missing required value '$requiredValue' for query parameter '$paramName'")
+    Encoder.AsObject.instance { case r @ InvalidRequiredValueForQueryParamRejection(paramName, requiredValue, _) =>
+      jsonObj(r, s"Request is missing required value '$requiredValue' for query parameter '$paramName'")
     }
 
   implicit private val invalidValueForQPResponseFields: HttpResponseFields[InvalidRequiredValueForQueryParamRejection] =
     HttpResponseFields(_ => StatusCodes.NotFound)
 
   implicit private val requestEntityEncoder: Encoder.AsObject[RequestEntityExpectedRejection.type] =
-    Encoder.AsObject.instance {
-      case r @ RequestEntityExpectedRejection =>
-        jsonObj(r, "Request entity expected but not supplied")
+    Encoder.AsObject.instance { case r @ RequestEntityExpectedRejection =>
+      jsonObj(r, "Request entity expected but not supplied")
     }
 
   implicit private val requestEntityResponseFields: HttpResponseFields[RequestEntityExpectedRejection.type] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private def missingAttributeEncoder[A]: Encoder.AsObject[MissingAttributeRejection[A]] =
-    Encoder.AsObject.instance {
-      case r @ MissingAttributeRejection(_) =>
-        jsonObj(r, StatusCodes.InternalServerError.defaultMessage)
+    Encoder.AsObject.instance { case r @ MissingAttributeRejection(_) =>
+      jsonObj(r, StatusCodes.InternalServerError.defaultMessage)
     }
 
   implicit private def missingAttributeResponseFields[A]: HttpResponseFields[MissingAttributeRejection[A]] =
@@ -350,11 +335,10 @@ object RdfRejectionHandler extends DeltaDirectives {
     HttpResponseFields(_ => StatusCodes.ServiceUnavailable)
 
   implicit private val unsatisfiableRangeEncoder: Encoder.AsObject[UnsatisfiableRangeRejection] =
-    Encoder.AsObject.instance {
-      case r @ UnsatisfiableRangeRejection(unsatisfiableRanges, _) =>
-        val reason =
-          s"None of the following requested Ranges were satisfiable: '${unsatisfiableRanges.mkString(", ")}'"
-        jsonObj(r, reason)
+    Encoder.AsObject.instance { case r @ UnsatisfiableRangeRejection(unsatisfiableRanges, _) =>
+      val reason =
+        s"None of the following requested Ranges were satisfiable: '${unsatisfiableRanges.mkString(", ")}'"
+      jsonObj(r, reason)
     }
 
   implicit private val unsatisfiableRangeResponseFields: HttpResponseFields[UnsatisfiableRangeRejection] =
@@ -363,18 +347,16 @@ object RdfRejectionHandler extends DeltaDirectives {
     }
 
   implicit private val expectedWsEncoder: Encoder.AsObject[ExpectedWebSocketRequestRejection.type] =
-    Encoder.AsObject.instance {
-      case r @ ExpectedWebSocketRequestRejection =>
-        jsonObj(r, "Expected WebSocket Upgrade request")
+    Encoder.AsObject.instance { case r @ ExpectedWebSocketRequestRejection =>
+      jsonObj(r, "Expected WebSocket Upgrade request")
     }
 
   implicit private val expectedWsResponseFields: HttpResponseFields[ExpectedWebSocketRequestRejection.type] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val validationEncoder: Encoder.AsObject[ValidationRejection] =
-    Encoder.AsObject.instance {
-      case r @ ValidationRejection(msg, _) =>
-        jsonObj(r, msg)
+    Encoder.AsObject.instance { case r @ ValidationRejection(msg, _) =>
+      jsonObj(r, msg)
     }
 
   implicit private val validationResponseFields: HttpResponseFields[ValidationRejection] =

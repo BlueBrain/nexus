@@ -78,9 +78,9 @@ class InfluxClientSpec extends AbstractCliSpec with Http4sExtras with TimeTransf
       )
       for {
         dbResult <- cl.write(point)
-        err <- console.errQueue.tryDequeue1
-        _    = err shouldEqual None
-        _    = dbResult shouldEqual Right(())
+        err      <- console.errQueue.tryDequeue1
+        _         = err shouldEqual None
+        _         = dbResult shouldEqual Right(())
       } yield ()
     }
 

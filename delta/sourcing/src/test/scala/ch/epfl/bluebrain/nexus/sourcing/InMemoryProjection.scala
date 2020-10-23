@@ -52,7 +52,7 @@ class InMemoryProjection[A] extends Projection[A] {
     * @return a source of the failed events
     */
   override def failures(id: ProjectionId): Stream[Task, (A, Offset, String)]                                          =
-    Stream.emits(progressFailures.map {
-      case (_, failure) => (failure.value, failure.offset, failure.throwable.getMessage)
+    Stream.emits(progressFailures.map { case (_, failure) =>
+      (failure.value, failure.offset, failure.throwable.getMessage)
     }.toSeq)
 }

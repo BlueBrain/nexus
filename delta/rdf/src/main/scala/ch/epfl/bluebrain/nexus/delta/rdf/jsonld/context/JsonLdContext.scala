@@ -29,8 +29,8 @@ final case class JsonLdContext(
   /**
     * The inverse of the aliases. When a same Iri has multiple prefixes, the first alphabetically is chosen
     */
-  lazy val aliasesInv: Map[Iri, String] = aliases.foldLeft(Map.empty[Iri, String]) {
-    case (acc, (prefix, iri)) => acc.updatedWith(iri)(_.fold(Some(prefix))(cur => Some(min(cur, prefix))))
+  lazy val aliasesInv: Map[Iri, String] = aliases.foldLeft(Map.empty[Iri, String]) { case (acc, (prefix, iri)) =>
+    acc.updatedWith(iri)(_.fold(Some(prefix))(cur => Some(min(cur, prefix))))
   }
 
   /**
@@ -100,7 +100,7 @@ final case class JsonLdContext(
     * Combines the current [[JsonLdContext]] context with a passed [[JsonLdContext]] context.
     * If a keys are is repeated in both contexts, the one in ''that'' will override the current one.
     *
-   * @param that another context to be merged with the current
+    * @param that another context to be merged with the current
     * @return the merged context
     */
   def merge(that: JsonLdContext): JsonLdContext          =
@@ -124,7 +124,7 @@ final case class JsonLdContext(
   /**
     * Add an alias to the current context.
     *
-   * @param prefix  the prefix which replces the ''iri'' when compacting JSON-LD
+    * @param prefix  the prefix which replces the ''iri'' when compacting JSON-LD
     * @param iri     the iri which replaces the ''prefix'' when expanding JSON-LD
     * @param dataType the @type Iri value
     */
