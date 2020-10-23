@@ -76,7 +76,7 @@ class RealmsRoutesSpec
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
-  private val routes = Route.seal(RealmsRoutes(identities, realms).routes)
+  private val routes = Route.seal(RealmsRoutes(identities, realms))
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",
@@ -98,12 +98,7 @@ class RealmsRoutesSpec
     )
   )
 
-  private val githubUpdated = githubCreated.deepMerge(
-    Json.obj(
-      "name" -> Json.fromString("updated"),
-      "_rev" -> Json.fromLong(2L)
-    )
-  )
+  private val githubUpdated = githubCreated deepMerge json"""{"name": "updated", "_rev": 2}"""
 
   private val gitlabCreated = jsonContentOf(
     "/realms/realm-resource.json",
@@ -125,20 +120,11 @@ class RealmsRoutesSpec
     )
   )
 
-  private val gitlabDeprecated = gitlabCreated.deepMerge(
-    Json.obj(
-      "_deprecated" -> Json.fromBoolean(true),
-      "_rev"        -> Json.fromLong(2L)
-    )
-  )
+  private val gitlabDeprecated = gitlabCreated deepMerge json"""{"_deprecated": true, "_rev": 2}"""
 
   "A RealmsRoute" should {
     "create a new realm" in {
-      val input = Json.obj(
-        "name"         -> Json.fromString(githubName.value),
-        "openIdConfig" -> Json.fromString(githubOpenId.toString()),
-        "logo"         -> Json.fromString(githubLogo.toString())
-      )
+      val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
@@ -147,18 +133,11 @@ class RealmsRoutesSpec
     }
 
     "fail when creating another realm with the same openIdConfig" in {
-      val input = Json.obj(
-        "name"         -> Json.fromString("duplicate"),
-        "openIdConfig" -> Json.fromString(githubOpenId.toString())
-      )
 
-      val expected = Json.obj(
-        "@context" -> Json.fromString("https://bluebrain.github.io/nexus/contexts/error.json"),
-        "@type"    -> Json.fromString("RealmOpenIdConfigAlreadyExists"),
-        "reason"   -> Json.fromString(
-          "Realm 'duplicate' with openIdConfig 'https://localhost/auth/github/protocol/openid-connect/' already exists."
-        )
-      )
+      val input = json"""{"name": "duplicate", "openIdConfig": "$githubOpenId"}"""
+
+      val expected =
+        json"""{"@context": "${contexts.error}", "@type": "RealmOpenIdConfigAlreadyExists", "reason": "Realm 'duplicate' with openIdConfig 'https://localhost/auth/github/protocol/openid-connect/' already exists."}"""
 
       Put("/v1/realms/duplicate", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -167,12 +146,8 @@ class RealmsRoutesSpec
     }
 
     "create another realm with an authenticated user" in {
-      val input = Json.obj(
-        "name"         -> Json.fromString(gitlabName.value),
-        "openIdConfig" -> Json.fromString(gitlabOpenId.toString()),
-        "logo"         -> Json.fromString(githubLogo.toString())
-      )
 
+      val input = json"""{"name": "$gitlabName", "openIdConfig": "$gitlabOpenId", "logo": "$githubLogo"}"""
       Put("/v1/realms/gitlab", input.toEntity) ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         response.asJson shouldEqual gitlabCreated
@@ -180,11 +155,8 @@ class RealmsRoutesSpec
     }
 
     "update an existing realm" in {
-      val input = Json.obj(
-        "name"         -> Json.fromString("updated"),
-        "openIdConfig" -> Json.fromString(githubOpenId.toString()),
-        "logo"         -> Json.fromString(githubLogo.toString())
-      )
+
+      val input = json"""{"name": "updated", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github?rev=1", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -209,7 +181,7 @@ class RealmsRoutesSpec
     "fail fetching a realm by id and rev when rev is invalid" in {
       Get("/v1/realms/github?rev=4") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf("/realms/revision-not-found.json", "provided" -> 4, "current" -> 2)
+        response.asJson shouldEqual jsonContentOf("/errors/revision-not-found.json", "provided" -> 4, "current" -> 2)
       }
     }
 
@@ -255,14 +227,6 @@ class RealmsRoutesSpec
             gitlabCreated.removeKeys("@context")
           )
         )
-      }
-    }
-
-    "failed list realms created by a group" in {
-      val group = Group("mygroup", Label.unsafe("myrealm"))
-      Get(s"/v1/realms?createdBy=${UrlUtils.encode(group.id.toString)}") ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("realms/malformed-query-param.json")
       }
     }
 

@@ -1,6 +1,0 @@
-{
-  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "MalformedQueryParamRejection",
-  "details": "The provided iri 'http://localhost/v1/realms/myrealm/groups/mygroup' does not represent a subject",
-  "reason": "The query parameter 'createdBy' was malformed"
-}

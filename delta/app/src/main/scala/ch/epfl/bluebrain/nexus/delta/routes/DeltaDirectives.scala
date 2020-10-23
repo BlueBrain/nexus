@@ -20,26 +20,38 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{JsonLd, JsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.DeltaDirectives.Result
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{HttpResponseFields, JsonLdFormat, RdfMarshalling}
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{HttpResponseFields, JsonLdFormat, QueryParamsUnmarshalling, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, Label}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import streamz.converter._
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
-trait DeltaDirectives extends RdfMarshalling {
+trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
 
   private val jsonMediaTypes =
     Seq(`application/json`, `application/ld+json`)
 
   private val mediaTypes = jsonMediaTypes ++
     Seq(`application/n-triples`, `application/vnd.graphviz`)
+
+  /**
+    * Extract the common searchParameters (deprecated, rev, createdBy, updatedBy) from query parameters
+    */
+  def searchParams(implicit
+      base: BaseUri
+  ): Directive[(Option[Boolean], Option[Long], Option[Subject], Option[Subject])] =
+    parameter("deprecated".as[Boolean].?) &
+      parameter("rev".as[Long].?) &
+      parameter("createdBy".as[Subject].?) &
+      parameter("updatedBy".as[Subject].?)
 
   /**
     * When ''prefix'' exists, consumes the leading slash and the following ''prefix'' value.
@@ -58,6 +70,17 @@ trait DeltaDirectives extends RdfMarshalling {
       Label(str) match {
         case Left(err)    => reject(validationRejection(err.getMessage))
         case Right(label) => provide(label)
+      }
+    }
+
+  /**
+    * Parse a segment in a UUID
+    */
+  def uuid: Directive1[UUID] =
+    pathPrefix(Segment).flatMap { str =>
+      Try(UUID.fromString(str)) match {
+        case Failure(_)    => reject(validationRejection(s"Path segment '$str' is not a UUIDv4"))
+        case Success(uuid) => provide(uuid)
       }
     }
 

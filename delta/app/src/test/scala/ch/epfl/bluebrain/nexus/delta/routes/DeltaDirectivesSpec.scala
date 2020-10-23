@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Accept, Allow, Cookie}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
+import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.SimpleRejection.{badRequestRejection, conflictRejection}
@@ -24,7 +24,10 @@ import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.http.scaladsl.model.StatusCodes._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 
 class DeltaDirectivesSpec
     extends AnyWordSpecLike
@@ -49,6 +52,7 @@ class DeltaDirectivesSpec
   private val id                                       = nxv + "myresource"
   private val resource                                 = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
   private val resourceNotFound: Option[SimpleResource] = None
+  implicit private val baseUri: BaseUri                = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val route: Route =
     get {
@@ -75,6 +79,9 @@ class DeltaDirectivesSpec
         },
         path("conflict") {
           completeIO(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(conflictRejection)))
+        },
+        (path("search") & searchParams) { case (deprecated, rev, createdBy, updatedBy) =>
+          complete(s"'${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}'")
         }
       )
     }
@@ -256,6 +263,36 @@ class DeltaDirectivesSpec
         response.asString should equalLinesUnordered(ntriples.value)
         response.status shouldEqual Conflict
         response.headers shouldEqual Seq.empty[HttpHeader]
+      }
+    }
+
+    "return search parameters" in {
+      val alicia   = User("alicia", Label.unsafe("myrealm"))
+      val aliciaId = UrlUtils.encode(alicia.id.toString)
+      val bob      = User("bob", Label.unsafe("myrealm"))
+      val bobId    = UrlUtils.encode(bob.id.toString)
+
+      Get(s"/search?deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"'false','2','$alicia','$bob'"
+      }
+
+      Get(s"/search?deprecated=false&rev=2") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "'false','2','',''"
+      }
+    }
+
+    "reject when invalid search parameters" in {
+      val group     = UrlUtils.encode(Group("mygroup", Label.unsafe("myrealm")).id.toString)
+      val endpoints = List(
+        "/search?deprecated=3",
+        "/search?rev=false",
+        "/search?createdBy=http%3A%2F%2Fexample.com%2Fwrong",
+        s"/search?updatedBy=$group"
+      )
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
+          rejection shouldBe a[MalformedQueryParamRejection]
+        }
       }
     }
 

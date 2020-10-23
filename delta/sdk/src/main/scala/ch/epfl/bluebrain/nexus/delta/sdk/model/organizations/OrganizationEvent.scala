@@ -3,8 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 import java.time.Instant
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of organization event states
@@ -78,4 +89,32 @@ object OrganizationEvent {
       instant: Instant,
       subject: Subject
   ) extends OrganizationEvent
+
+  private val context = ContextValue(contexts.resource, contexts.organizations)
+
+  implicit private[organizations] val config: Configuration = Configuration.default
+    .withDiscriminator(keywords.tpe)
+    .copy(transformMemberNames = {
+      case "label"   => nxv.label.prefix
+      case "uuid"    => nxv.uuid.prefix
+      case "rev"     => nxv.rev.prefix
+      case "instant" => nxv.instant.prefix
+      case "subject" => nxv.eventSubject.prefix
+      case other     => other
+    })
+
+  @nowarn("cat=unused")
+  implicit def organizationEventJsonLdEncoder(implicit
+      baseUri: BaseUri,
+      iriResolver: IriResolver[Label]
+  ): JsonLdEncoder[OrganizationEvent] = {
+    implicit val subjectEncoder: Encoder[Subject]             = Identity.subjectIdEncoder
+    implicit val encoder: Encoder.AsObject[OrganizationEvent] = Encoder.AsObject.instance { ev =>
+      deriveConfiguredEncoder[OrganizationEvent]
+        .mapJsonObject(_.add("@id", Json.fromString(iriResolver.resolve(ev.label).toString)))
+        .encodeObject(ev)
+    }
+
+    JsonLdEncoder.compactFromCirce[OrganizationEvent](context)
+  }
 }

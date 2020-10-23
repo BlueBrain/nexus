@@ -127,7 +127,7 @@ object RealmEvent {
   implicit private[realms] val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
-      case "id"                    => nxv.label.prefix
+      case "label"                 => nxv.label.prefix
       case "rev"                   => nxv.rev.prefix
       case "instant"               => nxv.instant.prefix
       case "subject"               => nxv.eventSubject.prefix

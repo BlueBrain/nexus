@@ -8,19 +8,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{CirceUnmarshalling, QueryParamsUnmarshalling}
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, IriResolver, RealmResource, Realms}
-import io.circe.generic.semiauto.deriveDecoder
 import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -32,8 +31,7 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities)
     with DeltaDirectives
-    with CirceUnmarshalling
-    with QueryParamsUnmarshalling {
+    with CirceUnmarshalling {
 
   import baseUri._
 
@@ -42,14 +40,8 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
   implicit val iriResolver: IriResolver[Label] = (l: Label) => realmsIri / l.value
   implicit val realmContext: ContextValue      = Realm.context
 
-  /**
-    * @return the extracted search parameters from the request query parameters.
-    */
-  def searchParams: Directive1[RealmSearchParams] =
-    (parameter("deprecated".as[Boolean].?) &
-      parameter("rev".as[Long].?) &
-      parameter("createdBy".as[Subject].?) &
-      parameter("updatedBy".as[Subject].?)).tmap { case (deprecated, rev, createdBy, updatedBy) =>
+  private def realmsSearchParams: Directive1[RealmSearchParams] =
+    searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>
       RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
     }
 
@@ -58,12 +50,14 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
       extractSubject { implicit subject =>
         pathPrefix("realms") {
           concat(
-            (get & extractUri & paginated & searchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
+            // List realms
+            (get & extractUri & paginated & realmsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/realms") {
                 implicit val searchEncoder: SearchEncoder[RealmResource] = searchResourceEncoder(pagination, uri)
                 completeSearch(realms.list(pagination, params))
               }
             },
+            // SSE realms
             (pathPrefix("events") & pathEndOrSingleSlash) {
               operationName(s"$prefixSegment/realms/events") {
                 lastEventId { offset =>
@@ -72,15 +66,17 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
               }
             },
             (label & pathEndOrSingleSlash) { id =>
-              operationName(s"$prefixSegment/realms/{}") {
+              operationName(s"$prefixSegment/realms/{label}") {
                 concat(
                   put {
                     parameter("rev".as[Long].?) {
                       case Some(rev) =>
+                        // Update realm
                         entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
                           completeIO(realms.update(id, rev, name, openIdConfig, logo))
                         }
                       case None      =>
+                        // Create realm
                         entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
                           completeIO(StatusCodes.Created, realms.create(id, name, openIdConfig, logo))
                         }
@@ -88,16 +84,13 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
                   },
                   get {
                     parameter("rev".as[Long].?) {
-                      case Some(rev) =>
-                        completeIOOpt(realms.fetchAt(id, rev).leftMap[RealmRejection] {
-                          identity
-                        })
-                      case None      =>
-                        completeUIOOpt(
-                          realms.fetch(id)
-                        )
+                      case Some(rev) => // Fetch realm at specific revision
+                        completeIOOpt(realms.fetchAt(id, rev).leftMap[RealmRejection](identity))
+                      case None      => // Fetch realm
+                        completeUIOOpt(realms.fetch(id))
                     }
                   },
+                  // Deprecate realm
                   delete {
                     parameter("rev".as[Long]) { rev => completeIO(realms.deprecate(id, rev)) }
                   }
@@ -112,6 +105,7 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
 
 object RealmsRoutes {
   import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+
   final private[routes] case class RealmInput(name: Name, openIdConfig: Uri, logo: Option[Uri])
   private[routes] object RealmInput {
     implicit val realmDecoder: Decoder[RealmInput] = deriveDecoder[RealmInput]
@@ -126,7 +120,7 @@ object RealmsRoutes {
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): RealmsRoutes =
-    new RealmsRoutes(identities, realms)
+  ): Route =
+    new RealmsRoutes(identities, realms).routes
 
 }
