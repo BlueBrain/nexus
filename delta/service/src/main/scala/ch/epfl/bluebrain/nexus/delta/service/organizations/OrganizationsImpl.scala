@@ -179,7 +179,7 @@ object OrganizationsImpl {
           )
       ),
       retryStrategy = RetryStrategy(
-        config.indexing.retryStrategy,
+        config.indexing.retry,
         _ => true,
         RetryStrategy.logError(logger, "organizations indexing")
       )

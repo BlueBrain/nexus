@@ -1,0 +1,18 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/organizations.json"
+  ],
+  "@id": "http://localhost/v1/orgs/{{label}}",
+  "@type": "Organization",
+  "description": "{{description}}",
+  "_uuid": "{{uuid}}",
+  "_label": "{{label}}",
+  "_rev": {{rev}},
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/organizations.json",
+  "_deprecated": {{deprecated}},
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "{{createdBy}}",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_updatedBy": "{{updatedBy}}"
+}

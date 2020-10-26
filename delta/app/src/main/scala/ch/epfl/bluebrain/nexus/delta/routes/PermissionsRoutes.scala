@@ -21,6 +21,7 @@ import monix.execution.Scheduler
 /**
   * The permissions routes.
   *
+  * @param identities  the identities operations bundle
   * @param permissions the permissions operations bundle
   */
 final class PermissionsRoutes(identities: Identities, permissions: Permissions)(implicit

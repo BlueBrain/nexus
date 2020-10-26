@@ -151,23 +151,24 @@ object Vocabulary {
     val base              = iri"https://bluebrain.github.io/nexus/contexts/"
     def +(suffix: String) = iri"$base$suffix"
 
-    val acls        = contexts + "acls.json"
-    val error       = contexts + "error.json"
-    val identities  = contexts + "identities.json"
-    val permissions = contexts + "permissions.json"
-    val realms      = contexts + "realms.json"
-    val resource    = contexts + "resource.json"
-    val search      = contexts + "search.json"
+    val acls          = contexts + "acls.json"
+    val error         = contexts + "error.json"
+    val identities    = contexts + "identities.json"
+    val organizations = contexts + "organizations.json"
+    val permissions   = contexts + "permissions.json"
+    val realms        = contexts + "realms.json"
+    val resource      = contexts + "resource.json"
+    val search        = contexts + "search.json"
   }
 
   /**
     * Metadata vocabulary.
     *
     * @param prefix the prefix associated to this term, used in the Json-LD context
-    * @param value  the fully expanded [[Iri]] to what the ''prefix'' resolves
+    * @param iri    the fully expanded [[Iri]] to what the ''prefix'' resolves
     * @param name   the name of the metadata
     */
-  final case class Metadata(prefix: String, value: Iri, name: String)
+  final case class Metadata(prefix: String, iri: Iri, name: String)
 
   object Metadata {
 
@@ -178,7 +179,7 @@ object Vocabulary {
       *                    vocabulary term
       */
     def apply(lastSegment: String)(implicit base: Iri): Metadata =
-      Metadata("_" + lastSegment, iri"$base$lastSegment}", lastSegment)
+      Metadata("_" + lastSegment, iri"$base$lastSegment", lastSegment)
   }
 }
 // $COVERAGE-ON$

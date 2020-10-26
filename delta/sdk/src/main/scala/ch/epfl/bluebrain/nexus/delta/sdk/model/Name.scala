@@ -12,7 +12,9 @@ import scala.util.matching.Regex
   *
   * @param value the string representation of the name
   */
-final case class Name private (value: String) extends AnyVal
+final case class Name private (value: String) extends AnyVal {
+  override def toString: String = value
+}
 
 object Name {
 

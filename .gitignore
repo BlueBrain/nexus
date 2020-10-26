@@ -24,6 +24,7 @@ project/.bloop
 **/nbproject/
 **/logs/
 **/nbactions.xml
+.java-version
 
 
 # Packages #
