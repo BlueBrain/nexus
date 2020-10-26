@@ -41,12 +41,14 @@ object ProcessorCommand {
   /**
     * Read only commands that don't need to be stashed when a [[Evaluate]] is running
     */
-  sealed trait ReadonlyCommand                                                           extends EventSourceCommand
-  final case class RequestState[State](id: String, replyTo: ActorRef[StateReply[State]]) extends ReadonlyCommand
-  final case class RequestLastSeqNr(id: String, replyTo: ActorRef[LastSeqNr])            extends ReadonlyCommand
-  final case class RequestStateInternal[State](id: String, replyTo: ActorRef[ResponseStateInternal[State]])
-      extends ReadonlyCommand
-  final case class ResponseStateInternal[State](id: String, value: State)                extends ReadonlyCommand
+  sealed trait ReadonlyCommand                                                               extends EventSourceCommand
+  final case class RequestState[State](id: String, replyTo: ActorRef[StateReply[State]])     extends ReadonlyCommand
+  final case class RequestLastSeqNr(id: String, replyTo: ActorRef[LastSeqNr])                extends ReadonlyCommand
+  final private[processor] case class RequestStateInternal[State](
+      id: String,
+      replyTo: ActorRef[ResponseStateInternal[State]]
+  )                                                                                          extends ReadonlyCommand
+  final private[processor] case class ResponseStateInternal[State](id: String, value: State) extends ReadonlyCommand
 
   /**
     * Internal event sent by the [[EventSourceProcessor]] to its state actor
