@@ -47,20 +47,22 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     val persistenceId = PersistenceId.ofUniqueId(id)
 
     Behaviors.setup[EventSourceCommand] { context =>
-      context.log.info2("Starting event source processor for type {} and id {}", entityType, entityId)
+      context.log.info2("Starting event source processor for type '{}' and id '{}'", entityType, entityId)
       EventSourcedBehavior[EventSourceCommand, Event, State](
         persistenceId,
         emptyState = initialState,
         // Command handler
         { (state, command) =>
           command match {
-            case RequestState(_, replyTo: ActorRef[StateReply[_]]) =>
+            case RequestState(_, replyTo: ActorRef[StateReply[_]])                     =>
               Effect.reply(replyTo)(StateReply(state))
-            case RequestLastSeqNr(_, replyTo: ActorRef[LastSeqNr]) =>
+            case RequestStateInternal(id, replyTo: ActorRef[ResponseStateInternal[_]]) =>
+              Effect.reply(replyTo)(ResponseStateInternal(id, state))
+            case RequestLastSeqNr(_, replyTo: ActorRef[LastSeqNr])                     =>
               Effect.reply(replyTo)(
                 LastSeqNr(EventSourcedBehavior.lastSequenceNumber(context))
               )
-            case Append(_, event: Event)                           => Effect.persist(event)
+            case Append(_, event: Event)                                               => Effect.persist(event)
           }
         },
         // Event handler
@@ -117,12 +119,15 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     def behavior(state: State): Behaviors.Receive[EventSourceCommand] =
       Behaviors.receive[EventSourceCommand] { (_, cmd) =>
         cmd match {
-          case RequestState(_, replyTo: ActorRef[StateReply[_]]) =>
+          case RequestState(_, replyTo: ActorRef[StateReply[_]])                     =>
             replyTo ! StateReply(state)
             Behaviors.same
-          case _: RequestLastSeqNr                               =>
+          case RequestStateInternal(id, replyTo: ActorRef[ResponseStateInternal[_]]) =>
+            replyTo ! ResponseStateInternal(id, state)
             Behaviors.same
-          case Append(_, event: Event)                           =>
+          case _: RequestLastSeqNr                                                   =>
+            Behaviors.same
+          case Append(_, event: Event)                                               =>
             behavior(t.next(state, event))
         }
       }
@@ -222,7 +227,26 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
           context.setReceiveTimeout(duration, Idle)
         }
 
-        active(definition.initialState)
+        // On initial cmd evaluation, before evaluating,
+        // the initial state is being retrieved from the child actor
+        def initialState: Behavior[ProcessorCommand] =
+          checkEntityId { (_, cmd) =>
+            cmd match {
+              case ResponseStateInternal(_, State(state)) =>
+                buffer.unstashAll(active(state))
+              case ese: EventSourceCommand                =>
+                stateActor ! ese
+                Behaviors.same
+              case Idle                                   =>
+                stopAfterInactivity(context.self)
+              case c                                      =>
+                buffer.stash(c)
+                stateActor ! RequestStateInternal(entityId, context.self)
+                Behaviors.same
+            }
+          }
+
+        initialState
       }
     }
 
