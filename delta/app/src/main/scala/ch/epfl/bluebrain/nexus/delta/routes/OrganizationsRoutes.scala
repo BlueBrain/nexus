@@ -4,19 +4,20 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, IriResolver, OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -42,8 +43,8 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
 
   private val orgsIri = endpoint.toIri / "orgs"
 
-  implicit val iriResolver: IriResolver[Label] = (l: Label) => orgsIri / l.value
-  implicit val orgContext: ContextValue        = Organization.context
+  implicit val iriResolver: Lens[Label, Iri] = (l: Label) => orgsIri / l.value
+  implicit val orgContext: ContextValue      = Organization.context
 
   private def orgsSearchParams: Directive1[OrganizationSearchParams] =
     searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>

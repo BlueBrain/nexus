@@ -60,7 +60,7 @@ class OrganizationsRoutesSpec
   private val org1 = OrganizationGen.organization("org1", fixedUuid, Some("My description"))
   private val org2 = OrganizationGen.organization("org2", fixedUuid)
 
-  private val orgs = OrganizationsDummy(2L).accepted
+  private val orgs = OrganizationsDummy().accepted
 
   private val realm                                       = Label.unsafe("wonderland")
   private val alice                                       = User("alice", realm)
@@ -139,7 +139,7 @@ class OrganizationsRoutesSpec
     "fetch an organization by UUID" in {
       Get(s"/v1/orgs/$fixedUuid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual org2Created
+        response.asJson shouldEqual org1Updated
       }
     }
 
@@ -153,7 +153,7 @@ class OrganizationsRoutesSpec
     "fetch an organization by UUID and rev" in {
       Get(s"/v1/orgs/$fixedUuid?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual org2Created
+        response.asJson shouldEqual org1Created
       }
     }
 

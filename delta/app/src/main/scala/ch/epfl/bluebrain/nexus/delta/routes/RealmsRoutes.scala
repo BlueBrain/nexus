@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{CirceUnmarshalling, QueryParamsUnmarshalling}
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
@@ -18,9 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchPa
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, IriResolver, RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, RealmResource, Realms}
-import io.circe.generic.semiauto.deriveDecoder
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
