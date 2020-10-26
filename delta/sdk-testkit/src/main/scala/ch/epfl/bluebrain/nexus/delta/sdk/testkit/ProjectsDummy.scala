@@ -14,20 +14,23 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, Organizations, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
 
 /**
   * A dummy Projects implementation
   * @param journal       the journal to store events
   * @param cache         the cache to store resources
+  * @param semaphore     a semaphore for serializing write operations on the journal
   * @param organizations an Organizations instance
   */
-final class ProjectsDummy private (journal: ProjectsJournal, cache: ProjectsCache, organizations: Organizations)(
-    implicit
-    base: BaseUri,
-    clock: Clock[UIO],
-    uuidf: UUIDF
-) extends Projects {
+final class ProjectsDummy private (
+    journal: ProjectsJournal,
+    cache: ProjectsCache,
+    semaphore: IOSemaphore,
+    organizations: Organizations
+)(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
+    extends Projects {
 
   override def create(ref: ProjectRef, fields: ProjectFields)(implicit
       caller: Identity.Subject
@@ -79,13 +82,15 @@ final class ProjectsDummy private (journal: ProjectsJournal, cache: ProjectsCach
     cache.list(pagination, params)
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
-    for {
-      state <- journal.currentState(cmd.ref, Initial, Projects.next).map(_.getOrElse(Initial))
-      event <- Projects.evaluate(organizations.fetch)(state, cmd)
-      _     <- journal.add(event)
-      res   <- IO.fromEither(Projects.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
-      _     <- cache.setToCache(res)
-    } yield res
+    semaphore.withPermit {
+      for {
+        state <- journal.currentState(cmd.ref, Initial, Projects.next).map(_.getOrElse(Initial))
+        event <- Projects.evaluate(organizations.fetch)(state, cmd)
+        _     <- journal.add(event)
+        res   <- IO.fromEither(Projects.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
+        _     <- cache.setToCache(res)
+      } yield res
+    }
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
     journal.events(offset)
@@ -113,5 +118,6 @@ object ProjectsDummy {
     for {
       journal <- Journal(entityType)
       cache   <- ResourceCache[ProjectRef, Project]
-    } yield new ProjectsDummy(journal, cache, organizations)
+      sem     <- IOSemaphore(1L)
+    } yield new ProjectsDummy(journal, cache, sem, organizations)
 }

@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -23,10 +24,12 @@ import monix.bio.{IO, Task, UIO}
   *
   * @param journal     a ref to the journal containing all the events wrapped in an envelope
   * @param cache       a ref to the cache containing all the current organization resources
+  * @param semaphore   a semaphore for serializing write operations on the journal
   */
 final class OrganizationsDummy private (
     journal: OrganizationsJournal,
-    cache: OrganizationsCache
+    cache: OrganizationsCache,
+    semaphore: IOSemaphore
 )(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Organizations {
 
@@ -84,14 +87,17 @@ final class OrganizationsDummy private (
   override def currentEvents(offset: Offset): Stream[Task, Envelope[OrganizationEvent]] =
     journal.currentEvents(offset)
 
-  private def eval(cmd: OrganizationCommand): IO[OrganizationRejection, OrganizationResource] =
-    for {
-      state <- journal.currentState(cmd.label, Initial, Organizations.next).map(_.getOrElse(Initial))
-      event <- Organizations.evaluate(state, cmd)
-      _     <- journal.add(event)
-      res   <- IO.fromEither(Organizations.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
-      _     <- cache.setToCache(res)
-    } yield res
+  private def eval(cmd: OrganizationCommand): IO[OrganizationRejection, OrganizationResource] = {
+    semaphore.withPermit {
+      for {
+        state <- journal.currentState(cmd.label, Initial, Organizations.next).map(_.getOrElse(Initial))
+        event <- Organizations.evaluate(state, cmd)
+        _     <- journal.add(event)
+        res   <- IO.fromEither(Organizations.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
+        _     <- cache.setToCache(res)
+      } yield res
+    }
+  }
 }
 
 object OrganizationsDummy {
@@ -113,5 +119,6 @@ object OrganizationsDummy {
     for {
       journal <- Journal(entityType)
       cache   <- ResourceCache[Label, Organization]
-    } yield new OrganizationsDummy(journal, cache)
+      sem     <- IOSemaphore(1L)
+    } yield new OrganizationsDummy(journal, cache, sem)
 }

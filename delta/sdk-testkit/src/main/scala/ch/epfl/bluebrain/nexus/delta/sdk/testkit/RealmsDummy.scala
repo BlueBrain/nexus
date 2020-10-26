@@ -14,18 +14,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
 
 /**
   * A dummy Realms implementation that uses a synchronized in memory journal.
   *
-  * @param resolveWellKnown get the well known configuration for an OIDC provider resolver
   * @param journal          the journal to store events
   * @param cache            the cache to store resources
+  * @param semaphore        a semaphore for serializing write operations on the journal
+  * @param resolveWellKnown get the well known configuration for an OIDC provider resolver
   */
 final class RealmsDummy private (
     journal: RealmsJournal,
     cache: RealmsCache,
+    semaphore: IOSemaphore,
     resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
 )(implicit clock: Clock[UIO])
     extends Realms {
@@ -35,7 +38,7 @@ final class RealmsDummy private (
       openIdConfig: Uri,
       logo: Option[Uri]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource] =
-    eval(CreateRealm(label, name, openIdConfig, logo, caller)).flatMap(cache.setToCache)
+    eval(CreateRealm(label, name, openIdConfig, logo, caller))
 
   override def update(
       label: Label,
@@ -44,10 +47,10 @@ final class RealmsDummy private (
       openIdConfig: Uri,
       logo: Option[Uri]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource] =
-    eval(UpdateRealm(label, rev, name, openIdConfig, logo, caller)).flatMap(cache.setToCache)
+    eval(UpdateRealm(label, rev, name, openIdConfig, logo, caller))
 
   override def deprecate(label: Label, rev: Long)(implicit caller: Subject): IO[RealmRejection, RealmResource] =
-    eval(DeprecateRealm(label, rev, caller)).flatMap(cache.setToCache)
+    eval(DeprecateRealm(label, rev, caller))
 
   override def fetch(label: Label): UIO[Option[RealmResource]] = cache.fetch(label)
 
@@ -60,12 +63,15 @@ final class RealmsDummy private (
     cache.list(pagination, params)
 
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
-    for {
-      state <- journal.currentState(cmd.label, Initial, Realms.next).map(_.getOrElse(Initial))
-      event <- Realms.evaluate(resolveWellKnown, cache.values)(state, cmd)
-      _     <- journal.add(event)
-      res   <- IO.fromEither(Realms.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
-    } yield res
+    semaphore.withPermit {
+      for {
+        state <- journal.currentState(cmd.label, Initial, Realms.next).map(_.getOrElse(Initial))
+        event <- Realms.evaluate(resolveWellKnown, cache.values)(state, cmd)
+        _     <- journal.add(event)
+        res   <- IO.fromEither(Realms.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.label)))
+        _     <- cache.setToCache(res)
+      } yield res
+    }
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[RealmEvent]] = journal.events(offset)
 
@@ -79,13 +85,12 @@ object RealmsDummy {
 
   val entityType: String = "realms"
 
-  implicit val idExtractor: Lens[RealmEvent, Label] = (event: RealmEvent) => event.label
+  implicit val idLens: Lens[RealmEvent, Label] = (event: RealmEvent) => event.label
 
   /**
     * Creates a new dummy Realms implementation.
     *
     * @param resolveWellKnown the well known configuration for an OIDC provider resolver
-    * @param maxStreamSize    truncate event stream after this size
     */
   final def apply(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
@@ -93,5 +98,6 @@ object RealmsDummy {
     for {
       journal <- Journal(entityType)
       cache   <- ResourceCache[Label, Realm]
-    } yield new RealmsDummy(journal, cache, resolveWellKnown)
+      sem     <- IOSemaphore(1L)
+    } yield new RealmsDummy(journal, cache, sem, resolveWellKnown)
 }
