@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
-import java.util.UUID
-
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
 /**
   * Enumeration of Organization collection command types.
@@ -26,13 +24,11 @@ object OrganizationCommand {
   /**
     * An intent to create an organization.
     * @param label        the organization label
-    * @param uuid         the uuid of the organization
     * @param description  an optional description of the organization
     * @param subject      the subject which created this command.
     */
   final case class CreateOrganization(
       label: Label,
-      uuid: UUID,
       description: Option[String],
       subject: Subject
   ) extends OrganizationCommand

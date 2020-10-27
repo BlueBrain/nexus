@@ -13,6 +13,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
 sealed trait ProjectEvent extends Event {
 
   /**
+    * @return the project ref
+    */
+  def ref: ProjectRef = ProjectRef(organizationLabel, label)
+
+  /**
     * @return the project label
     */
   def label: Label

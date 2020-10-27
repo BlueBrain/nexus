@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
@@ -17,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchPa
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, IriResolver, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, RealmResource, Realms}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -37,8 +38,8 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
 
   private val realmsIri = endpoint.toIri / "realms"
 
-  implicit val iriResolver: IriResolver[Label] = (l: Label) => realmsIri / l.value
-  implicit val realmContext: ContextValue      = Realm.context
+  implicit val iriLens: Lens[Label, Iri]  = (l: Label) => realmsIri / l.value
+  implicit val realmContext: ContextValue = Realm.context
 
   private def realmsSearchParams: Directive1[RealmSearchParams] =
     searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>

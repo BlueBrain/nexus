@@ -5,16 +5,16 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.mocks.OrganizationsMock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.PrefixIRI
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIRI, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues, _}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -27,6 +27,7 @@ class ProjectsSpec
     with Inspectors
     with IOFixedClock
     with IOValues
+    with TestHelpers
     with CirceLiteral
     with OptionValues {
 
@@ -43,6 +44,7 @@ class ProjectsSpec
       "org",
       "proj",
       1L,
+      orgUuid = org1.uuid,
       description = Some("desc"),
       mappings = am,
       base = base.value,
@@ -56,31 +58,36 @@ class ProjectsSpec
     val desc2                  = Some("desc2")
     val org2Label              = org2.label
     val subject                = User("myuser", label)
-    val orgs                   = new OrganizationsMock(Map(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value))
+    val orgs                   = ioFromMap(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value)
+
+    val ref  = ProjectRef(orgLabel, label)
+    val ref2 = ProjectRef(org2Label, label)
+
+    implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
     "evaluating an incoming command" should {
 
       "create a new event" in {
         evaluate(orgs)(
           Initial,
-          CreateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, subject)
+          CreateProject(ref, desc, am, base, vocab, subject)
         ).accepted shouldEqual
           ProjectCreated(label, uuid, orgLabel, orgUuid, 1L, desc, am, base, vocab, epoch, subject)
 
         evaluate(orgs)(
           current,
-          UpdateProject(label, uuid, orgLabel, orgUuid, desc2, Map.empty, base, vocab, 1L, subject)
+          UpdateProject(ref, desc2, Map.empty, base, vocab, 1L, subject)
         ).accepted shouldEqual
           ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, Map.empty, base, vocab, epoch, subject)
 
-        evaluate(orgs)(current, DeprecateProject(label, uuid, orgLabel, orgUuid, 1L, subject)).accepted shouldEqual
+        evaluate(orgs)(current, DeprecateProject(ref, 1L, subject)).accepted shouldEqual
           ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, epoch, subject)
       }
 
       "reject with IncorrectRev" in {
         val list = List(
-          current -> UpdateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, 2L, subject),
-          current -> DeprecateProject(label, uuid, orgLabel, orgUuid, 2L, subject)
+          current -> UpdateProject(ref, desc, am, base, vocab, 2L, subject),
+          current -> DeprecateProject(ref, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
           evaluate(orgs)(state, cmd).rejectedWith[IncorrectRev]
@@ -89,9 +96,9 @@ class ProjectsSpec
 
       "reject with OrganizationIsDeprecated" in {
         val list = List(
-          Initial -> CreateProject(label, uuid, org2Label, orgUuid, desc, am, base, vocab, subject),
-          current -> UpdateProject(label, uuid, org2Label, orgUuid, desc, am, base, vocab, 1L, subject),
-          current -> DeprecateProject(label, uuid, org2Label, orgUuid, 1L, subject)
+          Initial -> CreateProject(ref2, desc, am, base, vocab, subject),
+          current -> UpdateProject(ref2, desc, am, base, vocab, 1L, subject),
+          current -> DeprecateProject(ref2, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
           evaluate(orgs)(state, cmd).rejectedWith[OrganizationIsDeprecated]
@@ -99,11 +106,11 @@ class ProjectsSpec
       }
 
       "reject with OrganizationNotFound" in {
-        val orgNotFound = Label.unsafe("other")
+        val orgNotFound = ProjectRef(label, Label.unsafe("other"))
         val list        = List(
-          Initial -> CreateProject(label, uuid, orgNotFound, orgUuid, desc, am, base, vocab, subject),
-          current -> UpdateProject(label, uuid, orgNotFound, orgUuid, desc, am, base, vocab, 1L, subject),
-          current -> DeprecateProject(label, uuid, orgNotFound, orgUuid, 1L, subject)
+          Initial -> CreateProject(orgNotFound, desc, am, base, vocab, subject),
+          current -> UpdateProject(orgNotFound, desc, am, base, vocab, 1L, subject),
+          current -> DeprecateProject(orgNotFound, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
           evaluate(orgs)(state, cmd).rejectedWith[OrganizationNotFound]
@@ -113,8 +120,8 @@ class ProjectsSpec
       "reject with ProjectIsDeprecated" in {
         val cur  = current.copy(deprecated = true)
         val list = List(
-          cur -> UpdateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, 1L, subject),
-          cur -> DeprecateProject(label, uuid, orgLabel, orgUuid, 1L, subject)
+          cur -> UpdateProject(ref, desc, am, base, vocab, 1L, subject),
+          cur -> DeprecateProject(ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
           evaluate(orgs)(state, cmd).rejectedWith[ProjectIsDeprecated]
@@ -123,8 +130,8 @@ class ProjectsSpec
 
       "reject with ProjectNotFound" in {
         val list = List(
-          Initial -> UpdateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, 1L, subject),
-          Initial -> DeprecateProject(label, uuid, orgLabel, orgUuid, 1L, subject)
+          Initial -> UpdateProject(ref, desc, am, base, vocab, 1L, subject),
+          Initial -> DeprecateProject(ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
           evaluate(orgs)(state, cmd).rejectedWith[ProjectNotFound]
@@ -132,7 +139,7 @@ class ProjectsSpec
       }
 
       "reject with ProjectAlreadyExists" in {
-        evaluate(orgs)(current, CreateProject(label, uuid, orgLabel, orgUuid, desc, am, base, vocab, subject))
+        evaluate(orgs)(current, CreateProject(ref, desc, am, base, vocab, subject))
           .rejectedWith[ProjectAlreadyExists]
       }
 

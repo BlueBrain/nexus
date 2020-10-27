@@ -65,8 +65,7 @@ class RealmsRoutesSpec
     ioFromMap(
       Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
-    ),
-    2L
+    )
   ).accepted
 
   private val realm                                       = Label.unsafe("wonderland")

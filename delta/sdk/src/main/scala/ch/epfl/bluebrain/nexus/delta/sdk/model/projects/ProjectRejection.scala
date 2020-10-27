@@ -31,14 +31,6 @@ object ProjectRejection {
       extends ProjectRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
-    * Signals an error while decoding a project JSON payload.
-    *
-    * @param message human readable error details
-    */
-  final case class InvalidProjectFormat(message: String)
-      extends ProjectRejection("The project json representation is incorrectly formatted.")
-
-  /**
     * Signals that a project cannot be created because one with the same identifier already exists.
     */
   final case class ProjectAlreadyExists(projectRef: ProjectRef)
@@ -90,6 +82,13 @@ object ProjectRejection {
       extends ProjectRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the project may have been updated since last seen."
       )
+
+  /**
+    * Rejection returned when the returned state is the initial state after a Project.evaluation plus a Project.next
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    */
+  final case class UnexpectedInitialState(ref: ProjectRef)
+      extends ProjectRejection(s"Unexpected initial state for project '$ref'.")
 
   implicit private val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>

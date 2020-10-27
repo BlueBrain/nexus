@@ -29,8 +29,7 @@ final class OrganizationsImpl private (
     agg: OrganizationsAggregate,
     eventLog: EventLog[Envelope[OrganizationEvent]],
     cache: OrganizationsCache
-)(implicit uuidF: UUIDF)
-    extends Organizations {
+) extends Organizations {
 
   private val component: String = "organizations"
 
@@ -38,11 +37,7 @@ final class OrganizationsImpl private (
       label: Label,
       description: Option[String]
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    uuidF()
-      .flatMap { uuid =>
-        eval(CreateOrganization(label, uuid, description, caller))
-      }
-      .named("createOrganization", component)
+    eval(CreateOrganization(label, description, caller)).named("createOrganization", component)
 
   override def update(
       label: Label,
@@ -187,7 +182,7 @@ object OrganizationsImpl {
 
   private def aggregate(
       config: OrganizationsConfig
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[OrganizationsAggregate] = {
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO], uuidF: UUIDF): UIO[OrganizationsAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = entityType,
       initialState = OrganizationState.Initial,
@@ -218,7 +213,7 @@ object OrganizationsImpl {
       agg: OrganizationsAggregate,
       eventLog: EventLog[Envelope[OrganizationEvent]],
       cache: OrganizationsCache
-  )(implicit uuidF: UUIDF): OrganizationsImpl =
+  ): OrganizationsImpl =
     new OrganizationsImpl(agg, eventLog, cache)
 
   /**

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.testkit
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalactic.source
 import org.scalatest.matchers.should.Matchers.fail
@@ -28,7 +28,15 @@ trait IOValues extends Assertions {
   )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
     future.map(_ => succeed)
 
+  implicit final def uioValuesSyntax[A](uio: UIO[A]): UIOValuesOps[A] = new UIOValuesOps(uio)
+
   implicit final def ioValuesSyntax[E: ClassTag, A](io: IO[E, A]): IOValuesOps[E, A] = new IOValuesOps(io)
+}
+
+final class UIOValuesOps[A](private val uio: UIO[A]) {
+
+  def accepted(implicit s: Scheduler = Scheduler.global): A =
+    uio.runSyncUnsafe()
 }
 
 final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E]) {

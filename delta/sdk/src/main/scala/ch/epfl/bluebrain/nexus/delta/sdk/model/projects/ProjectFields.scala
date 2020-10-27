@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 /**
   * Type that represents a project payload for creation and update requests.
@@ -15,4 +17,24 @@ final case class ProjectFields(
     apiMappings: Map[String, Iri],
     base: Option[PrefixIRI],
     vocab: Option[PrefixIRI]
-)
+) {
+
+  /**
+    * @return the current base or a generated one based on the ''baseUri'' and the project ref
+    */
+  def baseOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIRI =
+    base.getOrElse(
+      PrefixIRI.unsafe(
+        (baseUri.endpoint / "resources" / projectRef.organization / projectRef.project / "_").finalSlash().toIri
+      )
+    )
+
+  /**
+    * @return the current vocab or a generated one based on the ''baseUri'' and the project ref
+    */
+  def vocabOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIRI =
+    vocab.getOrElse(
+      PrefixIRI.unsafe((baseUri.endpoint / "vocabs" / projectRef.organization / projectRef.project).finalSlash().toIri)
+    )
+
+}

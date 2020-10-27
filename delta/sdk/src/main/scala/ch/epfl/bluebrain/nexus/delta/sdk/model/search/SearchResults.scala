@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk.IriResolver
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -111,8 +112,8 @@ object SearchResults {
     * @param total      the total number of results
     * @param results    the collection of results
     */
-  final def apply[A](total: Long, results: Seq[ResultEntry[A]]): SearchResults[A] =
-    UnscoredSearchResults[A](total, results)
+  final def apply[A](total: Long, results: Seq[A]): SearchResults[A] =
+    UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
   private def encodeResults[A: Encoder.AsObject](
       next: SearchResults[A] => Option[Uri]
@@ -146,12 +147,12 @@ object SearchResults {
 
   def searchResourceEncoder[Id, A](pagination: FromPagination, searchUri: Uri)(implicit
       baseUri: BaseUri,
-      iriResolver: IriResolver[Id],
+      iriLens: Lens[Id, Iri],
       R: Encoder.AsObject[ResourceF[Iri, A]]
   ): SearchEncoder[ResourceF[Id, A]] = {
     Encoder.AsObject.instance { s =>
       searchResultsEncoder(pagination, searchUri).encodeObject(
-        s.map { r => r.copy(id = iriResolver.resolve(r.id)) }
+        s.map { r => r.copy(id = iriLens.get(r.id)) }
       )
     }
   }

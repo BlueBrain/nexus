@@ -2,20 +2,22 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.util.UUID
 
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.RevisionNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{RevisionNotFound, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import fs2.Stream
+import monix.bio.{IO, Task, UIO}
 
 trait Projects {
 
@@ -102,6 +104,21 @@ trait Projects {
       pagination: FromPagination,
       params: ProjectSearchParams = ProjectSearchParams.none
   ): UIO[UnscoredSearchResults[ProjectResource]]
+
+  /**
+    * A non terminating stream of events for projects. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def events(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
+
+  /**
+    * The current project events. The stream stops after emitting all known events.
+    *
+    * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
 }
 
 object Projects {
@@ -122,39 +139,57 @@ object Projects {
       // format: on
     }
 
-  private[delta] def evaluate(orgs: Organizations)(state: ProjectState, command: ProjectCommand)(implicit
-      clock: Clock[UIO] = IO.clock
+  private[delta] def evaluate(
+      fetchOrg: Label => UIO[Option[OrganizationResource]]
+  )(state: ProjectState, command: ProjectCommand)(implicit
+      clock: Clock[UIO] = IO.clock,
+      uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
 
-    def checkNotExistOrDeprecated(orgLabel: Label) =
-      orgs.fetch(orgLabel).flatMap {
+    def validateOrg(orgLabel: Label) =
+      fetchOrg(orgLabel).flatMap {
         case Some(org) if org.deprecated => IO.raiseError(OrganizationIsDeprecated(orgLabel))
-        case Some(_)                     => IO.unit
+        case Some(org)                   => IO.pure(org)
         case None                        => IO.raiseError(OrganizationNotFound(orgLabel))
       }
 
     def create(c: CreateProject) =
       state match {
         case Initial =>
-          // format: off
-          checkNotExistOrDeprecated(c.organizationLabel) >>
-              instant.map(ProjectCreated(c.label, c.uuid, c.organizationLabel, c.organizationUuid, 1L, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
-          // format: on
+          for {
+            org  <- validateOrg(c.ref.organization)
+            uuid <- uuidF()
+            now  <- instant
+          } yield {
+            ProjectCreated(
+              c.ref.project,
+              uuid,
+              c.ref.organization,
+              org.value.uuid,
+              1L,
+              c.description,
+              c.apiMappings,
+              c.base,
+              c.vocab,
+              now,
+              c.subject
+            )
+          }
         case _       =>
-          IO.raiseError(ProjectAlreadyExists(ProjectRef(c.organizationLabel, c.label)))
+          IO.raiseError(ProjectAlreadyExists(c.ref))
       }
 
     def update(c: UpdateProject) =
       state match {
         case Initial                      =>
-          IO.raiseError(ProjectNotFound(ProjectRef(c.organizationLabel, c.label)))
+          IO.raiseError(ProjectNotFound(c.ref))
         case s: Current if c.rev != s.rev =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
-          IO.raiseError(ProjectIsDeprecated(ProjectRef(c.organizationLabel, c.label)))
+          IO.raiseError(ProjectIsDeprecated(c.ref))
         case s: Current                   =>
           // format: off
-          checkNotExistOrDeprecated(c.organizationLabel) >>
+          validateOrg(c.ref.organization) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }
@@ -162,14 +197,14 @@ object Projects {
     def deprecate(c: DeprecateProject) =
       state match {
         case Initial                      =>
-          IO.raiseError(ProjectNotFound(ProjectRef(c.organizationLabel, c.label)))
+          IO.raiseError(ProjectNotFound(c.ref))
         case s: Current if c.rev != s.rev =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
-          IO.raiseError(ProjectIsDeprecated(ProjectRef(c.organizationLabel, c.label)))
+          IO.raiseError(ProjectIsDeprecated(c.ref))
         case s: Current                   =>
           // format: off
-          checkNotExistOrDeprecated(c.organizationLabel) >>
+          validateOrg(c.ref.organization) >>
               instant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }
