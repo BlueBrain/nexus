@@ -120,10 +120,10 @@ final class OrganizationsImpl private (
       .named("listOrganizations", component)
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] =
-    eventLog.eventsByTag(entityType, offset)
+    eventLog.eventsByTag(organizationTag, offset)
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] =
-    eventLog.currentEventsByTag(entityType, offset)
+    eventLog.currentEventsByTag(organizationTag, offset)
 
 }
 
@@ -188,22 +188,18 @@ object OrganizationsImpl {
       initialState = OrganizationState.Initial,
       next = Organizations.next,
       evaluate = Organizations.evaluate,
-      tagger = (_: OrganizationEvent) => Set(entityType),
-      snapshotStrategy = SnapshotStrategy.SnapshotCombined(
+      tagger = (_: OrganizationEvent) => Set(organizationTag),
+      snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: OrganizationState, _: OrganizationEvent, _: Long) =>
           state.deprecated
-        ),
-        SnapshotStrategy.SnapshotEvery(
-          numberOfEvents = 500,
-          keepNSnapshots = 1,
-          deleteEventsOnSnapshot = false
         )
-      )
+      ),
+      stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate,
+      config = config.aggregate.processor,
       retryStrategy = RetryStrategy.alwaysGiveUp
       // TODO: configure the number of shards
     )

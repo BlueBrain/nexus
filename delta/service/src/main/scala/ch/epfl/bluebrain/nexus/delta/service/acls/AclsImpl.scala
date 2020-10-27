@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{entityType, AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor._
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
@@ -118,14 +119,13 @@ object AclsImpl {
       next = Acls.next,
       evaluate = Acls.evaluate(permissions),
       tagger = (_: AclEvent) => Set(aclTag),
-      snapshotStrategy =
-        SnapshotStrategy.SnapshotEvery(numberOfEvents = 500, keepNSnapshots = 1, deleteEventsOnSnapshot = false),
-      stopStrategy = StopStrategy.PersistentStopStrategy.never
+      snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
+      stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )
     ShardedAggregate
       .persistentSharded(
         definition = definition,
-        config = aggregateConfig,
+        config = aggregateConfig.processor,
         retryStrategy = RetryStrategy.alwaysGiveUp
         // TODO: configure the number of shards
       )

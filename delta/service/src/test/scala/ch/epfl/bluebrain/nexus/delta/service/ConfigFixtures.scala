@@ -4,17 +4,24 @@ import akka.actor.typed.ActorSystem
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
+import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategyConfig, SnapshotStrategyConfig}
+import org.scalatest.OptionValues
 
 import scala.concurrent.duration._
 
-trait ConfigFixtures {
+trait ConfigFixtures extends OptionValues {
 
   implicit def system: ActorSystem[Nothing]
 
+  def neverStop     = StopStrategyConfig(None, None)
+  def neverSnapShot = SnapshotStrategyConfig(None, None, None).value
+
   def aggregate: AggregateConfig =
     AggregateConfig(
+      stopStrategy = neverStop,
+      snapshotStrategy = neverSnapShot,
       askTimeout = Timeout(5.seconds),
       evaluationMaxDuration = 1.second,
       evaluationExecutionContext = system.executionContext,
