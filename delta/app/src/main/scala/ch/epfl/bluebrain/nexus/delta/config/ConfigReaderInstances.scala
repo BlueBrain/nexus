@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig._
-import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategy, RetryStrategyConfig, SnapshotStrategyConfig}
 import com.typesafe.scalalogging.Logger
 import monix.execution.Scheduler
@@ -77,10 +77,7 @@ trait ConfigReaderInstances {
       } yield AggregateConfig(
         stopStrategy,
         snapshotStrategy,
-        Timeout(askTimeout),
-        evaluationMaxDuration,
-        Scheduler.global,
-        stashSize
+        EventSourceProcessorConfig(Timeout(askTimeout), evaluationMaxDuration, Scheduler.global, stashSize)
       )
     }
 
