@@ -4,17 +4,16 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.service.identity.IdentitiesImpl.{FetchGroups, GroupsCache}
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.TransientStopStrategy
 import ch.epfl.bluebrain.nexus.sourcing.{Aggregate, RetryStrategy, TransientEventDefinition}
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet
@@ -131,12 +130,12 @@ object IdentitiesImpl {
       entityType = "groups",
       None,
       (_: Option[Set[Group]], f: FetchGroups) => evaluate(getUserInfo)(f),
-      TransientStopStrategy(Some(config.passivateAfter))
+      stopStrategy = config.aggregate.stopStrategy.transientStrategy
     )
 
     ShardedAggregate.transientSharded(
       definition,
-      config.aggregate,
+      config.aggregate.processor,
       RetryStrategy.retryOnNonFatal(config.retryStrategy, logger)
       // TODO: configure the number of shards
     )

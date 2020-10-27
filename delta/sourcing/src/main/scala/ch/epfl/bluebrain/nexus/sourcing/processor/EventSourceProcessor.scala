@@ -31,7 +31,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     entityId: String,
     definition: EventDefinition[State, Command, Event, Rejection],
     stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-    config: AggregateConfig
+    config: EventSourceProcessorConfig
 )(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection]) {
 
   protected val id = persistenceId(definition.entityType, entityId)
@@ -351,7 +351,7 @@ object EventSourceProcessor {
       entityId: String,
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
       stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-      config: AggregateConfig
+      config: EventSourceProcessorConfig
   ): EventSourceProcessor[State, Command, Event, Rejection] =
     new EventSourceProcessor[State, Command, Event, Rejection](
       entityId,
@@ -371,7 +371,7 @@ object EventSourceProcessor {
       entityId: String,
       definition: TransientEventDefinition[State, Command, Event, Rejection],
       stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-      config: AggregateConfig
+      config: EventSourceProcessorConfig
   ) =
     new EventSourceProcessor[State, Command, Event, Rejection](
       entityId,

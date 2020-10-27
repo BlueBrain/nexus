@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.sourcing.TestCommand.{Increment, IncrementAsync, 
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
-import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, EventSourceProcessor, ProcessorCommand}
+import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessor, EventSourceProcessorConfig, ProcessorCommand}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
@@ -25,7 +25,7 @@ abstract class EventSourceProcessorSpec(config: Config)
     with AnyWordSpecLike
     with Matchers {
 
-  val eventSourceConfig: AggregateConfig = processor.AggregateConfig(
+  val eventSourceConfig: EventSourceProcessorConfig = processor.EventSourceProcessorConfig(
     100.millis,
     100.millis,
     system.executionContext,

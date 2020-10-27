@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service
+package ch.epfl.bluebrain.nexus.delta.service.config
 
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 
