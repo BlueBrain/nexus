@@ -171,7 +171,7 @@ object ShardedAggregate {
     */
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
-      config: AggregateProcessorConfig,
+      config: EventSourceProcessorConfig,
       retryStrategy: RetryStrategy,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =
@@ -201,7 +201,7 @@ object ShardedAggregate {
     */
   def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: TransientEventDefinition[State, Command, Event, Rejection],
-      config: AggregateProcessorConfig,
+      config: EventSourceProcessorConfig,
       retryStrategy: RetryStrategy,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit as: ActorSystem[Nothing]): UIO[Aggregate[String, State, Command, Event, Rejection]] =

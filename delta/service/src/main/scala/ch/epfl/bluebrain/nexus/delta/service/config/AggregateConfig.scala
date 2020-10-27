@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.config
 
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategyConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateProcessorConfig, StopStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
@@ -27,8 +27,8 @@ final case class AggregateConfig(
 ) {
 
   /**
-    * The underlying processor ''AggregateConfig''
+    * The underlying processor [[EventSourceProcessorConfig]]
     */
-  def processor: AggregateProcessorConfig =
-    AggregateProcessorConfig(askTimeout, evaluationMaxDuration, evaluationExecutionContext, stashSize)
+  def processor: EventSourceProcessorConfig =
+    EventSourceProcessorConfig(askTimeout, evaluationMaxDuration, evaluationExecutionContext, stashSize)
 }
