@@ -17,7 +17,7 @@ object ProcessorCommand {
     * Event sent when the [[EventSourceProcessor]] has been idling for too long
     * according to a defined [[StopStrategy]]
     */
-  case object Idle extends ProcessorCommand
+  private[processor] case object Idle extends ProcessorCommand
 
   /**
     * Command sent to the [[EventSourceProcessor]] by an other component.
@@ -51,10 +51,25 @@ object ProcessorCommand {
   final private[processor] case class ResponseStateInternal[State](id: String, value: State) extends ReadonlyCommand
 
   /**
-    * Internal event sent by the [[EventSourceProcessor]] to its state actor
-    * @param event the event to persist
+    * Internal message sent by the [[EventSourceProcessor]] to its state actor.
+    *
+    * @param event   the event to persist
+    * @param replyTo the actor to send the reply to (the [[EventSourceProcessor]] actor)
     */
-  final case class Append[Event] private[processor] (id: String, event: Event) extends EventSourceCommand
+  final case class Append[Event, State] private[processor] (
+      id: String,
+      event: Event,
+      replyTo: ActorRef[AppendSuccess[Event, State]]
+  ) extends EventSourceCommand
+
+  /**
+    * Internal message sent by the state actor to the [[EventSourceProcessor]] signaling a successful append of an Event
+    *
+    * @param event the appended
+    * @param state the state generated from the appended event
+    */
+  final case class AppendSuccess[Event, State] private[processor] (id: String, event: Event, state: State)
+      extends EventSourceCommand
 
   /**
     * Defines a command to evaluate the command giving a [[EvaluationResult]]
@@ -85,6 +100,13 @@ object ProcessorCommand {
     * @param state the new state
     */
   final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResult
+
+  /**
+    * Describes the event resulting from a successful evaluation.
+    *
+    * @param event the generated event
+    */
+  final private[processor] case class EvaluationSuccessInternal[Event](event: Event) extends EvaluationResult
 
   /**
     * Rejection that occured after running an an [[Evaluate]] or a [[DryRun]]
