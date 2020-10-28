@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors.minimum
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.minimum
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import org.scalatest.{Inspectors, OptionValues}

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionSet}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors._
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen._
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
@@ -220,38 +220,4 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
       // format: on
     }
   }
-}
-
-object PermissionsBehaviors {
-
-  import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{schemas, _}
-
-  /**
-    * The collection of minimum permissions.
-    */
-  val minimum = Set(
-    acls.read,
-    acls.write,
-    permissions.read,
-    permissions.write,
-    realms.read,
-    realms.write,
-    events.read,
-    orgs.read,
-    orgs.write,
-    orgs.create,
-    projects.read,
-    projects.write,
-    projects.create,
-    resources.read,
-    resources.write,
-    resolvers.write,
-    views.write,
-    views.query,
-    schemas.write,
-    files.write,
-    storages.write,
-    archives.write
-  )
-
 }

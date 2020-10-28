@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
+import monix.execution.Scheduler
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -30,7 +31,8 @@ trait ProjectsBehaviors {
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")
+  implicit val scheduler: Scheduler = Scheduler.global
+  implicit val baseUri: BaseUri     = BaseUri("http://localhost:8080/v1")
 
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -49,11 +51,15 @@ trait ProjectsBehaviors {
   val payload        = ProjectFields(desc, mappings, Some(base), Some(voc))
   val anotherPayload = ProjectFields(Some("Another project description"), mappings, None, None)
 
-  val organizations: UIO[OrganizationsDummy] = {
+  val org1 = Label.unsafe("org")
+  val org2 = Label.unsafe("org2")
+
+  lazy val organizations: UIO[OrganizationsDummy] = {
     val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)
     val orgs            = for {
       o <- OrganizationsDummy()(orgUuidF, ioClock)
-      _ <- o.create(Label.unsafe("org"), None)
+      _ <- o.create(org1, None)
+      _ <- o.create(org2, None)
       _ <- o.create(Label.unsafe("orgDeprecated"), None)
       _ <- o.deprecate(Label.unsafe("orgDeprecated"), 1L)
     } yield o
@@ -62,7 +68,7 @@ trait ProjectsBehaviors {
 
   def create: UIO[Projects]
 
-  val projects: Projects = create.accepted
+  lazy val projects: Projects = create.accepted
 
   val ref = ProjectRef.unsafe("org", "proj")
 
@@ -188,7 +194,7 @@ trait ProjectsBehaviors {
       projects.fetchAt(UUID.randomUUID(), 42L).accepted shouldEqual projects.fetchAt(ref, 42L).accepted
     }
 
-    val anotherRef          = ProjectRef.unsafe("org", "proj2")
+    val anotherRef          = ProjectRef.unsafe("org2", "proj2")
     val anotherProjResource = resourceFor(
       projectFromRef(anotherRef, uuid, orgUuid, anotherPayload),
       1L,
@@ -217,6 +223,13 @@ trait ProjectsBehaviors {
       val results = projects.list(FromPagination(0, 10), ProjectSearchParams(deprecated = Some(true))).accepted
 
       results shouldEqual SearchResults(1L, Vector(deprecatedResource))
+    }
+
+    "list projects from organization org" in {
+      val results =
+        projects.list(FromPagination(0, 10), ProjectSearchParams(organization = Some(anotherRef.organization))).accepted
+
+      results shouldEqual SearchResults(1L, Vector(anotherProjResource))
     }
 
     "list projects created by Anonymous" in {

@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -89,6 +90,14 @@ object ProjectRejection {
     */
   final case class UnexpectedInitialState(ref: ProjectRef)
       extends ProjectRejection(s"Unexpected initial state for project '$ref'.")
+
+  /**
+    * Rejection returned when applying owner permissions with the acl module during project creation fails
+    */
+  final case class OwnerPermissionsFailed(ref: ProjectRef, aclRejection: AclRejection)
+      extends ProjectRejection(
+        s"The project has been successfully created but applying owner permissions on project '$ref' failed with the following error: ${aclRejection.reason}"
+      )
 
   implicit private val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
