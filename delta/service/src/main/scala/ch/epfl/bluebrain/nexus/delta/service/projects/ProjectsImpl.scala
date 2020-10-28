@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{entityType, projectTag, ProjectsAggregate, ProjectsCache}
-import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils._
+import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -101,7 +101,7 @@ final class ProjectsImpl private (
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     eventLog
-      .fetchStateAt[ProjectState](
+      .fetchStateAt(
         persistenceId(entityType, ref.toString),
         rev,
         Initial,
