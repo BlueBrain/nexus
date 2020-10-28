@@ -42,8 +42,8 @@ object EventLogUtils {
       */
     def fetchStateAt[State](persistenceId: String, rev: Long, initialState: State, next: (State, E) => State)(implicit
         revLens: Lens[State, Long]
-    ): IO[Long, Option[State]] =
-      if (rev == 0L) UIO.pure(None)
+    ): IO[Long, State] =
+      if (rev == 0L) UIO.pure(initialState)
       else
         eventLog
           .currentEventsByPersistenceId(
@@ -59,10 +59,10 @@ object EventLogUtils {
           .last
           .hideErrors
           .flatMap {
-            case Some(state) if revLens.get(state) == rev => UIO.pure(Some(state))
-            case Some(`initialState`)                     => IO.pure(None)
+            case Some(state) if revLens.get(state) == rev => UIO.pure(state)
+            case Some(`initialState`)                     => IO.pure(initialState)
             case Some(state)                              => IO.raiseError(revLens.get(state))
-            case None                                     => IO.pure(None)
+            case None                                     => IO.raiseError(0L)
           }
 
   }

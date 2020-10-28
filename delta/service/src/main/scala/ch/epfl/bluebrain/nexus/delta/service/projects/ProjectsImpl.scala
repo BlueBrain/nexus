@@ -107,7 +107,7 @@ final class ProjectsImpl private (
         Initial,
         Projects.next
       )
-      .bimap(RevisionNotFound(rev, _), _.flatMap(_.toResource))
+      .bimap(RevisionNotFound(rev, _), _.toResource)
       .named("fetchProjectAt", component)
 
   override def fetch(uuid: UUID): UIO[Option[ProjectResource]] =
