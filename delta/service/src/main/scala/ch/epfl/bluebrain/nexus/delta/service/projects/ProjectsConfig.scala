@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.service.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 
 /**
   * Configuration for the Organizations module.

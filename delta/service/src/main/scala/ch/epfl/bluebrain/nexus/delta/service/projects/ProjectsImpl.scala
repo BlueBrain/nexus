@@ -165,7 +165,7 @@ object ProjectsImpl {
   /**
     * The projects tag
     */
-  final val projectTag: String = "projects"
+  final val projectTag: String = "project"
 
   private val logger: Logger = Logger[ProjectsImpl]
 
@@ -213,20 +213,16 @@ object ProjectsImpl {
       initialState = Initial,
       next = Projects.next,
       evaluate = Projects.evaluate(organizations.fetch),
-      tagger = (_: ProjectEvent) => Set(entityType),
-      snapshotStrategy = SnapshotStrategy.SnapshotCombined(
-        SnapshotStrategy.SnapshotPredicate((state: ProjectState, _: ProjectEvent, _: Long) => state.deprecated),
-        SnapshotStrategy.SnapshotEvery(
-          numberOfEvents = 500,
-          keepNSnapshots = 1,
-          deleteEventsOnSnapshot = false
-        )
-      )
+      tagger = (_: ProjectEvent) => Set(projectTag),
+      snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
+        SnapshotStrategy.SnapshotPredicate((state: ProjectState, _: ProjectEvent, _: Long) => state.deprecated)
+      ),
+      stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = config.aggregate,
+      config = config.aggregate.processor,
       retryStrategy = RetryStrategy.alwaysGiveUp
       // TODO: configure the number of shards
     )
