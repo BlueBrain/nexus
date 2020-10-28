@@ -10,8 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{entityType, AclsAggregate, AclsCache}
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{aclTag, entityType, AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor._
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
@@ -64,9 +65,15 @@ final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[Ac
       .map(_.filter(caller.identities))
       .named("listSelfAcls", component, Map("withAncestors" -> filter.withAncestors))
 
+  override def events(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]]                                    =
+    eventLog.eventsByTag(aclTag, offset)
+
+  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]] =
+    eventLog.currentEventsByTag(aclTag, offset)
+
   override def replace(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Identity.Subject
-  ): IO[AclRejection, AclResource]                                                                             =
+  ): IO[AclRejection, AclResource] =
     eval(ReplaceAcl(address, acl, rev, caller)).named("replaceAcls", component)
 
   override def append(address: AclAddress, acl: Acl, rev: Long)(implicit
@@ -118,14 +125,13 @@ object AclsImpl {
       next = Acls.next,
       evaluate = Acls.evaluate(permissions),
       tagger = (_: AclEvent) => Set(aclTag),
-      snapshotStrategy =
-        SnapshotStrategy.SnapshotEvery(numberOfEvents = 500, keepNSnapshots = 1, deleteEventsOnSnapshot = false),
-      stopStrategy = StopStrategy.PersistentStopStrategy.never
+      snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
+      stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )
     ShardedAggregate
       .persistentSharded(
         definition = definition,
-        config = aggregateConfig,
+        config = aggregateConfig.processor,
         retryStrategy = RetryStrategy.alwaysGiveUp
         // TODO: configure the number of shards
       )

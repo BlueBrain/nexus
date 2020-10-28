@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.config
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto._

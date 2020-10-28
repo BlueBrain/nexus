@@ -103,10 +103,10 @@ final class RealmsImpl private (
       .named("listRealms", component)
 
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
-    eventLog.eventsByTag(entityType, offset)
+    eventLog.eventsByTag(realmTag, offset)
 
   override def currentEvents(offset: Offset): Stream[Task, Envelope[RealmEvent]] =
-    eventLog.currentEventsByTag(entityType, offset)
+    eventLog.currentEventsByTag(realmTag, offset)
 
 }
 
@@ -169,20 +169,16 @@ object RealmsImpl {
       initialState = RealmState.Initial,
       next = Realms.next,
       evaluate = Realms.evaluate(resolveWellKnown, existingRealms),
-      tagger = (_: RealmEvent) => Set(entityType),
-      snapshotStrategy = SnapshotStrategy.SnapshotCombined(
-        SnapshotStrategy.SnapshotPredicate((state: RealmState, _: RealmEvent, _: Long) => state.deprecated),
-        SnapshotStrategy.SnapshotEvery(
-          numberOfEvents = 500,
-          keepNSnapshots = 1,
-          deleteEventsOnSnapshot = false
-        )
-      )
+      tagger = (_: RealmEvent) => Set(realmTag),
+      snapshotStrategy = realmsConfig.aggregate.snapshotStrategy.combinedStrategy(
+        SnapshotStrategy.SnapshotPredicate((state: RealmState, _: RealmEvent, _: Long) => state.deprecated)
+      ),
+      stopStrategy = realmsConfig.aggregate.stopStrategy.persistentStrategy
     )
 
     ShardedAggregate.persistentSharded(
       definition = definition,
-      config = realmsConfig.aggregate,
+      config = realmsConfig.aggregate.processor,
       retryStrategy = RetryStrategy.alwaysGiveUp
       // TODO: configure the number of shards
     )

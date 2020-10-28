@@ -5,14 +5,14 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
+import ch.epfl.bluebrain.nexus.sourcing.TestCommand.{Increment, IncrementAsync, Initialize}
 import ch.epfl.bluebrain.nexus.sourcing.TestEvent.{Incremented, Initialized}
 import ch.epfl.bluebrain.nexus.sourcing.TestRejection.InvalidRevision
 import ch.epfl.bluebrain.nexus.sourcing.TestState.Current
-import ch.epfl.bluebrain.nexus.sourcing.TestCommand.{Increment, IncrementAsync, Initialize}
 import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.sourcing.processor.StopStrategy.{PersistentStopStrategy, TransientStopStrategy}
-import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, EventSourceProcessor, ProcessorCommand}
+import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessor, EventSourceProcessorConfig, ProcessorCommand}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.should.Matchers
@@ -25,7 +25,7 @@ abstract class EventSourceProcessorSpec(config: Config)
     with AnyWordSpecLike
     with Matchers {
 
-  val eventSourceConfig: AggregateConfig = processor.AggregateConfig(
+  val eventSourceConfig: EventSourceProcessorConfig = processor.EventSourceProcessorConfig(
     100.millis,
     100.millis,
     system.executionContext,
@@ -34,6 +34,13 @@ abstract class EventSourceProcessorSpec(config: Config)
 
   val entityId      = "A"
   val persistenceId = "increment-A"
+
+  val stopProbe = testKit.createTestProbe[String]()
+
+  def onStopCallback(actorRef: ActorRef[ProcessorCommand]): Behavior[ProcessorCommand] = {
+    stopProbe.ref ! s"${actorRef.path.name} got stopped"
+    Behaviors.stopped[ProcessorCommand]
+  }
 
   def processorWithoutStop: ActorRef[ProcessorCommand]
 
@@ -78,15 +85,8 @@ abstract class EventSourceProcessorSpec(config: Config)
 
   "Stop" should {
     "happen after some inactivity" in {
-      val probe = testKit.createTestProbe[String]()
-
-      def stopAfterInactivity(actorRef: ActorRef[ProcessorCommand]) = {
-        probe.ref ! s"${actorRef.path.name} got stopped"
-        Behaviors.stopped[ProcessorCommand]
-      }
-
-      val actor = processorWithStop(stopAfterInactivity)
-      probe.expectMessage(s"${actor.path.name} got stopped")
+      val actor = processorWithStop(onStopCallback)
+      stopProbe.expectMessage(s"${actor.path.name} got stopped")
     }
   }
 
@@ -148,10 +148,7 @@ class PersistentEventProcessorSpec
     with BeforeAndAfterEach {
 
   override val processorWithoutStop: ActorRef[ProcessorCommand] =
-    processor(
-      PersistentStopStrategy.never,
-      (_: ActorRef[ProcessorCommand]) => Behaviors.same
-    )
+    processor(PersistentStopStrategy.never, onStopCallback)
   private val persistenceTestKit                                = PersistenceTestKit(system)
 
   override def beforeEach(): Unit = {
@@ -197,15 +194,8 @@ class PersistentEventProcessorSpec
 
   "Stop" should {
     "happen after recovery has been completed" in {
-      val probe = testKit.createTestProbe[String]()
-
-      def stopAfterInactivity(actorRef: ActorRef[ProcessorCommand]) = {
-        probe.ref ! s"${actorRef.path.name} got stopped"
-        Behaviors.stopped[ProcessorCommand]
-      }
-
-      val actor = processor(PersistentStopStrategy(None, Some(60.millis)), stopAfterInactivity)
-      probe.expectMessage(s"${actor.path.name} got stopped")
+      val actor = processor(PersistentStopStrategy(None, Some(60.millis)), onStopCallback)
+      stopProbe.expectMessage(s"${actor.path.name} got stopped")
     }
   }
 
@@ -218,7 +208,7 @@ class TransientEventProcessorSpec
     with BeforeAndAfterEach {
 
   override val processorWithoutStop: ActorRef[ProcessorCommand] =
-    processor(TransientStopStrategy.never, (_: ActorRef[ProcessorCommand]) => Behaviors.same)
+    processor(TransientStopStrategy.never, onStopCallback)
 
   override protected def expectNothingPersisted(): Unit = {}
 

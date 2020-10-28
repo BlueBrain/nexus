@@ -31,10 +31,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     entityId: String,
     definition: EventDefinition[State, Command, Event, Rejection],
     stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-    config: AggregateConfig
+    config: EventSourceProcessorConfig
 )(implicit State: ClassTag[State], Command: ClassTag[Command], Event: ClassTag[Event], Rejection: ClassTag[Rejection]) {
 
-  protected val id = persistenceId(definition.entityType, entityId)
+  protected val id: String = persistenceId(definition.entityType, entityId)
 
   /**
     * The behavior of the underlying state actor when we opted for persisting the events
@@ -62,7 +62,8 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Effect.reply(replyTo)(
                 LastSeqNr(EventSourcedBehavior.lastSequenceNumber(context))
               )
-            case Append(_, event: Event)                                               => Effect.persist(event)
+            case Append(id, Event(event), replyTo: ActorRef[AppendSuccess[_, _]])      =>
+              Effect.persist(event).thenReply(replyTo)(state => AppendSuccess(id, event, state))
           }
         },
         // Event handler
@@ -127,8 +128,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             Behaviors.same
           case _: RequestLastSeqNr                                                   =>
             Behaviors.same
-          case Append(_, event: Event)                                               =>
-            behavior(t.next(state, event))
+          case Append(id, Event(event), replyTo: ActorRef[AppendSuccess[_, _]])      =>
+            val newState = t.next(state, event)
+            replyTo ! AppendSuccess(id, event, newState)
+            behavior(newState)
         }
       }
     behavior(t.initialState)
@@ -197,25 +200,27 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
         def stash(state: State, replyTo: ActorRef[RunResult]): Behavior[ProcessorCommand] =
           checkEntityId { (_, cmd) =>
             cmd match {
-              case ro: ReadonlyCommand                                     =>
+              case ro: ReadonlyCommand                           =>
                 stateActor ! ro
                 Behaviors.same
-              case success @ EvaluationSuccess(Event(event), State(state)) =>
-                stateActor ! Append(entityId, event)
-                replyTo ! success
-                active(state)
-              case rejection @ EvaluationRejection(Rejection(_))           =>
+              case AppendSuccess(_, Event(event), State(state))  =>
+                replyTo ! EvaluationSuccess(event, state)
+                buffer.unstashAll(active(state))
+              case EvaluationSuccessInternal(Event(event))       =>
+                stateActor ! Append(entityId, event, context.self)
+                Behaviors.same
+              case rejection @ EvaluationRejection(Rejection(_)) =>
                 replyTo ! rejection
                 buffer.unstashAll(active(state))
-              case error: EvaluationError                                  =>
+              case error: EvaluationError                        =>
                 replyTo ! error
                 buffer.unstashAll(active(state))
-              case dryRun: DryRunResult                                    =>
+              case dryRun: DryRunResult                          =>
                 replyTo ! dryRun
                 buffer.unstashAll(active(state))
-              case Idle                                                    =>
+              case Idle                                          =>
                 stopAfterInactivity(context.self)
-              case c                                                       =>
+              case c                                             =>
                 buffer.stash(c)
                 Behaviors.same
             }
@@ -277,7 +282,12 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
       _ <- IO.shift(config.evaluationExecutionContext)
       r <- definition.evaluate(state, cmd).attempt
       _ <- IO.shift(context.executionContext)
-      _ <- tellResult(r.map { e => EvaluationSuccess(e, definition.next(state, e)) }.valueOr(EvaluationRejection(_)))
+      _ <- tellResult(
+             r.map {
+               case e if dryRun => EvaluationSuccess(e, definition.next(state, e))
+               case e           => EvaluationSuccessInternal(e)
+             }.valueOr(EvaluationRejection(_))
+           )
     } yield ()
     val io    = eval
       .timeoutTo(
@@ -351,7 +361,7 @@ object EventSourceProcessor {
       entityId: String,
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
       stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-      config: AggregateConfig
+      config: EventSourceProcessorConfig
   ): EventSourceProcessor[State, Command, Event, Rejection] =
     new EventSourceProcessor[State, Command, Event, Rejection](
       entityId,
@@ -371,7 +381,7 @@ object EventSourceProcessor {
       entityId: String,
       definition: TransientEventDefinition[State, Command, Event, Rejection],
       stopAfterInactivity: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand],
-      config: AggregateConfig
+      config: EventSourceProcessorConfig
   ) =
     new EventSourceProcessor[State, Command, Event, Rejection](
       entityId,

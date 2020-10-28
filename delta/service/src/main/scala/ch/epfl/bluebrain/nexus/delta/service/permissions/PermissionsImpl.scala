@@ -11,9 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
+import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.{entityId, entityType, permissionsTag, PermissionsAggregate}
 import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.processor.{AggregateConfig, ShardedAggregate, StopStrategy}
+import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -76,12 +77,11 @@ final class PermissionsImpl private (
   override def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(DeletePermissions(rev, caller)).named("deletePermissions", component)
 
-  override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] = {
+  override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
     offset match {
       case NoOffset => eventLog.eventsByPersistenceId(persistenceId, Long.MinValue, Long.MaxValue)
       case _        => eventLog.eventsByTag(permissionsTag, offset)
     }
-  }
 
   override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
     offset match {
@@ -135,14 +135,13 @@ object PermissionsImpl {
       next = Permissions.next(minimum),
       evaluate = Permissions.evaluate(minimum),
       tagger = (_: PermissionsEvent) => Set(permissionsTag),
-      snapshotStrategy =
-        SnapshotStrategy.SnapshotEvery(numberOfEvents = 500, keepNSnapshots = 1, deleteEventsOnSnapshot = false),
-      stopStrategy = StopStrategy.PersistentStopStrategy.never
+      snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
+      stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )
     ShardedAggregate
       .persistentSharded(
         definition = definition,
-        config = aggregateConfig,
+        config = aggregateConfig.processor,
         retryStrategy = RetryStrategy.alwaysGiveUp
         // TODO: configure the number of shards
       )

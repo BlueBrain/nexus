@@ -2,7 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
 
+import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -11,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
-import monix.bio.{IO, UIO}
+import fs2.Stream
+import monix.bio.{IO, Task, UIO}
 
 /**
   * Operations pertaining to managing Access Control Lists.
@@ -133,6 +136,21 @@ trait Acls {
     * @param caller    the caller that contains the provided identities
     */
   def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection]
+
+  /**
+    * A non terminating stream of events for ACLs. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
+    * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def events(offset: Offset = NoOffset): Stream[Task, Envelope[AclEvent]]
+
+  /**
+    * The current ACLs events. The stream stops after emitting all known events.
+    *
+    * @param offset the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[AclEvent]]
 
   /**
     * Overrides ''acl'' on a the passed ''address''.

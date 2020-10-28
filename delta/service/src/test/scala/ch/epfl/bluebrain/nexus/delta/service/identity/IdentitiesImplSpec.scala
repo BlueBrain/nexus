@@ -5,7 +5,6 @@ import java.util.Date
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
-import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
@@ -13,9 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{Access
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClientError.HttpUnexpectedError
-import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, TokenGenerator}
+import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures, TokenGenerator}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import com.nimbusds.jose.crypto.RSASSASigner
 import com.nimbusds.jose.{JWSAlgorithm, JWSHeader}
@@ -37,7 +35,8 @@ class IdentitiesImplSpec
     with TestHelpers
     with IOValues
     with EitherValuable
-    with OptionValues {
+    with OptionValues
+    with ConfigFixtures {
 
   private val rsaKey = TokenGenerator.generateKeys
 
@@ -86,12 +85,7 @@ class IdentitiesImplSpec
     )(uri)
 
   private val groupsConfig = GroupsConfig(
-    aggregate = AggregateConfig(
-      askTimeout = Timeout(5.seconds),
-      evaluationMaxDuration = 1.second,
-      evaluationExecutionContext = system.executionContext,
-      stashSize = 100
-    ),
+    aggregate,
     RetryStrategyConfig.AlwaysGiveUp,
     2.minutes
   )

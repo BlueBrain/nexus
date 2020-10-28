@@ -36,9 +36,9 @@ object StopStrategy {
     * A stop strategy for persistent actors
     *
     * @param lapsedSinceLastInteraction   Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval;
-    *                                       None to keep the actor alive
+    *                                     None to keep the actor alive
     * @param lapsedSinceRecoveryCompleted Some(duration) if the actor should stop (and passivate);
-    *                                       None to keep the actor alive (and no passivation)
+    *                                     None to keep the actor alive (and no passivation)
     */
   final case class PersistentStopStrategy(
       lapsedSinceLastInteraction: Option[FiniteDuration],

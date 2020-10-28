@@ -2,17 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import java.time.Instant
 
+import akka.persistence.query.Sequence
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{AclCannotContainEmptyPermissionCollection, AclIsEmpty, AclNotFound, NothingToBeUpdated, RevisionNotFound, UnknownPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -95,11 +98,8 @@ trait AclsBehaviors {
     }
 
     "replace an ACL" in {
-      acls.replace(AclAddress.Root, userR_groupX, 1L).accepted shouldEqual resourceFor(
-        AclAddress.Root,
-        userR_groupX,
-        2L
-      )
+      acls.replace(AclAddress.Root, userR_groupX, 1L).accepted shouldEqual
+        resourceFor(AclAddress.Root, userR_groupX, 2L)
     }
 
     "subtract an ACL" in {
@@ -210,6 +210,60 @@ trait AclsBehaviors {
           resourceFor(orgTarget, userR_groupX, 1L),
           resourceFor(projectTarget, anonR, 1L)
         )
+    }
+
+    val allEvents = List(
+      (AclAddress.Root, ClassUtils.simpleName(AclAppended), Sequence(1L)),
+      (AclAddress.Root, ClassUtils.simpleName(AclReplaced), Sequence(2L)),
+      (AclAddress.Root, ClassUtils.simpleName(AclSubtracted), Sequence(3L)),
+      (AclAddress.Root, ClassUtils.simpleName(AclDeleted), Sequence(4L)),
+      (orgTarget, ClassUtils.simpleName(AclReplaced), Sequence(5L)),
+      (orgTarget, ClassUtils.simpleName(AclAppended), Sequence(6L)),
+      (AclAddress.Root, ClassUtils.simpleName(AclAppended), Sequence(7L)),
+      (projectTarget, ClassUtils.simpleName(AclAppended), Sequence(8L)),
+      (org2Target, ClassUtils.simpleName(AclAppended), Sequence(9L))
+    )
+
+    "get the different events from start" in {
+      val events = acls
+        .events()
+        .map { e => (e.event.address, e.eventType, e.offset) }
+        .take(9L)
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents
+    }
+
+    "get the different current events from start" in {
+      val events = acls
+        .currentEvents()
+        .map { e => (e.event.address, e.eventType, e.offset) }
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents
+    }
+
+    "get the different events from offset 2" in {
+      val events = acls
+        .events(Sequence(2L))
+        .map { e => (e.event.address, e.eventType, e.offset) }
+        .take(9L - 2L)
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents.drop(2)
+    }
+
+    "get the different current events from offset 2" in {
+      val events = acls
+        .currentEvents(Sequence(2L))
+        .map { e => (e.event.address, e.eventType, e.offset) }
+        .compile
+        .toList
+
+      events.accepted shouldEqual allEvents.drop(2)
     }
 
     "fail to fetch an ACL on nonexistent revision" in {

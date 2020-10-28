@@ -5,14 +5,14 @@ import akka.util.Timeout
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.service.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
-import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig._
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
+import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
+import ch.epfl.bluebrain.nexus.sourcing.{RetryStrategy, RetryStrategyConfig, SnapshotStrategyConfig}
 import com.typesafe.scalalogging.Logger
 import monix.execution.Scheduler
 import pureconfig.ConfigReader
@@ -35,6 +35,31 @@ trait ConfigReaderInstances {
         .map(uri => BaseUri(uri))
     )
 
+  implicit final val stopStrategyConfigReader: ConfigReader[StopStrategyConfig] =
+    deriveReader[StopStrategyConfig]
+
+  implicit final val snapshotStrategyConfigReader: ConfigReader[SnapshotStrategyConfig] =
+    ConfigReader.fromCursor { cursor =>
+      for {
+        obj            <- cursor.asObjectCursor
+        noeK           <- obj.atKey("number-of-events")
+        noe            <- ConfigReader[Option[Int]].from(noeK)
+        keepK          <- obj.atKey("keep-snapshots")
+        keep           <- ConfigReader[Option[Int]].from(keepK)
+        deleteK        <- obj.atKey("delete-events-on-snapshot")
+        delete         <- ConfigReader[Option[Boolean]].from(deleteK)
+        snapshotConfig <-
+          SnapshotStrategyConfig(noe, keep, delete).toRight(
+            ConfigReaderFailures(
+              ConvertFailure(
+                CannotConvert("snapshotConfig", "SnapshotStrategyConfig", "All it's members must exist or be empty"),
+                obj
+              )
+            )
+          )
+      } yield snapshotConfig
+    }
+
   implicit final val aggregateConfigReader: ConfigReader[AggregateConfig] =
     ConfigReader.fromCursor { cursor =>
       for {
@@ -45,7 +70,15 @@ trait ConfigReaderInstances {
         evaluationMaxDuration <- ConfigReader[FiniteDuration].from(emdc)
         ssc                   <- obj.atKey("stash-size")
         stashSize             <- ssc.asInt
-      } yield AggregateConfig(Timeout(askTimeout), evaluationMaxDuration, Scheduler.global, stashSize)
+        stopStrategyK         <- obj.atKey("stop-strategy")
+        stopStrategy          <- ConfigReader[StopStrategyConfig].from(stopStrategyK)
+        snapshotStrategyK     <- obj.atKey("snapshot-strategy")
+        snapshotStrategy      <- ConfigReader[SnapshotStrategyConfig].from(snapshotStrategyK)
+      } yield AggregateConfig(
+        stopStrategy,
+        snapshotStrategy,
+        EventSourceProcessorConfig(Timeout(askTimeout), evaluationMaxDuration, Scheduler.global, stashSize)
+      )
     }
 
   implicit final val retryStrategyConfigReader: ConfigReader[RetryStrategyConfig] = {

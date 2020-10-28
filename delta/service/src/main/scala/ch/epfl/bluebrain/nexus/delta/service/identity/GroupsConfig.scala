@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.identity
 
+import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateConfig
 
 import scala.concurrent.duration.FiniteDuration
 
