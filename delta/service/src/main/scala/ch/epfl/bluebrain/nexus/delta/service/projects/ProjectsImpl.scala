@@ -6,6 +6,7 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -18,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{moduleType, ProjectsAggregate, ProjectsCache}
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
@@ -154,11 +155,6 @@ object ProjectsImpl {
     Aggregate[String, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection]
 
   type ProjectsCache = KeyValueStore[ProjectRef, ProjectResource]
-
-  /**
-    * The moduleType.
-    */
-  final val moduleType: String = "project"
 
   private val logger: Logger = Logger[ProjectsImpl]
 

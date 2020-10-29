@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{entityId, moduleType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.{entityId, moduleType, PermissionsAggregate}
+import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.PermissionsAggregate
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -27,8 +28,6 @@ final class PermissionsImpl private (
 ) extends Permissions {
 
   private val id: Iri = iri"${base.endpoint}/permissions"
-
-  override val persistenceId: String = s"$moduleType-$entityId"
 
   override def fetch: UIO[PermissionsResource] =
     agg.state(entityId).map(_.toResource(id, minimum)).named("fetchPermissions", moduleType)
@@ -90,16 +89,6 @@ object PermissionsImpl {
     */
   type PermissionsAggregate =
     Aggregate[String, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection]
-
-  /**
-    * The permissions entity type.
-    */
-  final val moduleType: String = "permissions"
-
-  /**
-    * The constant entity id.
-    */
-  final val entityId: String = "permissions"
 
   /**
     * Constructs a permissions aggregate. It requires that the system has joined a cluster. The implementation is

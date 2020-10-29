@@ -22,7 +22,7 @@ trait Permissions {
   /**
     * @return the permissions singleton persistence id
     */
-  def persistenceId: String
+  def persistenceId: String = Permissions.persistenceId
 
   /**
     * @return the minimum set of permissions
@@ -111,6 +111,18 @@ trait Permissions {
 }
 
 object Permissions {
+
+  /**
+    * The permissions entity type.
+    */
+  val moduleType: String = "permissions"
+
+  /**
+    * The constant entity id.
+    */
+  val entityId: String = "permissions"
+
+  val persistenceId: String = s"$moduleType-$entityId"
 
   /**
     * ACLs permissions.

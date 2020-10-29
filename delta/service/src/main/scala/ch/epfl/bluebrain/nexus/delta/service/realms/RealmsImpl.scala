@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
@@ -102,11 +103,6 @@ object RealmsImpl {
   type RealmsAggregate = Aggregate[String, RealmState, RealmCommand, RealmEvent, RealmRejection]
 
   type RealmsCache = KeyValueStore[Label, RealmResource]
-
-  /**
-    * The realms entity type.
-    */
-  final val moduleType: String = "realm"
 
   private val logger: Logger = Logger[RealmsImpl]
 

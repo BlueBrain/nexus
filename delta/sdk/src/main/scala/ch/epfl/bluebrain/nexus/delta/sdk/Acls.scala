@@ -193,6 +193,12 @@ trait Acls {
 }
 
 object Acls {
+
+  /**
+    * The acl module type
+    */
+  final val moduleType: String = "acl"
+
   private[delta] def next(state: AclState, event: AclEvent): AclState = {
     def replaced(e: AclReplaced): AclState     =
       state match {

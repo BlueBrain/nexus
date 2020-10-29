@@ -32,8 +32,6 @@ final class PermissionsDummy private (
 )(implicit clock: Clock[UIO])
     extends Permissions {
 
-  override val persistenceId: String = "permissions-permissions"
-
   override def fetch: UIO[PermissionsResource] =
     currentState.map(_.toResource(id, minimum))
 

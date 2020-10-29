@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.persistence.query.Offset
 import cats.implicits._
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -129,8 +130,6 @@ object ProjectsDummy {
   type ProjectsJournal = Journal[ProjectRef, ProjectEvent]
   type ProjectsCache   = ResourceCache[ProjectRef, Project]
 
-  val entityType: String = "projects"
-
   implicit val idLens: Lens[ProjectEvent, ProjectRef] = (event: ProjectEvent) =>
     ProjectRef(event.organizationLabel, event.label)
 
@@ -146,7 +145,7 @@ object ProjectsDummy {
       serviceAccount: Identity.Subject
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
-      journal <- Journal(entityType)
+      journal <- Journal(moduleType)
       cache   <- ResourceCache[ProjectRef, Project]
       sem     <- IOSemaphore(1L)
     } yield new ProjectsDummy(journal, cache, sem, organizations, acls, ownerPermissions, serviceAccount)

@@ -126,6 +126,12 @@ trait Organizations {
 }
 
 object Organizations {
+
+  /**
+    * The organizations entity type.
+    */
+  final val moduleType: String = "organization"
+
   private[delta] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
     (state, ev) match {
       case (Initial, OrganizationCreated(label, uuid, _, desc, instant, identity)) =>

@@ -110,6 +110,12 @@ trait Realms {
 }
 
 object Realms {
+
+  /**
+    * The realms entity type.
+    */
+  final val moduleType: String = "realm"
+
   private[delta] def next(state: RealmState, event: RealmEvent): RealmState = {
     // format: off
     def created(e: RealmCreated): RealmState = state match {

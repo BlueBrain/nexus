@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
@@ -120,11 +121,6 @@ object OrganizationsImpl {
     Aggregate[String, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection]
 
   type OrganizationsCache = KeyValueStore[Label, OrganizationResource]
-
-  /**
-    * The organizations entity type.
-    */
-  final val moduleType: String = "organization"
 
   private val logger: Logger = Logger[OrganizationsImpl]
 

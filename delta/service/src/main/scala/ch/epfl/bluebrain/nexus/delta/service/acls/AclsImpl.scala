@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.acls
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.Acls.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{moduleType, AclsAggregate, AclsCache}
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -92,8 +93,6 @@ object AclsImpl {
   type AclsAggregate = Aggregate[String, AclState, AclCommand, AclEvent, AclRejection]
 
   type AclsCache = KeyValueStore[AclAddress, AclResource]
-
-  final val moduleType: String = "acl"
 
   private val logger: Logger = Logger[AclsImpl]
 
