@@ -13,8 +13,9 @@ import ch.epfl.bluebrain.nexus.sourcing.{EventDefinition, PersistentEventDefinit
 import monix.bio.IO
 import monix.execution.Scheduler
 
+import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
-import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 /**
   * Event source based processor based on a Akka behavior which accepts and evaluates commands
@@ -197,30 +198,28 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
 
         // Evaluates the command and sends a message to self with the evaluation result
         def evaluateCommand(state: State, cmd: Command, dryRun: Boolean): Unit = {
-          val scope = if (dryRun) "testing" else "evaluating"
-          val eval  = for {
-            _    <- IO.shift(config.evaluationExecutionContext)
-            r    <- definition.evaluate(state, cmd).attempt
-            _    <- IO.shift(context.executionContext)
-            evRes = r.map(e => EvaluationResult.EvaluationSuccess(e, definition.next(state, e)))
-                      .valueOr(EvaluationResult.EvaluationRejection(_))
-            _    <- IO.delay(context.self ! evRes)
-          } yield ()
-          val io    = eval
-            .timeoutTo(
-              config.evaluationMaxDuration, {
-                IO.shift(context.executionContext) >>
-                  IO.delay(context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)) >>
-                  IO.delay(context.self ! EvaluationResult.EvaluationTimeout(cmd, config.evaluationMaxDuration))
-              }
-            )
-            .onError { case NonFatal(th) =>
-              IO.shift(context.executionContext) >>
-                IO.delay(context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)) >>
-                IO.delay(context.self ! EvaluationResult.EvaluationFailure(cmd, Option(th.getMessage)))
-            }
+          val scope      = if (dryRun) "testing" else "evaluating"
+          val evalResult = for {
+            _ <- IO.shift(config.evaluationExecutionContext)
+            r <- definition.evaluate(state, cmd).attempt
+            _ <- IO.shift(context.executionContext)
+          } yield r
+            .map(e => EvaluationResult.EvaluationSuccess(e, definition.next(state, e)))
+            .valueOr(EvaluationResult.EvaluationRejection(_))
 
-          io.runAsyncAndForget
+          val io = evalResult
+            .timeoutWith(config.evaluationMaxDuration, new TimeoutException())
+            .onErrorHandleWith(err => IO.shift(context.executionContext) >> IO.raiseError(err))
+
+          context.pipeToSelf(io.runToFuture) {
+            case Success(value)               => value
+            case Failure(_: TimeoutException) =>
+              context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)
+              EvaluationResult.EvaluationTimeout(cmd, config.evaluationMaxDuration)
+            case Failure(th)                  =>
+              context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)
+              EvaluationResult.EvaluationFailure(cmd, Option(th.getMessage))
+          }
         }
 
         /**
