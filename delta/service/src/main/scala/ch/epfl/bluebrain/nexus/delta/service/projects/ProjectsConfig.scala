@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 
 /**
-  * Configuration for the Organizations module.
+  * Configuration for the Projects module.
   *
   * @param aggregate     configuration of the underlying aggregate
   * @param keyValueStore configuration of the underlying key/value store

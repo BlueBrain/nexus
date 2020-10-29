@@ -6,14 +6,16 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{aclTag, entityType, AclsAggregate, AclsCache}
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{moduleType, AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
+import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor._
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
@@ -23,73 +25,55 @@ import monix.execution.Scheduler
 final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)
     extends Acls {
 
-  private val component: String = "acls"
-
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
-    agg.state(address.string).map(_.toResource).named("fetchAcl", component)
+    agg.state(address.string).map(_.toResource).named("fetchAcl", moduleType)
 
   override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.RevisionNotFound, Option[AclResource]] =
-    if (rev == 0L) UIO.pure(None).named("fetchAclsAt", component, Map("rev" -> rev))
-    else
-      eventLog
-        .currentEventsByPersistenceId(
-          EventSourceProcessor.persistenceId(entityType, address.string),
-          Long.MinValue,
-          Long.MaxValue
-        )
-        .takeWhile(_.event.rev <= rev)
-        .fold[AclState](AclState.Initial) { case (state, event) =>
-          Acls.next(state, event.event)
-        }
-        .compile
-        .last
-        .hideErrors
-        .flatMap {
-          case Some(state) if state.rev == rev => UIO.pure(state.toResource)
-          case Some(_)                         =>
-            fetch(address).flatMap {
-              case Some(res) => IO.raiseError(RevisionNotFound(rev, res.rev))
-              case None      => IO.pure(None)
-            }
-          case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
-        }
-        .named("fetchAclsAt", component, Map("rev" -> rev))
+    eventLog
+      .fetchStateAt(
+        persistenceId(moduleType, address.string),
+        rev,
+        Initial,
+        Acls.next
+      )
+      .bimap(RevisionNotFound(rev, _), _.toResource)
+      .named("fetchAclAt", moduleType)
 
-  override def list(filter: AclAddressFilter): UIO[AclCollection]                                              =
+  override def list(filter: AclAddressFilter): UIO[AclCollection]                              =
     index.values
       .map(as => AclCollection(as.toSeq: _*).fetch(filter))
-      .named("listAcls", component, Map("withAncestors" -> filter.withAncestors))
+      .named("listAcls", moduleType, Map("withAncestors" -> filter.withAncestors))
 
-  override def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection]                 =
+  override def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection] =
     list(filter)
       .map(_.filter(caller.identities))
-      .named("listSelfAcls", component, Map("withAncestors" -> filter.withAncestors))
+      .named("listSelfAcls", moduleType, Map("withAncestors" -> filter.withAncestors))
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]]                                    =
-    eventLog.eventsByTag(aclTag, offset)
+  override def events(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]]                    =
+    eventLog.eventsByTag(moduleType, offset)
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]] =
-    eventLog.currentEventsByTag(aclTag, offset)
+    eventLog.currentEventsByTag(moduleType, offset)
 
   override def replace(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Identity.Subject
   ): IO[AclRejection, AclResource] =
-    eval(ReplaceAcl(address, acl, rev, caller)).named("replaceAcls", component)
+    eval(ReplaceAcl(address, acl, rev, caller)).named("replaceAcls", moduleType)
 
   override def append(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Identity.Subject
   ): IO[AclRejection, AclResource] =
-    eval(AppendAcl(address, acl, rev, caller)).named("appendAcls", component)
+    eval(AppendAcl(address, acl, rev, caller)).named("appendAcls", moduleType)
 
   override def subtract(address: AclAddress, acl: Acl, rev: Long)(implicit
       caller: Identity.Subject
   ): IO[AclRejection, AclResource] =
-    eval(SubtractAcl(address, acl, rev, caller)).named("subtractAcls", component)
+    eval(SubtractAcl(address, acl, rev, caller)).named("subtractAcls", moduleType)
 
   override def delete(address: AclAddress, rev: Long)(implicit
       caller: Identity.Subject
   ): IO[AclRejection, AclResource] =
-    eval(DeleteAcl(address, rev, caller)).named("deleteAcls", component)
+    eval(DeleteAcl(address, rev, caller)).named("deleteAcls", moduleType)
 
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
     for {
@@ -109,9 +93,7 @@ object AclsImpl {
 
   type AclsCache = KeyValueStore[AclAddress, AclResource]
 
-  final val entityType: String = "acl"
-
-  final val aclTag = "acl"
+  final val moduleType: String = "acl"
 
   private val logger: Logger = Logger[AclsImpl]
 
@@ -120,11 +102,11 @@ object AclsImpl {
       aggregateConfig: AggregateConfig
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[AclsAggregate] = {
     val definition = PersistentEventDefinition(
-      entityType = entityType,
+      entityType = moduleType,
       initialState = AclState.Initial,
       next = Acls.next,
       evaluate = Acls.evaluate(permissions),
-      tagger = (_: AclEvent) => Set(aclTag),
+      tagger = (_: AclEvent) => Set(moduleType),
       snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
       stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
     )
@@ -140,7 +122,7 @@ object AclsImpl {
   private def cache(aclsConfig: AclsConfig)(implicit as: ActorSystem[Nothing]): AclsCache = {
     implicit val cfg: KeyValueStoreConfig  = aclsConfig.keyValueStore
     val clock: (Long, AclResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed("acls", clock)
+    KeyValueStore.distributed(moduleType, clock)
   }
 
   private def startIndexing(
@@ -150,10 +132,10 @@ object AclsImpl {
       acls: Acls
   )(implicit as: ActorSystem[Nothing], sc: Scheduler) =
     StreamSupervisor.runAsSingleton(
-      "AclsIndex",
+      s"AclsIndex",
       streamTask = Task.delay(
         eventLog
-          .eventsByTag(aclTag, Offset.noOffset)
+          .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             acls.fetch(envelope.event.address).flatMap {
               case Some(acl) => index.put(acl.id, acl)

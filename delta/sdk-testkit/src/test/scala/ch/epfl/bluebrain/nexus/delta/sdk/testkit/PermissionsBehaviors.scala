@@ -158,9 +158,6 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
       val fetch = retryBackoff(permissions.accepted.fetchAt(4L), 4, 100.milliseconds)
       fetch.accepted.value shouldEqual PermissionSet(minimum ++ Set(perm3, perm4))
     }
-    "return none for negative rev" in {
-      permissions.accepted.fetchAt(-1L).rejected shouldEqual RevisionNotFound(-1L, 5L)
-    }
     "return none for unknown rev" in {
       permissions.accepted.fetchAt(9999L).rejected shouldEqual RevisionNotFound(9999L, 5L)
     }

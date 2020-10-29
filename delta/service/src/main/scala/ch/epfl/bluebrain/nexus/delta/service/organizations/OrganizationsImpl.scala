@@ -9,16 +9,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{RevisionNotFound, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationEvent, OrganizationState, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
+import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
+import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
@@ -31,53 +33,38 @@ final class OrganizationsImpl private (
     cache: OrganizationsCache
 ) extends Organizations {
 
-  private val component: String = "organizations"
-
   override def create(
       label: Label,
       description: Option[String]
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    eval(CreateOrganization(label, description, caller)).named("createOrganization", component)
+    eval(CreateOrganization(label, description, caller)).named("createOrganization", moduleType)
 
   override def update(
       label: Label,
       description: Option[String],
       rev: Long
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    eval(UpdateOrganization(label, rev, description, caller)).named("updateOrganization", component)
+    eval(UpdateOrganization(label, rev, description, caller)).named("updateOrganization", moduleType)
 
   override def deprecate(
       label: Label,
       rev: Long
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    eval(DeprecateOrganization(label, rev, caller)).named("deprecateOrganization", component)
+    eval(DeprecateOrganization(label, rev, caller)).named("deprecateOrganization", moduleType)
 
   override def fetch(label: Label): UIO[Option[OrganizationResource]] =
-    agg.state(label.value).map(_.toResource).named("fetchOrganization", component)
+    agg.state(label.value).map(_.toResource).named("fetchOrganization", moduleType)
 
   override def fetchAt(label: Label, rev: Long): IO[RevisionNotFound, Option[OrganizationResource]] =
-    if (rev == 0L) UIO.pure(None).named("fetchOrganizationAt", component)
-    else {
-      eventLog
-        .currentEventsByPersistenceId(s"$entityType-$label", Long.MinValue, Long.MaxValue)
-        .takeWhile(_.event.rev <= rev)
-        .fold[OrganizationState](OrganizationState.Initial) { case (state, event) =>
-          Organizations.next(state, event.event)
-        }
-        .compile
-        .last
-        .hideErrors
-        .flatMap {
-          case Some(state) if state.rev == rev => UIO.pure(state.toResource)
-          case Some(_)                         =>
-            fetch(label).flatMap {
-              case Some(res) => IO.raiseError(RevisionNotFound(rev, res.rev))
-              case None      => IO.pure(None)
-            }
-          case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
-        }
-        .named("fetchOrganizationAt", component)
-    }
+    eventLog
+      .fetchStateAt(
+        persistenceId(moduleType, label.value),
+        rev,
+        Initial,
+        Organizations.next
+      )
+      .bimap(RevisionNotFound(rev, _), _.toResource)
+      .named("fetchOrganizationAt", moduleType)
 
   override def fetch(uuid: UUID): UIO[Option[OrganizationResource]] =
     fetchFromCache(uuid)
@@ -85,7 +72,7 @@ final class OrganizationsImpl private (
         case Some(label) => fetch(label)
         case None        => UIO.pure(None)
       }
-      .named("fetchOrganizationByUuid", component)
+      .named("fetchOrganizationByUuid", moduleType)
 
   override def fetchAt(uuid: UUID, rev: Long): IO[RevisionNotFound, Option[OrganizationResource]] =
     fetchFromCache(uuid)
@@ -93,7 +80,7 @@ final class OrganizationsImpl private (
         case Some(label) => fetchAt(label, rev)
         case None        => UIO.pure(None)
       }
-      .named("fetchOrganizationAtByUuid", component)
+      .named("fetchOrganizationAtByUuid", moduleType)
 
   private def fetchFromCache(uuid: UUID): UIO[Option[Label]]                                  =
     cache.collectFirst { case (label, resource) if resource.value.uuid == uuid => label }
@@ -117,13 +104,13 @@ final class OrganizationsImpl private (
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
         )
       }
-      .named("listOrganizations", component)
+      .named("listOrganizations", moduleType)
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] =
-    eventLog.eventsByTag(organizationTag, offset)
+    eventLog.eventsByTag(moduleType, offset)
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[OrganizationEvent]] =
-    eventLog.currentEventsByTag(organizationTag, offset)
+    eventLog.currentEventsByTag(moduleType, offset)
 
 }
 
@@ -137,12 +124,7 @@ object OrganizationsImpl {
   /**
     * The organizations entity type.
     */
-  final val entityType: String = "organizations"
-
-  /**
-    * The organizations tag name.
-    */
-  final val organizationTag = "organization"
+  final val moduleType: String = "organization"
 
   private val logger: Logger = Logger[OrganizationsImpl]
 
@@ -152,7 +134,7 @@ object OrganizationsImpl {
   private def cache(config: OrganizationsConfig)(implicit as: ActorSystem[Nothing]): OrganizationsCache = {
     implicit val cfg: KeyValueStoreConfig           = config.keyValueStore
     val clock: (Long, OrganizationResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed("organizations", clock)
+    KeyValueStore.distributed(moduleType, clock)
   }
 
   private def startIndexing(
@@ -165,7 +147,7 @@ object OrganizationsImpl {
       "OrganizationsIndex",
       streamTask = Task.delay(
         eventLog
-          .eventsByTag(organizationTag, Offset.noOffset)
+          .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             organizations.fetch(envelope.event.label).flatMap {
               case Some(org) => index.put(org.id, org)
@@ -184,11 +166,11 @@ object OrganizationsImpl {
       config: OrganizationsConfig
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO], uuidF: UUIDF): UIO[OrganizationsAggregate] = {
     val definition = PersistentEventDefinition(
-      entityType = entityType,
+      entityType = moduleType,
       initialState = OrganizationState.Initial,
       next = Organizations.next,
       evaluate = Organizations.evaluate,
-      tagger = (_: OrganizationEvent) => Set(organizationTag),
+      tagger = (_: OrganizationEvent) => Set(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: OrganizationState, _: OrganizationEvent, _: Long) =>
           state.deprecated

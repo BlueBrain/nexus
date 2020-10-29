@@ -15,11 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{entityType, projectTag, ProjectsAggregate, ProjectsCache}
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{moduleType, ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
@@ -39,12 +38,10 @@ final class ProjectsImpl private (
 )(implicit base: BaseUri)
     extends Projects {
 
-  private val component: String = "projects"
-
   override def create(ref: ProjectRef, fields: ProjectFields)(implicit
       caller: Identity.Subject
   ): IO[ProjectRejection, ProjectResource] =
-    (eval(
+    eval(
       CreateProject(
         ref,
         fields.description,
@@ -53,7 +50,10 @@ final class ProjectsImpl private (
         fields.vocabOrGenerated(ref),
         caller
       )
-    ) <* applyOwnerPermissions(ref, caller)).named("createProject", component)
+    ).named("createProject", moduleType) <* applyOwnerPermissions(ref, caller).named(
+      "applyOwnerPermissions",
+      moduleType
+    )
 
   private def applyOwnerPermissions(ref: ProjectRef, subject: Identity.Subject): IO[OwnerPermissionsFailed, Unit] = {
     val projectAddress = AclAddress.Project(ref.organization, ref.project)
@@ -66,10 +66,8 @@ final class ProjectsImpl private (
       if (ownerPermissions.subsetOf(currentPermissions))
         IO.unit
       else {
-        val (projectAcl, rev) = collection.value.get(projectAddress).fold((Acl.empty, 0L)) { r =>
-          (r.value, r.rev)
-        }
-        acls.replace(projectAddress, projectAcl ++ Acl(subject -> ownerPermissions), rev)(serviceAccount) >> IO.unit
+        val rev = collection.value.get(projectAddress).fold(0L)(_.rev)
+        acls.append(projectAddress, Acl(subject -> ownerPermissions), rev)(serviceAccount) >> IO.unit
       }
     }
 
@@ -89,26 +87,26 @@ final class ProjectsImpl private (
         rev,
         caller
       )
-    ).named("updateProject", component)
+    ).named("updateProject", moduleType)
 
   override def deprecate(ref: ProjectRef, rev: Long)(implicit
       caller: Identity.Subject
   ): IO[ProjectRejection, ProjectResource] =
-    eval(DeprecateProject(ref, rev, caller)).named("deprecateProject", component)
+    eval(DeprecateProject(ref, rev, caller)).named("deprecateProject", moduleType)
 
   override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] =
-    agg.state(ref.toString).map(_.toResource).named("fetchProject", component)
+    agg.state(ref.toString).map(_.toResource).named("fetchProject", moduleType)
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     eventLog
       .fetchStateAt(
-        persistenceId(entityType, ref.toString),
+        persistenceId(moduleType, ref.toString),
         rev,
         Initial,
         Projects.next
       )
       .bimap(RevisionNotFound(rev, _), _.toResource)
-      .named("fetchProjectAt", component)
+      .named("fetchProjectAt", moduleType)
 
   override def fetch(uuid: UUID): UIO[Option[ProjectResource]] =
     fetchFromCache(uuid).flatMap {
@@ -117,7 +115,7 @@ final class ProjectsImpl private (
     }
 
   override def fetchAt(uuid: UUID, rev: Long): IO[RevisionNotFound, Option[ProjectResource]] =
-    super.fetchAt(uuid, rev).named("fetchProjectAtByUuid", component)
+    super.fetchAt(uuid, rev).named("fetchProjectAtByUuid", moduleType)
 
   private def fetchFromCache(uuid: UUID): UIO[Option[ProjectRef]] =
     index.collectFirst { case (ref, resource) if resource.value.uuid == uuid => ref }
@@ -134,13 +132,13 @@ final class ProjectsImpl private (
           results.slice(pagination.from, pagination.from + pagination.size)
         )
       }
-      .named("listProjects", component)
+      .named("listProjects", moduleType)
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
-    eventLog.eventsByTag(projectTag, offset)
+    eventLog.eventsByTag(moduleType, offset)
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
-    eventLog.currentEventsByTag(projectTag, offset)
+    eventLog.currentEventsByTag(moduleType, offset)
 
   private def eval(cmd: ProjectCommand): IO[ProjectRejection, ProjectResource] =
     for {
@@ -158,14 +156,9 @@ object ProjectsImpl {
   type ProjectsCache = KeyValueStore[ProjectRef, ProjectResource]
 
   /**
-    * The projects entity type.
+    * The moduleType.
     */
-  final val entityType: String = "projects"
-
-  /**
-    * The projects tag
-    */
-  final val projectTag: String = "project"
+  final val moduleType: String = "project"
 
   private val logger: Logger = Logger[ProjectsImpl]
 
@@ -175,7 +168,7 @@ object ProjectsImpl {
   private def cache(config: ProjectsConfig)(implicit as: ActorSystem[Nothing]): ProjectsCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
     val clock: (Long, ProjectResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed(entityType, clock)
+    KeyValueStore.distributed(moduleType, clock)
   }
 
   private def startIndexing(
@@ -188,7 +181,7 @@ object ProjectsImpl {
       "ProjectsIndex",
       streamTask = Task.delay(
         eventLog
-          .eventsByTag(projectTag, Offset.noOffset)
+          .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             projects.fetch(envelope.event.ref).flatMap {
               case Some(project) => index.put(project.id, project)
@@ -209,11 +202,11 @@ object ProjectsImpl {
       uuidF: UUIDF
   ): UIO[ProjectsAggregate] = {
     val definition = PersistentEventDefinition(
-      entityType = entityType,
+      entityType = moduleType,
       initialState = Initial,
       next = Projects.next,
       evaluate = Projects.evaluate(organizations.fetch),
-      tagger = (_: ProjectEvent) => Set(projectTag),
+      tagger = (_: ProjectEvent) => Set(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: ProjectState, _: ProjectEvent, _: Long) => state.deprecated)
       ),
