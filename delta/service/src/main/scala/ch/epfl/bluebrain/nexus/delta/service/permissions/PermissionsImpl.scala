@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.{moduleType, entityId, PermissionsAggregate}
+import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.{entityId, moduleType, PermissionsAggregate}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
