@@ -124,7 +124,7 @@ trait Projects {
 object Projects {
 
   /**
-    * The moduleType.
+    * The projects module type.
     */
   final val moduleType: String = "project"
 

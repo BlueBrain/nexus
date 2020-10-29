@@ -112,7 +112,7 @@ trait Realms {
 object Realms {
 
   /**
-    * The realms entity type.
+    * The realms module type.
     */
   final val moduleType: String = "realm"
 

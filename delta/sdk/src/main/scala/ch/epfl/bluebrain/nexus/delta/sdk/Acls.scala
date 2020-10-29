@@ -195,7 +195,7 @@ trait Acls {
 object Acls {
 
   /**
-    * The acl module type
+    * The acls module type
     */
   final val moduleType: String = "acl"
 

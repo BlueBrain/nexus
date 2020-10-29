@@ -113,7 +113,7 @@ trait Permissions {
 object Permissions {
 
   /**
-    * The permissions entity type.
+    * The permissions module type.
     */
   val moduleType: String = "permissions"
 

@@ -128,7 +128,7 @@ trait Organizations {
 object Organizations {
 
   /**
-    * The organizations entity type.
+    * The organizations module type.
     */
   final val moduleType: String = "organization"
 
