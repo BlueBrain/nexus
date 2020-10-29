@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors
@@ -19,7 +20,7 @@ class PermissionsImplSpec extends AbstractDBSpec with PermissionsBehaviors with 
   override def create: Task[Permissions] = {
     eventLog.flatMap { el =>
       PermissionsImpl(
-        PermissionsBehaviors.minimum,
+        PermissionsGen.minimum,
         BaseUri("http://localhost:8080/v1"),
         aggregate,
         el

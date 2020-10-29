@@ -112,7 +112,7 @@ object SearchResults {
     * @param total      the total number of results
     * @param results    the collection of results
     */
-  final def apply[A](total: Long, results: Seq[A]): SearchResults[A] =
+  final def apply[A](total: Long, results: Seq[A]): UnscoredSearchResults[A] =
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
   private def encodeResults[A: Encoder.AsObject](

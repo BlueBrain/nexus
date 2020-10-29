@@ -17,5 +17,5 @@ class ProjectsDummySpec
     with OptionValues {
 
   override def create: UIO[Projects] =
-    organizations.flatMap(ProjectsDummy(_))
+    organizations.flatMap(ProjectsDummy(_, acls, ownerPermissions, serviceAccount))
 }

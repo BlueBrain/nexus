@@ -5,10 +5,10 @@ import java.time.Instant
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, RealmResource}
 import io.circe.Json
 
 /**
@@ -147,5 +147,7 @@ object RealmState {
         )
       )
   }
+
+  implicit val revisionLens: Lens[RealmState, Long] = (s: RealmState) => s.rev
 
 }

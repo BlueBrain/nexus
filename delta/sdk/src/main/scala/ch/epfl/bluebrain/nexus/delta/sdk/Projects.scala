@@ -123,6 +123,11 @@ trait Projects {
 
 object Projects {
 
+  /**
+    * The projects module type.
+    */
+  final val moduleType: String = "project"
+
   private[delta] def next(state: ProjectState, event: ProjectEvent): ProjectState =
     (state, event) match {
       // format: off

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionSet}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors._
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen._
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
@@ -158,9 +158,6 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
       val fetch = retryBackoff(permissions.accepted.fetchAt(4L), 4, 100.milliseconds)
       fetch.accepted.value shouldEqual PermissionSet(minimum ++ Set(perm3, perm4))
     }
-    "return none for negative rev" in {
-      permissions.accepted.fetchAt(-1L).rejected shouldEqual RevisionNotFound(-1L, 5L)
-    }
     "return none for unknown rev" in {
       permissions.accepted.fetchAt(9999L).rejected shouldEqual RevisionNotFound(9999L, 5L)
     }
@@ -220,38 +217,4 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
       // format: on
     }
   }
-}
-
-object PermissionsBehaviors {
-
-  import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{schemas, _}
-
-  /**
-    * The collection of minimum permissions.
-    */
-  val minimum = Set(
-    acls.read,
-    acls.write,
-    permissions.read,
-    permissions.write,
-    realms.read,
-    realms.write,
-    events.read,
-    orgs.read,
-    orgs.write,
-    orgs.create,
-    projects.read,
-    projects.write,
-    projects.create,
-    resources.read,
-    resources.write,
-    resolvers.write,
-    views.write,
-    views.query,
-    schemas.write,
-    files.write,
-    storages.write,
-    archives.write
-  )
-
 }
