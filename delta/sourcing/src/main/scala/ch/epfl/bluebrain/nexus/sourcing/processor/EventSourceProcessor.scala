@@ -184,15 +184,15 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case AggregateRequest.RequestLastSeqNr(_, replyTo) => ChildActorRequest.RequestLastSeqNr(replyTo)
           }
 
-        def toAggregateResponse(result: EvaluationResult): AggregateResponse.EvaluationResult =
+        def toAggregateResponse(result: EvaluationResultInternal): AggregateResponse.EvaluationResult =
           result match {
-            case EvaluationResult.EvaluationSuccess(Event(event), State(state)) =>
+            case EvaluationResultInternal.EvaluationSuccess(Event(event), State(state)) =>
               AggregateResponse.EvaluationSuccess(event, state)
-            case EvaluationResult.EvaluationRejection(Rejection(rej))           =>
+            case EvaluationResultInternal.EvaluationRejection(Rejection(rej))           =>
               AggregateResponse.EvaluationRejection(rej)
-            case EvaluationResult.EvaluationTimeout(Command(cmd), timeoutAfter) =>
+            case EvaluationResultInternal.EvaluationTimeout(Command(cmd), timeoutAfter) =>
               AggregateResponse.EvaluationTimeout(cmd, timeoutAfter)
-            case EvaluationResult.EvaluationFailure(Command(cmd), message)      =>
+            case EvaluationResultInternal.EvaluationFailure(Command(cmd), message)      =>
               AggregateResponse.EvaluationFailure(cmd, message)
           }
 
@@ -204,8 +204,8 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             r <- definition.evaluate(state, cmd).attempt
             _ <- IO.shift(context.executionContext)
           } yield r
-            .map(e => EvaluationResult.EvaluationSuccess(e, definition.next(state, e)))
-            .valueOr(EvaluationResult.EvaluationRejection(_))
+            .map(e => EvaluationResultInternal.EvaluationSuccess(e, definition.next(state, e)))
+            .valueOr(EvaluationResultInternal.EvaluationRejection(_))
 
           val io = evalResult
             .timeoutWith(config.evaluationMaxDuration, new TimeoutException())
@@ -215,10 +215,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case Success(value)               => value
             case Failure(_: TimeoutException) =>
               context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)
-              EvaluationResult.EvaluationTimeout(cmd, config.evaluationMaxDuration)
+              EvaluationResultInternal.EvaluationTimeout(cmd, config.evaluationMaxDuration)
             case Failure(th)                  =>
               context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)
-              EvaluationResult.EvaluationFailure(cmd, Option(th.getMessage))
+              EvaluationResultInternal.EvaluationFailure(cmd, Option(th.getMessage))
           }
         }
 
@@ -271,7 +271,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Behaviors.same
             case Idle                                                   =>
               stopAfterInactivity(context.self)
-            case _: EvaluationResult                                    =>
+            case _: EvaluationResultInternal                            =>
               context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
               Behaviors.unhandled
             case ChildActorResponse.AppendResult(_, _)                  =>
@@ -292,25 +292,25 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             dryRun: Boolean
         ): Behavior[ProcessorCommand] =
           checkEntityId {
-            case EvaluationResult.EvaluationSuccess(Event(event), _) if !dryRun =>
+            case EvaluationResultInternal.EvaluationSuccess(Event(event), _) if !dryRun =>
               stateActor ! ChildActorRequest.Append(event)
               appending(replyTo)
-            case r: EvaluationResult                                            =>
+            case r: EvaluationResultInternal                                            =>
               replyTo ! toAggregateResponse(r)
               buffer.unstashAll(active())
-            case readOnly: AggregateRequest.ReadOnlyRequest                     =>
+            case readOnly: AggregateRequest.ReadOnlyRequest                             =>
               stateActor ! toChildActorRequest(readOnly)
               Behaviors.same
-            case req: AggregateRequest                                          =>
+            case req: AggregateRequest                                                  =>
               buffer.stash(req)
               Behaviors.same
-            case Idle                                                           =>
+            case Idle                                                                   =>
               buffer.stash(Idle)
               Behaviors.same
-            case ChildActorResponse.AppendResult(_, _)                          =>
+            case ChildActorResponse.AppendResult(_, _)                                  =>
               context.log.error("Getting an append result should happen within the 'appending' behavior")
               Behaviors.unhandled
-            case ChildActorResponse.StateResponseInternal(_)                    =>
+            case ChildActorResponse.StateResponseInternal(_)                            =>
               context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
               Behaviors.unhandled
           }
@@ -335,7 +335,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case Idle                                                        =>
               buffer.stash(Idle)
               Behaviors.same
-            case _: EvaluationResult                                         =>
+            case _: EvaluationResultInternal                                 =>
               context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
               Behaviors.unhandled
             case ChildActorResponse.StateResponseInternal(_)                 =>

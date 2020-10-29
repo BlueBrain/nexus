@@ -49,12 +49,12 @@ object ProcessorCommand {
   /**
     * Messages issued from within the [[EventSourceProcessor]] as an evaluation result
     */
-  sealed private[processor] trait EvaluationResult extends ProcessorCommand
-  private[processor] object EvaluationResult {
-    final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResult
-    final case class EvaluationRejection[Rejection](value: Rejection)            extends EvaluationResult
+  sealed private[processor] trait EvaluationResultInternal extends ProcessorCommand
+  private[processor] object EvaluationResultInternal {
+    final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResultInternal
+    final case class EvaluationRejection[Rejection](value: Rejection)            extends EvaluationResultInternal
 
-    sealed trait EvaluationError extends Exception with EvaluationResult
+    sealed trait EvaluationError extends Exception with EvaluationResultInternal
     final case class EvaluationTimeout[Command](value: Command, timeoutAfter: FiniteDuration) extends EvaluationError
     final case class EvaluationFailure[Command](value: Command, message: Option[String]) extends EvaluationError
   }
