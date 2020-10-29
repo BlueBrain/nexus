@@ -7,8 +7,8 @@ import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityCont
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.StateReply
-import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateResponse.{StateResponse, _}
+import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand.AggregateRequest._
 import monix.bio.{IO, Task, UIO}
 import retry.CatsEffect._
 import retry.syntax.all._
@@ -44,7 +44,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     * @return the state for the given id
     */
   override def state(id: String): UIO[State] =
-    send(id, { askTo: ActorRef[StateReply[State]] => RequestState(id, askTo) })
+    send(id, { askTo: ActorRef[StateResponse[State]] => RequestState(id, askTo) })
       .map(_.value)
       .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name, "entity.id" -> id))
       .hideErrors
@@ -92,7 +92,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     */
   override def dryRun(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
     toEvaluationIO(
-      send(id, { askTo: ActorRef[DryRunResult] => DryRun(id, command, askTo) }).map(_.result)
+      send(id, { askTo: ActorRef[EvaluationResult] => DryRun(id, command, askTo) })
     ).named(
       "dryRun",
       component,

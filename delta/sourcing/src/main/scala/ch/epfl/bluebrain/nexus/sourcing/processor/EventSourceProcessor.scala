@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.sourcing.processor
 
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors, LoggerOps}
+import akka.actor.typed.scaladsl.{Behaviors, LoggerOps}
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.sourcing.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
 import monix.bio.IO
 import monix.execution.Scheduler
 
+import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
-import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 /**
   * Event source based processor based on a Akka behavior which accepts and evaluates commands
@@ -46,24 +46,22 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     import persistentEventDefinition._
     val persistenceId = PersistenceId.ofUniqueId(id)
 
-    Behaviors.setup[EventSourceCommand] { context =>
+    Behaviors.setup[ChildActorRequest] { context =>
       context.log.info2("Starting event source processor for type '{}' and id '{}'", entityType, entityId)
-      EventSourcedBehavior[EventSourceCommand, Event, State](
+      EventSourcedBehavior[ChildActorRequest, Event, State](
         persistenceId,
         emptyState = initialState,
         // Command handler
         { (state, command) =>
           command match {
-            case RequestState(_, replyTo: ActorRef[StateReply[_]])                     =>
-              Effect.reply(replyTo)(StateReply(state))
-            case RequestStateInternal(id, replyTo: ActorRef[ResponseStateInternal[_]]) =>
-              Effect.reply(replyTo)(ResponseStateInternal(id, state))
-            case RequestLastSeqNr(_, replyTo: ActorRef[LastSeqNr])                     =>
-              Effect.reply(replyTo)(
-                LastSeqNr(EventSourcedBehavior.lastSequenceNumber(context))
-              )
-            case Append(id, Event(event), replyTo: ActorRef[AppendSuccess[_, _]])      =>
-              Effect.persist(event).thenReply(replyTo)(state => AppendSuccess(id, event, state))
+            case ChildActorRequest.RequestState(replyTo)     =>
+              Effect.reply(replyTo)(AggregateResponse.StateResponse(state))
+            case ChildActorRequest.RequestLastSeqNr(replyTo) =>
+              Effect.reply(replyTo)(AggregateResponse.LastSeqNr(EventSourcedBehavior.lastSequenceNumber(context)))
+            case ChildActorRequest.RequestStateInternal      =>
+              Effect.reply(parent)(ChildActorResponse.StateResponseInternal(state))
+            case ChildActorRequest.Append(Event(event))      =>
+              Effect.persist(event).thenReply(parent)(state => ChildActorResponse.AppendResult(event, state))
           }
         },
         // Event handler
@@ -115,22 +113,23 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     * The behavior of the underlying state actor when we opted for NOT persisting the events
     */
   private def transientBehavior(
-      t: TransientEventDefinition[State, Command, Event, Rejection]
-  ): Behavior[EventSourceCommand] = {
-    def behavior(state: State): Behaviors.Receive[EventSourceCommand] =
-      Behaviors.receive[EventSourceCommand] { (_, cmd) =>
+      t: TransientEventDefinition[State, Command, Event, Rejection],
+      parent: ActorRef[ProcessorCommand]
+  ): Behavior[ChildActorRequest] = {
+    def behavior(state: State): Behaviors.Receive[ChildActorRequest] =
+      Behaviors.receive[ChildActorRequest] { (_, cmd) =>
         cmd match {
-          case RequestState(_, replyTo: ActorRef[StateReply[_]])                     =>
-            replyTo ! StateReply(state)
+          case ChildActorRequest.RequestState(replyTo) =>
+            replyTo ! AggregateResponse.StateResponse(state)
             Behaviors.same
-          case RequestStateInternal(id, replyTo: ActorRef[ResponseStateInternal[_]]) =>
-            replyTo ! ResponseStateInternal(id, state)
+          case ChildActorRequest.RequestLastSeqNr(_)   =>
             Behaviors.same
-          case _: RequestLastSeqNr                                                   =>
+          case ChildActorRequest.RequestStateInternal  =>
+            parent ! ChildActorResponse.StateResponseInternal(state)
             Behaviors.same
-          case Append(id, Event(event), replyTo: ActorRef[AppendSuccess[_, _]])      =>
+          case ChildActorRequest.Append(Event(event))  =>
             val newState = t.next(state, event)
-            replyTo ! AppendSuccess(id, event, newState)
+            parent ! ChildActorResponse.AppendResult(event, newState)
             behavior(newState)
         }
       }
@@ -138,7 +137,19 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
   }
 
   /**
-    * Behavior of the actor responsible for handling commands and events
+    * Behavior of the actor responsible for handling commands and events.
+    * There are multiple behaviors, each of them responsible for a different stage of a command evaluation.
+    *
+    * The following is a diagram of the different behaviors and their order:
+    *
+    * ┌--------┐        ┌---------------┐        ┌------------┐         ┌-----------┐
+    * │        │        │               │        │            │ !dryRun │           │
+    * │ active +--------> fetchingState │--------> evaluating │---------> appending │---┐
+    * │        │        │               │        │            │---┐     │           │   │
+    * └---^----┘        └---------------┘        └------------┘   │     └-----------┘   │
+    *     │                                                       │                     │
+    *     └-------------------------------------------------------┴---------------------┘
+    *                                        dryRun
     */
   def behavior(): Behavior[ProcessorCommand] =
     Behaviors.setup[ProcessorCommand] { context =>
@@ -146,84 +157,190 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
       Behaviors.withStash(config.stashSize) { buffer =>
         // We create a child actor to apply (and maybe persist) events
         // according to the definition that has been provided
-        val behavior   = definition match {
+        val behavior = definition match {
           case p: PersistentEventDefinition[State, Command, Event, Rejection] =>
             persistentBehavior(p, context.self)
           case t: TransientEventDefinition[State, Command, Event, Rejection]  =>
-            transientBehavior(t)
+            transientBehavior(t, context.self)
         }
-        val stateActor = context.spawn(
-          behavior,
-          s"${UrlUtils.encode(entityId)}_state"
-        )
+
+        val stateActor = context.spawn(behavior, s"${UrlUtils.encode(entityId)}_state")
 
         // Make sure that the message has been correctly routed to the appropriated actor
-        def checkEntityId(
-            onSuccess: (ActorContext[ProcessorCommand], ProcessorCommand) => Behavior[ProcessorCommand]
+        def checkEntityId(onSuccess: ProcessorCommand => Behavior[ProcessorCommand]): Behavior[ProcessorCommand] =
+          Behaviors.receive {
+            case (_, command: AggregateRequest) if command.id == entityId =>
+              onSuccess(command)
+            case (_, command: AggregateRequest)                           =>
+              context.log.warn(s"Unexpected message id '${command.id}' received in actor with id '$id''")
+              Behaviors.unhandled
+            case (_, command)                                             =>
+              onSuccess(command)
+          }
+
+        def toChildActorRequest(readOnly: AggregateRequest.ReadOnlyRequest): ChildActorRequest =
+          readOnly match {
+            case AggregateRequest.RequestState(_, replyTo)     => ChildActorRequest.RequestState(replyTo)
+            case AggregateRequest.RequestLastSeqNr(_, replyTo) => ChildActorRequest.RequestLastSeqNr(replyTo)
+          }
+
+        def toAggregateResponse(result: EvaluationResultInternal): AggregateResponse.EvaluationResult =
+          result match {
+            case EvaluationResultInternal.EvaluationSuccess(Event(event), State(state)) =>
+              AggregateResponse.EvaluationSuccess(event, state)
+            case EvaluationResultInternal.EvaluationRejection(Rejection(rej))           =>
+              AggregateResponse.EvaluationRejection(rej)
+            case EvaluationResultInternal.EvaluationTimeout(Command(cmd), timeoutAfter) =>
+              AggregateResponse.EvaluationTimeout(cmd, timeoutAfter)
+            case EvaluationResultInternal.EvaluationFailure(Command(cmd), message)      =>
+              AggregateResponse.EvaluationFailure(cmd, message)
+          }
+
+        // Evaluates the command and sends a message to self with the evaluation result
+        def evaluateCommand(state: State, cmd: Command, dryRun: Boolean): Unit = {
+          val scope      = if (dryRun) "testing" else "evaluating"
+          val evalResult = for {
+            _ <- IO.shift(config.evaluationExecutionContext)
+            r <- definition.evaluate(state, cmd).attempt
+            _ <- IO.shift(context.executionContext)
+          } yield r
+            .map(e => EvaluationResultInternal.EvaluationSuccess(e, definition.next(state, e)))
+            .valueOr(EvaluationResultInternal.EvaluationRejection(_))
+
+          val io = evalResult
+            .timeoutWith(config.evaluationMaxDuration, new TimeoutException())
+            .onErrorHandleWith(err => IO.shift(context.executionContext) >> IO.raiseError(err))
+
+          context.pipeToSelf(io.runToFuture) {
+            case Success(value)               => value
+            case Failure(_: TimeoutException) =>
+              context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)
+              EvaluationResultInternal.EvaluationTimeout(cmd, config.evaluationMaxDuration)
+            case Failure(th)                  =>
+              context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)
+              EvaluationResultInternal.EvaluationFailure(cmd, Option(th.getMessage))
+          }
+        }
+
+        /**
+          * Initial behavior, ready to process ''Evaluate'' and ''DryRun'' messages.
+          * Before evaluating a command we need the state, so we ask the stateActor for it and move our behavior to fetchingState.
+          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor.
+          */
+        def active(): Behavior[ProcessorCommand] =
+          checkEntityId {
+            case AggregateRequest.Evaluate(_, Command(subCommand), replyTo) =>
+              stateActor ! ChildActorRequest.RequestStateInternal
+              fetchingState(subCommand, replyTo, dryRun = false)
+            case AggregateRequest.DryRun(_, Command(subCommand), replyTo)   =>
+              stateActor ! ChildActorRequest.RequestStateInternal
+              fetchingState(subCommand, replyTo, dryRun = true)
+            case readOnly: AggregateRequest.ReadOnlyRequest                 =>
+              stateActor ! toChildActorRequest(readOnly)
+              Behaviors.same
+            case Idle                                                       =>
+              stopAfterInactivity(context.self)
+            case ChildActorResponse.AppendResult(_, _)                      =>
+              context.log.error("Getting an append result should happen within the 'appending' behavior")
+              Behaviors.unhandled
+            case ChildActorResponse.StateResponseInternal(_)                =>
+              context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
+              Behaviors.unhandled
+          }
+
+        /**
+          * The second behavior, ready to process ''StateResponseInternal'' messages.
+          * Once received, we trigger command Evaluation/DryRun and move our behavior to evaluating.
+          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
+          * while any other ''Evaluate'' or ''DryRun'' will be stashed.
+          */
+        def fetchingState(
+            subCommand: Command,
+            replyTo: ActorRef[AggregateResponse.EvaluationResult],
+            dryRun: Boolean
         ): Behavior[ProcessorCommand] =
-          Behaviors.receive { (context, command) =>
-            command match {
-              case i: InputCommand =>
-                if (i.id == entityId) {
-                  onSuccess(context, command)
-                } else {
-                  context.log.warn(s"Unexpected message id ${i.id} received in actor with id $id")
-                  Behaviors.unhandled
-                }
-              case _               => onSuccess(context, command)
-            }
+          checkEntityId {
+            case ChildActorResponse.StateResponseInternal(State(state)) =>
+              evaluateCommand(state, subCommand, dryRun)
+              evaluating(replyTo, dryRun)
+            case readOnly: AggregateRequest.ReadOnlyRequest             =>
+              stateActor ! toChildActorRequest(readOnly)
+              Behaviors.same
+            case req: AggregateRequest                                  =>
+              buffer.stash(req)
+              Behaviors.same
+            case Idle                                                   =>
+              stopAfterInactivity(context.self)
+            case _: EvaluationResultInternal                            =>
+              context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
+              Behaviors.unhandled
+            case ChildActorResponse.AppendResult(_, _)                  =>
+              context.log.error("Getting an append result should happen within the 'appending' behavior")
+              Behaviors.unhandled
           }
 
-        // The actor is not currently evaluating anything
-        def active(state: State): Behavior[ProcessorCommand] =
-          checkEntityId { (c, cmd) =>
-            cmd match {
-              case ese: EventSourceCommand                                               =>
-                stateActor ! ese
-                Behaviors.same
-              case Evaluate(_, Command(subCommand), replyTo: ActorRef[EvaluationResult]) =>
-                evaluateCommand(state, subCommand, c)
-                stash(state, replyTo.unsafeUpcast[RunResult])
-              case DryRun(_, Command(subCommand), replyTo: ActorRef[DryRunResult])       =>
-                evaluateCommand(state, subCommand, c, dryRun = true)
-                stash(state, replyTo.unsafeUpcast[RunResult])
-              case _: EvaluationResult                                                   =>
-                context.log.error("Getting an evaluation result should happen within a stashing behavior")
-                Behaviors.same
-              case Idle                                                                  =>
-                stopAfterInactivity(context.self)
-            }
+        /**
+          * The third behavior, ready to process evaluation results ''EvaluationResult'' messages.
+          * If the evaluation succeeded and we are not on a ''DryRun'', we will send an ''Append'' message to the stateActor
+          * with the computed event and move to the appending behavior.
+          * Otherwise we return the ''EvaluationResult'' to the client and unstash other messages while moving to active behavior.
+          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
+          * while any other ''Evaluate'' or ''DryRun'' will be stashed.
+          */
+        def evaluating(
+            replyTo: ActorRef[AggregateResponse.EvaluationResult],
+            dryRun: Boolean
+        ): Behavior[ProcessorCommand] =
+          checkEntityId {
+            case EvaluationResultInternal.EvaluationSuccess(Event(event), _) if !dryRun =>
+              stateActor ! ChildActorRequest.Append(event)
+              appending(replyTo)
+            case r: EvaluationResultInternal                                            =>
+              replyTo ! toAggregateResponse(r)
+              buffer.unstashAll(active())
+            case readOnly: AggregateRequest.ReadOnlyRequest                             =>
+              stateActor ! toChildActorRequest(readOnly)
+              Behaviors.same
+            case req: AggregateRequest                                                  =>
+              buffer.stash(req)
+              Behaviors.same
+            case Idle                                                                   =>
+              buffer.stash(Idle)
+              Behaviors.same
+            case ChildActorResponse.AppendResult(_, _)                                  =>
+              context.log.error("Getting an append result should happen within the 'appending' behavior")
+              Behaviors.unhandled
+            case ChildActorResponse.StateResponseInternal(_)                            =>
+              context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
+              Behaviors.unhandled
           }
 
-        // The actor is evaluating a command so we stash commands
-        // until we get a result for the current evaluation
-        def stash(state: State, replyTo: ActorRef[RunResult]): Behavior[ProcessorCommand] =
-          checkEntityId { (_, cmd) =>
-            cmd match {
-              case ro: ReadonlyCommand                           =>
-                stateActor ! ro
-                Behaviors.same
-              case AppendSuccess(_, Event(event), State(state))  =>
-                replyTo ! EvaluationSuccess(event, state)
-                buffer.unstashAll(active(state))
-              case EvaluationSuccessInternal(Event(event))       =>
-                stateActor ! Append(entityId, event, context.self)
-                Behaviors.same
-              case rejection @ EvaluationRejection(Rejection(_)) =>
-                replyTo ! rejection
-                buffer.unstashAll(active(state))
-              case error: EvaluationError                        =>
-                replyTo ! error
-                buffer.unstashAll(active(state))
-              case dryRun: DryRunResult                          =>
-                replyTo ! dryRun
-                buffer.unstashAll(active(state))
-              case Idle                                          =>
-                stopAfterInactivity(context.self)
-              case c                                             =>
-                buffer.stash(c)
-                Behaviors.same
-            }
+        /**
+          * The fourth behavior, ready to process ''AppendResult'' messages, which confirm correct append on the event log from the stateActor.
+          * After that we reply to the client and unstash other messages while moving to active behavior.
+          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
+          * while any other ''Evaluate'' or ''DryRun'' will be stashed.
+          */
+        def appending(replyTo: ActorRef[AggregateResponse.EvaluationResult]): Behavior[ProcessorCommand] =
+          checkEntityId {
+            case ChildActorResponse.AppendResult(Event(event), State(state)) =>
+              replyTo ! AggregateResponse.EvaluationSuccess(event, state)
+              buffer.unstashAll(active())
+            case readOnly: AggregateRequest.ReadOnlyRequest                  =>
+              stateActor ! toChildActorRequest(readOnly)
+              Behaviors.same
+            case req: AggregateRequest                                       =>
+              buffer.stash(req)
+              Behaviors.same
+            case Idle                                                        =>
+              buffer.stash(Idle)
+              Behaviors.same
+            case _: EvaluationResultInternal                                 =>
+              context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
+              Behaviors.unhandled
+            case ChildActorResponse.StateResponseInternal(_)                 =>
+              context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
+              Behaviors.unhandled
           }
 
         // The actor will be stopped if it doesn't receive any message
@@ -232,79 +349,11 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
           context.setReceiveTimeout(duration, Idle)
         }
 
-        // On initial cmd evaluation, before evaluating,
-        // the initial state is being retrieved from the child actor
-        def initialState: Behavior[ProcessorCommand] =
-          checkEntityId { (_, cmd) =>
-            cmd match {
-              case ResponseStateInternal(_, State(state)) =>
-                buffer.unstashAll(active(state))
-              case ese: EventSourceCommand                =>
-                stateActor ! ese
-                Behaviors.same
-              case Idle                                   =>
-                stopAfterInactivity(context.self)
-              case c                                      =>
-                buffer.stash(c)
-                stateActor ! RequestStateInternal(entityId, context.self)
-                Behaviors.same
-            }
-          }
-
-        initialState
+        active()
       }
     }
 
   implicit private val scheduler: Scheduler = Scheduler(config.evaluationExecutionContext)
-
-  /**
-    * Runs asynchronously the given command and sends
-    * the result back to the same actor which is stashing messages during this period
-    * @param state the current state
-    * @param cmd the command to run
-    * @param context the context of the current actor
-    * @param dryRun if we run as
-    */
-  private def evaluateCommand(
-      state: State,
-      cmd: Command,
-      context: ActorContext[ProcessorCommand],
-      dryRun: Boolean = false
-  ): Unit = {
-    def tellResult(evaluateResult: EvaluationResult) = {
-      val result = if (dryRun) { DryRunResult(evaluateResult) }
-      else { evaluateResult }
-      IO(context.self ! result)
-    }
-
-    val scope = if (dryRun) "testing" else "evaluating"
-    val eval  = for {
-      _ <- IO.shift(config.evaluationExecutionContext)
-      r <- definition.evaluate(state, cmd).attempt
-      _ <- IO.shift(context.executionContext)
-      _ <- tellResult(
-             r.map {
-               case e if dryRun => EvaluationSuccess(e, definition.next(state, e))
-               case e           => EvaluationSuccessInternal(e)
-             }.valueOr(EvaluationRejection(_))
-           )
-    } yield ()
-    val io    = eval
-      .timeoutTo(
-        config.evaluationMaxDuration, {
-          IO.shift(context.executionContext) >>
-            IO.delay(context.log.error2(s"Timed out while $scope command '{}' on actor '{}'", cmd, id)) >>
-            tellResult(EvaluationCommandTimeout(cmd, config.evaluationMaxDuration))
-        }
-      )
-      .onError { case NonFatal(th) =>
-        IO.shift(context.executionContext) >>
-          IO.delay(context.log.error2(s"Error while $scope command '{}' on actor '{}'", cmd, id)) >>
-          tellResult(EvaluationCommandError(cmd, Option(th.getMessage)))
-      }
-
-    io.runAsyncAndForget
-  }
 }
 
 object EventSourceProcessor {
@@ -352,10 +401,11 @@ object EventSourceProcessor {
   /**
     * Event source processor relying on akka-persistence
     * so than its state can be recovered
-    * @param entityId the entity identifier
-    * @param definition the event definition
+    *
+    * @param entityId            the entity identifier
+    * @param definition          the event definition
     * @param stopAfterInactivity the behavior to adopt when we stop the actor
-    * @param config the config
+    * @param config              the config
     */
   def persistent[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityId: String,
@@ -372,10 +422,11 @@ object EventSourceProcessor {
 
   /**
     * Event source processor without persistence: if the processor is lost, so is its state
-    * @param entityId the entity identifier
-    * @param definition the event definition
+    *
+    * @param entityId            the entity identifier
+    * @param definition          the event definition
     * @param stopAfterInactivity the behavior to adopt when we stop the actor
-    * @param config the config
+    * @param config              the config
     */
   def transient[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityId: String,
