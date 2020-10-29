@@ -88,6 +88,12 @@ object ResourceF {
       }
     }
 
+  implicit private def resourceFIdUnitEncoder[Id](implicit
+      base: BaseUri,
+      lens: Lens[Id, Iri]
+  ): Encoder.AsObject[ResourceF[Id, Unit]] =
+    resourceFUnitEncoder.contramapObject(r => r.copy(lens.get(r.id)))
+
   implicit def resourceFAEncoder[A](implicit
       base: BaseUri,
       A: Encoder.AsObject[A]
@@ -96,6 +102,10 @@ object ResourceF {
       r.void.asJsonObject deepMerge r.value.asJsonObject
     }
 
-  implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Iri, Unit]] =
-    JsonLdEncoder.compactFromCirce((v: ResourceF[Iri, Unit]) => v.id, iriContext = contexts.resource)
+  implicit final def resourceFIdToUnitJsonLdEncoder[Id](implicit
+      base: BaseUri,
+      lens: Lens[Id, Iri]
+  ): JsonLdEncoder[ResourceF[Id, Unit]] =
+    JsonLdEncoder.compactFromCirce((v: ResourceF[Id, Unit]) => lens.get(v.id), iriContext = contexts.resource)
+
 }

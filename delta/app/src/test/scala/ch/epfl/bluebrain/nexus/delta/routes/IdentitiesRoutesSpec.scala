@@ -6,16 +6,12 @@ import akka.http.scaladsl.model.headers.{Accept, BasicHttpCredentials, OAuth2Bea
 import akka.http.scaladsl.server.Directives.handleExceptions
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, RemoteContextResolutionDummy}
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.testkit.CirceEq
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -25,27 +21,11 @@ class IdentitiesRoutesSpec
     with Matchers
     with CirceEq
     with RouteHelpers
-    with TestHelpers {
+    with RouteFixtures {
 
-  implicit private val rcr: RemoteContextResolutionDummy =
-    RemoteContextResolutionDummy(
-      contexts.resource   -> jsonContentOf("contexts/resource.json"),
-      contexts.identities -> jsonContentOf("contexts/identities.json")
-    )
+  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
-  implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
-  implicit private val baseUri: BaseUri          = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val s: Scheduler              = Scheduler.global
-
-  private val realm  = Label.unsafe("wonderland")
-  private val user   = User("alice", realm)
-  private val caller = Caller(user, Set(user, Anonymous, Authenticated(realm), Group("group", realm)))
-
-  private val identities = IdentitiesDummy(
-    Map(
-      AuthToken("alice") -> caller
-    )
-  )
+  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
   private val route = Route.seal(
     handleExceptions(IdentityError.exceptionHandler) {

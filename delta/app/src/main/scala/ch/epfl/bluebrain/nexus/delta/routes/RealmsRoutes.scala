@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, RealmResource, Realms}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -36,7 +35,7 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
 
   import baseUri._
 
-  private val realmsIri = endpoint.toIri / "realms"
+  private val realmsIri = baseUri.iriEndpoint / "realms"
 
   implicit val iriLens: Lens[Label, Iri]  = (l: Label) => realmsIri / l.value
   implicit val realmContext: ContextValue = Realm.context
@@ -74,12 +73,12 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
                       case Some(rev) =>
                         // Update realm
                         entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                          completeIO(realms.update(id, rev, name, openIdConfig, logo))
+                          completeIO(realms.update(id, rev, name, openIdConfig, logo).map(_.void))
                         }
                       case None      =>
                         // Create realm
                         entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                          completeIO(StatusCodes.Created, realms.create(id, name, openIdConfig, logo))
+                          completeIO(StatusCodes.Created, realms.create(id, name, openIdConfig, logo).map(_.void))
                         }
                     }
                   },
@@ -93,7 +92,7 @@ class RealmsRoutes(identities: Identities, realms: Realms)(implicit
                   },
                   // Deprecate realm
                   delete {
-                    parameter("rev".as[Long]) { rev => completeIO(realms.deprecate(id, rev)) }
+                    parameter("rev".as[Long]) { rev => completeIO(realms.deprecate(id, rev).map(_.void)) }
                   }
                 )
               }

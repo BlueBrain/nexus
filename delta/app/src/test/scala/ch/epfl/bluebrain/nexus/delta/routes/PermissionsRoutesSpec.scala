@@ -4,27 +4,20 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
-import akka.http.scaladsl.server.{RejectionHandler, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, PermissionsDummy, RemoteContextResolutionDummy}
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.syntax._
+import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
-import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class PermissionsRoutesSpec
     extends AnyWordSpecLike
@@ -37,28 +30,15 @@ class PermissionsRoutesSpec
     with RouteHelpers
     with TestMatchers
     with Inspectors
-    with TestHelpers {
+    with RouteFixtures {
 
-  implicit private val rcr: RemoteContextResolutionDummy =
-    RemoteContextResolutionDummy(
-      contexts.resource    -> jsonContentOf("contexts/resource.json"),
-      contexts.error       -> jsonContentOf("contexts/error.json"),
-      contexts.permissions -> jsonContentOf("contexts/permissions.json")
-    )
-
-  implicit private val ordering: JsonKeyOrdering          = JsonKeyOrdering(
-    List("@context", "@id", "@type", "reason", "details"),
-    List("_rev", "_deprecated", "_createdAt", "_createdBy", "_updatedAt", "_updatedBy", "_constrainedBy")
-  )
-  implicit private val s: Scheduler                       = Scheduler.global
-  implicit private val baseUri: BaseUri                   = BaseUri("http://localhost:8080", Label.unsafe("v1"))
-  implicit private val caller: Subject                    = Identity.Anonymous
-  implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
+  implicit private val caller: Subject = Identity.Anonymous
 
   private val minimum     = Set(acls.read, acls.write)
   private val identities  = IdentitiesDummy(Map.empty)
   private val permissions = PermissionsDummy(minimum).accepted
   private val route       = Route.seal(PermissionsRoutes(identities, permissions))
+  private val id          = iri"http://localhost/v1/permissions"
 
   "The permissions routes" should {
 
@@ -89,7 +69,7 @@ class PermissionsRoutesSpec
     }
 
     "replace permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "2"))
+      val expected = resourceUnit(id, "Permissions", schemas.permissions, 2L)
 
       val replace = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -101,7 +81,7 @@ class PermissionsRoutesSpec
     }
 
     "append permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "3"))
+      val expected = resourceUnit(id, "Permissions", schemas.permissions, 3L)
 
       val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
       Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -114,7 +94,7 @@ class PermissionsRoutesSpec
     }
 
     "subtract permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "4"))
+      val expected = resourceUnit(id, "Permissions", schemas.permissions, 4L)
 
       val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
       Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -126,7 +106,7 @@ class PermissionsRoutesSpec
     }
 
     "delete permissions" in {
-      val expected = jsonContentOf("permissions/resource.jsonld", Map("rev" -> "5"))
+      val expected = resourceUnit(id, "Permissions", schemas.permissions, 5L)
 
       Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
@@ -190,9 +170,7 @@ class PermissionsRoutesSpec
       dummy.subtract(Set(realms.write), 6L).accepted
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
         mediaType shouldBe `text/event-stream`
-        val value    = Await.result(responseEntity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String), 3.seconds)
-        val expected = contentOf("/permissions/eventstream-0-5.txt")
-        value shouldEqual expected
+        response.asString shouldEqual contentOf("/permissions/eventstream-0-5.txt")
       }
     }
 
@@ -208,9 +186,7 @@ class PermissionsRoutesSpec
       dummy.subtract(Set(realms.write), 6L).accepted
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> route ~> check {
         mediaType shouldBe `text/event-stream`
-        val value    = Await.result(responseEntity.dataBytes.runFold(ByteString(""))(_ ++ _).map(_.utf8String), 3.seconds)
-        val expected = contentOf("/permissions/eventstream-2-7.txt")
-        value shouldEqual expected
+        response.asString shouldEqual contentOf("/permissions/eventstream-2-7.txt")
       }
     }
   }

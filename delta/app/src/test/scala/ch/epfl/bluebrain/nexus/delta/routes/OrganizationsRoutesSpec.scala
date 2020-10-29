@@ -6,24 +6,22 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
-import akka.http.scaladsl.server.{RejectionHandler, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, OrganizationsDummy, RemoteContextResolutionDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, OrganizationsDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -41,35 +39,25 @@ class OrganizationsRoutesSpec
     with RouteHelpers
     with TestMatchers
     with Inspectors
-    with TestHelpers {
+    with RouteFixtures {
 
-  implicit private val rcr: RemoteContextResolutionDummy =
-    RemoteContextResolutionDummy(
-      contexts.resource      -> jsonContentOf("contexts/resource.json"),
-      contexts.error         -> jsonContentOf("contexts/error.json"),
-      contexts.organizations -> jsonContentOf("contexts/organizations.json")
-    )
+  implicit val extractId: Lens[Label, Iri] = (l: Label) => baseUri.iriEndpoint / "orgs" / l.value
 
-  implicit private val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
-  implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
-  implicit private val s: Scheduler                       = Scheduler.global
-  private val fixedUuid                                   = UUID.randomUUID()
-  implicit private val uuidF: UUIDF                       = UUIDF.fixed(fixedUuid)
+  private val fixedUuid             = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(fixedUuid)
 
   private val org1 = OrganizationGen.organization("org1", fixedUuid, Some("My description"))
   private val org2 = OrganizationGen.organization("org2", fixedUuid)
 
   private val orgs = OrganizationsDummy().accepted
 
-  private val realm                                       = Label.unsafe("wonderland")
-  private val alice                                       = User("alice", realm)
-  private val caller                                      = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
+  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
   private val routes = Route.seal(OrganizationsRoutes(identities, orgs))
+
+  private val org1CreatedMeta = resourceUnit(extractId.get(org1.label), "Organization", schemas.organizations)
 
   private val org1Created = jsonContentOf(
     "/organizations/org-resource.json",
@@ -84,7 +72,8 @@ class OrganizationsRoutesSpec
     )
   )
 
-  private val org1Updated = org1Created deepMerge json"""{"description": "updated", "_rev": 2}"""
+  private val org1Updated     = org1Created deepMerge json"""{"description": "updated", "_rev": 2}"""
+  private val org1UpdatedMeta = resourceUnit(extractId.get(org1.label), "Organization", schemas.organizations, rev = 2L)
 
   private val org2Created = jsonContentOf(
     "/organizations/org-resource.json",
@@ -98,7 +87,18 @@ class OrganizationsRoutesSpec
     )
   ).removeKeys("description")
 
-  private val org2Deprecated = org2Created deepMerge json"""{"_deprecated": true, "_rev": 2}"""
+  private val org2CreatedMeta =
+    resourceUnit(extractId.get(org2.label), "Organization", schemas.organizations, createdBy = alice, updatedBy = alice)
+
+  private val org2DeprecatedMeta = resourceUnit(
+    extractId.get(org2.label),
+    "Organization",
+    schemas.organizations,
+    rev = 2L,
+    deprecated = true,
+    createdBy = alice,
+    updatedBy = alice
+  )
 
   "An OrganizationsRoute" should {
 
@@ -107,16 +107,14 @@ class OrganizationsRoutesSpec
 
       Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual org1Created
+        response.asJson shouldEqual org1CreatedMeta
       }
     }
 
     "create another organization with an authenticated user" in {
-      val input = Json.obj()
-
-      Put("/v1/orgs/org2", input.toEntity) ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
+      Put("/v1/orgs/org2", Json.obj().toEntity) ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual org2Created
+        response.asJson shouldEqual org2CreatedMeta
       }
     }
 
@@ -125,7 +123,7 @@ class OrganizationsRoutesSpec
 
       Put("/v1/orgs/org1?rev=1", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual org1Updated
+        response.asJson shouldEqual org1UpdatedMeta
       }
     }
 
@@ -197,13 +195,14 @@ class OrganizationsRoutesSpec
     "deprecate an organization" in {
       Delete("/v1/orgs/org2?rev=1") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(org2Deprecated)
+        response.asJson should equalIgnoreArrayOrder(org2DeprecatedMeta)
       }
     }
 
     "get the events stream with an offset" in {
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
+        println(response.asString)
         response.asString shouldEqual contentOf("/organizations/eventstream-2-4.txt", Map("uuid" -> fixedUuid.toString))
       }
     }
