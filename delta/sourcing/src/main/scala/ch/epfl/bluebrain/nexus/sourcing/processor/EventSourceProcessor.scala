@@ -242,10 +242,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               stopAfterInactivity(context.self)
             case ChildActorResponse.AppendResult(_, _)                      =>
               context.log.error("Getting an append result should happen within the 'appending' behavior")
-              Behaviors.same
+              Behaviors.unhandled
             case ChildActorResponse.StateResponseInternal(_)                =>
               context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
-              Behaviors.same
+              Behaviors.unhandled
           }
 
         /**
@@ -273,10 +273,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               stopAfterInactivity(context.self)
             case _: EvaluationResult                                    =>
               context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
-              Behaviors.same
+              Behaviors.unhandled
             case ChildActorResponse.AppendResult(_, _)                  =>
               context.log.error("Getting an append result should happen within the 'appending' behavior")
-              Behaviors.same
+              Behaviors.unhandled
           }
 
         /**
@@ -309,10 +309,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Behaviors.same
             case ChildActorResponse.AppendResult(_, _)                          =>
               context.log.error("Getting an append result should happen within the 'appending' behavior")
-              Behaviors.same
+              Behaviors.unhandled
             case ChildActorResponse.StateResponseInternal(_)                    =>
               context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
-              Behaviors.same
+              Behaviors.unhandled
           }
 
         /**
@@ -337,10 +337,10 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Behaviors.same
             case _: EvaluationResult                                         =>
               context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
-              Behaviors.same
+              Behaviors.unhandled
             case ChildActorResponse.StateResponseInternal(_)                 =>
               context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
-              Behaviors.same
+              Behaviors.unhandled
           }
 
         // The actor will be stopped if it doesn't receive any message
