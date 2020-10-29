@@ -138,17 +138,17 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
 
   /**
     * Behavior of the actor responsible for handling commands and events.
-    * There are multiple behaviours, each of them responsible for a different stage of a command evaluation.
+    * There are multiple behaviors, each of them responsible for a different stage of a command evaluation.
     *
     * The following is a diagram of the different behaviors and their order:
     *
-    * ┌--------┐        ┌-------------------┐        ┌------------┐         ┌-----------┐
-    * │        │        │                   │        │            │ !druRun │           │
-    * │ active +--------> waitingToEvaluate │--------> evaluating │---------> appending │---┐
-    * │        │        │                   │        │            │---┐     │           │   │
-    * └---^----┘        └-------------------┘        └------------┘   │     └-----------┘   │
-    *     │                                                           │                     │
-    *     └-----------------------------------------------------------┴---------------------┘
+    * ┌--------┐        ┌---------------┐        ┌------------┐         ┌-----------┐
+    * │        │        │               │        │            │ !dryRun │           │
+    * │ active +--------> fetchingState │--------> evaluating │---------> appending │---┐
+    * │        │        │               │        │            │---┐     │           │   │
+    * └---^----┘        └---------------┘        └------------┘   │     └-----------┘   │
+    *     │                                                       │                     │
+    *     └-------------------------------------------------------┴---------------------┘
     *                                        dryRun
     */
   def behavior(): Behavior[ProcessorCommand] =
@@ -224,17 +224,17 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
 
         /**
           * Initial behavior, ready to process ''Evaluate'' and ''DryRun'' messages.
-          * Before evaluating a command we need the state, so we ask the stateActor for it and move our behavior to waitingToEvaluate.
+          * Before evaluating a command we need the state, so we ask the stateActor for it and move our behavior to fetchingState.
           * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor.
           */
         def active(): Behavior[ProcessorCommand] =
           checkEntityId {
             case AggregateRequest.Evaluate(_, Command(subCommand), replyTo) =>
               stateActor ! ChildActorRequest.RequestStateInternal
-              waitingToEvaluate(subCommand, replyTo, dryRun = false)
+              fetchingState(subCommand, replyTo, dryRun = false)
             case AggregateRequest.DryRun(_, Command(subCommand), replyTo)   =>
               stateActor ! ChildActorRequest.RequestStateInternal
-              waitingToEvaluate(subCommand, replyTo, dryRun = true)
+              fetchingState(subCommand, replyTo, dryRun = true)
             case readOnly: AggregateRequest.ReadOnlyRequest                 =>
               stateActor ! toChildActorRequest(readOnly)
               Behaviors.same
@@ -244,7 +244,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               context.log.error("Getting an append result should happen within the 'appending' behavior")
               Behaviors.same
             case ChildActorResponse.StateResponseInternal(_)                =>
-              context.log.error("Getting the state from within should happen within the 'waitingToEvaluate' behavior")
+              context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
               Behaviors.same
           }
 
@@ -254,7 +254,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
           * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
           * while any other ''Evaluate'' or ''DryRun'' will be stashed.
           */
-        def waitingToEvaluate(
+        def fetchingState(
             subCommand: Command,
             replyTo: ActorRef[AggregateResponse.EvaluationResult],
             dryRun: Boolean
@@ -311,7 +311,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               context.log.error("Getting an append result should happen within the 'appending' behavior")
               Behaviors.same
             case ChildActorResponse.StateResponseInternal(_)                    =>
-              context.log.error("Getting the state from within should happen within the 'waitingToEvaluate' behavior")
+              context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
               Behaviors.same
           }
 
@@ -339,7 +339,7 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
               Behaviors.same
             case ChildActorResponse.StateResponseInternal(_)                 =>
-              context.log.error("Getting the state from within should happen within the 'waitingToEvaluate' behavior")
+              context.log.error("Getting the state from within should happen within the 'fetchingState' behavior")
               Behaviors.same
           }
 
