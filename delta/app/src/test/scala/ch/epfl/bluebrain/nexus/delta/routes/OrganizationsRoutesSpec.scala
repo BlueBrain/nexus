@@ -202,7 +202,6 @@ class OrganizationsRoutesSpec
     "get the events stream with an offset" in {
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
-        println(response.asString)
         response.asString shouldEqual contentOf("/organizations/eventstream-2-4.txt", Map("uuid" -> fixedUuid.toString))
       }
     }

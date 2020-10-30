@@ -230,7 +230,6 @@ class RealmsRoutesSpec
     "get the events stream with an offset" in {
       Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
-        println(response.asString)
         response.asString shouldEqual contentOf("/realms/eventstream-2-4.txt")
       }
     }
