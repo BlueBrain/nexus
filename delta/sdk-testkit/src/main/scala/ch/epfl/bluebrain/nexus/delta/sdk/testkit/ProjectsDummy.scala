@@ -136,7 +136,10 @@ object ProjectsDummy {
   /**
     * Creates a project dummy instance
     *
-    * @param organizations an Organizations instance
+    * @param organizations    an Organizations instance
+    * @param acls             an Acls instance
+    * @param ownerPermissions ownerPermissions to be present at project creation
+    * @param serviceAccount   the service account to apply the ownerPermissions
     */
   def apply(
       organizations: Organizations,
@@ -149,4 +152,17 @@ object ProjectsDummy {
       cache   <- ResourceCache[ProjectRef, Project]
       sem     <- IOSemaphore(1L)
     } yield new ProjectsDummy(journal, cache, sem, organizations, acls, ownerPermissions, serviceAccount)
+
+  /**
+    * Creates a project dummy instance where ownerPermissions don't matter
+    * @param organizations an Organizations instance
+    */
+  def apply(organizations: Organizations)(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
+    for {
+      journal <- Journal(moduleType)
+      cache   <- ResourceCache[ProjectRef, Project]
+      acls    <- AclsDummy(PermissionsDummy(Set.empty))
+      sem     <- IOSemaphore(1L)
+    } yield new ProjectsDummy(journal, cache, sem, organizations, acls, Set.empty, Identity.Anonymous)
+
 }

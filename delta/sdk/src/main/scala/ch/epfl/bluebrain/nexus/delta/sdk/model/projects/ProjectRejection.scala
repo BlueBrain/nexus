@@ -42,9 +42,13 @@ object ProjectRejection {
     */
   final case class ProjectNotFound private (override val reason: String) extends ProjectRejection(reason)
   object ProjectNotFound {
-    def apply(uuid: UUID): ProjectNotFound             =
+    def apply(uuid: UUID): ProjectNotFound                       =
       ProjectNotFound(s"Project with uuid '${uuid.toString.toLowerCase()}' not found.")
-    def apply(projectRef: ProjectRef): ProjectNotFound =
+    def apply(orgUuid: UUID, projectUuid: UUID): ProjectNotFound =
+      ProjectNotFound(
+        s"Project with uuid '${projectUuid.toString.toLowerCase()}' under organization: '${orgUuid.toString.toLowerCase()}' not found."
+      )
+    def apply(projectRef: ProjectRef): ProjectNotFound           =
       ProjectNotFound(s"Project with label '$projectRef' not found.")
   }
 

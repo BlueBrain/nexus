@@ -155,6 +155,15 @@ class OrganizationsRoutesSpec
       }
     }
 
+    "reject the creation of a organization if it already exists" in {
+      val input = json"""{"description": "${org1.description.value}"}"""
+
+      Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.Conflict
+        response.asJson shouldEqual jsonContentOf("/organizations/already-exists.json", "org" -> org1.label.value)
+      }
+    }
+
     "fail fetching an organization by label and rev when rev is invalid" in {
       Get("/v1/orgs/org1?rev=4") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound

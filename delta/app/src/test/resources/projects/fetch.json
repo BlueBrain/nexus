@@ -1,0 +1,32 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/projects.json"
+  ],
+  "@id" : "http://localhost/v1/projects/{{org}}/{{proj}}",
+  "@type" : "Project",
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/projects.json",
+  "_createdAt" : "1970-01-01T00:00:00Z",
+  "_updatedAt" : "1970-01-01T00:00:00Z",
+  {{#user}}
+  "_createdBy": "http://localhost/v1/realms/{{realm}}/users/{{user}}",
+  "_updatedBy": "http://localhost/v1/realms/{{realm}}/users/{{user}}",
+  {{/user}}
+  {{^user}}
+  "_createdBy": "http://localhost/v1/anonymous",
+  "_updatedBy": "http://localhost/v1/anonymous",
+  {{/user}}
+  "_deprecated" : {{deprecated}},
+  "_label" : "{{proj}}",
+  "_organizationLabel" : "{{org}}",
+  "_organizationUuid" : "{{orgUuid}}",
+  "_rev" : {{rev}},
+  "_uuid" : "{{uuid}}",
+  "apiMappings" : {
+    "nxv" : "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "person" : "https://shapes-registry.org/commons/person"
+  },
+  "base" : "{{base}}",
+  "description" : "{{description}}",
+  "vocab" : "{{vocab}}"
+}

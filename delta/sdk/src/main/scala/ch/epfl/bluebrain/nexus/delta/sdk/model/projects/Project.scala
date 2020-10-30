@@ -3,7 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import io.circe.Encoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
 /**
   * A project representation.
@@ -33,4 +39,21 @@ final case class Project(
     */
   def ref: ProjectRef =
     ProjectRef(organizationLabel, label)
+}
+
+object Project {
+
+  implicit private[Project] val config: Configuration = Configuration.default.copy(transformMemberNames = {
+    case "label"             => nxv.label.prefix
+    case "uuid"              => nxv.uuid.prefix
+    case "organizationLabel" => nxv.organizationLabel.prefix
+    case "organizationUuid"  => nxv.organizationUuid.prefix
+    case other               => other
+  })
+
+  implicit val projectEncoder: Encoder.AsObject[Project]    = deriveConfiguredEncoder[Project]
+  val context: ContextValue                                 = ContextValue(contexts.projects)
+  implicit val projectJsonLdEncoder: JsonLdEncoder[Project] =
+    JsonLdEncoder.compactFromCirce(context)
+
 }
