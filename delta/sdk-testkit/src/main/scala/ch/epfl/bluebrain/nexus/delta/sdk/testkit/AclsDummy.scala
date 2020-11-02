@@ -19,7 +19,7 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy ACLs implementation that uses a synchronized in memory journal.
   *
-  * @param perms     the bundle of operations pertaining to managing permissions wrappd in an IO
+  * @param perms     the bundle of operations pertaining to managing permissions wrapped in an IO
   * @param journal   a ref to the journal containing all the events discriminated by [[AclAddress]] location
   * @param cache     a ref to the cache containing all the current acl resources
   * @param semaphore a semaphore for serializing write operations on the journal

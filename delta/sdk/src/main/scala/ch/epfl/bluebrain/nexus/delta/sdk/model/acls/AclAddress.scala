@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalAclAddressFormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 
 /**
@@ -21,6 +23,23 @@ sealed trait AclAddress extends Product with Serializable {
 }
 
 object AclAddress {
+
+  final private[sdk] val orgAddressRegex  = s"^/(${Label.regex.regex})$$".r
+  final private[sdk] val projAddressRegex = s"^/(${Label.regex.regex})/(${Label.regex.regex})$$".r
+
+  /**
+    * Attempts to construct an AclAddress from the provided string. The accepted formats are the ones generated from
+    * the [[AclAddress.string]] functions. The validation make use of the [[Label.regex]] to ensure compatibility with
+    * a valid [[Label]].
+    *
+    * @param string the string representation of the AclAddress
+    */
+  final def fromString(string: String): Either[FormatError, AclAddress] = string match {
+    case Root.string                 => Right(Root)
+    case orgAddressRegex(org)        => Right(Organization(Label.unsafe(org))) // safe because the Label is already validated
+    case projAddressRegex(org, proj) => Right(Project(Label.unsafe(org), Label.unsafe(proj)))
+    case _                           => Left(IllegalAclAddressFormatError())
+  }
 
   type Root = Root.type
 

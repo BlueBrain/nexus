@@ -1,0 +1,13 @@
+{
+  "@type": "PermissionsReplaced",
+  "rev": 1,
+  "permissions": [
+    "my/perm"
+  ],
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
+  }
+}
