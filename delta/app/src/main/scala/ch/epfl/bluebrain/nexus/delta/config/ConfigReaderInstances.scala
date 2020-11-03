@@ -5,6 +5,7 @@ import akka.util.Timeout
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
@@ -137,6 +138,9 @@ trait ConfigReaderInstances {
 
   implicit final val realmsConfigReader: ConfigReader[RealmsConfig] =
     deriveReader[RealmsConfig]
+
+  implicit final val aclsConfigReader: ConfigReader[AclsConfig] =
+    deriveReader[AclsConfig]
 
   implicit final val orgsConfigReader: ConfigReader[OrganizationsConfig] =
     deriveReader[OrganizationsConfig]

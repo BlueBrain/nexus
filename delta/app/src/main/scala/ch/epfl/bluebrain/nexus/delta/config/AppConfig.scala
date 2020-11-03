@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import com.typesafe.config.{Config, ConfigFactory}
@@ -19,6 +20,7 @@ import pureconfig.{ConfigReader, ConfigSource}
   * @param permissions   the permissions config
   * @param realms        the realms config
   * @param organizations the organizations config
+  * @param acls          the ACLs config
   */
 final case class AppConfig(
     description: DescriptionConfig,
@@ -28,7 +30,8 @@ final case class AppConfig(
     identities: IdentitiesConfig,
     permissions: PermissionsConfig,
     realms: RealmsConfig,
-    organizations: OrganizationsConfig
+    organizations: OrganizationsConfig,
+    acls: AclsConfig
 )
 
 object AppConfig extends ConfigReaderInstances {

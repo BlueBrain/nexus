@@ -137,7 +137,6 @@ class AclsRoutesSpec
       acls.append(AclAddress.Root, userAcl, 0L).accepted
       forAll(paths.drop(1)) { path =>
         Put(s"/v1/acls$path", aclJson(userAcl).toEntity) ~> addCredentials(token) ~> routes ~> check {
-          //        println(response.asString)
           response.asJson shouldEqual expectedUpdateResponse(1L, user, user, path)
           status shouldEqual StatusCodes.Created
         }
@@ -388,7 +387,6 @@ class AclsRoutesSpec
 
     "get ACL self = false and rev = 2 when response is an empty ACL" in {
       Get(s"/v1/acls/myorg/myproj1?rev=2&self=false") ~> addCredentials(token) ~> routes ~> check {
-        println(response.asJson.spaces2)
         response.asJson shouldEqual expectedResponse(2L, 0L, Map.empty)
         status shouldEqual StatusCodes.OK
       }

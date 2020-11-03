@@ -193,4 +193,27 @@ object AclsImpl {
       acls  = AclsImpl.apply(agg, eventLog, index)
       _    <- UIO.delay(startIndexing(config, eventLog, index, acls))
     } yield acls
+
+  /**
+    * Constructs an [[AclsImpl]] instance.
+    *
+    * @param config       ACLs configurate
+    * @param permissions  [[Permissions]] instance
+    * @param eventLog     the event log
+    */
+  final def apply(
+      config: AclsConfig,
+      permissions: Permissions,
+      eventLog: EventLog[Envelope[AclEvent]]
+  )(implicit
+      as: ActorSystem[Nothing],
+      sc: Scheduler,
+      clock: Clock[UIO]
+  ): UIO[AclsImpl] =
+    for {
+      agg  <- aggregate(UIO.delay(permissions), config.aggregate)
+      index = cache(config)
+      acls  = AclsImpl.apply(agg, eventLog, index)
+      _    <- UIO.delay(startIndexing(config, eventLog, index, acls))
+    } yield acls
 }
