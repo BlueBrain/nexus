@@ -92,7 +92,7 @@ object PermissionsRoutes {
   /**
     * @return the [[Route]] for the permission resources
     */
-  def apply(identities: Identities, permissions: Permissions, acls:Acls)(implicit
+  def apply(identities: Identities, permissions: Permissions, acls: Acls)(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,

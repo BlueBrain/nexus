@@ -39,7 +39,7 @@ object OrganizationsModule extends ModuleDef {
     (
         identities: Identities,
         organizations: Organizations,
-        acls:Acls,
+        acls: Acls,
         baseUri: BaseUri,
         cfg: OrganizationsConfig,
         s: Scheduler,

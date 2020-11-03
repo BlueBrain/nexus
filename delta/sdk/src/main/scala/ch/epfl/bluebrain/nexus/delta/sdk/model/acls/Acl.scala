@@ -104,7 +104,7 @@ object Acl {
     hc.get[Seq[(Identity, Set[Permission])]]("acl").map(Acl(_: _*))
   }
 
-  val context: ContextValue                                                 = ContextValue(contexts.acls)
+  val context: ContextValue = ContextValue(contexts.acls)
 
   implicit def aclJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Acl] =
     JsonLdEncoder.compactFromCirce(context)

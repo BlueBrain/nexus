@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Accept, `Last-Event-ID`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.{RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
@@ -55,14 +55,14 @@ class PermissionsRoutesSpec
   implicit private val caller: Subject                    = Identity.Anonymous
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
 
-  private val minimum     = Set(acls.read, acls.write)
-  private val identities  = IdentitiesDummy(Map.empty)
+  private val minimum        = Set(acls.read, acls.write)
+  private val identities     = IdentitiesDummy(Map.empty)
   private val permissionsUIO = PermissionsDummy(minimum)
-  private val aclsDummy       = AclsDummy(
+  private val aclsDummy      = AclsDummy(
     permissionsUIO
   ).accepted
-  private val permissions = permissionsUIO.accepted
-  private val route       = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
+  private val permissions    = permissionsUIO.accepted
+  private val route          = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
 
   "The permissions routes" should {
 
