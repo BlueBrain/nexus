@@ -1,6 +1,7 @@
 {
   "@context": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
     "logo": {
       "@type": "@id",
       "@id": "nxv:logo"
@@ -9,7 +10,6 @@
       "@id": "nxv:openIdConfig",
       "@type": "@id"
     },
-    "name": "nxv:name",
     "_label": "nxv:label",
     "_grantTypes": "nxv:grantTypes",
     "_issuer": "nxv:issuer",
@@ -32,9 +32,7 @@
     "_endSessionEndpoint": {
       "@id": "nxv:endSessionEndpoint",
       "@type": "@id"
-    },
-    "realm": "nxv:realm",
-    "Realm": "nxv:Realm"
+    }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/realms.json"
 }

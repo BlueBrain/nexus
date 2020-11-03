@@ -52,6 +52,7 @@ val scalateVersion                  = "1.9.6"
 val scalaTestVersion                = "3.2.2"
 val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
+val topBraidVersion                 = "1.3.2"
 val uuidGeneratorVersion            = "3.2.0"
 
 lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
@@ -128,6 +129,7 @@ lazy val scalaLogging  = "com.typesafe.scala-logging" %% "scala-logging"        
 lazy val scalate       = "org.scalatra.scalate"       %% "scalate-core"            % scalateVersion
 lazy val scalaTest     = "org.scalatest"              %% "scalatest"               % scalaTestVersion
 lazy val streamz       = "com.github.krasserm"        %% "streamz-converter"       % streamzVersion
+lazy val topBraidShacl = "org.topbraid"                % "shacl"                   % topBraidVersion
 lazy val uuidGenerator = "com.fasterxml.uuid"          % "java-uuid-generator"     % uuidGeneratorVersion
 
 val javaSpecificationVersion = SettingKey[String](
@@ -332,7 +334,7 @@ lazy val testPlugin = project
 
 lazy val rdf = project
   .in(file("delta/rdf"))
-  .dependsOn(testkit % "test->compile")
+  .dependsOn(testkit)
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     name       := "delta-rdf",
@@ -345,6 +347,7 @@ lazy val rdf = project
       circeGeneric,
       jenaArq,
       monixBio,
+      topBraidShacl,
       akkaSlf4j   % Test,
       akkaTestKit % Test,
       logback     % Test,

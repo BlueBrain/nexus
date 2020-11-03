@@ -92,6 +92,27 @@ object Vocabulary {
   }
 
   /**
+    * SHACL vocabulary.
+    */
+  object sh {
+    val base              = iri"http://www.w3.org/ns/shacl#"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val ValidationReport = sh + "ValidationReport"
+    val conforms         = sh + "conforms"
+  }
+
+  /**
+    * Nexus SHACL vocabulary.
+    */
+  object nxsh {
+    val base              = iri"https://bluebrain.github.io/nexus/vocabulary/shacl/"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val targetedNodes = nxsh + "targetedNodes"
+  }
+
+  /**
     * Nexus vocabulary
     */
   object nxv {
@@ -115,6 +136,7 @@ object Vocabulary {
     val organizationUuid      = Metadata("organizationUuid")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")
+    val self                  = Metadata("self")
     val revocationEndpoint    = Metadata("revocationEndpoint")
     val score                 = Metadata("score")
     val tokenEndpoint         = Metadata("tokenEndpoint")
@@ -123,6 +145,11 @@ object Vocabulary {
     val updatedBy             = Metadata("updatedBy")
     val userInfoEndpoint      = Metadata("userInfoEndpoint")
     val uuid                  = Metadata("uuid")
+    val resourceId            = Metadata("resourceId")
+    val types                 = Metadata("types")
+    val source                = Metadata("source")
+    val compacted             = Metadata("compacted")
+    val expanded              = Metadata("expanded")
 
     // Resource types
     val AccessControlList = nxv + "AccessControlList"
@@ -144,6 +171,8 @@ object Vocabulary {
     val permissions   = schemas + "permissions.json"
     val projects      = schemas + "projects.json"
     val realms        = schemas + "realms.json"
+    val resources     = schemas + "resources.json"
+    val resolvers     = schemas + "resolvers.json"
   }
 
   /**
@@ -162,6 +191,7 @@ object Vocabulary {
     val realms        = contexts + "realms.json"
     val resource      = contexts + "resource.json"
     val search        = contexts + "search.json"
+    val shacl         = iri"https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
   }
 
   /**

@@ -6,27 +6,20 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import akka.stream.{Materializer, SystemMaterializer}
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{RemoteContextResolution, RemoteContextResolutionError}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
-import io.circe.Json
-import io.circe.parser._
 import izumi.distage.model.definition.ModuleDef
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
-
-import scala.io.{Codec, Source}
 
 /**
   * Complete service wiring definitions.
@@ -35,7 +28,16 @@ import scala.io.{Codec, Source}
   * @param config the raw merged and resolved configuration
   */
 // $COVERAGE-OFF$
-class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
+class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with TestHelpers {
+  private val resourceCtx      = jsonContentOf("/contexts/resource.json")
+  private val permissionsCtx   = jsonContentOf("/contexts/permissions.json")
+  private val organizationsCtx = jsonContentOf("/contexts/organizations.json")
+  private val projectsCtx      = jsonContentOf("/contexts/projects.json")
+  private val realmsCtx        = jsonContentOf("/contexts/realms.json")
+  private val errorCtx         = jsonContentOf("/contexts/error.json")
+  private val identitiesCtx    = jsonContentOf("/contexts/identities.json")
+  private val searchCtx        = jsonContentOf("/contexts/search.json")
+//  private val aclsCtx = jsonContentOf("/contexts/acl.json")
 
   make[AppConfig].from(appCfg)
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
@@ -47,12 +49,16 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
     )
   )
   make[RemoteContextResolution].from(
-    RemoteContextResolution({
-      case contexts.resource    => load("/contexts/resource.json", contexts.resource).memoizeOnSuccess
-      case contexts.permissions => load("/contexts/permissions.json", contexts.permissions).memoizeOnSuccess
-      case contexts.error       => load("/contexts/error.json", contexts.error).memoizeOnSuccess
-      case other                => IO.raiseError(RemoteContextNotFound(other))
-    })
+    RemoteContextResolution.fixed(
+      contexts.resource      -> resourceCtx,
+      contexts.permissions   -> permissionsCtx,
+      contexts.error         -> errorCtx,
+      contexts.organizations -> organizationsCtx,
+      contexts.projects      -> projectsCtx,
+      contexts.realms        -> realmsCtx,
+      contexts.identities    -> identitiesCtx,
+      contexts.search        -> searchCtx
+    )
   )
   make[ActorSystem[Nothing]].from(ActorSystem[Nothing](Behaviors.empty, "delta", config))
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
@@ -75,20 +81,6 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
   include(RealmsModule)
   include(OrganizationsModule)
   include(IdentitiesModule)
-
-  private def load(resourcePath: String, iri: Iri): IO[RemoteContextResolutionError, Json] =
-    for {
-      is     <- IO.fromOption(
-                  {
-                    val fromClass       = Option(getClass.getResourceAsStream(resourcePath))
-                    val fromClassLoader = Option(getClass.getClassLoader.getResourceAsStream(resourcePath))
-                    fromClass orElse fromClassLoader
-                  },
-                  RemoteContextNotAccessible(iri, s"File '$resourcePath' could not be loaded.")
-                )
-      string <- IO.delay(Source.fromInputStream(is)(Codec.UTF8).mkString).hideErrors
-      json   <- IO.fromEither(parse(string).leftMap(_ => RemoteContextWrongPayload(iri)))
-    } yield json
 }
 
 object DeltaModule {

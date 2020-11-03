@@ -1,14 +1,7 @@
 {
   "@context": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "User": "nxv:User",
-    "Group": "nxv:Group",
-    "Authenticated": "nxv:Authenticated",
-    "Anonymous": "nxv:Anonymous",
-    "realm": "nxv:realm",
-    "subject": "nxv:subject",
-    "group": "nxv:group",
-    "identity": "nxv:identity"
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/identity.json"
 }

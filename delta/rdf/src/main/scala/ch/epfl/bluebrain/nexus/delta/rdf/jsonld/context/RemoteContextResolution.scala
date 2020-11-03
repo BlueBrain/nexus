@@ -4,7 +4,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextCircularDependency
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextCircularDependency, RemoteContextNotFound}
 import io.circe.Json
 import monix.bio.IO
 
@@ -55,5 +55,14 @@ object RemoteContextResolution {
     *
     * @param f a function from an [[Iri]] to a [[Result]] of [[Json]]
     */
-  final def apply(f: Iri => Result[Json]): RemoteContextResolution = (iri: Iri) => f(iri)
+  final def fixed(f: (Iri, Json)*): RemoteContextResolution =
+    new RemoteContextResolution {
+      private val map = f.toMap
+
+      override def resolve(iri: Iri): Result[Json] =
+        map.get(iri) match {
+          case Some(result) => IO.pure(result)
+          case None         => IO.raiseError(RemoteContextNotFound(iri))
+        }
+    }
 }

@@ -34,16 +34,11 @@ object RdfError {
   /**
     * Invalid Iri
     */
-  final case class InvalidIri(iri: String) extends RdfError(s"The value '$iri' is not an Iri")
+  final case class InvalidIri(err: String) extends RdfError(err)
 
   /**
     * Unexpected Iri value
     */
   final case class UnexpectedIriOrBNode(expected: IriOrBNode, found: IriOrBNode)
       extends RdfError(s"Unexpected Iri or blank node value. Expected '$expected', found '$found'")
-
-  /**
-    * The JSON-LD document // RDF Dataset does not have a root node
-    */
-  final case object RootIriNotFound extends RdfError(s"Root Iri not found")
 }

@@ -5,10 +5,10 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.{Permissions, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import org.scalatest.Inspectors
@@ -24,9 +24,9 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "dealing with Permissions" should {
 
-      implicit val remoteResolution: RemoteContextResolutionDummy =
-        RemoteContextResolutionDummy(contexts.permissions -> permissionsContext)
-      val mergedCtx                                               = permissionsContext.topContextValueOrEmpty
+      implicit val remoteResolution: RemoteContextResolution =
+        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext)
+      val mergedCtx                                          = permissionsContext.topContextValueOrEmpty
 
       val compacted         = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
       val expanded          =
@@ -82,8 +82,8 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
       val dot                           = contentOf("encoder/dot.dot")
       val ntriples                      = contentOf("encoder/ntriples.nt")
 
-      implicit val remoteResolution: RemoteContextResolutionDummy =
-        RemoteContextResolutionDummy(contexts.permissions -> permissionsContext, contexts.resource -> resourceContext)
+      implicit val remoteResolution: RemoteContextResolution =
+        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext, contexts.resource -> resourceContext)
 
       "return a compacted Json-LD format" in {
 

@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RootIriNotFound, UnexpectedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -24,8 +25,9 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val name             = vocab + "name"
       val expectedExpanded = json"""[{"@type": ["${schema.Person}"], "$name": [{"@value": "Me"} ] } ]"""
       val compacted        = json"""{"@type": "Person", "name": "Me"}""".addContext(context)
-      val bNode            = BNode.random
-      JsonLd.expand(compacted, Some(bNode)).accepted shouldEqual JsonLd.expandedUnsafe(expectedExpanded, bNode)
+      val expanded         = JsonLd.expand(compacted).accepted
+      expanded shouldEqual JsonLd.expandedUnsafe(expectedExpanded, expanded.rootId)
+      expanded.rootId shouldBe a[BNode]
     }
 
     "be constructed successfully with remote contexts" in {
@@ -35,23 +37,26 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be constructed successfully with injected @id" in {
       val compactedNoId = compacted.removeKeys("id")
-      JsonLd.expand(compactedNoId, Some(iri)).accepted shouldEqual JsonLd.expandedUnsafe(expectedExpanded, iri)
+      JsonLd.expand(compactedNoId).accepted.replaceId(iri) shouldEqual JsonLd.expandedUnsafe(expectedExpanded, iri)
     }
 
-    "be constructed empty" in {
+    "be constructed empty (ignoring @id)" in {
       val compacted = json"""{"@id": "$iri"}"""
-      JsonLd.expand(compacted, Some(iri)).accepted shouldEqual
-        JsonLd.expandedUnsafe(json"""[ { "@id": "$iri" } ]""", iri)
-    }
-
-    "fail to be constructed when no root @id is present nor provided" in {
-      val compactedNoId = compacted.removeKeys("id")
-      JsonLd.expand(compactedNoId).rejected shouldEqual RootIriNotFound
+      val expanded  = JsonLd.expand(compacted).accepted
+      expanded shouldEqual JsonLd.expandedUnsafe(json"""[ {} ]""", expanded.rootId)
+      expanded.rootId shouldBe a[BNode]
     }
 
     "fail to be constructed when there are multiple root objects" in {
       val wrongInput = jsonContentOf("/jsonld/expanded/wrong-input-multiple-roots.json")
       JsonLd.expand(wrongInput).rejectedWith[UnexpectedJsonLd]
+    }
+
+    "replace @id" in {
+      val newIri   = iri"http://example.com/myid"
+      val expanded = JsonLd.expand(compacted).accepted.replaceId(newIri)
+      expanded.rootId shouldEqual newIri
+      expanded.json shouldEqual expectedExpanded.replace(keywords.id -> iri.asJson, newIri.asJson)
     }
 
     "fetch root @type" in {
@@ -132,12 +137,11 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "be converted to compacted form without @id" in {
-      val bNode     = BNode.random
       val compacted = json"""{"@type": "Person", "name": "Me"}""".addContext(context)
 
-      val expanded = JsonLd.expand(compacted, Some(bNode)).accepted
+      val expanded = JsonLd.expand(compacted).accepted
       val result   = expanded.toCompacted(context).accepted
-      result.rootId shouldEqual bNode
+      result.rootId shouldEqual expanded.rootId
       result.json.removeKeys(keywords.context) shouldEqual compacted.removeKeys(keywords.context)
     }
 

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
@@ -181,11 +181,24 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
   ): IO[RdfError, ExpandedJsonLd] =
     toCompactedJsonLd(Json.obj()).flatMap(_.toExpanded)
 
+  /**
+    * Replaces the root node
+    *
+    * @param node the new root node resource
+    */
+  private[rdf] def replaceRootNode(node: Resource): Graph =
+    if (node.isAnon) Graph(BNode.unsafe(node.getId.getLabelString), model)
+    else if (node.isURIResource) Graph(Iri.unsafe(node.getURI), model)
+    else self
+
   private def copy(model: Model): Model =
     ModelFactory.createDefaultModel().add(model)
 }
 
 object Graph {
+
+  final def unsafe(model: Model): Graph =
+    Graph(BNode.random, model)
 
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.
