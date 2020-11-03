@@ -10,3 +10,9 @@ trait Lens[S, A] {
     */
   def get(a: S): A
 }
+
+object Lens {
+
+  implicit final def identityLens[A]: Lens[A, A] = identity[A]
+
+}

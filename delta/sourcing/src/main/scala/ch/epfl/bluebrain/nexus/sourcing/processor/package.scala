@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.sourcing
 
-import ch.epfl.bluebrain.nexus.sourcing.processor.ProcessorCommand.{EvaluationRejection, EvaluationSuccess}
+import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateResponse._
 import monix.bio.IO
 
 package object processor {

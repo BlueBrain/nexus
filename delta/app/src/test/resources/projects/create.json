@@ -1,0 +1,21 @@
+{
+  {{#description}}
+  "description": "{{description}}",
+  {{/description}}
+  {{#base}}
+  "base": "{{base}}",
+  {{/base}}
+  {{#vocab}}
+  "vocab": "{{vocab}}",
+  {{/vocab}}
+  "apiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+    },
+    {
+      "prefix": "person",
+      "namespace": "https://shapes-registry.org/commons/person"
+    }
+  ]
+}

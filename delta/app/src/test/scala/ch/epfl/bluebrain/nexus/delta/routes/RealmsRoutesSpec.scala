@@ -4,24 +4,22 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
-import akka.http.scaladsl.server.{RejectionHandler, Route}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy, RemoteContextResolutionDummy}
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy}
+import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -39,19 +37,9 @@ class RealmsRoutesSpec
     with RouteHelpers
     with TestMatchers
     with Inspectors
-    with TestHelpers {
+    with RouteFixtures {
 
-  implicit private val rcr: RemoteContextResolutionDummy =
-    RemoteContextResolutionDummy(
-      contexts.resource -> jsonContentOf("contexts/resource.json"),
-      contexts.error    -> jsonContentOf("contexts/error.json"),
-      contexts.realms   -> jsonContentOf("contexts/realms.json")
-    )
-
-  implicit private val ordering: JsonKeyOrdering          = JsonKeyOrdering.alphabetical
-  implicit private val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
-  implicit private val s: Scheduler                       = Scheduler.global
+  val iriExtract: Lens[Label, Iri] = (l: Label) => baseUri.iriEndpoint / "realms" / l.value
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
@@ -68,18 +56,22 @@ class RealmsRoutesSpec
     )
   ).accepted
 
+  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+
+  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
   private val acls = AclsDummy(
     PermissionsDummy(Set.empty)
   ).accepted
 
-  private val realm                                       = Label.unsafe("wonderland")
-  private val alice                                       = User("alice", realm)
-  private val caller                                      = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
-
-  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
-
   private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
+
+  private val githubCreatedMeta = resourceUnit(iriExtract.get(github), "Realm", schemas.realms)
+  private val githubUpdatedMeta = resourceUnit(iriExtract.get(github), "Realm", schemas.realms, 2L)
+  private val gitlabCreatedMeta =
+    resourceUnit(iriExtract.get(gitlab), "Realm", schemas.realms, createdBy = alice, updatedBy = alice)
+
+  private val gitlabDeprecatedMeta =
+    resourceUnit(iriExtract.get(gitlab), "Realm", schemas.realms, 2L, deprecated = true, alice, alice)
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",
@@ -123,15 +115,13 @@ class RealmsRoutesSpec
     )
   )
 
-  private val gitlabDeprecated = gitlabCreated deepMerge json"""{"_deprecated": true, "_rev": 2}"""
-
   "A RealmsRoute" should {
     "create a new realm" in {
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual githubCreated
+        response.asJson shouldEqual githubCreatedMeta
       }
     }
 
@@ -153,7 +143,7 @@ class RealmsRoutesSpec
       val input = json"""{"name": "$gitlabName", "openIdConfig": "$gitlabOpenId", "logo": "$githubLogo"}"""
       Put("/v1/realms/gitlab", input.toEntity) ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual gitlabCreated
+        response.asJson shouldEqual gitlabCreatedMeta
       }
     }
 
@@ -163,7 +153,7 @@ class RealmsRoutesSpec
 
       Put("/v1/realms/github?rev=1", input.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual githubUpdated
+        response.asJson shouldEqual githubUpdatedMeta
       }
     }
 
@@ -236,7 +226,7 @@ class RealmsRoutesSpec
     "deprecate a realm" in {
       Delete("/v1/realms/gitlab?rev=1") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(gitlabDeprecated)
+        response.asJson should equalIgnoreArrayOrder(gitlabDeprecatedMeta)
       }
     }
 

@@ -1,0 +1,9 @@
+{
+  "@type": "AclDeleted",
+  "rev": 1,
+  "address": "/myorg/myproj",
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "@type": "Anonymous"
+  }
+}

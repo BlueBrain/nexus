@@ -1,0 +1,13 @@
+{
+  "label": "myorg",
+  "uuid": "b6bde92f-7836-4da6-8ead-2e0fd516ebe7",
+  "rev": 1,
+  "description": "some description",
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "@type": "OrganizationUpdated"
+}

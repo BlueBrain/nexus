@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "OrganizationIsDeprecated",
+  "reason": "Organization with label 'org2' is deprecated."
+}

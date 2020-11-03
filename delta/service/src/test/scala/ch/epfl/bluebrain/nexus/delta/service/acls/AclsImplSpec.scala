@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsBehaviors.minimum
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsBehaviors, PermissionsDummy}
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}

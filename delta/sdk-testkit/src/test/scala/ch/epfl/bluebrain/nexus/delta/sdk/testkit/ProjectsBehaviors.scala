@@ -5,13 +5,16 @@ import java.util.UUID
 
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{files, orgs, resolvers, resources, schemas, storages, views}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
+import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{IncorrectRev, OrganizationIsDeprecated, ProjectAlreadyExists, ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIRI, ProjectFields, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIri, ProjectFields, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
@@ -20,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
+import monix.execution.Scheduler
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -29,8 +33,10 @@ trait ProjectsBehaviors {
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
+  val serviceAccount: Subject   = Identity.User("serviceAccount", Label.unsafe("realm"))
 
-  implicit val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")
+  implicit val scheduler: Scheduler = Scheduler.global
+  implicit val baseUri: BaseUri     = BaseUri("http://localhost:8080/v1")
 
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -43,17 +49,60 @@ trait ProjectsBehaviors {
     "nxv" -> iri"https://localhost/nexus/vocabulary/",
     "rdf" -> iri"http://localhost/1999/02/22-rdf-syntax-ns#type"
   )
-  val base     = PrefixIRI.unsafe(iri"https://localhost/base/")
-  val voc      = PrefixIRI.unsafe(iri"https://localhost/voc/")
+  val base     = PrefixIri.unsafe(iri"https://localhost/base/")
+  val voc      = PrefixIri.unsafe(iri"https://localhost/voc/")
 
   val payload        = ProjectFields(desc, mappings, Some(base), Some(voc))
   val anotherPayload = ProjectFields(Some("Another project description"), mappings, None, None)
 
-  val organizations: UIO[OrganizationsDummy] = {
+  val org1 = Label.unsafe("org")
+  val org2 = Label.unsafe("org2")
+
+  val ownerPermissions = Set(
+    Permissions.projects.read,
+    resources.read,
+    resources.write,
+    resolvers.write,
+    views.write,
+    views.query,
+    schemas.write,
+    files.write,
+    storages.write
+  )
+
+  // A project created on org1 has all owner permissions on / and org1
+  val (rootPermissions, org1Permissions) = ownerPermissions.splitAt(ownerPermissions.size / 2)
+  val proj10                             = Label.unsafe("proj10")
+
+  // A project created on org2 lacks some of the owner permissions
+  // proj20 has all owner permissions on /, org2 and proj20
+  val proj20                               = Label.unsafe("proj20")
+  val (org2Permissions, proj20Permissions) = org1Permissions.splitAt(org1Permissions.size / 2)
+
+  // proj21 has some extra acls that should be conserved
+  val proj21            = Label.unsafe("proj21")
+  val proj21Permissions = Set(orgs.read, orgs.create)
+
+  // proj22 has no permission set
+  val proj22 = Label.unsafe("proj22")
+
+  val acls = {
+    for {
+      acls <- AclsDummy(PermissionsDummy(PermissionsGen.minimum))
+      _    <- acls.append(AclAddress.Root, Acl(subject -> rootPermissions), 0L)(serviceAccount)
+      _    <- acls.append(AclAddress.Organization(org1), Acl(subject -> org1Permissions), 0L)(serviceAccount)
+      _    <- acls.append(AclAddress.Organization(org2), Acl(subject -> org2Permissions), 0L)(serviceAccount)
+      _    <- acls.append(AclAddress.Project(org2, proj20), Acl(subject -> proj20Permissions), 0L)(serviceAccount)
+      _    <- acls.append(AclAddress.Project(org2, proj21), Acl(subject -> proj21Permissions), 0L)(serviceAccount)
+    } yield acls
+  }.accepted
+
+  lazy val organizations: UIO[OrganizationsDummy] = {
     val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)
     val orgs            = for {
       o <- OrganizationsDummy()(orgUuidF, ioClock)
-      _ <- o.create(Label.unsafe("org"), None)
+      _ <- o.create(org1, None)
+      _ <- o.create(org2, None)
       _ <- o.create(Label.unsafe("orgDeprecated"), None)
       _ <- o.deprecate(Label.unsafe("orgDeprecated"), 1L)
     } yield o
@@ -62,7 +111,7 @@ trait ProjectsBehaviors {
 
   def create: UIO[Projects]
 
-  val projects: Projects = create.accepted
+  lazy val projects: Projects = create.accepted
 
   val ref = ProjectRef.unsafe("org", "proj")
 
@@ -176,6 +225,11 @@ trait ProjectsBehaviors {
       projects.fetch(UUID.randomUUID()).accepted shouldEqual projects.fetch(ref).accepted
     }
 
+    "fetch a project by uuid with the wrong orgUuid" in {
+      val unknownUuid = UUID.randomUUID()
+      projects.fetch(unknownUuid, uuid).rejectedWith[ProjectNotFound] shouldEqual ProjectNotFound(unknownUuid, uuid)
+    }
+
     "fetch an unknown project at a given revision" in {
       val ref = ProjectRef.unsafe("org", "unknown")
 
@@ -188,7 +242,15 @@ trait ProjectsBehaviors {
       projects.fetchAt(UUID.randomUUID(), 42L).accepted shouldEqual projects.fetchAt(ref, 42L).accepted
     }
 
-    val anotherRef          = ProjectRef.unsafe("org", "proj2")
+    "fetch a project by uuid with the wrong orgUuid at a given revision" in {
+      val unknownUuid = UUID.randomUUID()
+      projects.fetchAt(unknownUuid, uuid, 1L).rejectedWith[ProjectNotFound] shouldEqual ProjectNotFound(
+        unknownUuid,
+        uuid
+      )
+    }
+
+    val anotherRef          = ProjectRef.unsafe("org2", "proj2")
     val anotherProjResource = resourceFor(
       projectFromRef(anotherRef, uuid, orgUuid, anotherPayload),
       1L,
@@ -217,6 +279,13 @@ trait ProjectsBehaviors {
       val results = projects.list(FromPagination(0, 10), ProjectSearchParams(deprecated = Some(true))).accepted
 
       results shouldEqual SearchResults(1L, Vector(deprecatedResource))
+    }
+
+    "list projects from organization org" in {
+      val results =
+        projects.list(FromPagination(0, 10), ProjectSearchParams(organization = Some(anotherRef.organization))).accepted
+
+      results shouldEqual SearchResults(1L, Vector(anotherProjResource))
     }
 
     "list projects created by Anonymous" in {
@@ -273,6 +342,43 @@ trait ProjectsBehaviors {
         .toList
 
       events.accepted shouldEqual allEvents.drop(2)
+    }
+  }
+
+  "Creating projects" should {
+
+    "not set any permissions if all permissions has been set on / and the org" in {
+      val proj10Ref = ProjectRef(org1, proj10)
+      projects.create(proj10Ref, payload).accepted.id shouldEqual proj10Ref
+
+      acls.fetch(AclAddress.Project(org1, proj10)).accepted shouldEqual None
+    }
+
+    "not set any permissions if all permissions has been set on /, the org and the project" in {
+      val proj20Ref = ProjectRef(org2, proj20)
+      projects.create(proj20Ref, payload).accepted.id shouldEqual proj20Ref
+
+      acls.fetch(AclAddress.Project(org2, proj20)).accepted.map(_.value.value) shouldEqual Some(
+        Map(subject -> proj20Permissions)
+      )
+    }
+
+    "set owner permissions if not all permissions are present and keep other ones" in {
+      val proj21Ref = ProjectRef(org2, proj21)
+      projects.create(proj21Ref, payload).accepted.id shouldEqual proj21Ref
+
+      acls.fetch(AclAddress.Project(org2, proj21)).accepted.map(_.value.value) shouldEqual Some(
+        Map(subject -> (proj21Permissions ++ ownerPermissions))
+      )
+    }
+
+    "set owner permissions if not all permissions are present" in {
+      val proj22Ref = ProjectRef(org2, proj22)
+      projects.create(proj22Ref, payload).accepted.id shouldEqual proj22Ref
+
+      acls.fetch(AclAddress.Project(org2, proj22)).accepted.map(_.value.value) shouldEqual Some(
+        Map(subject -> ownerPermissions)
+      )
     }
   }
 }

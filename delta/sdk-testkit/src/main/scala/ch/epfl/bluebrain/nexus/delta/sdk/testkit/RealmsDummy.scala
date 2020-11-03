@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnexpectedInitialState
@@ -83,8 +84,6 @@ object RealmsDummy {
   type RealmsJournal = Journal[Label, RealmEvent]
   type RealmsCache   = ResourceCache[Label, Realm]
 
-  val entityType: String = "realms"
-
   implicit val idLens: Lens[RealmEvent, Label] = (event: RealmEvent) => event.label
 
   /**
@@ -96,7 +95,7 @@ object RealmsDummy {
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
   )(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
     for {
-      journal <- Journal(entityType)
+      journal <- Journal(moduleType)
       cache   <- ResourceCache[Label, Realm]
       sem     <- IOSemaphore(1L)
     } yield new RealmsDummy(journal, cache, sem, resolveWellKnown)

@@ -1,139 +1,92 @@
 package ch.epfl.bluebrain.nexus.sourcing.processor
 
 import akka.actor.typed.ActorRef
-import akka.routing.ConsistentHashingRouter.ConsistentHashable
-import ch.epfl.bluebrain.nexus.sourcing.processor.AggregateReply.{LastSeqNr, StateReply}
 
 import scala.concurrent.duration.FiniteDuration
 
 /**
-  * Command used in [[EventSourceProcessor]]
+  * Incoming messages to [[EventSourceProcessor]] actor
   */
 sealed trait ProcessorCommand extends Product with Serializable
 
+// format: off
 object ProcessorCommand {
 
   /**
-    * Event sent when the [[EventSourceProcessor]] has been idling for too long
-    * according to a defined [[StopStrategy]]
+    * Incoming messages from the outside to [[EventSourceProcessor]] actor
     */
-  private[processor] case object Idle extends ProcessorCommand
-
-  /**
-    * Command sent to the [[EventSourceProcessor]] by an other component.
-    * The id has to match the entity id of the instance of the eventProcessor
-    */
-  sealed trait InputCommand extends ConsistentHashable with ProcessorCommand {
+  sealed trait AggregateRequest extends ProcessorCommand  {
 
     /**
-      * @return the persistence id
-      */
+     * @return the persistence id
+     */
     def id: String
+  }
 
-    override def consistentHashKey: String = id
+  object AggregateRequest {
+    final case class Evaluate[Command](id: String, command: Command, replyTo: ActorRef[AggregateResponse.EvaluationResult]) extends AggregateRequest
+    final case class DryRun[Command](id: String, command: Command, replyTo: ActorRef[AggregateResponse.EvaluationResult]) extends AggregateRequest
+
+    sealed trait ReadOnlyRequest extends AggregateRequest
+    final case class RequestState[State](id: String, replyTo: ActorRef[AggregateResponse.StateResponse[State]]) extends ReadOnlyRequest
+    final case class RequestLastSeqNr(id: String, replyTo: ActorRef[AggregateResponse.LastSeqNr]) extends ReadOnlyRequest
   }
 
   /**
-    * Command that can be forwarded from the [[EventSourceProcessor]] to its child actor stateActor
+    * Message issued when when passivation is triggered
     */
-  sealed trait EventSourceCommand extends InputCommand
+  final private[processor] case object Idle extends ProcessorCommand
 
   /**
-    * Read only commands that don't need to be stashed when a [[Evaluate]] is running
+    * Outgoing messages from child actor to the [[EventSourceProcessor]] actor
     */
-  sealed trait ReadonlyCommand                                                               extends EventSourceCommand
-  final case class RequestState[State](id: String, replyTo: ActorRef[StateReply[State]])     extends ReadonlyCommand
-  final case class RequestLastSeqNr(id: String, replyTo: ActorRef[LastSeqNr])                extends ReadonlyCommand
-  final private[processor] case class RequestStateInternal[State](
-      id: String,
-      replyTo: ActorRef[ResponseStateInternal[State]]
-  )                                                                                          extends ReadonlyCommand
-  final private[processor] case class ResponseStateInternal[State](id: String, value: State) extends ReadonlyCommand
+  sealed private[processor] trait ChildActorResponse extends ProcessorCommand
+  private[processor] object ChildActorResponse {
+    final case class AppendResult[Event, State](event: Event, state: State) extends ChildActorResponse
+    final case class StateResponseInternal[State](value: State)             extends ChildActorResponse
+  }
 
   /**
-    * Internal message sent by the [[EventSourceProcessor]] to its state actor.
-    *
-    * @param event   the event to persist
-    * @param replyTo the actor to send the reply to (the [[EventSourceProcessor]] actor)
+    * Messages issued from within the [[EventSourceProcessor]] as an evaluation result
     */
-  final case class Append[Event, State] private[processor] (
-      id: String,
-      event: Event,
-      replyTo: ActorRef[AppendSuccess[Event, State]]
-  ) extends EventSourceCommand
+  sealed private[processor] trait EvaluationResultInternal extends ProcessorCommand
+  private[processor] object EvaluationResultInternal {
+    final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResultInternal
+    final case class EvaluationRejection[Rejection](value: Rejection)            extends EvaluationResultInternal
 
-  /**
-    * Internal message sent by the state actor to the [[EventSourceProcessor]] signaling a successful append of an Event
-    *
-    * @param event the appended
-    * @param state the state generated from the appended event
-    */
-  final case class AppendSuccess[Event, State] private[processor] (id: String, event: Event, state: State)
-      extends EventSourceCommand
+    sealed trait EvaluationError extends Exception with EvaluationResultInternal
+    final case class EvaluationTimeout[Command](value: Command, timeoutAfter: FiniteDuration) extends EvaluationError
+    final case class EvaluationFailure[Command](value: Command, message: Option[String]) extends EvaluationError
+  }
+}
+// format: on
 
-  /**
-    * Defines a command to evaluate the command giving a [[EvaluationResult]]
-    * which is sent back to the replyTo
-    *
-    * @param command the command to evaluate
-    * @param replyTo the actor to send the result to
-    */
-  final case class Evaluate[Command](id: String, command: Command, replyTo: ActorRef[EvaluationResult])
-      extends InputCommand
-
-  /**
-    * Same thing as [[Evaluate]] but the result is never appended to the event log
-    * @param command the command to test
-    * @param replyTo the actor to send the result to
-    */
-  final case class DryRun[Command](id: String, command: Command, replyTo: ActorRef[DryRunResult]) extends InputCommand
-
-  // Evaluation results
-  sealed trait RunResult        extends ProcessorCommand
-  sealed trait EvaluationResult extends RunResult
-
-  /**
-    * Describes the event and the state computed when an an [[Evaluate]] or a [[DryRun]]
-    * has been successfully evaluated
-    *
-    * @param event the generated event
-    * @param state the new state
-    */
-  final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResult
-
-  /**
-    * Describes the event resulting from a successful evaluation.
-    *
-    * @param event the generated event
-    */
-  final private[processor] case class EvaluationSuccessInternal[Event](event: Event) extends EvaluationResult
-
-  /**
-    * Rejection that occured after running an an [[Evaluate]] or a [[DryRun]]
-    * @param value the rejection
-    */
-  final case class EvaluationRejection[Rejection](value: Rejection) extends EvaluationResult
-
-  /**
-    * Error that occured after running an [[Evaluate]] or a [[DryRun]]
-    */
-  abstract class EvaluationError                                                            extends Exception with EvaluationResult
-  final case class EvaluationCommandTimeout[Command](value: Command, timeoutAfter: FiniteDuration)
-      extends EvaluationError
-  final case class EvaluationCommandError[Command](value: Command, message: Option[String]) extends EvaluationError
-
-  /**
-    * Result of a [[DryRun]]
-    * @param result the result we got, can be a success / a rejection / an error
-    */
-  final case class DryRunResult(result: EvaluationResult) extends RunResult
-
+/**
+  * Incoming messages from within the [[EventSourceProcessor]] to child actor
+  */
+sealed private[processor] trait ChildActorRequest extends Product with Serializable
+private[processor] object ChildActorRequest {
+  final case class RequestLastSeqNr(replyTo: ActorRef[AggregateResponse.LastSeqNr]) extends ChildActorRequest
+  final case class RequestState[State](replyTo: ActorRef[AggregateResponse.StateResponse[State]])
+      extends ChildActorRequest
+  final case object RequestStateInternal                                            extends ChildActorRequest
+  final case class Append[Event](event: Event)                                      extends ChildActorRequest
 }
 
-// Replies
-sealed trait AggregateReply extends Product with Serializable
+/**
+  * Replies from [[EventSourceProcessor]] actor to the outside
+  */
+sealed trait AggregateResponse extends Product with Serializable
 
-object AggregateReply {
-  final case class LastSeqNr(value: Long)          extends AggregateReply
-  final case class StateReply[State](value: State) extends AggregateReply
+object AggregateResponse {
+  final case class LastSeqNr(value: Long)             extends AggregateResponse
+  final case class StateResponse[State](value: State) extends AggregateResponse
+
+  sealed trait EvaluationResult                                                extends AggregateResponse
+  final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResult
+  final case class EvaluationRejection[Rejection](value: Rejection)            extends EvaluationResult
+
+  sealed trait EvaluationError                                                              extends Exception with EvaluationResult
+  final case class EvaluationTimeout[Command](value: Command, timeoutAfter: FiniteDuration) extends EvaluationError
+  final case class EvaluationFailure[Command](value: Command, message: Option[String])      extends EvaluationError
 }

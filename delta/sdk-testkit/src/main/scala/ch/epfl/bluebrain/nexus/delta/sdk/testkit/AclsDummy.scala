@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.Acls.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{RevisionNotFound, UnexpectedInitialState}
@@ -18,7 +19,7 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy ACLs implementation that uses a synchronized in memory journal.
   *
-  * @param perms     the bundle of operations pertaining to managing permissions wrappd in an IO
+  * @param perms     the bundle of operations pertaining to managing permissions wrapped in an IO
   * @param journal   a ref to the journal containing all the events discriminated by [[AclAddress]] location
   * @param cache     a ref to the cache containing all the current acl resources
   * @param semaphore a semaphore for serializing write operations on the journal
@@ -94,8 +95,6 @@ object AclsDummy {
 
   type AclsJournal = Journal[AclAddress, AclEvent]
 
-  val entityType: String = "acls"
-
   implicit val idLens: Lens[AclEvent, AclAddress] = (event: AclEvent) => event.address
 
   /**
@@ -105,7 +104,7 @@ object AclsDummy {
     */
   final def apply(perms: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] =
     for {
-      journal  <- Journal(entityType)
+      journal  <- Journal(moduleType)
       cacheRef <- IORef.of(AclCollection.empty)
       sem      <- IOSemaphore(1L)
     } yield new AclsDummy(perms, journal, cacheRef, sem)

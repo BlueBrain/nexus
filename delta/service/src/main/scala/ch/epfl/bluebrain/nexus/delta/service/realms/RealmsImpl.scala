@@ -4,19 +4,22 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RevisionNotFound, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
+import ch.epfl.bluebrain.nexus.delta.service.syntax._
 import ch.epfl.bluebrain.nexus.sourcing._
+import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.sourcing.projections.StreamSupervisor
 import com.typesafe.scalalogging.Logger
@@ -30,26 +33,24 @@ final class RealmsImpl private (
     index: RealmsCache
 ) extends Realms {
 
-  private val component: String = "realms"
-
   override def create(label: Label, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit
       caller: Identity.Subject
   ): IO[RealmRejection, RealmResource] = {
     val command = CreateRealm(label, name, openIdConfig, logo, caller)
-    eval(command).named("createRealm", component)
+    eval(command).named("createRealm", moduleType)
   }
 
   override def update(label: Label, rev: Long, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit
       caller: Identity.Subject
   ): IO[RealmRejection, RealmResource] = {
     val command = UpdateRealm(label, rev, name, openIdConfig, logo, caller)
-    eval(command).named("updateRealm", component)
+    eval(command).named("updateRealm", moduleType)
   }
 
   override def deprecate(label: Label, rev: Long)(implicit
       caller: Identity.Subject
   ): IO[RealmRejection, RealmResource] =
-    eval(DeprecateRealm(label, rev, caller)).named("deprecateRealm", component)
+    eval(DeprecateRealm(label, rev, caller)).named("deprecateRealm", moduleType)
 
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
     for {
@@ -62,31 +63,18 @@ final class RealmsImpl private (
     } yield resource
 
   override def fetch(label: Label): UIO[Option[RealmResource]] =
-    agg.state(label.value).map(_.toResource).named("fetchRealm", component)
+    agg.state(label.value).map(_.toResource).named("fetchRealm", moduleType)
 
   override def fetchAt(label: Label, rev: Long): IO[RealmRejection.RevisionNotFound, Option[RealmResource]] =
-    if (rev == 0L) UIO.pure(None).named("fetchRealmAt", component, Map("rev" -> rev))
-    else {
-      eventLog
-        .currentEventsByPersistenceId(s"$entityType-$label", Long.MinValue, Long.MaxValue)
-        .takeWhile(_.event.rev <= rev)
-        .fold[RealmState](RealmState.Initial) { case (state, event) =>
-          Realms.next(state, event.event)
-        }
-        .compile
-        .last
-        .hideErrors
-        .flatMap {
-          case Some(state) if state.rev == rev => UIO.pure(state.toResource)
-          case Some(_)                         =>
-            fetch(label).flatMap {
-              case Some(res) => IO.raiseError(RevisionNotFound(rev, res.rev))
-              case None      => IO.pure(None)
-            }
-          case None                            => IO.raiseError(RevisionNotFound(rev, 0L))
-        }
-        .named("fetchRealmAt", component, Map("rev" -> rev))
-    }
+    eventLog
+      .fetchStateAt(
+        persistenceId(moduleType, label.value),
+        rev,
+        Initial,
+        Realms.next
+      )
+      .bimap(RevisionNotFound(rev, _), _.toResource)
+      .named("fetchRealmAt", moduleType)
 
   override def list(
       pagination: Pagination.FromPagination,
@@ -100,13 +88,13 @@ final class RealmsImpl private (
           results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
         )
       }
-      .named("listRealms", component)
+      .named("listRealms", moduleType)
 
   override def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]] =
-    eventLog.eventsByTag(realmTag, offset)
+    eventLog.eventsByTag(moduleType, offset)
 
   override def currentEvents(offset: Offset): Stream[Task, Envelope[RealmEvent]] =
-    eventLog.currentEventsByTag(realmTag, offset)
+    eventLog.currentEventsByTag(moduleType, offset)
 
 }
 
@@ -116,22 +104,12 @@ object RealmsImpl {
 
   type RealmsCache = KeyValueStore[Label, RealmResource]
 
-  /**
-    * The realms entity type.
-    */
-  final val entityType: String = "realms"
-
-  /**
-    * The realms tag name.
-    */
-  final val realmTag = "realm"
-
   private val logger: Logger = Logger[RealmsImpl]
 
   private def index(realmsConfig: RealmsConfig)(implicit as: ActorSystem[Nothing]): RealmsCache = {
     implicit val cfg: KeyValueStoreConfig    = realmsConfig.keyValueStore
     val clock: (Long, RealmResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed("realms", clock)
+    KeyValueStore.distributed(moduleType, clock)
   }
 
   private def startIndexing(
@@ -144,7 +122,7 @@ object RealmsImpl {
       "RealmsIndex",
       streamTask = Task.delay(
         eventLog
-          .eventsByTag(realmTag, Offset.noOffset)
+          .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             realms.fetch(envelope.event.label).flatMap {
               case Some(realm) => index.put(realm.id, realm)
@@ -165,11 +143,11 @@ object RealmsImpl {
       realmsConfig: RealmsConfig
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[RealmsAggregate] = {
     val definition = PersistentEventDefinition(
-      entityType = entityType,
+      entityType = moduleType,
       initialState = RealmState.Initial,
       next = Realms.next,
       evaluate = Realms.evaluate(resolveWellKnown, existingRealms),
-      tagger = (_: RealmEvent) => Set(realmTag),
+      tagger = (_: RealmEvent) => Set(moduleType),
       snapshotStrategy = realmsConfig.aggregate.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: RealmState, _: RealmEvent, _: Long) => state.deprecated)
       ),

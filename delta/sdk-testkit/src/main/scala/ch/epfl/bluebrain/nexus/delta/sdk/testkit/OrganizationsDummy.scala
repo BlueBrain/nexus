@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand.{CreateOrganization, DeprecateOrganization, UpdateOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.UnexpectedInitialState
@@ -105,8 +106,6 @@ object OrganizationsDummy {
   type OrganizationsJournal = Journal[Label, OrganizationEvent]
   type OrganizationsCache   = ResourceCache[Label, Organization]
 
-  val entityType: String = "organizations"
-
   implicit val idLens: Lens[OrganizationEvent, Label] = (a: OrganizationEvent) => a.label
 
   /**
@@ -117,7 +116,7 @@ object OrganizationsDummy {
       clock: Clock[UIO] = IO.clock
   ): UIO[OrganizationsDummy] =
     for {
-      journal <- Journal(entityType)
+      journal <- Journal(moduleType)
       cache   <- ResourceCache[Label, Organization]
       sem     <- IOSemaphore(1L)
     } yield new OrganizationsDummy(journal, cache, sem)

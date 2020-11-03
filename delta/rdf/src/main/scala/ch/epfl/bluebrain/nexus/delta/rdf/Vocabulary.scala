@@ -111,6 +111,8 @@ object Vocabulary {
     val maxScore              = Metadata("maxScore")
     val next                  = Metadata("next")
     val label                 = Metadata("label")
+    val organizationLabel     = Metadata("organizationLabel")
+    val organizationUuid      = Metadata("organizationUuid")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")
     val revocationEndpoint    = Metadata("revocationEndpoint")
@@ -156,6 +158,7 @@ object Vocabulary {
     val identities    = contexts + "identities.json"
     val organizations = contexts + "organizations.json"
     val permissions   = contexts + "permissions.json"
+    val projects      = contexts + "projects.json"
     val realms        = contexts + "realms.json"
     val resource      = contexts + "resource.json"
     val search        = contexts + "search.json"

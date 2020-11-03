@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -41,7 +40,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
 
   import baseUri._
 
-  private val orgsIri = endpoint.toIri / "orgs"
+  private val orgsIri = baseUri.iriEndpoint / "orgs"
 
   implicit val iriResolver: Lens[Label, Iri] = (l: Label) => orgsIri / l.value
   implicit val orgContext: ContextValue      = Organization.context
@@ -79,12 +78,12 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                       case Some(rev) =>
                         // Update organization
                         entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                          completeIO(organizations.update(id, description, rev))
+                          completeIO(organizations.update(id, description, rev).map(_.void))
                         }
                       case None      =>
                         // Create organization
                         entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                          completeIO(StatusCodes.Created, organizations.create(id, description))
+                          completeIO(StatusCodes.Created, organizations.create(id, description).map(_.void))
                         }
                     }
                   },
@@ -98,7 +97,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   },
                   // Deprecate organization
                   delete {
-                    parameter("rev".as[Long]) { rev => completeIO(organizations.deprecate(id, rev)) }
+                    parameter("rev".as[Long]) { rev => completeIO(organizations.deprecate(id, rev).map(_.void)) }
                   }
                 )
               }

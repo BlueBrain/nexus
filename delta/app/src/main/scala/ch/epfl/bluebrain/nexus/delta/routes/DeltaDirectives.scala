@@ -23,9 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{HttpResponseFields, JsonLdFormat, QueryParamsUnmarshalling, RdfMarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, Label}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import monix.bio.{IO, Task, UIO}
@@ -71,6 +72,14 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
         case Left(err)    => reject(validationRejection(err.getMessage))
         case Right(label) => provide(label)
       }
+    }
+
+  /**
+    * Parse two consecutive segment labels into a project reference
+    */
+  def projectRef: Directive1[ProjectRef] =
+    (label & label).tmap { case (org, proj) =>
+      ProjectRef(org, proj)
     }
 
   /**

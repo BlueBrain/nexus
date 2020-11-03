@@ -5,10 +5,10 @@ import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource}
 
 /**
   * Enumeration of organization states.
@@ -101,5 +101,7 @@ object OrganizationState {
         )
       )
   }
+
+  implicit val revisionLens: Lens[OrganizationState, Long] = (s: OrganizationState) => s.rev
 
 }
