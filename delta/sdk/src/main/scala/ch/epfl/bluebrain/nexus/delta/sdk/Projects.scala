@@ -82,6 +82,17 @@ trait Projects {
   def fetch(uuid: UUID): UIO[Option[ProjectResource]]
 
   /**
+    * Fetch a project resource by its uuid and its organization uuid
+    * @param orgUuid     the unique organization identifier
+    * @param projectUuid the unique project identifier
+    */
+  def fetch(orgUuid: UUID, projectUuid: UUID): IO[ProjectNotFound, Option[ProjectResource]] =
+    fetch(projectUuid).flatMap {
+      case Some(res) if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
+      case other                                              => IO.pure(other)
+    }
+
+  /**
     * Fetches a project resource at a specific revision based on its uuid.
     *
     * @param uuid the unique project identifier
@@ -91,6 +102,18 @@ trait Projects {
     fetch(uuid).flatMap {
       case Some(value) => fetchAt(value.value.ref, rev)
       case None        => IO.pure(None)
+    }
+
+  /**
+    * Fetch a project resource by its uuid and its organization uuid
+    * @param orgUuid     the unique organization identifier
+    * @param projectUuid the unique project identifier
+    * @param rev         the revision to be retrieved
+    */
+  def fetchAt(orgUuid: UUID, projectUuid: UUID, rev: Long): IO[ProjectRejection, Option[ProjectResource]] =
+    fetchAt(projectUuid, rev).flatMap {
+      case Some(res) if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
+      case other                                              => IO.pure(other)
     }
 
   /**

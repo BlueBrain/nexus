@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "ProjectNotFound",
+  "reason" : "Project with uuid '{{projUuid}}' under organization: '{{orgUuid}}' not found."
+}

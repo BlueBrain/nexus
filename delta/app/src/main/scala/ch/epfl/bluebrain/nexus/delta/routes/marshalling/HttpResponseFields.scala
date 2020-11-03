@@ -89,11 +89,12 @@ object HttpResponseFields {
 
   implicit val responseFieldsOrganizations: HttpResponseFields[OrganizationRejection] =
     HttpResponseFields {
-      case OrganizationRejection.OrganizationNotFound(_)   => StatusCodes.NotFound
-      case OrganizationRejection.IncorrectRev(_, _)        => StatusCodes.Conflict
-      case OrganizationRejection.RevisionNotFound(_, _)    => StatusCodes.NotFound
-      case OrganizationRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
-      case _                                               => StatusCodes.BadRequest
+      case OrganizationRejection.OrganizationNotFound(_)      => StatusCodes.NotFound
+      case OrganizationRejection.OrganizationAlreadyExists(_) => StatusCodes.Conflict
+      case OrganizationRejection.IncorrectRev(_, _)           => StatusCodes.Conflict
+      case OrganizationRejection.RevisionNotFound(_, _)       => StatusCodes.NotFound
+      case OrganizationRejection.UnexpectedInitialState(_)    => StatusCodes.InternalServerError
+      case _                                                  => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsProjects: HttpResponseFields[ProjectRejection] =
@@ -101,6 +102,7 @@ object HttpResponseFields {
       case ProjectRejection.RevisionNotFound(_, _)  => StatusCodes.NotFound
       case ProjectRejection.ProjectNotFound(_)      => StatusCodes.NotFound
       case ProjectRejection.OrganizationNotFound(_) => StatusCodes.NotFound
+      case ProjectRejection.ProjectAlreadyExists(_) => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)      => StatusCodes.Conflict
       //case ProjectRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
       case _                                        => StatusCodes.BadRequest

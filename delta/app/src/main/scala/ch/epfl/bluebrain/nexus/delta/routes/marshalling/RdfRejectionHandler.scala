@@ -292,7 +292,7 @@ object RdfRejectionHandler extends DeltaDirectives {
     }
 
   implicit private val missingQueryParamResponseFields: HttpResponseFields[MissingQueryParamRejection] =
-    HttpResponseFields(_ => StatusCodes.NotFound)
+    HttpResponseFields(_ => StatusCodes.BadRequest)
 
   implicit private val invalidValueForQPEncoder: Encoder.AsObject[InvalidRequiredValueForQueryParamRejection] =
     Encoder.AsObject.instance { case r @ InvalidRequiredValueForQueryParamRejection(paramName, requiredValue, _) =>
