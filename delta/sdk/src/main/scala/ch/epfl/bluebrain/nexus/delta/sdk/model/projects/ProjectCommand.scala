@@ -35,8 +35,8 @@ object ProjectCommand {
       ref: ProjectRef,
       description: Option[String],
       apiMappings: Map[String, Iri],
-      base: PrefixIRI,
-      vocab: PrefixIRI,
+      base: PrefixIri,
+      vocab: PrefixIri,
       subject: Subject
   ) extends ProjectCommand
 
@@ -55,8 +55,8 @@ object ProjectCommand {
       ref: ProjectRef,
       description: Option[String],
       apiMappings: Map[String, Iri],
-      base: PrefixIRI,
-      vocab: PrefixIRI,
+      base: PrefixIri,
+      vocab: PrefixIri,
       rev: Long,
       subject: Subject
   ) extends ProjectCommand

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 
@@ -50,7 +51,18 @@ object FormatError {
       )
 
   /**
-    * Prefix Mapping Iri formatting error, returned in cases where a PrefixIRI could not be constructed from an Iri.
+    * AclAddress formatting error, returned in cases where an AclAddress could not be constructed from a String.
+    *
+    * @param details possible additional details that may be interesting to provide to the caller
+    */
+  final case class IllegalAclAddressFormatError(details: Option[String] = None)
+      extends FormatError(
+        s"The provided string did not match any of the expected Acl Address formats: '/', '${AclAddress.orgAddressRegex.regex}', '${AclAddress.projAddressRegex.regex}'.",
+        details
+      )
+
+  /**
+    * Prefix Mapping Iri formatting error, returned in cases where a PrefixIri could not be constructed from an Iri.
     *
     * @param details possible additional details that may be interesting to provide to the caller
     */

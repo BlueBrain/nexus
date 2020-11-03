@@ -1,0 +1,14 @@
+{
+  "label": "myproj",
+  "uuid": "fe1301a6-a105-4966-84af-32723fd003d2",
+  "organizationLabel": "myorg",
+  "organizationUuid": "b6bde92f-7836-4da6-8ead-2e0fd516ebe7",
+  "rev": 1,
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "@type": "ProjectDeprecated"
+}

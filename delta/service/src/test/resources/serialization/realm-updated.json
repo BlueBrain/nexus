@@ -1,0 +1,33 @@
+{
+  "label": "myrealm",
+  "rev": 1,
+  "name": "name",
+  "openIdConfig": "http://localhost:8080/.wellknown",
+  "issuer": "http://localhost:8080/issuer",
+  "keys": [
+    {
+      "k": "http://localhost:8080/issuer"
+    }
+  ],
+  "grantTypes": [
+    "deviceCode",
+    "password",
+    "clientCredentials",
+    "refreshToken",
+    "authorizationCode",
+    "implicit"
+  ],
+  "logo": "http://localhost:8080/logo.png",
+  "authorizationEndpoint": "http://localhost:8080/authorize",
+  "tokenEndpoint": "http://localhost:8080/token",
+  "userInfoEndpoint": "http://localhost:8080/userinfo",
+  "revocationEndpoint": "http://localhost:8080/revocation",
+  "endSessionEndpoint": "http://localhost:8080/logout",
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "@type": "RealmUpdated"
+}

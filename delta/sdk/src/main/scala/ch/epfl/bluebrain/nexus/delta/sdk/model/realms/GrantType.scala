@@ -77,5 +77,14 @@ object GrantType {
       case DeviceCode        => Json.fromString("deviceCode")
       case RefreshToken      => Json.fromString("refreshToken")
     }
+    implicit final val grantTypeDecoder: Decoder[GrantType] = Decoder.decodeString.emap {
+      case "authorizationCode" => Right(AuthorizationCode)
+      case "implicit"          => Right(Implicit)
+      case "password"          => Right(Password)
+      case "clientCredentials" => Right(ClientCredentials)
+      case "deviceCode"        => Right(DeviceCode)
+      case "refreshToken"      => Right(RefreshToken)
+      case other               => Left(s"Unknown grant type '$other'")
+    }
   }
 }
