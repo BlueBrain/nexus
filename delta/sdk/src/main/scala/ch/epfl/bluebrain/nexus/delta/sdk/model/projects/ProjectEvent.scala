@@ -63,8 +63,8 @@ object ProjectEvent {
       rev: Long,
       description: Option[String],
       apiMappings: Map[String, Iri],
-      base: PrefixIRI,
-      vocab: PrefixIRI,
+      base: PrefixIri,
+      vocab: PrefixIri,
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent
@@ -92,8 +92,8 @@ object ProjectEvent {
       rev: Long,
       description: Option[String],
       apiMappings: Map[String, Iri],
-      base: PrefixIRI,
-      vocab: PrefixIRI,
+      base: PrefixIri,
+      vocab: PrefixIri,
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent

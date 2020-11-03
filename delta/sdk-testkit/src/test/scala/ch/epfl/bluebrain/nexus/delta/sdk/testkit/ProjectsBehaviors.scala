@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{IncorrectRev, OrganizationIsDeprecated, ProjectAlreadyExists, ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIRI, ProjectFields, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIri, ProjectFields, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
@@ -49,8 +49,8 @@ trait ProjectsBehaviors {
     "nxv" -> iri"https://localhost/nexus/vocabulary/",
     "rdf" -> iri"http://localhost/1999/02/22-rdf-syntax-ns#type"
   )
-  val base     = PrefixIRI.unsafe(iri"https://localhost/base/")
-  val voc      = PrefixIRI.unsafe(iri"https://localhost/voc/")
+  val base     = PrefixIri.unsafe(iri"https://localhost/base/")
+  val voc      = PrefixIri.unsafe(iri"https://localhost/voc/")
 
   val payload        = ProjectFields(desc, mappings, Some(base), Some(voc))
   val anotherPayload = ProjectFields(Some("Another project description"), mappings, None, None)

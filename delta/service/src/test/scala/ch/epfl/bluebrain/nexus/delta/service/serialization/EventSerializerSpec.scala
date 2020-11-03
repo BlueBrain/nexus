@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.serialization
+package ch.epfl.bluebrain.nexus.delta.service.serialization
 
 import java.time.Instant
 import java.util.UUID
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIRI, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIri, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmEvent}
@@ -66,8 +66,8 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
   val proj: Label                   = Label.unsafe("myproj")
   val projUuid: UUID                = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
   val apiMappings: Map[String, Iri] = Map("nxv" -> nxv.base)
-  val base: PrefixIRI               = PrefixIRI.unsafe(schemas.base)
-  val vocab: PrefixIRI              = PrefixIRI.unsafe(nxv.base)
+  val base: PrefixIri               = PrefixIri.unsafe(schemas.base)
+  val vocab: PrefixIri              = PrefixIri.unsafe(nxv.base)
 
   val permissionsMapping: Map[PermissionsEvent, Json] = Map(
     PermissionsAppended(rev, permSet, instant, subject)   -> jsonContentOf("/serialization/permissions-appended.json"),

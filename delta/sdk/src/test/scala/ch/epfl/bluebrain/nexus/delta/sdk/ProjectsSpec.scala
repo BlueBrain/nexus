@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIRI, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIri, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues, _}
@@ -36,8 +36,8 @@ class ProjectsSpec
     val epoch                  = Instant.EPOCH
     val time2                  = Instant.ofEpochMilli(10L)
     val am                     = Map("xsd" -> xsd.base, "Person" -> schema.Person)
-    val base                   = PrefixIRI.unsafe(iri"http://example.com/base/")
-    val vocab                  = PrefixIRI.unsafe(iri"http://example.com/vocab/")
+    val base                   = PrefixIri.unsafe(iri"http://example.com/base/")
+    val vocab                  = PrefixIri.unsafe(iri"http://example.com/vocab/")
     val org1                   = OrganizationGen.currentState("org", 1L)
     val org2                   = OrganizationGen.currentState("org2", 1L, deprecated = true)
     val current                = ProjectGen.currentState(

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.serialization
+package ch.epfl.bluebrain.nexus.delta.service.serialization
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}

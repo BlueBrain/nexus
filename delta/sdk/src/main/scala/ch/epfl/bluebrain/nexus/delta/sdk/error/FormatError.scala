@@ -62,7 +62,7 @@ object FormatError {
       )
 
   /**
-    * Prefix Mapping Iri formatting error, returned in cases where a PrefixIRI could not be constructed from an Iri.
+    * Prefix Mapping Iri formatting error, returned in cases where a PrefixIri could not be constructed from an Iri.
     *
     * @param details possible additional details that may be interesting to provide to the caller
     */

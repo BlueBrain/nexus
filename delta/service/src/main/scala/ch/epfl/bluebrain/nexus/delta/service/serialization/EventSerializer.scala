@@ -1,20 +1,22 @@
-package ch.epfl.bluebrain.nexus.delta.serialization
+package ch.epfl.bluebrain.nexus.delta.service.serialization
 
 import java.nio.charset.StandardCharsets
 
-import akka.http.scaladsl.model.Uri
 import akka.serialization.SerializerWithStringManifest
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIRI, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType.Camel._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
-import ch.epfl.bluebrain.nexus.delta.serialization.EventSerializer._
+import ch.epfl.bluebrain.nexus.delta.service.serialization.EventSerializer._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.parser._
@@ -22,7 +24,6 @@ import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder}
 
 import scala.annotation.nowarn
-import scala.util.Try
 
 /**
   * A json serializer for delta [[Event]] types.
@@ -68,11 +69,11 @@ class EventSerializer extends SerializerWithStringManifest {
 @nowarn("cat=unused")
 object EventSerializer {
 
-  final val permissionsEventManifest: String  = "permissions"
-  final val aclEventManifest: String          = "acl"
-  final val realmEventManifest: String        = "realm"
-  final val organizationEventManifest: String = "organization"
-  final val projectEventManifest: String      = "project"
+  final val permissionsEventManifest: String  = Permissions.moduleType
+  final val aclEventManifest: String          = Acls.moduleType
+  final val realmEventManifest: String        = Realms.moduleType
+  final val organizationEventManifest: String = Organizations.moduleType
+  final val projectEventManifest: String      = Projects.moduleType
 
   implicit final private val configuration: Configuration =
     Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
@@ -93,20 +94,9 @@ object EventSerializer {
     Acl(entries.map(e => e.identity -> e.permissions).toMap)
   }
 
-  implicit final val uriEncoder: Encoder[Uri] = Encoder.encodeString.contramap(_.toString)
-  implicit final val uriDecoder: Decoder[Uri] = Decoder.decodeString.emapTry(str => Try(Uri(str)))
-
-  implicit final val prefixIriEncoder: Encoder[PrefixIRI] = Encoder.encodeString.contramap(_.value.toString)
-  implicit final val prefixIriDecoder: Decoder[PrefixIRI] =
-    Decoder.decodeString.emap(str => PrefixIRI(str).leftMap(_.getMessage))
-
   implicit final val permissionsEventCodec: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
   implicit final val aclEventCodec: Codec.AsObject[AclEvent]                 = deriveConfiguredCodec[AclEvent]
-  implicit final val realmEventCodec: Codec.AsObject[RealmEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType.Camel._
-    deriveConfiguredCodec[RealmEvent]
-  }
+  implicit final val realmEventCodec: Codec.AsObject[RealmEvent]             = deriveConfiguredCodec[RealmEvent]
   implicit final val organizationEvent: Codec.AsObject[OrganizationEvent]    = deriveConfiguredCodec[OrganizationEvent]
   implicit final val projectEvent: Codec.AsObject[ProjectEvent]              = deriveConfiguredCodec[ProjectEvent]
-
 }

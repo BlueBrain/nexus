@@ -15,16 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 final case class ProjectFields(
     description: Option[String],
     apiMappings: Map[String, Iri],
-    base: Option[PrefixIRI],
-    vocab: Option[PrefixIRI]
+    base: Option[PrefixIri],
+    vocab: Option[PrefixIri]
 ) {
 
   /**
     * @return the current base or a generated one based on the ''baseUri'' and the project ref
     */
-  def baseOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIRI =
+  def baseOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
     base.getOrElse(
-      PrefixIRI.unsafe(
+      PrefixIri.unsafe(
         (baseUri.endpoint / "resources" / projectRef.organization / projectRef.project / "_").finalSlash().toIri
       )
     )
@@ -32,9 +32,9 @@ final case class ProjectFields(
   /**
     * @return the current vocab or a generated one based on the ''baseUri'' and the project ref
     */
-  def vocabOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIRI =
+  def vocabOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
     vocab.getOrElse(
-      PrefixIRI.unsafe((baseUri.endpoint / "vocabs" / projectRef.organization / projectRef.project).finalSlash().toIri)
+      PrefixIri.unsafe((baseUri.endpoint / "vocabs" / projectRef.organization / projectRef.project).finalSlash().toIri)
     )
 
 }
