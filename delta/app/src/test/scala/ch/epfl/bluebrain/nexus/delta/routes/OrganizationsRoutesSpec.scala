@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken, `Last-Event-ID`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils

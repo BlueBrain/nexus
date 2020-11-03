@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Accept, `Last-Event-ID`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
@@ -42,7 +42,7 @@ class PermissionsRoutesSpec
   ).accepted
   private val permissions    = permissionsUIO.accepted
   private val route          = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
-  private val id          = iri"http://localhost/v1/permissions"
+  private val id             = iri"http://localhost/v1/permissions"
 
   "The permissions routes" should {
 

@@ -59,7 +59,7 @@ class RealmsRoutesSpec
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
-  private val acls = AclsDummy(
+  private val acls       = AclsDummy(
     PermissionsDummy(Set.empty)
   ).accepted
 
