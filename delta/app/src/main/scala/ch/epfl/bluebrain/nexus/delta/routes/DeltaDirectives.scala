@@ -304,7 +304,7 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
       S: SearchEncoder[A],
       additionalContext: ContextValue
   ): Route =
-    completeUIO(io.map(res => SearchResults(res.length.toLong, res)))
+    completeUIO(io.map(res => SearchResults(res.length.toLong, res).asInstanceOf[SearchResults[A]]))
 
   /**
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
