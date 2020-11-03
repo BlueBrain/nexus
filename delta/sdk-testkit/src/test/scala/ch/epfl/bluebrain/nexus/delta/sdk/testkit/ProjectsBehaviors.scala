@@ -225,6 +225,11 @@ trait ProjectsBehaviors {
       projects.fetch(UUID.randomUUID()).accepted shouldEqual projects.fetch(ref).accepted
     }
 
+    "fetch a project by uuid with the wrong orgUuid" in {
+      val unknownUuid = UUID.randomUUID()
+      projects.fetch(unknownUuid, uuid).rejectedWith[ProjectNotFound] shouldEqual ProjectNotFound(unknownUuid, uuid)
+    }
+
     "fetch an unknown project at a given revision" in {
       val ref = ProjectRef.unsafe("org", "unknown")
 
@@ -235,6 +240,14 @@ trait ProjectsBehaviors {
       val ref = ProjectRef.unsafe("org", "unknown")
 
       projects.fetchAt(UUID.randomUUID(), 42L).accepted shouldEqual projects.fetchAt(ref, 42L).accepted
+    }
+
+    "fetch a project by uuid with the wrong orgUuid at a given revision" in {
+      val unknownUuid = UUID.randomUUID()
+      projects.fetchAt(unknownUuid, uuid, 1L).rejectedWith[ProjectNotFound] shouldEqual ProjectNotFound(
+        unknownUuid,
+        uuid
+      )
     }
 
     val anotherRef          = ProjectRef.unsafe("org2", "proj2")

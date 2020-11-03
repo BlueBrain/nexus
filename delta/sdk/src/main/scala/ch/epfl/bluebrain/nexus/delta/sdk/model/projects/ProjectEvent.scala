@@ -4,8 +4,21 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
+import scala.collection.mutable.ListBuffer
 
 /**
   * Enumeration of Project event types.
@@ -118,4 +131,48 @@ object ProjectEvent {
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent
+
+  private val context = ContextValue(contexts.resource, contexts.projects)
+
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default
+    .withDiscriminator(keywords.tpe)
+    .copy(transformMemberNames = {
+      case "label"             => nxv.label.prefix
+      case "uuid"              => nxv.uuid.prefix
+      case "organizationLabel" => nxv.organizationLabel.prefix
+      case "organizationUuid"  => nxv.organizationUuid.prefix
+      case "rev"               => nxv.rev.prefix
+      case "instant"           => nxv.instant.prefix
+      case "subject"           => nxv.eventSubject.prefix
+      case other               => other
+    })
+
+  @nowarn("cat=unused")
+  implicit private val apiMappingEncoder: Encoder[Map[String, Iri]] =
+    Encoder.encodeJson.contramap { map =>
+      Json.arr(
+        map
+          .foldLeft(ListBuffer.newBuilder[Json]) { case (acc, (prefix, namespace)) =>
+            acc += Json.obj("prefix" -> Json.fromString(prefix), "namespace" -> namespace.asJson)
+          }
+          .result()
+          .toSeq: _*
+      )
+    }
+
+  @nowarn("cat=unused")
+  implicit def projectEventJsonLdEncoder(implicit
+      baseUri: BaseUri,
+      iriLens: Lens[ProjectRef, Iri]
+  ): JsonLdEncoder[ProjectEvent] = {
+    implicit val subjectEncoder: Encoder[Subject]        = Identity.subjectIdEncoder
+    implicit val encoder: Encoder.AsObject[ProjectEvent] = Encoder.AsObject.instance { ev =>
+      deriveConfiguredEncoder[ProjectEvent]
+        .mapJsonObject(_.add("@id", Json.fromString(iriLens.get(ev.ref).toString)))
+        .encodeObject(ev)
+    }
+
+    JsonLdEncoder.compactFromCirce[ProjectEvent](context)
+  }
 }

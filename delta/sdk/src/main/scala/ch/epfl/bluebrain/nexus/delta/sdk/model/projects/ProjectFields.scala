@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 
 /**
   * Type that represents a project payload for creation and update requests.
@@ -36,5 +38,23 @@ final case class ProjectFields(
     vocab.getOrElse(
       PrefixIRI.unsafe((baseUri.endpoint / "vocabs" / projectRef.organization / projectRef.project).finalSlash().toIri)
     )
+
+}
+
+object ProjectFields {
+
+  final case class Mapping(prefix: String, namespace: Iri)
+
+  implicit val mappingDecoder: Decoder[Mapping] = deriveDecoder[Mapping]
+
+  implicit val projectFieldsDecoder: Decoder[ProjectFields] = Decoder.instance { hc =>
+    for {
+      desc <- hc.downField("description").as[Option[String]]
+      lam   = hc.downField("apiMappings").as[List[Mapping]].getOrElse(List.empty)
+      map   = lam.map(am => am.prefix -> am.namespace).toMap
+      base <- hc.downField("base").as[Option[PrefixIRI]]
+      voc  <- hc.downField("vocab").as[Option[PrefixIRI]]
+    } yield ProjectFields(desc, map, base, voc)
+  }
 
 }

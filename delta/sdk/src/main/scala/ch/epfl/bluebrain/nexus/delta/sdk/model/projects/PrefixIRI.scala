@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.{IllegalIRIFormatError, IllegalPrefixIRIFormatError}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe.{Decoder, Encoder}
 
 /**
   * An Iri that ends with ''/'' or ''#''
@@ -38,5 +39,11 @@ object PrefixIRI {
     */
   final def unsafe(value: Iri): PrefixIRI =
     new PrefixIRI(value)
+
+  implicit final val prefixIriDecoder: Decoder[PrefixIRI] =
+    Decoder.decodeString.emap(apply(_).leftMap(_.getMessage))
+
+  implicit final val iriOrBNodeEncoder: Encoder[PrefixIRI] =
+    Encoder.encodeString.contramap(_.toString)
 
 }

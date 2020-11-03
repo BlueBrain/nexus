@@ -22,6 +22,7 @@ trait RouteFixtures extends TestHelpers {
       contexts.organizations -> jsonContentOf("contexts/organizations.json"),
       contexts.identities    -> jsonContentOf("contexts/identities.json"),
       contexts.permissions   -> jsonContentOf("contexts/permissions.json"),
+      contexts.projects      -> jsonContentOf("contexts/projects.json"),
       contexts.realms        -> jsonContentOf("contexts/realms.json")
     )
 
