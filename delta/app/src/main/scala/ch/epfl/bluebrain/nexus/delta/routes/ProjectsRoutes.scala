@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{SearchEncoder, searchResourceEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResourceEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, ProjectResource, Projects}
