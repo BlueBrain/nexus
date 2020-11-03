@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, OrganizationsDummy, RemoteContextResolutionDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, OrganizationsDummy, PermissionsDummy, RemoteContextResolutionDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
@@ -68,8 +68,11 @@ class OrganizationsRoutesSpec
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
+  private val acls       = AclsDummy(
+    PermissionsDummy(Set.empty)
+  ).accepted
 
-  private val routes = Route.seal(OrganizationsRoutes(identities, orgs))
+  private val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
 
   private val org1Created = jsonContentOf(
     "/organizations/org-resource.json",

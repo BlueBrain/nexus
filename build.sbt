@@ -372,7 +372,8 @@ lazy val sdk = project
       fs2,
       monixBio,
       akkaHttpTestKit % Test,
-      scalaTest       % Test
+      scalaTest       % Test,
+      mockito         % Test
     ),
     addCompilerPlugin(kindProjector)
   )

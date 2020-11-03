@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsConfig, RealmsImpl, WellKnownResolver}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
@@ -45,13 +45,14 @@ object RealmsModule extends ModuleDef {
     (
         identities: Identities,
         realms: Realms,
+        acls: Acls,
         baseUri: BaseUri,
         cfg: RealmsConfig,
         s: Scheduler,
         cr: RemoteContextResolution,
         ordering: JsonKeyOrdering
     ) =>
-      new RealmsRoutes(identities, realms)(baseUri, cfg.pagination, s, cr, ordering)
+      new RealmsRoutes(identities, realms, acls)(baseUri, cfg.pagination, s, cr, ordering)
   }
 
 }

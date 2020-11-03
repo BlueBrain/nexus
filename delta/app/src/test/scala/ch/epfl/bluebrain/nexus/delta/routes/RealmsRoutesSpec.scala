@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.Unsuccessfu
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, RealmsDummy, RemoteContextResolutionDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy, RemoteContextResolutionDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -68,6 +68,10 @@ class RealmsRoutesSpec
     )
   ).accepted
 
+  private val acls = AclsDummy(
+    PermissionsDummy(Set.empty)
+  ).accepted
+
   private val realm                                       = Label.unsafe("wonderland")
   private val alice                                       = User("alice", realm)
   private val caller                                      = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
@@ -75,7 +79,7 @@ class RealmsRoutesSpec
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
-  private val routes = Route.seal(RealmsRoutes(identities, realms))
+  private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",

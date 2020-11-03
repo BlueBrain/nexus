@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.{OrganizationsConfig, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
@@ -39,13 +39,14 @@ object OrganizationsModule extends ModuleDef {
     (
         identities: Identities,
         organizations: Organizations,
+        acls:Acls,
         baseUri: BaseUri,
         cfg: OrganizationsConfig,
         s: Scheduler,
         cr: RemoteContextResolution,
         ordering: JsonKeyOrdering
     ) =>
-      new OrganizationsRoutes(identities, organizations)(baseUri, cfg.pagination, s, cr, ordering)
+      new OrganizationsRoutes(identities, organizations, acls)(baseUri, cfg.pagination, s, cr, ordering)
   }
 
 }

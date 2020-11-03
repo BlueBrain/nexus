@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, RemoteContextResolutionDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RemoteContextResolutionDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -25,7 +25,8 @@ class IdentitiesRoutesSpec
     with Matchers
     with CirceEq
     with RouteHelpers
-    with TestHelpers {
+    with TestHelpers
+    with IOValues {
 
   implicit private val rcr: RemoteContextResolutionDummy =
     RemoteContextResolutionDummy(
@@ -46,10 +47,13 @@ class IdentitiesRoutesSpec
       AuthToken("alice") -> caller
     )
   )
+  private val acls       = AclsDummy(
+    PermissionsDummy(Set.empty)
+  ).accepted
 
   private val route = Route.seal(
     handleExceptions(IdentityError.exceptionHandler) {
-      IdentitiesRoutes(identities)
+      IdentitiesRoutes(identities, acls)
     }
   )
 

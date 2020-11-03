@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.Decoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -24,12 +24,12 @@ import monix.execution.Scheduler
   * @param identities  the identities operations bundle
   * @param permissions the permissions operations bundle
   */
-final class PermissionsRoutes(identities: Identities, permissions: Permissions)(implicit
+final class PermissionsRoutes(identities: Identities, permissions: Permissions, acls: Acls)(implicit
     baseUri: BaseUri,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities)
+) extends AuthDirectives(identities, acls)
     with DeltaDirectives
     with CirceUnmarshalling {
 
@@ -92,13 +92,13 @@ object PermissionsRoutes {
   /**
     * @return the [[Route]] for the permission resources
     */
-  def apply(identities: Identities, permissions: Permissions)(implicit
+  def apply(identities: Identities, permissions: Permissions, acls:Acls)(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new PermissionsRoutes(identities, permissions).routes
+    new PermissionsRoutes(identities, permissions, acls).routes
 
   sealed private[routes] trait PatchPermissions extends Product with Serializable
 
