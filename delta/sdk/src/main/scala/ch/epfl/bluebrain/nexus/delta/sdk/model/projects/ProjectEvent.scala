@@ -134,7 +134,8 @@ object ProjectEvent {
 
   private val context = ContextValue(contexts.resource, contexts.projects)
 
-  implicit private[projects] val config: Configuration = Configuration.default
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
     .copy(transformMemberNames = {
       case "label"             => nxv.label.prefix
@@ -147,7 +148,8 @@ object ProjectEvent {
       case other               => other
     })
 
-  implicit val apiMappingEncoder: Encoder[Map[String, Iri]] =
+  @nowarn("cat=unused")
+  implicit private val apiMappingEncoder: Encoder[Map[String, Iri]] =
     Encoder.encodeJson.contramap { map =>
       Json.arr(
         map

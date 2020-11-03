@@ -9,16 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResourceEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{SearchEncoder, searchResourceEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, ProjectResource, Projects}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
 import monix.execution.Scheduler
 
 /**
@@ -26,7 +24,7 @@ import monix.execution.Scheduler
   * @param identities the identity module
   * @param projects   the projects module
   */
-final class ProjectsRoutes private (identities: Identities, projects: Projects)(implicit
+final class ProjectsRoutes(identities: Identities, projects: Projects)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
@@ -57,7 +55,7 @@ final class ProjectsRoutes private (identities: Identities, projects: Projects)(
         pathPrefix("projects") {
           concat(
             // List projects
-            (get & extractUri & paginated & projectsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
+            (get & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/projects") {
                 implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResourceEncoder(pagination, uri)
                 completeSearch(projects.list(pagination, params))
@@ -106,17 +104,11 @@ final class ProjectsRoutes private (identities: Identities, projects: Projects)(
             (uuid & uuid & pathEndOrSingleSlash) { (orgUuid, projectUuid) =>
               operationName(s"$prefixSegment/project/{orgUuid}/{projectUuid}") {
                 get {
-                  def checkOrg(p: Option[ProjectResource]): IO[ProjectRejection, Option[ProjectResource]] =
-                    if (p.exists(_.value.organizationUuid == orgUuid))
-                      IO.pure(p)
-                    else
-                      IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
-
                   parameter("rev".as[Long].?) {
                     case Some(rev) => // Fetch project from UUID at specific revision
-                      completeIOOpt(projects.fetchAt(projectUuid, rev).flatMap(checkOrg))
+                      completeIOOpt(projects.fetchAt(orgUuid, projectUuid, rev))
                     case None      => // Fetch project from UUID
-                      completeIOOpt(projects.fetch(projectUuid).flatMap(checkOrg))
+                      completeIOOpt(projects.fetch(orgUuid, projectUuid).leftMap[ProjectRejection](identity))
                   }
                 }
               }
