@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import monix.bio.IO
 import org.apache.jena.rdf.model.Resource
-import io.circe.syntax._
 
 /**
   * Data type that represents the outcome of validating data against a shacl schema.
@@ -32,12 +32,12 @@ final case class ValidationReport private (conforms: Boolean, targetedNodes: Int
 
 object ValidationReport extends ClasspathResourceUtils {
 
-  private val shaclCtxResolved: Json = jsonContentOf("/shacl-context-resp.json")
+  private val shaclResolvedCtx = ioJsonContentOf("contexts/shacl-context.json").memoizeOnSuccess
 
   private val shaclCtx: Json = Json.obj(keywords.context -> contexts.shacl.asJson)
 
   implicit private val contextResolution: RemoteContextResolution =
-    RemoteContextResolution.fixed(contexts.shacl -> shaclCtxResolved)
+    RemoteContextResolution.fixedIOResource(contexts.shacl -> shaclResolvedCtx)
 
   final def apply(report: Resource): IO[String, ValidationReport] = {
     val tmpGraph = Graph.unsafe(report.getModel)

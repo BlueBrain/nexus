@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClasspathResourceError, ClasspathResourceUtils}
+import io.circe.Json
 import monix.bio.{IO, UIO}
+import monix.execution.Scheduler
+
 import scala.annotation.tailrec
 import scala.util.Random
 
@@ -39,6 +42,38 @@ trait TestHelpers extends ClasspathResourceUtils {
     */
   final def ioFromMap[A, B, C](map: Map[A, B], ifAbsent: A => C): A => IO[C, B] =
     (a: A) => IO.fromOption(map.get(a), ifAbsent(a))
+
+  /**
+    * Loads the content of the argument classpath resource as a string and replaces all the key matches of
+    * the ''replacements'' with their values.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a string
+    */
+  final def contentOf(
+      resourcePath: String,
+      attributes: (String, Any)*
+  )(implicit s: Scheduler = Scheduler.global): String =
+    runAcceptOrThrow(ioContentOf(resourcePath, attributes: _*))
+
+  /**
+    * Loads the content of the argument classpath resource as a string and replaces all the key matches of
+    * the ''replacements'' with their values.  The resulting string is parsed into a json value.
+    *
+    * @param resourcePath the path of a resource available on the classpath
+    * @return the content of the referenced resource as a json value
+    */
+  final def jsonContentOf(
+      resourcePath: String,
+      attributes: (String, Any)*
+  )(implicit s: Scheduler = Scheduler.global): Json =
+    runAcceptOrThrow(ioJsonContentOf(resourcePath, attributes: _*))
+
+  private def runAcceptOrThrow[A](io: IO[ClasspathResourceError, A])(implicit s: Scheduler): A =
+    io.attempt.runSyncUnsafe() match {
+      case Left(value)  => throw new IllegalArgumentException(value.toString)
+      case Right(value) => value
+    }
 }
 
 object TestHelpers extends TestHelpers

@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, ResourcePathNotFound}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution.Result
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextCircularDependency, RemoteContextNotFound}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.{RemoteContextCircularDependency, RemoteContextNotFound, RemoteContextWrongPayload}
 import io.circe.Json
 import monix.bio.IO
 
@@ -53,16 +55,36 @@ object RemoteContextResolution {
   /**
     * Helper method to construct a [[RemoteContextResolution]] .
     *
-    * @param f a function from an [[Iri]] to a [[Result]] of [[Json]]
+    * @param f a pair of [[Iri]] and the resolved Result of [[Json]]
+    */
+  final def fixedIO(f: (Iri, Result[Json])*): RemoteContextResolution = new RemoteContextResolution {
+    private val map = f.toMap
+
+    override def resolve(iri: Iri): Result[Json] =
+      map.get(iri) match {
+        case Some(result) => result
+        case None         => IO.raiseError(RemoteContextNotFound(iri))
+      }
+  }
+
+  /**
+    * Helper method to construct a [[RemoteContextResolution]] .
+    *
+    * @param f a pair of [[Iri]] and the resolved [[Json]] or a [[ClasspathResourceError]]
+    */
+  final def fixedIOResource(f: (Iri, IO[ClasspathResourceError, Json])*): RemoteContextResolution =
+    fixedIO(f.map { case (iri, io) =>
+      iri -> io.leftMap {
+        case _: InvalidJson          => RemoteContextWrongPayload(iri)
+        case _: ResourcePathNotFound => RemoteContextNotFound(iri)
+      }
+    }: _*)
+
+  /**
+    * Helper method to construct a [[RemoteContextResolution]] .
+    *
+    * @param f a pair of [[Iri]] and the resolved [[Json]]
     */
   final def fixed(f: (Iri, Json)*): RemoteContextResolution =
-    new RemoteContextResolution {
-      private val map = f.toMap
-
-      override def resolve(iri: Iri): Result[Json] =
-        map.get(iri) match {
-          case Some(result) => IO.pure(result)
-          case None         => IO.raiseError(RemoteContextNotFound(iri))
-        }
-    }
+    fixedIO(f.map { case (iri, json) => iri -> IO.pure(json) }: _*)
 }

@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.IterableUtils.singleEntry
-import io.circe.syntax._
 import io.circe._
+import io.circe.syntax._
 
 trait JsonUtils {
 
@@ -68,11 +68,12 @@ trait JsonUtils {
     * Replace in the passed ''json'' the found key value pairs in ''from'' with the value in ''toValue''
     */
   def replace(json: Json, from: (String, Json), toValue: Json): Json = {
+    val (fromKey, fromValue)               = from
     def inner(obj: JsonObject): JsonObject =
       JsonObject.fromIterable(
         obj.toVector.map {
-          case (k, v) if k == from._1 && v == from._2 => k -> toValue
-          case (k, v)                                 => k -> v
+          case (`fromKey`, `fromValue`) => fromKey -> toValue
+          case (k, v)                   => k       -> v
         }
       )
     json.arrayOrObject(

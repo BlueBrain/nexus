@@ -15,7 +15,7 @@ import monix.execution.Scheduler
 
 trait RouteFixtures extends TestHelpers {
 
-  implicit val rcr: RemoteContextResolution =
+  implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
       contexts.resource      -> jsonContentOf("contexts/resource.json"),
       contexts.error         -> jsonContentOf("contexts/error.json"),
@@ -47,15 +47,13 @@ trait RouteFixtures extends TestHelpers {
   ): Json =
     jsonContentOf(
       "resource-unit.json",
-      Map(
-        "id"         -> id,
-        "type"       -> tpe,
-        "schema"     -> schema,
-        "deprecated" -> deprecated,
-        "rev"        -> rev,
-        "createdBy"  -> createdBy.id,
-        "updatedBy"  -> updatedBy.id
-      )
+      "id"         -> id,
+      "type"       -> tpe,
+      "schema"     -> schema,
+      "deprecated" -> deprecated,
+      "rev"        -> rev,
+      "createdBy"  -> createdBy.id,
+      "updatedBy"  -> updatedBy.id
     )
 
 }

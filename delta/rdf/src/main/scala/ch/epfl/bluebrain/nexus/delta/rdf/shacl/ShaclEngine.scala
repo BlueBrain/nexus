@@ -24,7 +24,6 @@ import scala.util.{Failure, Success, Try}
   * @param shapesGraphURI the URI of the shapes graph (must be in the dataset)
   * @param shapesGraph    the ShapesGraph with the shapes to validate against
   */
-// $COVERAGE-OFF$
 @SuppressWarnings(Array("NullParameter"))
 final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGraph: ShapesGraph)
     extends ValidationEngine(dataset, shapesGraphURI, shapesGraph, null) {
@@ -105,4 +104,3 @@ object ShaclEngine {
     }
   }
 }
-// $COVERAGE-ON$

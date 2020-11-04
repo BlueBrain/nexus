@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.syntax._
-import org.apache.jena.rdf.model.{ModelFactory, Resource}
-import org.apache.jena.riot.system.StreamRDFLib
-import org.apache.jena.riot.{Lang, RDFParser}
+import org.apache.jena.rdf.model.Resource
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -18,24 +20,25 @@ class ValidationReportSpec
     with OptionValues
     with IOValues {
 
-  private def resource(json: Json): Resource = {
-    val m = ModelFactory.createDefaultModel
-    RDFParser.create.fromString(json.noSpaces).base("").lang(Lang.JSONLD).parse(StreamRDFLib.graph(m.getGraph))
-    m.createResource()
-  }
+  private val shaclResolvedCtx = jsonContentOf("contexts/shacl-context.json")
+
+  implicit private val rcr: RemoteContextResolution =
+    RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
+
+  private def resource(json: Json): Resource        =
+    Graph(JsonLd.expand(json).accepted).accepted.model.createResource()
 
   "A ValidationReport" should {
-    val ctx      = jsonContentOf("/shacl-context-resp.json")
     val conforms = jsonContentOf("/shacl/conforms.json")
     val failed   = jsonContentOf("/shacl/failed.json")
 
     "be constructed correctly when conforms" in {
-      ValidationReport(resource(conforms deepMerge ctx)).accepted shouldEqual
+      ValidationReport(resource(conforms)).accepted shouldEqual
         ValidationReport(conforms = true, 1, conforms)
     }
 
     "be constructed correctly when fails" in {
-      val report = ValidationReport(resource(failed deepMerge ctx)).accepted
+      val report = ValidationReport(resource(failed)).accepted
       report.conforms shouldEqual false
       report.targetedNodes shouldEqual 1
       report.isValid() shouldEqual false
@@ -47,7 +50,7 @@ class ValidationReportSpec
     }
 
     "be encoded as json" in {
-      val report = ValidationReport(resource(failed deepMerge ctx)).accepted
+      val report = ValidationReport(resource(failed)).accepted
       report.asJson shouldEqual report.json
     }
   }

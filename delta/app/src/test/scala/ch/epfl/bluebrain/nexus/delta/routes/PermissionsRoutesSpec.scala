@@ -45,7 +45,8 @@ class PermissionsRoutesSpec
     "fetch permissions" in {
       val expected = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
-        Map("rev" -> "0", "permissions" -> s""""${acls.read}","${acls.write}"""")
+        "rev"         -> "0",
+        "permissions" -> s""""${acls.read}","${acls.write}""""
       )
       Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
@@ -59,7 +60,8 @@ class PermissionsRoutesSpec
 
       val expected = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
-        Map("rev" -> "1", "permissions" -> s""""${acls.read}","${acls.write}","${realms.read}"""")
+        "rev"         -> "1",
+        "permissions" -> s""""${acls.read}","${acls.write}","${realms.read}""""
       )
       Get("/v1/permissions?rev=1") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
@@ -121,7 +123,7 @@ class PermissionsRoutesSpec
       val err        = s"Expected value 'Replace' or 'Subtract' when using 'PATCH'."
 
       Patch("/v1/permissions?rev=5", wrongPatch.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", Map("msg" -> err))
+        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", "msg" -> err)
         response.status shouldEqual StatusCodes.BadRequest
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
@@ -132,7 +134,7 @@ class PermissionsRoutesSpec
       val err          = s"Expected value 'Replace' when using 'PUT'."
 
       Put("/v1/permissions?rev=5", wrongReplace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", Map("msg" -> err))
+        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", "msg" -> err)
         response.status shouldEqual StatusCodes.BadRequest
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
@@ -143,7 +145,8 @@ class PermissionsRoutesSpec
       Put("/v1/permissions?rev=6", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual jsonContentOf(
           "permissions/reject_incorrect_rev.jsonld",
-          Map("provided" -> "6", "expected" -> "5")
+          "provided" -> "6",
+          "expected" -> "5"
         )
         response.status shouldEqual StatusCodes.Conflict
         response.entity.contentType shouldEqual `application/ld+json`.toContentType

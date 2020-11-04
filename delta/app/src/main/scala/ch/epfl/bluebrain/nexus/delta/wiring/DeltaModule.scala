@@ -29,14 +29,14 @@ import org.slf4j.{Logger, LoggerFactory}
   */
 // $COVERAGE-OFF$
 class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with ClasspathResourceUtils {
-  private val resourceCtx      = jsonContentOf("/contexts/resource.json")
-  private val permissionsCtx   = jsonContentOf("/contexts/permissions.json")
-  private val organizationsCtx = jsonContentOf("/contexts/organizations.json")
-  private val projectsCtx      = jsonContentOf("/contexts/projects.json")
-  private val realmsCtx        = jsonContentOf("/contexts/realms.json")
-  private val errorCtx         = jsonContentOf("/contexts/error.json")
-  private val identitiesCtx    = jsonContentOf("/contexts/identities.json")
-  private val searchCtx        = jsonContentOf("/contexts/search.json")
+  private val resourceCtx      = ioJsonContentOf("/contexts/resource.json").memoizeOnSuccess
+  private val permissionsCtx   = ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess
+  private val organizationsCtx = ioJsonContentOf("/contexts/organizations.json").memoizeOnSuccess
+  private val projectsCtx      = ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess
+  private val realmsCtx        = ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess
+  private val errorCtx         = ioJsonContentOf("/contexts/error.json").memoizeOnSuccess
+  private val identitiesCtx    = ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess
+  private val searchCtx        = ioJsonContentOf("/contexts/search.json").memoizeOnSuccess
 //  private val aclsCtx = jsonContentOf("/contexts/acl.json")
 
   make[AppConfig].from(appCfg)
@@ -49,7 +49,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
     )
   )
   make[RemoteContextResolution].from(
-    RemoteContextResolution.fixed(
+    RemoteContextResolution.fixedIOResource(
       contexts.resource      -> resourceCtx,
       contexts.permissions   -> permissionsCtx,
       contexts.error         -> errorCtx,

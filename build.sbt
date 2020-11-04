@@ -229,7 +229,8 @@ lazy val kernel = project
       circeParser,
       monixBio,
       kamonCore,
-      scalate
+      scalate,
+      scalaTest % Test
     ),
     coverageFailOnMinimum := false
   )
