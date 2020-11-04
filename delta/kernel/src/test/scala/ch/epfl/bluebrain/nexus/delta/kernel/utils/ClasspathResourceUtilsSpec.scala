@@ -35,15 +35,15 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
       accept(resourceIO) shouldEqual "A text resource with replacement 'v'"
     }
 
-    "return a json" ignore {
+    "return a json" in {
       accept(ioJsonContentOf("resource.json", "value" -> "v")) shouldEqual Json.obj("k" -> "v".asJson)
     }
 
-    "fail when resource is not a json" ignore {
+    "fail when resource is not a json" in {
       reject(ioJsonContentOf("resource.txt")) shouldEqual InvalidJson("resource.txt")
     }
 
-    "fail when resource does not exists" ignore {
+    "fail when resource does not exists" in {
       reject(ioContentOf("resource2.txt", "value" -> "v")) shouldEqual ResourcePathNotFound("resource2.txt")
     }
   }

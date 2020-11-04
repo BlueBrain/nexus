@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.testkit.cassandra
 
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
 import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.CassandraHostConfig
-import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 import org.scalatest.wordspec.AnyWordSpecLike
 
-trait CassandraDocker extends DockerKitSpotify {
+trait CassandraDocker extends DockerKitWithFactory {
 
   val DefaultCqlPort = 9042
 

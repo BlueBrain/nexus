@@ -166,8 +166,9 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     */
   def requestMediaType: Directive1[MediaType] =
     extractRequest.flatMap { req =>
-      val ct = new MediaTypeNegotiator(req.headers)
-      (ct.acceptedMediaRanges :+ MediaRanges.`*/*`).foldLeft[Option[MediaType]](None) {
+      val ct       = new MediaTypeNegotiator(req.headers)
+      val accepted = if (ct.acceptedMediaRanges.isEmpty) List(MediaRanges.`*/*`) else ct.acceptedMediaRanges
+      accepted.foldLeft[Option[MediaType]](None) {
         case (s @ Some(_), _) => s
         case (None, mr)       => mediaTypes.find(mt => mr.matches(mt))
       } match {
@@ -516,7 +517,7 @@ object DeltaDirectives {
 
   private val notFound: ServiceError = ServiceError.NotFound
 
-  private[routes] case class Result[C](statusCode: StatusCode, hearders: Seq[HttpHeader], content: C)
+  final private[routes] case class Result[C](statusCode: StatusCode, hearders: Seq[HttpHeader], content: C)
 
   private[routes] object Result {
 

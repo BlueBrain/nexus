@@ -10,18 +10,18 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "1.4.5"
+val scalacScapegoatVersion = "1.4.6"
 val scalaCompilerVersion   = "2.13.3"
 
 val akkaHttpVersion                 = "10.2.1"
-val akkaHttpCirceVersion            = "1.35.0"
+val akkaHttpCirceVersion            = "1.35.2"
 val akkaCorsVersion                 = "1.1.0"
 val akkaPersistenceCassandraVersion = "1.0.3"
 val akkaPersistenceJdbcVersion      = "4.0.0"
 val akkaVersion                     = "2.6.10"
 val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
-val awsSdkVersion                   = "2.10.23"
+val awsSdkVersion                   = "2.15.20"
 val byteBuddyAgentVersion           = "1.10.17"
 val catsEffectVersion               = "2.2.0"
 val catsRetryVersion                = "0.3.2"
@@ -45,7 +45,7 @@ val logbackVersion                  = "1.2.3"
 val mockitoVersion                  = "1.16.0"
 val monixVersion                    = "3.2.2"
 val monixBioVersion                 = "1.0.0"
-val nimbusJoseJwtVersion            = "9.0.1"
+val nimbusJoseJwtVersion            = "9.1.2"
 val pureconfigVersion               = "0.14.0"
 val scalaLoggingVersion             = "3.9.2"
 val scalateVersion                  = "1.9.6"
@@ -53,7 +53,7 @@ val scalaTestVersion                = "3.2.2"
 val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2"
-val uuidGeneratorVersion            = "3.2.0"
+val uuidGeneratorVersion            = "4.0.1"
 
 lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
 lazy val akkaClusterTyped         = "com.typesafe.akka" %% "akka-cluster-typed"          % akkaVersion
@@ -104,8 +104,8 @@ lazy val distageTestkit       = "io.7mind.izumi"        %% "distage-testkit-scal
 lazy val doobiePostgres       = "org.tpolecat"          %% "doobie-postgres"           % doobieVersion
 
 lazy val dockerTestKit = Seq(
-  "com.whisk" %% "docker-testkit-scalatest"    % dockerTestKitVersion,
-  "com.whisk" %% "docker-testkit-impl-spotify" % dockerTestKitVersion
+  "com.whisk" %% "docker-testkit-scalatest"        % dockerTestKitVersion,
+  "com.whisk" %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 )
 
 lazy val fs2           = "co.fs2"                     %% "fs2-core"                % fs2Version
@@ -223,25 +223,27 @@ lazy val docs = project
 lazy val kernel = project
   .in(file("delta/kernel"))
   .settings(name := "delta-kernel", moduleName := "delta-kernel")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    libraryDependencies  ++= Seq(
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
       circeParser,
       monixBio,
       kamonCore,
       scalate,
       scalaTest % Test
     ),
-    coverageFailOnMinimum := false
+    coverageFailOnMinimum    := false
   )
 
 lazy val testkit = project
   .dependsOn(kernel)
   .in(file("delta/testkit"))
   .settings(name := "delta-testkit", moduleName := "delta-testkit")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    libraryDependencies ++= Seq(
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
       catsEffectRetry,
       doobiePostgres,
       distageDocker,
@@ -325,6 +327,7 @@ lazy val sourcing = project
 
 lazy val testPlugin = project
   .in(file("delta/test-plugin"))
+  .disablePlugins(ScapegoatSbtPlugin)
   .dependsOn(sdk % "provided", testkit % "provided")
   .settings(shared, compilation, noPublish)
   .settings(
@@ -345,7 +348,8 @@ lazy val rdf = project
     moduleName := "delta-rdf"
   )
   .settings(
-    libraryDependencies ++= Seq(
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
       catsCore,
       circeParser,
       circeGeneric,
@@ -357,7 +361,7 @@ lazy val rdf = project
       logback     % Test,
       scalaTest   % Test
     ),
-    Test / fork          := true
+    Test / fork              := true
   )
 
 lazy val sdk = project
@@ -428,7 +432,7 @@ lazy val app = project
     moduleName := "delta-app"
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
-  .settings(shared, compilation, assertJavaVersion, kamonSettings, coverage, release)
+  .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
   .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
     libraryDependencies ++= Seq(
@@ -446,6 +450,11 @@ lazy val app = project
     buildInfoPackage     := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName := "nexus-delta"
   )
+
+lazy val delta = project
+  .in(file("delta"))
+  .settings(noPublish)
+  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, service, app)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
@@ -552,7 +561,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(noPublish)
-  .aggregate(docs, cli, kernel, testkit, storage, sourcing, rdf, sdk, sdkTestkit, service, app)
+  .aggregate(docs, cli, delta, storage, tests)
 
 lazy val noPublish = Seq(publishLocal := {}, publish := {}, publishArtifact := false)
 
@@ -688,9 +697,6 @@ lazy val servicePackaging = {
 inThisBuild(
   Seq(
     scapegoatVersion              := scalacScapegoatVersion,
-    scapegoatMaxWarnings          := 0,
-    scapegoatMaxErrors            := 0,
-    scapegoatMaxInfos             := 0,
     scapegoatDisabledInspections  := Seq(
       "AsInstanceOf",
       "ClassNames",
@@ -716,7 +722,16 @@ inThisBuild(
   )
 )
 
+Global / excludeLintKeys += packageDoc / publishArtifact
+Global / excludeLintKeys += tests / composeFile
+Global / excludeLintKeys += docs / paradoxRoots
+Global / excludeLintKeys += docs / Paradox / paradoxNavigationDepth
+
 addCommandAlias("review", ";clean;scalafmtCheck;test:scalafmtCheck;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
+addCommandAlias(
+  "deltaReview",
+  ";delta/clean;delta/scalafmtCheck;delta/test:scalafmtCheck;scalafmtSbtCheck;coverage;delta/scapegoat;delta/test;delta/coverageReport;delta/coverageAggregate"
+)
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
 addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
 addCommandAlias("build-product-page", ";productPage/clean;productPage/makeSite")
