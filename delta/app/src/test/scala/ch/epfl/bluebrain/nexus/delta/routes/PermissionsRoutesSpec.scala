@@ -37,9 +37,7 @@ class PermissionsRoutesSpec
   private val minimum        = Set(acls.read, acls.write)
   private val identities     = IdentitiesDummy(Map.empty)
   private val permissionsUIO = PermissionsDummy(minimum)
-  private val aclsDummy      = AclsDummy(
-    permissionsUIO
-  ).accepted
+  private val aclsDummy      = AclsDummy(permissionsUIO).accepted
   private val permissions    = permissionsUIO.accepted
   private val route          = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
   private val id             = iri"http://localhost/v1/permissions"
