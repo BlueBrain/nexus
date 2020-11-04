@@ -126,15 +126,11 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                       completeIO(status, acls.replace(address, aclEntity.toAcl, rev).map(_.void))
                     }
                   },
-                  (patch & entity(as[PatchAcl])) { aclPatch =>
-                    authorizeFor(address, aclsWrite).apply {
-                      aclPatch match {
-                        case AppendAcl(acl)   =>
-                          completeIO(acls.append(address, acl, rev).map(_.void))
-                        case SubtractAcl(acl) =>
-                          completeIO(acls.subtract(address, acl, rev).map(_.void))
-                      }
-                    }
+                  (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsWrite)) {
+                    case AppendAcl(acl)   =>
+                      completeIO(acls.append(address, acl, rev).map(_.void))
+                    case SubtractAcl(acl) =>
+                      completeIO(acls.subtract(address, acl, rev).map(_.void))
                   },
                   delete {
                     authorizeFor(address, aclsWrite).apply {
