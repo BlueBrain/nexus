@@ -82,6 +82,11 @@ final class JsonOps(private val json: Json) extends AnyVal {
   def removeAllValues[A: Encoder](values: A*): Json = JsonUtils.removeAllValues(json, values: _*)
 
   /**
+    * Replace in the current json the found key value pairs in ''from'' with the value in ''toValue''
+    */
+  def replace(from: (String, Json), toValue: Json): Json = JsonUtils.replace(json, from, toValue)
+
+  /**
     * Extract all the values found from the passed ''keys'' in the current json.
     *
     * @param keys the keys from where to extract the Json values

@@ -20,7 +20,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     val iriSubject       = subject(iri)
     val rootBNode        = BNode.random
     val expandedNoIdJson = expandedJson.removeAll(keywords.id -> iri)
-    val expandedNoId     = JsonLd.expand(expandedNoIdJson, Some(rootBNode)).accepted
+    val expandedNoId     = JsonLd.expand(expandedNoIdJson).accepted.replaceId(rootBNode)
     val graphNoId        = Graph(expandedNoId).accepted
     val bnodeNoId        = bNode(graphNoId)
 

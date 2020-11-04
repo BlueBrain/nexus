@@ -1,0 +1,34 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    {
+      "nxv": "https://bluebrain.github.io/nexus/vocabulary/"
+    }
+  ],
+  "@type": "nxv:Schema",
+  "shapes": [
+    {
+      "@id": "nxv:MyShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": "nxv:Custom",
+      "property": [
+        {
+          "path": "nxv:name",
+          "datatype": "xsd:string",
+          "minCount": 1
+        },
+        {
+          "path": "nxv:number",
+          "datatype": "xsd:integer",
+          "minCount": 1
+        },
+        {
+          "path": "nxv:bool",
+          "datatype": "xsd:boolean",
+          "minCount": 1
+        }
+      ]
+    }
+  ]
+}

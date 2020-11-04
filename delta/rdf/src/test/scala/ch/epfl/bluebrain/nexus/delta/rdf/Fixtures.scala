@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
-import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -33,7 +32,7 @@ trait Fixtures
     )
   // format: on
 
-  implicit val remoteResolution: RemoteContextResolution = new RemoteContextResolutionDummy(remoteContexts)
+  implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(remoteContexts.toSeq: _*)
   implicit val pm: CanBlock                              = CanBlock.permit
 
   object vocab {
