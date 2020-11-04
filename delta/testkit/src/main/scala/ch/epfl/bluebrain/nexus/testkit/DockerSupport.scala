@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import com.spotify.docker.client.DefaultDockerClient
+import com.github.dockerjava.core.DefaultDockerClientConfig
+import com.github.dockerjava.netty.NettyDockerCmdExecFactory
 import com.whisk.docker.DockerFactory
-import com.whisk.docker.impl.spotify.{DockerKitSpotify, SpotifyDockerFactory}
+import com.whisk.docker.impl.dockerjava.{DockerJavaExecutorFactory, DockerKitDockerJava, Docker => JDocker}
 import izumi.distage.docker.Docker
 
 object DockerSupport {
@@ -18,13 +19,14 @@ object DockerSupport {
       registry = None
     )
 
-  trait DockerKitWithFactory extends DockerKitSpotify {
-    implicit override val dockerFactory: DockerFactory = new SpotifyDockerFactory(
-      DefaultDockerClient
-        .fromEnv()
-        .connectTimeoutMillis(clientConfig.connectTimeoutMs.toLong)
-        .readTimeoutMillis(clientConfig.readTimeoutMs.toLong)
-        .build()
+  trait DockerKitWithFactory extends DockerKitDockerJava {
+    implicit override val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(
+      new JDocker(
+        DefaultDockerClientConfig.createDefaultConfigBuilder().build(),
+        new NettyDockerCmdExecFactory()
+          .withReadTimeout(clientConfig.readTimeoutMs)
+          .withConnectTimeout(clientConfig.connectTimeoutMs)
+      )
     )
   }
 

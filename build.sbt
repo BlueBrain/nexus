@@ -104,8 +104,8 @@ lazy val distageTestkit       = "io.7mind.izumi"        %% "distage-testkit-scal
 lazy val doobiePostgres       = "org.tpolecat"          %% "doobie-postgres"           % doobieVersion
 
 lazy val dockerTestKit = Seq(
-  "com.whisk" %% "docker-testkit-scalatest"    % dockerTestKitVersion,
-  "com.whisk" %% "docker-testkit-impl-spotify" % dockerTestKitVersion
+  "com.whisk" %% "docker-testkit-scalatest"        % dockerTestKitVersion,
+  "com.whisk" %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 )
 
 lazy val fs2           = "co.fs2"                     %% "fs2-core"                % fs2Version
