@@ -22,9 +22,11 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
-      - uses: olafurpg/setup-scala@v5
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v5
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.8-0
       - name: StaticAnalysis
@@ -53,25 +55,24 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v5
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.8-0
-      - name: PublishToBintray
+      - name: Publish To Bintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
-      - name: PublishToDockerHub
+      - name: Publish To DockerHub
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" docker:publishLocal
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-storage:latest
-      - name: RecordCoverage
+      - name: Record Coverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
-      - uses: codecov/codecov-action@v1
+      - name: Report Coverage
+        uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
   release:
@@ -85,22 +86,25 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-      - uses: actions/checkout@v2
-      - uses: coursier/cache-action@v4
-      - uses: olafurpg/setup-scala@v5
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v5
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.8-0
       - name: SetVersion
         run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
-      - name: PublishToBintray
+      - name: Publish To Bintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
-      - name: PublishToDockerHub
+      - name: Publish To DockerHub
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" ";set Docker/version := \"${{ env.VERSION }}\"; docker:publishLocal"
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-storage:${{ env.VERSION }}
-      - name: RecordCoverage
+      - name: Record Coverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
-      - uses: codecov/codecov-action@v1
+      - name: Report Coverage
+        uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

@@ -30,9 +30,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v4
+        uses: coursier/cache-action@v5
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Static Analysis
@@ -52,9 +52,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v4
+        uses: coursier/cache-action@v5
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Publish To Bintray
