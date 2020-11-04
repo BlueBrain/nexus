@@ -226,13 +226,16 @@ lazy val kernel = project
   .settings(shared, compilation, coverage, release)
   .settings(
     libraryDependencies  ++= Seq(
+      circeParser,
       monixBio,
-      kamonCore
+      kamonCore,
+      scalate
     ),
     coverageFailOnMinimum := false
   )
 
 lazy val testkit = project
+  .dependsOn(kernel)
   .in(file("delta/testkit"))
   .settings(name := "delta-testkit", moduleName := "delta-testkit")
   .settings(shared, compilation, coverage, release)
@@ -334,7 +337,7 @@ lazy val testPlugin = project
 
 lazy val rdf = project
   .in(file("delta/rdf"))
-  .dependsOn(testkit)
+  .dependsOn(kernel, testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     name       := "delta-rdf",

@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.{Encoder, Json}
 import monix.bio.IO
 import org.apache.jena.rdf.model.Resource
@@ -30,7 +30,7 @@ final case class ValidationReport private (conforms: Boolean, targetedNodes: Int
     (ignoreTargetedNodes && conforms) || (!ignoreTargetedNodes && targetedNodes > 0 && conforms)
 }
 
-object ValidationReport extends TestHelpers {
+object ValidationReport extends ClasspathResourceUtils {
 
   private val shaclCtxResolved: Json = jsonContentOf("/shacl-context-resp.json")
 

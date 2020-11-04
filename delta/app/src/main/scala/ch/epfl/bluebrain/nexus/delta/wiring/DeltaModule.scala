@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import akka.stream.{Materializer, SystemMaterializer}
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -14,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.ModuleDef
@@ -28,7 +28,7 @@ import org.slf4j.{Logger, LoggerFactory}
   * @param config the raw merged and resolved configuration
   */
 // $COVERAGE-OFF$
-class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with TestHelpers {
+class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with ClasspathResourceUtils {
   private val resourceCtx      = jsonContentOf("/contexts/resource.json")
   private val permissionsCtx   = jsonContentOf("/contexts/permissions.json")
   private val organizationsCtx = jsonContentOf("/contexts/organizations.json")
