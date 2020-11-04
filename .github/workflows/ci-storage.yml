@@ -4,12 +4,14 @@ on:
     branches:
       - master
     paths:
+      - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
     paths:
+      - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'storage/**'
       - 'build.sbt'
@@ -28,7 +30,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8.0-272
+          java-version: adopt@1.11
       - name: StaticAnalysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
@@ -61,7 +63,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8.0-272
+          java-version: adopt@1.11
       - name: Publish To Bintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
       - name: Publish To DockerHub
@@ -69,39 +71,6 @@ jobs:
           sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" docker:publishLocal
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-storage:latest
-      - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
-      - name: Report Coverage
-        uses: codecov/codecov-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-  release:
-    if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-    env:
-      CI: true
-      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
-      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v5
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8.0-272
-      - name: SetVersion
-        run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
-      - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
-      - name: Publish To DockerHub
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" ";set Docker/version := \"${{ env.VERSION }}\"; docker:publishLocal"
-          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-          docker push bluebrain/nexus-storage:${{ env.VERSION }}
       - name: Record Coverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
       - name: Report Coverage

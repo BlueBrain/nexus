@@ -30,6 +30,7 @@ jobs:
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-cli:${{ env.VERSION }}
           docker push bluebrain/nexus-delta:${{ env.VERSION }}
+          docker push bluebrain/nexus-storage:${{ env.VERSION }}
       - name: Record Coverage
         run: sbt -Dsbt.color=always -Dsbt.supershell=false clean coverage test coverageReport coverageAggregate
       - name: Report Coverage

@@ -4,6 +4,7 @@ on:
     branches:
       - master
     paths:
+      - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
       - 'delta/sdk-testkit/**'
@@ -11,6 +12,7 @@ on:
       - 'project/**'
   pull_request:
     paths:
+      - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
       - 'delta/sdk-testkit/**'

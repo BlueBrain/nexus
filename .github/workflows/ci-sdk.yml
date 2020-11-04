@@ -4,12 +4,14 @@ on:
     branches:
       - master
     paths:
+      - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
     paths:
+      - 'delta/kernel/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
       - 'build.sbt'
