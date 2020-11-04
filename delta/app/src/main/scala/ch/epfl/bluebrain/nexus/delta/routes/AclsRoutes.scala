@@ -27,9 +27,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{encodeResul
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities, Lens}
+import io.circe._
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax.EncoderOps
-import io.circe._
 import monix.execution.Scheduler
 
 class AclsRoutes(identities: Identities, acls: Acls)(implicit
@@ -106,7 +106,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
         case Path.Slash(Path.Segment(org, Path.Slash(Path.Segment(`any`, Path.Empty))))   =>
           Label(org).fold(
             err => reject(validationRejection(err.getMessage)),
-            label => provide(AnyProject(label, ancestors).asInstanceOf[AclAddressFilter])
+            label => provide[AclAddressFilter](AnyProject(label, ancestors))
           )
         case _                                                                            => reject
       }
@@ -149,10 +149,9 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                           completeIO(
                             acls
                               .fetchSelfAt(address, rev)
-                              .map { acl =>
+                              .map[SearchResults[AclResource]] { acl =>
                                 val searchResults = Seq(acl).flatten
                                 SearchResults(searchResults.size.toLong, searchResults)
-                                  .asInstanceOf[SearchResults[AclResource]]
                               }
                               .leftWiden[AclRejection]
                           )
@@ -177,10 +176,9 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                             completeIO(
                               acls
                                 .fetchAt(address, rev)
-                                .map { acl =>
+                                .map[SearchResults[AclResource]] { acl =>
                                   val searchResults = Seq(acl).flatten
                                   SearchResults(searchResults.size.toLong, searchResults)
-                                    .asInstanceOf[SearchResults[AclResource]]
                                 }
                                 .leftWiden[AclRejection]
                             )
