@@ -31,12 +31,12 @@ final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGr
 
   override def validateNodesAgainstConstraint(focusNodes: util.Collection[RDFNode], constraint: Constraint): Unit = {
     super.validateNodesAgainstConstraint(focusNodes, constraint)
-    targetedNodes += 1
+    targetedNodes += focusNodes.size()
   }
 
   override def validateAll(): Resource = {
     val r = super.validateAll()
-    if (r != null) r.addLiteral(toProperty(nxsh.targetedNodes), JenaDatatypes.createInteger(targetedNodes)) else r
+    Option(r).fold(r)(_.addLiteral(toProperty(nxsh.targetedNodes), JenaDatatypes.createInteger(targetedNodes)))
   }
 
   private def toProperty(iri: Iri): Property =
