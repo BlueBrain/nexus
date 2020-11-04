@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.{Decoder, Encoder, Json, JsonObject}
 import io.circe.generic.extras.Configuration
 import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 
 /**
   * An Access Control List codified as a map where the keys are [[Identity]] and the values are a set of [[Permission]].
@@ -98,10 +98,6 @@ object Acl {
       )
     )
 
-  }
-
-  implicit val aclDecoder: Decoder[Acl] = Decoder.instance { hc =>
-    hc.get[Seq[(Identity, Set[Permission])]]("acl").map(Acl(_: _*))
   }
 
   val context: ContextValue = ContextValue(contexts.acls)
