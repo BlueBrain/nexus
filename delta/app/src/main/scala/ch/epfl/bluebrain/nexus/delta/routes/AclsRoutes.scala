@@ -222,7 +222,10 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                   completeSearch(
                     acls
                       .list(addressFilter)
-                      .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
+                      .map { aclCol =>
+                        val filtered = aclCol.filterByPermission(caller.identities, aclsRead)
+                        SearchResults(filtered.value.size.toLong, filtered.value.values.toSeq)
+                      }
                   )
               }
             }
