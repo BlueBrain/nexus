@@ -3,20 +3,20 @@ package ch.epfl.bluebrain.nexus.delta.utils
 import akka.http.scaladsl.server.RejectionHandler
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import monix.execution.Scheduler
 
 trait RouteFixtures extends TestHelpers {
 
-  implicit val rcr: RemoteContextResolutionDummy =
-    RemoteContextResolutionDummy(
+  implicit def rcr: RemoteContextResolution =
+    RemoteContextResolution.fixed(
       contexts.resource      -> jsonContentOf("contexts/resource.json"),
       contexts.error         -> jsonContentOf("contexts/error.json"),
       contexts.organizations -> jsonContentOf("contexts/organizations.json"),
@@ -47,15 +47,13 @@ trait RouteFixtures extends TestHelpers {
   ): Json =
     jsonContentOf(
       "resource-unit.json",
-      Map(
-        "id"         -> id,
-        "type"       -> tpe,
-        "schema"     -> schema,
-        "deprecated" -> deprecated,
-        "rev"        -> rev,
-        "createdBy"  -> createdBy.id,
-        "updatedBy"  -> updatedBy.id
-      )
+      "id"         -> id,
+      "type"       -> tpe,
+      "schema"     -> schema,
+      "deprecated" -> deprecated,
+      "rev"        -> rev,
+      "createdBy"  -> createdBy.id,
+      "updatedBy"  -> updatedBy.id
     )
 
 }

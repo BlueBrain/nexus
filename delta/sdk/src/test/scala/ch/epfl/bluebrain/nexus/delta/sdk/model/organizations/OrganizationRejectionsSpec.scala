@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -20,11 +20,11 @@ class OrganizationRejectionsSpec
 
   "An OrganizationRejection" should {
 
-    implicit val rcr: RemoteContextResolutionDummy =
-      RemoteContextResolutionDummy(contexts.error -> jsonContentOf("/contexts/error.json"))
+    implicit val rcr: RemoteContextResolution =
+      RemoteContextResolution.fixed(contexts.error -> jsonContentOf("/contexts/error.json"))
 
-    val incorrectRev                               = IncorrectRev(2L, 3L)
-    val alreadyExists                              = OrganizationAlreadyExists(Label.unsafe("org"))
+    val incorrectRev                          = IncorrectRev(2L, 3L)
+    val alreadyExists                         = OrganizationAlreadyExists(Label.unsafe("org"))
 
     "be converted to compacted JSON-LD" in {
       val list = List(

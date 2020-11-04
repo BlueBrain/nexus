@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.SimpleRejection.{badRequestRejection, confl
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.{SimpleRejection, SimpleResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
@@ -25,6 +24,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.http.scaladsl.model.StatusCodes._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
@@ -40,8 +40,8 @@ class DeltaDirectivesSpec
     with TestMatchers
     with Inspectors {
 
-  implicit private val rcr: RemoteContextResolutionDummy =
-    RemoteContextResolutionDummy(
+  implicit private val rcr: RemoteContextResolution =
+    RemoteContextResolution.fixed(
       SimpleResource.contextIri  -> SimpleResource.context,
       SimpleRejection.contextIri -> SimpleRejection.context
     )

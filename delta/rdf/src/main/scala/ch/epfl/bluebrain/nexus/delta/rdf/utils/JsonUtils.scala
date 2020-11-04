@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.IterableUtils.singleEntry
-import io.circe.syntax._
 import io.circe._
+import io.circe.syntax._
 
 trait JsonUtils {
 
@@ -63,6 +63,25 @@ trait JsonUtils {
     */
   def remoteAllKeys(json: Json, keys: String*): Json =
     removeNested(json, keys.map(k => (kk => kk == k, _ => true)))
+
+  /**
+    * Replace in the passed ''json'' the found key value pairs in ''from'' with the value in ''toValue''
+    */
+  def replace(json: Json, from: (String, Json), toValue: Json): Json = {
+    val (fromKey, fromValue)               = from
+    def inner(obj: JsonObject): JsonObject =
+      JsonObject.fromIterable(
+        obj.toVector.map {
+          case (`fromKey`, `fromValue`) => fromKey -> toValue
+          case (k, v)                   => k       -> v
+        }
+      )
+    json.arrayOrObject(
+      json,
+      arr => Json.fromValues(arr.map(j => replace(j, from, toValue))),
+      obj => Json.fromJsonObject(inner(obj))
+    )
+  }
 
   private def removeNested(json: Json, keyValues: Seq[(String => Boolean, Json => Boolean)]): Json = {
     def inner(obj: JsonObject): JsonObject =

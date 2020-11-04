@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedIriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
@@ -65,10 +64,7 @@ final case class CompactedJsonLd private[jsonld] (
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, ExpandedJsonLd] =
-    JsonLd.expand(json, Some(rootId)).flatMap {
-      case expanded if rootId != expanded.rootId => IO.raiseError(UnexpectedIriOrBNode(rootId, expanded.rootId))
-      case expanded                              => IO.pure(expanded)
-    }
+    JsonLd.expand(json).map(_.replaceId(rootId))
 
   override def toGraph(implicit
       opts: JsonLdOptions,

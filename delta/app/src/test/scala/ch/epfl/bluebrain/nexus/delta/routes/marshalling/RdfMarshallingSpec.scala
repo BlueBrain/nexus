@@ -9,9 +9,9 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.SimpleResource
 import ch.epfl.bluebrain.nexus.delta.SimpleResource.{context, contextIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RemoteContextResolutionDummy
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
@@ -30,9 +30,9 @@ class RdfMarshallingSpec
     with RouteHelpers
     with TestMatchers {
 
-  implicit private val ec: ExecutionContext              = system.dispatcher
-  implicit private val rcr: RemoteContextResolutionDummy = RemoteContextResolutionDummy(contextIri -> context)
-  implicit private val ordering: JsonKeyOrdering         = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
+  implicit private val ec: ExecutionContext         = system.dispatcher
+  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contextIri -> context)
+  implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
 
   private val id       = nxv + "myresource"
   private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)

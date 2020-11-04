@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.dummies.RemoteContextResolutionDummy
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
@@ -38,7 +38,7 @@ class ResourceFSpec
         PermissionSet(Set(acls.read, acls.write))
       )
 
-    implicit val remoteResolution: RemoteContextResolutionDummy = RemoteContextResolutionDummy(
+    implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(
       contexts.permissions -> jsonContentOf("contexts/permissions.json"),
       contexts.resource    -> jsonContentOf("contexts/resource.json")
     )
