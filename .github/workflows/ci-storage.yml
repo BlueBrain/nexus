@@ -28,7 +28,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: StaticAnalysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
@@ -61,7 +61,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: Publish To Bintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
       - name: Publish To DockerHub
@@ -92,7 +92,7 @@ jobs:
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: SetVersion
         run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
       - name: Publish To Bintray
