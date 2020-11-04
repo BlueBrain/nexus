@@ -116,8 +116,9 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
   def routes: Route = baseUriPrefix(baseUri.prefix) {
     pathPrefix("acls") {
       extractCaller { implicit caller =>
+        implicit val subject = caller.subject
         concat(
-          // SSE realms
+          // SSE acls
           (pathPrefix("events") & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/acls/events") {
               lastEventId { offset =>
@@ -126,42 +127,68 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
             }
           },
           extractAclAddress { address =>
-            extractSubject { implicit subject =>
-              parameter("rev" ? 0L) { rev =>
-                concat(
-                  (put & entity(as[AclInput])) { aclEntity =>
-                    operationName(s"$prefixSegment/acls/replace") {
-                      authorizeFor(address, aclsWrite).apply {
-                        val status = if (rev == 0L) Created else OK
-                        completeIO(status, acls.replace(address, aclEntity.toAcl, rev).map(_.void))
-                      }
+            parameter("rev" ? 0L) { rev =>
+              concat(
+                (put & entity(as[AclInput])) { aclEntity =>
+                  operationName(s"$prefixSegment/acls/replace") {
+                    authorizeFor(address, aclsWrite).apply {
+                      val status = if (rev == 0L) Created else OK
+                      completeIO(status, acls.replace(address, aclEntity.toAcl, rev).map(_.void))
                     }
-                  },
-                  (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsWrite)) {
-                    case AppendAcl(acl)   =>
-                      operationName(s"$prefixSegment/acls/append") {
-                        completeIO(acls.append(address, acl, rev).map(_.void))
-                      }
-                    case SubtractAcl(acl) =>
-                      operationName(s"$prefixSegment/acls/subtract") {
-                        completeIO(acls.subtract(address, acl, rev).map(_.void))
-                      }
-                  },
-                  delete {
-                    operationName(s"$prefixSegment/acls/delete") {
-                      authorizeFor(address, aclsWrite).apply {
-                        completeIO(OK, acls.delete(address, rev).map(_.void))
-                      }
+                  }
+                },
+                (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsWrite)) {
+                  case AppendAcl(acl)   =>
+                    operationName(s"$prefixSegment/acls/append") {
+                      completeIO(acls.append(address, acl, rev).map(_.void))
                     }
-                  },
-                  (get & parameter("self" ? true) & operationName(s"$prefixSegment/acls/fetch")) {
-                    case true  =>
+                  case SubtractAcl(acl) =>
+                    operationName(s"$prefixSegment/acls/subtract") {
+                      completeIO(acls.subtract(address, acl, rev).map(_.void))
+                    }
+                },
+                delete {
+                  operationName(s"$prefixSegment/acls/delete") {
+                    authorizeFor(address, aclsWrite).apply {
+                      completeIO(OK, acls.delete(address, rev).map(_.void))
+                    }
+                  }
+                },
+                (get & parameter("self" ? true) & operationName(s"$prefixSegment/acls/fetch")) {
+                  case true  =>
+                    (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
+                      case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
+                      case (Some(rev), false) =>
+                        completeIO(
+                          acls
+                            .fetchSelfAt(address, rev)
+                            .map[SearchResults[AclResource]] { acl =>
+                              val searchResults = Seq(acl).flatten
+                              SearchResults(searchResults.size.toLong, searchResults)
+                            }
+                            .leftWiden[AclRejection]
+                        )
+                      case (None, true)       =>
+                        completeUnscoredSearch(
+                          acls
+                            .fetchSelfWithAncestors(address)
+                            .map(_.value.values.toSeq)
+                        )
+                      case (None, false)      =>
+                        completeUnscoredSearch(
+                          acls
+                            .fetchSelf(address)
+                            .map(Seq(_).flatten)
+                        )
+                    }
+                  case false =>
+                    authorizeFor(address, aclsRead).apply {
                       (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
                         case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
                         case (Some(rev), false) =>
                           completeIO(
                             acls
-                              .fetchSelfAt(address, rev)
+                              .fetchAt(address, rev)
                               .map[SearchResults[AclResource]] { acl =>
                                 val searchResults = Seq(acl).flatten
                                 SearchResults(searchResults.size.toLong, searchResults)
@@ -171,47 +198,19 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                         case (None, true)       =>
                           completeUnscoredSearch(
                             acls
-                              .fetchSelfWithAncestors(address)
+                              .fetchWithAncestors(address)
                               .map(_.value.values.toSeq)
                           )
                         case (None, false)      =>
                           completeUnscoredSearch(
                             acls
-                              .fetchSelf(address)
+                              .fetch(address)
                               .map(Seq(_).flatten)
                           )
                       }
-                    case false =>
-                      authorizeFor(address, aclsRead).apply {
-                        (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
-                          case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
-                          case (Some(rev), false) =>
-                            completeIO(
-                              acls
-                                .fetchAt(address, rev)
-                                .map[SearchResults[AclResource]] { acl =>
-                                  val searchResults = Seq(acl).flatten
-                                  SearchResults(searchResults.size.toLong, searchResults)
-                                }
-                                .leftWiden[AclRejection]
-                            )
-                          case (None, true)       =>
-                            completeUnscoredSearch(
-                              acls
-                                .fetchWithAncestors(address)
-                                .map(_.value.values.toSeq)
-                            )
-                          case (None, false)      =>
-                            completeUnscoredSearch(
-                              acls
-                                .fetch(address)
-                                .map(Seq(_).flatten)
-                            )
-                        }
-                      }
-                  }
-                )
-              }
+                    }
+                }
+              )
             }
           },
           (get & extractAclAddressFilter) { addressFilter =>
