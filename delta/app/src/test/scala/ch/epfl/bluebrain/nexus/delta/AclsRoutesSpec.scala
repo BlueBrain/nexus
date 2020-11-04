@@ -47,7 +47,7 @@ class AclsRoutesSpec
   val group     = Group("mygroup", Label.unsafe("myrealm"))
   val group2    = Group("mygroup2", Label.unsafe("myrealm"))
   val readWrite =
-    Set(Permission.unsafe("acls/read"), Permission.unsafe("acls/write"))
+    Set(Permission.unsafe("acls/read"), Permission.unsafe("acls/write"), Permission.unsafe("events/read"))
   val manage    = Set(Permission.unsafe("acls/manage"))
 
   val userAcl   = Acl(user -> readWrite)
@@ -71,7 +71,12 @@ class AclsRoutesSpec
     )
   private val acls                                       = AclsDummy(
     PermissionsDummy(
-      Set(Permission.unsafe("acls/read"), Permission.unsafe("acls/write"), Permission.unsafe("acls/manage"))
+      Set(
+        Permission.unsafe("acls/read"),
+        Permission.unsafe("acls/write"),
+        Permission.unsafe("acls/manage"),
+        Permission.unsafe("events/read")
+      )
     )
   ).accepted
 
@@ -157,7 +162,8 @@ class AclsRoutesSpec
     }
 
     "get the events stream" in {
-      Get("/v1/acls/events") ~> Accept(`*/*`) ~> routes ~> check {
+      Get("/v1/acls/events") ~> addCredentials(token) ~> Accept(`*/*`) ~> routes ~> check {
+        print(response.asString)
         mediaType shouldBe `text/event-stream`
         response.asString.strip shouldEqual contentOf("/acls/eventstream.txt").strip
       }

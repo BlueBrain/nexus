@@ -120,9 +120,11 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
         concat(
           // SSE acls
           (pathPrefix("events") & pathEndOrSingleSlash) {
-            operationName(s"$prefixSegment/acls/events") {
-              lastEventId { offset =>
-                completeStream(acls.events(offset))
+            authorizeFor(AclAddress.Root, eventsRead).apply {
+              operationName(s"$prefixSegment/acls/events") {
+                lastEventId { offset =>
+                  completeStream(acls.events(offset))
+                }
               }
             }
           },
@@ -236,8 +238,9 @@ object AclsRoutes {
 
   type AclResponseResource = ResourceF[Iri, Acl]
 
-  private val aclsRead  = Permission.unsafe("acls/read")
-  private val aclsWrite = Permission.unsafe("acls/write")
+  private val aclsRead   = Permission.unsafe("acls/read")
+  private val aclsWrite  = Permission.unsafe("acls/write")
+  private val eventsRead = Permission.unsafe("events/read")
 
   final private[routes] case class AclEntry(permissions: Set[Permission], identity: Identity)
   final private[routes] case class AclInput(acl: Seq[AclEntry]) {
