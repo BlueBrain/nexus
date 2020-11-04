@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities, Lens}
 import io.circe._
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax.EncoderOps
+import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
 class AclsRoutes(identities: Identities, acls: Acls)(implicit
@@ -118,8 +119,10 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
         concat(
           // SSE realms
           (pathPrefix("events") & pathEndOrSingleSlash) {
-            lastEventId { offset =>
-              completeStream(acls.events(offset))
+            operationName(s"$prefixSegment/acls/events") {
+              lastEventId { offset =>
+                completeStream(acls.events(offset))
+              }
             }
           },
           extractAclAddress { address =>
@@ -127,23 +130,31 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
               parameter("rev" ? 0L) { rev =>
                 concat(
                   (put & entity(as[AclInput])) { aclEntity =>
-                    authorizeFor(address, aclsWrite).apply {
-                      val status = if (rev == 0L) Created else OK
-                      completeIO(status, acls.replace(address, aclEntity.toAcl, rev).map(_.void))
+                    operationName(s"$prefixSegment/acls/replace") {
+                      authorizeFor(address, aclsWrite).apply {
+                        val status = if (rev == 0L) Created else OK
+                        completeIO(status, acls.replace(address, aclEntity.toAcl, rev).map(_.void))
+                      }
                     }
                   },
                   (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsWrite)) {
                     case AppendAcl(acl)   =>
-                      completeIO(acls.append(address, acl, rev).map(_.void))
+                      operationName(s"$prefixSegment/acls/append") {
+                        completeIO(acls.append(address, acl, rev).map(_.void))
+                      }
                     case SubtractAcl(acl) =>
-                      completeIO(acls.subtract(address, acl, rev).map(_.void))
+                      operationName(s"$prefixSegment/acls/subtract") {
+                        completeIO(acls.subtract(address, acl, rev).map(_.void))
+                      }
                   },
                   delete {
-                    authorizeFor(address, aclsWrite).apply {
-                      completeIO(OK, acls.delete(address, rev).map(_.void))
+                    operationName(s"$prefixSegment/acls/delete") {
+                      authorizeFor(address, aclsWrite).apply {
+                        completeIO(OK, acls.delete(address, rev).map(_.void))
+                      }
                     }
                   },
-                  (get & parameter("self" ? true)) {
+                  (get & parameter("self" ? true) & operationName(s"$prefixSegment/acls/fetch")) {
                     case true  =>
                       (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
                         case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
@@ -204,19 +215,21 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
             }
           },
           (get & extractAclAddressFilter) { addressFilter =>
-            parameter("self" ? true) {
-              case true  =>
-                completeSearch(
-                  acls
-                    .listSelf(addressFilter)
-                    .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
-                )
-              case false =>
-                completeSearch(
-                  acls
-                    .list(addressFilter)
-                    .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
-                )
+            operationName(s"$prefixSegment/acls/list") {
+              parameter("self" ? true) {
+                case true  =>
+                  completeSearch(
+                    acls
+                      .listSelf(addressFilter)
+                      .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
+                  )
+                case false =>
+                  completeSearch(
+                    acls
+                      .list(addressFilter)
+                      .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
+                  )
+              }
             }
           }
         )
