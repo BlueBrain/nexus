@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.storage
 
+import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.charset.StandardCharsets.UTF_8
 import java.nio.file.{Files, Paths}
@@ -151,9 +152,10 @@ class DiskStorageSpec
       implicit val bucketExistsEvidence = BucketExists
 
       "fail when call to nexus-fixer fails" in new AbsoluteDirectoryCreated {
-        val badStorage   = new DiskStorage[IO](sConfig.copy(fixerCommand = Vector("/bin/false")), dConfig, cache)
+        val falseBinary  = if (new File("/bin/false").exists()) "/bin/false" else "/usr/bin/false"
+        val badStorage   = new DiskStorage[IO](sConfig.copy(fixerCommand = Vector(falseBinary)), dConfig, cache)
         val file         = "some/folder/my !file.txt"
-        val absoluteFile = baseRootPath.resolve(Paths.get(file.toString))
+        val absoluteFile = baseRootPath.resolve(Paths.get(file))
         Files.createDirectories(absoluteFile.getParent)
         Files.write(absoluteFile, "something".getBytes(StandardCharsets.UTF_8))
 

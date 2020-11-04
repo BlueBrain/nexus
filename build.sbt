@@ -223,25 +223,27 @@ lazy val docs = project
 lazy val kernel = project
   .in(file("delta/kernel"))
   .settings(name := "delta-kernel", moduleName := "delta-kernel")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    libraryDependencies  ++= Seq(
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
       circeParser,
       monixBio,
       kamonCore,
       scalate,
       scalaTest % Test
     ),
-    coverageFailOnMinimum := false
+    coverageFailOnMinimum    := false
   )
 
 lazy val testkit = project
   .dependsOn(kernel)
   .in(file("delta/testkit"))
   .settings(name := "delta-testkit", moduleName := "delta-testkit")
-  .settings(shared, compilation, coverage, release)
+  .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
-    libraryDependencies ++= Seq(
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
       catsEffectRetry,
       doobiePostgres,
       distageDocker,
@@ -346,7 +348,8 @@ lazy val rdf = project
     moduleName := "delta-rdf"
   )
   .settings(
-    libraryDependencies ++= Seq(
+    javaSpecificationVersion := "1.8",
+    libraryDependencies     ++= Seq(
       catsCore,
       circeParser,
       circeGeneric,
@@ -358,7 +361,7 @@ lazy val rdf = project
       logback     % Test,
       scalaTest   % Test
     ),
-    Test / fork          := true
+    Test / fork              := true
   )
 
 lazy val sdk = project

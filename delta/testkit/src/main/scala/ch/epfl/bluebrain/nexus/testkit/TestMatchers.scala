@@ -9,8 +9,8 @@ trait TestMatchers {
   private class EqualLinesUnordered(right: String) extends Matcher[String] {
 
     override def apply(left: String): MatchResult = {
-      val leftSorted  = left.split("\n").filterNot(_.isBlank).sorted
-      val rightSorted = right.split("\n").filterNot(_.isBlank).sorted
+      val leftSorted  = left.split("\n").filterNot(_.trim.isEmpty).sorted
+      val rightSorted = right.split("\n").filterNot(_.trim.isEmpty).sorted
       MatchResult(
         leftSorted sameElements rightSorted,
         s"""
