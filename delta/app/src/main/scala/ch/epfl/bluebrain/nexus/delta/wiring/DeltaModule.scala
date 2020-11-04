@@ -50,6 +50,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef {
     RemoteContextResolution({
       case contexts.resource    => load("/contexts/resource.json", contexts.resource).memoizeOnSuccess
       case contexts.permissions => load("/contexts/permissions.json", contexts.permissions).memoizeOnSuccess
+      case contexts.acls        => load("/contexts/acls.json", contexts.acls).memoizeOnSuccess
       case contexts.error       => load("/contexts/error.json", contexts.error).memoizeOnSuccess
       case other                => IO.raiseError(RemoteContextNotFound(other))
     })
