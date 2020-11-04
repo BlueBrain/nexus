@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta
 
+import akka.http.scaladsl.model.MediaRanges.`*/*`
+import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.{AuthorizationFailedRejection, MalformedQueryParamRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -134,7 +136,7 @@ class AclsRoutesSpec
     }
 
     "create ACL" in {
-      acls.append(AclAddress.Root, userAcl, 0L).accepted
+      acls.replace(AclAddress.Root, userAcl, 0L).accepted
       forAll(paths.drop(1)) { path =>
         Put(s"/v1/acls$path", aclJson(userAcl).toEntity) ~> addCredentials(token) ~> routes ~> check {
           response.asJson shouldEqual expectedUpdateResponse(1L, user, user, path)
@@ -151,6 +153,13 @@ class AclsRoutesSpec
           response.asJson shouldEqual expectedUpdateResponse(2L, user, user, path)
           status shouldEqual StatusCodes.OK
         }
+      }
+    }
+
+    "get the events stream" in {
+      Get("/v1/acls/events") ~> Accept(`*/*`) ~> routes ~> check {
+        mediaType shouldBe `text/event-stream`
+        response.asString.strip shouldEqual contentOf("/acls/eventstream.txt").strip
       }
     }
 

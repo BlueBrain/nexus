@@ -116,6 +116,12 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
     pathPrefix("acls") {
       extractCaller { implicit caller =>
         concat(
+          // SSE realms
+          (pathPrefix("events") & pathEndOrSingleSlash) {
+            lastEventId { offset =>
+              completeStream(acls.events(offset))
+            }
+          },
           extractAclAddress { address =>
             extractSubject { implicit subject =>
               parameter("rev" ? 0L) { rev =>
