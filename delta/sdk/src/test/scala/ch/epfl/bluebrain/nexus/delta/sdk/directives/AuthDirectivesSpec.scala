@@ -136,7 +136,7 @@ class AuthDirectivesSpec
     }
 
     "fail with an invalid token" in {
-      Get("/user") ~> addCredentials(OAuth2BearerToken("bob")) ~> callerRoute ~> check {
+      Get("/user") ~> addCredentials(OAuth2BearerToken("unknown")) ~> callerRoute ~> check {
         response.status shouldEqual StatusCodes.Unauthorized
       }
     }
@@ -161,29 +161,9 @@ class AuthDirectivesSpec
     }
 
     "correctly reject user without permission " in {
-      Get("/user") ~> addCredentials(OAuth2BearerToken("alice")) ~> authorizationRoute ~> check {
+      Get("/user") ~> addCredentials(OAuth2BearerToken("bob")) ~> authorizationRoute ~> check {
         rejection shouldEqual AuthorizationFailedRejection
       }
     }
-
   }
-
-}
-
-object AuthDirectivesSpec {
-
-  val identities = new Identities {
-
-    override def exchange(token: AuthToken): IO[TokenRejection, Caller] = {
-      token match {
-        case AuthToken("alice") =>
-          IO.pure(
-            Caller(User("alice", Label.unsafe("wonderland")), Set.empty)
-          )
-        case _                  => IO.raiseError(InvalidAccessToken)
-
-      }
-    }
-  }
-
 }
