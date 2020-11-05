@@ -164,7 +164,6 @@ class AclsRoutesSpec
 
     "get the events stream" in {
       Get("/v1/acls/events") ~> addCredentials(token) ~> Accept(`*/*`) ~> routes ~> check {
-        print(response.asString)
         mediaType shouldBe `text/event-stream`
         response.asString.strip shouldEqual contentOf("/acls/eventstream.txt").strip
       }
