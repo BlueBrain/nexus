@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, OrganizationsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, OrganizationsDummy, PermissionsDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -54,8 +54,11 @@ class OrganizationsRoutesSpec
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
+  private val acls       = AclsDummy(
+    PermissionsDummy(Set.empty)
+  ).accepted
 
-  private val routes = Route.seal(OrganizationsRoutes(identities, orgs))
+  private val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
 
   private val org1CreatedMeta = resourceUnit(extractId.get(org1.label), "Organization", schemas.organizations)
 

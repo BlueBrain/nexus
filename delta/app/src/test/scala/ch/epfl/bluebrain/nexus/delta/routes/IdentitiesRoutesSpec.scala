@@ -9,9 +9,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
-import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -21,15 +21,20 @@ class IdentitiesRoutesSpec
     with Matchers
     with CirceEq
     with RouteHelpers
-    with RouteFixtures {
+    with RouteFixtures
+    with IOValues {
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
+  private val acls = AclsDummy(
+    PermissionsDummy(Set.empty)
+  ).accepted
+
   private val route = Route.seal(
     handleExceptions(IdentityError.exceptionHandler) {
-      IdentitiesRoutes(identities)
+      IdentitiesRoutes(identities, acls)
     }
   )
 

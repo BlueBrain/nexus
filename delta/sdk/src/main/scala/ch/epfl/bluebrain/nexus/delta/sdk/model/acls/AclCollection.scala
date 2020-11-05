@@ -72,6 +72,18 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     }
 
   /**
+    * Generates a new [[AclCollection]] only containing [[Acl]]s
+    * where user has `permission` on the [[Acl]] or ancestor
+    *
+    * @param identities the identities of the user
+    * @param permission the permission to filter by
+    */
+  def filterByPermission(identities: Set[Identity], permission: Permission): AclCollection =
+    AclCollection(value.filter { case (address, _) =>
+      exists(identities, permission, address)
+    })
+
+  /**
     * @return a new [[AclCollection]] containing the ACLs with non empty [[Acl]]
     */
   def removeEmpty(): AclCollection =

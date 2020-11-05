@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -34,11 +34,13 @@ class PermissionsRoutesSpec
 
   implicit private val caller: Subject = Identity.Anonymous
 
-  private val minimum     = Set(acls.read, acls.write)
-  private val identities  = IdentitiesDummy(Map.empty)
-  private val permissions = PermissionsDummy(minimum).accepted
-  private val route       = Route.seal(PermissionsRoutes(identities, permissions))
-  private val id          = iri"http://localhost/v1/permissions"
+  private val minimum        = Set(acls.read, acls.write)
+  private val identities     = IdentitiesDummy(Map.empty)
+  private val permissionsUIO = PermissionsDummy(minimum)
+  private val aclsDummy      = AclsDummy(permissionsUIO).accepted
+  private val permissions    = permissionsUIO.accepted
+  private val route          = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
+  private val id             = iri"http://localhost/v1/permissions"
 
   "The permissions routes" should {
 
@@ -163,7 +165,7 @@ class PermissionsRoutesSpec
 
     "return the event stream when no offset is provided" in {
       val dummy = PermissionsDummy(Set.empty, 5L).accepted
-      val route = Route.seal(PermissionsRoutes(identities, dummy))
+      val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
       dummy.append(Set(acls.read), 0L).accepted
       dummy.subtract(Set(acls.read), 1L).accepted
       dummy.replace(Set(acls.write), 2L).accepted
@@ -179,7 +181,7 @@ class PermissionsRoutesSpec
 
     "return the event stream when an offset is provided" in {
       val dummy = PermissionsDummy(Set.empty, 5L).accepted
-      val route = Route.seal(PermissionsRoutes(identities, dummy))
+      val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
       dummy.append(Set(acls.read), 0L).accepted
       dummy.subtract(Set(acls.read), 1L).accepted
       dummy.replace(Set(acls.write), 2L).accepted

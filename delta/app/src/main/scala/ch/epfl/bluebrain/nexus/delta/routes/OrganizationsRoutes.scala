@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -28,13 +28,13 @@ import monix.execution.Scheduler
   * @param identities    the identities operations bundle
   * @param organizations the organizations operations bundle
   */
-final class OrganizationsRoutes(identities: Identities, organizations: Organizations)(implicit
+final class OrganizationsRoutes(identities: Identities, organizations: Organizations, acls: Acls)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities)
+) extends AuthDirectives(identities, acls)
     with DeltaDirectives
     with CirceUnmarshalling {
 
@@ -130,13 +130,13 @@ object OrganizationsRoutes {
   /**
     * @return the [[Route]] for organizations
     */
-  def apply(identities: Identities, organizations: Organizations)(implicit
+  def apply(identities: Identities, organizations: Organizations, acls: Acls)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new OrganizationsRoutes(identities, organizations).routes
+    new OrganizationsRoutes(identities, organizations, acls).routes
 
 }

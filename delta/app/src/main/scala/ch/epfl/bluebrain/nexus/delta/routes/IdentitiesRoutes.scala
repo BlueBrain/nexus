@@ -4,7 +4,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller._
@@ -16,12 +16,12 @@ import monix.execution.Scheduler
 /**
   * The identities routes
   */
-class IdentitiesRoutes(identities: Identities)(implicit
+class IdentitiesRoutes(identities: Identities, acls: Acls)(implicit
     override val s: Scheduler,
     baseUri: BaseUri,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities)
+) extends AuthDirectives(identities, acls)
     with DeltaDirectives {
 
   def routes: Route = {
@@ -43,7 +43,8 @@ object IdentitiesRoutes {
     * @return the [[Route]] for identities
     */
   def apply(
-      identities: Identities
+      identities: Identities,
+      acls: Acls
   )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
-    new IdentitiesRoutes(identities).routes
+    new IdentitiesRoutes(identities, acls).routes
 }

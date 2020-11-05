@@ -292,6 +292,22 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     completeUIO(io)
 
   /**
+    * Completes a passed [[UIO]] of sequence of ''A'' as [[UnscoredSearchResults]]
+    * @param io the search result to be returned, wrapped in an [[UIO]]
+    * @param additionalContext a context related to ''A''
+    */
+  def completeUnscoredSearch[A](
+      io: UIO[Seq[A]]
+  )(implicit
+      s: Scheduler,
+      cr: RemoteContextResolution,
+      ordering: JsonKeyOrdering,
+      S: SearchEncoder[A],
+      additionalContext: ContextValue
+  ): Route =
+    completeUIO(io.map[SearchResults[A]](res => SearchResults(res.length.toLong, res)))
+
+  /**
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Before returning the response, the request data bytes will be discarded.
     * If the normal channel doesn't hold any value, a not found output is produced

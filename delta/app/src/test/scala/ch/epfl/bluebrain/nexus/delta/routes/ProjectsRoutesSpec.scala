@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, OrganizationsDummy, ProjectsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, OrganizationsDummy, PermissionsDummy, ProjectsDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.delta.syntax._
@@ -48,6 +48,10 @@ class ProjectsRoutesSpec
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
+  private val acls = AclsDummy(
+    PermissionsDummy(Set.empty)
+  ).accepted
+
   // Creating the org instance and injecting some data in it
   private val orgs = {
     implicit val subject: Identity.Subject = caller.subject
@@ -60,7 +64,7 @@ class ProjectsRoutesSpec
     } yield o
   }.accepted
 
-  private val routes = Route.seal(ProjectsRoutes(identities, ProjectsDummy(orgs).accepted))
+  private val routes = Route.seal(ProjectsRoutes(identities, ProjectsDummy(orgs).accepted, acls))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"

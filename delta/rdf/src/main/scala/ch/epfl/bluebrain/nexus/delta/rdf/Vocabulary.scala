@@ -150,6 +150,7 @@ object Vocabulary {
     val updatedBy             = Metadata("updatedBy")
     val userInfoEndpoint      = Metadata("userInfoEndpoint")
     val uuid                  = Metadata("uuid")
+    val path                  = Metadata("path")
 
     // Resource types
     val AccessControlList = nxv + "AccessControlList"

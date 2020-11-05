@@ -161,7 +161,7 @@ object AclsImpl {
     */
   final def apply(
       config: AclsConfig,
-      permissions: UIO[Permissions],
+      permissions: Permissions,
       eventLog: EventLog[Envelope[AclEvent]]
   )(implicit
       as: ActorSystem[Nothing],
@@ -169,7 +169,7 @@ object AclsImpl {
       clock: Clock[UIO]
   ): UIO[AclsImpl] =
     for {
-      agg  <- aggregate(permissions, config.aggregate)
+      agg  <- aggregate(UIO.delay(permissions), config.aggregate)
       index = cache(config)
       acls  = AclsImpl.apply(agg, eventLog, index)
       _    <- UIO.delay(startIndexing(config, eventLog, index, acls))

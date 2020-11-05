@@ -1,7 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import io.circe.generic.extras.Configuration
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 
 /**
   * An Access Control List codified as a map where the keys are [[Identity]] and the values are a set of [[Permission]].
@@ -80,6 +87,24 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
 
 object Acl {
 
+  implicit private[Acl] val config: Configuration = Configuration.default
+
+  implicit def aclEncoder(implicit base: BaseUri): Encoder.AsObject[Acl] = Encoder.AsObject.instance { acl =>
+    JsonObject(
+      "acl" -> Json.fromValues(
+        acl.value.map { case (identity, permissions) =>
+          Json.obj("identity" -> identity.asJson, "permissions" -> permissions.asJson)
+        }
+      )
+    )
+
+  }
+
+  val context: ContextValue = ContextValue(contexts.acls)
+
+  implicit def aclJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Acl] =
+    JsonLdEncoder.compactFromCirce(context)
+
   /**
     * An empty [[Acl]].
     */
@@ -90,4 +115,5 @@ object Acl {
     */
   def apply(acl: (Identity, Set[Permission])*): Acl =
     Acl(acl.toMap)
+
 }

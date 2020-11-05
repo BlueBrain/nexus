@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, RealmsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -59,8 +59,11 @@ class RealmsRoutesSpec
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
+  private val acls       = AclsDummy(
+    PermissionsDummy(Set.empty)
+  ).accepted
 
-  private val routes = Route.seal(RealmsRoutes(identities, realms))
+  private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
 
   private val githubCreatedMeta = resourceUnit(iriExtract.get(github), "Realm", schemas.realms)
   private val githubUpdatedMeta = resourceUnit(iriExtract.get(github), "Realm", schemas.realms, 2L)

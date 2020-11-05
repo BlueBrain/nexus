@@ -2,8 +2,21 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.Lens
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax.EncoderOps
+import io.circe.{Encoder, Json}
+
+import scala.annotation.nowarn
 
 /**
   * Enumeration of ACL event types.
@@ -84,4 +97,42 @@ object AclEvent {
       subject: Subject
   ) extends AclEvent
 
+  private val context = ContextValue(contexts.resource, contexts.acls)
+
+  @nowarn("cat=unused")
+  implicit def aclEventJsonLdEncoder(implicit
+      baseUri: BaseUri,
+      iriLens: Lens[AclAddress, Iri]
+  ): JsonLdEncoder[AclEvent] = {
+    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+
+    implicit val config: Configuration = Configuration.default
+      .withDiscriminator(keywords.tpe)
+      .copy(transformMemberNames = {
+        case "address" => nxv.path.prefix
+        case "instant" => nxv.instant.prefix
+        case "subject" => nxv.eventSubject.prefix
+        case "rev"     => nxv.rev.prefix
+        case other     => other
+      })
+
+    implicit def aclEncoder(implicit base: BaseUri, idEncoder: Encoder[Identity]): Encoder[Acl] = Encoder.instance {
+      acl =>
+        Json.fromValues(
+          acl.value.map { case (identity: Identity, permissions) =>
+            Json.obj("identity" -> identity.asJson, "permissions" -> permissions.asJson)
+          }
+        )
+    }
+
+    implicit val encoder: Encoder.AsObject[AclEvent] = Encoder.AsObject.instance { ev =>
+      deriveConfiguredEncoder[AclEvent]
+        .mapJsonObject { json =>
+          json
+            .add("@id", Json.fromString(iriLens.get(ev.address).toString))
+        }
+        .encodeObject(ev)
+    }
+    JsonLdEncoder.compactFromCirce[AclEvent](context)
+  }
 }

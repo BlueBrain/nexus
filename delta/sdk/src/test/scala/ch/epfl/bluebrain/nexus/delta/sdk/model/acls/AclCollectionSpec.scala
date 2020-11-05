@@ -46,6 +46,12 @@ class AclCollectionSpec extends AnyWordSpecLike with Matchers with AclFixtures {
       acls.filter(Set(subject, group)) shouldEqual acls
     }
 
+    "filter identities by permission" in {
+      val acls = AclCollection(acl.copy(id = projAddress), acl2.copy(id = orgAddress), acl3)
+      acls.filterByPermission(Set(subject), r) shouldEqual AclCollection.empty + acl.copy(id = projAddress)
+
+    }
+
     "subtract an ACL" in {
       (AclCollection(acl) - acl3) shouldEqual AclCollection(acl3.copy(value = userRW))
       (AclCollection(acl) - acl) shouldEqual AclCollection.empty

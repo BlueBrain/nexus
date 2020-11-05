@@ -36,6 +36,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
   private val realmsCtx        = ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess
   private val errorCtx         = ioJsonContentOf("/contexts/error.json").memoizeOnSuccess
   private val identitiesCtx    = ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess
+  private val aclsCtx          = ioJsonContentOf("/contexts/acls.json").memoizeOnSuccess
   private val searchCtx        = ioJsonContentOf("/contexts/search.json").memoizeOnSuccess
 //  private val aclsCtx = jsonContentOf("/contexts/acl.json")
 
@@ -57,6 +58,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
       contexts.projects      -> projectsCtx,
       contexts.realms        -> realmsCtx,
       contexts.identities    -> identitiesCtx,
+      contexts.acls          -> aclsCtx,
       contexts.search        -> searchCtx
     )
   )

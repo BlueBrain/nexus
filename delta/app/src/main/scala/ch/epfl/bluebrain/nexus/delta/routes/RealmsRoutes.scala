@@ -17,19 +17,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, RealmResource, Realms}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
-class RealmsRoutes(identities: Identities, realms: Realms)(implicit
+class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities)
+) extends AuthDirectives(identities, acls)
     with DeltaDirectives
     with CirceUnmarshalling {
 
@@ -114,13 +114,13 @@ object RealmsRoutes {
   /**
     * @return the [[Route]] for realms
     */
-  def apply(identities: Identities, realms: Realms)(implicit
+  def apply(identities: Identities, realms: Realms, acls: Acls)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new RealmsRoutes(identities, realms).routes
+    new RealmsRoutes(identities, realms, acls).routes
 
 }

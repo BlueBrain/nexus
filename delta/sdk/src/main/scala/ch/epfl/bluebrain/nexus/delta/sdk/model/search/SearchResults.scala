@@ -115,7 +115,7 @@ object SearchResults {
   final def apply[A](total: Long, results: Seq[A]): UnscoredSearchResults[A] =
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
-  private def encodeResults[A: Encoder.AsObject](
+  def encodeResults[A: Encoder.AsObject](
       next: SearchResults[A] => Option[Uri]
   ): SearchEncoder[A] =
     Encoder.AsObject.instance { r =>

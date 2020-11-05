@@ -25,6 +25,6 @@ class AclsImplSpec
 
   override def create: Task[Acls] =
     eventLog.flatMap { el =>
-      AclsImpl(AclsConfig(aggregate, keyValueStore, indexing), PermissionsDummy(minimum), el)
+      AclsImpl(AclsConfig(aggregate, keyValueStore, indexing), PermissionsDummy(minimum).accepted, el)
     }
 }

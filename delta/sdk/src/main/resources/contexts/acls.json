@@ -1,0 +1,8 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_path": "nxv:path"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/acls.json"
+}

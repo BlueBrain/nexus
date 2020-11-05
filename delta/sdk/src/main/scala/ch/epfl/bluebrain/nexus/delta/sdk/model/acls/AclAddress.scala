@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalAclAddressFormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import io.circe.{Encoder, Json}
 
 /**
   * Enumeration of possible ACL addresses. An ACL address is the address where a certain ACL is anchored.
@@ -73,4 +74,6 @@ object AclAddress {
   }
 
   implicit val aclAddressOrdering: Ordering[AclAddress] = Ordering.by(_.string)
+
+  implicit val aclAddressEncoder: Encoder[AclAddress] = Encoder.instance(a => Json.fromString(a.string))
 }

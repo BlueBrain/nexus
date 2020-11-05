@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResourceEncoder, SearchEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, Lens, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, ProjectResource, Projects}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -23,14 +23,15 @@ import monix.execution.Scheduler
   * The project routes
   * @param identities the identity module
   * @param projects   the projects module
+  * @param acls       the ACLs module
   */
-final class ProjectsRoutes(identities: Identities, projects: Projects)(implicit
+final class ProjectsRoutes(identities: Identities, projects: Projects, acls: Acls)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities)
+) extends AuthDirectives(identities, acls)
     with DeltaDirectives
     with CirceUnmarshalling {
 
@@ -124,12 +125,12 @@ object ProjectsRoutes {
   /**
     * @return the [[Route]] for projects
     */
-  def apply(identities: Identities, projects: Projects)(implicit
+  def apply(identities: Identities, projects: Projects, acls: Acls)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ProjectsRoutes(identities, projects).routes
+  ): Route = new ProjectsRoutes(identities, projects, acls).routes
 
 }
