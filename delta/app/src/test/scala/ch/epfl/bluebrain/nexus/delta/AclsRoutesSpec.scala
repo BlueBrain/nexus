@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RemoteContextResolutionDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
@@ -47,8 +48,10 @@ class AclsRoutesSpec
   val group     = Group("mygroup", Label.unsafe("myrealm"))
   val group2    = Group("mygroup2", Label.unsafe("myrealm"))
   val readWrite =
-    Set(Permission.unsafe("acls/read"), Permission.unsafe("acls/write"), Permission.unsafe("events/read"))
-  val manage    = Set(Permission.unsafe("acls/manage"))
+    Set(aclsPermissions.read, aclsPermissions.write, events.read)
+
+  val managePermission = Permission.unsafe("acls/manage")
+  val manage           = Set(managePermission)
 
   val userAcl   = Acl(user -> readWrite)
   val groupAcl  = Acl(group -> manage)
@@ -72,10 +75,10 @@ class AclsRoutesSpec
   private val acls                                       = AclsDummy(
     PermissionsDummy(
       Set(
-        Permission.unsafe("acls/read"),
-        Permission.unsafe("acls/write"),
-        Permission.unsafe("acls/manage"),
-        Permission.unsafe("events/read")
+        aclsPermissions.read,
+        aclsPermissions.write,
+        managePermission,
+        events.read
       )
     )
   ).accepted
