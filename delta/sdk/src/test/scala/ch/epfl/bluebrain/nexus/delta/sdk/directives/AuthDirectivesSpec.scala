@@ -36,7 +36,8 @@ class AuthDirectivesSpec
     with IdiomaticMockito
     with BeforeAndAfter {
 
-  val user = User("alice", Label.unsafe("wonderland"))
+  val user  = User("alice", Label.unsafe("wonderland"))
+  val user2 = User("bob", Label.unsafe("wonderland"))
 
   val identities = new Identities {
 
@@ -45,6 +46,10 @@ class AuthDirectivesSpec
         case AuthToken("alice") =>
           IO.pure(
             Caller(user, Set(user))
+          )
+        case AuthToken("bob")   =>
+          IO.pure(
+            Caller(user2, Set(user2))
           )
         case _                  => IO.raiseError(InvalidAccessToken)
 
@@ -151,6 +156,12 @@ class AuthDirectivesSpec
 
     "correctly reject Anonymous " in {
       Get("/user") ~> authorizationRoute ~> check {
+        rejection shouldEqual AuthorizationFailedRejection
+      }
+    }
+
+    "correctly reject user without permission " in {
+      Get("/user") ~> addCredentials(OAuth2BearerToken("alice")) ~> authorizationRoute ~> check {
         rejection shouldEqual AuthorizationFailedRejection
       }
     }
