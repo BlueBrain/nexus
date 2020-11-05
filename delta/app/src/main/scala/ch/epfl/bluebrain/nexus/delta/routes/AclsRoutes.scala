@@ -8,8 +8,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, MalformedQueryParamRejection, Route}
 import cats.implicits.{toBifunctorOps, toFunctorOps}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
@@ -24,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{encodeResults, searchResultsJsonLdEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{SearchEncoder, encodeResults, searchResultsJsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities, Lens}
@@ -67,16 +65,6 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
         "_path" -> Json.fromString(r.id.string)
       )
     }
-
-  implicit val aclWriteResponseEncoder: Encoder.AsObject[ResourceF[AclAddress, Unit]] = Encoder.AsObject
-    .instance { r: ResourceF[AclAddress, Unit] =>
-      r.copy(id = iriLens.get(r.id)).void.asJsonObject deepMerge r.value.asJsonObject
-    }
-
-  implicit val aclWriteFResponseEncoder: JsonLdEncoder[ResourceF[AclAddress, Unit]] = JsonLdEncoder.compactFromCirce(
-    (v: ResourceF[AclAddress, Unit]) => iriLens.get(v.id),
-    iriContext = contexts.resource
-  )
 
   implicit val searchEncoder: SearchEncoder[AclResource] = encodeResults(_ => None)
 
