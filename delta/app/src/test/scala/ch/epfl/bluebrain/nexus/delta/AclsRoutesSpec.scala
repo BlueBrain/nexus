@@ -61,7 +61,7 @@ class AclsRoutesSpec
   implicit val caller: Caller   = Caller(user, Set(user, group))
   implicit val subject: Subject = caller.subject
 
-  private val acls                               = AclsDummy(
+  private val acls = AclsDummy(
     PermissionsDummy(
       Set(
         aclsPermissions.read,
