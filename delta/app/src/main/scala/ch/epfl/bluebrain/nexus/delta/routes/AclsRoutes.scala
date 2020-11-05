@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{CirceUnmarshalling, QueryParamsUnmarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project}
@@ -118,7 +119,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
         concat(
           // SSE acls
           (pathPrefix("events") & pathEndOrSingleSlash) {
-            authorizeFor(AclAddress.Root, eventsRead).apply {
+            authorizeFor(AclAddress.Root, events.read).apply {
               operationName(s"$prefixSegment/acls/events") {
                 lastEventId { offset =>
                   completeStream(acls.events(offset))
@@ -131,19 +132,19 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
               operationName(s"$prefixSegment/acls${address.string}") {
                 concat(
                   (put & entity(as[AclInput])) { aclEntity =>
-                    authorizeFor(address, aclsWrite).apply {
+                    authorizeFor(address, aclsPermissions.write).apply {
                       val status = if (rev == 0L) Created else OK
                       completeIO(status, acls.replace(address, aclEntity.toAcl, rev).map(_.void))
                     }
                   },
-                  (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsWrite)) {
+                  (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsPermissions.write)) {
                     case AppendAcl(acl)   =>
                       completeIO(acls.append(address, acl, rev).map(_.void))
                     case SubtractAcl(acl) =>
                       completeIO(acls.subtract(address, acl, rev).map(_.void))
                   },
                   delete {
-                    authorizeFor(address, aclsWrite).apply {
+                    authorizeFor(address, aclsPermissions.write).apply {
                       completeIO(OK, acls.delete(address, rev).map(_.void))
                     }
                   },
@@ -175,7 +176,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                           )
                       }
                     case false =>
-                      authorizeFor(address, aclsRead).apply {
+                      authorizeFor(address, aclsPermissions.read).apply {
                         (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
                           case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
                           case (Some(rev), false) =>
@@ -221,7 +222,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                     acls
                       .list(addressFilter)
                       .map { aclCol =>
-                        val filtered = aclCol.filterByPermission(caller.identities, aclsRead)
+                        val filtered = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
                         SearchResults(filtered.value.size.toLong, filtered.value.values.toSeq)
                       }
                   )
@@ -238,10 +239,6 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
 object AclsRoutes {
 
   type AclResponseResource = ResourceF[Iri, Acl]
-
-  private val aclsRead   = Permission.unsafe("acls/read")
-  private val aclsWrite  = Permission.unsafe("acls/write")
-  private val eventsRead = Permission.unsafe("events/read")
 
   final private[routes] case class AclEntry(permissions: Set[Permission], identity: Identity)
   final private[routes] case class AclInput(acl: Seq[AclEntry]) {
