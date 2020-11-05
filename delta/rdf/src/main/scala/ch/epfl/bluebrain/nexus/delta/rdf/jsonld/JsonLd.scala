@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, RootIriNotFound, UnexpectedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -126,33 +126,21 @@ object JsonLd {
   /**
     * Create an expanded ExpandedJsonLd document using the passed ''input''.
     *
-    * If the Json-LD document does not have a root @id, and the ''defaultId'' is present, it creates one.
-    *
-    * If the Json-LD document does not have a root @id, and the ''defaultId'' is not present, it fails.
-    *
     * If the Json-LD document has more than one Json Object inside the array, it fails (@graph with more than an element).
     */
-  final def expand(
-      input: Json,
-      defaultId: => Option[IriOrBNode] = None
-  )(implicit
+  final def expand(input: Json)(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
     for {
-      expanded      <- api.expand(input)
-      obj           <- IO.fromOption(
-                         expanded.singleEntryOr(JsonObject.empty),
-                         UnexpectedJsonLd("Expected a sequence of Json Objects with a single value")
-                       )
-      id            <- (obj(keywords.id), defaultId) match {
-                         case (Some(jsonIri), _) => IO.fromEither(jsonIri.as[Iri]).leftMap(_ => InvalidIri(jsonIri.noSpaces))
-                         case (_, Some(default)) => IO.pure(default)
-                         case _                  => IO.raiseError(RootIriNotFound)
-                       }
-      objWithIdOnIri = id.asIri.fold(obj)(iriId => obj.add(keywords.id, iriId.asJson))
-    } yield ExpandedJsonLd(objWithIdOnIri, id)
+      expanded <- api.expand(input)
+      obj      <- IO.fromOption(
+                    expanded.singleEntryOr(JsonObject.empty),
+                    UnexpectedJsonLd("Expected a sequence of Json Objects with a single value")
+                  )
+      idOpt    <- IO.fromEither(obj.asJson.hcursor.get[Option[Iri]](keywords.id).leftMap(e => InvalidIri(e.message)))
+    } yield ExpandedJsonLd(obj, idOpt.getOrElse(BNode.random))
 
   /**
     * Create compacted JSON-LD document using the passed ''input'' and ''context''.
@@ -174,12 +162,10 @@ object JsonLd {
     for {
       compacted <- api.compact(input, context)
       _         <- topGraphErr(compacted)
-    } yield CompactedJsonLd(compacted, context.topContextValueOrEmpty, rootId)
+    } yield CompactedJsonLd(compacted.remove(keywords.context), context.topContextValueOrEmpty, rootId)
 
   /**
     * Create compacted JSON-LD document using the passed ''input'' and ''context''.
-    *
-    * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
     *
     * The ''rootId'' is enforced using a framing on it.
     */
@@ -197,7 +183,7 @@ object JsonLd {
     for {
       compacted <- api.frame(input, frame)
       _         <- topGraphErr(compacted)
-    } yield CompactedJsonLd(compacted, context.topContextValueOrEmpty, rootId)
+    } yield CompactedJsonLd(compacted.remove(keywords.context), context.topContextValueOrEmpty, rootId)
   }
 
   private def topGraphErr(obj: JsonObject): IO[RdfError, Unit] =

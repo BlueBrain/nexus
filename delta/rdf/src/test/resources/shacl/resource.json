@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+  },
+  "@type": "Custom",
+  "name": "Alex",
+  "number": 24,
+  "bool": false
+}

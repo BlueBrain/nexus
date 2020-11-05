@@ -146,7 +146,7 @@ class CompositeViewsSpec extends BaseSpec {
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
           "token"          -> jerryToken
-        )
+        ): _*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite", view, Jerry) { (_, response) =>
@@ -166,7 +166,7 @@ class CompositeViewsSpec extends BaseSpec {
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1/other",
           "token"          -> jerryToken
-        )
+        ): _*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (_, response) =>
@@ -183,7 +183,7 @@ class CompositeViewsSpec extends BaseSpec {
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://delta:8080/v1",
           "token"          -> s"${jerryToken}wrong"
-        )
+        ): _*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (json, response) =>
@@ -201,7 +201,7 @@ class CompositeViewsSpec extends BaseSpec {
           "org2"           -> orgId,
           "remoteEndpoint" -> "http://fail/v1",
           "token"          -> jerryToken
-        )
+        ): _*
       )
 
       deltaClient.put[Json](s"/views/$orgId/bands/composite2", view, Jerry) { (_, response) =>

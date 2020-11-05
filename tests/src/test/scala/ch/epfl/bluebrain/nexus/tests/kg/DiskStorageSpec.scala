@@ -34,7 +34,7 @@ class DiskStorageSpec extends StorageSpec {
                  "read"        -> "resources/read",
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
                  "write"       -> "files/write"
-               )
+               ): _*
              )
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
@@ -56,7 +56,7 @@ class DiskStorageSpec extends StorageSpec {
                  "read"        -> s"$storageType/read",
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
                  "write"       -> s"$storageType/write"
-               )
+               ): _*
              )
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
@@ -71,7 +71,7 @@ class DiskStorageSpec extends StorageSpec {
         Json.obj("volume" -> Json.fromString(volume))
 
       deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
-        json shouldEqual jsonContentOf("/kg/storages/error.json", Map("volume" -> volume))
+        json shouldEqual jsonContentOf("/kg/storages/error.json", "volume" -> volume)
         response.status shouldEqual StatusCodes.BadRequest
       }
     }

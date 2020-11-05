@@ -22,9 +22,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v4
+        uses: coursier/cache-action@v5
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Static Analysis
@@ -44,16 +44,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v4
+        uses: coursier/cache-action@v5
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Publish
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" releaseEarly
       - name: Publish To DockerHub
         run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false docker:publishLocal
+          sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" docker:publishLocal
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           docker push bluebrain/nexus-cli:latest
       - name: Record Coverage

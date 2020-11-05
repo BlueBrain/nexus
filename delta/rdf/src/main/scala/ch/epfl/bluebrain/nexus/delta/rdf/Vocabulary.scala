@@ -92,6 +92,27 @@ object Vocabulary {
   }
 
   /**
+    * SHACL vocabulary.
+    */
+  object sh {
+    val base              = iri"http://www.w3.org/ns/shacl#"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val ValidationReport = sh + "ValidationReport"
+    val conforms         = sh + "conforms"
+  }
+
+  /**
+    * Nexus SHACL vocabulary.
+    */
+  object nxsh {
+    val base              = iri"https://bluebrain.github.io/nexus/vocabulary/shacl/"
+    def +(suffix: String) = iri"$base$suffix"
+
+    val targetedNodes = nxsh + "targetedNodes"
+  }
+
+  /**
     * Nexus vocabulary
     */
   object nxv {
@@ -100,25 +121,31 @@ object Vocabulary {
 
     // Metadata vocabulary
     val authorizationEndpoint = Metadata("authorizationEndpoint")
+    val compacted             = Metadata("compacted")
     val createdAt             = Metadata("createdAt")
     val createdBy             = Metadata("createdBy")
     val deprecated            = Metadata("deprecated")
     val endSessionEndpoint    = Metadata("endSessionEndpoint")
     val eventSubject          = Metadata("subject")
+    val expanded              = Metadata("expanded")
     val grantTypes            = Metadata("grantTypes")
     val instant               = Metadata("instant")
     val issuer                = Metadata("issuer")
+    val label                 = Metadata("label")
     val maxScore              = Metadata("maxScore")
     val next                  = Metadata("next")
-    val label                 = Metadata("label")
     val organizationLabel     = Metadata("organizationLabel")
     val organizationUuid      = Metadata("organizationUuid")
+    val resourceId            = Metadata("resourceId")
     val results               = Metadata("results")
     val rev                   = Metadata("rev")
     val revocationEndpoint    = Metadata("revocationEndpoint")
     val score                 = Metadata("score")
+    val self                  = Metadata("self")
+    val source                = Metadata("source")
     val tokenEndpoint         = Metadata("tokenEndpoint")
     val total                 = Metadata("total")
+    val types                 = Metadata("types")
     val updatedAt             = Metadata("updatedAt")
     val updatedBy             = Metadata("updatedBy")
     val userInfoEndpoint      = Metadata("userInfoEndpoint")
@@ -145,6 +172,8 @@ object Vocabulary {
     val permissions   = schemas + "permissions.json"
     val projects      = schemas + "projects.json"
     val realms        = schemas + "realms.json"
+    val resources     = schemas + "resources.json"
+    val resolvers     = schemas + "resolvers.json"
   }
 
   /**
@@ -163,6 +192,7 @@ object Vocabulary {
     val realms        = contexts + "realms.json"
     val resource      = contexts + "resource.json"
     val search        = contexts + "search.json"
+    val shacl         = iri"https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
   }
 
   /**

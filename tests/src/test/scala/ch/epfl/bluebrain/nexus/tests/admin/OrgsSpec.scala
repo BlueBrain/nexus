@@ -16,7 +16,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
   private val Fry        = UserCredentials(genString(), genString(), testRealm)
   private val Leela      = UserCredentials(genString(), genString(), testRealm)
 
-  private[tests] val errorCtx = Map("error-context" -> prefixesConfig.errorContext.toString)
+  private[tests] val errorCtx = "error-context" -> prefixesConfig.errorContext.toString
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 
@@ -87,10 +87,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
                Some(
                  ExpectedResponse(
                    StatusCodes.Conflict,
-                   jsonContentOf(
-                     "/admin/errors/org-already-exists.json",
-                     Map("orgId" -> duplicate)
-                   )
+                   jsonContentOf("/admin/errors/org-already-exists.json", "orgId" -> duplicate)
                  )
                )
              )
@@ -215,7 +212,7 @@ class OrgsSpec extends BaseSpec with EitherValuable {
     "fail when organization does not exist" taggedAs OrgsTag in {
       val notFound = ExpectedResponse(
         StatusCodes.NotFound,
-        jsonContentOf("/admin/errors/not-exists.json", Map("orgId" -> nonExistent))
+        jsonContentOf("/admin/errors/not-exists.json", "orgId" -> nonExistent)
       )
       adminDsl.updateOrganization(
         nonExistent,

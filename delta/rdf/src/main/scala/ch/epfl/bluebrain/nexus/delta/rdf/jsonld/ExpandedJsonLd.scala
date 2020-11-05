@@ -26,6 +26,8 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
 
   lazy val json: Json = Json.arr(obj.asJson)
 
+  private val rootIdJson = rootId.asJson
+
   def add(key: Predicate, iri: Iri): This =
     add(key.toString, expand(iri))
 
@@ -76,6 +78,18 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
     */
   def types: List[Iri] =
     hc.get[List[Iri]](keywords.tpe).getOrElse(List.empty)
+
+  /**
+    * Replaces the root @id value and returns a new [[ExpandedJsonLd]]
+    *
+    * @param iriOrBNode the new root @id value
+    */
+  def replaceId(iriOrBNode: IriOrBNode): ExpandedJsonLd =
+    iriOrBNode match {
+      case _ if iriOrBNode == rootId && obj(keywords.id) == Some(rootIdJson) => self
+      case iri: Iri                                                          => new ExpandedJsonLd(obj.add(keywords.id, iri.asJson), iri)
+      case bNode: IriOrBNode.BNode                                           => new ExpandedJsonLd(obj.remove(keywords.id), bNode)
+    }
 
   def toCompacted(context: Json)(implicit
       opts: JsonLdOptions,

@@ -1,0 +1,59 @@
+name: Continuous Integration Delta Kernel
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'delta/kernel/**'
+      - 'build.sbt'
+      - 'project/**'
+  pull_request:
+    paths:
+      - 'delta/kernel/**'
+      - 'build.sbt'
+      - 'project/**'
+jobs:
+  review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v5
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Static Analysis
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project kernel" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+      - name: Tests
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project kernel" clean coverage test coverageReport coverageAggregate
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    env:
+      CI: true
+      BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
+      BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v5
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Publish To Bintray
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project kernel" releaseEarly
+      - name: Record Coverage
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project kernel" clean coverage test coverageReport coverageAggregate
+      - name: Report Coverage
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

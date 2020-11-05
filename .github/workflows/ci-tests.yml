@@ -2,6 +2,8 @@ name: Continuous Integration Tests
 on:
   pull_request:
     paths:
+      - 'delta/kernel/**'
+      - 'delta/sdk-testkit/**'
       - 'tests/**'
       - 'build.sbt'
       - 'project/**'
@@ -15,10 +17,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Coursier Cache
-        uses: coursier/cache-action@v4
+        uses: coursier/cache-action@v5
       - name: Setup Scala
-        uses: olafurpg/setup-scala@v5
+        uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
       - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" clean scalafmtCheck test:scalafmtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" clean scalafmtCheck test:scalafmtCheck test:compile scapegoat

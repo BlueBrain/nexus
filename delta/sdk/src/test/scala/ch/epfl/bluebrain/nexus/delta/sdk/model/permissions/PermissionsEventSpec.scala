@@ -5,13 +5,11 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionError.RemoteContextNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
-import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -22,11 +20,8 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost")
 
-  implicit private val res: RemoteContextResolution = RemoteContextResolution({
-    case contexts.resource    => UIO.pure(resourceContext)
-    case contexts.permissions => UIO.pure(permissionsContext)
-    case other                => IO.raiseError(RemoteContextNotFound(other))
-  })
+  implicit private val res: RemoteContextResolution =
+    RemoteContextResolution.fixed(contexts.resource -> resourceContext, contexts.permissions -> permissionsContext)
 
   "A PermissionsAppended" should {
     val event: PermissionsEvent = PermissionsAppended(

@@ -2,14 +2,16 @@ package ch.epfl.bluebrain.nexus.testkit
 
 import _root_.io.circe._
 import _root_.io.circe.syntax._
+import ch.epfl.bluebrain.nexus.testkit.CirceEq.IgnoredArrayOrder
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 trait CirceEq {
-  implicit private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
-
   def equalIgnoreArrayOrder(json: Json): IgnoredArrayOrder = IgnoredArrayOrder(json)
+}
 
-  case class IgnoredArrayOrder(json: Json) extends Matcher[Json] {
+object CirceEq {
+  final case class IgnoredArrayOrder(json: Json) extends Matcher[Json] {
+    implicit private val printer: Printer = Printer.spaces2.copy(dropNullValues = true)
     private def sortKeys(value: Json): Json = {
       def canonicalJson(json: Json): Json =
         json.arrayOrObject[Json](
@@ -34,5 +36,4 @@ trait CirceEq {
       )
     }
   }
-
 }

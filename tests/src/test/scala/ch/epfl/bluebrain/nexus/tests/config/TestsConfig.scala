@@ -20,7 +20,7 @@ final case class PrefixesConfig(
     errorContext: Uri
 ) {
 
-  def coreContextMap = Map("success-context" -> coreContext.toString)
+  def coreContextRepl = "success-context" -> coreContext.toString
 }
 
 final case class StorageConfig(s3: S3Config, maxFileSize: Long)

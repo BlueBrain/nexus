@@ -353,7 +353,8 @@ class ProjectsRoutesSpec
         mediaType shouldBe `text/event-stream`
         response.asString shouldEqual contentOf(
           "/projects/eventstream-1-4.txt",
-          Map("projectUuid" -> projectUuid, "orgUuid" -> orgUuid)
+          "projectUuid" -> projectUuid,
+          "orgUuid"     -> orgUuid
         )
       }
     }

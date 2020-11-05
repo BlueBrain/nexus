@@ -6,22 +6,19 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.{AuthorizationFailedRejection, MalformedQueryParamRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RemoteContextResolutionDummy}
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -41,7 +38,8 @@ class AclsRoutesSpec
     with RouteHelpers
     with TestMatchers
     with Inspectors
-    with TestHelpers {
+    with TestHelpers
+    with RouteFixtures {
 
   val user      = User("uuid", Label.unsafe("realm"))
   val user2     = User("uuid2", Label.unsafe("realm"))
@@ -63,16 +61,7 @@ class AclsRoutesSpec
   implicit val caller: Caller   = Caller(user, Set(user, group))
   implicit val subject: Subject = caller.subject
 
-  implicit private val baseUri: BaseUri                  =
-    BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val ordering: JsonKeyOrdering         = JsonKeyOrdering.alphabetical
-  implicit private val s: Scheduler                      = Scheduler.global
-  implicit private val rcr: RemoteContextResolutionDummy =
-    RemoteContextResolutionDummy(
-      contexts.resource -> jsonContentOf("contexts/resource.json"),
-      contexts.error    -> jsonContentOf("contexts/error.json")
-    )
-  private val acls                                       = AclsDummy(
+  private val acls                               = AclsDummy(
     PermissionsDummy(
       Set(
         aclsPermissions.read,
@@ -98,17 +87,15 @@ class AclsRoutesSpec
   def expectedUpdateResponse(rev: Long, createdBy: Subject, updatedBy: Subject, path: String): Json =
     jsonContentOf(
       "/acls/write-response-routes.json",
-      Map(
-        "path"      -> path.stripSuffix("/"),
-        "createdBy" -> createdBy.id.toString,
-        "updatedBy" -> updatedBy.id.toString
-      )
+      "path"                    -> path.stripSuffix("/"),
+      "createdBy"               -> createdBy.id.toString,
+      "updatedBy"               -> updatedBy.id.toString
     ) deepMerge Json.obj("_rev" -> Json.fromLong(rev))
 
   def expectedResponse(rev: Long, total: Long, acls: Map[String, Acl]): Json = {
-    jsonContentOf("/acls/acls-route-response.json", Map("total" -> total)) deepMerge Json
+    jsonContentOf("/acls/acls-route-response.json", "total" -> total) deepMerge Json
       .obj(
-        "_results" -> Json.fromValues(
+        "_results"                                          -> Json.fromValues(
           acls.map { case (path, acl) =>
             aclJson(acl) deepMerge Json.obj(
               "_path"          -> Json.fromString(path),

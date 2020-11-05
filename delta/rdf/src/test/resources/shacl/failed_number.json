@@ -1,0 +1,22 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+  "@type" : "sh:ValidationReport",
+  "conforms" : false,
+  "result" : {
+    "@type" : "sh:ValidationResult",
+    "focusNode" : {
+
+    },
+    "resultMessage" : "Value must be a valid literal of type integer",
+    "result:Path" : {
+      "@id" : "nxv:number"
+    },
+    "resultSeverity" : "sh:Violation",
+    "sourceConstraintComponent" : "sh:DatatypeConstraintComponent",
+    "sourceShape" : {
+
+    },
+    "sh:value" : "Other"
+  },
+  "targetedNodes" : 10
+}

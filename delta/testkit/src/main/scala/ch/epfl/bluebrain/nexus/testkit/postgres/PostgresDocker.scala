@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.testkit.postgres
 
 import java.sql.DriverManager
 
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresHostConfig
-import com.whisk.docker.impl.spotify.DockerKitSpotify
 import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerCommandExecutor, DockerContainer, DockerContainerState, DockerReadyChecker}
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -11,7 +11,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-trait PostgresDocker extends DockerKitSpotify {
+trait PostgresDocker extends DockerKitWithFactory {
   import scala.concurrent.duration._
 
   val PostgresAdvertisedPort = 5432

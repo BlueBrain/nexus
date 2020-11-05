@@ -11,5 +11,5 @@ object UrlUtils extends UrlUtils {
     * Encodes the passed ''url''.
     */
   def encode(url: String): String =
-    URLEncoder.encode(url, StandardCharsets.UTF_8).replace("+", "%20")
+    URLEncoder.encode(url, StandardCharsets.UTF_8.name()).replace("+", "%20")
 }

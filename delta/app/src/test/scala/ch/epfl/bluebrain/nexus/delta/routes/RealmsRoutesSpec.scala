@@ -75,44 +75,40 @@ class RealmsRoutesSpec
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",
-    Map(
-      "label"                 -> github.value,
-      "name"                  -> githubName.value,
-      "openIdConfig"          -> githubOpenId,
-      "logo"                  -> githubLogo,
-      "issuer"                -> github.value,
-      "authorizationEndpoint" -> githubWk.authorizationEndpoint,
-      "tokenEndpoint"         -> githubWk.tokenEndpoint,
-      "userInfoEndpoint"      -> githubWk.userInfoEndpoint,
-      "revocationEndpoint"    -> githubWk.revocationEndpoint.value,
-      "endSessionEndpoint"    -> githubWk.endSessionEndpoint.value,
-      "createdBy"             -> Anonymous.id,
-      "updatedBy"             -> Anonymous.id,
-      "deprecated"            -> false,
-      "rev"                   -> 1L
-    )
+    "label"                 -> github.value,
+    "name"                  -> githubName.value,
+    "openIdConfig"          -> githubOpenId,
+    "logo"                  -> githubLogo,
+    "issuer"                -> github.value,
+    "authorizationEndpoint" -> githubWk.authorizationEndpoint,
+    "tokenEndpoint"         -> githubWk.tokenEndpoint,
+    "userInfoEndpoint"      -> githubWk.userInfoEndpoint,
+    "revocationEndpoint"    -> githubWk.revocationEndpoint.value,
+    "endSessionEndpoint"    -> githubWk.endSessionEndpoint.value,
+    "createdBy"             -> Anonymous.id,
+    "updatedBy"             -> Anonymous.id,
+    "deprecated"            -> false,
+    "rev"                   -> 1L
   )
 
   private val githubUpdated = githubCreated deepMerge json"""{"name": "updated", "_rev": 2}"""
 
   private val gitlabCreated = jsonContentOf(
     "/realms/realm-resource.json",
-    Map(
-      "label"                 -> gitlab.value,
-      "name"                  -> gitlabName.value,
-      "openIdConfig"          -> gitlabOpenId,
-      "logo"                  -> githubLogo,
-      "issuer"                -> gitlab.value,
-      "authorizationEndpoint" -> gitlabWk.authorizationEndpoint,
-      "tokenEndpoint"         -> gitlabWk.tokenEndpoint,
-      "userInfoEndpoint"      -> gitlabWk.userInfoEndpoint,
-      "revocationEndpoint"    -> gitlabWk.revocationEndpoint.value,
-      "endSessionEndpoint"    -> gitlabWk.endSessionEndpoint.value,
-      "createdBy"             -> alice.id,
-      "updatedBy"             -> alice.id,
-      "deprecated"            -> false,
-      "rev"                   -> 1L
-    )
+    "label"                 -> gitlab.value,
+    "name"                  -> gitlabName.value,
+    "openIdConfig"          -> gitlabOpenId,
+    "logo"                  -> githubLogo,
+    "issuer"                -> gitlab.value,
+    "authorizationEndpoint" -> gitlabWk.authorizationEndpoint,
+    "tokenEndpoint"         -> gitlabWk.tokenEndpoint,
+    "userInfoEndpoint"      -> gitlabWk.userInfoEndpoint,
+    "revocationEndpoint"    -> gitlabWk.revocationEndpoint.value,
+    "endSessionEndpoint"    -> gitlabWk.endSessionEndpoint.value,
+    "createdBy"             -> alice.id,
+    "updatedBy"             -> alice.id,
+    "deprecated"            -> false,
+    "rev"                   -> 1L
   )
 
   "A RealmsRoute" should {

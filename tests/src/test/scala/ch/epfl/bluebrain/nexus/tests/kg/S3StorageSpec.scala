@@ -68,24 +68,20 @@ class S3StorageSpec extends StorageSpec {
   override def createStorages: Task[Assertion] = {
     val payload = jsonContentOf(
       "/kg/storages/s3.json",
-      Map(
-        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageName",
-        "bucket"    -> bucket,
-        "endpoint"  -> s3Endpoint,
-        "accessKey" -> s3Config.accessKey.get,
-        "secretKey" -> s3Config.secretKey.get
-      )
+      "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageName",
+      "bucket"    -> bucket,
+      "endpoint"  -> s3Endpoint,
+      "accessKey" -> s3Config.accessKey.get,
+      "secretKey" -> s3Config.secretKey.get
     )
 
     val payload2 = jsonContentOf(
       "/kg/storages/s3.json",
-      Map(
-        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/${storageName}2",
-        "bucket"    -> bucket,
-        "endpoint"  -> s3Endpoint,
-        "accessKey" -> s3Config.accessKey.get,
-        "secretKey" -> s3Config.secretKey.get
-      )
+      "storageId"       -> s"https://bluebrain.github.io/nexus/vocabulary/${storageName}2",
+      "bucket"          -> bucket,
+      "endpoint"        -> s3Endpoint,
+      "accessKey"       -> s3Config.accessKey.get,
+      "secretKey"       -> s3Config.secretKey.get
     ) deepMerge Json.obj(
       "region"          -> Json.fromString("not-important"),
       "readPermission"  -> Json.fromString(s"$storageType/read"),
@@ -108,7 +104,7 @@ class S3StorageSpec extends StorageSpec {
                  "endpoint"    -> s3Endpoint,
                  "read"        -> "resources/read",
                  "write"       -> "files/write"
-               )
+               ): _*
              )
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
@@ -129,7 +125,7 @@ class S3StorageSpec extends StorageSpec {
                  "endpoint"    -> s3Endpoint,
                  "read"        -> "s3/read",
                  "write"       -> "s3/write"
-               )
+               ): _*
              ).deepMerge(Json.obj("region" -> Json.fromString("not-important")))
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
@@ -141,13 +137,11 @@ class S3StorageSpec extends StorageSpec {
     "fail creating an S3Storage with an invalid bucket" taggedAs StorageTag in {
       val payload = jsonContentOf(
         "/kg/storages/s3.json",
-        Map(
-          "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageName",
-          "bucket"    -> "foobar",
-          "endpoint"  -> s3Endpoint,
-          "accessKey" -> s3Config.accessKey.get,
-          "secretKey" -> s3Config.secretKey.get
-        )
+        "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/$storageName",
+        "bucket"    -> "foobar",
+        "endpoint"  -> s3Endpoint,
+        "accessKey" -> s3Config.accessKey.get,
+        "secretKey" -> s3Config.secretKey.get
       )
 
       deltaClient.post[Json](s"/storages/$fullId", payload, Coyote) { (json, response) =>
@@ -177,7 +171,7 @@ class S3StorageSpec extends StorageSpec {
                 "endpoint"       -> s3Endpoint,
                 "endpointBucket" -> s3BucketEndpoint,
                 "key"            -> logoKey
-              )
+              ): _*
             )
       }
     }
@@ -195,7 +189,7 @@ class S3StorageSpec extends StorageSpec {
         response.status shouldEqual StatusCodes.BadGateway
         json shouldEqual jsonContentOf(
           "/kg/files/linking-notfound.json",
-          Map("endpointBucket" -> s3BucketEndpoint)
+          "endpointBucket" -> s3BucketEndpoint
         )
     }
   }

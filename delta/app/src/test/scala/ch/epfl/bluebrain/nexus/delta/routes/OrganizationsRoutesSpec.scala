@@ -64,15 +64,13 @@ class OrganizationsRoutesSpec
 
   private val org1Created = jsonContentOf(
     "/organizations/org-resource.json",
-    Map(
-      "label"       -> org1.label.value,
-      "uuid"        -> fixedUuid.toString,
-      "description" -> org1.description.value,
-      "createdBy"   -> Anonymous.id,
-      "updatedBy"   -> Anonymous.id,
-      "deprecated"  -> false,
-      "rev"         -> 1L
-    )
+    "label"       -> org1.label.value,
+    "uuid"        -> fixedUuid.toString,
+    "description" -> org1.description.value,
+    "createdBy"   -> Anonymous.id,
+    "updatedBy"   -> Anonymous.id,
+    "deprecated"  -> false,
+    "rev"         -> 1L
   )
 
   private val org1Updated     = org1Created deepMerge json"""{"description": "updated", "_rev": 2}"""
@@ -80,14 +78,12 @@ class OrganizationsRoutesSpec
 
   private val org2Created = jsonContentOf(
     "/organizations/org-resource.json",
-    Map(
-      "label"      -> org2.label.value,
-      "uuid"       -> fixedUuid.toString,
-      "createdBy"  -> alice.id,
-      "updatedBy"  -> alice.id,
-      "deprecated" -> false,
-      "rev"        -> 1L
-    )
+    "label"      -> org2.label.value,
+    "uuid"       -> fixedUuid.toString,
+    "createdBy"  -> alice.id,
+    "updatedBy"  -> alice.id,
+    "deprecated" -> false,
+    "rev"        -> 1L
   ).removeKeys("description")
 
   private val org2CreatedMeta =
@@ -214,7 +210,7 @@ class OrganizationsRoutesSpec
     "get the events stream with an offset" in {
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString shouldEqual contentOf("/organizations/eventstream-2-4.txt", Map("uuid" -> fixedUuid.toString))
+        response.asString shouldEqual contentOf("/organizations/eventstream-2-4.txt", "uuid" -> fixedUuid.toString)
       }
     }
   }
