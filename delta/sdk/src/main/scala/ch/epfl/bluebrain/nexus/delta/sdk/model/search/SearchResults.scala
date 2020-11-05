@@ -128,20 +128,17 @@ object SearchResults {
       }
     }
 
-  def searchResultsEncoder[A: Encoder.AsObject](pagination: FromPagination, searchUri: Uri)(implicit
-      baseUri: BaseUri
-  ): SearchEncoder[A] = {
-    def next(pagination: FromPagination, searchUri: Uri)(implicit baseUri: BaseUri): SearchResults[_] => Option[Uri] =
-      (results: SearchResults[_]) => {
-        val nextFrom = pagination.from + pagination.size
-        Option.when(nextFrom < results.total.toInt) {
-          val params = searchUri.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
-          toPublic(searchUri).withQuery(Query(params))
-        }
+  def searchResultsEncoder[A: Encoder.AsObject](
+      pagination: FromPagination,
+      searchUri: Uri
+  )(implicit baseUri: BaseUri): SearchEncoder[A] =
+    encodeResults(results => {
+      val nextFrom = pagination.from + pagination.size
+      Option.when(nextFrom < results.total.toInt) {
+        val params = searchUri.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
+        toPublic(searchUri).withQuery(Query(params))
       }
-
-    encodeResults(next(pagination, searchUri))
-  }
+    })
 
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)
