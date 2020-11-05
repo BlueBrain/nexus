@@ -4,14 +4,13 @@ import akka.persistence.query.{Offset, Sequence}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import fs2.Stream
@@ -29,14 +28,14 @@ final class PermissionsDummy private (
     journal: IORef[Vector[Envelope[PermissionsEvent]]],
     semaphore: IOSemaphore,
     maxStreamSize: Long
-)(implicit clock: Clock[UIO])
+)(implicit base: BaseUri, clock: Clock[UIO])
     extends Permissions {
 
   override def fetch: UIO[PermissionsResource] =
-    currentState.map(_.toResource(id, minimum))
+    currentState.map(_.toResource(minimum))
 
   override def fetchAt(rev: Long): IO[RevisionNotFound, PermissionsResource] =
-    stateAt(rev).map(_.toResource(id, minimum))
+    stateAt(rev).map(_.toResource(minimum))
 
   override def replace(
       permissions: Set[Permission],
@@ -100,7 +99,7 @@ final class PermissionsDummy private (
                          event.instant.toEpochMilli
                        )
                      )
-      } yield Permissions.next(minimum)(current, event).toResource(id, minimum)
+      } yield Permissions.next(minimum)(current, event).toResource(minimum)
     }
 }
 
@@ -120,7 +119,7 @@ object PermissionsDummy {
   final def apply(
       minimum: Set[Permission],
       maxStreamSize: Long = Long.MaxValue
-  )(implicit clock: Clock[UIO]): UIO[PermissionsDummy] =
+  )(implicit base: BaseUri, clock: Clock[UIO]): UIO[PermissionsDummy] =
     for {
       ref <- IORef.of(Vector.empty[Envelope[PermissionsEvent]])
       sem <- IOSemaphore(1L)

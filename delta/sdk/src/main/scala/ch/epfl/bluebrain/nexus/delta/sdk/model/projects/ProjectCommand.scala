@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 
 /**
@@ -34,7 +33,7 @@ object ProjectCommand {
   final case class CreateProject(
       ref: ProjectRef,
       description: Option[String],
-      apiMappings: Map[String, Iri],
+      apiMappings: ApiMappings,
       base: PrefixIri,
       vocab: PrefixIri,
       subject: Subject
@@ -54,7 +53,7 @@ object ProjectCommand {
   final case class UpdateProject(
       ref: ProjectRef,
       description: Option[String],
-      apiMappings: Map[String, Iri],
+      apiMappings: ApiMappings,
       base: PrefixIri,
       vocab: PrefixIri,
       rev: Long,

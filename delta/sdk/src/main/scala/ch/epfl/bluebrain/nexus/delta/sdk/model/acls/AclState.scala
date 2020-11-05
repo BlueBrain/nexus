@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Lens}
 
 /**
@@ -37,7 +37,7 @@ sealed trait AclState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource: Option[AclResource]
+  def toResource(implicit base: BaseUri): Option[AclResource]
 }
 
 object AclState {
@@ -53,13 +53,12 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    override val toResource: Option[AclResource] = None
+    override def toResource(implicit base: BaseUri): Option[AclResource] = None
   }
 
   /**
     * An existing ACLs state.
     *
-    * @param address   the ACL address
     * @param acl       the Access Control List
     * @param rev       the ACLs revision
     * @param createdAt the instant when the resource was created
@@ -68,7 +67,6 @@ object AclState {
     * @param updatedBy the identity that last updated the resource
     */
   final case class Current(
-      address: AclAddress,
       acl: Acl,
       rev: Long,
       createdAt: Instant,
@@ -76,10 +74,12 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override val toResource: Option[AclResource] =
+    override def toResource(implicit base: BaseUri): Option[AclResource] = {
+      val accessUrl = AccessUrl.acl(acl.address)
       Some(
         ResourceF(
-          id = address,
+          id = accessUrl.iri,
+          accessUrl = accessUrl,
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -91,6 +91,7 @@ object AclState {
           value = acl
         )
       )
+    }
   }
 
   implicit val revisionLens: Lens[AclState, Long] = (s: AclState) => s.rev

@@ -167,6 +167,9 @@ object Identity {
   def subjectIdEncoder(implicit base: BaseUri): Encoder[Subject] =
     Encoder.encodeJson.contramap(_.id.asJson)
 
+  def identityIdEncoder(implicit base: BaseUri): Encoder[Identity] =
+    Encoder.encodeJson.contramap(_.id.asJson)
+
   implicit val subjectDecoder: Decoder[Subject] = Decoder.instance { hc =>
     attemptsSubject.foldLeft(Left(DecodingFailure("Unexpected", hc.history)): Result[Subject]) {
       case (acc @ Right(_), _) => acc

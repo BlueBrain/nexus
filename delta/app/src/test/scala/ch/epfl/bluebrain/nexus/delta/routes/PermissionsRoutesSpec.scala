@@ -6,13 +6,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
-import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.Inspectors
@@ -40,7 +38,6 @@ class PermissionsRoutesSpec
   private val aclsDummy      = AclsDummy(permissionsUIO).accepted
   private val permissions    = permissionsUIO.accepted
   private val route          = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
-  private val id             = iri"http://localhost/v1/permissions"
 
   "The permissions routes" should {
 
@@ -73,7 +70,7 @@ class PermissionsRoutesSpec
     }
 
     "replace permissions" in {
-      val expected = resourceUnit(id, "Permissions", schemas.permissions, 2L)
+      val expected = permissionsResourceUnit(rev = 2L)
 
       val replace = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -85,7 +82,7 @@ class PermissionsRoutesSpec
     }
 
     "append permissions" in {
-      val expected = resourceUnit(id, "Permissions", schemas.permissions, 3L)
+      val expected = permissionsResourceUnit(rev = 3L)
 
       val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
       Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -98,7 +95,7 @@ class PermissionsRoutesSpec
     }
 
     "subtract permissions" in {
-      val expected = resourceUnit(id, "Permissions", schemas.permissions, 4L)
+      val expected = permissionsResourceUnit(rev = 4L)
 
       val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
       Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -110,7 +107,7 @@ class PermissionsRoutesSpec
     }
 
     "delete permissions" in {
-      val expected = resourceUnit(id, "Permissions", schemas.permissions, 5L)
+      val expected = permissionsResourceUnit(rev = 5L)
 
       Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected

@@ -4,7 +4,6 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
@@ -15,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIri, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmEvent}
@@ -57,17 +56,17 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
   val root: AclAddress                    = AclAddress.Root
   val orgAddress: AclAddress.Organization = AclAddress.Organization(Label.unsafe("myorg"))
   val projAddress: AclAddress.Project     = AclAddress.Project(Label.unsafe("myorg"), Label.unsafe("myproj"))
-  val acl: Acl                            = Acl(Anonymous -> permSet, authenticated -> permSet, group -> permSet, subject -> permSet)
+  def acl(address: AclAddress): Acl       = Acl(address, Anonymous -> permSet, authenticated -> permSet, group -> permSet, subject -> permSet)
 
   val org: Label          = Label.unsafe("myorg")
   val orgUuid: UUID       = UUID.fromString("b6bde92f-7836-4da6-8ead-2e0fd516ebe7")
   val description: String = "some description"
 
-  val proj: Label                   = Label.unsafe("myproj")
-  val projUuid: UUID                = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
-  val apiMappings: Map[String, Iri] = Map("nxv" -> nxv.base)
-  val base: PrefixIri               = PrefixIri.unsafe(schemas.base)
-  val vocab: PrefixIri              = PrefixIri.unsafe(nxv.base)
+  val proj: Label              = Label.unsafe("myproj")
+  val projUuid: UUID           = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
+  val apiMappings: ApiMappings = ApiMappings(Map("nxv" -> nxv.base))
+  val base: PrefixIri          = PrefixIri.unsafe(schemas.base)
+  val vocab: PrefixIri         = PrefixIri.unsafe(nxv.base)
 
   val permissionsMapping: Map[PermissionsEvent, Json] = Map(
     PermissionsAppended(rev, permSet, instant, subject)   -> jsonContentOf("/serialization/permissions-appended.json"),
@@ -77,9 +76,9 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
   )
 
   val aclsMapping: Map[AclEvent, Json] = Map(
-    AclAppended(root, acl, rev, instant, subject)         -> jsonContentOf("/serialization/acl-appended.json"),
-    AclSubtracted(orgAddress, acl, rev, instant, subject) -> jsonContentOf("/serialization/acl-subtracted.json"),
-    AclReplaced(projAddress, acl, rev, instant, subject)  -> jsonContentOf("/serialization/acl-replaced.json"),
+    AclAppended(acl(root), rev, instant, subject)         -> jsonContentOf("/serialization/acl-appended.json"),
+    AclSubtracted(acl(orgAddress), rev, instant, subject) -> jsonContentOf("/serialization/acl-subtracted.json"),
+    AclReplaced(acl(projAddress), rev, instant, subject)  -> jsonContentOf("/serialization/acl-replaced.json"),
     AclDeleted(projAddress, rev, instant, anonymous)      -> jsonContentOf("/serialization/acl-deleted.json")
   )
 

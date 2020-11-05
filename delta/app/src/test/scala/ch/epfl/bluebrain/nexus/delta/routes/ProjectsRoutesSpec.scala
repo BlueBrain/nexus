@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, OrganizationsDummy, PermissionsDummy, ProjectsDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
@@ -48,15 +49,13 @@ class ProjectsRoutesSpec
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val acls = AclsDummy(
-    PermissionsDummy(Set.empty)
-  ).accepted
+  private val acls = AclsDummy(PermissionsDummy(Set.empty)).accepted
 
   // Creating the org instance and injecting some data in it
   private val orgs = {
     implicit val subject: Identity.Subject = caller.subject
     for {
-      o <- OrganizationsDummy()(uuidF = UUIDF.fixed(orgUuid))
+      o <- OrganizationsDummy()(baseUri, uuidF = UUIDF.fixed(orgUuid))
       _ <- o.create(Label.unsafe("org1"), None)
       _ <- o.create(Label.unsafe("org2"), None)
       _ <- o.deprecate(Label.unsafe("org2"), 1L)
@@ -82,26 +81,17 @@ class ProjectsRoutesSpec
     "create a project" in {
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf("/projects/meta.json", "org" -> "org1", "proj" -> "proj", "rev" -> 1, "deprecated" -> false)
-        )
+        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
+        response.asJson should equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 1L))
       }
     }
 
     "create a project with an authenticated user" in {
       Put("/v1/projects/org1/proj2", anotherPayload.toEntity) ~> asAlice ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf(
-            "/projects/meta.json",
-            "org"        -> "org1",
-            "proj"       -> "proj2",
-            "rev"        -> 1,
-            "deprecated" -> false,
-            "realm"      -> alice.realm,
-            "user"       -> alice.subject
-          )
-        )
+        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj2"))
+        response.asJson should
+          equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 1L, createdBy = alice, updatedBy = alice))
       }
     }
 
@@ -132,9 +122,8 @@ class ProjectsRoutesSpec
     "update a project" in {
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf("/projects/meta.json", "org" -> "org1", "proj" -> "proj", "rev" -> 2, "deprecated" -> false)
-        )
+        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
+        response.asJson should equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 2L))
       }
     }
 
@@ -162,9 +151,8 @@ class ProjectsRoutesSpec
     "deprecate a project" in {
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf("/projects/meta.json", "org" -> "org1", "proj" -> "proj", "rev" -> 3, "deprecated" -> true)
-        )
+        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
+        response.asJson should equalIgnoreArrayOrder(projectResourceUnit(ref, rev = 3L, deprecated = true))
       }
     }
 

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, PermissionsResource}
 
 /**
@@ -38,10 +38,9 @@ sealed trait PermissionsState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     *
-    * @param id      the resource identifier
     * @param minimum minimum set of permissions (static configuration)
     */
-  def toResource(id: Iri, minimum: Set[Permission]): PermissionsResource
+  def toResource(minimum: Set[Permission])(implicit base: BaseUri): PermissionsResource
 }
 
 object PermissionsState {
@@ -57,9 +56,11 @@ object PermissionsState {
   final case object Initial extends PermissionsState {
     override val rev: Long = 0L
 
-    override def toResource(id: Iri, minimum: Set[Permission]): PermissionsResource =
+    override def toResource(minimum: Set[Permission])(implicit base: BaseUri): PermissionsResource = {
+      val accessUrl = AccessUrl.permissions
       ResourceF(
-        id = id,
+        id = accessUrl.iri,
+        accessUrl = accessUrl,
         rev = rev,
         types = types,
         deprecated = deprecated,
@@ -70,6 +71,7 @@ object PermissionsState {
         schema = schema,
         value = PermissionSet(minimum)
       )
+    }
   }
 
   /**
@@ -91,9 +93,11 @@ object PermissionsState {
       updatedBy: Subject
   ) extends PermissionsState {
 
-    override def toResource(id: Iri, minimum: Set[Permission]): PermissionsResource =
+    override def toResource(minimum: Set[Permission])(implicit base: BaseUri): PermissionsResource = {
+      val accessUrl = AccessUrl.permissions
       ResourceF(
-        id = id,
+        id = accessUrl.iri,
+        accessUrl = accessUrl,
         rev = rev,
         types = types,
         deprecated = deprecated,
@@ -104,6 +108,7 @@ object PermissionsState {
         schema = schema,
         value = PermissionSet(permissions ++ minimum)
       )
+    }
   }
 
   implicit val revisionLens: Lens[PermissionsState, Long] = (s: PermissionsState) => s.rev

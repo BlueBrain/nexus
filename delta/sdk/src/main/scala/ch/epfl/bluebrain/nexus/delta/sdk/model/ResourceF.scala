@@ -8,15 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
 /**
   * A resource representation.
   *
-  * @param id         the unique identifier of the resource in a given project
+  * @param id         the resource id
+  * @param accessUrl  the resource access Url
   * @param rev        the revision of the resource
   * @param types      the collection of known types of this resource
   * @param deprecated whether the resource is deprecated of not
@@ -26,11 +28,11 @@ import io.circe.{Encoder, JsonObject}
   * @param updatedBy  the last subject that updated this resource
   * @param schema     the schema reference that this resource conforms to
   * @param value      the resource value
-  * @tparam Id the resource id type
-  * @tparam A  the resource value type
+  * @tparam A the resource value type
   */
-final case class ResourceF[Id, A](
-    id: Id,
+final case class ResourceF[A](
+    id: Iri,
+    accessUrl: AccessUrl,
     rev: Long,
     types: Set[Iri],
     deprecated: Boolean,
@@ -48,29 +50,20 @@ final case class ResourceF[Id, A](
     * @param f  the function to apply to transform the current resource value
     * @return a new resource with a value of type B
     */
-  def map[B](f: A => B): ResourceF[Id, B] =
-    ResourceF(id, rev, types, deprecated, createdAt, createdBy, updatedAt, updatedBy, schema, f(value))
+  def map[B](f: A => B): ResourceF[B] =
+    copy(value = f(value))
 }
 
 object ResourceF {
-  implicit def resourceFunctor[Id]: Functor[ResourceF[Id, *]] =
-    new Functor[ResourceF[Id, *]] {
-      override def map[A, B](fa: ResourceF[Id, A])(f: A => B): ResourceF[Id, B] = fa.map(f)
+  implicit val resourceFunctor: Functor[ResourceF] =
+    new Functor[ResourceF] {
+      override def map[A, B](fa: ResourceF[A])(f: A => B): ResourceF[B] = fa.map(f)
     }
 
-  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[Iri, A]] =
-    JsonLdEncoder.compose(rf => (rf.void, rf.value, rf.id))
-
-  implicit def resourceFIdAJsonLdEncoder[Id, A: JsonLdEncoder](implicit
-      base: BaseUri,
-      iriLens: Lens[Id, Iri]
-  ): JsonLdEncoder[ResourceF[Id, A]] =
-    JsonLdEncoder.compose { rf =>
-      val rfi = rf.copy(id = iriLens.get(rf.id))
-      (rfi.void, rfi.value, rfi.id)
-    }
-
-  implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Iri, Unit]] =
+  implicit final private def resourceFUnitEncoder(implicit
+      mappings: ApiMappings,
+      base: BaseUri
+  ): Encoder.AsObject[ResourceF[Unit]] =
     Encoder.AsObject.instance { r =>
       val obj = JsonObject.empty
         .add(keywords.id, r.id.asJson)
@@ -81,6 +74,7 @@ object ResourceF {
         .add("_updatedAt", r.updatedAt.asJson)
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
+        .add("_self", r.accessUrl.shortForm(mappings).asJson)
       r.types.take(2).toList match {
         case Nil         => obj
         case head :: Nil => obj.add(keywords.tpe, head.stripPrefix(nxv.base).asJson)
@@ -88,24 +82,23 @@ object ResourceF {
       }
     }
 
-  implicit private def resourceFIdUnitEncoder[Id](implicit
+  implicit def resourceFAEncoder[A: Encoder.AsObject](implicit
       base: BaseUri,
-      lens: Lens[Id, Iri]
-  ): Encoder.AsObject[ResourceF[Id, Unit]] =
-    resourceFUnitEncoder.contramapObject(r => r.copy(lens.get(r.id)))
-
-  implicit def resourceFAEncoder[A](implicit
-      base: BaseUri,
-      A: Encoder.AsObject[A]
-  ): Encoder.AsObject[ResourceF[Iri, A]] =
+      mappings: ApiMappings = ApiMappings.empty
+  ): Encoder.AsObject[ResourceF[A]] =
     Encoder.AsObject.instance { r =>
       r.void.asJsonObject deepMerge r.value.asJsonObject
     }
 
-  implicit final def resourceFIdToUnitJsonLdEncoder[Id](implicit
+  implicit final def resourceFUnitJsonLdEncoder(implicit
       base: BaseUri,
-      lens: Lens[Id, Iri]
-  ): JsonLdEncoder[ResourceF[Id, Unit]] =
-    JsonLdEncoder.compactFromCirce((v: ResourceF[Id, Unit]) => lens.get(v.id), iriContext = contexts.resource)
+      mappings: ApiMappings = ApiMappings.empty
+  ): JsonLdEncoder[ResourceF[Unit]] =
+    JsonLdEncoder.compactFromCirce((v: ResourceF[Unit]) => v.id, iriContext = contexts.resource)
 
+  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit
+      base: BaseUri,
+      mappings: ApiMappings = ApiMappings.empty
+  ): JsonLdEncoder[ResourceF[A]] =
+    JsonLdEncoder.compose(rf => (rf.void, rf.value, rf.id))
 }

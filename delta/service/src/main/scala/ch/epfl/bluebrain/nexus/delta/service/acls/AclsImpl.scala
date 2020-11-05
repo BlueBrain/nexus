@@ -4,12 +4,13 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.moduleType
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -23,8 +24,9 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)
-    extends Acls {
+final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)(implicit
+    base: BaseUri
+) extends Acls {
 
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
     agg.state(address.string).map(_.toResource).named("fetchAcl", moduleType)
@@ -56,24 +58,16 @@ final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[Ac
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]] =
     eventLog.currentEventsByTag(moduleType, offset)
 
-  override def replace(address: AclAddress, acl: Acl, rev: Long)(implicit
-      caller: Identity.Subject
-  ): IO[AclRejection, AclResource] =
-    eval(ReplaceAcl(address, acl, rev, caller)).named("replaceAcls", moduleType)
+  override def replace(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+    eval(ReplaceAcl(acl, rev, caller)).named("replaceAcls", moduleType)
 
-  override def append(address: AclAddress, acl: Acl, rev: Long)(implicit
-      caller: Identity.Subject
-  ): IO[AclRejection, AclResource] =
-    eval(AppendAcl(address, acl, rev, caller)).named("appendAcls", moduleType)
+  override def append(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+    eval(AppendAcl(acl, rev, caller)).named("appendAcls", moduleType)
 
-  override def subtract(address: AclAddress, acl: Acl, rev: Long)(implicit
-      caller: Identity.Subject
-  ): IO[AclRejection, AclResource] =
-    eval(SubtractAcl(address, acl, rev, caller)).named("subtractAcls", moduleType)
+  override def subtract(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+    eval(SubtractAcl(acl, rev, caller)).named("subtractAcls", moduleType)
 
-  override def delete(address: AclAddress, rev: Long)(implicit
-      caller: Identity.Subject
-  ): IO[AclRejection, AclResource] =
+  override def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
     eval(DeleteAcl(address, rev, caller)).named("deleteAcls", moduleType)
 
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
@@ -137,8 +131,8 @@ object AclsImpl {
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             acls.fetch(envelope.event.address).flatMap {
-              case Some(acl) => index.put(acl.id, acl)
-              case None      => UIO.unit
+              case Some(aclResource) => index.put(aclResource.value.address, aclResource)
+              case None              => UIO.unit
             }
           )
       ),
@@ -149,7 +143,11 @@ object AclsImpl {
       )
     )
 
-  private def apply(agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], cache: AclsCache): AclsImpl =
+  private def apply(
+      agg: AclsAggregate,
+      eventLog: EventLog[Envelope[AclEvent]],
+      cache: AclsCache
+  )(implicit base: BaseUri): AclsImpl =
     new AclsImpl(agg, eventLog, cache)
 
   /**
@@ -164,6 +162,7 @@ object AclsImpl {
       permissions: Permissions,
       eventLog: EventLog[Envelope[AclEvent]]
   )(implicit
+      base: BaseUri,
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]

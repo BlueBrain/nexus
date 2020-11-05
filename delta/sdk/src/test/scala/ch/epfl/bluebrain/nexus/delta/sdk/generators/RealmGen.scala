@@ -4,11 +4,12 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, WellKnown}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 
 object RealmGen {
 
@@ -56,9 +57,16 @@ object RealmGen {
       wk.keys
     )
 
-  def resourceFor(realm: Realm, rev: Long, subject: Subject, deprecated: Boolean = false): ResourceF[Label, Realm] =
+  def resourceFor(
+      realm: Realm,
+      rev: Long,
+      subject: Subject,
+      deprecated: Boolean = false
+  )(implicit base: BaseUri): RealmResource = {
+    val accessUrl = AccessUrl.realm(realm.label)
     ResourceF(
-      id = Label.unsafe(realm.issuer),
+      id = accessUrl.iri,
+      accessUrl = accessUrl,
       rev = rev,
       types = Set(nxv.Realm),
       deprecated = deprecated,
@@ -69,5 +77,6 @@ object RealmGen {
       schema = Latest(schemas.realms),
       value = realm
     )
+  }
 
 }

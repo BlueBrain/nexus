@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResourceEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.SearchEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, ProjectResource, Projects}
@@ -58,7 +59,7 @@ final class ProjectsRoutes(identities: Identities, projects: Projects, acls: Acl
             // List projects
             (get & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/projects") {
-                implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResourceEncoder(pagination, uri)
+                implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
                 completeSearch(projects.list(pagination, params))
               }
             },

@@ -14,11 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, Label}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
-import scala.collection.mutable.ListBuffer
 
 /**
   * Enumeration of Project event types.
@@ -75,7 +73,7 @@ object ProjectEvent {
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
-      apiMappings: Map[String, Iri],
+      apiMappings: ApiMappings,
       base: PrefixIri,
       vocab: PrefixIri,
       instant: Instant,
@@ -104,7 +102,7 @@ object ProjectEvent {
       organizationUuid: UUID,
       rev: Long,
       description: Option[String],
-      apiMappings: Map[String, Iri],
+      apiMappings: ApiMappings,
       base: PrefixIri,
       vocab: PrefixIri,
       instant: Instant,
@@ -147,19 +145,6 @@ object ProjectEvent {
       case "subject"           => nxv.eventSubject.prefix
       case other               => other
     })
-
-  @nowarn("cat=unused")
-  implicit private val apiMappingEncoder: Encoder[Map[String, Iri]] =
-    Encoder.encodeJson.contramap { map =>
-      Json.arr(
-        map
-          .foldLeft(ListBuffer.newBuilder[Json]) { case (acc, (prefix, namespace)) =>
-            acc += Json.obj("prefix" -> Json.fromString(prefix), "namespace" -> namespace.asJson)
-          }
-          .result()
-          .toSeq: _*
-      )
-    }
 
   @nowarn("cat=unused")
   implicit def projectEventJsonLdEncoder(implicit

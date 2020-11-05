@@ -6,15 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import io.circe.generic.extras.Configuration
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 /**
-  * An Access Control List codified as a map where the keys are [[Identity]] and the values are a set of [[Permission]].
-  * It specifies which permissions are applied for which identities.
+  * An Access Control List codified as an address and a map where the keys are [[Identity]] and the values are a set of [[Permission]].
+  * It specifies which permissions are applied for which identities in which address.
   */
-final case class Acl(value: Map[Identity, Set[Permission]]) {
+final case class Acl(address: AclAddress, value: Map[Identity, Set[Permission]]) {
 
   /**
     * Adds the provided ''acl'' to the current ''value'' and returns a new [[Acl]] with the added ACL.
@@ -22,9 +21,11 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
     * @param acl the acl to be added
     */
   def ++(acl: Acl): Acl =
-    Acl(acl.value.foldLeft(value) { case (acc, (id, permsToAdd)) =>
-      acc.updatedWith(id)(perms => Some(perms.fold(permsToAdd)(_ ++ permsToAdd)))
-    })
+    if (acl.address == address)
+      copy(value = acl.value.foldLeft(value) { case (acc, (id, permsToAdd)) =>
+        acc.updatedWith(id)(perms => Some(perms.fold(permsToAdd)(_ ++ permsToAdd)))
+      })
+    else this
 
   /**
     * removes the provided ''acl'' from the current ''value'' and returns a new [[Acl]] with the subtracted ACL.
@@ -32,9 +33,11 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
     * @param acl the acl to be subtracted
     */
   def --(acl: Acl): Acl =
-    Acl(acl.value.foldLeft(value) { case (acc, (id, permsToDelete)) =>
-      acc.updatedWith(id)(_.map(_ -- permsToDelete).filter(_.nonEmpty))
-    })
+    if (acl.address == address)
+      copy(value = acl.value.foldLeft(value) { case (acc, (id, permsToDelete)) =>
+        acc.updatedWith(id)(_.map(_ -- permsToDelete).filter(_.nonEmpty))
+      })
+    else this
 
   /**
     * @return a collapsed Set of [[Permission]] from all the identities
@@ -64,13 +67,13 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
     * @return a new [[Acl]] without the identities that have empty permission sets
     */
   def removeEmpty(): Acl                     =
-    Acl(value.filter { case (_, perms) => perms.nonEmpty })
+    Acl(address, value.filter { case (_, perms) => perms.nonEmpty })
 
   /**
     * Filters the passed identities from the current value map.
     */
   def filter(identities: Set[Identity]): Acl =
-    Acl(value.view.filterKeys(identities.contains).toMap)
+    Acl(address, value.view.filterKeys(identities.contains).toMap)
 
   /**
     * Determines if the current ACL contains the argument ''permission'' for at least one of the provided ''identities''.
@@ -87,33 +90,27 @@ final case class Acl(value: Map[Identity, Set[Permission]]) {
 
 object Acl {
 
-  implicit private[Acl] val config: Configuration = Configuration.default
+  /**
+    * Convenience factory method to build an ACL from var args of ''Identity'' to ''Permissions'' tuples.
+    */
+  def apply(address: AclAddress, acl: (Identity, Set[Permission])*): Acl =
+    Acl(address, acl.toMap)
 
-  implicit def aclEncoder(implicit base: BaseUri): Encoder.AsObject[Acl] = Encoder.AsObject.instance { acl =>
-    JsonObject(
-      "acl" -> Json.fromValues(
-        acl.value.map { case (identity, permissions) =>
-          Json.obj("identity" -> identity.asJson, "permissions" -> permissions.asJson)
-        }
+  implicit def aclEncoder(implicit base: BaseUri): Encoder.AsObject[Acl] =
+    Encoder.AsObject.instance { acl =>
+      JsonObject(
+        "_path" -> acl.address.asJson,
+        "acl"   -> Json.fromValues(
+          acl.value.map { case (identity, permissions) =>
+            Json.obj("identity" -> identity.asJson, "permissions" -> permissions.asJson)
+          }
+        )
       )
-    )
 
-  }
+    }
 
   val context: ContextValue = ContextValue(contexts.acls)
 
   implicit def aclJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Acl] =
     JsonLdEncoder.compactFromCirce(context)
-
-  /**
-    * An empty [[Acl]].
-    */
-  val empty: Acl = Acl(Map.empty[Identity, Set[Permission]])
-
-  /**
-    * Convenience factory method to build an ACL from var args of ''Identity'' to ''Permissions'' tuples.
-    */
-  def apply(acl: (Identity, Set[Permission])*): Acl =
-    Acl(acl.toMap)
-
 }

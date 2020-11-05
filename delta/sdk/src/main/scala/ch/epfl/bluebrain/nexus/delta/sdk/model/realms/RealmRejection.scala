@@ -46,7 +46,7 @@ object RealmRejection {
       extends RealmRejection(s"Realm '$label' with openIdConfig '${openIdConfig.toString()}' already exists.")
 
   /**
-    * Rejection returned when attempting to update a realm with an id that doesnt exist.
+    * Rejection returned when attempting to update a realm with an id that doesn't exist.
     *
     * @param label the label of the realm
     */

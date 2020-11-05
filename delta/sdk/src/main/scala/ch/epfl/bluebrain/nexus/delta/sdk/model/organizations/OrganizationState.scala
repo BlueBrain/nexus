@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource}
 
 /**
@@ -39,7 +39,7 @@ sealed trait OrganizationState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource: Option[OrganizationResource]
+  def toResource(implicit base: BaseUri): Option[OrganizationResource]
 }
 
 object OrganizationState {
@@ -50,14 +50,14 @@ object OrganizationState {
   type Initial = Initial.type
 
   /**
-    * Initial state for the permission set.
+    * Initial organizations state.
     */
   final case object Initial extends OrganizationState {
     override val rev: Long = 0L
 
     override val deprecated: Boolean = false
 
-    override val toResource: Option[OrganizationResource] = None
+    override def toResource(implicit base: BaseUri): Option[OrganizationResource] = None
   }
 
   /**
@@ -85,10 +85,12 @@ object OrganizationState {
       updatedBy: Subject
   ) extends OrganizationState {
 
-    override val toResource: Option[OrganizationResource] =
+    override def toResource(implicit base: BaseUri): Option[OrganizationResource] = {
+      val accessUrl = AccessUrl.organization(label)
       Some(
         ResourceF(
-          id = label,
+          id = accessUrl.iri,
+          accessUrl = accessUrl,
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -100,6 +102,7 @@ object OrganizationState {
           value = Organization(label, uuid, description)
         )
       )
+    }
   }
 
   implicit val revisionLens: Lens[OrganizationState, Long] = (s: OrganizationState) => s.rev

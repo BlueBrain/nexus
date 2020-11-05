@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.WellKnown
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -32,15 +32,16 @@ class RealmsSpec
   import RealmsSpec._
 
   "The Realm state machine" when {
-    implicit val sc: Scheduler = Scheduler.global
-    val epoch: Instant         = Instant.EPOCH
-    val time2                  = Instant.ofEpochMilli(10L)
-    val issuer: String         = "myrealm"
-    val label: Label           = Label.unsafe(issuer)
-    val name: Name             = Name.unsafe(s"$issuer-name")
-    val (wellKnownUri, wk)     = WellKnownGen.create(issuer)
-    val (wellKnown2Uri, wk2)   = WellKnownGen.create("myrealm2")
-    val wkResolution           = ioFromMap(
+    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+    implicit val sc: Scheduler    = Scheduler.global
+    val epoch: Instant            = Instant.EPOCH
+    val time2                     = Instant.ofEpochMilli(10L)
+    val issuer: String            = "myrealm"
+    val label: Label              = Label.unsafe(issuer)
+    val name: Name                = Name.unsafe(s"$issuer-name")
+    val (wellKnownUri, wk)        = WellKnownGen.create(issuer)
+    val (wellKnown2Uri, wk2)      = WellKnownGen.create("myrealm2")
+    val wkResolution              = ioFromMap(
       Map(wellKnownUri -> wk, wellKnown2Uri -> wk2),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
     )

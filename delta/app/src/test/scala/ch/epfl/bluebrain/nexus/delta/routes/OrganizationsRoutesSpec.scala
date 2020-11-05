@@ -9,11 +9,8 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -41,8 +38,6 @@ class OrganizationsRoutesSpec
     with Inspectors
     with RouteFixtures {
 
-  implicit val extractId: Lens[Label, Iri] = (l: Label) => baseUri.iriEndpoint / "orgs" / l.value
-
   private val fixedUuid             = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(fixedUuid)
 
@@ -60,44 +55,29 @@ class OrganizationsRoutesSpec
 
   private val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
 
-  private val org1CreatedMeta = resourceUnit(extractId.get(org1.label), "Organization", schemas.organizations)
+  private val org1CreatedMeta = orgResourceUnit(org1.label)
 
   private val org1Created = jsonContentOf(
     "/organizations/org-resource.json",
     "label"       -> org1.label.value,
     "uuid"        -> fixedUuid.toString,
-    "description" -> org1.description.value,
-    "createdBy"   -> Anonymous.id,
-    "updatedBy"   -> Anonymous.id,
-    "deprecated"  -> false,
-    "rev"         -> 1L
-  )
+    "description" -> org1.description.value
+  ) deepMerge org1CreatedMeta.removeKeys("@context")
 
-  private val org1Updated     = org1Created deepMerge json"""{"description": "updated", "_rev": 2}"""
-  private val org1UpdatedMeta = resourceUnit(extractId.get(org1.label), "Organization", schemas.organizations, rev = 2L)
+  private val org1UpdatedMeta = orgResourceUnit(org1.label, rev = 2L)
+  private val org1Updated     =
+    org1Created deepMerge json"""{"description": "updated"}""" deepMerge org1UpdatedMeta.removeKeys("@context")
+
+  private val org2CreatedMeta = orgResourceUnit(org2.label, createdBy = alice, updatedBy = alice)
 
   private val org2Created = jsonContentOf(
     "/organizations/org-resource.json",
-    "label"      -> org2.label.value,
-    "uuid"       -> fixedUuid.toString,
-    "createdBy"  -> alice.id,
-    "updatedBy"  -> alice.id,
-    "deprecated" -> false,
-    "rev"        -> 1L
-  ).removeKeys("description")
+    "label" -> org2.label.value,
+    "uuid"  -> fixedUuid.toString
+  ).removeKeys("description") deepMerge org2CreatedMeta.removeKeys("@context")
 
-  private val org2CreatedMeta =
-    resourceUnit(extractId.get(org2.label), "Organization", schemas.organizations, createdBy = alice, updatedBy = alice)
-
-  private val org2DeprecatedMeta = resourceUnit(
-    extractId.get(org2.label),
-    "Organization",
-    schemas.organizations,
-    rev = 2L,
-    deprecated = true,
-    createdBy = alice,
-    updatedBy = alice
-  )
+  private val org2DeprecatedMeta =
+    orgResourceUnit(org2.label, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
 
   "An OrganizationsRoute" should {
 

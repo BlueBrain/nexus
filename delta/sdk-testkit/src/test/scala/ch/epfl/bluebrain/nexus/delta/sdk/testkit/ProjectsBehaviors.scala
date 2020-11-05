@@ -5,22 +5,22 @@ import java.util.UUID
 
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{files, orgs, resolvers, resources, schemas, storages, views}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{IncorrectRev, OrganizationIsDeprecated, ProjectAlreadyExists, ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIri, ProjectFields, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, Projects}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -36,7 +36,7 @@ trait ProjectsBehaviors {
   val serviceAccount: Subject   = Identity.User("serviceAccount", Label.unsafe("realm"))
 
   implicit val scheduler: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost:8080/v1")
+  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -45,9 +45,11 @@ trait ProjectsBehaviors {
 
   val desc = Some("Project description")
 
-  val mappings = Map(
-    "nxv" -> iri"https://localhost/nexus/vocabulary/",
-    "rdf" -> iri"http://localhost/1999/02/22-rdf-syntax-ns#type"
+  val mappings = ApiMappings(
+    Map(
+      "nxv" -> iri"https://localhost/nexus/vocabulary/",
+      "rdf" -> iri"http://localhost/1999/02/22-rdf-syntax-ns#type"
+    )
   )
   val base     = PrefixIri.unsafe(iri"https://localhost/base/")
   val voc      = PrefixIri.unsafe(iri"https://localhost/voc/")
@@ -89,18 +91,18 @@ trait ProjectsBehaviors {
   val acls = {
     for {
       acls <- AclsDummy(PermissionsDummy(PermissionsGen.minimum))
-      _    <- acls.append(AclAddress.Root, Acl(subject -> rootPermissions), 0L)(serviceAccount)
-      _    <- acls.append(AclAddress.Organization(org1), Acl(subject -> org1Permissions), 0L)(serviceAccount)
-      _    <- acls.append(AclAddress.Organization(org2), Acl(subject -> org2Permissions), 0L)(serviceAccount)
-      _    <- acls.append(AclAddress.Project(org2, proj20), Acl(subject -> proj20Permissions), 0L)(serviceAccount)
-      _    <- acls.append(AclAddress.Project(org2, proj21), Acl(subject -> proj21Permissions), 0L)(serviceAccount)
+      _    <- acls.append(Acl(AclAddress.Root, subject -> rootPermissions), 0L)(serviceAccount)
+      _    <- acls.append(Acl(AclAddress.Organization(org1), subject -> org1Permissions), 0L)(serviceAccount)
+      _    <- acls.append(Acl(AclAddress.Organization(org2), subject -> org2Permissions), 0L)(serviceAccount)
+      _    <- acls.append(Acl(AclAddress.Project(org2, proj20), subject -> proj20Permissions), 0L)(serviceAccount)
+      _    <- acls.append(Acl(AclAddress.Project(org2, proj21), subject -> proj21Permissions), 0L)(serviceAccount)
     } yield acls
   }.accepted
 
   lazy val organizations: UIO[OrganizationsDummy] = {
     val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)
     val orgs            = for {
-      o <- OrganizationsDummy()(orgUuidF, ioClock)
+      o <- OrganizationsDummy()(baseUri, orgUuidF, ioClock)
       _ <- o.create(org1, None)
       _ <- o.create(org2, None)
       _ <- o.create(Label.unsafe("orgDeprecated"), None)
@@ -349,14 +351,14 @@ trait ProjectsBehaviors {
 
     "not set any permissions if all permissions has been set on / and the org" in {
       val proj10Ref = ProjectRef(org1, proj10)
-      projects.create(proj10Ref, payload).accepted.id shouldEqual proj10Ref
+      projects.create(proj10Ref, payload).accepted.value.ref shouldEqual proj10Ref
 
       acls.fetch(AclAddress.Project(org1, proj10)).accepted shouldEqual None
     }
 
     "not set any permissions if all permissions has been set on /, the org and the project" in {
       val proj20Ref = ProjectRef(org2, proj20)
-      projects.create(proj20Ref, payload).accepted.id shouldEqual proj20Ref
+      projects.create(proj20Ref, payload).accepted.value.ref shouldEqual proj20Ref
 
       acls.fetch(AclAddress.Project(org2, proj20)).accepted.map(_.value.value) shouldEqual Some(
         Map(subject -> proj20Permissions)
@@ -365,7 +367,7 @@ trait ProjectsBehaviors {
 
     "set owner permissions if not all permissions are present and keep other ones" in {
       val proj21Ref = ProjectRef(org2, proj21)
-      projects.create(proj21Ref, payload).accepted.id shouldEqual proj21Ref
+      projects.create(proj21Ref, payload).accepted.value.ref shouldEqual proj21Ref
 
       acls.fetch(AclAddress.Project(org2, proj21)).accepted.map(_.value.value) shouldEqual Some(
         Map(subject -> (proj21Permissions ++ ownerPermissions))
@@ -374,7 +376,7 @@ trait ProjectsBehaviors {
 
     "set owner permissions if not all permissions are present" in {
       val proj22Ref = ProjectRef(org2, proj22)
-      projects.create(proj22Ref, payload).accepted.id shouldEqual proj22Ref
+      projects.create(proj22Ref, payload).accepted.value.ref shouldEqual proj22Ref
 
       acls.fetch(AclAddress.Project(org2, proj22)).accepted.map(_.value.value) shouldEqual Some(
         Map(subject -> ownerPermissions)

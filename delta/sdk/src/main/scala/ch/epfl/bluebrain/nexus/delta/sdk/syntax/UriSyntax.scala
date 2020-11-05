@@ -72,4 +72,10 @@ final class UriOps(private val uri: Uri) extends AnyVal {
     else
       uri.copy(path = uri.path / segment)
   }
+
+  /**
+    * Adds a path to the end of the current Uris' path
+    */
+  def +(path: Uri.Path): Uri =
+    uri.copy(path = uri.path ++ path)
 }

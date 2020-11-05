@@ -5,10 +5,10 @@ import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ProjectResource}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ProjectResource}
 
 /**
   * Enumeration of Project state types.
@@ -38,7 +38,7 @@ sealed trait ProjectState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource: Option[ProjectResource]
+  def toResource(implicit base: BaseUri): Option[ProjectResource]
 }
 
 object ProjectState {
@@ -66,7 +66,7 @@ object ProjectState {
     /**
       * Converts the state into a resource representation.
       */
-    override val toResource: Option[ProjectResource] = None
+    override def toResource(implicit base: BaseUri): Option[ProjectResource] = None
   }
 
   /**
@@ -95,7 +95,7 @@ object ProjectState {
       rev: Long,
       deprecated: Boolean,
       description: Option[String],
-      apiMappings: Map[String, Iri],
+      apiMappings: ApiMappings,
       base: Iri,
       vocab: Iri,
       createdAt: Instant,
@@ -122,10 +122,12 @@ object ProjectState {
     /**
       * Converts the state into a resource representation.
       */
-    override def toResource: Option[ProjectResource] =
+    override def toResource(implicit base: BaseUri): Option[ProjectResource] = {
+      val accessUrl = AccessUrl.project(ProjectRef(organizationLabel, label))
       Some(
         ResourceF(
-          id = ProjectRef(organizationLabel, label),
+          id = accessUrl.iri,
+          accessUrl = accessUrl,
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -137,6 +139,7 @@ object ProjectState {
           value = project
         )
       )
+    }
   }
 
   implicit val revisionLens: Lens[ProjectState, Long] = (s: ProjectState) => s.rev

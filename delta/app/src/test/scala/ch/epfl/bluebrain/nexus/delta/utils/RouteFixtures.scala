@@ -2,13 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.utils
 
 import akka.http.scaladsl.server.RejectionHandler
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import monix.execution.Scheduler
@@ -36,14 +38,125 @@ trait RouteFixtures extends TestHelpers {
   val realm: Label = Label.unsafe("wonderland")
   val alice: User  = User("alice", realm)
 
-  def resourceUnit(
-      id: Iri,
-      tpe: String,
-      schema: Iri,
+  def projectResourceUnit(
+      ref: ProjectRef,
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous
+      updatedBy: Subject = Anonymous,
+      mappings: ApiMappings = ApiMappings.empty
+  ): Json = {
+    val accessUrl = AccessUrl.project(ref)
+    resourceUnit(
+      accessUrl.iri,
+      accessUrl,
+      "Project",
+      schemas.projects,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy,
+      mappings
+    )
+  }
+
+  def orgResourceUnit(
+      label: Label,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      mappings: ApiMappings = ApiMappings.empty
+  ): Json = {
+    val accessUrl = AccessUrl.organization(label)
+    resourceUnit(
+      accessUrl.iri,
+      accessUrl,
+      "Organization",
+      schemas.organizations,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy,
+      mappings
+    )
+  }
+
+  def permissionsResourceUnit(
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      mappings: ApiMappings = ApiMappings.empty
+  ): Json = {
+    val accessUrl = AccessUrl.permissions
+    resourceUnit(
+      accessUrl.iri,
+      accessUrl,
+      "Permissions",
+      schemas.permissions,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy,
+      mappings
+    )
+  }
+
+  def aclResourceUnit(
+      address: AclAddress,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      mappings: ApiMappings = ApiMappings.empty
+  ): Json = {
+    val accessUrl = AccessUrl.acl(address)
+    resourceUnit(
+      accessUrl.iri,
+      accessUrl,
+      "AccessControlList",
+      schemas.acls,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy,
+      mappings
+    )
+  }
+
+  def realmsResourceUnit(
+      label: Label,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      mappings: ApiMappings = ApiMappings.empty
+  ): Json = {
+    val accessUrl = AccessUrl.realm(label)
+    resourceUnit(
+      accessUrl.iri,
+      accessUrl,
+      "Realm",
+      schemas.realms,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy,
+      mappings
+    )
+  }
+
+  private def resourceUnit(
+      id: Iri,
+      accessUrl: AccessUrl,
+      tpe: String,
+      schema: Iri,
+      rev: Long,
+      deprecated: Boolean,
+      createdBy: Subject,
+      updatedBy: Subject,
+      mappings: ApiMappings
   ): Json =
     jsonContentOf(
       "resource-unit.json",
@@ -53,7 +166,8 @@ trait RouteFixtures extends TestHelpers {
       "deprecated" -> deprecated,
       "rev"        -> rev,
       "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id
+      "updatedBy"  -> updatedBy.id,
+      "self"       -> accessUrl.shortForm(mappings)
     )
 
 }

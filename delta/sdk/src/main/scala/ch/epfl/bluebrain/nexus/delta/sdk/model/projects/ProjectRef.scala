@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import io.circe.Encoder
 
 /**
   * A project label along with its parent organization label.
@@ -19,5 +20,7 @@ object ProjectRef {
     */
   def unsafe(organization: String, project: String): ProjectRef =
     ProjectRef(Label.unsafe(organization), Label.unsafe(project))
+
+  implicit val projectRefEncoder: Encoder[ProjectRef] = Encoder.encodeString.contramap(_.toString)
 
 }

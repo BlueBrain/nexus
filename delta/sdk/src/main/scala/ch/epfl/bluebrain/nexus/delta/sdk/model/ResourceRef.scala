@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import io.circe.Encoder
 
 /**
   * A resource reference.
@@ -11,6 +12,8 @@ sealed trait ResourceRef extends Product with Serializable {
     * @return the reference identifier as an iri
     */
   def iri: Iri
+
+  override def toString: String = iri.toString
 }
 
 object ResourceRef {
@@ -37,5 +40,7 @@ object ResourceRef {
     * @param tag the reference tag
     */
   final case class Tag(iri: Iri, tag: String) extends ResourceRef
+
+  implicit val resourceRefEncoder: Encoder[ResourceRef] = Encoder.encodeString.contramap(_.toString)
 
 }

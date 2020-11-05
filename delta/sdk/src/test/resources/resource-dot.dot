@@ -3,10 +3,11 @@ digraph "http://example.com/permissions" {
   "http://example.com/permissions" -> "acls/read" [label = "permissions"]
   "http://example.com/permissions" -> "acls/write" [label = "permissions"]
   "http://example.com/permissions" -> 1 [label = "_rev"]
+  "http://example.com/permissions" -> "http://example.com/permissions" [label = "_self"]
   "http://example.com/permissions" -> false [label = "_deprecated"]
   "http://example.com/permissions" -> "1970-01-01T00:00:00Z" [label = "_createdAt"]
   "http://example.com/permissions" -> "https://bluebrain.github.io/nexus/schemas/permissions.json" [label = "_constrainedBy"]
   "http://example.com/permissions" -> "1970-01-01T00:00:00Z" [label = "_updatedAt"]
-  "http://example.com/permissions" -> "http://nexus.com/realms/bbp/users/maria" [label = "_updatedBy"]
-  "http://example.com/permissions" -> "http://nexus.com/anonymous" [label = "_createdBy"]
+  "http://example.com/permissions" -> "http://example.com/realms/bbp/users/maria" [label = "_updatedBy"]
+  "http://example.com/permissions" -> "http://example.com/anonymous" [label = "_createdBy"]
 }

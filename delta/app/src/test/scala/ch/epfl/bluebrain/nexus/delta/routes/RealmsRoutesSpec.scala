@@ -7,12 +7,10 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -39,8 +37,6 @@ class RealmsRoutesSpec
     with Inspectors
     with RouteFixtures {
 
-  val iriExtract: Lens[Label, Iri] = (l: Label) => baseUri.iriEndpoint / "realms" / l.value
-
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
 
@@ -65,13 +61,12 @@ class RealmsRoutesSpec
 
   private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
 
-  private val githubCreatedMeta = resourceUnit(iriExtract.get(github), "Realm", schemas.realms)
-  private val githubUpdatedMeta = resourceUnit(iriExtract.get(github), "Realm", schemas.realms, 2L)
-  private val gitlabCreatedMeta =
-    resourceUnit(iriExtract.get(gitlab), "Realm", schemas.realms, createdBy = alice, updatedBy = alice)
+  private val githubCreatedMeta = realmsResourceUnit(github)
+  private val githubUpdatedMeta = realmsResourceUnit(github, rev = 2L)
+  private val gitlabCreatedMeta = realmsResourceUnit(gitlab, createdBy = alice, updatedBy = alice)
 
   private val gitlabDeprecatedMeta =
-    resourceUnit(iriExtract.get(gitlab), "Realm", schemas.realms, 2L, deprecated = true, alice, alice)
+    realmsResourceUnit(gitlab, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",
@@ -84,14 +79,12 @@ class RealmsRoutesSpec
     "tokenEndpoint"         -> githubWk.tokenEndpoint,
     "userInfoEndpoint"      -> githubWk.userInfoEndpoint,
     "revocationEndpoint"    -> githubWk.revocationEndpoint.value,
-    "endSessionEndpoint"    -> githubWk.endSessionEndpoint.value,
-    "createdBy"             -> Anonymous.id,
-    "updatedBy"             -> Anonymous.id,
-    "deprecated"            -> false,
-    "rev"                   -> 1L
-  )
+    "endSessionEndpoint"    -> githubWk.endSessionEndpoint.value
+  ) deepMerge githubCreatedMeta.removeKeys("@context")
 
-  private val githubUpdated = githubCreated deepMerge json"""{"name": "updated", "_rev": 2}"""
+  private val githubUpdated = githubCreated deepMerge
+    json"""{"name": "updated"}""" deepMerge
+    githubUpdatedMeta.removeKeys("@context")
 
   private val gitlabCreated = jsonContentOf(
     "/realms/realm-resource.json",
@@ -104,12 +97,8 @@ class RealmsRoutesSpec
     "tokenEndpoint"         -> gitlabWk.tokenEndpoint,
     "userInfoEndpoint"      -> gitlabWk.userInfoEndpoint,
     "revocationEndpoint"    -> gitlabWk.revocationEndpoint.value,
-    "endSessionEndpoint"    -> gitlabWk.endSessionEndpoint.value,
-    "createdBy"             -> alice.id,
-    "updatedBy"             -> alice.id,
-    "deprecated"            -> false,
-    "rev"                   -> 1L
-  )
+    "endSessionEndpoint"    -> gitlabWk.endSessionEndpoint.value
+  ) deepMerge gitlabCreatedMeta
 
   "A RealmsRoute" should {
     "create a new realm" in {

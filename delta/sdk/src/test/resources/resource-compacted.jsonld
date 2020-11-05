@@ -9,8 +9,9 @@
   "_rev": 1,
   "_deprecated": false,
   "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://nexus.com/anonymous",
+  "_createdBy": "http://example.com/anonymous",
   "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://nexus.com/realms/bbp/users/maria",
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/permissions.json"
+  "_updatedBy": "http://example.com/realms/bbp/users/maria",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/permissions.json",
+  "_self": "http://example.com/permissions"
 }

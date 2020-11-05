@@ -32,7 +32,8 @@ final class OrganizationsImpl private (
     agg: OrganizationsAggregate,
     eventLog: EventLog[Envelope[OrganizationEvent]],
     cache: OrganizationsCache
-) extends Organizations {
+)(implicit base: BaseUri)
+    extends Organizations {
 
   override def create(
       label: Label,
@@ -146,8 +147,8 @@ object OrganizationsImpl {
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             organizations.fetch(envelope.event.label).flatMap {
-              case Some(org) => index.put(org.id, org)
-              case None      => UIO.unit
+              case Some(orgResource) => index.put(orgResource.value.label, orgResource)
+              case None              => UIO.unit
             }
           )
       ),
@@ -187,7 +188,7 @@ object OrganizationsImpl {
       agg: OrganizationsAggregate,
       eventLog: EventLog[Envelope[OrganizationEvent]],
       cache: OrganizationsCache
-  ): OrganizationsImpl =
+  )(implicit base: BaseUri): OrganizationsImpl =
     new OrganizationsImpl(agg, eventLog, cache)
 
   /**
@@ -201,6 +202,7 @@ object OrganizationsImpl {
       eventLog: EventLog[Envelope[OrganizationEvent]]
   )(implicit
       uuidF: UUIDF = UUIDF.random,
+      base: BaseUri,
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]

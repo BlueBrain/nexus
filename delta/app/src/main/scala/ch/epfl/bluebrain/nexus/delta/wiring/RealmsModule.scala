@@ -8,11 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsConfig, RealmsImpl, WellKnownResolver}
+import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsImpl, WellKnownResolver}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import io.circe.Json
 import izumi.distage.model.definition.ModuleDef
@@ -25,34 +25,31 @@ import monix.execution.Scheduler
 // $COVERAGE-OFF$
 object RealmsModule extends ModuleDef {
 
-  make[RealmsConfig].from((cfg: AppConfig) => cfg.realms)
-
   make[EventLog[Envelope[RealmEvent]]].fromEffect { databaseEventLog[RealmEvent](_, _) }
 
   make[Realms].fromEffect {
     (
-        cfg: RealmsConfig,
+        cfg: AppConfig,
         eventLog: EventLog[Envelope[RealmEvent]],
         as: ActorSystem[Nothing],
         scheduler: Scheduler,
         hc: HttpClient
     ) =>
       val wellKnownResolver = WellKnownResolver((uri: Uri) => hc[Json](HttpRequest(uri = uri))) _
-      RealmsImpl(cfg, wellKnownResolver, eventLog)(as, scheduler, Clock[UIO])
+      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(cfg.http.baseUri, as, scheduler, Clock[UIO])
   }
 
   make[RealmsRoutes].from {
     (
         identities: Identities,
         realms: Realms,
+        cfg: AppConfig,
         acls: Acls,
-        baseUri: BaseUri,
-        cfg: RealmsConfig,
         s: Scheduler,
         cr: RemoteContextResolution,
         ordering: JsonKeyOrdering
     ) =>
-      new RealmsRoutes(identities, realms, acls)(baseUri, cfg.pagination, s, cr, ordering)
+      new RealmsRoutes(identities, realms, acls)(cfg.http.baseUri, cfg.realms.pagination, s, cr, ordering)
   }
 
 }

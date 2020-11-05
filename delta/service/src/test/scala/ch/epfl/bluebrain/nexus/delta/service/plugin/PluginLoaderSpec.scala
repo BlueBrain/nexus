@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.plugin
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginLoader.PluginLoaderConfig
@@ -12,10 +13,11 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers {
 
-  val plConfig = PluginLoaderConfig(Some("../test-plugin/target"))
-  val pl       = PluginLoader(plConfig)
-  val perms    = PermissionsDummy(Set(Permission.unsafe("test"), Permission.unsafe("test2")))
-  val module   = new ModuleDef {
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  val plConfig                  = PluginLoaderConfig(Some("../test-plugin/target"))
+  val pl                        = PluginLoader(plConfig)
+  val perms                     = PermissionsDummy(Set(Permission.unsafe("test"), Permission.unsafe("test2")))
+  val module                    = new ModuleDef {
     make[Permissions].fromEffect(perms)
   }
 

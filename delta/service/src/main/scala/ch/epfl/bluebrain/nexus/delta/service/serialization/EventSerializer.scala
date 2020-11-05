@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.serialization.SerializerWithStringManifest
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -13,12 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType.Camel._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.service.serialization.EventSerializer._
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.generic.extras.semiauto._
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, Encoder}
@@ -81,22 +82,44 @@ object EventSerializer {
   implicit final private val subjectCodec: Codec.AsObject[Subject]   = deriveConfiguredCodec[Subject]
   implicit final private val identityCodec: Codec.AsObject[Identity] = deriveConfiguredCodec[Identity]
 
+  implicit final private val apiMappingsDecoder: Decoder[ApiMappings]          =
+    Decoder.decodeMap[String, Iri].map(ApiMappings(_))
+  implicit final private val apiMappingsEncoder: Encoder.AsObject[ApiMappings] =
+    Encoder.encodeMap[String, Iri].contramapObject(_.value)
+
   implicit final private val aclAddressEncoder: Encoder[AclAddress] = Encoder.encodeString.contramap(_.string)
   implicit final private val aclAddressDecoder: Decoder[AclAddress] = Decoder.decodeString.emap { str =>
     AclAddress.fromString(str).leftMap(_.getMessage)
   }
 
   final private case class AclEntry(identity: Identity, permissions: Set[Permission])
-  final private val aclEntryCodec                     = deriveConfiguredCodec[AclEntry]
-  implicit final private val aclEncoder: Encoder[Acl] =
+  final private val aclEntryCodec                                             = deriveConfiguredCodec[AclEntry]
+  implicit final private val aclEncoder: Encoder[Acl]                         =
     Encoder.encodeList(aclEntryCodec).contramap(acl => acl.value.toList.map { case (id, perms) => AclEntry(id, perms) })
-  implicit final private val aclDecoder: Decoder[Acl] = Decoder.decodeList[AclEntry](aclEntryCodec).map { entries =>
-    Acl(entries.map(e => e.identity -> e.permissions).toMap)
-  }
 
-  implicit final val permissionsEventCodec: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
-  implicit final val aclEventCodec: Codec.AsObject[AclEvent]                 = deriveConfiguredCodec[AclEvent]
-  implicit final val realmEventCodec: Codec.AsObject[RealmEvent]             = deriveConfiguredCodec[RealmEvent]
-  implicit final val organizationEvent: Codec.AsObject[OrganizationEvent]    = deriveConfiguredCodec[OrganizationEvent]
-  implicit final val projectEvent: Codec.AsObject[ProjectEvent]              = deriveConfiguredCodec[ProjectEvent]
+  implicit private def aclDecoder(implicit address: AclAddress): Decoder[Acl] =
+    Decoder
+      .decodeList[AclEntry](aclEntryCodec)
+      .map(entries => Acl(address, entries.map(e => e.identity -> e.permissions).toMap))
+
+  implicit final val permissionsEventCodec: Codec.AsObject[PermissionsEvent]  = deriveConfiguredCodec[PermissionsEvent]
+  implicit final val aclEventDecoder: Decoder[AclEvent]                       =
+    Decoder.instance { hc =>
+      hc.get[AclAddress]("address").flatMap { implicit address =>
+        hc.get[String](keywords.tpe).flatMap {
+          case "AclDeleted" =>
+            deriveConfiguredDecoder[AclEvent].decodeJson(hc.value)
+          case _            =>
+            deriveConfiguredDecoder[AclEvent].decodeJson(hc.value.removeKeys("address"))
+        }
+      }
+    }
+
+  implicit final val aclEventEncoder: Encoder.AsObject[AclEvent]          =
+    Encoder.AsObject.instance { ev =>
+      deriveConfiguredEncoder[AclEvent].mapJsonObject(_.add("address", ev.address.asJson)).encodeObject(ev)
+    }
+  implicit final val realmEventCodec: Codec.AsObject[RealmEvent]          = deriveConfiguredCodec[RealmEvent]
+  implicit final val organizationEvent: Codec.AsObject[OrganizationEvent] = deriveConfiguredCodec[OrganizationEvent]
+  implicit final val projectEvent: Codec.AsObject[ProjectEvent]           = deriveConfiguredCodec[ProjectEvent]
 }

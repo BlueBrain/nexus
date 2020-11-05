@@ -4,8 +4,8 @@ import java.time.Instant
 
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -14,8 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollect
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -40,6 +39,7 @@ trait AclsBehaviors {
   implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
   implicit val caller: Caller       = Caller.unsafe(subject)
   implicit val scheduler: Scheduler = Scheduler.global
+  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val user: Identity  = subject
   val group: Identity = Group("mygroup", Label.unsafe("myrealm2"))
@@ -50,14 +50,14 @@ trait AclsBehaviors {
   val x: Permission        = Permission.unsafe("organizations/create")
   val rwx: Set[Permission] = Set(r, w, x)
 
-  val userR         = Acl(user -> Set(r))
-  val userW         = Acl(user -> Set(w))
-  val userRW        = Acl(user -> Set(r, w))
-  val userR_groupX  = Acl(user -> Set(r), group -> Set(x))
-  val userRW_groupX = Acl(user -> Set(r, w), group -> Set(x))
-  val groupR        = Acl(group -> Set(r))
-  val groupX        = Acl(group -> Set(x))
-  val anonR         = Acl(anon -> Set(r))
+  def userR(address: AclAddress)         = Acl(address, user -> Set(r))
+  def userW(address: AclAddress)         = Acl(address, user -> Set(w))
+  def userRW(address: AclAddress)        = Acl(address, user -> Set(r, w))
+  def userR_groupX(address: AclAddress)  = Acl(address, user -> Set(r), group -> Set(x))
+  def userRW_groupX(address: AclAddress) = Acl(address, user -> Set(r, w), group -> Set(x))
+  def groupR(address: AclAddress)        = Acl(address, group -> Set(r))
+  def groupX(address: AclAddress)        = Acl(address, group -> Set(x))
+  def anonR(address: AclAddress)         = Acl(address, anon -> Set(r))
 
   val org: Label          = Label.unsafe("org")
   val org2: Label         = Label.unsafe("org2")
@@ -72,20 +72,6 @@ trait AclsBehaviors {
 
   def create: Task[Acls]
 
-  def resourceFor(address: AclAddress, acl: Acl, rev: Long, deprecated: Boolean = false): AclResource =
-    ResourceF(
-      id = address,
-      rev = rev,
-      types = Set(nxv.AccessControlList),
-      deprecated = deprecated,
-      createdAt = Instant.EPOCH,
-      createdBy = subject,
-      updatedAt = Instant.EPOCH,
-      updatedBy = subject,
-      schema = Latest(schemas.acls),
-      value = acl
-    )
-
   "An ACLs implementation" should {
     val acls =
       create
@@ -94,45 +80,47 @@ trait AclsBehaviors {
         .accepted
 
     "append an ACL" in {
-      acls.append(AclAddress.Root, userR, 0L).accepted shouldEqual resourceFor(AclAddress.Root, userR, 1L)
+      acls.append(userR(AclAddress.Root), 0L).accepted shouldEqual resourceFor(userR(AclAddress.Root), 1L, subject)
     }
 
     "replace an ACL" in {
-      acls.replace(AclAddress.Root, userR_groupX, 1L).accepted shouldEqual
-        resourceFor(AclAddress.Root, userR_groupX, 2L)
+      acls.replace(userR_groupX(AclAddress.Root), 1L).accepted shouldEqual
+        resourceFor(userR_groupX(AclAddress.Root), 2L, subject)
     }
 
     "subtract an ACL" in {
-      acls.subtract(AclAddress.Root, groupX, 2L).accepted shouldEqual resourceFor(AclAddress.Root, userR, 3L)
+      acls.subtract(groupX(AclAddress.Root), 2L).accepted shouldEqual
+        resourceFor(userR(AclAddress.Root), 3L, subject)
     }
 
     "delete an ACL" in {
-      acls.delete(AclAddress.Root, 3L).accepted shouldEqual resourceFor(AclAddress.Root, Acl.empty, 4L)
+      acls.delete(AclAddress.Root, 3L).accepted shouldEqual
+        resourceFor(Acl(AclAddress.Root), 4L, subject)
     }
 
     "fetch an ACL" in {
-      acls.replace(orgTarget, userR_groupX, 0L).accepted
-      acls.fetch(orgTarget).accepted.value shouldEqual resourceFor(orgTarget, userR_groupX, 1L)
+      acls.replace(userR_groupX(orgTarget), 0L).accepted
+      acls.fetch(orgTarget).accepted.value shouldEqual resourceFor(userR_groupX(orgTarget), 1L, subject)
     }
 
     "fetch an ACL containing only caller identities" in {
-      acls.fetchSelf(orgTarget).accepted.value shouldEqual resourceFor(orgTarget, userR, 1L)
+      acls.fetchSelf(orgTarget).accepted.value shouldEqual resourceFor(userR(orgTarget), 1L, subject)
     }
 
     "fetch an ACL data" in {
-      acls.fetchAcl(orgTarget).accepted shouldEqual userR_groupX
-      acls.fetchSelfAcl(orgTarget).accepted shouldEqual userR
-      acls.fetchAcl(projectTarget).accepted shouldEqual Acl.empty
+      acls.fetchAcl(orgTarget).accepted shouldEqual userR_groupX(orgTarget)
+      acls.fetchSelfAcl(orgTarget).accepted shouldEqual userR(orgTarget)
+      acls.fetchAcl(projectTarget).accepted shouldEqual Acl(projectTarget)
     }
 
     "fetch an ACL at specific revision" in {
-      acls.append(orgTarget, userW, 1L).accepted
-      acls.fetchAt(orgTarget, 2L).accepted.value shouldEqual resourceFor(orgTarget, userRW_groupX, 2L)
-      acls.fetchAt(orgTarget, 1L).accepted.value shouldEqual resourceFor(orgTarget, userR_groupX, 1L)
+      acls.append(userW(orgTarget), 1L).accepted
+      acls.fetchAt(orgTarget, 2L).accepted.value shouldEqual resourceFor(userRW_groupX(orgTarget), 2L, subject)
+      acls.fetchAt(orgTarget, 1L).accepted.value shouldEqual resourceFor(userR_groupX(orgTarget), 1L, subject)
     }
 
     "fetch an ACL at specific revision containing only caller identities" in {
-      acls.fetchSelfAt(orgTarget, 1L).accepted.value shouldEqual resourceFor(orgTarget, userR, 1L)
+      acls.fetchSelfAt(orgTarget, 1L).accepted.value shouldEqual resourceFor(userR(orgTarget), 1L, subject)
     }
 
     "fetch a non existing acl" in {
@@ -146,69 +134,68 @@ trait AclsBehaviors {
     }
 
     "list ACLs" in {
-      acls.append(AclAddress.Root, groupR, 4L).accepted
-      acls.append(projectTarget, anonR, 0L).accepted
+      acls.append(groupR(AclAddress.Root), 4L).accepted
+      acls.append(anonR(projectTarget), 0L).accepted
 
       forAll(List(any, AnyProject(org, withAncestors = false))) { filter =>
-        acls.list(filter).accepted shouldEqual
-          AclCollection(resourceFor(projectTarget, anonR, 1L))
+        acls.list(filter).accepted shouldEqual AclCollection(resourceFor(anonR(projectTarget), 1L, subject))
       }
     }
 
     "list ACLs containing only caller identities" in {
-      acls.listSelf(anyOrg).accepted shouldEqual AclCollection(resourceFor(orgTarget, userRW, 2L))
+      acls.listSelf(anyOrg).accepted shouldEqual AclCollection(resourceFor(userRW(orgTarget), 2L, subject))
     }
 
     "list ACLs containing ancestors" in {
-      acls.append(org2Target, userRW, 0L).accepted
+      acls.append(userRW(org2Target), 0L).accepted
 
       acls.list(anyWithAncestors).accepted shouldEqual
         AclCollection(
-          resourceFor(AclAddress.Root, groupR, 5L),
-          resourceFor(orgTarget, userRW_groupX, 2L),
-          resourceFor(org2Target, userRW, 1L),
-          resourceFor(projectTarget, anonR, 1L)
+          resourceFor(groupR(AclAddress.Root), 5L, subject),
+          resourceFor(userRW_groupX(orgTarget), 2L, subject),
+          resourceFor(userRW(org2Target), 1L, subject),
+          resourceFor(anonR(projectTarget), 1L, subject)
         )
 
       acls.list(AnyProject(org, withAncestors = true)).accepted shouldEqual
         AclCollection(
-          resourceFor(AclAddress.Root, groupR, 5L),
-          resourceFor(orgTarget, userRW_groupX, 2L),
-          resourceFor(projectTarget, anonR, 1L)
+          resourceFor(groupR(AclAddress.Root), 5L, subject),
+          resourceFor(userRW_groupX(orgTarget), 2L, subject),
+          resourceFor(anonR(projectTarget), 1L, subject)
         )
 
       acls.list(anyOrgWithAncestors).accepted shouldEqual
         AclCollection(
-          resourceFor(AclAddress.Root, groupR, 5L),
-          resourceFor(orgTarget, userRW_groupX, 2L),
-          resourceFor(org2Target, userRW, 1L)
+          resourceFor(groupR(AclAddress.Root), 5L, subject),
+          resourceFor(userRW_groupX(orgTarget), 2L, subject),
+          resourceFor(userRW(org2Target), 1L, subject)
         )
     }
 
     "list ACLs containing ancestors and caller identities" in {
       acls.listSelf(anyOrgWithAncestors).accepted shouldEqual
         AclCollection(
-          resourceFor(AclAddress.Root, Acl.empty, 5L),
-          resourceFor(orgTarget, userRW, 2L),
-          resourceFor(org2Target, userRW, 1L)
+          resourceFor(Acl(AclAddress.Root), 5L, subject),
+          resourceFor(userRW(orgTarget), 2L, subject),
+          resourceFor(userRW(org2Target), 1L, subject)
         )
     }
 
     "fetch ACLs containing ancestors" in {
       acls.fetchWithAncestors(projectTarget).accepted shouldEqual
         AclCollection(
-          resourceFor(AclAddress.Root, groupR, 5L),
-          resourceFor(orgTarget, userRW_groupX, 2L),
-          resourceFor(projectTarget, anonR, 1L)
+          resourceFor(groupR(AclAddress.Root), 5L, subject),
+          resourceFor(userRW_groupX(orgTarget), 2L, subject),
+          resourceFor(anonR(projectTarget), 1L, subject)
         )
     }
 
     "fetch ACLs containing ancestors at specific revision" in {
       acls.fetchAtWithAncestors(projectTarget, 1L).accepted shouldEqual
         AclCollection(
-          resourceFor(AclAddress.Root, userR, 1L),
-          resourceFor(orgTarget, userR_groupX, 1L),
-          resourceFor(projectTarget, anonR, 1L)
+          resourceFor(userR(AclAddress.Root), 1L, subject),
+          resourceFor(userR_groupX(orgTarget), 1L, subject),
+          resourceFor(anonR(projectTarget), 1L, subject)
         )
     }
 
@@ -271,26 +258,26 @@ trait AclsBehaviors {
     }
 
     "fail to append an ACL already appended" in {
-      acls.append(org2Target, userRW, 1L).rejectedWith[NothingToBeUpdated]
+      acls.append(userRW(org2Target), 1L).rejectedWith[NothingToBeUpdated]
     }
 
     "fail to subtract an ACL with permissions that do not exist" in {
-      acls.subtract(org2Target, anonR, 1L).rejectedWith[NothingToBeUpdated]
+      acls.subtract(anonR(org2Target), 1L).rejectedWith[NothingToBeUpdated]
     }
 
     "fail to replace an ACL containing empty permissions" in {
-      val aclWithEmptyPerms = Acl(user -> Set(r), group -> Set.empty)
-      acls.replace(org2Target, aclWithEmptyPerms, 1L).rejectedWith[AclCannotContainEmptyPermissionCollection]
+      val aclWithEmptyPerms = Acl(org2Target, user -> Set(r), group -> Set.empty)
+      acls.replace(aclWithEmptyPerms, 1L).rejectedWith[AclCannotContainEmptyPermissionCollection]
     }
 
     "fail to append an ACL containing empty permissions" in {
-      val aclWithEmptyPerms = Acl(user -> Set(r), group -> Set.empty)
-      acls.append(org2Target, aclWithEmptyPerms, 1L).rejectedWith[AclCannotContainEmptyPermissionCollection]
+      val aclWithEmptyPerms = Acl(org2Target, user -> Set(r), group -> Set.empty)
+      acls.append(aclWithEmptyPerms, 1L).rejectedWith[AclCannotContainEmptyPermissionCollection]
     }
 
     "fail to subtract an ACL containing empty permissions" in {
-      val aclWithEmptyPerms = Acl(user -> Set(r), group -> Set.empty)
-      acls.subtract(org2Target, aclWithEmptyPerms, 1L).rejectedWith[AclCannotContainEmptyPermissionCollection]
+      val aclWithEmptyPerms = Acl(org2Target, user -> Set(r), group -> Set.empty)
+      acls.subtract(aclWithEmptyPerms, 1L).rejectedWith[AclCannotContainEmptyPermissionCollection]
     }
 
     "fail to delete an ACL already deleted" in {
@@ -300,7 +287,7 @@ trait AclsBehaviors {
 
     "fail to subtract an ACL that does not exist" in {
       val targetNotExist = Organization(Label.unsafe("other"))
-      acls.subtract(targetNotExist, anonR, 0L).rejectedWith[AclNotFound]
+      acls.subtract(anonR(targetNotExist), 0L).rejectedWith[AclNotFound]
     }
 
     "fail to delete an ACL that does not exist" in {
@@ -309,18 +296,18 @@ trait AclsBehaviors {
     }
 
     "fail to replace an ACL containing invalid permissions" in {
-      val aclWithInvalidPerms = Acl(user -> Set(r), group -> Set(Permission.unsafe("invalid")))
-      acls.replace(org2Target, aclWithInvalidPerms, 2L).rejectedWith[UnknownPermissions]
+      val aclWithInvalidPerms = Acl(org2Target, user -> Set(r), group -> Set(Permission.unsafe("invalid")))
+      acls.replace(aclWithInvalidPerms, 2L).rejectedWith[UnknownPermissions]
     }
 
     "fail to append an ACL containing invalid permissions" in {
-      val aclWithInvalidPerms = Acl(user -> Set(r), group -> Set(Permission.unsafe("invalid")))
-      acls.append(org2Target, aclWithInvalidPerms, 2L).rejectedWith[UnknownPermissions]
+      val aclWithInvalidPerms = Acl(org2Target, user -> Set(r), group -> Set(Permission.unsafe("invalid")))
+      acls.append(aclWithInvalidPerms, 2L).rejectedWith[UnknownPermissions]
     }
 
     "fail to subtract an ACL containing invalid permissions" in {
-      val aclWithInvalidPerms = Acl(user -> Set(r), group -> Set(Permission.unsafe("invalid")))
-      acls.subtract(orgTarget, aclWithInvalidPerms, 2L).rejectedWith[UnknownPermissions]
+      val aclWithInvalidPerms = Acl(orgTarget, user -> Set(r), group -> Set(Permission.unsafe("invalid")))
+      acls.subtract(aclWithInvalidPerms, 2L).rejectedWith[UnknownPermissions]
     }
   }
 

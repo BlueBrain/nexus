@@ -5,13 +5,13 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{PrefixIri, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues, _}
@@ -32,15 +32,16 @@ class ProjectsSpec
     with OptionValues {
 
   "The Projects state machine" when {
-    implicit val sc: Scheduler = Scheduler.global
-    val epoch                  = Instant.EPOCH
-    val time2                  = Instant.ofEpochMilli(10L)
-    val am                     = Map("xsd" -> xsd.base, "Person" -> schema.Person)
-    val base                   = PrefixIri.unsafe(iri"http://example.com/base/")
-    val vocab                  = PrefixIri.unsafe(iri"http://example.com/vocab/")
-    val org1                   = OrganizationGen.currentState("org", 1L)
-    val org2                   = OrganizationGen.currentState("org2", 1L, deprecated = true)
-    val current                = ProjectGen.currentState(
+    implicit val sc: Scheduler    = Scheduler.global
+    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+    val epoch                     = Instant.EPOCH
+    val time2                     = Instant.ofEpochMilli(10L)
+    val am                        = ApiMappings(Map("xsd" -> xsd.base, "Person" -> schema.Person))
+    val base                      = PrefixIri.unsafe(iri"http://example.com/base/")
+    val vocab                     = PrefixIri.unsafe(iri"http://example.com/vocab/")
+    val org1                      = OrganizationGen.currentState("org", 1L)
+    val org2                      = OrganizationGen.currentState("org2", 1L, deprecated = true)
+    val current                   = ProjectGen.currentState(
       "org",
       "proj",
       1L,
@@ -50,15 +51,15 @@ class ProjectsSpec
       base = base.value,
       vocab = vocab.value
     )
-    val label                  = current.label
-    val uuid                   = current.uuid
-    val orgLabel               = current.organizationLabel
-    val orgUuid                = current.organizationUuid
-    val desc                   = current.description
-    val desc2                  = Some("desc2")
-    val org2Label              = org2.label
-    val subject                = User("myuser", label)
-    val orgs                   = ioFromMap(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value)
+    val label                     = current.label
+    val uuid                      = current.uuid
+    val orgLabel                  = current.organizationLabel
+    val orgUuid                   = current.organizationUuid
+    val desc                      = current.description
+    val desc2                     = Some("desc2")
+    val org2Label                 = org2.label
+    val subject                   = User("myuser", label)
+    val orgs                      = ioFromMap(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value)
 
     val ref  = ProjectRef(orgLabel, label)
     val ref2 = ProjectRef(org2Label, label)
@@ -76,9 +77,9 @@ class ProjectsSpec
 
         evaluate(orgs)(
           current,
-          UpdateProject(ref, desc2, Map.empty, base, vocab, 1L, subject)
+          UpdateProject(ref, desc2, ApiMappings.empty, base, vocab, 1L, subject)
         ).accepted shouldEqual
-          ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, Map.empty, base, vocab, epoch, subject)
+          ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, ApiMappings.empty, base, vocab, epoch, subject)
 
         evaluate(orgs)(current, DeprecateProject(ref, 1L, subject)).accepted shouldEqual
           ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, epoch, subject)
@@ -162,11 +163,11 @@ class ProjectsSpec
 
       "create a new ProjectUpdated state" in {
         // format: off
-        next(Initial, ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, Map.empty, base, vocab, time2, subject)) shouldEqual
+        next(Initial, ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, ApiMappings.empty, base, vocab, time2, subject)) shouldEqual
           Initial
 
-        next(current, ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, Map.empty, base, vocab, time2, subject)) shouldEqual
-          current.copy(rev = 2L, description = desc2, apiMappings = Map.empty, updatedAt = time2, updatedBy = subject)
+        next(current, ProjectUpdated(label, uuid, orgLabel, orgUuid, 2L, desc2, ApiMappings.empty, base, vocab, time2, subject)) shouldEqual
+          current.copy(rev = 2L, description = desc2, apiMappings = ApiMappings.empty, updatedAt = time2, updatedBy = subject)
         // format: on
       }
 

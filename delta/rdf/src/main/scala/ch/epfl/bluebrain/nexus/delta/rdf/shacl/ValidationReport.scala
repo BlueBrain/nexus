@@ -32,7 +32,7 @@ final case class ValidationReport private (conforms: Boolean, targetedNodes: Int
 
 object ValidationReport extends ClasspathResourceUtils {
 
-  private val shaclResolvedCtx = ioJsonContentOf("contexts/shacl-context.json").memoizeOnSuccess
+  private val shaclResolvedCtx = ioJsonContentOf("contexts/shacl.json").memoizeOnSuccess
 
   private val shaclCtx: Json = Json.obj(keywords.context -> contexts.shacl.asJson)
 

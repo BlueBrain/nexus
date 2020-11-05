@@ -30,8 +30,7 @@ trait RealmsBehaviors {
   val epoch: Instant                = Instant.EPOCH
   implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
   implicit val scheduler: Scheduler = Scheduler.global
-
-  implicit lazy val baseUri: BaseUri = BaseUri("http://localhost:8080/v1")
+  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))

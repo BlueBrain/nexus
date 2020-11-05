@@ -29,7 +29,7 @@ final case class Project(
     organizationLabel: Label,
     organizationUuid: UUID,
     description: Option[String],
-    apiMappings: Map[String, Iri],
+    apiMappings: ApiMappings,
     base: Iri,
     vocab: Iri
 ) {

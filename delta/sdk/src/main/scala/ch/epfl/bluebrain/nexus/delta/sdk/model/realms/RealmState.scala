@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, RealmResource}
 import io.circe.Json
 
@@ -39,7 +39,7 @@ sealed trait RealmState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource: Option[RealmResource]
+  def toResource(implicit base: BaseUri): Option[RealmResource]
 
 }
 
@@ -64,7 +64,7 @@ object RealmState {
     /**
       * Converts the state into a resource representation.
       */
-    override val toResource: Option[RealmResource] = None
+    override def toResource(implicit base: BaseUri): Option[RealmResource] = None
   }
 
   /**
@@ -131,10 +131,12 @@ object RealmState {
     /**
       * @return a resource representation for the realm
       */
-    override def toResource: Option[RealmResource] =
+    override def toResource(implicit base: BaseUri): Option[RealmResource] = {
+      val accessUrl = AccessUrl.realm(label)
       Some(
         ResourceF(
-          id = label,
+          id = accessUrl.iri,
+          accessUrl = accessUrl,
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -146,6 +148,7 @@ object RealmState {
           value = realm
         )
       )
+    }
   }
 
   implicit val revisionLens: Lens[RealmState, Long] = (s: RealmState) => s.rev

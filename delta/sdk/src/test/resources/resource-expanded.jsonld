@@ -17,6 +17,11 @@
         "@value": 1
       }
     ],
+    "https://bluebrain.github.io/nexus/vocabulary/self": [
+      {
+        "@id": "http://example.com/permissions"
+      }
+    ],
     "https://bluebrain.github.io/nexus/vocabulary/deprecated": [
       {
         "@value": false
@@ -29,7 +34,7 @@
     ],
     "https://bluebrain.github.io/nexus/vocabulary/createdBy": [
       {
-        "@id": "http://nexus.com/anonymous"
+        "@id": "http://example.com/anonymous"
       }
     ],
     "https://bluebrain.github.io/nexus/vocabulary/updatedAt": [
@@ -39,7 +44,7 @@
     ],
     "https://bluebrain.github.io/nexus/vocabulary/updatedBy": [
       {
-        "@id": "http://nexus.com/realms/bbp/users/maria"
+        "@id": "http://example.com/realms/bbp/users/maria"
       }
     ],
     "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": [

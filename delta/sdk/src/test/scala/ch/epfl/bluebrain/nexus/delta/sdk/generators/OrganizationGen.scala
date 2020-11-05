@@ -4,11 +4,13 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceF}
 
 object OrganizationGen {
 
@@ -37,11 +39,13 @@ object OrganizationGen {
   def resourceFor(
       organization: Organization,
       rev: Long,
-      subject: Subject,
+      subject: Subject = Identity.Anonymous,
       deprecated: Boolean = false
-  ): ResourceF[Label, Organization] =
+  )(implicit base: BaseUri): OrganizationResource = {
+    val accessUrl = AccessUrl.organization(organization.label)
     ResourceF(
-      id = organization.label,
+      id = accessUrl.iri,
+      accessUrl = accessUrl,
       rev = rev,
       types = Set(nxv.Organization),
       deprecated = deprecated,
@@ -52,5 +56,6 @@ object OrganizationGen {
       schema = Latest(schemas.organizations),
       value = organization
     )
+  }
 
 }

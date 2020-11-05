@@ -75,8 +75,8 @@ trait Realms {
     * Fetches a realm at a specific revision.
     *
     * @param label the realm label
-    * @param rev   the permissions revision
-    * @return the permissions as a resource at the specified revision
+    * @param rev   the realm revision
+    * @return the realm as a resource at the specified revision
     */
   def fetchAt(label: Label, rev: Long): IO[RevisionNotFound, Option[RealmResource]]
 

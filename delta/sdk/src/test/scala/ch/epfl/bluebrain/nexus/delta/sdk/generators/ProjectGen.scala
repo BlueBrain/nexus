@@ -5,11 +5,12 @@ import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFields, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceF}
 
 object ProjectGen {
 
@@ -20,7 +21,7 @@ object ProjectGen {
       uuid: UUID = UUID.randomUUID(),
       orgUuid: UUID = UUID.randomUUID(),
       description: Option[String] = None,
-      mappings: Map[String, Iri] = Map.empty,
+      mappings: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base,
       vocab: Iri = nxv.base,
       deprecated: Boolean = false
@@ -65,7 +66,7 @@ object ProjectGen {
       uuid: UUID = UUID.randomUUID(),
       orgUuid: UUID = UUID.randomUUID(),
       description: Option[String] = None,
-      mappings: Map[String, Iri] = Map.empty,
+      mappings: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base,
       vocab: Iri = nxv.base
   ): Project =
@@ -76,9 +77,11 @@ object ProjectGen {
       rev: Long,
       subject: Subject,
       deprecated: Boolean = false
-  ): ResourceF[ProjectRef, Project] =
+  )(implicit base: BaseUri): ProjectResource = {
+    val accessUrl = AccessUrl.project(project.ref)
     ResourceF(
-      id = ProjectRef(project.organizationLabel, project.label),
+      id = accessUrl.iri,
+      accessUrl = accessUrl,
       rev = rev,
       types = Set(nxv.Project),
       deprecated = deprecated,
@@ -89,5 +92,6 @@ object ProjectGen {
       schema = Latest(schemas.projects),
       value = project
     )
+  }
 
 }

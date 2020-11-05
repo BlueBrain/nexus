@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.I
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationCommand, OrganizationRejection, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource, Organizations}
@@ -31,7 +31,7 @@ final class OrganizationsDummy private (
     journal: OrganizationsJournal,
     cache: OrganizationsCache,
     semaphore: IOSemaphore
-)(implicit clock: Clock[UIO], uuidF: UUIDF)
+)(implicit base: BaseUri, clock: Clock[UIO], uuidF: UUIDF)
     extends Organizations {
 
   override def create(
@@ -72,8 +72,8 @@ final class OrganizationsDummy private (
       rev: Long
   ): IO[OrganizationRejection.RevisionNotFound, Option[OrganizationResource]] =
     fetch(uuid).flatMap {
-      case Some(value) => fetchAt(value.id, rev)
-      case None        => IO.pure(None)
+      case Some(orgResource) => fetchAt(orgResource.value.label, rev)
+      case None              => IO.pure(None)
     }
 
   override def list(
@@ -112,12 +112,15 @@ object OrganizationsDummy {
     * Creates a new dummy Organizations implementation.
     */
   final def apply()(implicit
+      base: BaseUri,
       uuidF: UUIDF = UUIDF.random,
       clock: Clock[UIO] = IO.clock
-  ): UIO[OrganizationsDummy] =
+  ): UIO[OrganizationsDummy] = {
+    implicit val lens: Lens[Organization, Label] = _.label
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[Label, Organization]
       sem     <- IOSemaphore(1L)
     } yield new OrganizationsDummy(journal, cache, sem)
+  }
 }
