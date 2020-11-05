@@ -66,13 +66,11 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
         "_path" -> Json.fromString(r.id.string)
       )
     }
-    .mapJsonObject(_.remove("_deprecated"))
 
   implicit val aclWriteResponseEncoder: Encoder.AsObject[ResourceF[AclAddress, Unit]] = Encoder.AsObject
     .instance { r: ResourceF[AclAddress, Unit] =>
       r.copy(id = iriLens.get(r.id)).void.asJsonObject deepMerge r.value.asJsonObject
     }
-    .mapJsonObject(_.remove("_deprecated"))
 
   implicit val aclWriteFResponseEncoder: JsonLdEncoder[ResourceF[AclAddress, Unit]] = JsonLdEncoder.compactFromCirce(
     (v: ResourceF[AclAddress, Unit]) => iriLens.get(v.id),

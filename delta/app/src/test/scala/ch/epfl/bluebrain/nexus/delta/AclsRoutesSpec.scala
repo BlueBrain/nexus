@@ -112,6 +112,7 @@ class AclsRoutesSpec
               "@id"            -> Json.fromString(s"http://localhost/v1/acls${path.stripSuffix("/")}"),
               "@type"          -> Json.fromString("AccessControlList"),
               "_constrainedBy" -> Json.fromString("https://bluebrain.github.io/nexus/schemas/acls.json"),
+              "_deprecated"    -> Json.fromBoolean(false),
               "_createdAt"     -> Json.fromString("1970-01-01T00:00:00Z"),
               "_updatedAt"     -> Json.fromString("1970-01-01T00:00:00Z"),
               "_createdBy"     -> Json.fromString(user.id.toString),
