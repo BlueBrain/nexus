@@ -79,7 +79,7 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     * @param permission the permission to filter by
     */
   def filterByPermission(identities: Set[Identity], permission: Permission): AclCollection =
-    AclCollection.apply(value.filter { case (address, _) =>
+    AclCollection(value.filter { case (address, _) =>
       exists(identities, permission, address)
     })
 
