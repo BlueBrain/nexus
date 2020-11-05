@@ -43,12 +43,10 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
 
     val json = jsonContentOf(
       "/iam/keycloak/import.json",
-      Map(
-        "realm"         -> realm.name,
-        "client"        -> clientCredentials.id,
-        "client_secret" -> clientCredentials.secret,
-        "users"         -> users
-      )
+      "realm"         -> realm.name,
+      "client"        -> clientCredentials.id,
+      "client_secret" -> clientCredentials.secret,
+      "users"         -> users
     )
 
     for {

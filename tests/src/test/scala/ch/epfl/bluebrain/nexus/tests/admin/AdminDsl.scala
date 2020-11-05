@@ -20,10 +20,8 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
 
   private val logger = Logger[this.type]
 
-  def orgPayload(description: String = genString()): Json = {
-    val rep = Map("description" -> description)
-    jsonContentOf("/admin/orgs/payload.json", rep)
-  }
+  def orgPayload(description: String = genString()): Json =
+    jsonContentOf("/admin/orgs/payload.json", "description" -> description)
 
   def createRespJson(
       id: String,
@@ -33,7 +31,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       authenticated: Authenticated,
       deprecated: Boolean = false
   ): Json = {
-    val resp = prefixesConfig.coreContextMap ++ Map(
+    val resp = Seq(prefixesConfig.coreContextRepl) ++ Seq(
       "id"         -> id,
       "path"       -> tpe,
       "type"       -> `@type`,
@@ -44,7 +42,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       "orgId"      -> id,
       "deprecated" -> deprecated.toString
     )
-    jsonContentOf("/admin/response.json", resp)
+    jsonContentOf("/admin/response.json", resp: _*)
   }
 
   private def queryParams(revision: Long) =
@@ -120,16 +118,15 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       description: String = genString(),
       base: String = s"${config.deltaUri.toString()}/${genString()}/",
       vocab: String = s"${config.deltaUri.toString()}/${genString()}/"
-  ): Json = {
-    val rep = Map(
+  ): Json =
+    jsonContentOf(
+      path,
       "nxv-prefix"    -> nxv,
       "person-prefix" -> person,
       "description"   -> description,
       "base"          -> base,
       "vocab"         -> vocab
     )
-    jsonContentOf(path, rep)
-  }
 
   def createProject(
       orgId: String,

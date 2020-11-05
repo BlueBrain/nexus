@@ -43,26 +43,22 @@ class RemoteStorageSpec extends StorageSpec {
   override def createStorages: Task[Assertion] = {
     val payload = jsonContentOf(
       "/kg/storages/remote-disk.json",
-      Map(
-        "endpoint" -> externalEndpoint,
-        "cred"     -> serviceAccountToken,
-        "read"     -> "resources/read",
-        "write"    -> "files/write",
-        "folder"   -> remoteFolder,
-        "id"       -> storageName
-      )
+      "endpoint" -> externalEndpoint,
+      "cred"     -> serviceAccountToken,
+      "read"     -> "resources/read",
+      "write"    -> "files/write",
+      "folder"   -> remoteFolder,
+      "id"       -> storageName
     )
 
     val payload2 = jsonContentOf(
       "/kg/storages/remote-disk.json",
-      Map(
-        "endpoint" -> externalEndpoint,
-        "cred"     -> serviceAccountToken,
-        "read"     -> s"$storageType/read",
-        "write"    -> s"$storageType/write",
-        "folder"   -> remoteFolder,
-        "id"       -> s"${storageName}2"
-      )
+      "endpoint" -> externalEndpoint,
+      "cred"     -> serviceAccountToken,
+      "read"     -> s"$storageType/read",
+      "write"    -> s"$storageType/write",
+      "folder"   -> remoteFolder,
+      "id"       -> s"${storageName}2"
     )
 
     for {
@@ -81,7 +77,7 @@ class RemoteStorageSpec extends StorageSpec {
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
                  "read"        -> "resources/read",
                  "write"       -> "files/write"
-               )
+               ): _*
              )
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
@@ -90,10 +86,8 @@ class RemoteStorageSpec extends StorageSpec {
              response.status shouldEqual StatusCodes.OK
              val expected = jsonContentOf(
                "/kg/storages/storage-source.json",
-               Map(
-                 "folder"      -> remoteFolder,
-                 "storageBase" -> externalEndpoint
-               )
+               "folder"      -> remoteFolder,
+               "storageBase" -> externalEndpoint
              )
              json should equalIgnoreArrayOrder(expected)
 
@@ -117,7 +111,7 @@ class RemoteStorageSpec extends StorageSpec {
                  "maxFileSize" -> storageConfig.maxFileSize.toString,
                  "read"        -> s"$storageType/read",
                  "write"       -> s"$storageType/write"
-               )
+               ): _*
              )
              filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
              response.status shouldEqual StatusCodes.OK
@@ -129,14 +123,12 @@ class RemoteStorageSpec extends StorageSpec {
     "fail creating a RemoteDiskStorage without folder" taggedAs StorageTag in {
       val payload = jsonContentOf(
         "/kg/storages/remote-disk.json",
-        Map(
-          "endpoint" -> externalEndpoint,
-          "cred"     -> serviceAccountToken,
-          "read"     -> "resources/read",
-          "write"    -> "files/write",
-          "folder"   -> "nexustest",
-          "id"       -> storageName
-        )
+        "endpoint" -> externalEndpoint,
+        "cred"     -> serviceAccountToken,
+        "read"     -> "resources/read",
+        "write"    -> "files/write",
+        "folder"   -> "nexustest",
+        "id"       -> storageName
       )
 
       deltaClient.post[Json](s"/storages/$fullId", filterKey("folder")(payload), Coyote) { (_, response) =>

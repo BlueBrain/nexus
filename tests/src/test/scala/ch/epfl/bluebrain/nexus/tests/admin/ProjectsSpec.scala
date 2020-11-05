@@ -125,11 +125,9 @@ class ProjectsSpec extends BaseSpec {
         StatusCodes.Conflict,
         jsonContentOf(
           "/admin/errors/project-already-exists.json",
-          Map(
-            "projLabel" -> projId,
-            "orgId"     -> orgId,
-            "projId"    -> id
-          )
+          "projLabel" -> projId,
+          "orgId"     -> orgId,
+          "projId"    -> id
         )
       )
 
@@ -321,7 +319,7 @@ class ProjectsSpec extends BaseSpec {
               "id"     -> s"$orgId/$projectId",
               "projId" -> projectId,
               "orgId"  -> orgId
-            )
+            ): _*
           )
         }: _*
       )

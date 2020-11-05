@@ -12,16 +12,11 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-trait IOValues extends Assertions {
+trait IOValues extends IOValuesLowPrio {
   implicit def taskToFutureAssertion(
       task: Task[Assertion]
   )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
     task.runToFuture
-
-  implicit def taskListToFutureAssertion(
-      task: Task[List[Assertion]]
-  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
-    task.runToFuture.map(_ => succeed)
 
   implicit def futureListToFutureAssertion(
       future: Future[List[Assertion]]
@@ -31,6 +26,13 @@ trait IOValues extends Assertions {
   implicit final def uioValuesSyntax[A](uio: UIO[A]): UIOValuesOps[A] = new UIOValuesOps(uio)
 
   implicit final def ioValuesSyntax[E: ClassTag, A](io: IO[E, A]): IOValuesOps[E, A] = new IOValuesOps(io)
+}
+
+trait IOValuesLowPrio extends Assertions {
+  implicit def taskListToFutureAssertion(
+      task: Task[List[Assertion]]
+  )(implicit s: Scheduler = Scheduler.global): Future[Assertion] =
+    task.runToFuture.map(_ => succeed)
 }
 
 final class UIOValuesOps[A](private val uio: UIO[A]) {
