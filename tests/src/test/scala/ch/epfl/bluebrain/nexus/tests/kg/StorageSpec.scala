@@ -201,7 +201,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
           "storageId" -> s"nxv:$storageName",
           "projId"    -> s"$fullId",
           "project"   -> s"${config.deltaUri}/projects/$fullId"
-        )
+        ): _*
       )
 
       deltaClient.get[Json](s"/files/$fullId/attachment:attachment.json", Coyote) { (json, response) =>
@@ -286,7 +286,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
           "storageId" -> s"nxv:$storageName",
           "projId"    -> s"$fullId",
           "project"   -> s"${config.deltaUri}/projects/$fullId"
-        )
+        ): _*
       )
 
       deltaClient.get[Json](s"/files/$fullId/attachment:attachment2", Coyote) { (json, response) =>

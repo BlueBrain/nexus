@@ -9,8 +9,7 @@ class KgDsl(config: TestsConfig) extends TestHelpers with Matchers {
 
   def projectJson(path: String = "/kg/projects/project.json", name: String = genString()): Json = {
     val base = s"${config.deltaUri.toString()}/resources/$name/_/"
-    val rep  = Map("name" -> name, "base" -> base)
-    jsonContentOf(path, rep)
+    jsonContentOf(path, "name" -> name, "base" -> base)
   }
 
 }

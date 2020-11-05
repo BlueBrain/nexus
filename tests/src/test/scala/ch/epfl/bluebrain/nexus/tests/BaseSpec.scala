@@ -135,9 +135,7 @@ trait BaseSpec
               val body =
                 jsonContentOf(
                   "/iam/realms/create.json",
-                  Map(
-                    "realm" -> s"${config.realmSuffix(realm)}"
-                  )
+                  "realm" -> s"${config.realmSuffix(realm)}"
                 )
               for {
                 _ <- deltaClient.put[Json](s"/realms/${realm.name}", body, identity) { (_, response) =>
@@ -195,11 +193,11 @@ trait BaseSpec
     Coders.Gzip.decode(input).map(_.utf8String)(global).futureValue
 
   private[tests] def replacements(authenticated: Authenticated, otherReplacements: (String, String)*) =
-    Map(
+    Seq(
       "deltaUri" -> config.deltaUri.toString(),
       "realm"    -> authenticated.realm.name,
       "user"     -> authenticated.name
-    ) ++ otherReplacements.toMap
+    ) ++ otherReplacements
 
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))

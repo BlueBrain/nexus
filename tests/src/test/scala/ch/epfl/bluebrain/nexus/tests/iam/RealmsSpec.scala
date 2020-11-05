@@ -35,21 +35,17 @@ class RealmsSpec extends BaseSpec {
     "create realm" taggedAs RealmsTag in {
       val body = jsonContentOf(
         "/iam/realms/create.json",
-        Map(
-          "realm" -> testRealmUri
-        )
+        "realm" -> testRealmUri
       )
 
       deltaClient.put[Json](s"/realms/${testRealm.name}", body, Identity.ServiceAccount) { (json, _) =>
         filterRealmKeys(json) shouldEqual jsonContentOf(
           "/iam/realms/ref-response.json",
-          Map(
-            "realm"      -> testRealmUri,
-            "deltaUri"   -> config.deltaUri.toString(),
-            "label"      -> testRealm.name,
-            "rev"        -> "1",
-            "deprecated" -> "false"
-          )
+          "realm"      -> testRealmUri,
+          "deltaUri"   -> config.deltaUri.toString(),
+          "label"      -> testRealm.name,
+          "rev"        -> "1",
+          "deprecated" -> "false"
         )
       }
     }
@@ -57,21 +53,17 @@ class RealmsSpec extends BaseSpec {
     "recreate realm" taggedAs RealmsTag in {
       val body = jsonContentOf(
         "/iam/realms/create.json",
-        Map(
-          "realm" -> testRealmUri
-        )
+        "realm" -> testRealmUri
       )
 
       deltaClient.put[Json](s"/realms/${testRealm.name}?rev=$rev", body, Identity.ServiceAccount) { (json, _) =>
         filterRealmKeys(json) shouldEqual jsonContentOf(
           "/iam/realms/ref-response.json",
-          Map(
-            "realm"      -> testRealmUri,
-            "deltaUri"   -> config.deltaUri.toString(),
-            "label"      -> testRealm.name,
-            "rev"        -> s"${rev + 1}",
-            "deprecated" -> "false"
-          )
+          "realm"      -> testRealmUri,
+          "deltaUri"   -> config.deltaUri.toString(),
+          "label"      -> testRealm.name,
+          "rev"        -> s"${rev + 1}",
+          "deprecated" -> "false"
         )
       }
     }
@@ -81,12 +73,10 @@ class RealmsSpec extends BaseSpec {
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
           "/iam/realms/fetch-response.json",
-          Map(
-            "realm"    -> testRealmUri,
-            "deltaUri" -> config.deltaUri.toString(),
-            "rev"      -> s"${rev + 1}",
-            "label"    -> testRealm.name
-          )
+          "realm"    -> testRealmUri,
+          "deltaUri" -> config.deltaUri.toString(),
+          "rev"      -> s"${rev + 1}",
+          "label"    -> testRealm.name
         )
       }
     }
@@ -95,9 +85,7 @@ class RealmsSpec extends BaseSpec {
       val body =
         jsonContentOf(
           "/iam/realms/update.json",
-          Map(
-            "realm" -> testRealmUri
-          )
+          "realm" -> testRealmUri
         )
 
       deltaClient.put[Json](s"/realms/${testRealm.name}?rev=${rev + 1}", body, Identity.ServiceAccount) {
@@ -105,13 +93,11 @@ class RealmsSpec extends BaseSpec {
           result.status shouldEqual StatusCodes.OK
           filterRealmKeys(json) shouldEqual jsonContentOf(
             "/iam/realms/ref-response.json",
-            Map(
-              "realm"      -> testRealmUri,
-              "deltaUri"   -> config.deltaUri.toString(),
-              "label"      -> testRealm.name,
-              "rev"        -> s"${rev + 2}",
-              "deprecated" -> "false"
-            )
+            "realm"      -> testRealmUri,
+            "deltaUri"   -> config.deltaUri.toString(),
+            "label"      -> testRealm.name,
+            "rev"        -> s"${rev + 2}",
+            "deprecated" -> "false"
           )
       }
     }
@@ -121,12 +107,10 @@ class RealmsSpec extends BaseSpec {
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
           "/iam/realms/fetch-updated-response.json",
-          Map(
-            "realm"    -> testRealmUri,
-            "deltaUri" -> config.deltaUri.toString(),
-            "rev"      -> s"${rev + 2}",
-            "label"    -> testRealm.name
-          )
+          "realm"    -> testRealmUri,
+          "deltaUri" -> config.deltaUri.toString(),
+          "rev"      -> s"${rev + 2}",
+          "label"    -> testRealm.name
         )
       }
     }
@@ -136,13 +120,11 @@ class RealmsSpec extends BaseSpec {
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
           "/iam/realms/ref-response.json",
-          Map(
-            "realm"      -> testRealmUri,
-            "deltaUri"   -> config.deltaUri.toString(),
-            "label"      -> testRealm.name,
-            "rev"        -> s"${rev + 3}",
-            "deprecated" -> "true"
-          )
+          "realm"      -> testRealmUri,
+          "deltaUri"   -> config.deltaUri.toString(),
+          "label"      -> testRealm.name,
+          "rev"        -> s"${rev + 3}",
+          "deprecated" -> "true"
         )
       }
     }
@@ -152,12 +134,10 @@ class RealmsSpec extends BaseSpec {
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
           "/iam/realms/fetch-deprecated-response.json",
-          Map(
-            "realm"    -> testRealmUri,
-            "deltaUri" -> config.deltaUri.toString(),
-            "rev"      -> s"${rev + 3}",
-            "label"    -> testRealm.name
-          )
+          "realm"    -> testRealmUri,
+          "deltaUri" -> config.deltaUri.toString(),
+          "rev"      -> s"${rev + 3}",
+          "label"    -> testRealm.name
         )
       }
     }

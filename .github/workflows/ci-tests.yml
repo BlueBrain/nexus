@@ -2,6 +2,8 @@ name: Continuous Integration Tests
 on:
   pull_request:
     paths:
+      - 'delta/kernel/**'
+      - 'delta/sdk-testkit/**'
       - 'tests/**'
       - 'build.sbt'
       - 'project/**'

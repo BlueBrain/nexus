@@ -102,7 +102,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             "id"             -> "https://dev.nexus.test.com/simplified-resource/testSparqlView",
             "resources"      -> s"${config.deltaUri}/views/$fullId/test-resource:testSparqlView",
             "project-parent" -> s"${config.deltaUri}/projects/$fullId"
-          )
+          ): _*
         )
 
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -110,10 +110,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "create an AggregateSparqlView" taggedAs ViewsTag in {
-      val payload = jsonContentOf(
-        "/kg/views/agg-sparql-view.json",
-        Map("project1" -> fullId, "project2" -> fullId2)
-      )
+      val payload = jsonContentOf("/kg/views/agg-sparql-view.json", "project1" -> fullId, "project2" -> fullId2)
 
       deltaClient.put[Json](s"/views/$fullId2/test-resource:testAggView", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -121,10 +118,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "create an AggregateElasticSearchView" taggedAs ViewsTag in {
-      val payload = jsonContentOf(
-        "/kg/views/agg-elastic-view.json",
-        Map("project1" -> fullId, "project2" -> fullId2)
-      )
+      val payload = jsonContentOf("/kg/views/agg-elastic-view.json", "project1" -> fullId, "project2" -> fullId2)
 
       deltaClient.put[Json](s"/views/$fullId2/test-resource:testAggEsView", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -144,7 +138,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
             "project1"       -> fullId,
             "project2"       -> fullId2
-          )
+          ): _*
         )
 
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -163,7 +157,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
             "project1"       -> fullId,
             "project2"       -> fullId2
-          )
+          ): _*
         )
 
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -221,10 +215,8 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual jsonContentOf(
-            "/kg/views/es-search-response.json",
-            Map("index" -> index)
-          )
+          filterKey("took")(json) shouldEqual
+            jsonContentOf("/kg/views/es-search-response.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>
@@ -239,10 +231,8 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual jsonContentOf(
-            "/kg/views/es-search-response-2.json",
-            Map("index" -> index)
-          )
+          filterKey("took")(json) shouldEqual
+            jsonContentOf("/kg/views/es-search-response-2.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId2/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>
@@ -260,8 +250,9 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       ) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val indexes   = hits.each._index.string.getAll(json)
-        val toReplace = indexes.zipWithIndex.map { case (value, i) => s"index${i + 1}" -> value }.toMap
-        filterKey("took")(json) shouldEqual jsonContentOf("/kg/views/es-search-response-aggregated.json", toReplace)
+        val toReplace = indexes.zipWithIndex.map { case (value, i) => s"index${i + 1}" -> value }
+        filterKey("took")(json) shouldEqual
+          jsonContentOf("/kg/views/es-search-response-aggregated.json", toReplace: _*)
       }
     }
 
@@ -270,10 +261,8 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual jsonContentOf(
-            "/kg/views/es-search-response-2.json",
-            Map("index" -> index)
-          )
+          filterKey("took")(json) shouldEqual
+            jsonContentOf("/kg/views/es-search-response-2.json", "index" -> index)
       }
     }
 
@@ -282,13 +271,11 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          Map(
-            "total"     -> "12",
-            "processed" -> "12",
-            "evaluated" -> "6",
-            "discarded" -> "6",
-            "remaining" -> "0"
-          )
+          "total"     -> "12",
+          "processed" -> "12",
+          "evaluated" -> "6",
+          "discarded" -> "6",
+          "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
       }
@@ -341,13 +328,11 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          Map(
-            "total"     -> "12",
-            "processed" -> "12",
-            "evaluated" -> "12",
-            "discarded" -> "0",
-            "remaining" -> "0"
-          )
+          "total"     -> "12",
+          "processed" -> "12",
+          "evaluated" -> "12",
+          "discarded" -> "0",
+          "remaining" -> "0"
         )
         filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
       }
@@ -405,10 +390,8 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual jsonContentOf(
-            "/kg/views/es-search-response-no-type.json",
-            Map("index" -> index)
-          )
+          filterKey("took")(json) shouldEqual
+            jsonContentOf("/kg/views/es-search-response-no-type.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>
@@ -432,10 +415,8 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         (json, result) =>
           result.status shouldEqual StatusCodes.OK
           val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual jsonContentOf(
-            "/kg/views/es-search-response-no-deprecated.json",
-            Map("index" -> index)
-          )
+          filterKey("took")(json) shouldEqual
+            jsonContentOf("/kg/views/es-search-response-no-deprecated.json", "index" -> index)
 
           deltaClient
             .post[Json](s"/views/$fullId/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>

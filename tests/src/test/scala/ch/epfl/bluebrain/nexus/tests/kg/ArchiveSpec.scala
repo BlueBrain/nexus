@@ -35,12 +35,14 @@ class ArchiveSpec extends BaseSpec with CirceEq {
 
   private val payload1 = jsonContentOf(
     "/kg/resources/simple-resource.json",
-    Map("priority" -> "5", "resourceId" -> "1")
+    "priority"   -> "5",
+    "resourceId" -> "1"
   )
 
   private val payload2 = jsonContentOf(
     "/kg/resources/simple-resource.json",
-    Map("priority" -> "6", "resourceId" -> "2")
+    "priority"   -> "6",
+    "resourceId" -> "2"
   )
 
   private val nexusLogoDigest =
@@ -113,7 +115,7 @@ class ArchiveSpec extends BaseSpec with CirceEq {
 
   "creating archives" should {
     "succeed" taggedAs ArchivesTag in {
-      val payload = jsonContentOf("/kg/archives/archive3.json", Map("project2" -> fullId2))
+      val payload = jsonContentOf("/kg/archives/archive3.json", "project2" -> fullId2)
 
       deltaClient.put[Json](s"/archives/$fullId/test-resource:archive", payload, Tweety) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
@@ -145,7 +147,8 @@ class ArchiveSpec extends BaseSpec with CirceEq {
       val collisions = List.tabulate(2)(i => jsonContentOf(s"/kg/archives/archive-path-collision${i + 1}.json"))
       val expected   = jsonContentOf(
         "/kg/archives/archive-path-dup.json",
-        Map("project" -> fullId, "kg" -> config.deltaUri.toString())
+        "project" -> fullId,
+        "kg"      -> config.deltaUri.toString()
       )
 
       collisions.traverse { payload =>
@@ -167,7 +170,7 @@ class ArchiveSpec extends BaseSpec with CirceEq {
             Tweety,
             "project2" -> fullId2,
             "project1" -> fullId
-          )
+          ): _*
         )
         filterKeys(
           Set("_createdAt", "_updatedAt", "_expiresInSeconds")

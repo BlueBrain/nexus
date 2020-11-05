@@ -109,7 +109,8 @@ class EventsSpec extends BaseSpec with Inspectors {
       //Created event
       val payload = jsonContentOf(
         "/kg/resources/simple-resource.json",
-        Map("priority" -> "3", "resourceId" -> "1")
+        "priority"   -> "3",
+        "resourceId" -> "1"
       )
 
       for {
@@ -125,7 +126,8 @@ class EventsSpec extends BaseSpec with Inspectors {
                s"/resources/$id/_/test-resource:1?rev=1",
                jsonContentOf(
                  "/kg/resources/simple-resource.json",
-                 Map("priority" -> "5", "resourceId" -> "1")
+                 "priority"   -> "5",
+                 "resourceId" -> "1"
                ),
                BugsBunny
              ) { (_, response) =>
@@ -136,7 +138,8 @@ class EventsSpec extends BaseSpec with Inspectors {
                s"/resources/$id/_/test-resource:1/tags?rev=2",
                jsonContentOf(
                  "/kg/resources/tag.json",
-                 Map("tag" -> "v1.0.0", "rev" -> "1")
+                 "tag" -> "v1.0.0",
+                 "rev" -> "1"
                ),
                BugsBunny
              ) { (_, response) =>
@@ -191,7 +194,7 @@ class EventsSpec extends BaseSpec with Inspectors {
                        "resources"        -> s"${config.deltaUri}/resources/$id",
                        "organizationUuid" -> uuids._1,
                        "projectUuid"      -> uuids._2
-                     )
+                     ): _*
                    )
                  }
       } yield succeed
@@ -219,7 +222,7 @@ class EventsSpec extends BaseSpec with Inspectors {
                        "resources"        -> s"${config.deltaUri}/resources/$id",
                        "organizationUuid" -> uuids._1,
                        "projectUuid"      -> uuids._2
-                     )
+                     ): _*
                    )
                  }
       } yield succeed
@@ -241,7 +244,7 @@ class EventsSpec extends BaseSpec with Inspectors {
                 "resources"        -> s"${config.deltaUri}/resources/$id",
                 "organizationUuid" -> uuids._1,
                 "projectUuid"      -> uuids._2
-              )
+              ): _*
             )
           }
       } yield succeed
@@ -273,7 +276,7 @@ class EventsSpec extends BaseSpec with Inspectors {
                         "projectUuid"       -> uuids._2,
                         "organization2Uuid" -> uuids2._1,
                         "project2Uuid"      -> uuids2._2
-                      )
+                      ): _*
                     )
                   }
       } yield succeed
