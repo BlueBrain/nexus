@@ -44,13 +44,12 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
     with CirceUnmarshalling
     with QueryParamsUnmarshalling {
 
-  import baseUri._
-
   private val any = "*"
 
   private val simultaneousRevAndAncestorsRejection =
     MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously")
 
+  import baseUri.prefixSegment
   implicit val aclContext: ContextValue = Acl.context
 
   implicit val searchEncoder: SearchEncoder[AclResource] = encodeResults(_ => None)

@@ -3,15 +3,15 @@
     "https://bluebrain.github.io/nexus/contexts/resource.json",
     "https://bluebrain.github.io/nexus/contexts/permissions.json"
   ],
-  "@id": "http://example.com/permissions",
+  "@id": "http://localhost/v1/permissions",
   "@type": "Permissions",
   "permissions": [ "acls/read", "acls/write"],
   "_rev": 1,
   "_deprecated": false,
   "_createdAt": "1970-01-01T00:00:00Z",
-  "_createdBy": "http://example.com/anonymous",
+  "_createdBy": "http://localhost/v1/anonymous",
   "_updatedAt": "1970-01-01T00:00:00Z",
-  "_updatedBy": "http://example.com/realms/bbp/users/maria",
+  "_updatedBy": "http://localhost/v1/realms/bbp/users/maria",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/permissions.json",
-  "_self": "http://example.com/permissions"
+  "_self": "http://localhost/v1/permissions"
 }

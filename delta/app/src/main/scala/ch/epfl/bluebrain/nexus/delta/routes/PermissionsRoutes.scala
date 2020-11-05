@@ -33,7 +33,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
     with DeltaDirectives
     with CirceUnmarshalling {
 
-  import baseUri._
+  import baseUri.prefixSegment
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {

@@ -19,7 +19,7 @@ class ResourceFSpec
     with TestMatchers {
 
   "A ResourceF" should {
-    implicit val baseUri: BaseUri = BaseUri("http://example.com")
+    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
     val updatedBy                 = User("maria", Label.unsafe("bbp"))
     val resource                  = PermissionsGen.resourceFor(Set(acls.read, acls.write), rev = 1L, updatedBy = updatedBy)
 

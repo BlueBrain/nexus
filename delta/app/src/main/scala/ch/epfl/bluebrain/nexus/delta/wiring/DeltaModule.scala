@@ -29,16 +29,6 @@ import org.slf4j.{Logger, LoggerFactory}
   */
 // $COVERAGE-OFF$
 class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with ClasspathResourceUtils {
-  private val aclsCtx          = ioJsonContentOf("/contexts/acls.json").memoizeOnSuccess
-  private val errorCtx         = ioJsonContentOf("/contexts/error.json").memoizeOnSuccess
-  private val identitiesCtx    = ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess
-  private val organizationsCtx = ioJsonContentOf("/contexts/organizations.json").memoizeOnSuccess
-  private val permissionsCtx   = ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess
-  private val projectsCtx      = ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess
-  private val realmsCtx        = ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess
-  private val resourceCtx      = ioJsonContentOf("/contexts/resource.json").memoizeOnSuccess
-  private val searchCtx        = ioJsonContentOf("/contexts/search.json").memoizeOnSuccess
-  private val shaclCtx         = ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess
 
   make[AppConfig].from(appCfg)
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
@@ -52,16 +42,16 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
   )
   make[RemoteContextResolution].from(
     RemoteContextResolution.fixedIOResource(
-      contexts.acls          -> aclsCtx,
-      contexts.error         -> errorCtx,
-      contexts.identities    -> identitiesCtx,
-      contexts.organizations -> organizationsCtx,
-      contexts.permissions   -> permissionsCtx,
-      contexts.projects      -> projectsCtx,
-      contexts.realms        -> realmsCtx,
-      contexts.resource      -> resourceCtx,
-      contexts.search        -> searchCtx,
-      contexts.shacl         -> shaclCtx
+      contexts.acls          -> ioJsonContentOf("/contexts/acls.json").memoizeOnSuccess,
+      contexts.error         -> ioJsonContentOf("/contexts/error.json").memoizeOnSuccess,
+      contexts.identities    -> ioJsonContentOf("/contexts/identities.json").memoizeOnSuccess,
+      contexts.organizations -> ioJsonContentOf("/contexts/organizations.json").memoizeOnSuccess,
+      contexts.permissions   -> ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess,
+      contexts.projects      -> ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess,
+      contexts.realms        -> ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess,
+      contexts.resource      -> ioJsonContentOf("/contexts/resource.json").memoizeOnSuccess,
+      contexts.search        -> ioJsonContentOf("/contexts/search.json").memoizeOnSuccess,
+      contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess
     )
   )
   make[ActorSystem[Nothing]].from(ActorSystem[Nothing](Behaviors.empty, "delta", config))
