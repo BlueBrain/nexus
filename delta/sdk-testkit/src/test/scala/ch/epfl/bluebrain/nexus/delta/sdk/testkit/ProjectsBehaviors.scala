@@ -102,7 +102,7 @@ trait ProjectsBehaviors {
   lazy val organizations: UIO[OrganizationsDummy] = {
     val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)
     val orgs            = for {
-      o <- OrganizationsDummy()(baseUri, orgUuidF, ioClock)
+      o <- OrganizationsDummy()(orgUuidF, ioClock)
       _ <- o.create(org1, None)
       _ <- o.create(org2, None)
       _ <- o.create(Label.unsafe("orgDeprecated"), None)

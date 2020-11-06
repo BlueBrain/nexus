@@ -4,15 +4,15 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFields, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import org.scalatest.OptionValues
 
-object ProjectGen {
+object ProjectGen extends OptionValues {
 
   def currentState(
       orgLabel: String,
@@ -24,7 +24,8 @@ object ProjectGen {
       mappings: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base,
       vocab: Iri = nxv.base,
-      deprecated: Boolean = false
+      deprecated: Boolean = false,
+      subject: Subject = Anonymous
   ): Current =
     Current(
       Label.unsafe(label),
@@ -38,9 +39,9 @@ object ProjectGen {
       base,
       vocab,
       Instant.EPOCH,
-      Anonymous,
+      subject,
       Instant.EPOCH,
-      Anonymous
+      subject
     )
 
   def projectFromRef(
@@ -77,21 +78,19 @@ object ProjectGen {
       rev: Long,
       subject: Subject,
       deprecated: Boolean = false
-  )(implicit base: BaseUri): ProjectResource = {
-    val accessUrl = AccessUrl.project(project.ref)
-    ResourceF(
-      id = accessUrl.iri,
-      accessUrl = accessUrl,
-      rev = rev,
-      types = Set(nxv.Project),
+  ): ProjectResource =
+    currentState(
+      project.organizationLabel.value,
+      project.label.value,
+      rev,
+      project.uuid,
+      project.organizationUuid,
+      project.description,
+      project.apiMappings,
+      project.base,
+      project.vocab,
       deprecated = deprecated,
-      createdAt = Instant.EPOCH,
-      createdBy = subject,
-      updatedAt = Instant.EPOCH,
-      updatedBy = subject,
-      schema = Latest(schemas.projects),
-      value = project
-    )
-  }
+      subject = subject
+    ).toResource.value
 
 }

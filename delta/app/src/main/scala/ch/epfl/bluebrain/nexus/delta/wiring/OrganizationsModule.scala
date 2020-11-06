@@ -30,7 +30,7 @@ object OrganizationsModule extends ModuleDef {
         as: ActorSystem[Nothing],
         scheduler: Scheduler
     ) =>
-      OrganizationsImpl(cfg.organizations, eventLog)(UUIDF.random, cfg.http.baseUri, as, scheduler, Clock[UIO])
+      OrganizationsImpl(cfg.organizations, eventLog)(UUIDF.random, as, scheduler, Clock[UIO])
   }
 
   make[OrganizationsRoutes].from {

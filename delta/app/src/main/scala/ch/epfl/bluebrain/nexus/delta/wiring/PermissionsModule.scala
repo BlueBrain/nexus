@@ -26,7 +26,7 @@ object PermissionsModule extends ModuleDef {
         cfg.permissions.minimum,
         cfg.permissions.aggregate,
         log
-      )(cfg.http.baseUri, as, Clock[UIO])
+      )(as, Clock[UIO])
   }
 
   make[PermissionsRoutes]

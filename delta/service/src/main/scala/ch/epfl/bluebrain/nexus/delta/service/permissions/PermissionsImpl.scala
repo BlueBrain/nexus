@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.PermissionsAggregate
@@ -23,8 +23,7 @@ final class PermissionsImpl private (
     override val minimum: Set[Permission],
     agg: PermissionsAggregate,
     eventLog: EventLog[Envelope[PermissionsEvent]]
-)(implicit base: BaseUri)
-    extends Permissions {
+) extends Permissions {
 
   override def fetch: UIO[PermissionsResource] =
     agg.state(entityId).map(_.toResource(minimum)).named("fetchPermissions", moduleType)
@@ -128,8 +127,8 @@ object PermissionsImpl {
       minimum: Set[Permission],
       agg: PermissionsAggregate,
       eventLog: EventLog[Envelope[PermissionsEvent]]
-  )(implicit base: BaseUri): Permissions =
-    new PermissionsImpl(minimum, agg, eventLog)(base)
+  ): Permissions =
+    new PermissionsImpl(minimum, agg, eventLog)
 
   /**
     * Constructs a new [[Permissions]] instance backed by a sharded aggregate. It requires that the system has joined
@@ -144,7 +143,7 @@ object PermissionsImpl {
       minimum: Set[Permission],
       aggregateConfig: AggregateConfig,
       eventLog: EventLog[Envelope[PermissionsEvent]]
-  )(implicit base: BaseUri, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions] =
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions] =
     aggregate(minimum, aggregateConfig).map { agg =>
       apply(minimum, agg, eventLog)
     }

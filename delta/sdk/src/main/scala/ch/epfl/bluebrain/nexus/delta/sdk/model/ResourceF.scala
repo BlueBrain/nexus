@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF.fixedBase
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import io.circe.syntax._
@@ -17,8 +18,8 @@ import io.circe.{Encoder, JsonObject}
 /**
   * A resource representation.
   *
-  * @param id         the resource id
-  * @param accessUrl  the resource access Url
+  * @param id         the function to generate the resource id
+  * @param accessUrl  the function to generate the resource access Url
   * @param rev        the revision of the resource
   * @param types      the collection of known types of this resource
   * @param deprecated whether the resource is deprecated of not
@@ -31,8 +32,8 @@ import io.circe.{Encoder, JsonObject}
   * @tparam A the resource value type
   */
 final case class ResourceF[A](
-    id: Iri,
-    accessUrl: AccessUrl,
+    id: BaseUri => Iri,
+    accessUrl: BaseUri => AccessUrl,
     rev: Long,
     types: Set[Iri],
     deprecated: Boolean,
@@ -43,6 +44,25 @@ final case class ResourceF[A](
     schema: ResourceRef,
     value: A
 ) {
+
+  private[ResourceF] val fixedId        = id(fixedBase)
+  private[ResourceF] val fixedAccessUrl = accessUrl(fixedBase)
+
+  override def hashCode(): Int =
+    (fixedId, fixedAccessUrl, rev, types, deprecated, createdAt, createdBy, updatedAt, updatedBy, schema, value).##
+
+  // format: off
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case b @ ResourceF(_, _, `rev`, `types`, `deprecated`, `createdAt`, `createdBy`, `updatedAt`, `updatedBy`, `schema`, `value`) =>
+        fixedId == b.fixedId && fixedAccessUrl == b.fixedAccessUrl
+      case _ =>
+        false
+    }
+  // format: on
+
+  override def toString: String =
+    s"fixedId = '$fixedId', fixedAccessUrl = '$fixedAccessUrl', rev = '$rev', types = '$types', deprecated = '$deprecated', createdAt = '$createdAt', createdBy = '$createdBy', updatedAt = '$updatedAt', updatedBy = '$updatedBy', schema = '$schema', value = '$value'"
 
   /**
     * Maps the value of the resource using the supplied function f.
@@ -55,6 +75,8 @@ final case class ResourceF[A](
 }
 
 object ResourceF {
+  private[ResourceF] val fixedBase: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+
   implicit val resourceFunctor: Functor[ResourceF] =
     new Functor[ResourceF] {
       override def map[A, B](fa: ResourceF[A])(f: A => B): ResourceF[B] = fa.map(f)
@@ -66,7 +88,7 @@ object ResourceF {
   ): Encoder.AsObject[ResourceF[Unit]] =
     Encoder.AsObject.instance { r =>
       val obj = JsonObject.empty
-        .add(keywords.id, r.id.asJson)
+        .add(keywords.id, r.id(base).asJson)
         .add("_rev", r.rev.asJson)
         .add("_deprecated", r.deprecated.asJson)
         .add("_createdAt", r.createdAt.asJson)
@@ -74,7 +96,7 @@ object ResourceF {
         .add("_updatedAt", r.updatedAt.asJson)
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
-        .add("_self", r.accessUrl.shortForm(mappings).asJson)
+        .add("_self", r.accessUrl(base).shortForm(mappings).asJson)
       r.types.take(2).toList match {
         case Nil         => obj
         case head :: Nil => obj.add(keywords.tpe, head.stripPrefix(nxv.base).asJson)
@@ -94,11 +116,11 @@ object ResourceF {
       base: BaseUri,
       mappings: ApiMappings = ApiMappings.empty
   ): JsonLdEncoder[ResourceF[Unit]] =
-    JsonLdEncoder.compactFromCirce((v: ResourceF[Unit]) => v.id, iriContext = contexts.resource)
+    JsonLdEncoder.compactFromCirce((v: ResourceF[Unit]) => v.id(base), iriContext = contexts.resource)
 
   implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit
       base: BaseUri,
       mappings: ApiMappings = ApiMappings.empty
   ): JsonLdEncoder[ResourceF[A]] =
-    JsonLdEncoder.compose(rf => (rf.void, rf.value, rf.id))
+    JsonLdEncoder.compose(rf => (rf.void, rf.value, rf.id(base)))
 }

@@ -36,7 +36,7 @@ object RealmsModule extends ModuleDef {
         hc: HttpClient
     ) =>
       val wellKnownResolver = WellKnownResolver((uri: Uri) => hc[Json](HttpRequest(uri = uri))) _
-      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(cfg.http.baseUri, as, scheduler, Clock[UIO])
+      RealmsImpl(cfg.realms, wellKnownResolver, eventLog)(as, scheduler, Clock[UIO])
   }
 
   make[RealmsRoutes].from {

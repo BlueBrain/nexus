@@ -55,7 +55,7 @@ class ProjectsRoutesSpec
   private val orgs = {
     implicit val subject: Identity.Subject = caller.subject
     for {
-      o <- OrganizationsDummy()(baseUri, uuidF = UUIDF.fixed(orgUuid))
+      o <- OrganizationsDummy()(uuidF = UUIDF.fixed(orgUuid))
       _ <- o.create(Label.unsafe("org1"), None)
       _ <- o.create(Label.unsafe("org2"), None)
       _ <- o.deprecate(Label.unsafe("org2"), 1L)

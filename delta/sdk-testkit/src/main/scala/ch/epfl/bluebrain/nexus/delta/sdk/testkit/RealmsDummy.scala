@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
@@ -31,7 +31,7 @@ final class RealmsDummy private (
     cache: RealmsCache,
     semaphore: IOSemaphore,
     resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
-)(implicit base: BaseUri, clock: Clock[UIO])
+)(implicit clock: Clock[UIO])
     extends Realms {
   override def create(
       label: Label,
@@ -93,7 +93,7 @@ object RealmsDummy {
     */
   final def apply(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
-  )(implicit clock: Clock[UIO], base: BaseUri): UIO[RealmsDummy] = {
+  )(implicit clock: Clock[UIO]): UIO[RealmsDummy] = {
     implicit val lens: Lens[Realm, Label] = _.label
 
     for {

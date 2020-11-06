@@ -3,22 +3,22 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, WellKnown}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import org.scalatest.OptionValues
 
-object RealmGen {
+object RealmGen extends OptionValues {
 
   def currentState(
       openIdConfig: Uri,
       wk: WellKnown,
       rev: Long,
       deprecated: Boolean = false,
-      logo: Option[Uri] = None
+      logo: Option[Uri] = None,
+      subject: Subject = Anonymous
   ): Current =
     Current(
       Label.unsafe(wk.issuer),
@@ -36,9 +36,9 @@ object RealmGen {
       wk.revocationEndpoint,
       wk.endSessionEndpoint,
       Instant.EPOCH,
-      Anonymous,
+      subject,
       Instant.EPOCH,
-      Anonymous
+      subject
     )
 
   def realm(openIdConfig: Uri, wk: WellKnown, logo: Option[Uri] = None): Realm =
@@ -60,23 +60,23 @@ object RealmGen {
   def resourceFor(
       realm: Realm,
       rev: Long,
-      subject: Subject,
+      subject: Subject = Anonymous,
       deprecated: Boolean = false
-  )(implicit base: BaseUri): RealmResource = {
-    val accessUrl = AccessUrl.realm(realm.label)
-    ResourceF(
-      id = accessUrl.iri,
-      accessUrl = accessUrl,
-      rev = rev,
-      types = Set(nxv.Realm),
-      deprecated = deprecated,
-      createdAt = Instant.EPOCH,
-      createdBy = subject,
-      updatedAt = Instant.EPOCH,
-      updatedBy = subject,
-      schema = Latest(schemas.realms),
-      value = realm
+  ): RealmResource = {
+    val wk = WellKnown(
+      realm.issuer,
+      realm.grantTypes,
+      realm.keys,
+      realm.authorizationEndpoint,
+      realm.tokenEndpoint,
+      realm.userInfoEndpoint,
+      realm.revocationEndpoint,
+      realm.endSessionEndpoint
     )
+    currentState(realm.openIdConfig, wk, rev, deprecated, realm.logo, subject)
+      .copy(label = realm.label, name = realm.name)
+      .toResource
+      .value
   }
 
 }

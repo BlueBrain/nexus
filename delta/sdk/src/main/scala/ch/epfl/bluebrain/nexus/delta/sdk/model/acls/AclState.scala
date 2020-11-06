@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Lens}
 
 /**
@@ -37,7 +37,7 @@ sealed trait AclState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(implicit base: BaseUri): Option[AclResource]
+  def toResource: Option[AclResource]
 }
 
 object AclState {
@@ -53,7 +53,7 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    override def toResource(implicit base: BaseUri): Option[AclResource] = None
+    override val toResource: Option[AclResource] = None
   }
 
   /**
@@ -74,12 +74,11 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override def toResource(implicit base: BaseUri): Option[AclResource] = {
-      val accessUrl = AccessUrl.acl(acl.address)
+    override def toResource: Option[AclResource] =
       Some(
         ResourceF(
-          id = accessUrl.iri,
-          accessUrl = accessUrl,
+          id = AccessUrl.acl(acl.address)(_).iri,
+          accessUrl = AccessUrl.acl(acl.address)(_),
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -91,7 +90,6 @@ object AclState {
           value = acl
         )
       )
-    }
   }
 
   implicit val revisionLens: Lens[AclState, Long] = (s: AclState) => s.rev

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.I
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationCommand, OrganizationRejection, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, OrganizationResource, Organizations}
@@ -31,7 +31,7 @@ final class OrganizationsDummy private (
     journal: OrganizationsJournal,
     cache: OrganizationsCache,
     semaphore: IOSemaphore
-)(implicit base: BaseUri, clock: Clock[UIO], uuidF: UUIDF)
+)(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Organizations {
 
   override def create(
@@ -111,11 +111,7 @@ object OrganizationsDummy {
   /**
     * Creates a new dummy Organizations implementation.
     */
-  final def apply()(implicit
-      base: BaseUri,
-      uuidF: UUIDF = UUIDF.random,
-      clock: Clock[UIO] = IO.clock
-  ): UIO[OrganizationsDummy] = {
+  final def apply()(implicit uuidF: UUIDF = UUIDF.random, clock: Clock[UIO] = IO.clock): UIO[OrganizationsDummy] = {
     implicit val lens: Lens[Organization, Label] = _.label
     for {
       journal <- Journal(moduleType)

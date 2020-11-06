@@ -31,7 +31,7 @@ object AclsModule extends ModuleDef {
         scheduler: Scheduler,
         permissions: Permissions
     ) =>
-      AclsImpl(cfg.acls, permissions, eventLog)(cfg.http.baseUri, as, scheduler, Clock[UIO])
+      AclsImpl(cfg.acls, permissions, eventLog)(as, scheduler, Clock[UIO])
   }
 
   make[AclsRoutes].from {

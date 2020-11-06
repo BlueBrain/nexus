@@ -2,16 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, ResourceF}
+import org.scalatest.OptionValues
 
-object AclGen {
+object AclGen extends OptionValues {
 
   def currentState(
       acl: Acl,
@@ -24,23 +22,8 @@ object AclGen {
   def resourceFor(
       acl: Acl,
       rev: Long = 1L,
-      subject: Subject = Identity.Anonymous,
-      deprecated: Boolean = false
-  )(implicit base: BaseUri): AclResource = {
-    val accessUrl = AccessUrl.acl(acl.address)
-    ResourceF(
-      id = accessUrl.iri,
-      accessUrl = accessUrl,
-      rev = rev,
-      types = Set(nxv.AccessControlList),
-      deprecated = deprecated,
-      createdAt = Instant.EPOCH,
-      createdBy = subject,
-      updatedAt = Instant.EPOCH,
-      updatedBy = subject,
-      schema = Latest(schemas.acls),
-      value = acl
-    )
-  }
+      subject: Subject = Identity.Anonymous
+  ): AclResource =
+    currentState(acl, rev, subject, subject).toResource.value
 
 }

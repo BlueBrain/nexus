@@ -38,7 +38,7 @@ sealed trait ProjectState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(implicit base: BaseUri): Option[ProjectResource]
+  def toResource: Option[ProjectResource]
 }
 
 object ProjectState {
@@ -66,7 +66,7 @@ object ProjectState {
     /**
       * Converts the state into a resource representation.
       */
-    override def toResource(implicit base: BaseUri): Option[ProjectResource] = None
+    override val toResource: Option[ProjectResource] = None
   }
 
   /**
@@ -122,12 +122,12 @@ object ProjectState {
     /**
       * Converts the state into a resource representation.
       */
-    override def toResource(implicit base: BaseUri): Option[ProjectResource] = {
-      val accessUrl = AccessUrl.project(ProjectRef(organizationLabel, label))
+    override def toResource: Option[ProjectResource] = {
+      val projectRef = ProjectRef(organizationLabel, label)
       Some(
         ResourceF(
-          id = accessUrl.iri,
-          accessUrl = accessUrl,
+          id = AccessUrl.project(projectRef)(_).iri,
+          accessUrl = AccessUrl.project(projectRef)(_),
           rev = rev,
           types = types,
           deprecated = deprecated,

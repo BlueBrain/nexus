@@ -39,7 +39,7 @@ sealed trait OrganizationState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(implicit base: BaseUri): Option[OrganizationResource]
+  def toResource: Option[OrganizationResource]
 }
 
 object OrganizationState {
@@ -57,7 +57,7 @@ object OrganizationState {
 
     override val deprecated: Boolean = false
 
-    override def toResource(implicit base: BaseUri): Option[OrganizationResource] = None
+    override val toResource: Option[OrganizationResource] = None
   }
 
   /**
@@ -85,12 +85,11 @@ object OrganizationState {
       updatedBy: Subject
   ) extends OrganizationState {
 
-    override def toResource(implicit base: BaseUri): Option[OrganizationResource] = {
-      val accessUrl = AccessUrl.organization(label)
+    override def toResource: Option[OrganizationResource] =
       Some(
         ResourceF(
-          id = accessUrl.iri,
-          accessUrl = accessUrl,
+          id = AccessUrl.organization(label)(_).iri,
+          accessUrl = AccessUrl.organization(label)(_),
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -102,7 +101,6 @@ object OrganizationState {
           value = Organization(label, uuid, description)
         )
       )
-    }
   }
 
   implicit val revisionLens: Lens[OrganizationState, Long] = (s: OrganizationState) => s.rev

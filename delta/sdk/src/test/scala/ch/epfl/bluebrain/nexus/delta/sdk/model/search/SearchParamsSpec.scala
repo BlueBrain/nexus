@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen, RealmGen, WellKnownGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.{OrganizationSearchParams, ProjectSearchParams, RealmSearchParams}
@@ -11,8 +11,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
 
-  private val subject                   = User("myuser", Label.unsafe("myrealm"))
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  private val subject = User("myuser", Label.unsafe("myrealm"))
 
   "A RealmSearchParams" should {
     val issuer              = "myrealm"

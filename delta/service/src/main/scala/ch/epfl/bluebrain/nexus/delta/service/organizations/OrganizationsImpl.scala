@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationEvent, OrganizationState, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
@@ -32,8 +32,7 @@ final class OrganizationsImpl private (
     agg: OrganizationsAggregate,
     eventLog: EventLog[Envelope[OrganizationEvent]],
     cache: OrganizationsCache
-)(implicit base: BaseUri)
-    extends Organizations {
+) extends Organizations {
 
   override def create(
       label: Label,
@@ -188,7 +187,7 @@ object OrganizationsImpl {
       agg: OrganizationsAggregate,
       eventLog: EventLog[Envelope[OrganizationEvent]],
       cache: OrganizationsCache
-  )(implicit base: BaseUri): OrganizationsImpl =
+  ): OrganizationsImpl =
     new OrganizationsImpl(agg, eventLog, cache)
 
   /**
@@ -202,7 +201,6 @@ object OrganizationsImpl {
       eventLog: EventLog[Envelope[OrganizationEvent]]
   )(implicit
       uuidF: UUIDF = UUIDF.random,
-      base: BaseUri,
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]

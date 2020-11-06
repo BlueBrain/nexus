@@ -39,7 +39,7 @@ sealed trait RealmState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(implicit base: BaseUri): Option[RealmResource]
+  def toResource: Option[RealmResource]
 
 }
 
@@ -64,7 +64,7 @@ object RealmState {
     /**
       * Converts the state into a resource representation.
       */
-    override def toResource(implicit base: BaseUri): Option[RealmResource] = None
+    override val toResource: Option[RealmResource] = None
   }
 
   /**
@@ -131,12 +131,11 @@ object RealmState {
     /**
       * @return a resource representation for the realm
       */
-    override def toResource(implicit base: BaseUri): Option[RealmResource] = {
-      val accessUrl = AccessUrl.realm(label)
+    override def toResource: Option[RealmResource] =
       Some(
         ResourceF(
-          id = accessUrl.iri,
-          accessUrl = accessUrl,
+          id = AccessUrl.realm(label)(_).iri,
+          accessUrl = AccessUrl.realm(label)(_),
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -148,7 +147,6 @@ object RealmState {
           value = realm
         )
       )
-    }
   }
 
   implicit val revisionLens: Lens[RealmState, Long] = (s: RealmState) => s.rev

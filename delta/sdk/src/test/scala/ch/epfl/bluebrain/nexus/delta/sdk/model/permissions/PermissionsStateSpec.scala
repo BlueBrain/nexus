@@ -4,14 +4,12 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class PermissionsStateSpec extends AnyWordSpecLike with Matchers {
 
   "A PermissionsState" when {
-    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
     val minimum    = Set(Permission.unsafe("my/permission"))
     val additional = Set(Permission.unsafe("my/additional"))

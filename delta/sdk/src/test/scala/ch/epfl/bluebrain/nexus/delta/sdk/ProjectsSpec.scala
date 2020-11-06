@@ -5,7 +5,7 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
@@ -32,16 +32,15 @@ class ProjectsSpec
     with OptionValues {
 
   "The Projects state machine" when {
-    implicit val sc: Scheduler    = Scheduler.global
-    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-    val epoch                     = Instant.EPOCH
-    val time2                     = Instant.ofEpochMilli(10L)
-    val am                        = ApiMappings(Map("xsd" -> xsd.base, "Person" -> schema.Person))
-    val base                      = PrefixIri.unsafe(iri"http://example.com/base/")
-    val vocab                     = PrefixIri.unsafe(iri"http://example.com/vocab/")
-    val org1                      = OrganizationGen.currentState("org", 1L)
-    val org2                      = OrganizationGen.currentState("org2", 1L, deprecated = true)
-    val current                   = ProjectGen.currentState(
+    implicit val sc: Scheduler = Scheduler.global
+    val epoch                  = Instant.EPOCH
+    val time2                  = Instant.ofEpochMilli(10L)
+    val am                     = ApiMappings(Map("xsd" -> xsd.base, "Person" -> schema.Person))
+    val base                   = PrefixIri.unsafe(iri"http://example.com/base/")
+    val vocab                  = PrefixIri.unsafe(iri"http://example.com/vocab/")
+    val org1                   = OrganizationGen.currentState("org", 1L)
+    val org2                   = OrganizationGen.currentState("org2", 1L, deprecated = true)
+    val current                = ProjectGen.currentState(
       "org",
       "proj",
       1L,
@@ -51,15 +50,15 @@ class ProjectsSpec
       base = base.value,
       vocab = vocab.value
     )
-    val label                     = current.label
-    val uuid                      = current.uuid
-    val orgLabel                  = current.organizationLabel
-    val orgUuid                   = current.organizationUuid
-    val desc                      = current.description
-    val desc2                     = Some("desc2")
-    val org2Label                 = org2.label
-    val subject                   = User("myuser", label)
-    val orgs                      = ioFromMap(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value)
+    val label                  = current.label
+    val uuid                   = current.uuid
+    val orgLabel               = current.organizationLabel
+    val orgUuid                = current.organizationUuid
+    val desc                   = current.description
+    val desc2                  = Some("desc2")
+    val org2Label              = org2.label
+    val subject                = User("myuser", label)
+    val orgs                   = ioFromMap(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value)
 
     val ref  = ProjectRef(orgLabel, label)
     val ref2 = ProjectRef(org2Label, label)

@@ -31,8 +31,7 @@ final class RealmsImpl private (
     agg: RealmsAggregate,
     eventLog: EventLog[Envelope[RealmEvent]],
     index: RealmsCache
-)(implicit base: BaseUri)
-    extends Realms {
+) extends Realms {
 
   override def create(
       label: Label,
@@ -172,7 +171,7 @@ object RealmsImpl {
       agg: RealmsAggregate,
       eventLog: EventLog[Envelope[RealmEvent]],
       index: RealmsCache
-  )(implicit base: BaseUri): RealmsImpl =
+  ): RealmsImpl =
     new RealmsImpl(agg, eventLog, index)
 
   /**
@@ -186,7 +185,7 @@ object RealmsImpl {
       realmsConfig: RealmsConfig,
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown],
       eventLog: EventLog[Envelope[RealmEvent]]
-  )(implicit base: BaseUri, as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): UIO[Realms] = {
+  )(implicit as: ActorSystem[Nothing], sc: Scheduler, clock: Clock[UIO]): UIO[Realms] = {
     val i = index(realmsConfig)
     for {
       agg   <- aggregate(resolveWellKnown, i.values, realmsConfig)

@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
@@ -33,9 +33,8 @@ class AuthDirectivesSpec
     with IdiomaticMockito
     with BeforeAndAfter {
 
-  val user                              = User("alice", Label.unsafe("wonderland"))
-  val user2                             = User("bob", Label.unsafe("wonderland"))
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  val user  = User("alice", Label.unsafe("wonderland"))
+  val user2 = User("bob", Label.unsafe("wonderland"))
 
   val identities = new Identities {
 

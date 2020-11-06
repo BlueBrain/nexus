@@ -4,7 +4,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.moduleType
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
@@ -29,7 +29,7 @@ final class AclsDummy private (
     journal: AclsJournal,
     cache: IORef[AclCollection],
     semaphore: IOSemaphore
-)(implicit base: BaseUri, clock: Clock[UIO])
+)(implicit clock: Clock[UIO])
     extends Acls {
 
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
@@ -94,7 +94,7 @@ object AclsDummy {
     *
     * @param perms the bundle of operations pertaining to managing permissions wrapped in an IO
     */
-  final def apply(perms: UIO[Permissions])(implicit base: BaseUri, clock: Clock[UIO] = IO.clock): UIO[AclsDummy] = {
+  final def apply(perms: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] = {
     implicit val idLens: Lens[AclEvent, AclAddress] = _.address
 
     for {

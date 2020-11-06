@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
@@ -28,7 +28,7 @@ final class PermissionsDummy private (
     journal: IORef[Vector[Envelope[PermissionsEvent]]],
     semaphore: IOSemaphore,
     maxStreamSize: Long
-)(implicit base: BaseUri, clock: Clock[UIO])
+)(implicit clock: Clock[UIO])
     extends Permissions {
 
   override def fetch: UIO[PermissionsResource] =
@@ -119,7 +119,7 @@ object PermissionsDummy {
   final def apply(
       minimum: Set[Permission],
       maxStreamSize: Long = Long.MaxValue
-  )(implicit base: BaseUri, clock: Clock[UIO]): UIO[PermissionsDummy] =
+  )(implicit clock: Clock[UIO]): UIO[PermissionsDummy] =
     for {
       ref <- IORef.of(Vector.empty[Envelope[PermissionsEvent]])
       sem <- IOSemaphore(1L)

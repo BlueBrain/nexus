@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -24,9 +24,8 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)(implicit
-    base: BaseUri
-) extends Acls {
+final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)
+    extends Acls {
 
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
     agg.state(address.string).map(_.toResource).named("fetchAcl", moduleType)
@@ -147,7 +146,7 @@ object AclsImpl {
       agg: AclsAggregate,
       eventLog: EventLog[Envelope[AclEvent]],
       cache: AclsCache
-  )(implicit base: BaseUri): AclsImpl =
+  ): AclsImpl =
     new AclsImpl(agg, eventLog, cache)
 
   /**
@@ -162,7 +161,6 @@ object AclsImpl {
       permissions: Permissions,
       eventLog: EventLog[Envelope[AclEvent]]
   )(implicit
-      base: BaseUri,
       as: ActorSystem[Nothing],
       sc: Scheduler,
       clock: Clock[UIO]
