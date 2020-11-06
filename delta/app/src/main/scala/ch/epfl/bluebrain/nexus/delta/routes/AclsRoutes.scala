@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.Uri.Path._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, MalformedQueryParamRejection, Route}
 import cats.implicits.{toBifunctorOps, toFunctorOps}
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
@@ -23,14 +23,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{encodeResults, searchResultsJsonLdEncoder, SearchEncoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities, Lens}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities}
 import io.circe._
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.generic.semiauto.deriveDecoder
-import io.circe.syntax.EncoderOps
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
+
+import scala.annotation.nowarn
 
 class AclsRoutes(identities: Identities, acls: Acls)(implicit
     baseUri: BaseUri,
@@ -42,29 +44,13 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
     with CirceUnmarshalling
     with QueryParamsUnmarshalling {
 
-  import baseUri._
-
-  private val aclsIri = endpoint.toIri / "acls"
-
   private val any = "*"
 
   private val simultaneousRevAndAncestorsRejection =
     MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously")
 
-  implicit val iriLens: Lens[AclAddress, Iri] = {
-    case AclAddress.Root    => aclsIri
-    case Organization(org)  => aclsIri / org.value
-    case Project(org, proj) => aclsIri / org.value / proj.value
-  }
-
+  import baseUri.prefixSegment
   implicit val aclContext: ContextValue = Acl.context
-
-  implicit val aclResponseEncoder: Encoder.AsObject[AclResource] = Encoder.AsObject
-    .instance { r: AclResource =>
-      r.copy(id = iriLens.get(r.id)).void.asJsonObject deepMerge r.value.asJsonObject deepMerge JsonObject(
-        "_path" -> Json.fromString(r.id.string)
-      )
-    }
 
   implicit val searchEncoder: SearchEncoder[AclResource] = encodeResults(_ => None)
 
@@ -119,18 +105,21 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
             parameter("rev" ? 0L) { rev =>
               operationName(s"$prefixSegment/acls${address.string}") {
                 concat(
-                  (put & entity(as[AclInput])) { aclEntity =>
+                  // Replace ACLs
+                  (put & entity(as[ReplaceAcl])) { case ReplaceAcl(AclValues(values)) =>
                     authorizeFor(address, aclsPermissions.write).apply {
                       val status = if (rev == 0L) Created else OK
-                      completeIO(status, acls.replace(address, aclEntity.toAcl, rev).map(_.void))
+                      completeIO(status, acls.replace(Acl(address, values: _*), rev).map(_.void))
                     }
                   },
+                  // Append or subtract ACLs
                   (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsPermissions.write)) {
-                    case AppendAcl(acl)   =>
-                      completeIO(acls.append(address, acl, rev).map(_.void))
-                    case SubtractAcl(acl) =>
-                      completeIO(acls.subtract(address, acl, rev).map(_.void))
+                    case Append(AclValues(values))   =>
+                      completeIO(acls.append(Acl(address, values: _*), rev).map(_.void))
+                    case Subtract(AclValues(values)) =>
+                      completeIO(acls.subtract(Acl(address, values: _*), rev).map(_.void))
                   },
+                  // Delete ACLs
                   delete {
                     authorizeFor(address, aclsPermissions.write).apply {
                       completeIO(OK, acls.delete(address, rev).map(_.void))
@@ -141,6 +130,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                       (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
                         case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
                         case (Some(rev), false) =>
+                          // Fetch self ACLs without ancestors at specific revision
                           completeIO(
                             acls
                               .fetchSelfAt(address, rev)
@@ -151,12 +141,14 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                               .leftWiden[AclRejection]
                           )
                         case (None, true)       =>
+                          // Fetch self ACLs with ancestors
                           completeUnscoredSearch(
                             acls
                               .fetchSelfWithAncestors(address)
                               .map(_.value.values.toSeq)
                           )
                         case (None, false)      =>
+                          // Fetch self ACLs without ancestors
                           completeUnscoredSearch(
                             acls
                               .fetchSelf(address)
@@ -168,6 +160,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                         (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
                           case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
                           case (Some(rev), false) =>
+                            // Fetch all ACLs without ancestors at specific revision
                             completeIO(
                               acls
                                 .fetchAt(address, rev)
@@ -178,12 +171,14 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
                                 .leftWiden[AclRejection]
                             )
                           case (None, true)       =>
+                            // Fetch all ACLs with ancestors
                             completeUnscoredSearch(
                               acls
                                 .fetchWithAncestors(address)
                                 .map(_.value.values.toSeq)
                             )
                           case (None, false)      =>
+                            // Fetch all ACLs without ancestors
                             completeUnscoredSearch(
                               acls
                                 .fetch(address)
@@ -200,12 +195,14 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
             operationName(s"$prefixSegment/acls${addressFilter.string}") {
               parameter("self" ? true) {
                 case true  =>
+                  // Filter self ACLs with or without ancestors
                   completeSearch(
                     acls
                       .listSelf(addressFilter)
                       .map(aclCol => SearchResults(aclCol.value.size.toLong, aclCol.value.values.toSeq))
                   )
                 case false =>
+                  // Filter all ACLs with or without ancestors
                   completeSearch(
                     acls
                       .list(addressFilter)
@@ -226,37 +223,31 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
 
 object AclsRoutes {
 
-  type AclResponseResource = ResourceF[Iri, Acl]
+  final private case class IdentityPermissions(identity: Identity, permissions: Set[Permission])
 
-  final private[routes] case class AclEntry(permissions: Set[Permission], identity: Identity)
-  final private[routes] case class AclInput(acl: Seq[AclEntry]) {
-    def toAcl: Acl = Acl(acl.map(entry => entry.identity -> entry.permissions): _*)
+  final private[routes] case class AclValues(value: Seq[(Identity, Set[Permission])])
+  private[routes] object AclValues {
+    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] = deriveDecoder[IdentityPermissions]
+
+    implicit val aclValuesDecoder: Decoder[AclValues] =
+      Decoder
+        .decodeSeq[IdentityPermissions]
+        .map(seq => AclValues(seq.map(value => value.identity -> value.permissions)))
   }
 
-  private[routes] object AclInput {
-    implicit val aclEntryDecoder: Decoder[AclEntry] = deriveDecoder[AclEntry]
-
-    implicit val aclDecoder: Decoder[AclInput] = deriveDecoder[AclInput]
-
+  final private[routes] case class ReplaceAcl(acl: AclValues)
+  private[routes] object ReplaceAcl {
+    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = deriveDecoder[ReplaceAcl]
   }
 
-  sealed trait PatchAcl
-  object PatchAcl {
-    final case class SubtractAcl(acl: Acl) extends PatchAcl
-    final case class AppendAcl(acl: Acl)   extends PatchAcl
+  sealed private[routes] trait PatchAcl extends Product with Serializable
+  private[routes] object PatchAcl {
+    final case class Subtract(acl: AclValues) extends PatchAcl
+    final case class Append(acl: AclValues)   extends PatchAcl
 
-    implicit val patchAclDecoder: Decoder[PatchAcl] =
-      Decoder.instance { hc =>
-        for {
-          tpe   <- hc.get[String]("@type")
-          acl   <- hc.value.as[AclInput]
-          patch <- tpe match {
-                     case "Append"   => Right(AppendAcl(acl.toAcl))
-                     case "Subtract" => Right(SubtractAcl(acl.toAcl))
-                     case _          => Left(DecodingFailure("@type field must have Append or Subtract value", hc.history))
-                   }
-        } yield patch
-      }
+    @nowarn("cat=unused")
+    implicit private val config: Configuration      = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val aclPatchDecoder: Decoder[PatchAcl] = deriveConfiguredDecoder[PatchAcl]
   }
 
   /**

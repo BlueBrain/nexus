@@ -17,7 +17,7 @@ class ShaclEngineSpec extends AnyWordSpecLike with Matchers with TestHelpers wit
 
     val schema           = jsonContentOf("shacl/schema.json")
     val resource         = jsonContentOf("shacl/resource.json")
-    val shaclResolvedCtx = jsonContentOf("contexts/shacl-context.json")
+    val shaclResolvedCtx = jsonContentOf("contexts/shacl.json")
 
     implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 

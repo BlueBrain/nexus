@@ -93,10 +93,13 @@ object RealmsDummy {
     */
   final def apply(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown]
-  )(implicit clock: Clock[UIO]): UIO[RealmsDummy] =
+  )(implicit clock: Clock[UIO]): UIO[RealmsDummy] = {
+    implicit val lens: Lens[Realm, Label] = _.label
+
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[Label, Realm]
       sem     <- IOSemaphore(1L)
     } yield new RealmsDummy(journal, cache, sem, resolveWellKnown)
+  }
 }

@@ -4,15 +4,13 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import cats.Functor
 import cats.syntax.functor._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -130,32 +128,17 @@ object SearchResults {
       }
     }
 
-  def searchResultsEncoder[A: Encoder.AsObject](pagination: FromPagination, searchUri: Uri)(implicit
-      baseUri: BaseUri
-  ): SearchEncoder[A] = {
-    def next(pagination: FromPagination, searchUri: Uri)(implicit baseUri: BaseUri): SearchResults[_] => Option[Uri] =
-      (results: SearchResults[_]) => {
-        val nextFrom = pagination.from + pagination.size
-        Option.when(nextFrom < results.total.toInt) {
-          val params = searchUri.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
-          toPublic(searchUri).withQuery(Query(params))
-        }
+  def searchResultsEncoder[A: Encoder.AsObject](
+      pagination: FromPagination,
+      searchUri: Uri
+  )(implicit baseUri: BaseUri): SearchEncoder[A] =
+    encodeResults(results => {
+      val nextFrom = pagination.from + pagination.size
+      Option.when(nextFrom < results.total.toInt) {
+        val params = searchUri.query().toMap + (from -> nextFrom.toString) + (size -> pagination.size.toString)
+        toPublic(searchUri).withQuery(Query(params))
       }
-
-    encodeResults(next(pagination, searchUri))
-  }
-
-  def searchResourceEncoder[Id, A](pagination: FromPagination, searchUri: Uri)(implicit
-      baseUri: BaseUri,
-      iriLens: Lens[Id, Iri],
-      R: Encoder.AsObject[ResourceF[Iri, A]]
-  ): SearchEncoder[ResourceF[Id, A]] = {
-    Encoder.AsObject.instance { s =>
-      searchResultsEncoder(pagination, searchUri).encodeObject(
-        s.map { r => r.copy(id = iriLens.get(r.id)) }
-      )
-    }
-  }
+    })
 
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)

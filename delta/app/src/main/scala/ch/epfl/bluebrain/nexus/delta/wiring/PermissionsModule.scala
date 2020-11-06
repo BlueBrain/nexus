@@ -24,7 +24,6 @@ object PermissionsModule extends ModuleDef {
     (cfg: AppConfig, log: EventLog[Envelope[PermissionsEvent]], as: ActorSystem[Nothing]) =>
       PermissionsImpl(
         cfg.permissions.minimum,
-        cfg.http.baseUri,
         cfg.permissions.aggregate,
         log
       )(as, Clock[UIO])

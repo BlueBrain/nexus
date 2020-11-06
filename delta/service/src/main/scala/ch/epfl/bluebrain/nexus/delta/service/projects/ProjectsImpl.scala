@@ -8,7 +8,7 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{OwnerPermissionsFailed, RevisionNotFound, UnexpectedInitialState}
@@ -35,13 +35,14 @@ final class ProjectsImpl private (
     index: ProjectsCache,
     acls: Acls,
     ownerPermissions: Set[Permission],
-    serviceAccount: Identity.Subject
+    serviceAccount: Subject
 )(implicit base: BaseUri)
     extends Projects {
 
-  override def create(ref: ProjectRef, fields: ProjectFields)(implicit
-      caller: Identity.Subject
-  ): IO[ProjectRejection, ProjectResource] =
+  override def create(
+      ref: ProjectRef,
+      fields: ProjectFields
+  )(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     eval(
       CreateProject(
         ref,
@@ -56,7 +57,7 @@ final class ProjectsImpl private (
       moduleType
     )
 
-  private def applyOwnerPermissions(ref: ProjectRef, subject: Identity.Subject): IO[OwnerPermissionsFailed, Unit] = {
+  private def applyOwnerPermissions(ref: ProjectRef, subject: Subject): IO[OwnerPermissionsFailed, Unit] = {
     val projectAddress = AclAddress.Project(ref.organization, ref.project)
 
     def applyMissing(collection: AclCollection) = {
@@ -68,16 +69,18 @@ final class ProjectsImpl private (
         IO.unit
       else {
         val rev = collection.value.get(projectAddress).fold(0L)(_.rev)
-        acls.append(projectAddress, Acl(subject -> ownerPermissions), rev)(serviceAccount) >> IO.unit
+        acls.append(Acl(projectAddress, subject -> ownerPermissions), rev)(serviceAccount) >> IO.unit
       }
     }
 
     acls.fetchWithAncestors(projectAddress).flatMap(applyMissing).leftMap(OwnerPermissionsFailed(ref, _))
   }
 
-  override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
-      caller: Identity.Subject
-  ): IO[ProjectRejection, ProjectResource] =
+  override def update(
+      ref: ProjectRef,
+      rev: Long,
+      fields: ProjectFields
+  )(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     eval(
       UpdateProject(
         ref,
@@ -90,9 +93,7 @@ final class ProjectsImpl private (
       )
     ).named("updateProject", moduleType)
 
-  override def deprecate(ref: ProjectRef, rev: Long)(implicit
-      caller: Identity.Subject
-  ): IO[ProjectRejection, ProjectResource] =
+  override def deprecate(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     eval(DeprecateProject(ref, rev, caller)).named("deprecateProject", moduleType)
 
   override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] =
@@ -180,8 +181,8 @@ object ProjectsImpl {
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             projects.fetch(envelope.event.ref).flatMap {
-              case Some(project) => index.put(project.id, project)
-              case None          => UIO.unit
+              case Some(projectResource) => index.put(projectResource.value.ref, projectResource)
+              case None                  => UIO.unit
             }
           )
       ),
@@ -223,7 +224,7 @@ object ProjectsImpl {
       cache: ProjectsCache,
       acls: Acls,
       ownerPermissions: Set[Permission],
-      serviceAccount: Identity.Subject
+      serviceAccount: Subject
   )(implicit base: BaseUri): ProjectsImpl =
     new ProjectsImpl(agg, eventLog, cache, acls, ownerPermissions, serviceAccount)
 
@@ -243,7 +244,7 @@ object ProjectsImpl {
       organizations: Organizations,
       acls: Acls,
       ownerPermissions: Set[Permission],
-      serviceAccount: Identity.Subject
+      serviceAccount: Subject
   )(implicit
       base: BaseUri,
       uuidF: UUIDF = UUIDF.random,

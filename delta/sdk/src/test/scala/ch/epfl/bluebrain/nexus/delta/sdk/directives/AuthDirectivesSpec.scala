@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import java.time.Instant
-
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
@@ -9,16 +7,15 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, TokenRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
@@ -63,24 +60,8 @@ class AuthDirectivesSpec
   val permission = Permission.unsafe("test/read")
 
   before {
-    acls.fetchWithAncestors(AclAddress.Root) shouldReturn UIO.pure(
-      AclCollection(
-        ResourceF[AclAddress, Acl](
-          AclAddress.Root,
-          1L,
-          Set.empty,
-          false,
-          Instant.now(),
-          Identity.Anonymous,
-          Instant.now(),
-          Identity.Anonymous,
-          Latest(Iri.unsafe("http://example.com")),
-          Acl(
-            user -> Set(permission)
-          )
-        )
-      )
-    )
+    acls.fetchWithAncestors(AclAddress.Root) shouldReturn
+      UIO.pure(AclCollection(AclGen.resourceFor(Acl(AclAddress.Root, user -> Set(permission)))))
   }
 
   private def asString(response: HttpResponse) =

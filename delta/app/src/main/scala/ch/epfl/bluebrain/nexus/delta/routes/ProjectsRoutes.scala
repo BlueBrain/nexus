@@ -2,20 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive1, _}
+import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResourceEncoder, SearchEncoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.SearchEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -35,13 +34,8 @@ final class ProjectsRoutes(identities: Identities, projects: Projects, acls: Acl
     with DeltaDirectives
     with CirceUnmarshalling {
 
-  import baseUri._
-
-  private val projectsIri = endpoint.toIri / "projects"
-
-  implicit val iriResolver: Lens[ProjectRef, Iri] = (ref: ProjectRef) =>
-    projectsIri / ref.organization.value / ref.project.value
-  implicit val projectContext: ContextValue       = Project.context
+  import baseUri.prefixSegment
+  implicit val projectContext: ContextValue = Project.context
 
   private def projectsSearchParams: Directive1[ProjectSearchParams] =
     parameter("label".as[Label].?).flatMap { organization =>
@@ -58,7 +52,7 @@ final class ProjectsRoutes(identities: Identities, projects: Projects, acls: Acl
             // List projects
             (get & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/projects") {
-                implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResourceEncoder(pagination, uri)
+                implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
                 completeSearch(projects.list(pagination, params))
               }
             },

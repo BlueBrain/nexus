@@ -19,6 +19,10 @@
     },
     "_instant": "nxv:instant",
     "_subject": "nxv:subject",
+    "_self": {
+      "@id": "nxv:self",
+      "@type": "@id"
+    },
     "AccessControlList": "nxv:AccessControlList",
     "Organization": "nxv:Organization",
     "Permissions": "nxv:Permissions",

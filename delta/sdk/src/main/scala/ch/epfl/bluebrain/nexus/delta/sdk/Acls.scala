@@ -106,21 +106,23 @@ trait Acls {
     fetchAtWithAncestors(address, rev).map(_.filter(caller.identities))
 
   /**
-    * Fetches the ACL with the passed ''address''. If ACL does not exist, return an empty [[Acl]]
+    * Fetches the ACL with the passed ''address''.
+    * If the [[Acl]] does not exist, return an Acl with empty identity and permissions.
     *
     * @param address the ACL address
     */
   final def fetchAcl(address: AclAddress): UIO[Acl] =
-    fetch(address).map(_.fold(Acl.empty)(_.value))
+    fetch(address).map(_.fold(Acl(address))(_.value))
 
   /**
-    * Fetches the ACL with the passed ''address''. If ACL does not exist, return an empty [[Acl]]
+    * Fetches the ACL with the passed ''address''.
+    * If the [[Acl]] does not exist, return an Acl with empty identity and permissions.
     * The response only contains ACL with identities present in the provided ''caller''.
     *
     * @param address the ACL address
     */
   final def fetchSelfAcl(address: AclAddress)(implicit caller: Caller): UIO[Acl] =
-    fetchSelf(address).map(_.fold(Acl.empty)(_.value))
+    fetchSelf(address).map(_.fold(Acl(address))(_.value))
 
   /**
     * Fetches the [[AclCollection]] of the provided ''filter'' address.
@@ -153,31 +155,28 @@ trait Acls {
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[AclEvent]]
 
   /**
-    * Overrides ''acl'' on a the passed ''address''.
+    * Overrides ''acl''.
     *
-    * @param address the ACL address
-    * @param acl    the identity to permissions mapping to replace
+    * @param acl    the acl to replace
     * @param rev    the last known revision of the resource
     */
-  def replace(address: AclAddress, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def replace(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
-    * Appends ''acl'' on the passed ''address''.
+    * Appends ''acl''.
     *
-    * @param address the ACL address
-    * @param acl    the identity to permissions mapping to append
+    * @param acl    the acl to append
     * @param rev    the last known revision of the resource
     */
-  def append(address: AclAddress, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def append(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
-    * Subtracts ''acl'' on the passed ''address''.
+    * Subtracts ''acl''.
     *
-    * @param address the ACL address
-    * @param acl    the identity to permissions mapping to subtract
+    * @param acl    the acl to subtract
     * @param rev    the last known revision of the resource
     */
-  def subtract(address: AclAddress, acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
+  def subtract(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Delete all ''acl'' on the passed ''address''.
@@ -202,12 +201,12 @@ object Acls {
   private[delta] def next(state: AclState, event: AclEvent): AclState = {
     def replaced(e: AclReplaced): AclState     =
       state match {
-        case Initial    => Current(e.address, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case Initial    => Current(e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
         case c: Current => c.copy(acl = e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     def appended(e: AclAppended): AclState     =
       state match {
-        case Initial    => Current(e.address, e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
+        case Initial    => Current(e.acl, 1L, e.instant, e.subject, e.instant, e.subject)
         case c: Current => c.copy(acl = c.acl ++ e.acl, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     def subtracted(e: AclSubtracted): AclState =
@@ -218,7 +217,7 @@ object Acls {
     def deleted(e: AclDeleted): AclState       =
       state match {
         case Initial    => Initial
-        case c: Current => c.copy(acl = Acl.empty, rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
+        case c: Current => c.copy(acl = Acl(c.acl.address), rev = e.rev, updatedAt = e.instant, updatedBy = e.subject)
       }
     event match {
       case ev: AclReplaced   => replaced(ev)
@@ -241,58 +240,58 @@ object Acls {
     def replace(c: ReplaceAcl)   =
       state match {
         case Initial if c.rev != 0                                        =>
-          IO.raiseError(IncorrectRev(c.address, c.rev, 0L))
+          IO.raiseError(IncorrectRev(c.acl.address, c.rev, 0L))
         case Initial if c.acl.hasEmptyPermissions                         =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.acl.address))
         case Initial                                                      =>
-          acceptChecking(c.acl)(AclReplaced(c.address, c.acl, 1L, _, c.subject))
+          acceptChecking(c.acl)(AclReplaced(c.acl, 1L, _, c.subject))
         case s: Current if !s.acl.isEmpty && c.rev != s.rev               =>
-          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.acl.address, c.rev, s.rev))
         case s: Current if s.acl.isEmpty && c.rev != s.rev && c.rev != 0L =>
-          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.acl.address, c.rev, s.rev))
         case _: Current if c.acl.hasEmptyPermissions                      =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.acl.address))
         case s: Current                                                   =>
-          acceptChecking(c.acl)(AclReplaced(c.address, c.acl, s.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclReplaced(c.acl, s.rev + 1, _, c.subject))
       }
     def append(c: AppendAcl)     =
       state match {
         case Initial if c.rev != 0L                                                  =>
-          IO.raiseError(IncorrectRev(c.address, c.rev, 0L))
+          IO.raiseError(IncorrectRev(c.acl.address, c.rev, 0L))
         case Initial if c.acl.hasEmptyPermissions                                    =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.acl.address))
         case Initial                                                                 =>
-          acceptChecking(c.acl)(AclAppended(c.address, c.acl, c.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclAppended(c.acl, c.rev + 1, _, c.subject))
         case s: Current if s.acl.permissions.nonEmpty && c.rev != s.rev              =>
-          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.acl.address, c.rev, s.rev))
         case s: Current if s.acl.permissions.isEmpty && c.rev != s.rev & c.rev != 0L =>
-          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.acl.address, c.rev, s.rev))
         case _: Current if c.acl.hasEmptyPermissions                                 =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.acl.address))
         case s: Current if s.acl ++ c.acl == s.acl                                   =>
-          IO.raiseError(NothingToBeUpdated(c.address))
+          IO.raiseError(NothingToBeUpdated(c.acl.address))
         case s: Current                                                              =>
-          acceptChecking(c.acl)(AclAppended(c.address, c.acl, s.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclAppended(c.acl, s.rev + 1, _, c.subject))
       }
     def subtract(c: SubtractAcl) =
       state match {
         case Initial                                 =>
-          IO.raiseError(AclNotFound(c.address))
+          IO.raiseError(AclNotFound(c.acl.address))
         case s: Current if c.rev != s.rev            =>
-          IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
+          IO.raiseError(IncorrectRev(c.acl.address, c.rev, s.rev))
         case _: Current if c.acl.hasEmptyPermissions =>
-          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.address))
+          IO.raiseError(AclCannotContainEmptyPermissionCollection(c.acl.address))
         case s: Current if s.acl -- c.acl == s.acl   =>
-          IO.raiseError(NothingToBeUpdated(c.address))
+          IO.raiseError(NothingToBeUpdated(c.acl.address))
         case _: Current                              =>
-          acceptChecking(c.acl)(AclSubtracted(c.address, c.acl, c.rev + 1, _, c.subject))
+          acceptChecking(c.acl)(AclSubtracted(c.acl, c.rev + 1, _, c.subject))
       }
     def delete(c: DeleteAcl)     =
       state match {
-        case Initial                          => IO.raiseError(AclNotFound(c.address))
-        case s: Current if c.rev != s.rev     => IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
-        case s: Current if s.acl == Acl.empty => IO.raiseError(AclIsEmpty(c.address))
-        case _: Current                       => instant.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
+        case Initial                      => IO.raiseError(AclNotFound(c.address))
+        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(c.address, c.rev, s.rev))
+        case s: Current if s.acl.isEmpty  => IO.raiseError(AclIsEmpty(c.address))
+        case _: Current                   => instant.map(AclDeleted(c.address, c.rev + 1, _, c.subject))
       }
 
     cmd match {

@@ -12,5 +12,6 @@
   "_createdBy" : "http://localhost/v1/anonymous",
   "_updatedAt" : "1970-01-01T00:00:00Z",
   "_updatedBy" : "http://localhost/v1/anonymous",
-  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/permissions.json"
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/permissions.json",
+  "_self" : "http://localhost/v1/permissions"
 }

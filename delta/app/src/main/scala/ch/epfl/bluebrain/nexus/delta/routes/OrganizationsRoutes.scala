@@ -4,19 +4,18 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -27,6 +26,7 @@ import monix.execution.Scheduler
   *
   * @param identities    the identities operations bundle
   * @param organizations the organizations operations bundle
+  * @param acls          the acls operations bundle
   */
 final class OrganizationsRoutes(identities: Identities, organizations: Organizations, acls: Acls)(implicit
     baseUri: BaseUri,
@@ -38,12 +38,8 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     with DeltaDirectives
     with CirceUnmarshalling {
 
-  import baseUri._
-
-  private val orgsIri = baseUri.iriEndpoint / "orgs"
-
-  implicit val iriResolver: Lens[Label, Iri] = (l: Label) => orgsIri / l.value
-  implicit val orgContext: ContextValue      = Organization.context
+  import baseUri.prefixSegment
+  implicit val orgContext: ContextValue = Organization.context
 
   private def orgsSearchParams: Directive1[OrganizationSearchParams] =
     searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>
@@ -58,7 +54,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
             // List organizations
             (get & extractUri & paginated & orgsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/orgs") {
-                implicit val searchEncoder: SearchEncoder[OrganizationResource] = searchResourceEncoder(pagination, uri)
+                implicit val searchEncoder: SearchEncoder[OrganizationResource] = searchResultsEncoder(pagination, uri)
                 completeSearch(organizations.list(pagination, params))
               }
             },

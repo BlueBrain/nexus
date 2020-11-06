@@ -72,8 +72,8 @@ final class OrganizationsDummy private (
       rev: Long
   ): IO[OrganizationRejection.RevisionNotFound, Option[OrganizationResource]] =
     fetch(uuid).flatMap {
-      case Some(value) => fetchAt(value.id, rev)
-      case None        => IO.pure(None)
+      case Some(orgResource) => fetchAt(orgResource.value.label, rev)
+      case None              => IO.pure(None)
     }
 
   override def list(
@@ -111,13 +111,12 @@ object OrganizationsDummy {
   /**
     * Creates a new dummy Organizations implementation.
     */
-  final def apply()(implicit
-      uuidF: UUIDF = UUIDF.random,
-      clock: Clock[UIO] = IO.clock
-  ): UIO[OrganizationsDummy] =
+  final def apply()(implicit uuidF: UUIDF = UUIDF.random, clock: Clock[UIO] = IO.clock): UIO[OrganizationsDummy] = {
+    implicit val lens: Lens[Organization, Label] = _.label
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[Label, Organization]
       sem     <- IOSemaphore(1L)
     } yield new OrganizationsDummy(journal, cache, sem)
+  }
 }

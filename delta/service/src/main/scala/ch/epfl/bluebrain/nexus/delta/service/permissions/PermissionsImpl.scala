@@ -3,14 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.service.permissions
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{entityId, moduleType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.RevisionNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl.PermissionsAggregate
@@ -23,14 +22,11 @@ import monix.bio.{IO, Task, UIO}
 final class PermissionsImpl private (
     override val minimum: Set[Permission],
     agg: PermissionsAggregate,
-    eventLog: EventLog[Envelope[PermissionsEvent]],
-    base: BaseUri
+    eventLog: EventLog[Envelope[PermissionsEvent]]
 ) extends Permissions {
 
-  private val id: Iri = iri"${base.endpoint}/permissions"
-
   override def fetch: UIO[PermissionsResource] =
-    agg.state(entityId).map(_.toResource(id, minimum)).named("fetchPermissions", moduleType)
+    agg.state(entityId).map(_.toResource(minimum)).named("fetchPermissions", moduleType)
 
   override def fetchAt(rev: Long): IO[PermissionsRejection.RevisionNotFound, PermissionsResource] =
     eventLog
@@ -40,7 +36,7 @@ final class PermissionsImpl private (
         Initial,
         Permissions.next(minimum)
       )
-      .bimap(RevisionNotFound(rev, _), _.toResource(id, minimum))
+      .bimap(RevisionNotFound(rev, _), _.toResource(minimum))
       .named("fetchPermissionsAt", moduleType)
 
   override def replace(
@@ -78,7 +74,7 @@ final class PermissionsImpl private (
 
   private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] =
     agg.evaluate(entityId, cmd).mapError(_.value).map { success =>
-      success.state.toResource(id, minimum)
+      success.state.toResource(minimum)
     }
 }
 
@@ -130,27 +126,25 @@ object PermissionsImpl {
   final def apply(
       minimum: Set[Permission],
       agg: PermissionsAggregate,
-      eventLog: EventLog[Envelope[PermissionsEvent]],
-      base: BaseUri
+      eventLog: EventLog[Envelope[PermissionsEvent]]
   ): Permissions =
-    new PermissionsImpl(minimum, agg, eventLog, base)
+    new PermissionsImpl(minimum, agg, eventLog)
 
   /**
-    *  Constructs a new [[Permissions]] instance backed by a sharded aggregate. It requires that the system has joined
-    *  a cluster. The implementation is effectful as it allocates a new cluster sharding entity across the cluster.
+    * Constructs a new [[Permissions]] instance backed by a sharded aggregate. It requires that the system has joined
+    * a cluster. The implementation is effectful as it allocates a new cluster sharding entity across the cluster.
     *
     * @param minimum         the minimum collection of permissions
-    * @param base            the base uri of the system API
     * @param aggregateConfig the aggregate configuration
     * @param eventLog        an event log instance for events of type [[PermissionsEvent]]
+    * @param base            the base uri of the system API
     */
   final def apply(
       minimum: Set[Permission],
-      base: BaseUri,
       aggregateConfig: AggregateConfig,
       eventLog: EventLog[Envelope[PermissionsEvent]]
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Permissions] =
     aggregate(minimum, aggregateConfig).map { agg =>
-      apply(minimum, agg, eventLog, base)
+      apply(minimum, agg, eventLog)
     }
 }

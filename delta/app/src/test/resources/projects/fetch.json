@@ -22,10 +22,17 @@
   "_organizationUuid" : "{{orgUuid}}",
   "_rev" : {{rev}},
   "_uuid" : "{{uuid}}",
-  "apiMappings" : {
-    "nxv" : "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
-    "person" : "https://shapes-registry.org/commons/person"
-  },
+  "_self" : "http://localhost/v1/projects/{{org}}/{{proj}}",
+  "apiMappings" : [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+    },
+    {
+      "prefix": "person",
+      "namespace": "https://shapes-registry.org/commons/person"
+    }
+  ],
   "base" : "{{base}}",
   "description" : "{{description}}",
   "vocab" : "{{vocab}}"

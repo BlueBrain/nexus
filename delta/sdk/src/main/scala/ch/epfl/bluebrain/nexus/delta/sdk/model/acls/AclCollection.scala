@@ -29,8 +29,8 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     */
   def ++(acls: AclCollection): AclCollection         =
     AclCollection(acls.value.foldLeft(value) {
-      case (acc, (address, aclToAdd)) if aclToAdd.id != address => acc // should not happen, ignore it
-      case (acc, (address, aclToAdd))                           =>
+      case (acc, (address, aclToAdd)) if aclToAdd.value.address != address => acc // should not happen, ignore it
+      case (acc, (address, aclToAdd))                                      =>
         acc.updatedWith(address)(acl => Some(acl.fold(aclToAdd)(c => aclToAdd.map(c.value ++ _))))
     })
 
@@ -41,7 +41,7 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     * @param entry the [[AclResource]] to be added
     */
   def +(entry: AclResource): AclCollection =
-    self ++ AclCollection(SortedMap(entry.id -> entry))
+    self ++ AclCollection(SortedMap(entry.value.address -> entry))
 
   /**
     * Removes an [[AclResource]] to the current ''value'' and
@@ -50,7 +50,7 @@ final case class AclCollection private (value: SortedMap[AclAddress, AclResource
     * @param entry the [[AclResource]] to be subtracted
     */
   def -(entry: AclResource): AclCollection =
-    AclCollection(self.value.updatedWith(entry.id)(_.fold[Option[AclResource]](None) { cur =>
+    AclCollection(self.value.updatedWith(entry.value.address)(_.fold[Option[AclResource]](None) { cur =>
       val updated = entry.map(acl => cur.value -- acl)
       Option.when(updated.value.nonEmpty)(updated)
     }))
@@ -121,6 +121,6 @@ object AclCollection {
     * Convenience factory method to build a [[AclCollection]] [[AclResource]]s.
     */
   final def apply(resources: AclResource*): AclCollection =
-    AclCollection(SortedMap(resources.map(res => res.id -> res): _*))
+    AclCollection(SortedMap(resources.map(res => res.value.address -> res): _*))
 
 }

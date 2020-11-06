@@ -1,5 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import java.time.Instant
+
+import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Current
+
 object PermissionsGen {
 
   import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{schemas, _}
@@ -31,5 +39,13 @@ object PermissionsGen {
     storages.write,
     archives.write
   )
+
+  def resourceFor(
+      permissions: Set[Permission],
+      rev: Long,
+      createdBy: Subject = Identity.Anonymous,
+      updatedBy: Subject = Identity.Anonymous
+  ): PermissionsResource =
+    Current(rev, permissions, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy).toResource(permissions)
 
 }

@@ -5,10 +5,10 @@ import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ProjectResource}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ProjectResource}
 
 /**
   * Enumeration of Project state types.
@@ -95,7 +95,7 @@ object ProjectState {
       rev: Long,
       deprecated: Boolean,
       description: Option[String],
-      apiMappings: Map[String, Iri],
+      apiMappings: ApiMappings,
       base: Iri,
       vocab: Iri,
       createdAt: Instant,
@@ -122,10 +122,12 @@ object ProjectState {
     /**
       * Converts the state into a resource representation.
       */
-    override def toResource: Option[ProjectResource] =
+    override def toResource: Option[ProjectResource] = {
+      val projectRef = ProjectRef(organizationLabel, label)
       Some(
         ResourceF(
-          id = ProjectRef(organizationLabel, label),
+          id = AccessUrl.project(projectRef)(_).iri,
+          accessUrl = AccessUrl.project(projectRef)(_),
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -137,6 +139,7 @@ object ProjectState {
           value = project
         )
       )
+    }
   }
 
   implicit val revisionLens: Lens[ProjectState, Long] = (s: ProjectState) => s.rev

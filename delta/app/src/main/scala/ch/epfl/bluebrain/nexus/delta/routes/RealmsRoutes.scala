@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
@@ -16,8 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Lens, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -33,11 +32,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
     with DeltaDirectives
     with CirceUnmarshalling {
 
-  import baseUri._
-
-  private val realmsIri = baseUri.iriEndpoint / "realms"
-
-  implicit val iriLens: Lens[Label, Iri]  = (l: Label) => realmsIri / l.value
+  import baseUri.prefixSegment
   implicit val realmContext: ContextValue = Realm.context
 
   private def realmsSearchParams: Directive1[RealmSearchParams] =
@@ -53,7 +48,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
             // List realms
             (get & extractUri & paginated & realmsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/realms") {
-                implicit val searchEncoder: SearchEncoder[RealmResource] = searchResourceEncoder(pagination, uri)
+                implicit val searchEncoder: SearchEncoder[RealmResource] = searchResultsEncoder(pagination, uri)
                 completeSearch(realms.list(pagination, params))
               }
             },

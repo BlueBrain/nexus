@@ -1,13 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import java.time.Instant
-
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionSet
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import org.scalatest.matchers.should.Matchers
@@ -22,21 +19,9 @@ class ResourceFSpec
     with TestMatchers {
 
   "A ResourceF" should {
-    val iri                       = iri"http://example.com/permissions"
-    implicit val baseUri: BaseUri = BaseUri("http://nexus.com")
-    val resource                  =
-      ResourceF(
-        iri,
-        1L,
-        Set(nxv.Permissions),
-        deprecated = false,
-        Instant.EPOCH,
-        Anonymous,
-        Instant.EPOCH,
-        User("maria", Label.unsafe("bbp")),
-        Latest(schemas.permissions),
-        PermissionSet(Set(acls.read, acls.write))
-      )
+    implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+    val updatedBy                 = User("maria", Label.unsafe("bbp"))
+    val resource                  = PermissionsGen.resourceFor(Set(acls.read, acls.write), rev = 1L, updatedBy = updatedBy)
 
     implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(
       contexts.permissions -> jsonContentOf("contexts/permissions.json"),

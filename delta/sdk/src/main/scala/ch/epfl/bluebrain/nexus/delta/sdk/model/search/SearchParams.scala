@@ -5,14 +5,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas => nxvschemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 
 /**
   * Enumeration of the possible Search Parameters
   */
-sealed trait SearchParams[Id, A] {
+sealed trait SearchParams[A] {
   def deprecated: Option[Boolean]
   def rev: Option[Long]
   def createdBy: Option[Subject]
@@ -25,7 +25,7 @@ sealed trait SearchParams[Id, A] {
     *
     * @param resource a resource
     */
-  def matches(resource: ResourceF[Id, A]): Boolean =
+  def matches(resource: ResourceF[A]): Boolean =
     rev.forall(_ == resource.rev) &&
       deprecated.forall(_ == resource.deprecated) &&
       createdBy.forall(_ == resource.createdBy) &&
@@ -52,11 +52,11 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None
-  ) extends SearchParams[Label, Realm] {
+  ) extends SearchParams[Realm] {
     override val types: Set[Iri]             = Set(nxv.Realm)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.realms))
 
-    override def matches(resource: ResourceF[Label, Realm]): Boolean =
+    override def matches(resource: ResourceF[Realm]): Boolean =
       super.matches(resource) &&
         issuer.forall(_ == resource.value.issuer)
   }
@@ -82,7 +82,7 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None
-  ) extends SearchParams[Label, Organization] {
+  ) extends SearchParams[Organization] {
     override val types: Set[Iri]             = Set(nxv.Organization)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.organizations))
   }
@@ -110,11 +110,11 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None
-  ) extends SearchParams[ProjectRef, Project] {
+  ) extends SearchParams[Project] {
     override val types: Set[Iri]             = Set(nxv.Project)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.projects))
 
-    override def matches(resource: ResourceF[ProjectRef, Project]): Boolean =
+    override def matches(resource: ResourceF[Project]): Boolean =
       super.matches(resource) &&
         organization.forall(_ == resource.value.organizationLabel)
   }
@@ -126,5 +126,4 @@ object SearchParams {
       */
     final val none: ProjectSearchParams = ProjectSearchParams()
   }
-
 }

@@ -19,16 +19,10 @@ class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with OptionValu
 
   override def create: Task[Realms] =
     eventLog.flatMap { el =>
-      RealmsImpl(
-        RealmsConfig(aggregate, keyValueStore, pagination, indexing),
-        ioFromMap(
-          Map(
-            githubOpenId -> githubWk,
-            gitlabOpenId -> gitlabWk
-          ),
-          (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
-        ),
-        el
+      val resolveWellKnown = ioFromMap(
+        Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
+        (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
       )
+      RealmsImpl(RealmsConfig(aggregate, keyValueStore, pagination, indexing), resolveWellKnown, el)
     }
 }

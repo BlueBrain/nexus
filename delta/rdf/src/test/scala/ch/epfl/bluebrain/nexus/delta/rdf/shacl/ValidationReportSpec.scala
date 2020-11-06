@@ -20,7 +20,7 @@ class ValidationReportSpec
     with OptionValues
     with IOValues {
 
-  private val shaclResolvedCtx = jsonContentOf("contexts/shacl-context.json")
+  private val shaclResolvedCtx = jsonContentOf("contexts/shacl.json")
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)

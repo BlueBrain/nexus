@@ -12,7 +12,7 @@ class ProjectFieldsSpec extends AnyWordSpecLike with Matchers with EitherValuabl
 
   "Generating default" should {
 
-    val fields = ProjectFields(None, Map.empty, None, None)
+    val fields = ProjectFields(None, ApiMappings.empty, None, None)
 
     "Generate the expected default defaultBase" in {
       val defaultBase = fields.baseOrGenerated(ProjectRef(Label.unsafe("org"), Label.unsafe("proj")))
@@ -20,7 +20,7 @@ class ProjectFieldsSpec extends AnyWordSpecLike with Matchers with EitherValuabl
       defaultBase.value shouldEqual iri"http://localhost:8080/v1/resources/org/proj/_/"
     }
     "Generate the expected default vocab" in {
-      val fields = ProjectFields(None, Map.empty, None, None)
+      val fields = ProjectFields(None, ApiMappings.empty, None, None)
 
       val defaultVocab = fields.vocabOrGenerated(ProjectRef(Label.unsafe("org"), Label.unsafe("proj")))
 

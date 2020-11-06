@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Lens}
 
 /**
@@ -59,7 +59,6 @@ object AclState {
   /**
     * An existing ACLs state.
     *
-    * @param address   the ACL address
     * @param acl       the Access Control List
     * @param rev       the ACLs revision
     * @param createdAt the instant when the resource was created
@@ -68,7 +67,6 @@ object AclState {
     * @param updatedBy the identity that last updated the resource
     */
   final case class Current(
-      address: AclAddress,
       acl: Acl,
       rev: Long,
       createdAt: Instant,
@@ -76,10 +74,11 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override val toResource: Option[AclResource] =
+    override def toResource: Option[AclResource] =
       Some(
         ResourceF(
-          id = address,
+          id = AccessUrl.acl(acl.address)(_).iri,
+          accessUrl = AccessUrl.acl(acl.address)(_),
           rev = rev,
           types = types,
           deprecated = deprecated,

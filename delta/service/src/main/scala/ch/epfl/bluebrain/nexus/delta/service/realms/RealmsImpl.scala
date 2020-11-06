@@ -6,7 +6,7 @@ import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Initial
@@ -33,23 +33,28 @@ final class RealmsImpl private (
     index: RealmsCache
 ) extends Realms {
 
-  override def create(label: Label, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit
-      caller: Identity.Subject
-  ): IO[RealmRejection, RealmResource] = {
+  override def create(
+      label: Label,
+      name: Name,
+      openIdConfig: Uri,
+      logo: Option[Uri]
+  )(implicit caller: Subject): IO[RealmRejection, RealmResource] = {
     val command = CreateRealm(label, name, openIdConfig, logo, caller)
     eval(command).named("createRealm", moduleType)
   }
 
-  override def update(label: Label, rev: Long, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit
-      caller: Identity.Subject
-  ): IO[RealmRejection, RealmResource] = {
+  override def update(
+      label: Label,
+      rev: Long,
+      name: Name,
+      openIdConfig: Uri,
+      logo: Option[Uri]
+  )(implicit caller: Subject): IO[RealmRejection, RealmResource] = {
     val command = UpdateRealm(label, rev, name, openIdConfig, logo, caller)
     eval(command).named("updateRealm", moduleType)
   }
 
-  override def deprecate(label: Label, rev: Long)(implicit
-      caller: Identity.Subject
-  ): IO[RealmRejection, RealmResource] =
+  override def deprecate(label: Label, rev: Long)(implicit caller: Subject): IO[RealmRejection, RealmResource] =
     eval(DeprecateRealm(label, rev, caller)).named("deprecateRealm", moduleType)
 
   private def eval(cmd: RealmCommand): IO[RealmRejection, RealmResource] =
@@ -125,8 +130,8 @@ object RealmsImpl {
           .eventsByTag(moduleType, Offset.noOffset)
           .mapAsync(config.indexing.concurrency)(envelope =>
             realms.fetch(envelope.event.label).flatMap {
-              case Some(realm) => index.put(realm.id, realm)
-              case None        => UIO.unit
+              case Some(realmResource) => index.put(realmResource.value.label, realmResource)
+              case None                => UIO.unit
             }
           )
       ),

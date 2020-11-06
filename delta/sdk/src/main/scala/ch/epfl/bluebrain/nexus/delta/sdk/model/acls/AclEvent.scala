@@ -2,15 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Event}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -34,53 +32,53 @@ object AclEvent {
   /**
     * A witness to ACL replace.
     *
-    * @param address the address for the ACL
     * @param acl     the ACL replaced, represented as a mapping of identities to permissions
     * @param rev     the revision that this event generated
     * @param instant the instant when this event was recorded
     * @param subject the subject which generated this event
     */
   final case class AclReplaced(
-      address: AclAddress,
       acl: Acl,
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends AclEvent
+  ) extends AclEvent {
+    override val address: AclAddress = acl.address
+  }
 
   /**
     * A witness to ACL append.
     *
-    * @param address the address for the ACL
     * @param acl     the ACL appended, represented as a mapping of identities to permissions
     * @param rev     the revision that this event generated
     * @param instant the instant when this event was recorded
     * @param subject the subject which generated this event
     */
   final case class AclAppended(
-      address: AclAddress,
       acl: Acl,
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends AclEvent
+  ) extends AclEvent {
+    override val address: AclAddress = acl.address
+  }
 
   /**
     * A witness to ACL subtraction.
     *
-    * @param address the address for the ACL
     * @param acl     the ACL subtracted, represented as a mapping of identities to permissions
     * @param rev     the revision that this event generated
     * @param instant the instant when this event was recorded
     * @param subject the subject which generated this event
     */
   final case class AclSubtracted(
-      address: AclAddress,
       acl: Acl,
       rev: Long,
       instant: Instant,
       subject: Subject
-  ) extends AclEvent
+  ) extends AclEvent {
+    override val address: AclAddress = acl.address
+  }
 
   /**
     * A witness to ACL deletion.
@@ -100,10 +98,7 @@ object AclEvent {
   private val context = ContextValue(contexts.resource, contexts.acls)
 
   @nowarn("cat=unused")
-  implicit def aclEventJsonLdEncoder(implicit
-      baseUri: BaseUri,
-      iriLens: Lens[AclAddress, Iri]
-  ): JsonLdEncoder[AclEvent] = {
+  implicit def aclEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[AclEvent] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
 
     implicit val config: Configuration = Configuration.default
@@ -116,21 +111,18 @@ object AclEvent {
         case other     => other
       })
 
-    implicit def aclEncoder(implicit base: BaseUri, idEncoder: Encoder[Identity]): Encoder[Acl] = Encoder.instance {
-      acl =>
+    implicit val aclEncoder: Encoder[Acl] =
+      Encoder.instance { acl =>
         Json.fromValues(
           acl.value.map { case (identity: Identity, permissions) =>
             Json.obj("identity" -> identity.asJson, "permissions" -> permissions.asJson)
           }
         )
-    }
+      }
 
     implicit val encoder: Encoder.AsObject[AclEvent] = Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[AclEvent]
-        .mapJsonObject { json =>
-          json
-            .add("@id", Json.fromString(iriLens.get(ev.address).toString))
-        }
+        .mapJsonObject(json => json.add("@id", AccessUrl.acl(ev.address).iri.asJson).add("_path", ev.address.asJson))
         .encodeObject(ev)
     }
     JsonLdEncoder.compactFromCirce[AclEvent](context)

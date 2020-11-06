@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Decoder
@@ -16,7 +15,7 @@ import io.circe.generic.semiauto.deriveDecoder
   */
 final case class ProjectFields(
     description: Option[String],
-    apiMappings: Map[String, Iri],
+    apiMappings: ApiMappings,
     base: Option[PrefixIri],
     vocab: Option[PrefixIri]
 ) {
@@ -43,18 +42,6 @@ final case class ProjectFields(
 
 object ProjectFields {
 
-  final case class Mapping(prefix: String, namespace: Iri)
-
-  implicit val mappingDecoder: Decoder[Mapping] = deriveDecoder[Mapping]
-
-  implicit val projectFieldsDecoder: Decoder[ProjectFields] = Decoder.instance { hc =>
-    for {
-      desc <- hc.downField("description").as[Option[String]]
-      lam   = hc.downField("apiMappings").as[List[Mapping]].getOrElse(List.empty)
-      map   = lam.map(am => am.prefix -> am.namespace).toMap
-      base <- hc.downField("base").as[Option[PrefixIri]]
-      voc  <- hc.downField("vocab").as[Option[PrefixIri]]
-    } yield ProjectFields(desc, map, base, voc)
-  }
+  implicit val projectFieldsDecoder: Decoder[ProjectFields] = deriveDecoder[ProjectFields]
 
 }

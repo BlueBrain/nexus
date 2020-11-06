@@ -4,16 +4,15 @@ import java.time.Instant
 
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionSet}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
@@ -32,6 +31,7 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 
   implicit def scheduler: Scheduler = Scheduler.global
+  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   /**
     * Create a permissions instance. The instance will be memoized.
@@ -77,19 +77,7 @@ trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues w
       permissions.accepted.fetchPermissionSet.accepted shouldEqual minimum
     }
     "return the minimum permissions resource" in {
-      val expected = ResourceF(
-        id = resourceId,
-        rev = 0L,
-        types = Set(nxv.Permissions),
-        deprecated = false,
-        createdAt = Instant.EPOCH,
-        createdBy = Identity.Anonymous,
-        updatedAt = Instant.EPOCH,
-        updatedBy = Identity.Anonymous,
-        schema = Latest(schemas.permissions),
-        value = PermissionSet(minimum)
-      )
-      permissions.accepted.fetch.accepted shouldEqual expected
+      permissions.accepted.fetch.accepted shouldEqual PermissionsGen.resourceFor(minimum, rev = 0L)
     }
     "fail to delete minimum when initial" in {
       permissions.accepted.delete(0L).rejected shouldEqual CannotDeleteMinimumCollection

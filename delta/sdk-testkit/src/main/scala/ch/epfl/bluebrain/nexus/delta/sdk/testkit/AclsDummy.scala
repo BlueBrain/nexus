@@ -50,26 +50,20 @@ final class AclsDummy private (
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[AclEvent]] = journal.events(offset)
 
-  override def replace(address: AclAddress, acl: Acl, rev: Long)(implicit
-      caller: Subject
-  ): IO[AclRejection, AclResource] =
-    eval(ReplaceAcl(address, acl, rev, caller)).flatMap(setToCache)
+  override def replace(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+    eval(ReplaceAcl(acl, rev, caller)).flatMap(setToCache)
 
-  override def append(address: AclAddress, acl: Acl, rev: Long)(implicit
-      caller: Subject
-  ): IO[AclRejection, AclResource] =
-    eval(AppendAcl(address, acl, rev, caller)).flatMap(appendToCache)
+  override def append(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+    eval(AppendAcl(acl, rev, caller)).flatMap(appendToCache)
 
-  override def subtract(address: AclAddress, acl: Acl, rev: Long)(implicit
-      caller: Subject
-  ): IO[AclRejection, AclResource] =
-    eval(SubtractAcl(address, acl, rev, caller)).flatMap(subtractFromCache)
+  override def subtract(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
+    eval(SubtractAcl(acl, rev, caller)).flatMap(subtractFromCache)
 
   override def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
     eval(DeleteAcl(address, rev, caller)).flatMap(deleteFromCache)
 
   private def setToCache(resource: AclResource): UIO[AclResource]    =
-    cache.update(c => c.copy(c.value + (resource.id -> resource))).as(resource)
+    cache.update(c => c.copy(c.value + (resource.value.address -> resource))).as(resource)
 
   private def appendToCache(resource: AclResource): UIO[AclResource] =
     cache.update(_ + resource).as(resource)
@@ -78,7 +72,7 @@ final class AclsDummy private (
     cache.update(_ - resource).as(resource)
 
   private def deleteFromCache(resource: AclResource): UIO[AclResource] =
-    cache.update(_ - resource.id).as(resource)
+    cache.update(_ - resource.value.address).as(resource)
 
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
     semaphore.withPermit {
@@ -95,17 +89,18 @@ object AclsDummy {
 
   type AclsJournal = Journal[AclAddress, AclEvent]
 
-  implicit val idLens: Lens[AclEvent, AclAddress] = (event: AclEvent) => event.address
-
   /**
     * Creates a new dummy Acls implementation.
     *
     * @param perms the bundle of operations pertaining to managing permissions wrapped in an IO
     */
-  final def apply(perms: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] =
+  final def apply(perms: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] = {
+    implicit val idLens: Lens[AclEvent, AclAddress] = _.address
+
     for {
       journal  <- Journal(moduleType)
       cacheRef <- IORef.of(AclCollection.empty)
       sem      <- IOSemaphore(1L)
     } yield new AclsDummy(perms, journal, cacheRef, sem)
+  }
 }
