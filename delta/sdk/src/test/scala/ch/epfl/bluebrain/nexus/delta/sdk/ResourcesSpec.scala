@@ -187,7 +187,7 @@ class ResourcesSpec
           current,
           UpdateResource(myId, project.value.ref, otherSchema, source, compacted, expanded, 1L, subject)
         ).rejected shouldEqual
-          ResourceSchemaUnexpected(myId, provided = otherSchema.value, expected = Latest(schema1.id))
+          UnexpectedResourceSchema(myId, provided = otherSchema.value, expected = Latest(schema1.id))
       }
 
       "reject with ResourceAlreadyExists" in {
@@ -219,6 +219,7 @@ class ResourcesSpec
         val expanded  = current.expanded
         val list      = List(
           current -> UpdateResource(myId, project.value.ref, None, source, compacted, expanded, 1L, subject),
+          current -> TagResource(myId, project.value.ref, None, 1L, Label.unsafe("a"), 1L, subject),
           current -> DeprecateResource(myId, project.value.ref, None, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -227,8 +228,7 @@ class ResourcesSpec
       }
 
       "reject with RevisionNotFound" in {
-        val current =
-          ResourceGen.currentState(myId, project.value.ref, source, Latest(schemas.resources), types, deprecated = true)
+        val current = ResourceGen.currentState(myId, project.value.ref, source, Latest(schemas.resources), types)
         eval(
           current,
           TagResource(myId, project.value.ref, None, 3L, Label.unsafe("myTag"), 1L, subject)

@@ -51,7 +51,7 @@ object ResourceRejection {
     * @param id        the resource identifier
     * @param payloadId the resource identifier on the payload
     */
-  final case class ResourceIdUnexpected(id: Iri, payloadId: Iri)
+  final case class UnexpectedResourceId(id: Iri, payloadId: Iri)
       extends ResourceRejection(s"Resource '$id' does not match resource id on payload '$payloadId'.")
 
   /**
@@ -71,7 +71,7 @@ object ResourceRejection {
     * @param provided the resource provided schema
     * @param expected the resource schema
     */
-  final case class ResourceSchemaUnexpected(id: Iri, provided: ResourceRef, expected: ResourceRef)
+  final case class UnexpectedResourceSchema(id: Iri, provided: ResourceRef, expected: ResourceRef)
       extends ResourceRejection(
         s"Resource '$id' is not constrained by the provided schema '$provided', but by the schema '$expected'."
       )
@@ -131,7 +131,10 @@ object ResourceRejection {
     */
   final case class SchemaNotFound(ref: ResourceRef) extends ResourceRejection(s"Schema '$ref' not found.")
 
-  final case class ResourceJsonLdPayloadRejection(idOpt: Option[Iri], rdfError: RdfError)
+  /**
+    * Signals an error converting the source Json to JsonLD
+    */
+  final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
       extends ResourceRejection(s"Resource ${idOpt.fold("")(id => s"'$id'")} has invalid JSON-LD payload.")
 
   /**
@@ -147,7 +150,7 @@ object ResourceRejection {
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
-        case ResourceJsonLdPayloadRejection(_, details)  => obj.add("details", details.reason.asJson)
+        case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
         case InvalidResource(_, _, report)               => obj.add("details", report.json)
         case _                                           => obj
       }

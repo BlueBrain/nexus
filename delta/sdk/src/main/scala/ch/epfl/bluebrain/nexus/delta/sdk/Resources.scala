@@ -17,9 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResourceSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
@@ -137,18 +134,6 @@ trait Resources {
   ): IO[RevisionNotFound, Option[DataResource]]
 
   /**
-    * Lists resources with optional filters.
-    *
-    * @param pagination the pagination settings
-    * @param params     filter parameters of the resources
-    * @return a paginated results list of resources sorted by their creation date.
-    */
-  def list(
-      pagination: FromPagination,
-      params: ResourceSearchParams = ResourceSearchParams.none
-  ): UIO[UnscoredSearchResults[DataResource]]
-
-  /**
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
     * are recorded.
     *
@@ -211,7 +196,7 @@ object Resources {
   ): IO[ResourceRejection, ResourceEvent] = {
 
     def asGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
-      expanded.toGraph.leftMap(err => ResourceJsonLdPayloadRejection(Some(id), err))
+      expanded.toGraph.leftMap(err => InvalidJsonLdFormat(Some(id), err))
 
     def validate(schemaRef: ResourceRef, id: Iri, graph: Graph): IO[ResourceRejection, Unit] = {
       if (schemaRef.iri == schemas.resources) IO.unit
@@ -253,7 +238,7 @@ object Resources {
         case s: Current if s.deprecated                      =>
           IO.raiseError(ResourceIsDeprecated(c.id))
         case s: Current if c.schemaOpt.exists(_ != s.schema) =>
-          IO.raiseError(ResourceSchemaUnexpected(s.id, c.schemaOpt.get, s.schema))
+          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
         case s: Current                                      =>
           for {
             graph <- asGraph(c.id, c.expanded)
@@ -271,7 +256,9 @@ object Resources {
         case s: Current if s.rev != c.rev                    =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if c.schemaOpt.exists(_ != s.schema) =>
-          IO.raiseError(ResourceSchemaUnexpected(s.id, c.schemaOpt.get, s.schema))
+          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
+        case s: Current if s.deprecated                      =>
+          IO.raiseError(ResourceIsDeprecated(c.id))
         case s: Current if c.targetRev > s.rev               =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
         case s: Current                                      =>
@@ -286,7 +273,7 @@ object Resources {
         case s: Current if s.rev != c.rev                    =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if c.schemaOpt.exists(_ != s.schema) =>
-          IO.raiseError(ResourceSchemaUnexpected(s.id, c.schemaOpt.get, s.schema))
+          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
         case s: Current if s.deprecated                      =>
           IO.raiseError(ResourceIsDeprecated(c.id))
         case s: Current                                      =>

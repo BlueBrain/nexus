@@ -135,7 +135,6 @@ object ResourceEvent {
       subject: Subject
   ) extends ResourceEvent
 
-  //TODO: Maybe add a resources context
   private val context = ContextValue(contexts.resource)
 
   implicit private[resources] val config: Configuration = Configuration.default
