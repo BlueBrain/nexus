@@ -7,9 +7,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{OwnerPermissionsFailed, RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
@@ -17,10 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
+import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -33,9 +32,7 @@ final class ProjectsImpl private (
     agg: ProjectsAggregate,
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
-    acls: Acls,
-    ownerPermissions: Set[Permission],
-    serviceAccount: Subject
+    applyOwnerPermissions: ApplyOwnerPermissions
 )(implicit base: BaseUri)
     extends Projects {
 
@@ -52,35 +49,17 @@ final class ProjectsImpl private (
         fields.vocabOrGenerated(ref),
         caller
       )
-    ).named("createProject", moduleType) <* applyOwnerPermissions(ref, caller).named(
-      "applyOwnerPermissions",
-      moduleType
-    )
+    ).named("createProject", moduleType) <* applyOwnerPermissions
+      .onProject(ref, caller)
+      .leftMap(OwnerPermissionsFailed(ref, _))
+      .named(
+        "applyOwnerPermissions",
+        moduleType
+      )
 
-  private def applyOwnerPermissions(ref: ProjectRef, subject: Subject): IO[OwnerPermissionsFailed, Unit] = {
-    val projectAddress = AclAddress.Project(ref.organization, ref.project)
-
-    def applyMissing(collection: AclCollection) = {
-      val currentPermissions = collection.value.foldLeft(Set.empty[Permission]) { case (acc, (_, acl)) =>
-        acc ++ acl.value.permissions
-      }
-
-      if (ownerPermissions.subsetOf(currentPermissions))
-        IO.unit
-      else {
-        val rev = collection.value.get(projectAddress).fold(0L)(_.rev)
-        acls.append(Acl(projectAddress, subject -> ownerPermissions), rev)(serviceAccount) >> IO.unit
-      }
-    }
-
-    acls.fetchWithAncestors(projectAddress).flatMap(applyMissing).leftMap(OwnerPermissionsFailed(ref, _))
-  }
-
-  override def update(
-      ref: ProjectRef,
-      rev: Long,
-      fields: ProjectFields
-  )(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
+  override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
+      caller: Subject
+  ): IO[ProjectRejection, ProjectResource] =
     eval(
       UpdateProject(
         ref,
@@ -222,29 +201,23 @@ object ProjectsImpl {
       agg: ProjectsAggregate,
       eventLog: EventLog[Envelope[ProjectEvent]],
       cache: ProjectsCache,
-      acls: Acls,
-      ownerPermissions: Set[Permission],
-      serviceAccount: Subject
+      applyOwnerPermissions: ApplyOwnerPermissions
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, eventLog, cache, acls, ownerPermissions, serviceAccount)
+    new ProjectsImpl(agg, eventLog, cache, applyOwnerPermissions)
 
   /**
     * Constructs a [[Projects]] instance.
     *
-    * @param config           the projects configuration
-    * @param eventLog         the event log for [[ProjectEvent]]
-    * @param organizations    an instance of the organizations module
-    * @param acls             an instance of the acl module
-    * @param ownerPermissions the owner permissions to be present at project creation
-    * @param serviceAccount   ther service account to apply owner permissions when needed
+    * @param config                the projects configuration
+    * @param eventLog              the event log for [[ProjectEvent]]
+    * @param organizations         an instance of the organizations module
+    * @param applyOwnerPermissions an instance of [[ApplyOwnerPermissions]] for project creation
     */
   final def apply(
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       organizations: Organizations,
-      acls: Acls,
-      ownerPermissions: Set[Permission],
-      serviceAccount: Subject
+      applyOwnerPermissions: ApplyOwnerPermissions
   )(implicit
       base: BaseUri,
       uuidF: UUIDF = UUIDF.random,
@@ -255,7 +228,7 @@ object ProjectsImpl {
     for {
       agg     <- aggregate(config, organizations)
       index    = cache(config)
-      projects = apply(agg, eventLog, index, acls, ownerPermissions, serviceAccount)
+      projects = apply(agg, eventLog, index, applyOwnerPermissions)
       _       <- UIO.delay(startIndexing(config, eventLog, index, projects))
     } yield projects
 

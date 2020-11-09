@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissions
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import org.scalatest.matchers.should.Matchers
@@ -17,5 +18,7 @@ class OrganizationsDummySpec
     with OptionValues
     with Inspectors {
 
-  override def create: Task[Organizations] = OrganizationsDummy()
+  override def create: Task[Organizations] = OrganizationsDummy(
+    ApplyOwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)
+  )
 }

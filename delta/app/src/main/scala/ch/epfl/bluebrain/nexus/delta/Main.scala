@@ -9,7 +9,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, IdentitiesRoutes, OrganizationsRoutes, PermissionsRoutes, RealmsRoutes}
+import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, IdentitiesRoutes, OrganizationsRoutes, PermissionsRoutes, ProjectsRoutes, RealmsRoutes}
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -51,7 +51,8 @@ object Main extends BIOApp {
             locator.get[PermissionsRoutes].routes,
             locator.get[RealmsRoutes].routes,
             locator.get[AclsRoutes].routes,
-            locator.get[OrganizationsRoutes].routes
+            locator.get[OrganizationsRoutes].routes,
+            locator.get[ProjectsRoutes].routes
           )
         }
       }

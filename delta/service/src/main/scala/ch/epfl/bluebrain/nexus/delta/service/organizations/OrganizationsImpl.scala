@@ -5,11 +5,12 @@ import java.util.UUID
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{RevisionNotFound, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OwnerPermissionsFailed, RevisionNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -20,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
+import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing._
 import ch.epfl.bluebrain.nexus.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.sourcing.processor.ShardedAggregate
@@ -31,14 +33,22 @@ import monix.execution.Scheduler
 final class OrganizationsImpl private (
     agg: OrganizationsAggregate,
     eventLog: EventLog[Envelope[OrganizationEvent]],
-    cache: OrganizationsCache
+    cache: OrganizationsCache,
+    applyOwnerPermissions: ApplyOwnerPermissions
 ) extends Organizations {
 
   override def create(
       label: Label,
       description: Option[String]
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    eval(CreateOrganization(label, description, caller)).named("createOrganization", moduleType)
+    eval(CreateOrganization(label, description, caller))
+      .named("createOrganization", moduleType) <* applyOwnerPermissions
+      .onOrganization(label, caller)
+      .leftMap(OwnerPermissionsFailed(label, _))
+      .named(
+        "applyOwnerPermissions",
+        moduleType
+      )
 
   override def update(
       label: Label,
@@ -186,19 +196,22 @@ object OrganizationsImpl {
   private def apply(
       agg: OrganizationsAggregate,
       eventLog: EventLog[Envelope[OrganizationEvent]],
-      cache: OrganizationsCache
+      cache: OrganizationsCache,
+      applyOwnerPermissions: ApplyOwnerPermissions
   ): OrganizationsImpl =
-    new OrganizationsImpl(agg, eventLog, cache)
+    new OrganizationsImpl(agg, eventLog, cache, applyOwnerPermissions)
 
   /**
     * Constructs a [[Organizations]] instance.
     *
-    * @param config   the organization configuration
-    * @param eventLog the event log for [[OrganizationEvent]]
+    * @param config                the organization configuration
+    * @param eventLog              the event log for [[OrganizationEvent]]
+    * @param applyOwnerPermissions to apply owner permissions on organization creation
     */
   final def apply(
       config: OrganizationsConfig,
-      eventLog: EventLog[Envelope[OrganizationEvent]]
+      eventLog: EventLog[Envelope[OrganizationEvent]],
+      applyOwnerPermissions: ApplyOwnerPermissions
   )(implicit
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
@@ -208,7 +221,7 @@ object OrganizationsImpl {
     for {
       agg          <- aggregate(config)
       index         = cache(config)
-      organizations = apply(agg, eventLog, index)
+      organizations = apply(agg, eventLog, index, applyOwnerPermissions)
       _            <- UIO.delay(startIndexing(config, eventLog, index, organizations))
     } yield organizations
 }

@@ -74,6 +74,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
   include(PermissionsModule)
   include(RealmsModule)
   include(OrganizationsModule)
+  include(ProjectsModule)
   include(IdentitiesModule)
 }
 

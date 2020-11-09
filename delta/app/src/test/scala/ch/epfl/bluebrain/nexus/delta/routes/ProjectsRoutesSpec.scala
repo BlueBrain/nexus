@@ -55,7 +55,7 @@ class ProjectsRoutesSpec
   private val orgs = {
     implicit val subject: Identity.Subject = caller.subject
     for {
-      o <- OrganizationsDummy()(uuidF = UUIDF.fixed(orgUuid))
+      o <- OrganizationsDummy()(uuidF = UUIDF.fixed(orgUuid), clock = ioClock)
       _ <- o.create(Label.unsafe("org1"), None)
       _ <- o.create(Label.unsafe("org2"), None)
       _ <- o.deprecate(Label.unsafe("org2"), 1L)
@@ -63,7 +63,7 @@ class ProjectsRoutesSpec
     } yield o
   }.accepted
 
-  private val routes = Route.seal(ProjectsRoutes(identities, ProjectsDummy(orgs).accepted, acls))
+  private val routes = Route.seal(ProjectsRoutes(identities, acls, ProjectsDummy(orgs).accepted))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"

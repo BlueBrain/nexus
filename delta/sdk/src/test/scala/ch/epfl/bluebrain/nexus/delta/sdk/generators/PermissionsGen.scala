@@ -40,6 +40,21 @@ object PermissionsGen {
     archives.write
   )
 
+  /**
+    * The owner permissions to apply when creating an org/project
+    */
+  val ownerPermissions = Set(
+    projects.read,
+    resources.read,
+    resources.write,
+    resolvers.write,
+    views.write,
+    views.query,
+    schemas.write,
+    files.write,
+    storages.write
+  )
+
   def resourceFor(
       permissions: Set[Permission],
       rev: Long,

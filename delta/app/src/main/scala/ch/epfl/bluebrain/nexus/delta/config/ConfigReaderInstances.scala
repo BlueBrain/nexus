@@ -3,13 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.config
 import akka.http.scaladsl.model.Uri
 import akka.util.Timeout
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.service.config.{AggregateConfig, IndexingConfig}
 import ch.epfl.bluebrain.nexus.delta.service.identity.GroupsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig._
 import ch.epfl.bluebrain.nexus.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
@@ -35,6 +37,28 @@ trait ConfigReaderInstances {
         .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
         .map(uri => BaseUri(uri))
     )
+
+  implicit final val serviceAccountConfigReader: ConfigReader[ServiceAccountConfig] =
+    ConfigReader.fromCursor { cursor =>
+      for {
+        obj                  <- cursor.asObjectCursor
+        subjectK             <- obj.atKey("subject")
+        subject              <- ConfigReader[String].from(subjectK)
+        realmK               <- obj.atKey("realm")
+        realm                <- ConfigReader[String].from(realmK)
+        serviceAccountConfig <-
+          Label(realm).bimap(
+            e =>
+              ConfigReaderFailures(
+                ConvertFailure(
+                  CannotConvert("serviceAccountConfig", "ServiceAccountConfig", e.getMessage),
+                  obj
+                )
+              ),
+            l => ServiceAccountConfig(User(subject, l))
+          )
+      } yield serviceAccountConfig
+    }
 
   implicit final val stopStrategyConfigReader: ConfigReader[StopStrategyConfig] =
     deriveReader[StopStrategyConfig]
@@ -144,6 +168,9 @@ trait ConfigReaderInstances {
 
   implicit final val orgsConfigReader: ConfigReader[OrganizationsConfig] =
     deriveReader[OrganizationsConfig]
+
+  implicit final val projectConfigReader: ConfigReader[ProjectsConfig] =
+    deriveReader[ProjectsConfig]
 
 }
 
