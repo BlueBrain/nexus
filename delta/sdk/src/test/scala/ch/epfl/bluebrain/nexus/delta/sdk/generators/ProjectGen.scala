@@ -75,8 +75,8 @@ object ProjectGen extends OptionValues {
 
   def resourceFor(
       project: Project,
-      rev: Long,
-      subject: Subject,
+      rev: Long = 1L,
+      subject: Subject = Anonymous,
       deprecated: Boolean = false
   ): ProjectResource =
     currentState(

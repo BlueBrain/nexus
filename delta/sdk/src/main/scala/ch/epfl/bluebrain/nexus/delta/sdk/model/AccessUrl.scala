@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
@@ -39,14 +40,17 @@ object AccessUrl {
   final private case class CompactableId(endpoint: Uri, id: Iri) extends AccessUrl {
     override val value: Uri = endpoint / id.toString
 
-    override def shortForm(mappings: ApiMappings): Uri = endpoint / context(mappings).compact(id, useVocab = false)
+    override def shortForm(mappings: ApiMappings): Uri = {
+      val ctx = context(mappings + defaultMappings)
+      endpoint / ctx.compact(id, useVocab = false)
+    }
   }
 
   final private case class CompactableSchemaAndId(endpoint: Uri, schema: ResourceRef, id: Iri) extends AccessUrl {
     override val value: Uri = endpoint / schema.toString / id.toString
 
     override def shortForm(mappings: ApiMappings): Uri = {
-      val ctx = context(mappings)
+      val ctx = context(mappings + defaultMappings)
       endpoint / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
     }
   }
@@ -88,10 +92,8 @@ object AccessUrl {
   /**
     * Access Url for a resource
     */
-  def resource(ref: ProjectRef, id: Iri, schema: Option[ResourceRef])(implicit base: BaseUri): AccessUrl =
-    schema.fold[AccessUrl](
-      CompactableId(base.endpoint / "resources" / ref.organization.value / ref.project.value / "_", id)
-    )(sc => CompactableSchemaAndId(base.endpoint / "resources" / ref.organization.value / ref.project.value, sc, id))
+  def resource(ref: ProjectRef, id: Iri, schema: ResourceRef)(implicit base: BaseUri): AccessUrl =
+    CompactableSchemaAndId(base.endpoint / "resources" / ref.organization.value / ref.project.value, schema, id)
 
   /**
     * Access Url for a schema
@@ -107,5 +109,9 @@ object AccessUrl {
 
   private def context(mappings: ApiMappings): JsonLdContext =
     JsonLdContext(ContextValue.empty, prefixMappings = mappings.prefixMappings, aliases = mappings.aliases)
+
+  private val defaultMappings: ApiMappings = ApiMappings(
+    Map("_" -> schemas.resources, "schema" -> schemas.shacl, "resolver" -> schemas.resolvers)
+  )
 
 }

@@ -6,6 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionSet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 
 package object sdk {
 
@@ -33,5 +35,15 @@ package object sdk {
     * Type alias for a project specific resource.
     */
   type ProjectResource = ResourceF[Project]
+
+  /**
+    * Type alias for a data specific resource.
+    */
+  type DataResource = ResourceF[Resource]
+
+  /**
+    * Type alias for a schema specific resource.
+    */
+  type SchemaResource = ResourceF[Schema]
 
 }
