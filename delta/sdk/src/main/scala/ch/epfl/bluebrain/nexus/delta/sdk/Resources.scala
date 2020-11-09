@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
@@ -32,6 +32,19 @@ import monix.bio.{IO, Task, UIO}
 trait Resources {
 
   /**
+    * Creates a new resource where the id is either present on the payload or self generated.
+    *
+    * @param project the project where the resource belongs
+    * @param source  the resource payload
+    * @param schema  the schema to validate the resource against
+    */
+  def create(
+      project: Project,
+      schema: ResourceRef,
+      source: Json
+  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+
+  /**
     * Creates a new resource with the passed id.
     *
     * @param id      the resource identifier
@@ -41,19 +54,6 @@ trait Resources {
     */
   def create(
       id: Iri,
-      project: ProjectRef,
-      schema: ResourceRef,
-      source: Json
-  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
-
-  /**
-    * Creates a new resource where the id is either present on the payload or self generated.
-    *
-    * @param project the project where the resource belongs
-    * @param source  the resource payload
-    * @param schema  the schema to validate the resource against
-    */
-  def create(
       project: ProjectRef,
       schema: ResourceRef,
       source: Json
@@ -79,12 +79,12 @@ trait Resources {
   /**
     * Adds a tag to an existing resource.
     *
-    * @param id      the resource identifier
-    * @param project the project where the resource belongs
+    * @param id        the resource identifier
+    * @param project   the project where the resource belongs
     * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
-    * @param tag the tag name
-    * @param tagRev the tag revision
-    * @param rev     the current revision of the resource
+    * @param tag       the tag name
+    * @param tagRev    the tag revision
+    * @param rev       the current revision of the resource
     */
   def tag(
       id: Iri,
@@ -107,7 +107,6 @@ trait Resources {
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      schema: ResourceRef,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
