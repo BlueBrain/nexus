@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import java.time.Instant
 import java.util.UUID
 
+import akka.persistence.query.Sequence
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -10,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, Sc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -282,6 +285,64 @@ trait ResourcesBehaviors {
         resources.fetch(myId, projectRef, Some(Latest(schema1.id))).accepted shouldEqual None
         resources.fetchBy(myId, projectRef, Some(Latest(schema1.id)), tag).accepted shouldEqual None
         resources.fetchAt(myId, projectRef, Some(Latest(schema1.id)), 2L).accepted shouldEqual None
+      }
+    }
+
+    "fetching SSE" should {
+      val allEvents = List(
+        (myId, ClassUtils.simpleName(ResourceCreated), Sequence(1L)),
+        (myId2, ClassUtils.simpleName(ResourceCreated), Sequence(2L)),
+        (myId3, ClassUtils.simpleName(ResourceCreated), Sequence(3L)),
+        (myId4, ClassUtils.simpleName(ResourceCreated), Sequence(4L)),
+        (myId5, ClassUtils.simpleName(ResourceCreated), Sequence(5L)),
+        (myId6, ClassUtils.simpleName(ResourceCreated), Sequence(6L)),
+        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(7L)),
+        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(8L)),
+        (myId3, ClassUtils.simpleName(ResourceDeprecated), Sequence(9L)),
+        (myId, ClassUtils.simpleName(ResourceTagAdded), Sequence(10L)),
+        (myId4, ClassUtils.simpleName(ResourceDeprecated), Sequence(11L))
+      )
+
+      "get the different events from start" in {
+        val events = resources
+          .events()
+          .map { e => (e.event.id, e.eventType, e.offset) }
+          .take(11L)
+          .compile
+          .toList
+
+        events.accepted shouldEqual allEvents
+      }
+
+      "get the different current events from start" in {
+        val events = resources
+          .currentEvents()
+          .map { e => (e.event.id, e.eventType, e.offset) }
+          .compile
+          .toList
+
+        events.accepted shouldEqual allEvents
+      }
+
+      "get the different events from offset 2" in {
+        val events = resources
+          .events(Sequence(2L))
+          .map { e => (e.event.id, e.eventType, e.offset) }
+          .take(9L)
+          .compile
+          .toList
+
+        events.accepted shouldEqual allEvents.drop(2)
+      }
+
+      "get the different current events from offset 2" in {
+        val events = resources
+          .currentEvents(Sequence(2L))
+          .map { e => (e.event.id, e.eventType, e.offset) }
+          .compile
+          .toList
+
+        events.accepted shouldEqual allEvents.drop(2)
       }
     }
   }
