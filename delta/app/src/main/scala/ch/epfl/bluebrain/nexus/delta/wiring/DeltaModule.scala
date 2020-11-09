@@ -27,7 +27,6 @@ import org.slf4j.{Logger, LoggerFactory}
   * @param appCfg the application configuration
   * @param config the raw merged and resolved configuration
   */
-// $COVERAGE-OFF$
 class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with ClasspathResourceUtils {
 
   make[AppConfig].from(appCfg)
@@ -72,6 +71,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
   }
 
   include(PermissionsModule)
+  include(AclsModule)
   include(RealmsModule)
   include(OrganizationsModule)
   include(ProjectsModule)
@@ -89,4 +89,3 @@ object DeltaModule {
   final def apply(appCfg: AppConfig, config: Config): DeltaModule =
     new DeltaModule(appCfg, config)
 }
-// $COVERAGE-ON$

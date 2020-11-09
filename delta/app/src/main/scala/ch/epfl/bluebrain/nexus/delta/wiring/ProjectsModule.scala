@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations, Projects}
-import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl
 import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
@@ -45,16 +44,16 @@ object ProjectsModule extends ModuleDef {
 
   make[ProjectsRoutes].from {
     (
+        config: AppConfig,
         identities: Identities,
         acls: Acls,
         projects: Projects,
         baseUri: BaseUri,
-        cfg: OrganizationsConfig,
         s: Scheduler,
         cr: RemoteContextResolution,
         ordering: JsonKeyOrdering
     ) =>
-      new ProjectsRoutes(identities, acls, projects)(baseUri, cfg.pagination, s, cr, ordering)
+      new ProjectsRoutes(identities, acls, projects)(baseUri, config.projects.pagination, s, cr, ordering)
   }
 
 }
