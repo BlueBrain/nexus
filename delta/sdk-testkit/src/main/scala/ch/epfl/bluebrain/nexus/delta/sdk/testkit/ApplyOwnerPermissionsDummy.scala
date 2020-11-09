@@ -41,7 +41,7 @@ class ApplyOwnerPermissionsDummy private (
 
   private def applyOwnerPermissions(address: AclAddress, subject: Identity.Subject): IO[AclRejection, Unit] = {
     def applyMissing(collection: AclCollection) = {
-      val currentPermissions = collection.value.foldLeft(Set.empty[Permission]) { case (acc, (_, acl)) =>
+      val currentPermissions = collection.filter(Set(subject)).value.foldLeft(Set.empty[Permission]) { case (acc, (_, acl)) =>
         acc ++ acl.value.permissions
       }
 
