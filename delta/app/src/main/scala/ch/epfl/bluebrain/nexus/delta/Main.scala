@@ -17,29 +17,31 @@ import com.typesafe.config.Config
 import distage.{Injector, Roots}
 import izumi.distage.model.Locator
 import kamon.Kamon
-import monix.bio.{BIOApp, Task, UIO}
+import monix.bio.{BIOApp, IO, Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 import pureconfig.error.ConfigReaderFailures
 
 import scala.concurrent.duration.DurationInt
 
-// $COVERAGE-OFF$
 object Main extends BIOApp {
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
+    start(_ => IO.unit)
+  }
+
+  private[delta] def start(preStart: Locator => Task[Unit]): IO[Nothing, ExitCode] =
     AppConfig
       .load()
       .flatMap { case (cfg: AppConfig, config: Config) =>
         initializeKamon(config) >>
           Injector()
             .produceF[Task](DeltaModule(cfg, config), Roots.Everything)
-            .use(bootstrap)
+            .use(locator => preStart(locator) >> bootstrap(locator))
             .hideErrors >>
           UIO.pure(ExitCode.Success)
       }
       .onErrorHandleWith(configReaderErrorHandler)
-  }
 
   private def routes(locator: Locator): Route = {
     import akka.http.scaladsl.server.Directives._
@@ -127,4 +129,3 @@ object Main extends BIOApp {
     UIO.delay(println(lines.mkString("\n"))) >> UIO.pure(ExitCode.Error)
   }
 }
-// $COVERAGE-ON$

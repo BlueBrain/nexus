@@ -442,9 +442,9 @@ lazy val app = project
       akkaSlf4j,
       logback,
       pureconfig,
-      akkaHttpTestKit % Test,
-      akkaTestKit     % Test,
-      scalaTest       % Test
+      akkaHttpTestKit  % Test,
+      akkaTestKitTyped % Test,
+      scalaTest        % Test
     ),
     run / fork           := true,
     buildInfoKeys        := Seq[BuildInfoKey](version),
