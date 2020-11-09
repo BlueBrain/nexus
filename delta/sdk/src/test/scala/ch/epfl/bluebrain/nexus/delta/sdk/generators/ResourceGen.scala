@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -25,7 +25,7 @@ object ResourceGen extends OptionValues with IOValues {
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
       types: Set[Iri] = Set.empty,
-      tags: Map[String, Long] = Map.empty,
+      tags: Map[Label, Long] = Map.empty,
       rev: Long = 1L,
       deprecated: Boolean = false,
       subject: Subject = Anonymous
@@ -64,7 +64,7 @@ object ResourceGen extends OptionValues with IOValues {
   def resourceFor(
       resource: Resource,
       types: Set[Iri] = Set.empty,
-      tags: Map[String, Long] = Map.empty,
+      tags: Map[Label, Long] = Map.empty,
       rev: Long = 1L,
       subject: Subject = Anonymous,
       deprecated: Boolean = false

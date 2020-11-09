@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResourceSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
 import io.circe.Json
@@ -90,7 +90,7 @@ trait Resources {
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      tag: String,
+      tag: Label,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
 import io.circe.Json
 
 /**
@@ -64,7 +64,7 @@ object ResourceState {
       deprecated: Boolean,
       schema: ResourceRef,
       types: Set[Iri],
-      tags: Map[String, Long],
+      tags: Map[Label, Long],
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,

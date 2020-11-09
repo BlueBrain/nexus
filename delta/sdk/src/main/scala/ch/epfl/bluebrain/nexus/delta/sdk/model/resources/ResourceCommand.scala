@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Json
@@ -91,7 +91,7 @@ object ResourceCommand {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       targetRev: Long,
-      tag: String,
+      tag: Label,
       rev: Long,
       subject: Subject
   ) extends ResourceCommand
