@@ -37,11 +37,14 @@ import scala.util.{Failure, Success, Try}
 
 trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
 
-  private val jsonMediaTypes =
-    Seq(`application/json`, `application/ld+json`)
-
-  private val mediaTypes = jsonMediaTypes ++
-    Seq(`application/n-triples`, `application/vnd.graphviz`)
+  // order is important
+  private val mediaTypes =
+    Seq(
+      `application/ld+json`,
+      `application/json`,
+      `application/n-triples`,
+      `text/vnd.graphviz`
+    )
 
   /**
     * Extract the common searchParameters (deprecated, rev, createdBy, updatedBy) from query parameters
@@ -213,18 +216,30 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
       io: UIO[Option[A]]
   )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     requestMediaType {
-      case mediaType if jsonMediaTypes.contains(mediaType) =>
+      case mediaType if mediaType == `application/ld+json` =>
         jsonldFormat(io, status, headers).apply { formatted =>
-          onSuccess(formatted.runToFuture) { case Result(status, headers, jsonLd) => complete(status, headers, jsonLd) }
+          onSuccess(formatted.runToFuture) { case Result(status, headers, jsonLd) =>
+            complete(status, headers, jsonLd)
+          }
+        }
+
+      case mediaType if mediaType == `application/json` =>
+        jsonldFormat(io, status, headers).apply { formatted =>
+          onSuccess(formatted.runToFuture) { case Result(status, headers, jsonLd) =>
+            complete(status, headers, jsonLd.json)
+          }
         }
 
       case mediaType if mediaType == `application/n-triples` =>
         val f = io.flatMap { v => Result.nTriples(v, status, headers) }.runToFuture
         onSuccess(f) { case Result(status, headers, ntriples) => complete(status, headers, ntriples) }
 
-      case _                                                 => // `application/vnd.graphviz`
+      case mediaType if mediaType == `text/vnd.graphviz`     =>
         val f = io.flatMap { v => Result.dot(v, status, headers) }.runToFuture
         onSuccess(f) { case Result(status, headers, dot) => complete(status, headers, dot) }
+
+      case _                                                 => // reject
+        reject(UnacceptedResponseContentTypeRejection(mediaTypes.toSet.map((mt: MediaType) => Alternative(mt))))
     }
 
   /**
@@ -397,10 +412,17 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
       io: IO[E, Option[A]]
   )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     requestMediaType {
-      case mediaType if jsonMediaTypes.contains(mediaType) =>
+      case mediaType if mediaType == `application/ld+json` =>
         jsonldFormat(io, status, headers).apply { formatted =>
           onSuccess(formatted.runToFuture) { case Result(status, headers, jsonLd) =>
             complete(status, headers, jsonLd)
+          }
+        }
+
+      case mediaType if mediaType == `application/json` =>
+        jsonldFormat(io, status, headers).apply { formatted =>
+          onSuccess(formatted.runToFuture) { case Result(status, headers, jsonLd) =>
+            complete(status, headers, jsonLd.json)
           }
         }
 
@@ -413,7 +435,7 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
           complete(status, headers, ntriples)
         }
 
-      case _ => // `application/vnd.graphviz`
+      case mediaType if mediaType == `text/vnd.graphviz` =>
         val formatted = io.attempt.flatMap {
           case Left(err)    => err.toDot.map(v => Result(err.status, err.headers, v))
           case Right(value) => Result.dot(value, status, headers)
@@ -421,6 +443,9 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
         onSuccess(formatted.runToFuture) { case Result(status, headers, dot) =>
           complete(status, headers, dot)
         }
+
+      case _ => // reject
+        reject(UnacceptedResponseContentTypeRejection(mediaTypes.toSet.map((mt: MediaType) => Alternative(mt))))
     }
 
   /**

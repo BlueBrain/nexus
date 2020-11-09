@@ -63,7 +63,7 @@ class RdfMarshallingSpec
       val response = Marshal(StatusCodes.OK -> dot).to[HttpResponse].futureValue
       response.status shouldEqual StatusCodes.OK
       response.asString should equalLinesUnordered(dot.value)
-      response.entity.contentType shouldEqual `application/vnd.graphviz`.toContentType
+      response.entity.contentType shouldEqual `text/vnd.graphviz`.toContentType
     }
   }
 

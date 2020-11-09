@@ -3,48 +3,47 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import java.time.Instant
 
 import akka.http.scaladsl.model.HttpMethods.GET
-import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`}
+import akka.http.scaladsl.model.MediaRange._
+import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, `text/*`}
+import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/plain`}
+import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Accept, Allow, Cookie}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Cookie}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.SimpleRejection.{badRequestRejection, conflictRejection}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.syntax._
-import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.{SimpleRejection, SimpleResource}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import akka.http.scaladsl.model.StatusCodes._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.syntax._
+import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.{SimpleRejection, SimpleResource}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
+import monix.bio.{IO, UIO}
+import monix.execution.Scheduler
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 class DeltaDirectivesSpec
     extends AnyWordSpecLike
     with ScalatestRouteTest
     with Matchers
+    with OptionValues
     with CirceLiteral
     with DeltaDirectives
     with IOValues
     with RouteHelpers
     with TestMatchers
+    with TestHelpers
     with Inspectors {
-
-  implicit private val rcr: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      SimpleResource.contextIri  -> SimpleResource.context,
-      SimpleRejection.contextIri -> SimpleRejection.context
-    )
 
   implicit private val ordering: JsonKeyOrdering = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
   implicit private val s: Scheduler              = Scheduler.global
@@ -54,6 +53,13 @@ class DeltaDirectivesSpec
   private val resourceNotFound: Option[SimpleResource] = None
   implicit private val baseUri: BaseUri                = BaseUri("http://localhost", Label.unsafe("v1"))
 
+  implicit private val rcr: RemoteContextResolution =
+    RemoteContextResolution.fixed(
+      SimpleResource.contextIri  -> SimpleResource.context,
+      SimpleRejection.contextIri -> SimpleRejection.context,
+      Vocabulary.contexts.error  -> ioJsonContentOf("/contexts/error.json").accepted
+    )
+
   private val route: Route =
     get {
       concat(
@@ -61,7 +67,6 @@ class DeltaDirectivesSpec
           completeUIO(Accepted, UIO.pure(resource))
         },
         path("uio-opt") {
-
           completeUIOOpt(Accepted, Seq(Cookie("k", "v")), UIO.pure(resourceNotFound))
         },
         path("io") {
@@ -89,6 +94,51 @@ class DeltaDirectivesSpec
   "A route" should {
 
     val notFound: ServiceError = ServiceError.NotFound
+
+    "return the appropriate content type for Accept header that matches supported" in {
+      val endpoints     = List("/uio", "/uio-opt", "/io", "/io-opt", "/bad-request")
+      val acceptMapping = Map[Accept, MediaType](
+        Accept(`*/*`)                                          -> `application/ld+json`,
+        Accept(`application/ld+json`)                          -> `application/ld+json`,
+        Accept(`application/json`)                             -> `application/json`,
+        Accept(`application/json`, `application/ld+json`)      -> `application/json`,
+        Accept(`application/ld+json`, `application/json`)      -> `application/ld+json`,
+        Accept(`application/json`, `text/plain`)               -> `application/json`,
+        Accept(`text/vnd.graphviz`, `application/json`)        -> `text/vnd.graphviz`,
+        Accept(`application/*`)                                -> `application/ld+json`,
+        Accept(`application/*`, `text/plain`)                  -> `application/ld+json`,
+        Accept(`text/*`)                                       -> `text/vnd.graphviz`,
+        Accept(`application/n-triples`, `application/ld+json`) -> `application/n-triples`,
+        Accept(`text/plain`, `application/n-triples`)          -> `application/n-triples`
+      )
+      forAll(endpoints) { endpoint =>
+        forAll(acceptMapping) { case (accept, mt) =>
+          Get(endpoint) ~> accept ~> route ~> check {
+            response.header[`Content-Type`].value.contentType.mediaType shouldEqual mt
+          }
+        }
+      }
+    }
+
+    "return the application/ld+json for missing Accept header" in {
+      val endpoints = List("/uio", "/uio-opt", "/io", "/io-opt", "/bad-request")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> route ~> check {
+          response.header[`Content-Type`].value.contentType.mediaType shouldEqual `application/ld+json`
+        }
+      }
+    }
+
+    "reject the request for unsupported Accept header value" in {
+      val endpoints = List("/uio", "/uio-opt", "/io", "/io-opt", "/bad-request")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> Accept(`text/plain`) ~> route ~> check {
+          rejection shouldEqual UnacceptedResponseContentTypeRejection(
+            Set(`application/ld+json`, `application/json`, `application/n-triples`, `text/vnd.graphviz`)
+          )
+        }
+      }
+    }
 
     "return a 404 when the resource is missing" in {
       val notFoundCompacted = notFound.toCompactedJsonLd.accepted
@@ -151,13 +201,13 @@ class DeltaDirectivesSpec
     "return payload in Dot format" in {
       val dot = resource.toDot.accepted
 
-      Get("/uio") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
+      Get("/uio") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         response.asString should equalLinesUnordered(dot.value)
         response.status shouldEqual Accepted
         response.headers shouldEqual Seq.empty[HttpHeader]
       }
 
-      Get("/io") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
+      Get("/io") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         response.asString should equalLinesUnordered(dot.value)
         response.status shouldEqual Accepted
         response.headers shouldEqual Seq(Cookie("k", "v"))
@@ -231,7 +281,7 @@ class DeltaDirectivesSpec
     }
 
     "return bad request rejection  in Dot format" in {
-      Get("/bad-request") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
+      Get("/bad-request") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         val dot = badRequestRejection.toDot.accepted
         response.asString should equalLinesUnordered(dot.value)
         response.status shouldEqual BadRequest
@@ -240,7 +290,7 @@ class DeltaDirectivesSpec
     }
 
     "return conflict rejection  in Dot format" in {
-      Get("/conflict") ~> Accept(`application/vnd.graphviz`) ~> route ~> check {
+      Get("/conflict") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         val dot = conflictRejection.toDot.accepted
         response.asString should equalLinesUnordered(dot.value)
         response.status shouldEqual Conflict
