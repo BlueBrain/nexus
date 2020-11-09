@@ -207,7 +207,7 @@ export MINI="https://bluebrainnexus.io/docs/getting-started/running-nexus/miniku
 
 This page presents the necessary commands to deploy Nexus with Minikube but also examples the show the expected output.
 
-Some of the examples on this page make use of @link:[curl](https://curl.haxx.se/){ open=new } and @link:[jq](https://stedolan.github.io/jq/){ open=new }
+Some of the examples on this page make use of @link:[curl](https://curl.se/){ open=new } and @link:[jq](https://stedolan.github.io/jq/){ open=new }
 for formatting the json output when interacting with the services. Please install these command line tools if you'd like
 to run the commands in the examples. They should be available through your usual package manager (Chocolatey, Homebrew,
 APT, YUM/DNF, ...)
