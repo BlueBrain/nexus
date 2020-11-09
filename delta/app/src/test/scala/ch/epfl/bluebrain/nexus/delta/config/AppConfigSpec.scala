@@ -27,5 +27,4 @@ class AppConfigSpec extends AnyWordSpecLike with Matchers with IOValues {
 
   }
 
-
 }

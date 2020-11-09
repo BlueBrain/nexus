@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import monix.bio.IO
 
 /**
- * Apply the owner permissions at org/project creation
- *
- * @param acls               an instance of the acl module
- * @param ownerPermissions   the owner permissions to be present at project creation
- * @param serviceAccount     the service account to apply owner permissions when needed
- */
+  * Apply the owner permissions at org/project creation
+  *
+  * @param acls               an instance of the acl module
+  * @param ownerPermissions   the owner permissions to be present at project creation
+  * @param serviceAccount     the service account to apply owner permissions when needed
+  */
 class ApplyOwnerPermissions private (acls: Acls, ownerPermissions: Set[Permission], serviceAccount: Identity.Subject) {
 
   /**

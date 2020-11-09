@@ -56,12 +56,11 @@ object PermissionsGen {
   )
 
   def resourceFor(
-                   permissions: Set[Permission],
-                   rev: Long,
-                   createdBy: Subject = Identity.Anonymous,
-                   updatedBy: Subject = Identity.Anonymous
-                 ): PermissionsResource =
+      permissions: Set[Permission],
+      rev: Long,
+      createdBy: Subject = Identity.Anonymous,
+      updatedBy: Subject = Identity.Anonymous
+  ): PermissionsResource =
     Current(rev, permissions, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy).toResource(permissions)
-
 
 }
