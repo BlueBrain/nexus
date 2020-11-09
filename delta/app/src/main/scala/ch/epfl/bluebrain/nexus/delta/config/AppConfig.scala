@@ -13,15 +13,17 @@ import pureconfig.{ConfigReader, ConfigSource}
 /**
   * Main application configuration.
   *
-  * @param description   the service description
-  * @param http          the http config
-  * @param cluster       the cluster config
-  * @param database      the database config
-  * @param identities    the identities config
-  * @param permissions   the permissions config
-  * @param realms        the realms config
-  * @param organizations the organizations config
-  * @param acls          the ACLs config
+  * @param description    the service description
+  * @param http           the http config
+  * @param cluster        the cluster config
+  * @param database       the database config
+  * @param identities     the identities config
+  * @param permissions    the permissions config
+  * @param realms         the realms config
+  * @param organizations  the organizations config
+  * @param acls           the ACLs config
+  * @param projects       the projects config
+  * @param serviceAccount the service account config
   */
 final case class AppConfig(
     description: DescriptionConfig,

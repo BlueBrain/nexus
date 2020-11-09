@@ -21,8 +21,8 @@ import monix.execution.Scheduler
 /**
   * The project routes
   * @param identities the identity module
-  * @param projects   the projects module
   * @param acls       the ACLs module
+  * @param projects   the projects module
   */
 final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Projects)(implicit
     baseUri: BaseUri,
