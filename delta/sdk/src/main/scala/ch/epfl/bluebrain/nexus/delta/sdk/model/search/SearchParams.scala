@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 
 /**
@@ -117,6 +118,33 @@ object SearchParams {
     override def matches(resource: ResourceF[Project]): Boolean =
       super.matches(resource) &&
         organization.forall(_ == resource.value.organizationLabel)
+  }
+
+  /**
+    * Search parameters to filter data resources.
+    *
+    * @param deprecated the optional deprecation status of the project resources
+    * @param rev        the optional revision of the project resources
+    * @param createdBy  the optional subject who created the project resource
+    * @param updatedBy  the optional subject who updated the resource
+    * @param types      the resource types
+    * @param schema     the optional schema
+    */
+  final case class ResourceSearchParams(
+      deprecated: Option[Boolean] = None,
+      rev: Option[Long] = None,
+      createdBy: Option[Subject] = None,
+      updatedBy: Option[Subject] = None,
+      types: Set[Iri] = Set.empty[Iri],
+      schema: Option[ResourceRef] = None
+  ) extends SearchParams[Resource]
+
+  object ResourceSearchParams {
+
+    /**
+      * A ResourceSearchParams without any filters.
+      */
+    final val none: ResourceSearchParams = ResourceSearchParams()
   }
 
   object ProjectSearchParams {
