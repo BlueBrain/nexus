@@ -111,9 +111,9 @@ object OrganizationsDummy {
   type OrganizationsJournal = Journal[Label, OrganizationEvent]
   type OrganizationsCache   = ResourceCache[Label, Organization]
 
-  implicit val idLens: Lens[OrganizationEvent, Label] = (a: OrganizationEvent) => a.label
+  implicit private val idLens: Lens[OrganizationEvent, Label] = (a: OrganizationEvent) => a.label
 
-  implicit val lens: Lens[Organization, Label] = _.label
+  implicit private val lens: Lens[Organization, Label] = _.label
 
   final def apply(applyOwnerPermissions: ApplyOwnerPermissionsDummy)(implicit
       uuidF: UUIDF,
