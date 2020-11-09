@@ -123,7 +123,7 @@ trait Resources {
     * @param id        the resource identifier
     * @param project   the project where the resource belongs
     * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
-    * @param rev       the permissions revision
+    * @param rev       the resources revision
     * @return the resource as a resource at the specified revision
     */
   def fetchAt(
@@ -132,6 +132,30 @@ trait Resources {
       schemaOpt: Option[ResourceRef],
       rev: Long
   ): IO[RevisionNotFound, Option[DataResource]]
+
+  /**
+    * Fetches a resource by tag.
+    *
+    * @param id        the resource identifier
+    * @param project   the project where the resource belongs
+    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
+    * @param tag       the tag revision
+    * @return the resource as a resource at the specified revision
+    */
+  def fetchBy(
+      id: Iri,
+      project: ProjectRef,
+      schemaOpt: Option[ResourceRef],
+      tag: Label
+  ): IO[TagNotFound, Option[DataResource]] =
+    fetch(id, project, schemaOpt).flatMap {
+      case Some(resource) =>
+        resource.value.tags.get(tag) match {
+          case Some(rev) => fetchAt(id, project, schemaOpt, rev).leftMap(_ => TagNotFound(tag))
+          case None      => IO.raiseError(TagNotFound(tag))
+        }
+      case None           => IO.pure(None)
+    }
 
   /**
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events

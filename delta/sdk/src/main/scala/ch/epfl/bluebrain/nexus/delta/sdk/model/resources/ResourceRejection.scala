@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -30,6 +30,14 @@ object ResourceRejection {
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends ResourceRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
+
+  /**
+    * Rejection returned when a subject intends to retrieve a resource at a specific tag, but the provided tag
+    * does not exist.
+    *
+    * @param tag the provided tag
+    */
+  final case class TagNotFound(tag: Label) extends ResourceRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a resource with an id that already exists.

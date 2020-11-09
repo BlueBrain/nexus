@@ -84,7 +84,7 @@ object ResourceState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Resource(id, project, schema, source, compacted, expanded)
+          value = Resource(id, project, tags, schema, source, compacted, expanded)
         )
       )
   }
