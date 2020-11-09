@@ -158,6 +158,7 @@ object Vocabulary {
     val Permissions       = nxv + "Permissions"
     val Project           = nxv + "Project"
     val Realm             = nxv + "Realm"
+    val Schema            = nxv + "Schema"
   }
 
   /**
@@ -168,6 +169,7 @@ object Vocabulary {
     def +(suffix: String) = iri"$base$suffix"
 
     val acls          = schemas + "acls.json"
+    val shacl         = iri"https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl"
     val organizations = schemas + "organizations.json"
     val permissions   = schemas + "permissions.json"
     val projects      = schemas + "projects.json"

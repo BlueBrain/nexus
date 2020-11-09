@@ -25,7 +25,7 @@ object OrganizationRejection {
     * Signals the the organization already exists.
     */
   final case class OrganizationAlreadyExists(label: Label)
-      extends OrganizationRejection(s"Organization with label '$label' already exists.")
+      extends OrganizationRejection(s"Organization '$label' already exists.")
 
   /**
     * Signals that the organization does not exist.
@@ -37,7 +37,7 @@ object OrganizationRejection {
       new OrganizationNotFound(s"Organization with uuid '${uuid.toString.toLowerCase()}' not found.")
 
     def apply(label: Label): OrganizationNotFound =
-      new OrganizationNotFound(s"Organization with label '$label' not found.")
+      new OrganizationNotFound(s"Organization '$label' not found.")
   }
 
   /**

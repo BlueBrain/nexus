@@ -70,26 +70,17 @@ class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with E
     }
 
     "be constructed for resources" in {
-      val id            = nxv + "myid"
-      val expected      = Uri(s"http://localhost/v1/resources/myorg/myproject/_/${UrlUtils.encode(id.toString)}")
-      val expectedShort = Uri("http://localhost/v1/resources/myorg/myproject/_/nxv:myid")
-      val accessUrl     = AccessUrl.resource(projectRef, id, None)
-      accessUrl.value shouldEqual expected
-      accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expectedShort
-      accessUrl.shortForm(ApiMappings.empty) shouldEqual expected
-    }
-
-    "be constructed for resources with schema" in {
-      val id            = nxv + "myid"
-      val idEncoded     = UrlUtils.encode(id.toString)
-      val schemaEncoded = UrlUtils.encode(schemas.resolvers.toString)
-      val expected      = Uri(s"http://localhost/v1/resources/myorg/myproject/$schemaEncoded/$idEncoded")
-      val expectedShort = Uri("http://localhost/v1/resources/myorg/myproject/resolvers/nxv:myid")
-      val accessUrl     = AccessUrl.resource(projectRef, id, Some(Latest(schemas.resolvers)))
-      accessUrl.value shouldEqual expected
-      accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expectedShort
+      val id        = nxv + "myid"
+      val encodedId = UrlUtils.encode(id.toString)
+      forAll(List(schemas.resources -> "_", schemas.resolvers -> "resolver")) { case (schema, shortForm) =>
+        val encodedSchema = UrlUtils.encode(schema.toString)
+        val expected      = Uri(s"http://localhost/v1/resources/myorg/myproject/$encodedSchema/$encodedId")
+        val expectedShort = Uri(s"http://localhost/v1/resources/myorg/myproject/$shortForm/nxv:myid")
+        val accessUrl     = AccessUrl.resource(projectRef, id, Latest(schema))
+        accessUrl.value shouldEqual expected
+        accessUrl.iri shouldEqual expected.toIri
+        accessUrl.shortForm(mappings) shouldEqual expectedShort
+      }
     }
 
     "be constructed for schemas" in {

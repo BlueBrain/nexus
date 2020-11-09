@@ -1,5 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "ProjectIsDeprecated",
-  "reason": "Project with label '{{org}}/{{proj}}' is deprecated."
+  "reason": "Project '{{org}}/{{proj}}' is deprecated."
 }
