@@ -4,10 +4,12 @@ import java.util.UUID
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand.{CreateOrganization, DeprecateOrganization, UpdateOrganization}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.UnexpectedInitialState
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OwnerPermissionsFailed, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationCommand, OrganizationRejection, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
@@ -30,7 +32,8 @@ import monix.bio.{IO, Task, UIO}
 final class OrganizationsDummy private (
     journal: OrganizationsJournal,
     cache: OrganizationsCache,
-    semaphore: IOSemaphore
+    semaphore: IOSemaphore,
+    applyOwnerPermissions: ApplyOwnerPermissionsDummy
 )(implicit clock: Clock[UIO], uuidF: UUIDF)
     extends Organizations {
 
@@ -38,7 +41,9 @@ final class OrganizationsDummy private (
       label: Label,
       description: Option[String]
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
-    eval(CreateOrganization(label, description, caller))
+    eval(CreateOrganization(label, description, caller)) <* applyOwnerPermissions
+      .onOrganization(label, caller)
+      .leftMap(OwnerPermissionsFailed(label, _))
 
   override def update(
       label: Label,
@@ -108,15 +113,27 @@ object OrganizationsDummy {
 
   implicit val idLens: Lens[OrganizationEvent, Label] = (a: OrganizationEvent) => a.label
 
-  /**
-    * Creates a new dummy Organizations implementation.
-    */
-  final def apply()(implicit uuidF: UUIDF = UUIDF.random, clock: Clock[UIO] = IO.clock): UIO[OrganizationsDummy] = {
-    implicit val lens: Lens[Organization, Label] = _.label
+  implicit val lens: Lens[Organization, Label] = _.label
+
+  final def apply(applyOwnerPermissions: ApplyOwnerPermissionsDummy)(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO]
+  ): UIO[OrganizationsDummy] =
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[Label, Organization]
       sem     <- IOSemaphore(1L)
-    } yield new OrganizationsDummy(journal, cache, sem)
-  }
+    } yield new OrganizationsDummy(journal, cache, sem, applyOwnerPermissions)
+
+  /**
+    * Creates a new dummy Organizations implementation.
+    */
+  final def apply()(implicit
+      uuidF: UUIDF,
+      clock: Clock[UIO]
+  ): UIO[OrganizationsDummy] =
+    AclsDummy(PermissionsDummy(Set.empty)).flatMap { acls =>
+      apply(ApplyOwnerPermissionsDummy(acls, Set.empty, Identity.Anonymous))
+    }
+
 }

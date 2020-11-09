@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsConfig
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import com.typesafe.config.{Config, ConfigFactory}
 import monix.bio.{IO, UIO}
@@ -31,7 +32,9 @@ final case class AppConfig(
     permissions: PermissionsConfig,
     realms: RealmsConfig,
     organizations: OrganizationsConfig,
-    acls: AclsConfig
+    acls: AclsConfig,
+    projects: ProjectsConfig,
+    serviceAccount: ServiceAccountConfig
 )
 
 object AppConfig extends ConfigReaderInstances {

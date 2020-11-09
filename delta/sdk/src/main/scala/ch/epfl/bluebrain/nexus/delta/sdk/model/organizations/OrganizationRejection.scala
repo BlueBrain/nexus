@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -73,6 +74,14 @@ object OrganizationRejection {
     */
   final case class UnexpectedInitialState(label: Label)
       extends OrganizationRejection(s"Unexpected initial state for organization '$label'.")
+
+  /**
+    * Rejection returned when applying owner permissions with the acl module during project creation fails
+    */
+  final case class OwnerPermissionsFailed(label: Label, aclRejection: AclRejection)
+      extends OrganizationRejection(
+        s"The organization has been successfully created but applying owner permissions on org '$label' failed with the following error: ${aclRejection.reason}"
+      )
 
   implicit private val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
     Encoder.AsObject.instance { r =>

@@ -14,6 +14,7 @@ import pureconfig.generic.semiauto._
   */
 final case class PermissionsConfig(
     minimum: Set[Permission],
+    ownerPermissions: Set[Permission],
     aggregate: AggregateConfig
 )
 

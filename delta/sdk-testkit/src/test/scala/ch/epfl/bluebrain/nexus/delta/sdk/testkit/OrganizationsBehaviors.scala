@@ -6,8 +6,11 @@ import java.util.UUID
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
@@ -27,10 +30,11 @@ import org.scalatest.wordspec.AnyWordSpecLike
 trait OrganizationsBehaviors {
   this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock with TestHelpers with OptionValues =>
 
-  val epoch: Instant                = Instant.EPOCH
-  implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
+  val epoch: Instant            = Instant.EPOCH
+  implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))
+  val serviceAccount: Subject   = Identity.User("serviceAccount", Label.unsafe("realm"))
+
   implicit val scheduler: Scheduler = Scheduler.global
-  implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   val description  = Some("my description")
   val description2 = Some("my other description")
@@ -39,6 +43,21 @@ trait OrganizationsBehaviors {
   val uuid         = UUID.randomUUID()
 
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
+
+  // myorg has all owner permissions on / and itself
+  val (rootPermissions, myOrgPermissions) =
+    PermissionsGen.ownerPermissions.splitAt(PermissionsGen.ownerPermissions.size / 2)
+  // myorg2 misses some owner permissions and have other ones that should not be deleted
+  val myOrg2Permissions                   = Set(events.read, realms.read)
+
+  val acls = {
+    for {
+      acls <- AclsDummy(PermissionsDummy(PermissionsGen.minimum))
+      _    <- acls.append(Acl(AclAddress.Root, subject -> rootPermissions), 0L)(serviceAccount)
+      _    <- acls.append(Acl(AclAddress.Organization(label), subject -> myOrgPermissions), 0L)(serviceAccount)
+      _    <- acls.append(Acl(AclAddress.Organization(label2), subject -> myOrg2Permissions), 0L)(serviceAccount)
+    } yield acls
+  }.accepted
 
   def create: Task[Organizations]
 
@@ -49,6 +68,10 @@ trait OrganizationsBehaviors {
     "create an organization" in {
       orgs.create(label, description).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1L, subject)
+
+      acls.fetch(AclAddress.Organization(label)).accepted.map(_.value.value) shouldEqual Some(
+        Map(subject -> myOrgPermissions)
+      )
     }
 
     "update an organization" in {
@@ -95,9 +118,16 @@ trait OrganizationsBehaviors {
       orgs.fetchAt(UUID.randomUUID(), 1L).accepted shouldEqual None
     }
 
+    "create another organization" in {
+      orgs.create(label2, None).accepted
+
+      acls.fetch(AclAddress.Organization(label2)).accepted.map(_.value.value) shouldEqual Some(
+        Map(subject -> (PermissionsGen.ownerPermissions ++ myOrg2Permissions))
+      )
+    }
+
     "list organizations" in {
       val result1 = orgs.fetch(label).accepted.value
-      orgs.create(label2, None).accepted
       val result2 = orgs.fetch(label2).accepted.value
       val filter  = OrganizationSearchParams(deprecated = Some(true), rev = Some(3))
 

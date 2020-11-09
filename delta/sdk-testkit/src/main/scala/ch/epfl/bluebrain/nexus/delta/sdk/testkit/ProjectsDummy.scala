@@ -6,9 +6,8 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{OwnerPermissionsFailed, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
@@ -17,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams,
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
 
@@ -33,9 +31,7 @@ final class ProjectsDummy private (
     cache: ProjectsCache,
     semaphore: IOSemaphore,
     organizations: Organizations,
-    acls: Acls,
-    ownerPermissions: Set[Permission],
-    serviceAccount: Identity.Subject
+    applyOwnerPermissions: ApplyOwnerPermissionsDummy
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
@@ -51,26 +47,7 @@ final class ProjectsDummy private (
         fields.vocabOrGenerated(ref),
         caller
       )
-    ) <* applyOwnerPermissions(ref, caller)
-
-  private def applyOwnerPermissions(ref: ProjectRef, subject: Identity.Subject): IO[OwnerPermissionsFailed, Unit] = {
-    val projectAddress = AclAddress.Project(ref.organization, ref.project)
-
-    def applyMissing(collection: AclCollection) = {
-      val currentPermissions = collection.value.foldLeft(Set.empty[Permission]) { case (acc, (_, acl)) =>
-        acc ++ acl.value.permissions
-      }
-
-      if (ownerPermissions.subsetOf(currentPermissions))
-        IO.unit
-      else {
-        val rev = collection.value.get(projectAddress).fold(0L)(_.rev)
-        acls.append(Acl(projectAddress, subject -> ownerPermissions), rev)(serviceAccount) >> IO.unit
-      }
-    }
-
-    acls.fetchWithAncestors(projectAddress).flatMap(applyMissing).leftMap(OwnerPermissionsFailed(ref, _))
-  }
+    ) <* applyOwnerPermissions.onProject(ref, caller).leftMap(OwnerPermissionsFailed(ref, _))
 
   override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
       caller: Identity.Subject
@@ -133,42 +110,31 @@ object ProjectsDummy {
   implicit val idLens: Lens[ProjectEvent, ProjectRef] = (event: ProjectEvent) =>
     ProjectRef(event.organizationLabel, event.label)
 
+  implicit val lens: Lens[Project, ProjectRef] = _.ref
+
   /**
     * Creates a project dummy instance
     *
-    * @param organizations    an Organizations instance
-    * @param acls             an Acls instance
-    * @param ownerPermissions ownerPermissions to be present at project creation
-    * @param serviceAccount   the service account to apply the ownerPermissions
+    * @param organizations         an Organizations instance
+    * @param applyOwnerPermissions to apply owner permissions on project creation
     */
   def apply(
       organizations: Organizations,
-      acls: Acls,
-      ownerPermissions: Set[Permission],
-      serviceAccount: Identity.Subject
-  )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] = {
-    implicit val lens: Lens[Project, ProjectRef] = _.ref
+      applyOwnerPermissions: ApplyOwnerPermissionsDummy
+  )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
       journal <- Journal(moduleType)
       cache   <- ResourceCache[ProjectRef, Project]
       sem     <- IOSemaphore(1L)
-    } yield new ProjectsDummy(journal, cache, sem, organizations, acls, ownerPermissions, serviceAccount)
-  }
+    } yield new ProjectsDummy(journal, cache, sem, organizations, applyOwnerPermissions)
 
   /**
     * Creates a project dummy instance where ownerPermissions don't matter
     * @param organizations an Organizations instance
     */
-  def apply(
-      organizations: Organizations
-  )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] = {
-    implicit val lens: Lens[Project, ProjectRef] = _.ref
-    for {
-      journal <- Journal(moduleType)
-      cache   <- ResourceCache[ProjectRef, Project]
-      acls    <- AclsDummy(PermissionsDummy(Set.empty))
-      sem     <- IOSemaphore(1L)
-    } yield new ProjectsDummy(journal, cache, sem, organizations, acls, Set.empty, Identity.Anonymous)
-  }
+  def apply(organizations: Organizations)(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
+    AclsDummy(PermissionsDummy(Set.empty)).flatMap { acls =>
+      apply(organizations, ApplyOwnerPermissionsDummy(acls, Set.empty, Identity.Anonymous))
+    }
 
 }

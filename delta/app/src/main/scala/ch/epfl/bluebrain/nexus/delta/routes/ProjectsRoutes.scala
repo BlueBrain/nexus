@@ -24,7 +24,7 @@ import monix.execution.Scheduler
   * @param projects   the projects module
   * @param acls       the ACLs module
   */
-final class ProjectsRoutes(identities: Identities, projects: Projects, acls: Acls)(implicit
+final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Projects)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
@@ -119,12 +119,12 @@ object ProjectsRoutes {
   /**
     * @return the [[Route]] for projects
     */
-  def apply(identities: Identities, projects: Projects, acls: Acls)(implicit
+  def apply(identities: Identities, acls: Acls, projects: Projects)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ProjectsRoutes(identities, projects, acls).routes
+  ): Route = new ProjectsRoutes(identities, acls, projects).routes
 
 }

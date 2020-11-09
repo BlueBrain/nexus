@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Organizations}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
+import ch.epfl.bluebrain.nexus.delta.service.utils.ApplyOwnerPermissions
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.UIO
@@ -25,12 +26,17 @@ object OrganizationsModule extends ModuleDef {
 
   make[Organizations].fromEffect {
     (
-        cfg: AppConfig,
+        config: AppConfig,
         eventLog: EventLog[Envelope[OrganizationEvent]],
+        acls: Acls,
         as: ActorSystem[Nothing],
         scheduler: Scheduler
     ) =>
-      OrganizationsImpl(cfg.organizations, eventLog)(UUIDF.random, as, scheduler, Clock[UIO])
+      OrganizationsImpl(
+        config.organizations,
+        eventLog,
+        ApplyOwnerPermissions(acls, config.permissions.ownerPermissions, config.serviceAccount.subject)
+      )(UUIDF.random, as, scheduler, Clock[UIO])
   }
 
   make[OrganizationsRoutes].from {
