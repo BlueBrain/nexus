@@ -107,10 +107,10 @@ object ProjectsDummy {
   type ProjectsJournal = Journal[ProjectRef, ProjectEvent]
   type ProjectsCache   = ResourceCache[ProjectRef, Project]
 
-  implicit val idLens: Lens[ProjectEvent, ProjectRef] = (event: ProjectEvent) =>
+  implicit private val idLens: Lens[ProjectEvent, ProjectRef] = (event: ProjectEvent) =>
     ProjectRef(event.organizationLabel, event.label)
 
-  implicit val lens: Lens[Project, ProjectRef] = _.ref
+  implicit private val lens: Lens[Project, ProjectRef] = _.ref
 
   /**
     * Creates a project dummy instance

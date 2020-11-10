@@ -256,7 +256,7 @@ object Resources {
     def update(c: UpdateResource) =
       state match {
         case Initial                                         =>
-          IO.raiseError(ResourceNotFound(c.id))
+          IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
         case s: Current if s.rev != c.rev                    =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated                      =>
@@ -276,7 +276,7 @@ object Resources {
     def tag(c: TagResource) =
       state match {
         case Initial                                         =>
-          IO.raiseError(ResourceNotFound(c.id))
+          IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
         case s: Current if s.rev != c.rev                    =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if c.schemaOpt.exists(_ != s.schema) =>
@@ -293,7 +293,7 @@ object Resources {
     def deprecate(c: DeprecateResource) =
       state match {
         case Initial                                         =>
-          IO.raiseError(ResourceNotFound(c.id))
+          IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
         case s: Current if s.rev != c.rev                    =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if c.schemaOpt.exists(_ != s.schema) =>

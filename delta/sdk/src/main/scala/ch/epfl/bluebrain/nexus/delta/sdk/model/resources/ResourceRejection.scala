@@ -49,9 +49,11 @@ object ResourceRejection {
   /**
     * Rejection returned when attempting to update a resource with an id that doesn't exist.
     *
-    * @param id      the resource identifier
+    * @param id        the resource identifier
+    * @param schemaOpt the optional resource schema
     */
-  final case class ResourceNotFound(id: Iri) extends ResourceRejection(s"Resource '$id' not found.")
+  final case class ResourceNotFound(id: Iri, schemaOpt: Option[ResourceRef])
+      extends ResourceRejection(s"Resource '$id' not found${schemaOpt.fold("")(schema => s" with schema '$schema'")}.")
 
   /**
     * Rejection returned when attempting to create a resource where the passed id does not match the id on the payload.

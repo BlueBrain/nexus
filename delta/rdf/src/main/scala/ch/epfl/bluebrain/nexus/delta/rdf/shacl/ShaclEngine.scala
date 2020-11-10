@@ -5,6 +5,7 @@ import java.util
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import monix.bio.IO
 import org.apache.jena.query.Dataset
 import org.apache.jena.rdf.model._
@@ -54,7 +55,10 @@ object ShaclEngine {
     * @param reportDetails true to also include the sh:detail (more verbose) and false to omit them
     * @return an option of [[ValidationReport]] with the validation results
     */
-  def apply(shapesModel: Model, reportDetails: Boolean): IO[String, ValidationReport] =
+  def apply(
+      shapesModel: Model,
+      reportDetails: Boolean
+  )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] =
     applySkipShapesCheck(shapesModel, shaclModel, validateShapes = true, reportDetails = reportDetails)
 
   /**
@@ -71,7 +75,7 @@ object ShaclEngine {
       shapesModel: Model,
       validateShapes: Boolean,
       reportDetails: Boolean
-  ): IO[String, ValidationReport] = {
+  )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] = {
 
     val finalShapesModel = ValidationUtil.ensureToshTriplesExist(shapesModel)
     // Make sure all sh:Functions are registered
@@ -84,7 +88,7 @@ object ShaclEngine {
       finalShapesModel: Model,
       validateShapes: Boolean,
       reportDetails: Boolean
-  ): IO[String, ValidationReport] = {
+  )(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
     val shapesGraphURI = SHACLUtil.createRandomShapesGraphURI()

@@ -32,12 +32,9 @@ trait ClasspathResourceUtils {
     *         resource is not found
     */
   final def ioContentOf(resourcePath: String, attributes: (String, Any)*): IO[ClasspathResourceError, String] =
-    resourceAsTextFrom(resourcePath).map { text =>
-      templateEngine.layout(
-        "dummy.template",
-        templateEngine.compileMoustache(text),
-        attributes.toMap
-      )
+    resourceAsTextFrom(resourcePath).map {
+      case text if attributes.isEmpty => text
+      case text                       => templateEngine.layout("dummy.template", templateEngine.compileMoustache(text), attributes.toMap)
     }
 
   /**
