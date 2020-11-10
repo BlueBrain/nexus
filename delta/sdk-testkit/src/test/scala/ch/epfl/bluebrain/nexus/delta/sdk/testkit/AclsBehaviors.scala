@@ -105,6 +105,13 @@ trait AclsBehaviors {
       acls.append(userR(AclAddress.Root), 0L).accepted shouldEqual resourceFor(userR(AclAddress.Root), 1L, subject)
     }
 
+    "should not return permissions for Anonymous after a new revision was recorded on Root" in {
+      val expected = AclCollection(resourceFor(userR(AclAddress.Root), 1L, subject))
+      acls.fetchWithAncestors(projectTarget).accepted shouldEqual expected
+      acls.fetchWithAncestors(orgTarget).accepted shouldEqual expected
+      acls.fetchWithAncestors(AclAddress.Root).accepted shouldEqual expected
+    }
+
     "replace an ACL" in {
       acls.replace(userR_groupX(AclAddress.Root), 1L).accepted shouldEqual
         resourceFor(userR_groupX(AclAddress.Root), 2L, subject)
