@@ -19,13 +19,13 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy ACLs implementation that uses a synchronized in memory journal.
   *
-  * @param perms     the bundle of operations pertaining to managing permissions wrapped in an IO
+  * @param permissions     the bundle of operations pertaining to managing permissions
   * @param journal   a ref to the journal containing all the events discriminated by [[AclAddress]] location
   * @param cache     a ref to the cache containing all the current acl resources
   * @param semaphore a semaphore for serializing write operations on the journal
   */
 final class AclsDummy private (
-    perms: UIO[Permissions],
+    permissions: Permissions,
     journal: AclsJournal,
     cache: IORef[AclCollection],
     semaphore: IOSemaphore
@@ -34,6 +34,9 @@ final class AclsDummy private (
 
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
     cache.get.map(_.value.get(address))
+
+  override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
+    Acls.fetchWithAncestors(address, this, permissions)
 
   override def fetchAt(address: AclAddress, rev: Long): IO[RevisionNotFound, Option[AclResource]] =
     journal
@@ -78,7 +81,7 @@ final class AclsDummy private (
     semaphore.withPermit {
       for {
         state <- journal.currentState(cmd.address, Initial, Acls.next).map(_.getOrElse(Initial))
-        event <- Acls.evaluate(perms)(state, cmd)
+        event <- Acls.evaluate(UIO.pure(permissions))(state, cmd)
         _     <- journal.add(event)
         res   <- IO.fromEither(Acls.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.address)))
       } yield res
@@ -92,12 +95,13 @@ object AclsDummy {
   /**
     * Creates a new dummy Acls implementation.
     *
-    * @param perms the bundle of operations pertaining to managing permissions wrapped in an IO
+    * @param permissions the bundle of operations pertaining to managing permissions wrapped in an IO
     */
-  final def apply(perms: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] = {
+  final def apply(permissions: UIO[Permissions])(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] = {
     implicit val idLens: Lens[AclEvent, AclAddress] = _.address
 
     for {
+      perms    <- permissions
       journal  <- Journal(moduleType)
       cacheRef <- IORef.of(AclCollection.empty)
       sem      <- IOSemaphore(1L)

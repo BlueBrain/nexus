@@ -4,17 +4,18 @@ import java.time.Instant
 
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{AclCannotContainEmptyPermissionCollection, AclIsEmpty, AclNotFound, NothingToBeUpdated, RevisionNotFound, UnknownPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -70,14 +71,35 @@ trait AclsBehaviors {
   val anyOrg              = AnyOrganization(false)
   val anyOrgWithAncestors = AnyOrganization(true)
 
-  def create: Task[Acls]
+  def create: Task[(Acls, Permissions)]
 
   "An ACLs implementation" should {
-    val acls =
+    val (acls, permissions) =
       create
         .timeoutWith(10.seconds, new TimeoutException("Unable to create a permissions instance"))
         .memoizeOnSuccess
         .accepted
+
+    "return the full permissions for Anonymous if no permissions are defined" in {
+      val expected: AclCollection =
+        permissions.fetchPermissionSet
+          .map(ps =>
+            AclCollection(
+              Current(
+                acl = Acl(AclAddress.Root, Identity.Anonymous -> ps),
+                rev = 0L,
+                createdAt = Instant.EPOCH,
+                createdBy = Identity.Anonymous,
+                updatedAt = Instant.EPOCH,
+                updatedBy = Identity.Anonymous
+              ).asResource
+            )
+          )
+          .accepted
+      acls.fetchWithAncestors(projectTarget).accepted shouldEqual expected
+      acls.fetchWithAncestors(orgTarget).accepted shouldEqual expected
+      acls.fetchWithAncestors(AclAddress.Root).accepted shouldEqual expected
+    }
 
     "append an ACL" in {
       acls.append(userR(AclAddress.Root), 0L).accepted shouldEqual resourceFor(userR(AclAddress.Root), 1L, subject)

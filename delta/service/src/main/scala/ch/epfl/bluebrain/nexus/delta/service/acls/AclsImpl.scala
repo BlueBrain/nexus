@@ -4,13 +4,13 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -24,11 +24,18 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-final class AclsImpl private (agg: AclsAggregate, eventLog: EventLog[Envelope[AclEvent]], index: AclsCache)
-    extends Acls {
+final class AclsImpl private (
+    agg: AclsAggregate,
+    permissions: Permissions,
+    eventLog: EventLog[Envelope[AclEvent]],
+    index: AclsCache
+) extends Acls {
 
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
     agg.state(address.string).map(_.toResource).named("fetchAcl", moduleType)
+
+  override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
+    Acls.fetchWithAncestors(address, this, permissions)
 
   override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.RevisionNotFound, Option[AclResource]] =
     eventLog
@@ -144,10 +151,11 @@ object AclsImpl {
 
   private def apply(
       agg: AclsAggregate,
+      permissions: Permissions,
       eventLog: EventLog[Envelope[AclEvent]],
       cache: AclsCache
   ): AclsImpl =
-    new AclsImpl(agg, eventLog, cache)
+    new AclsImpl(agg, permissions, eventLog, cache)
 
   /**
     * Constructs an [[AclsImpl]] instance.
@@ -168,7 +176,7 @@ object AclsImpl {
     for {
       agg  <- aggregate(UIO.delay(permissions), config.aggregate)
       index = cache(config)
-      acls  = AclsImpl.apply(agg, eventLog, index)
+      acls  = AclsImpl.apply(agg, permissions, eventLog, index)
       _    <- UIO.delay(startIndexing(config, eventLog, index, acls))
     } yield acls
 }

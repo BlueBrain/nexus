@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsBehaviors, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
@@ -23,8 +23,11 @@ class AclsImplSpec
   private def eventLog: Task[EventLog[Envelope[AclEvent]]] =
     EventLog.postgresEventLog(EventLogUtils.toEnvelope)
 
-  override def create: Task[Acls] =
-    eventLog.flatMap { el =>
-      AclsImpl(AclsConfig(aggregate, keyValueStore, indexing), PermissionsDummy(minimum).accepted, el)
-    }
+  override def create: Task[(Acls, Permissions)] =
+    for {
+      el <- eventLog
+      p  <- PermissionsDummy(minimum)
+      a  <- AclsImpl(AclsConfig(aggregate, keyValueStore, indexing), p, el)
+    } yield (a, p)
+
 }
