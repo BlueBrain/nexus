@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -30,16 +29,11 @@ final case class ValidationReport private (conforms: Boolean, targetedNodes: Int
     (ignoreTargetedNodes && conforms) || (!ignoreTargetedNodes && targetedNodes > 0 && conforms)
 }
 
-object ValidationReport extends ClasspathResourceUtils {
-
-  private val shaclResolvedCtx = ioJsonContentOf("contexts/shacl.json").memoizeOnSuccess
+object ValidationReport {
 
   private val shaclCtx: Json = Json.obj(keywords.context -> contexts.shacl.asJson)
 
-  implicit private val contextResolution: RemoteContextResolution =
-    RemoteContextResolution.fixedIOResource(contexts.shacl -> shaclResolvedCtx)
-
-  final def apply(report: Resource): IO[String, ValidationReport] = {
+  final def apply(report: Resource)(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] = {
     val tmpGraph = Graph.unsafe(report.getModel)
     for {
       subject       <- IO.fromEither(

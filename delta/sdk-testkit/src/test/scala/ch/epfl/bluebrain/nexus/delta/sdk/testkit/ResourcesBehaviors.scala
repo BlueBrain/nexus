@@ -44,8 +44,9 @@ trait ResourcesBehaviors {
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
+  val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
   implicit def res: RemoteContextResolution =
-    RemoteContextResolution.fixed(contexts.shacl -> jsonContentOf("contexts/shacl.json"))
+    RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   val project                               = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproject", base = nxv.base))
   val projectRef                            = project.value.ref
