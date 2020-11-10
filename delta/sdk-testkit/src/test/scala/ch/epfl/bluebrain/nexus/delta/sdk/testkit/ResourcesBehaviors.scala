@@ -67,13 +67,15 @@ trait ResourcesBehaviors {
 
   "The Resources operations bundle" when {
 
-    val myId           = nxv + "myid"
-    val myId2          = nxv + "myid2"
-    val myId3          = nxv + "myid3"
-    val myId4          = nxv + "myid4"
-    val myId5          = nxv + "myid5"
-    val myId6          = nxv + "myid6"
+    // format: off
+    val myId  = nxv + "myid"  // Resource created against the resource schema with id present on the payload
+    val myId3 = nxv + "myid3" // Resource created against the resource schema with id present on the payload and passed explicitly
+    val myId4 = nxv + "myid4" // Resource created against schema1 with id present on the payload and passed explicitly
+    val myId5 = nxv + "myid5" // Resource created against the resource schema with id passed explicitly but not present on the payload
+    val myId6 = nxv + "myid6" // Resource created against schema1 with id passed explicitly but not present on the payload
+    // format: on
     val resourceSchema = Latest(schemas.resources)
+    val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
     val types          = Set(nxv + "Custom")
     val source         = jsonContentOf("resources/resource.json", "id" -> myId)
     val tag            = Label.unsafe("tag")
