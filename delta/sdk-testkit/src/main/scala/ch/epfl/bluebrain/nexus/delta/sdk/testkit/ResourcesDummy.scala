@@ -13,9 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceCommand, ResourceEvent, ResourceRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy.{ResourcesCache, ResourcesJournal}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy.ResourcesJournal
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import io.circe.Json
@@ -25,13 +25,11 @@ import monix.bio.{IO, Task, UIO}
   * A dummy Resources implementation
   *
   * @param journal     the journal to store events
-  * @param cache       the cache to store resources
   * @param fetchSchema a function to retrieve the schema based on the schema iri
   * @param semaphore   a semaphore for serializing write operations on the journal
   */
 final class ResourcesDummy private (
     journal: ResourcesJournal,
-    cache: ResourcesCache,
     fetchSchema: ResourceRef => UIO[Option[SchemaResource]],
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
@@ -86,7 +84,10 @@ final class ResourcesDummy private (
     eval(DeprecateResource(id, project, schemaOpt, rev, caller))
 
   override def fetch(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef]): UIO[Option[DataResource]] =
-    cache.fetch((project, id)).map(validateSameSchema(_, schemaOpt))
+    journal
+      .currentState((project, id), Initial, Resources.next)
+      .map(_.flatMap(_.toResource))
+      .map(validateSameSchema(_, schemaOpt))
 
   override def fetchAt(
       id: Iri,
@@ -106,7 +107,6 @@ final class ResourcesDummy private (
         event <- Resources.evaluate(fetchSchema)(state, cmd)
         _     <- journal.add(event)
         res   <- IO.fromEither(Resources.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.id)))
-        _     <- cache.setToCache(res)
       } yield res
     }
 
@@ -153,13 +153,9 @@ object ResourcesDummy {
   type ResourceIdentifier = (ProjectRef, Iri)
 
   type ResourcesJournal = Journal[ResourceIdentifier, ResourceEvent]
-  type ResourcesCache   = ResourceCache[ResourceIdentifier, Resource]
 
   implicit private val eventLens: Lens[ResourceEvent, ResourceIdentifier] =
     (event: ResourceEvent) => (event.project, event.id)
-
-  implicit private val resourceLens: Lens[Resource, ResourceIdentifier] =
-    (resource: Resource) => (resource.project, resource.id)
 
   /**
     * Creates a resources dummy instance
@@ -171,8 +167,7 @@ object ResourcesDummy {
   )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[ResourcesDummy] =
     for {
       journal <- Journal(moduleType)
-      cache   <- ResourceCache[ResourceIdentifier, Resource]
       sem     <- IOSemaphore(1L)
-    } yield new ResourcesDummy(journal, cache, fetchSchema, sem)
+    } yield new ResourcesDummy(journal, fetchSchema, sem)
 
 }
