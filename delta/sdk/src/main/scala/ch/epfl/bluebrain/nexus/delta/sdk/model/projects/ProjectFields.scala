@@ -3,7 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+
+import scala.annotation.nowarn
 
 /**
   * Type that represents a project payload for creation and update requests.
@@ -42,6 +45,8 @@ final case class ProjectFields(
 
 object ProjectFields {
 
-  implicit val projectFieldsDecoder: Decoder[ProjectFields] = deriveDecoder[ProjectFields]
+  @nowarn("cat=unused")
+  implicit final private val configuration: Configuration   = Configuration.default.withStrictDecoding
+  implicit val projectFieldsDecoder: Decoder[ProjectFields] = deriveConfiguredDecoder[ProjectFields]
 
 }

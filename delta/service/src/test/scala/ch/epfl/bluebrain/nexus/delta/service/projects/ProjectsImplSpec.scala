@@ -9,9 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.{ApplyOwnerPermissions, Event
 import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import monix.bio.UIO
-import org.scalatest.OptionValues
 
-class ProjectImplSpec extends AbstractDBSpec with ProjectsBehaviors with OptionValues with ConfigFixtures {
+class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with ConfigFixtures {
 
   val projectsConfig: ProjectsConfig = ProjectsConfig(aggregate, keyValueStore, pagination, indexing)
 

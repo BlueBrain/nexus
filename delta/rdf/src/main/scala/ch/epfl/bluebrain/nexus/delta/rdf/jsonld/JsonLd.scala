@@ -113,15 +113,28 @@ object JsonLd {
   /**
     * Creates an [[ExpandedJsonLd]] unsafely.
     *
-    * @param expanded an already expanded Json-LD document. It must be a Json array with a single Json Object inside
+    * @param value    an already expanded Json-LD document. It must be a Json array with a single Json Object inside
     * @param rootId   the top @id value
     * @throws IllegalArgumentException when the provided ''expanded'' json does not match the expected value
     */
-  final def expandedUnsafe(expanded: Json, rootId: IriOrBNode): ExpandedJsonLd =
-    expanded.asArray.flatMap(_.singleEntryOr(Json.obj())).flatMap(_.asObject) match {
-      case Some(obj) => ExpandedJsonLd(obj, rootId)
-      case None      => throw new IllegalArgumentException("Expected a sequence of Json Objects with a single value")
+  final def expandedUnsafe(value: Json, rootId: IriOrBNode): ExpandedJsonLd =
+    expanded(value, rootId) match {
+      case Right(expandedJsonLd) => expandedJsonLd
+      case Left(err)             => throw new IllegalArgumentException(err)
     }
+
+  /**
+    * Creates an [[ExpandedJsonLd]] with the explicit passed rootId and the already expanded json.
+    *
+    * @param expanded an already expanded Json-LD document. It must be a Json array with a single Json Object inside
+    * @param rootId   the top @id value
+    */
+  final def expanded(expanded: Json, rootId: IriOrBNode): Either[String, ExpandedJsonLd] =
+    expanded.asArray
+      .flatMap(_.singleEntryOr(Json.obj()))
+      .flatMap(_.asObject)
+      .map(obj => ExpandedJsonLd(obj, rootId))
+      .toRight("Expected a sequence of Json Objects with a single value")
 
   /**
     * Create an expanded ExpandedJsonLd document using the passed ''input''.

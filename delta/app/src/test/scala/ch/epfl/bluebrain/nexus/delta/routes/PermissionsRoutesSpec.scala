@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -15,17 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class PermissionsRoutesSpec
-    extends AnyWordSpecLike
-    with ScalatestRouteTest
+    extends RouteHelpers
     with Matchers
     with CirceLiteral
     with DeltaDirectives
     with IOFixedClock
     with IOValues
-    with RouteHelpers
     with TestMatchers
     with Inspectors
     with RouteFixtures {
@@ -71,8 +68,7 @@ class PermissionsRoutesSpec
 
     "replace permissions" in {
       val expected = permissionsResourceUnit(rev = 2L)
-
-      val replace = json"""{"permissions": ["${realms.write}"]}"""
+      val replace  = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
         response.status shouldEqual StatusCodes.OK
@@ -117,12 +113,23 @@ class PermissionsRoutesSpec
       permissions.fetchAt(5L).accepted.value.permissions shouldEqual minimum
     }
 
-    "reject on PATCH request" in {
+    "reject on PATCH request with unknown @type" in {
       val wrongPatch = json"""{"@type": "Other", "permissions": ["${realms.read}"]}"""
-      val err        = s"Expected value 'Replace' or 'Subtract' when using 'PATCH'."
 
       Patch("/v1/permissions?rev=5", wrongPatch.toEntity) ~> Accept(`*/*`) ~> route ~> check {
-        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld", "msg" -> err)
+        response.asJson shouldEqual jsonContentOf("permissions/reject_malformed.jsonld")
+        response.status shouldEqual StatusCodes.BadRequest
+        response.entity.contentType shouldEqual `application/ld+json`.toContentType
+      }
+    }
+
+    "reject on PATCH request with Replace @type" in {
+      val wrongPatch = json"""{"@type": "Replace", "permissions": ["${realms.read}"]}"""
+
+      Patch("/v1/permissions?rev=5", wrongPatch.toEntity) ~> Accept(`*/*`) ~> route ~> check {
+        val errMsg   = s"Value for field '${keywords.tpe}' must be 'Append' or 'Subtract' when using 'PATCH'."
+        val expected = jsonContentOf("permissions/reject_malformed.jsonld") deepMerge json"""{"details": "$errMsg"}"""
+        response.asJson shouldEqual expected
         response.status shouldEqual StatusCodes.BadRequest
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }

@@ -18,9 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
 import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
+
+import scala.annotation.nowarn
 
 class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
     baseUri: BaseUri,
@@ -101,9 +104,12 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
 object RealmsRoutes {
   import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 
+  @nowarn("cat=unused")
+  implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
+
   final private[routes] case class RealmInput(name: Name, openIdConfig: Uri, logo: Option[Uri])
   private[routes] object RealmInput {
-    implicit val realmDecoder: Decoder[RealmInput] = deriveDecoder[RealmInput]
+    implicit val realmDecoder: Decoder[RealmInput] = deriveConfiguredDecoder[RealmInput]
   }
 
   /**

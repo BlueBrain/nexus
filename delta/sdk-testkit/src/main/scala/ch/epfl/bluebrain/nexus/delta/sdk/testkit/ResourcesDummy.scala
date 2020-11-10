@@ -2,11 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{moduleType, sourceAsJsonLD}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -115,28 +113,6 @@ final class ResourcesDummy private (
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ResourceEvent]] =
     journal.currentEvents(offset)
-
-  private def sourceAsJsonLD(
-      project: Project,
-      source: Json
-  ): IO[ResourceRejection, (Iri, CompactedJsonLd, ExpandedJsonLd)] =
-    for {
-      expandedNoId <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(None, err))
-      id           <- expandedNoId.rootId.asIri.fold(uuidF().map(uuid => project.base / uuid.toString))(IO.pure)
-      expanded      = expandedNoId.replaceId(id)
-      compacted    <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
-    } yield (id, compacted, expanded)
-
-  private def sourceAsJsonLD(id: Iri, source: Json): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] =
-    for {
-      expandedNoId <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
-      id           <- expandedNoId.rootId.asIri match {
-                        case Some(sourceId) if sourceId != id => IO.raiseError(UnexpectedResourceId(id, sourceId))
-                        case _                                => IO.pure(id)
-                      }
-      expanded      = expandedNoId.replaceId(id)
-      compacted    <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
-    } yield (compacted, expanded)
 
   private def validateSameSchema(
       resourceOpt: Option[DataResource],

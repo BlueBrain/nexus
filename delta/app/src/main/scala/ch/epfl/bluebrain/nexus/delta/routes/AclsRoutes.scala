@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Identities}
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
-import io.circe.generic.semiauto.deriveDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -223,11 +222,16 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
 
 object AclsRoutes {
 
+  @nowarn("cat=unused")
+  implicit private val config =
+    Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
+
   final private case class IdentityPermissions(identity: Identity, permissions: Set[Permission])
 
   final private[routes] case class AclValues(value: Seq[(Identity, Set[Permission])])
   private[routes] object AclValues {
-    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] = deriveDecoder[IdentityPermissions]
+    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] =
+      deriveConfiguredDecoder[IdentityPermissions]
 
     implicit val aclValuesDecoder: Decoder[AclValues] =
       Decoder
@@ -237,7 +241,7 @@ object AclsRoutes {
 
   final private[routes] case class ReplaceAcl(acl: AclValues)
   private[routes] object ReplaceAcl {
-    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = deriveDecoder[ReplaceAcl]
+    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = deriveConfiguredDecoder[ReplaceAcl]
   }
 
   sealed private[routes] trait PatchAcl extends Product with Serializable
@@ -245,8 +249,6 @@ object AclsRoutes {
     final case class Subtract(acl: AclValues) extends PatchAcl
     final case class Append(acl: AclValues)   extends PatchAcl
 
-    @nowarn("cat=unused")
-    implicit private val config: Configuration      = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val aclPatchDecoder: Decoder[PatchAcl] = deriveConfiguredDecoder[PatchAcl]
   }
 

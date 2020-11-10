@@ -10,12 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.Task
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.Inspectors
 
 class OrganizationsImplSpec
     extends AbstractDBSpec
     with OrganizationsBehaviors
-    with OptionValues
     with Inspectors
     with CirceLiteral
     with ConfigFixtures {

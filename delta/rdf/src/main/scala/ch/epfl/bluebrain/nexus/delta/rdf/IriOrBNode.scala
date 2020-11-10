@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.{unsafe, Query}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import io.circe.{Decoder, Encoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
@@ -46,6 +46,70 @@ object IriOrBNode {
     * @param value the underlying Jena [[IRI]]
     */
   final case class Iri private (private val value: IRI) extends IriOrBNode {
+
+    /**
+      * Extract the query parameters as key and values
+      */
+    def query(): Query =
+      rawQuery().split("&").foldLeft(Map.empty[String, Vector[String]]) { (acc, c) =>
+        c.split("=", 2).toList match {
+          case k :: v :: Nil if k.trim.nonEmpty =>
+            acc.updatedWith(k)(cur => Some(cur.getOrElse(Vector.empty[String]) :+ v))
+          case k :: Nil if k.trim.nonEmpty      =>
+            acc.updatedWith(k)(cur => Some(cur.getOrElse(Vector.empty[String])))
+          case _                                =>
+            acc
+        }
+      }
+
+    /**
+      * Extract the query parameters as String
+      */
+    def rawQuery(): String = Option(value.getRawQuery).getOrElse("")
+
+    /**
+      * Removes each encounter of the passed query parameter keys from the current Iri query parameters
+      *
+      * @param keys the keys to remove
+      */
+    def removeQueryParams(keys: String*): Iri =
+      if (rawQuery().isEmpty) this
+      else queryParams(query() -- keys)
+
+    /**
+      * Override the current query parameters with the passed ones
+      */
+    def queryParams(query: Query): Iri = {
+      val sb = new StringBuilder
+      // Adding Iri scheme when present
+      Option(value.getScheme).foreach(sb.append(_).append(':'))
+      if (Option(value.getRawAuthority).nonEmpty) {
+        sb.append("//")
+        // Adding Iri user info (user & password) when present
+        Option(value.getRawUserinfo).foreach(sb.append(_).append('@'))
+        //Adding Iri host when present
+        Option(value.getRawHost).foreach(sb.append)
+        //Adding Iri port when present
+        if (value.getPort > 0) sb.append(':').append(value.getPort)
+      }
+      // Adding Iri path when present
+      Option(value.getRawPath).foreach(sb.append)
+      // Adding passed query parameters
+      if (query.nonEmpty) sb.append("?").append(toRawString(query))
+      // Adding Iri fragment when present
+      Option(value.getRawFragment).foreach(sb.append('#').append(_))
+      Iri.unsafe(sb.toString())
+    }
+
+    private def toRawString(query: Query): String =
+      query
+        .flatMap { case (k, values) =>
+          values.map {
+            case v if v.trim.isEmpty => k
+            case v                   => s"$k=$v"
+          }
+        }
+        .mkString("&")
 
     /**
       * Is valid according tot he IRI rfc
@@ -134,6 +198,11 @@ object IriOrBNode {
   }
 
   object Iri {
+
+    /**
+      * Alias for query parameters
+      */
+    type Query = Map[String, Seq[String]]
 
     private val iriFactory = IRIFactory.iriImplementation()
 

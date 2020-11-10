@@ -6,7 +6,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -311,5 +311,42 @@ object Resources {
       case c: DeprecateResource => deprecate(c)
     }
   }
+
+  private[delta] def sourceAsJsonLD(
+      project: Project,
+      source: Json
+  )(implicit
+      uuidF: UUIDF,
+      rcr: RemoteContextResolution
+  ): IO[ResourceRejection, (Iri, CompactedJsonLd, ExpandedJsonLd)] =
+    for {
+      expandedNoId <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(None, err))
+      id           <- expandedNoId.rootId.asIri.fold(uuidF().map(uuid => project.base / uuid.toString))(IO.pure)
+      expanded      = expandedNoId.replaceId(id)
+      compacted    <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
+    } yield (id, compacted, expanded)
+
+  private[delta] def sourceAsJsonLD(
+      id: Iri,
+      source: Json
+  )(implicit rcr: RemoteContextResolution): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] =
+    for {
+      expandedNoId <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
+      id           <- expandedNoId.rootId.asIri match {
+                        case Some(sourceId) if sourceId != id => IO.raiseError(UnexpectedResourceId(id, sourceId))
+                        case _                                => IO.pure(id)
+                      }
+      expanded      = expandedNoId.replaceId(id)
+      compacted    <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
+    } yield (compacted, expanded)
+
+  private[delta] def validateSameSchema(
+      resourceOpt: Option[DataResource],
+      schemaOpt: Option[ResourceRef]
+  ): Option[DataResource] =
+    resourceOpt match {
+      case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
+      case _                                                  => None
+    }
 
 }
