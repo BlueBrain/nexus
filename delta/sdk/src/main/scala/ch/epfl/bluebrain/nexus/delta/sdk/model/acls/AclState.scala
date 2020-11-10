@@ -75,20 +75,21 @@ object AclState {
       updatedBy: Subject
   ) extends AclState {
     override def toResource: Option[AclResource] =
-      Some(
-        ResourceF(
-          id = AccessUrl.acl(acl.address)(_).iri,
-          accessUrl = AccessUrl.acl(acl.address)(_),
-          rev = rev,
-          types = types,
-          deprecated = deprecated,
-          createdAt = createdAt,
-          createdBy = createdBy,
-          updatedAt = updatedAt,
-          updatedBy = updatedBy,
-          schema = schema,
-          value = acl
-        )
+      Some(asResource)
+
+    def asResource: AclResource =
+      ResourceF(
+        id = AccessUrl.acl(acl.address)(_).iri,
+        accessUrl = AccessUrl.acl(acl.address)(_),
+        rev = rev,
+        types = types,
+        deprecated = deprecated,
+        createdAt = createdAt,
+        createdBy = createdBy,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy,
+        schema = schema,
+        value = acl
       )
   }
 

@@ -120,9 +120,9 @@ object Journal {
 
   /**
     * Construct a journal for the entity type with a number of available permits
-    * @param entityType   type of entity
-    * @param permits      number of permits
-    * @param idExtractor  how to extract the id out of the event
+    * @param entityType type of entity
+    * @param permits    number of permits
+    * @param idLens     how to extract the id out of the event
     */
   def apply[Id, E <: Event](entityType: String, permits: Long = 1L)(implicit idLens: Lens[E, Id]): UIO[Journal[Id, E]] =
     for {
