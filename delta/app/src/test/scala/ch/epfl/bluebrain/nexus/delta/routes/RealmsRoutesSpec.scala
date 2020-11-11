@@ -8,10 +8,12 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{realms => realmsPermissions, events}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
@@ -33,6 +35,8 @@ class RealmsRoutesSpec
     with Inspectors
     with RouteFixtures {
 
+  implicit private val subject: Subject = Identity.Anonymous
+
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
 
@@ -52,7 +56,7 @@ class RealmsRoutesSpec
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
   private val acls       = AclsDummy(
-    PermissionsDummy(Set.empty)
+    PermissionsDummy(Set(realmsPermissions.read, realmsPermissions.write, events.read))
   ).accepted
 
   private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
@@ -97,7 +101,18 @@ class RealmsRoutesSpec
   ) deepMerge gitlabCreatedMeta
 
   "A RealmsRoute" should {
+
+    "fail to create a realm  without realms/write permission" in {
+      val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
+
+      Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
     "create a new realm" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.write)), 0L).accepted
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
@@ -138,7 +153,22 @@ class RealmsRoutesSpec
       }
     }
 
+    "fail to fetch a realm  without realms/read permission" in {
+      Get("/v1/realms/github") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
+    "fail to list realms  without realms/read permission" in {
+      Get("/v1/realms") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
     "fetch a realm by id" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 1L).accepted
       Get("/v1/realms/github") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual githubUpdated
@@ -211,7 +241,15 @@ class RealmsRoutesSpec
       }
     }
 
+    "fail to get the events stream without events/read permission" in {
+      Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
     "get the events stream with an offset" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 2L).accepted
       Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString shouldEqual contentOf("/realms/eventstream-2-4.txt")

@@ -10,12 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -45,21 +47,28 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractSubject { implicit subject =>
+      extractCaller { implicit caller =>
+        implicit val subject = caller.subject
         pathPrefix("realms") {
           concat(
             // List realms
             (get & extractUri & paginated & realmsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/realms") {
-                implicit val searchEncoder: SearchEncoder[RealmResource] = searchResultsEncoder(pagination, uri)
-                completeSearch(realms.list(pagination, params))
+                authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
+                  implicit val searchEncoder: SearchEncoder[RealmResource] = searchResultsEncoder(pagination, uri)
+                  completeSearch(realms.list(pagination, params))
+                }
               }
             },
             // SSE realms
             (pathPrefix("events") & pathEndOrSingleSlash) {
-              operationName(s"$prefixSegment/realms/events") {
-                lastEventId { offset =>
-                  completeStream(realms.events(offset))
+              get {
+                operationName(s"$prefixSegment/realms/events") {
+                  authorizeFor(AclAddress.Root, events.read).apply {
+                    lastEventId { offset =>
+                      completeStream(realms.events(offset))
+                    }
+                  }
                 }
               }
             },
@@ -67,30 +76,36 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
               operationName(s"$prefixSegment/realms/{label}") {
                 concat(
                   put {
-                    parameter("rev".as[Long].?) {
-                      case Some(rev) =>
-                        // Update realm
-                        entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                          completeIO(realms.update(id, rev, name, openIdConfig, logo).map(_.void))
-                        }
-                      case None      =>
-                        // Create realm
-                        entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                          completeIO(StatusCodes.Created, realms.create(id, name, openIdConfig, logo).map(_.void))
-                        }
+                    authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
+                      parameter("rev".as[Long].?) {
+                        case Some(rev) =>
+                          // Update realm
+                          entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
+                            completeIO(realms.update(id, rev, name, openIdConfig, logo).map(_.void))
+                          }
+                        case None      =>
+                          // Create realm
+                          entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
+                            completeIO(StatusCodes.Created, realms.create(id, name, openIdConfig, logo).map(_.void))
+                          }
+                      }
                     }
                   },
                   get {
-                    parameter("rev".as[Long].?) {
-                      case Some(rev) => // Fetch realm at specific revision
-                        completeIOOpt(realms.fetchAt(id, rev).leftMap[RealmRejection](identity))
-                      case None      => // Fetch realm
-                        completeUIOOpt(realms.fetch(id))
+                    authorizeFor(AclAddress.Root, realmsPermissions.read).apply {
+                      parameter("rev".as[Long].?) {
+                        case Some(rev) => // Fetch realm at specific revision
+                          completeIOOpt(realms.fetchAt(id, rev).leftWiden[RealmRejection])
+                        case None      => // Fetch realm
+                          completeUIOOpt(realms.fetch(id))
+                      }
                     }
                   },
                   // Deprecate realm
                   delete {
-                    parameter("rev".as[Long]) { rev => completeIO(realms.deprecate(id, rev).map(_.void)) }
+                    authorizeFor(AclAddress.Root, realmsPermissions.write).apply {
+                      parameter("rev".as[Long]) { rev => completeIO(realms.deprecate(id, rev).map(_.void)) }
+                    }
                   }
                 )
               }
