@@ -89,7 +89,7 @@ object OrganizationState {
       Some(
         ResourceF(
           id = AccessUrl.organization(label)(_).iri,
-          accessUrl = AccessUrl.organization(label)(_),
+          accessUrl = AccessUrl.organization(label)(_).value,
           rev = rev,
           types = types,
           deprecated = deprecated,

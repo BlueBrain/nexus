@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFields, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import org.scalatest.OptionValues
 
@@ -72,6 +72,14 @@ object ProjectGen extends OptionValues {
       vocab: Iri = nxv.base
   ): Project =
     Project(Label.unsafe(label), uuid, Label.unsafe(orgLabel), orgUuid, description, mappings, base, vocab)
+
+  def projectFields(project: Project): ProjectFields =
+    ProjectFields(
+      project.description,
+      project.apiMappings,
+      Some(PrefixIri.unsafe(project.base)),
+      Some(PrefixIri.unsafe(project.vocab))
+    )
 
   def resourceFor(
       project: Project,

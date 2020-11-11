@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -116,16 +116,9 @@ object ResourceRejection {
       )
 
   /**
-    * Signals and attempt to interact with a resource that belongs to a deprecated project.
+    * Signals a rejection caused when interacting with the projects API
     */
-  final case class ProjectIsDeprecated(projectRef: ProjectRef)
-      extends ResourceRejection(s"Project with label '$projectRef' is deprecated.")
-
-  /**
-    * Signals that an operation on a resource cannot be perform due to the fact that its project does not exist.
-    */
-  final case class ProjectNotFound(projectRef: ProjectRef)
-      extends ResourceRejection(s"Project '$projectRef' not found.")
+  final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResourceRejection(rejection.reason)
 
   /**
     * Rejection returned when attempting to validate a resource against a schema that is deprecated.
@@ -159,6 +152,7 @@ object ResourceRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
+        case WrappedProjectRejection(rejection)          => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
         case InvalidResource(_, _, report)               => obj.add("details", report.json)

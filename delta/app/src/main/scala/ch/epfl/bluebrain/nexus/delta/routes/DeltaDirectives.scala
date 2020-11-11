@@ -344,6 +344,15 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     }
 
   /**
+    * Completes a passed value of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
+    * Before returning the response, the request data bytes will be discarded.
+    */
+  def discardEntityAndComplete[A: JsonLdEncoder: HttpResponseFields](
+      value: A
+  )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
+    discardEntityAndCompleteUIO(status = value.status, headers = value.headers, io = UIO.pure(value))
+
+  /**
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Before returning the response, the request data bytes will be discarded.
     *

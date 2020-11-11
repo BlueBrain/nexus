@@ -6,8 +6,8 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -36,7 +36,7 @@ trait Resources {
     * @param schema  the schema to validate the resource against
     */
   def create(
-      project: Project,
+      project: ProjectRef,
       schema: ResourceRef,
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
@@ -115,7 +115,7 @@ trait Resources {
     * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
     * @return the resource in a Resource representation, None otherwise
     */
-  def fetch(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef]): UIO[Option[DataResource]]
+  def fetch(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef]): IO[ResourceRejection, Option[DataResource]]
 
   /**
     * Fetches a resource at a specific revision.
@@ -131,7 +131,7 @@ trait Resources {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       rev: Long
-  ): IO[RevisionNotFound, Option[DataResource]]
+  ): IO[ResourceRejection, Option[DataResource]]
 
   /**
     * Fetches a resource by tag.
@@ -147,7 +147,7 @@ trait Resources {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       tag: Label
-  ): IO[TagNotFound, Option[DataResource]] =
+  ): IO[ResourceRejection, Option[DataResource]] =
     fetch(id, project, schemaOpt).flatMap {
       case Some(resource) =>
         resource.value.tags.get(tag) match {

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -33,11 +33,12 @@ object SchemaGen extends OptionValues with IOValues {
       schema: Schema,
       rev: Long = 1L,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false
+      deprecated: Boolean = false,
+      mappings: ApiMappings = ApiMappings.empty
   ): SchemaResource =
     ResourceF(
       id = AccessUrl.schema(schema.project, schema.id)(_).iri,
-      accessUrl = AccessUrl.schema(schema.project, schema.id)(_),
+      accessUrl = AccessUrl.schema(schema.project, schema.id)(_).shortForm(mappings),
       rev = rev,
       types = Set(nxv.Schema),
       deprecated = deprecated,

@@ -127,7 +127,7 @@ object ProjectState {
       Some(
         ResourceF(
           id = AccessUrl.project(projectRef)(_).iri,
-          accessUrl = AccessUrl.project(projectRef)(_),
+          accessUrl = AccessUrl.project(projectRef)(_).value,
           rev = rev,
           types = types,
           deprecated = deprecated,

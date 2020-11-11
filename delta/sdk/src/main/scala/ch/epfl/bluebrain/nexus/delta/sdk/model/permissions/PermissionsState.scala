@@ -59,7 +59,7 @@ object PermissionsState {
     override def toResource(minimum: Set[Permission]): PermissionsResource = {
       ResourceF(
         id = AccessUrl.permissions(_).iri,
-        accessUrl = AccessUrl.permissions(_),
+        accessUrl = AccessUrl.permissions(_).value,
         rev = rev,
         types = types,
         deprecated = deprecated,
@@ -95,7 +95,7 @@ object PermissionsState {
     override def toResource(minimum: Set[Permission]): PermissionsResource = {
       ResourceF(
         id = AccessUrl.permissions(_).iri,
-        accessUrl = AccessUrl.permissions(_),
+        accessUrl = AccessUrl.permissions(_).value,
         rev = rev,
         types = types,
         deprecated = deprecated,

@@ -80,7 +80,7 @@ object AclState {
     def asResource: AclResource =
       ResourceF(
         id = AccessUrl.acl(acl.address)(_).iri,
-        accessUrl = AccessUrl.acl(acl.address)(_),
+        accessUrl = AccessUrl.acl(acl.address)(_).value,
         rev = rev,
         types = types,
         deprecated = deprecated,

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Lens}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
 import io.circe.Json
 
@@ -28,8 +28,10 @@ sealed trait ResourceState extends Product with Serializable {
 
   /**
     * Converts the state into a resource representation.
+    *
+    * @param mappings the Api mappings to be applied in order to shorten segment ids
     */
-  def toResource: Option[DataResource]
+  def toResource(mappings: ApiMappings): Option[DataResource]
 }
 
 object ResourceState {
@@ -48,7 +50,7 @@ object ResourceState {
 
     override def rev: Long = 0L
 
-    override val toResource: Option[DataResource] = None
+    override def toResource(mappings: ApiMappings): Option[DataResource] = None
   }
 
   /**
@@ -86,11 +88,11 @@ object ResourceState {
       updatedBy: Subject
   ) extends ResourceState {
 
-    override def toResource: Option[DataResource] =
+    override def toResource(mappings: ApiMappings): Option[DataResource] =
       Some(
         ResourceF(
           id = _ => id,
-          accessUrl = AccessUrl.resource(project, id, schema)(_),
+          accessUrl = AccessUrl.resource(project, id, schema)(_).shortForm(mappings),
           rev = rev,
           types = types,
           schema = schema,

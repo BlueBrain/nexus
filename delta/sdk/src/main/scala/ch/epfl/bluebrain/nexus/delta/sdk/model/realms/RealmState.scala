@@ -135,7 +135,7 @@ object RealmState {
       Some(
         ResourceF(
           id = AccessUrl.realm(label)(_).iri,
-          accessUrl = AccessUrl.realm(label)(_),
+          accessUrl = AccessUrl.realm(label)(_).value,
           rev = rev,
           types = types,
           deprecated = deprecated,

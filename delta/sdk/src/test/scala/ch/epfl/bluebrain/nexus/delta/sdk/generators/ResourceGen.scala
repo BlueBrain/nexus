@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Current
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -68,7 +68,8 @@ object ResourceGen extends OptionValues with IOValues {
       tags: Map[Label, Long] = Map.empty,
       rev: Long = 1L,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false
+      deprecated: Boolean = false,
+      mappings: ApiMappings = ApiMappings.empty
   )(implicit resolution: RemoteContextResolution): DataResource =
     currentState(
       resource.id,
@@ -80,6 +81,6 @@ object ResourceGen extends OptionValues with IOValues {
       rev,
       deprecated,
       subject
-    ).toResource.value
+    ).toResource(mappings).value
 
 }
