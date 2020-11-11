@@ -10,10 +10,13 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, orgs => orgsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, OrganizationsDummy, PermissionsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, ApplyOwnerPermissionsDummy, IdentitiesDummy, OrganizationsDummy, PermissionsDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -40,14 +43,15 @@ class OrganizationsRoutesSpec
   private val org1 = OrganizationGen.organization("org1", fixedUuid, Some("My description"))
   private val org2 = OrganizationGen.organization("org2", fixedUuid)
 
-  private val orgs = OrganizationsDummy().accepted
+  implicit private val subject: Subject = Identity.Anonymous
+
+  private val acls = AclsDummy(PermissionsDummy(Set(orgsPermissions.write, orgsPermissions.read, events.read))).accepted
+  private val aopd = ApplyOwnerPermissionsDummy(acls, Set(orgsPermissions.write, orgsPermissions.read), subject)
+  private val orgs = OrganizationsDummy(aopd).accepted
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
-  private val acls       = AclsDummy(
-    PermissionsDummy(Set.empty)
-  ).accepted
 
   private val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
 
@@ -77,7 +81,22 @@ class OrganizationsRoutesSpec
 
   "An OrganizationsRoute" should {
 
+    "fail to create an organization without organizations/write permission" in {
+      val input = json"""{"description": "${org1.description.value}"}"""
+
+      Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
     "create a new organization" in {
+      acls
+        .append(
+          Acl(AclAddress.Root, Anonymous -> Set(orgsPermissions.write), caller.subject -> Set(orgsPermissions.write)),
+          0L
+        )
+        .accepted
       val input = json"""{"description": "${org1.description.value}"}"""
 
       Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
@@ -183,7 +202,38 @@ class OrganizationsRoutesSpec
       }
     }
 
+    "fail fetch an organization by label without organizations/read permission" in {
+      acls.delete(AclAddress.Root, 1L).accepted
+      Get("/v1/orgs/org2") ~> routes ~> check {
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
+    "fail to fetch an organization by UUID without orgs/read permission" in {
+      acls.delete(AclAddress.Organization(Label.unsafe("org1")), 1L).accepted
+      Get(s"/v1/orgs/$fixedUuid") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
+    "fail to fetch an organization by UUID and rev without orgs/read permission" in {
+      Get(s"/v1/orgs/$fixedUuid?rev=1") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
+    "fail to get the events stream without events/read permission" in {
+      Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
     "get the events stream with an offset" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 2L).accepted
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString shouldEqual contentOf("/organizations/eventstream-2-4.txt", "uuid" -> fixedUuid.toString)

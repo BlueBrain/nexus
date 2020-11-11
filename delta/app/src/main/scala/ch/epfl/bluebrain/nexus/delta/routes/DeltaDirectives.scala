@@ -291,6 +291,16 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     completeUIOOpt(io.map(Some(_)))
 
   /**
+    * Completes a passed [[A]] with the desired output format using the implicitly available [[JsonLdEncoder]].
+    *
+    * @param value  the value to be returned
+    */
+  def completePure[A: JsonLdEncoder](
+      value: A
+  )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
+    completeUIO(IO.pure(value))
+
+  /**
     * Completes a passed [[UIO]] of search results of ''A'' with the desired output format
     * @param io the search result to be returned, wrapped in an [[UIO]]
     * @param additionalContext a context related to ''A''
@@ -405,6 +415,22 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
       io: UIO[Option[A]]
   )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
     discardEntityAndCompleteUIOOpt(StatusCodes.OK, Seq.empty, io)
+
+  /**
+    * Completes a passed [[A]] with the desired output format using the implicitly available [[JsonLdEncoder]].
+    * Before returning the response, the request data bytes will be discarded.
+    * If the normal channel doesn't hold any value, a not found output is produced
+    *
+    * @param value  the value to be returned
+    */
+  def discardEntityAndComplete[A: JsonLdEncoder](
+      value: A
+  )(implicit fields: HttpResponseFields[A], s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =
+    discardEntityAndCompleteUIO(
+      status = fields.statusFrom(value),
+      headers = fields.headersFrom(value),
+      io = UIO.pure(value)
+    )
 
   /**
     * Completes a passed [[IO]] of ''E'' and ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
