@@ -344,6 +344,15 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     }
 
   /**
+    * Completes a passed value of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
+    * Before returning the response, the request data bytes will be discarded.
+    */
+  def discardEntityAndComplete[A: JsonLdEncoder: HttpResponseFields](
+      value: A
+  )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
+    discardEntityAndCompleteUIO(status = value.status, headers = value.headers, io = UIO.pure(value))
+
+  /**
     * Completes a passed [[UIO]] of ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Before returning the response, the request data bytes will be discarded.
     *
@@ -471,12 +480,11 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     * @param status the returned HTTP status code
     * @param io     the value to be returned, wrapped in an [[IO]]
     */
-  def completeIOOpt[E: JsonLdEncoder, A: JsonLdEncoder](
+  def completeIOOpt[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       status: => StatusCode,
       io: IO[E, Option[A]]
   )(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
@@ -489,9 +497,8 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     * @param status the returned HTTP status code
     * @param io     the value to be returned, wrapped in an [[IO]]
     */
-  def completeIO[E: JsonLdEncoder, A: JsonLdEncoder](status: => StatusCode, io: IO[E, A])(implicit
+  def completeIO[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](status: => StatusCode, io: IO[E, A])(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
@@ -504,11 +511,10 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     *
     * @param io  the value to be returned, wrapped in an [[IO]]
     */
-  def completeIOOpt[E: JsonLdEncoder, A: JsonLdEncoder](
+  def completeIOOpt[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       io: IO[E, Option[A]]
   )(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
@@ -520,9 +526,8 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     *
     * @param io  the value to be returned, wrapped in an [[IO]]
     */
-  def completeIO[E: JsonLdEncoder, A: JsonLdEncoder](io: IO[E, A])(implicit
+  def completeIO[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](io: IO[E, A])(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =

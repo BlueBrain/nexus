@@ -18,5 +18,7 @@ class ResourcesDummySpec
     with CirceLiteral
     with ResourcesBehaviors {
 
-  override def create: UIO[Resources] = ResourcesDummy(fetchSchema)
+  override def create: UIO[Resources] =
+    projects.flatMap(ResourcesDummy(_, fetchSchema))
+
 }

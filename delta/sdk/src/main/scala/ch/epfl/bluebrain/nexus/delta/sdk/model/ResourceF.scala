@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import java.time.Instant
 
+import akka.http.scaladsl.model.Uri
 import cats.Functor
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF.fixedBase
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -33,7 +33,7 @@ import io.circe.{Encoder, JsonObject}
   */
 final case class ResourceF[A](
     id: BaseUri => Iri,
-    accessUrl: BaseUri => AccessUrl,
+    accessUrl: BaseUri => Uri,
     rev: Long,
     types: Set[Iri],
     deprecated: Boolean,
@@ -82,10 +82,7 @@ object ResourceF {
       override def map[A, B](fa: ResourceF[A])(f: A => B): ResourceF[B] = fa.map(f)
     }
 
-  implicit final private def resourceFUnitEncoder(implicit
-      mappings: ApiMappings,
-      base: BaseUri
-  ): Encoder.AsObject[ResourceF[Unit]] =
+  implicit final private def resourceFUnitEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceF[Unit]] =
     Encoder.AsObject.instance { r =>
       val obj = JsonObject.empty
         .add(keywords.id, r.id(base).asJson)
@@ -96,7 +93,7 @@ object ResourceF {
         .add("_updatedAt", r.updatedAt.asJson)
         .add("_updatedBy", r.updatedBy.id.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
-        .add("_self", r.accessUrl(base).shortForm(mappings).asJson)
+        .add("_self", r.accessUrl(base).asJson)
       r.types.take(2).toList match {
         case Nil         => obj
         case head :: Nil => obj.add(keywords.tpe, head.stripPrefix(nxv.base).asJson)
@@ -104,23 +101,14 @@ object ResourceF {
       }
     }
 
-  implicit def resourceFAEncoder[A: Encoder.AsObject](implicit
-      base: BaseUri,
-      mappings: ApiMappings = ApiMappings.empty
-  ): Encoder.AsObject[ResourceF[A]] =
+  implicit def resourceFAEncoder[A: Encoder.AsObject](implicit base: BaseUri): Encoder.AsObject[ResourceF[A]] =
     Encoder.AsObject.instance { r =>
       r.void.asJsonObject deepMerge r.value.asJsonObject
     }
 
-  implicit final def resourceFUnitJsonLdEncoder(implicit
-      base: BaseUri,
-      mappings: ApiMappings = ApiMappings.empty
-  ): JsonLdEncoder[ResourceF[Unit]] =
+  implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
     JsonLdEncoder.compactFromCirce((v: ResourceF[Unit]) => v.id(base), iriContext = contexts.resource)
 
-  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit
-      base: BaseUri,
-      mappings: ApiMappings = ApiMappings.empty
-  ): JsonLdEncoder[ResourceF[A]] =
+  implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
     JsonLdEncoder.compose(rf => (rf.void, rf.value, rf.id(base)))
 }

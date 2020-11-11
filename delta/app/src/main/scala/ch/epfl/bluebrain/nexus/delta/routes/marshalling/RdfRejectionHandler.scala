@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.DeltaDirectives
-import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.syntax._
 import io.circe.{DecodingFailure, Encoder, JsonObject}
 import monix.bio.UIO
@@ -34,87 +33,32 @@ object RdfRejectionHandler extends DeltaDirectives {
   ): RejectionHandler =
     RejectionHandler
       .newBuilder()
-      .handleAll[SchemeRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handleAll[MethodRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handle { case AuthorizationFailedRejection =>
-        val r = AuthorizationFailedRejection
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MalformedFormFieldRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MalformedHeaderRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MalformedQueryParamRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MalformedRequestContentRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MissingCookieRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MissingFormFieldRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MissingHeaderRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MissingAttributeRejection[_] =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: InvalidOriginRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: MissingQueryParamRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: InvalidRequiredValueForQueryParamRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case RequestEntityExpectedRejection =>
-        val r = RequestEntityExpectedRejection
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: TooManyRangesRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: CircuitBreakerOpenRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handle { case r: UnsatisfiableRangeRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handleAll[AuthenticationFailedRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handleAll[UnacceptedResponseContentTypeRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handleAll[UnacceptedResponseEncodingRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handleAll[UnsupportedRequestContentTypeRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handleAll[UnsupportedRequestEncodingRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handle { case ExpectedWebSocketRequestRejection =>
-        val r = ExpectedWebSocketRequestRejection
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
-      .handleAll[UnsupportedWebSocketSubprotocolRejection] { rejections =>
-        discardEntityAndCompleteUIO(rejections.status, rejections.headers, UIO.pure(rejections))
-      }
-      .handle { case r: ValidationRejection =>
-        discardEntityAndCompleteUIO(r.status, r.headers, UIO.pure(r))
-      }
+      .handleAll[SchemeRejection] { rejections => discardEntityAndComplete(rejections) }
+      .handleAll[MethodRejection] { rejections => discardEntityAndComplete(rejections) }
+      .handle { case AuthorizationFailedRejection => discardEntityAndComplete(AuthorizationFailedRejection) }
+      .handle { case r: MalformedFormFieldRejection => discardEntityAndComplete(r) }
+      .handle { case r: MalformedHeaderRejection => discardEntityAndComplete(r) }
+      .handle { case r: MalformedQueryParamRejection => discardEntityAndComplete(r) }
+      .handle { case r: MalformedRequestContentRejection => discardEntityAndComplete(r) }
+      .handle { case r: MissingCookieRejection => discardEntityAndComplete(r) }
+      .handle { case r: MissingFormFieldRejection => discardEntityAndComplete(r) }
+      .handle { case r: MissingHeaderRejection => discardEntityAndComplete(r) }
+      .handle { case r: MissingAttributeRejection[_] => discardEntityAndComplete(r) }
+      .handle { case r: InvalidOriginRejection => discardEntityAndComplete(r) }
+      .handle { case r: MissingQueryParamRejection => discardEntityAndComplete(r) }
+      .handle { case r: InvalidRequiredValueForQueryParamRejection => discardEntityAndComplete(r) }
+      .handle { case RequestEntityExpectedRejection => discardEntityAndComplete(RequestEntityExpectedRejection) }
+      .handle { case r: TooManyRangesRejection => discardEntityAndComplete(r) }
+      .handle { case r: CircuitBreakerOpenRejection => discardEntityAndComplete(r) }
+      .handle { case r: UnsatisfiableRangeRejection => discardEntityAndComplete(r) }
+      .handleAll[AuthenticationFailedRejection] { rejections => discardEntityAndComplete(rejections) }
+      .handleAll[UnacceptedResponseContentTypeRejection] { discardEntityAndComplete }
+      .handleAll[UnacceptedResponseEncodingRejection] { discardEntityAndComplete }
+      .handleAll[UnsupportedRequestContentTypeRejection] { discardEntityAndComplete }
+      .handleAll[UnsupportedRequestEncodingRejection] { discardEntityAndComplete }
+      .handle { case ExpectedWebSocketRequestRejection => discardEntityAndComplete(ExpectedWebSocketRequestRejection) }
+      .handleAll[UnsupportedWebSocketSubprotocolRejection] { discardEntityAndComplete }
+      .handle { case r: ValidationRejection => discardEntityAndComplete(r) }
       .handleNotFound {
         discardEntityAndCompleteUIO(StatusCodes.NotFound, UIO.pure(ResourceNotFound))
       }

@@ -1,10 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.resources
+package ch.epfl.bluebrain.nexus.delta.service.resources
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesBehaviors
-import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl
 import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
@@ -22,6 +21,7 @@ class ResourcesImplSpec
   override def create: UIO[Resources] =
     for {
       eventLog  <- EventLog.postgresEventLog[Envelope[ResourceEvent]](EventLogUtils.toEnvelope).hideErrors
-      resources <- ResourcesImpl(fetchSchema, aggregate, eventLog)
+      p         <- projects
+      resources <- ResourcesImpl(p, fetchSchema, aggregate, eventLog)
     } yield resources
 }

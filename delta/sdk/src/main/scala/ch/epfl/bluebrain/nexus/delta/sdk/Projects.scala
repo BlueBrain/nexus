@@ -67,6 +67,25 @@ trait Projects {
   def fetch(ref: ProjectRef): UIO[Option[ProjectResource]]
 
   /**
+    * Fetches the current active project, rejecting if the project does not exists or if the project is deprecated
+    */
+  def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project] =
+    fetch(ref).flatMap {
+      case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
+      case None                                  => IO.raiseError(ProjectNotFound(ref))
+      case Some(resource)                        => IO.pure(resource.value)
+    }
+
+  /**
+    * Fetches the current project, rejecting if the project does not exists
+    */
+  def fetchProject(ref: ProjectRef): IO[ProjectRejection, Project] =
+    fetch(ref).flatMap {
+      case Some(resource) => IO.pure(resource.value)
+      case None           => IO.raiseError(ProjectNotFound(ref))
+    }
+
+  /**
     * Fetches a project resource at a specific revision based on its reference.
     *
     * @param ref the project reference
