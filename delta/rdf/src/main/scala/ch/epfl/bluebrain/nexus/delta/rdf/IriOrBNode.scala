@@ -71,27 +71,25 @@ object IriOrBNode {
     /**
       * Override the current query parameters with the passed ones
       */
-    def queryParams(query: Query): Iri = {
-      val sb = new StringBuilder
-      // Adding Iri scheme when present
-      Option(value.getScheme).foreach(sb.append(_).append(':'))
+    def queryParams(query: Query): Iri =
       if (Option(value.getRawAuthority).nonEmpty) {
-        sb.append("//")
-        // Adding Iri user info (user & password) when present
-        Option(value.getRawUserinfo).foreach(sb.append(_).append('@'))
-        //Adding Iri host when present
-        Option(value.getRawHost).foreach(sb.append)
-        //Adding Iri port when present
-        if (value.getPort > 0) sb.append(':').append(value.getPort)
+        Iri.unsafe(
+          scheme = Option(value.getScheme),
+          userInfo = Option(value.getRawUserinfo),
+          host = Option(value.getRawHost),
+          port = Option.when(value.getPort > 0)(value.getPort),
+          path = Option(value.getRawPath),
+          query = Option.when(query.nonEmpty)(query.toString()),
+          fragment = Option(value.getRawFragment)
+        )
+      } else {
+        Iri.unsafe(
+          scheme = Option(value.getScheme),
+          path = Option(value.getRawPath),
+          query = Option.when(query.nonEmpty)(query.toString()),
+          fragment = Option(value.getRawFragment)
+        )
       }
-      // Adding Iri path when present
-      Option(value.getRawPath).foreach(sb.append)
-      // Adding passed query parameters
-      if (query.nonEmpty) sb.append("?").append(query.toString)
-      // Adding Iri fragment when present
-      Option(value.getRawFragment).foreach(sb.append('#').append(_))
-      Iri.unsafe(sb.toString())
-    }
 
     /**
       * Is valid according tot he IRI rfc
@@ -191,6 +189,60 @@ object IriOrBNode {
     def apply(string: String): Either[String, Iri] = {
       val iri = unsafe(string)
       Option.when(!iri.isValid(includeWarnings = false))(iri).toRight(s"'$string' is not an IRI")
+    }
+
+    /**
+      * Construct an [[Iri]] from its raw components.
+      *
+      * @param scheme   the optional scheme segment
+      * @param userInfo the optional user info segment
+      * @param host     the optional host segment
+      * @param port     the optional port
+      * @param path     the optional path segment
+      * @param query    the optional query segment
+      * @param fragment the optional fragment segment
+      */
+    def unsafe(
+        scheme: Option[String],
+        userInfo: Option[String],
+        host: Option[String],
+        port: Option[Int],
+        path: Option[String],
+        query: Option[String],
+        fragment: Option[String]
+    ): Iri = {
+      val sb = new StringBuilder
+      scheme.foreach(sb.append(_).append(':'))
+      sb.append("//")
+      userInfo.foreach(sb.append(_).append('@'))
+      host.foreach(sb.append)
+      port.foreach(sb.append(':').append(_))
+      path.foreach(sb.append)
+      query.foreach(sb.append("?").append(_))
+      fragment.foreach(sb.append('#').append(_))
+      Iri.unsafe(sb.toString())
+    }
+
+    /**
+      * Construct an [[Iri]] from its raw components
+      *
+      * @param scheme   the optional scheme segment
+      * @param path     the optional path segment
+      * @param query    the optional query segment
+      * @param fragment the optional fragment segment
+      */
+    def unsafe(
+        scheme: Option[String],
+        path: Option[String],
+        query: Option[String],
+        fragment: Option[String]
+    ): Iri = {
+      val sb = new StringBuilder
+      scheme.foreach(sb.append(_).append(':'))
+      path.foreach(sb.append)
+      query.foreach(sb.append("?").append(_))
+      fragment.foreach(sb.append('#').append(_))
+      Iri.unsafe(sb.toString())
     }
 
     /**
