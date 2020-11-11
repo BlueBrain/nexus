@@ -11,8 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, permissions => permissionsPerms}
 import io.circe.{Decoder, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -41,41 +43,50 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractSubject { implicit subject =>
+      extractCaller { implicit caller =>
+        implicit val subject = caller.subject
         concat(
           (pathPrefix("permissions") & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/permissions") {
               concat(
                 get { // Fetch permissions
-                  parameter("rev".as[Long].?) {
-                    case Some(rev) => completeIO(permissions.fetchAt(rev).leftMap[PermissionsRejection](identity))
-                    case None      => completeUIO(permissions.fetch)
+                  authorizeFor(AclAddress.Root, permissionsPerms.read).apply {
+                    parameter("rev".as[Long].?) {
+                      case Some(rev) => completeIO(permissions.fetchAt(rev).leftWiden[PermissionsRejection])
+                      case None      => completeUIO(permissions.fetch)
+                    }
                   }
                 },
                 (put & parameter("rev" ? 0L)) { rev => // Replace permissions
-                  entity(as[PatchPermissions]) {
-                    case Replace(set) => completeIO(permissions.replace(set, rev).map(_.void))
-                    case _            =>
-                      reject(
-                        malformedContent(s"Value for field '${keywords.tpe}' must be 'Replace' when using 'PUT'.")
-                      )
+                  authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
+                    entity(as[PatchPermissions]) {
+                      case Replace(set) => completeIO(permissions.replace(set, rev).map(_.void))
+                      case _            =>
+                        reject(
+                          malformedContent(s"Value for field '${keywords.tpe}' must be 'Replace' when using 'PUT'.")
+                        )
+                    }
                   }
                 },
                 (patch & parameter("rev" ? 0L)) { rev => // Append or Subtract permissions
-                  entity(as[PatchPermissions]) {
-                    case Append(set)   => completeIO(permissions.append(set, rev).map(_.void))
-                    case Subtract(set) => completeIO(permissions.subtract(set, rev).map(_.void))
-                    case _             =>
-                      reject(
-                        malformedContent(
-                          s"Value for field '${keywords.tpe}' must be 'Append' or 'Subtract' when using 'PATCH'."
+                  authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
+                    entity(as[PatchPermissions]) {
+                      case Append(set)   => completeIO(permissions.append(set, rev).map(_.void))
+                      case Subtract(set) => completeIO(permissions.subtract(set, rev).map(_.void))
+                      case _             =>
+                        reject(
+                          malformedContent(
+                            s"Value for field '${keywords.tpe}' must be 'Append' or 'Subtract' when using 'PATCH'."
+                          )
                         )
-                      )
+                    }
                   }
                 },
                 delete { // Delete permissions
-                  parameter("rev".as[Long]) { rev =>
-                    completeIO(permissions.delete(rev).map(_.void))
+                  authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
+                    parameter("rev".as[Long]) { rev =>
+                      completeIO(permissions.delete(rev).map(_.void))
+                    }
                   }
                 }
               )
@@ -83,8 +94,10 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
           },
           (pathPrefix("permissions" / "events") & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/permissions/events") {
-              lastEventId { offset =>
-                completeStream(permissions.events(offset))
+              authorizeFor(AclAddress.Root, events.read).apply {
+                lastEventId { offset =>
+                  completeStream(permissions.events(offset))
+                }
               }
             }
           }

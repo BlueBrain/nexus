@@ -7,9 +7,10 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, orgs, realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, events, orgs, realms, permissions => permissionsPerms}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -29,7 +30,7 @@ class PermissionsRoutesSpec
 
   implicit private val caller: Subject = Identity.Anonymous
 
-  private val minimum        = Set(acls.read, acls.write)
+  private val minimum        = Set(acls.read, acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
   private val identities     = IdentitiesDummy(Map.empty)
   private val permissionsUIO = PermissionsDummy(minimum)
   private val aclsDummy      = AclsDummy(permissionsUIO).accepted
@@ -38,15 +39,23 @@ class PermissionsRoutesSpec
 
   "The permissions routes" should {
 
+    "fail to fetch permissions without permissions/read permission" in {
+      Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
     "fetch permissions" in {
+      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.read)), 0L).accepted
       val expected = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
         "rev"         -> "0",
-        "permissions" -> s""""${acls.read}","${acls.write}""""
+        "permissions" -> minimum.mkString("\"", "\",\"", "\"")
       )
       Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
-        response.status shouldEqual StatusCodes.OK
+
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
     }
@@ -54,11 +63,13 @@ class PermissionsRoutesSpec
     "fetch permissions at specific revision" in {
       permissions.append(Set(realms.read), 0L).accepted
 
-      val expected = jsonContentOf(
+      val permissionsToFetch = minimum + realms.read
+      val expected           = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
         "rev"         -> "1",
-        "permissions" -> s""""${acls.read}","${acls.write}","${realms.read}""""
+        "permissions" -> permissionsToFetch.mkString("\"", "\",\"", "\"")
       )
+
       Get("/v1/permissions?rev=1") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
         response.status shouldEqual StatusCodes.OK
@@ -66,7 +77,40 @@ class PermissionsRoutesSpec
       }
     }
 
+    "fail to replace permissions without permissions/write permission" in {
+      val replace = json"""{"permissions": ["${realms.write}"]}"""
+      Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
+    "fail to append permissions without permissions/write permission" in {
+      val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
+      Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
+    "fail to subtract permissions without permissions/write permission" in {
+      val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
+      Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
+    "fail to delete permissions without permissions/write permission" in {
+      Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+      }
+    }
+
     "replace permissions" in {
+
+      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 1L).accepted
       val expected = permissionsResourceUnit(rev = 2L)
       val replace  = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -167,7 +211,15 @@ class PermissionsRoutesSpec
       }
     }
 
+    "fail to get the events stream without events/read permission" in {
+      Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
+        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
     "return the event stream when no offset is provided" in {
+      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 2L).accepted
       val dummy = PermissionsDummy(Set.empty, 5L).accepted
       val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
       dummy.append(Set(acls.read), 0L).accepted
