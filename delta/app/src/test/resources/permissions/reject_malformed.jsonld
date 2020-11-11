@@ -1,6 +1,5 @@
 {
   "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type" : "MalformedFormFieldRejection",
-  "reason" : "The form field '@type' was malformed",
-  "details" : "{{msg}}"
+  "@type" : "MalformedRequestContentRejection",
+  "reason" : "The request content was malformed"
 }

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{MalformedFormFieldRejection, Route}
+import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -13,10 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
-import ch.epfl.bluebrain.nexus.delta.syntax._
-import io.circe.Decoder
+import io.circe.{Decoder, Json}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
+import io.circe.syntax._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
+
+import scala.annotation.nowarn
 
 /**
   * The permissions routes.
@@ -51,7 +55,10 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                 (put & parameter("rev" ? 0L)) { rev => // Replace permissions
                   entity(as[PatchPermissions]) {
                     case Replace(set) => completeIO(permissions.replace(set, rev).map(_.void))
-                    case _            => reject(malformedFormField(keywords.tpe, s"Expected value 'Replace' when using 'PUT'."))
+                    case _            =>
+                      reject(
+                        malformedContent(s"Value for field '${keywords.tpe}' must be 'Replace' when using 'PUT'.")
+                      )
                   }
                 },
                 (patch & parameter("rev" ? 0L)) { rev => // Append or Subtract permissions
@@ -60,7 +67,9 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                     case Subtract(set) => completeIO(permissions.subtract(set, rev).map(_.void))
                     case _             =>
                       reject(
-                        malformedFormField(keywords.tpe, s"Expected value 'Replace' or 'Subtract' when using 'PATCH'.")
+                        malformedContent(
+                          s"Value for field '${keywords.tpe}' must be 'Append' or 'Subtract' when using 'PATCH'."
+                        )
                       )
                   }
                 },
@@ -83,8 +92,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
       }
     }
 
-  private def malformedFormField(field: String, details: String) =
-    MalformedFormFieldRejection(field, details, None)
+  private def malformedContent(field: String) =
+    MalformedRequestContentRejection(field, new IllegalArgumentException())
 }
 
 object PermissionsRoutes {
@@ -107,16 +116,16 @@ object PermissionsRoutes {
     final case class Append(permissions: Set[Permission])   extends PatchPermissions
     final case class Subtract(permissions: Set[Permission]) extends PatchPermissions
     final case class Replace(permissions: Set[Permission])  extends PatchPermissions
-    final case object Unexpected                            extends PatchPermissions
+
+    @nowarn("cat=unused")
+    implicit final private val configuration: Configuration =
+      Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
+
+    private val replacedType = Json.obj(keywords.tpe -> "Replace".asJson)
 
     implicit val patchPermissionsDecoder: Decoder[PatchPermissions] =
       Decoder.instance { hc =>
-        (hc.get[Set[Permission]]("permissions"), hc.getIgnoreSingleArrayOr(keywords.tpe)("Replace")).mapN {
-          case (permissions, "Replace")  => Replace(permissions)
-          case (permissions, "Append")   => Append(permissions)
-          case (permissions, "Subtract") => Subtract(permissions)
-          case _                         => Unexpected
-        }
+        deriveConfiguredDecoder[PatchPermissions].decodeJson(replacedType deepMerge hc.value)
       }
   }
 

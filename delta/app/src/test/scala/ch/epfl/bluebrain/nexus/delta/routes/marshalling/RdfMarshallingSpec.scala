@@ -2,10 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import java.time.Instant
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
-import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.SimpleResource
 import ch.epfl.bluebrain.nexus.delta.SimpleResource.{context, contextIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -16,21 +14,15 @@ import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestMatchers}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.ExecutionContext
 
 class RdfMarshallingSpec
-    extends TestKit(ActorSystem("DeltaMarshallingSpec"))
-    with AnyWordSpecLike
+    extends RouteHelpers
     with Matchers
     with CirceLiteral
     with RdfMarshalling
     with IOValues
-    with RouteHelpers
     with TestMatchers {
 
-  implicit private val ec: ExecutionContext         = system.dispatcher
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contextIri -> context)
   implicit private val ordering: JsonKeyOrdering    = JsonKeyOrdering(List("@context", "@id"), List("_rev", "_createdAt"))
 

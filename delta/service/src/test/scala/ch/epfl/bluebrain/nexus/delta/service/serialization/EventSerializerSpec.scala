@@ -4,7 +4,10 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -14,10 +17,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectEvent, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
@@ -62,11 +67,16 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
   val orgUuid: UUID       = UUID.fromString("b6bde92f-7836-4da6-8ead-2e0fd516ebe7")
   val description: String = "some description"
 
-  val proj: Label              = Label.unsafe("myproj")
-  val projUuid: UUID           = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
-  val apiMappings: ApiMappings = ApiMappings(Map("nxv" -> nxv.base))
-  val base: PrefixIri          = PrefixIri.unsafe(schemas.base)
-  val vocab: PrefixIri         = PrefixIri.unsafe(nxv.base)
+  val proj: Label                           = Label.unsafe("myproj")
+  val projUuid: UUID                        = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
+  val apiMappings: ApiMappings              = ApiMappings(Map("nxv" -> nxv.base))
+  val base: PrefixIri                       = PrefixIri.unsafe(schemas.base)
+  val vocab: PrefixIri                      = PrefixIri.unsafe(nxv.base)
+  val projectRef                            = ProjectRef(org, proj)
+  val myId                                  = nxv + "myId"
+  val shaclResolvedCtx                      = jsonContentOf("contexts/shacl.json")
+  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
+  val resource                              = ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
 
   val permissionsMapping: Map[PermissionsEvent, Json] = Map(
     PermissionsAppended(rev, permSet, instant, subject)   -> jsonContentOf("/serialization/permissions-appended.json"),
@@ -131,6 +141,50 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
     OrganizationDeprecated(org, orgUuid, rev, instant, subject)                 -> jsonContentOf("/serialization/org-deprecated.json")
   )
 
+  val resourcesMapping: Map[ResourceEvent, Json] = Map(
+    ResourceCreated(
+      myId,
+      projectRef,
+      Latest(schemas.resources),
+      Set(schema.Person),
+      resource.source,
+      resource.compacted,
+      resource.expanded,
+      1L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resource-created.json"),
+    ResourceUpdated(
+      myId,
+      projectRef,
+      Set(schema.Person),
+      resource.source,
+      resource.compacted,
+      resource.expanded,
+      2L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resource-updated.json"),
+    ResourceTagAdded(
+      myId,
+      projectRef,
+      Set(schema.Person),
+      1L,
+      Label.unsafe("mytag"),
+      3L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resource-tagged.json"),
+    ResourceDeprecated(
+      myId,
+      projectRef,
+      Set(schema.Person),
+      4L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resource-deprecated.json")
+  )
+
   val projectsMapping: Map[ProjectEvent, Json] = Map(
     ProjectCreated(
       label = proj,
@@ -179,5 +233,7 @@ class EventSerializerSpec extends EventSerializerBehaviours with AnyFlatSpecLike
   "An EventSerializer" should behave like jsonToEventDeserializer("organization", orgsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("project", projectsMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("project", projectsMapping)
+  "An EventSerializer" should behave like eventToJsonSerializer("resource", resourcesMapping)
+  "An EventSerializer" should behave like jsonToEventDeserializer("resource", resourcesMapping)
 
 }

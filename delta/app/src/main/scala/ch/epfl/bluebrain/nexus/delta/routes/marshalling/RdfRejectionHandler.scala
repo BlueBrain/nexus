@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.DeltaDirectives
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import io.circe.syntax._
-import io.circe.{Encoder, JsonObject}
+import io.circe.{DecodingFailure, Encoder, JsonObject}
 import monix.bio.UIO
 import monix.execution.Scheduler
 
@@ -244,6 +244,9 @@ object RdfRejectionHandler extends DeltaDirectives {
     Encoder.AsObject.instance {
       case r @ MalformedRequestContentRejection(_, EntityStreamSizeException(limit, _)) =>
         jsonObj(r, s"The request payload exceed the maximum configured limit '$limit'.")
+      case r @ MalformedRequestContentRejection(_, f: DecodingFailure)                  =>
+        val details = Option.when(f.getMessage() != "CNil")(f.getMessage())
+        jsonObj(r, "The request content was malformed", details)
       case r @ MalformedRequestContentRejection(msg, _)                                 =>
         jsonObj(r, "The request content was malformed", Some(msg))
     }

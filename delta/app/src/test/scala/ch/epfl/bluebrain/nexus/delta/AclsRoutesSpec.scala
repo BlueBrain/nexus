@@ -113,7 +113,8 @@ class AclsRoutesSpec
 
     "fail to create acls without permissions" in {
       forAll(paths) { case (path, address) =>
-        Put(s"/v1/acls$path", aclJson(userAcl(address)).toEntity) ~> addCredentials(token) ~> routes ~> check {
+        val json = aclJson(userAcl(address)).removeKeys("_path")
+        Put(s"/v1/acls$path", json.toEntity) ~> addCredentials(token) ~> routes ~> check {
           rejection shouldEqual AuthorizationFailedRejection
         }
       }

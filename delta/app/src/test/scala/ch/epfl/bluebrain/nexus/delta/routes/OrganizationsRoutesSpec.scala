@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
@@ -20,12 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
 class OrganizationsRoutesSpec
-    extends AnyWordSpecLike
-    with ScalatestRouteTest
+    extends RouteHelpers
     with Matchers
     with CirceLiteral
     with CirceEq
@@ -33,7 +30,6 @@ class OrganizationsRoutesSpec
     with IOFixedClock
     with IOValues
     with OptionValues
-    with RouteHelpers
     with TestMatchers
     with Inspectors
     with RouteFixtures {

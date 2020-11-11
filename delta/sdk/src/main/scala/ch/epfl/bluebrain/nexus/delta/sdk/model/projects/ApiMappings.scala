@@ -1,9 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
+
+import scala.annotation.nowarn
 
 /**
   * The Api mappings to be applied in order to shorten segment ids
@@ -26,8 +29,12 @@ object ApiMappings {
   val empty: ApiMappings = ApiMappings(Map.empty[String, Iri])
 
   final private case class Mapping(prefix: String, namespace: Iri)
-  implicit private val mappingDecoder: Decoder[Mapping] = deriveDecoder[Mapping]
-  implicit private val mappingEncoder: Encoder[Mapping] = deriveEncoder[Mapping]
+
+  @nowarn("cat=unused")
+  implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
+
+  implicit private val mappingDecoder: Decoder[Mapping] = deriveConfiguredDecoder[Mapping]
+  implicit private val mappingEncoder: Encoder[Mapping] = deriveConfiguredEncoder[Mapping]
 
   implicit val apiMappingsEncoder: Encoder[ApiMappings] =
     Encoder.encodeJson.contramap { case ApiMappings(mappings) =>

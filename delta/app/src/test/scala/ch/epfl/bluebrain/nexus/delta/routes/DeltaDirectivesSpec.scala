@@ -11,7 +11,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Cookie}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.SimpleRejection.{badRequestRejection, conflictRejection}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -29,18 +28,15 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, Tes
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
 class DeltaDirectivesSpec
-    extends AnyWordSpecLike
-    with ScalatestRouteTest
+    extends RouteHelpers
     with Matchers
     with OptionValues
     with CirceLiteral
     with DeltaDirectives
     with IOValues
-    with RouteHelpers
     with TestMatchers
     with TestHelpers
     with Inspectors {

@@ -4,7 +4,7 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
+import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Lens}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
@@ -15,6 +15,16 @@ import io.circe.Json
   */
 
 sealed trait ResourceState extends Product with Serializable {
+
+  /**
+    * @return the current state revision
+    */
+  def rev: Long
+
+  /**
+    * @return the current deprecation status
+    */
+  def deprecated: Boolean
 
   /**
     * Converts the state into a resource representation.
@@ -33,6 +43,11 @@ object ResourceState {
     * Initial resources state.
     */
   final case object Initial extends ResourceState {
+
+    override val deprecated: Boolean = false
+
+    override def rev: Long = 0L
+
     override val toResource: Option[DataResource] = None
   }
 
@@ -88,5 +103,7 @@ object ResourceState {
         )
       )
   }
+
+  implicit val resourceStateRevisionLens: Lens[ResourceState, Long] = (s: ResourceState) => s.rev
 
 }

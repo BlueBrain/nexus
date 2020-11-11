@@ -10,9 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import monix.bio.Task
-import org.scalatest.OptionValues
 
-class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with OptionValues with ConfigFixtures {
+class RealmsImplSpec extends AbstractDBSpec with RealmsBehaviors with ConfigFixtures {
 
   private def eventLog: Task[EventLog[Envelope[RealmEvent]]] =
     EventLog.postgresEventLog(EventLogUtils.toEnvelope)

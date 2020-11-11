@@ -10,15 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.service.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.Task
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.Inspectors
 
-class AclsImplSpec
-    extends AbstractDBSpec
-    with AclsBehaviors
-    with OptionValues
-    with Inspectors
-    with CirceLiteral
-    with ConfigFixtures {
+class AclsImplSpec extends AbstractDBSpec with AclsBehaviors with Inspectors with CirceLiteral with ConfigFixtures {
 
   private def eventLog: Task[EventLog[Envelope[AclEvent]]] =
     EventLog.postgresEventLog(EventLogUtils.toEnvelope)

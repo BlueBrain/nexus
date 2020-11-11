@@ -4,30 +4,34 @@ import java.nio.charset.StandardCharsets
 
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, RequestEntity}
-import akka.stream.Materializer
+import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
 import akka.stream.scaladsl.Source
+import akka.testkit.TestDuration
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.{Json, Printer}
 import io.circe.parser.parse
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
-trait RouteHelpers extends ScalaFutures with EitherValuable {
+trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFutures with EitherValuable {
+
+  implicit val timeout: RouteTestTimeout = RouteTestTimeout(6.seconds.dilated)
 
   implicit def httpResponseSyntax(http: HttpResponse): HttpResponseOps = new HttpResponseOps(http)
   implicit def httpJsonSyntax(json: Json): JsonToHttpEntityOps         = new JsonToHttpEntityOps(json)
 
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.second, 10.milliseconds)
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds.dilated, 10.milliseconds)
 
-  private def consume(source: Source[ByteString, Any])(implicit mt: Materializer): String =
+  private def consume(source: Source[ByteString, Any]): String =
     source.runFold("")(_ ++ _.utf8String).futureValue
 
-  def asString(source: Source[ByteString, Any])(implicit mt: Materializer): String =
+  def asString(source: Source[ByteString, Any]): String =
     consume(source)
 
-  def asJson(source: Source[ByteString, Any])(implicit mt: Materializer): Json =
+  def asJson(source: Source[ByteString, Any]): Json =
     parse(consume(source)).rightValue
 
 }
@@ -40,9 +44,9 @@ final class JsonToHttpEntityOps(private val json: Json) extends AnyVal {
 }
 
 final class HttpResponseOps(private val http: HttpResponse) extends AnyVal {
-  def asString(implicit mt: Materializer): String =
+  def asString: String =
     RouteHelpers.asString(http.entity.dataBytes)
 
-  def asJson(implicit mt: Materializer): Json =
+  def asJson: Json =
     RouteHelpers.asJson(http.entity.dataBytes)
 }

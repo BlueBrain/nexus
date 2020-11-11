@@ -21,21 +21,17 @@ import com.nimbusds.jwt.{JWTClaimsSet, PlainJWT, SignedJWT}
 import io.circe.{parser, Json}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
-import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
 class IdentitiesImplSpec
     extends AbstractDBSpec
-    with AnyWordSpecLike
     with Matchers
     with CirceLiteral
     with TestHelpers
     with IOValues
     with EitherValuable
-    with OptionValues
     with ConfigFixtures {
 
   private val rsaKey = TokenGenerator.generateKeys

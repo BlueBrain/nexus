@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 
 import java.util.UUID
 
+import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import io.circe.{Decoder, Encoder}
@@ -46,6 +47,49 @@ object IriOrBNode {
     * @param value the underlying Jena [[IRI]]
     */
   final case class Iri private (private val value: IRI) extends IriOrBNode {
+
+    /**
+      * Extract the query parameters as key and values
+      */
+    def query(): Query =
+      Query(Option(value.getRawQuery))
+
+    /**
+      * Extract the query parameters as String
+      */
+    def rawQuery(): String = Option(value.getRawQuery).getOrElse("")
+
+    /**
+      * Removes each encounter of the passed query parameter keys from the current Iri query parameters
+      *
+      * @param keys the keys to remove
+      */
+    def removeQueryParams(keys: String*): Iri =
+      if (rawQuery().isEmpty) this
+      else queryParams(Query(query().toMap -- keys))
+
+    /**
+      * Override the current query parameters with the passed ones
+      */
+    def queryParams(query: Query): Iri =
+      if (Option(value.getRawAuthority).nonEmpty) {
+        Iri.unsafe(
+          scheme = Option(value.getScheme),
+          userInfo = Option(value.getRawUserinfo),
+          host = Option(value.getRawHost),
+          port = Option.when(value.getPort > 0)(value.getPort),
+          path = Option(value.getRawPath),
+          query = Option.when(query.nonEmpty)(query.toString()),
+          fragment = Option(value.getRawFragment)
+        )
+      } else {
+        Iri.unsafe(
+          scheme = Option(value.getScheme),
+          path = Option(value.getRawPath),
+          query = Option.when(query.nonEmpty)(query.toString()),
+          fragment = Option(value.getRawFragment)
+        )
+      }
 
     /**
       * Is valid according tot he IRI rfc
@@ -145,6 +189,60 @@ object IriOrBNode {
     def apply(string: String): Either[String, Iri] = {
       val iri = unsafe(string)
       Option.when(!iri.isValid(includeWarnings = false))(iri).toRight(s"'$string' is not an IRI")
+    }
+
+    /**
+      * Construct an [[Iri]] from its raw components.
+      *
+      * @param scheme   the optional scheme segment
+      * @param userInfo the optional user info segment
+      * @param host     the optional host segment
+      * @param port     the optional port
+      * @param path     the optional path segment
+      * @param query    the optional query segment
+      * @param fragment the optional fragment segment
+      */
+    def unsafe(
+        scheme: Option[String],
+        userInfo: Option[String],
+        host: Option[String],
+        port: Option[Int],
+        path: Option[String],
+        query: Option[String],
+        fragment: Option[String]
+    ): Iri = {
+      val sb = new StringBuilder
+      scheme.foreach(sb.append(_).append(':'))
+      sb.append("//")
+      userInfo.foreach(sb.append(_).append('@'))
+      host.foreach(sb.append)
+      port.foreach(sb.append(':').append(_))
+      path.foreach(sb.append)
+      query.foreach(sb.append("?").append(_))
+      fragment.foreach(sb.append('#').append(_))
+      Iri.unsafe(sb.toString())
+    }
+
+    /**
+      * Construct an [[Iri]] from its raw components
+      *
+      * @param scheme   the optional scheme segment
+      * @param path     the optional path segment
+      * @param query    the optional query segment
+      * @param fragment the optional fragment segment
+      */
+    def unsafe(
+        scheme: Option[String],
+        path: Option[String],
+        query: Option[String],
+        fragment: Option[String]
+    ): Iri = {
+      val sb = new StringBuilder
+      scheme.foreach(sb.append(_).append(':'))
+      path.foreach(sb.append)
+      query.foreach(sb.append("?").append(_))
+      fragment.foreach(sb.append('#').append(_))
+      Iri.unsafe(sb.toString())
     }
 
     /**

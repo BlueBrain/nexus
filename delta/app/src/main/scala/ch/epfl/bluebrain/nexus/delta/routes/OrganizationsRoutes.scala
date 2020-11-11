@@ -17,9 +17,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationS
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
+
+import scala.annotation.nowarn
 
 /**
   * The organization routes.
@@ -120,7 +123,9 @@ object OrganizationsRoutes {
   final private[routes] case class OrganizationInput(description: Option[String])
 
   private[routes] object OrganizationInput {
-    implicit val organizationDecoder: Decoder[OrganizationInput] = deriveDecoder[OrganizationInput]
+    @nowarn("cat=unused")
+    implicit final private val configuration: Configuration      = Configuration.default.withStrictDecoding
+    implicit val organizationDecoder: Decoder[OrganizationInput] = deriveConfiguredDecoder[OrganizationInput]
   }
 
   /**

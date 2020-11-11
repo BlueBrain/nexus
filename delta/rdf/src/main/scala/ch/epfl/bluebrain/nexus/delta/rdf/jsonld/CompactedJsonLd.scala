@@ -28,7 +28,7 @@ final case class CompactedJsonLd private[jsonld] (
   protected type Predicate = String
 
   lazy val json: Json =
-    obj.asJson.addContext(ctx.contextObj)
+    obj.remove(keywords.context).asJson.addContext(ctx.contextObj)
 
   def add(key: String, iri: Iri): This =
     add(key, iri.asJson)

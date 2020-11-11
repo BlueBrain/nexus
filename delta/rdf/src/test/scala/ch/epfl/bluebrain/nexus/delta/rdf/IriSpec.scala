@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
+import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{owl, schema, xsd}
 import org.scalatest.Inspectors
@@ -60,6 +61,30 @@ class IriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
       val expected = iri"http://example.com/a/b"
       forAll(list) { case (iri, segment) => (iri / segment) shouldEqual expected }
     }
+
+    "extract its query parameters" in {
+      val list = List(
+        iri"http://example.com?"            -> Query.Empty,
+        iri"http://example.com?a=1&b=2&b=3" -> Query.Empty.+:("b" -> "3").+:("b" -> "2").+:("a" -> "1"),
+        iri"http://example.com?a"           -> Query.Empty.+:("a" -> "")
+      )
+      forAll(list) { case (iri, qp) => iri.query() shouldEqual qp }
+    }
+
+    "remove query param field" in {
+      val list = List(
+        iri"http://example.com?"                                   -> iri"http://example.com?",
+        iri"http://example.com?a=1&c=2"                            -> iri"http://example.com?a=1&c=2",
+        iri"http://example.com?b=1&b=2"                            -> iri"http://example.com",
+        iri"http://example.com?b=1&b=2&a=1"                        -> iri"http://example.com?a=1",
+        iri"http://user:pass@example.com?d=1b&b&ab=1&b=2&b=3#frag" -> iri"http://user:pass@example.com?ab=1#frag"
+      )
+      forAll(list) { case (iri, afterRemoval) =>
+        iri.removeQueryParams("b", "d") shouldEqual afterRemoval
+      }
+
+    }
+
     "be converted to Json" in {
       iri.asJson shouldEqual Json.fromString(iriString)
     }

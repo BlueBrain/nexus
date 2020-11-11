@@ -2,11 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import java.time.Instant
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model.{HttpEntity, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.SimpleResource
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
@@ -15,20 +13,14 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, DecodingFailure}
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.ExecutionContext
 
 class CirceUnmarshallingSpec
-    extends TestKit(ActorSystem("DeltaUnmarshallingSpec"))
-    with AnyWordSpecLike
+    extends RouteHelpers
     with Matchers
     with CirceLiteral
     with CirceUnmarshalling
-    with RouteHelpers
     with TestMatchers {
 
-  implicit private val ec: ExecutionContext                           = system.dispatcher
   implicit private val simpleResourceDecoder: Decoder[SimpleResource] = deriveDecoder[SimpleResource]
 
   private val id       = nxv + "myresource"
