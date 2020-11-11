@@ -17,7 +17,7 @@ class ResourceRefSpec extends AnyWordSpecLike with Matchers with Inspectors with
     val list = List(
       iri"http://ex.com?rev=1&other=value"          -> Revision(iri"http://ex.com?rev=1&other=value", iri"http://ex.com?other=value", 1L),
       iri"http://ex.com?rev=1"                      -> Revision(iri"http://ex.com?rev=1", iri"http://ex.com", 1L),
-      iri"http://ex.com?tag=this&other=value"       -> Tag(iri"http://ex.com?tag=this&other=value", iri"http://ex.com?other=value", "this"),
+      iri"http://ex.com?tag=this&other=value"       -> Tag(iri"http://ex.com?tag=this&other=value", iri"http://ex.com?other=value", Label.unsafe("this")),
       iri"http://ex.com?rev=1&tag=this&other=value" -> Revision(iri"http://ex.com?rev=1&tag=this&other=value" , iri"http://ex.com?other=value", 1L),
       iri"http://ex.com?other=value"                -> Latest(iri"http://ex.com?other=value"),
       iri"http://ex.com#fragment"                   -> Latest(iri"http://ex.com#fragment")

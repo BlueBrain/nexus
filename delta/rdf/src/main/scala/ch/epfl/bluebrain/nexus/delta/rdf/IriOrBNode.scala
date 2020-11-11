@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.{unsafe, Query}
+import akka.http.scaladsl.model.Uri.Query
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import io.circe.{Decoder, Encoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
@@ -51,16 +52,7 @@ object IriOrBNode {
       * Extract the query parameters as key and values
       */
     def query(): Query =
-      rawQuery().split("&").foldLeft(Map.empty[String, Vector[String]]) { (acc, c) =>
-        c.split("=", 2).toList match {
-          case k :: v :: Nil if k.trim.nonEmpty =>
-            acc.updatedWith(k)(cur => Some(cur.getOrElse(Vector.empty[String]) :+ v))
-          case k :: Nil if k.trim.nonEmpty      =>
-            acc.updatedWith(k)(cur => Some(cur.getOrElse(Vector.empty[String])))
-          case _                                =>
-            acc
-        }
-      }
+      Query(Option(value.getRawQuery))
 
     /**
       * Extract the query parameters as String
@@ -74,7 +66,7 @@ object IriOrBNode {
       */
     def removeQueryParams(keys: String*): Iri =
       if (rawQuery().isEmpty) this
-      else queryParams(query() -- keys)
+      else queryParams(Query(query().toMap -- keys))
 
     /**
       * Override the current query parameters with the passed ones
@@ -95,21 +87,11 @@ object IriOrBNode {
       // Adding Iri path when present
       Option(value.getRawPath).foreach(sb.append)
       // Adding passed query parameters
-      if (query.nonEmpty) sb.append("?").append(toRawString(query))
+      if (query.nonEmpty) sb.append("?").append(query.toString)
       // Adding Iri fragment when present
       Option(value.getRawFragment).foreach(sb.append('#').append(_))
       Iri.unsafe(sb.toString())
     }
-
-    private def toRawString(query: Query): String =
-      query
-        .flatMap { case (k, values) =>
-          values.map {
-            case v if v.trim.isEmpty => k
-            case v                   => s"$k=$v"
-          }
-        }
-        .mkString("&")
 
     /**
       * Is valid according tot he IRI rfc
@@ -198,11 +180,6 @@ object IriOrBNode {
   }
 
   object Iri {
-
-    /**
-      * Alias for query parameters
-      */
-    type Query = Map[String, Seq[String]]
 
     private val iriFactory = IRIFactory.iriImplementation()
 

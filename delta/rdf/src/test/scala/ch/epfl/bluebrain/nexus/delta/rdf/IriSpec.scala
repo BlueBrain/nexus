@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf
 
+import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{owl, schema, xsd}
 import org.scalatest.Inspectors
@@ -63,9 +64,9 @@ class IriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
 
     "extract its query parameters" in {
       val list = List(
-        iri"http://example.com?"            -> Map.empty[String, Vector[String]],
-        iri"http://example.com?a=1&b=2&b=3" -> Map("a" -> Vector("1"), "b" -> Vector("2", "3")),
-        iri"http://example.com?a"           -> Map("a" -> Vector.empty[String])
+        iri"http://example.com?"            -> Query.Empty,
+        iri"http://example.com?a=1&b=2&b=3" -> Query.Empty.+:("b" -> "3").+:("b" -> "2").+:("a" -> "1"),
+        iri"http://example.com?a"           -> Query.Empty.+:("a" -> "")
       )
       forAll(list) { case (iri, qp) => iri.query() shouldEqual qp }
     }

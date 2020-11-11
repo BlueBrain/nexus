@@ -61,6 +61,7 @@ lazy val akkaClusterShardingTyped = "com.typesafe.akka" %% "akka-cluster-shardin
 lazy val akkaDistributedData      = "com.typesafe.akka" %% "akka-distributed-data"       % akkaVersion
 
 lazy val akkaHttp        = "com.typesafe.akka" %% "akka-http"         % akkaHttpVersion
+lazy val akkaHttpCore    = "com.typesafe.akka" %% "akka-http-core"    % akkaHttpVersion
 lazy val akkaHttpCirce   = "de.heikoseeberger" %% "akka-http-circe"   % akkaHttpCirceVersion
 lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCorsVersion
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
@@ -350,6 +351,8 @@ lazy val rdf = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
+      akkaActorTyped, // Needed to create Uri
+      akkaHttpCore,
       catsCore,
       circeParser,
       circeGeneric,
@@ -375,7 +378,6 @@ lazy val sdk = project
   .settings(
     coverageFailOnMinimum := false,
     libraryDependencies  ++= Seq(
-      akkaActorTyped,       // Needed to create Uri
       akkaHttp,
       akkaPersistenceQuery, // To have access to the Offset type
       circeGenericExtras,

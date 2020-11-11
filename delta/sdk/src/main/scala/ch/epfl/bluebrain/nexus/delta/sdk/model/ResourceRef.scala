@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Decoder, Encoder}
 
 import scala.util.Try
@@ -39,7 +39,7 @@ object ResourceRef {
     * A reference annotated with a revision.
     *
     * @param original the original iri
-    * @param iri      the reference identifier as an iri
+    * @param iri      the reference identifier as an iri (without the tag or rev query parameter)
     * @param rev      the reference revision
     */
   final case class Revision(original: Iri, iri: Iri, rev: Long) extends ResourceRef
@@ -48,22 +48,19 @@ object ResourceRef {
     * A reference annotated with a tag.
     *
     * @param original the original iri
-    * @param iri      the reference identifier as an iri
+    * @param iri      the reference identifier as an iri (without the tag or rev query parameter)
     * @param tag      the reference tag
     */
-  final case class Tag(original: Iri, iri: Iri, tag: String) extends ResourceRef
-
-  private def firstAs[A](seq: Seq[String], f: String => Option[A]): Option[A] =
-    seq.singleEntry.flatMap(f)
+  final case class Tag(original: Iri, iri: Iri, tag: Label) extends ResourceRef
 
   /**
     * Creates a [[ResourceRef]] from the passed ''iri''
     */
   final def apply(iri: Iri): ResourceRef = {
 
-    def extractTagRev(map: Iri.Query): Option[Either[String, Long]] = {
-      def rev = map.get("rev").flatMap(seq => firstAs(seq, s => Try(s.toLong).filter(_ > 0).toOption))
-      def tag = map.get("tag").flatMap(seq => firstAs(seq, s => Option.when(s.nonEmpty)(s)))
+    def extractTagRev(map: Query): Option[Either[Label, Long]] = {
+      def rev = map.get("rev").flatMap(s => Try(s.toLong).filter(_ > 0).toOption)
+      def tag = map.get("tag").flatMap(s => Option.when(s.nonEmpty)(s)).flatMap(Label(_).toOption)
       rev.map(Right.apply) orElse tag.map(Left.apply)
     }
     extractTagRev(iri.query()) match {
