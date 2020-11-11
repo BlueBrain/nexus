@@ -107,7 +107,7 @@ class RealmsRoutesSpec
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -156,14 +156,14 @@ class RealmsRoutesSpec
     "fail to fetch a realm  without realms/read permission" in {
       Get("/v1/realms/github") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "fail to list realms  without realms/read permission" in {
       Get("/v1/realms") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -243,7 +243,7 @@ class RealmsRoutesSpec
 
     "fail to get the events stream without events/read permission" in {
       Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
       }
     }

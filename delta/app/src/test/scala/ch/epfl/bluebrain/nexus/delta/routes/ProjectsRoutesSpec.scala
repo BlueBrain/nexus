@@ -85,7 +85,7 @@ class ProjectsRoutesSpec
 
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -145,7 +145,7 @@ class ProjectsRoutesSpec
       acls.delete(AclAddress.Root, 1L).accepted
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -192,7 +192,7 @@ class ProjectsRoutesSpec
       acls.delete(AclAddress.Root, 3L).accepted
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
     "deprecate a project" in {
@@ -274,21 +274,21 @@ class ProjectsRoutesSpec
     "fail to fetch a project without projects/read permission" in {
       Get("/v1/projects/org1/proj") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "fail to fetch a project by uuid without projects/read permission" in {
       Get(s"/v1/projects/$orgUuid/$projectUuid") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "fail to fetch a project by uuid and rev without projects/read permission" in {
       Get(s"/v1/projects/$orgUuid/$projectUuid?rev=2") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -423,7 +423,7 @@ class ProjectsRoutesSpec
     }
     "fail to get the events stream without events/read permission" in {
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
       }
     }

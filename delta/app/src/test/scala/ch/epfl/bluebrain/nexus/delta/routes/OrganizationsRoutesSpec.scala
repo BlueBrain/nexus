@@ -86,7 +86,7 @@ class OrganizationsRoutesSpec
 
       Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -205,7 +205,7 @@ class OrganizationsRoutesSpec
     "fail fetch an organization by label without organizations/read permission" in {
       acls.delete(AclAddress.Root, 1L).accepted
       Get("/v1/orgs/org2") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -214,20 +214,20 @@ class OrganizationsRoutesSpec
       acls.delete(AclAddress.Organization(Label.unsafe("org1")), 1L).accepted
       Get(s"/v1/orgs/$fixedUuid") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "fail to fetch an organization by UUID and rev without orgs/read permission" in {
       Get(s"/v1/orgs/$fixedUuid?rev=1") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "fail to get the events stream without events/read permission" in {
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
       }
     }

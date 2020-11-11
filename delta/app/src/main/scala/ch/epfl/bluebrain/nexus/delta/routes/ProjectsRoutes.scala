@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{searchResul
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
 import monix.execution.Scheduler
 
 /**
@@ -145,11 +144,11 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     case Some(rev) => // Fetch project from UUID at specific revision
                       authorizeForProjectUUIDAndRev(orgUuid, projectUuid, projectsPermissions.read, rev).apply {
                         project =>
-                          completeUIO(IO.pure(project))
+                          completePure(project)
                       }
                     case None      => // Fetch project from UUID
                       authorizeForProjectUUID(orgUuid, projectUuid, projectsPermissions.read).apply { project =>
-                        completeUIO(IO.pure(project))
+                        completePure(project)
                       }
                   }
                 }

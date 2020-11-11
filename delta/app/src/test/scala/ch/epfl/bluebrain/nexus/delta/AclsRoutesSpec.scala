@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
-import akka.http.scaladsl.server.{AuthorizationFailedRejection, MalformedQueryParamRejection}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, DeltaDirectives}
@@ -101,7 +101,7 @@ class AclsRoutesSpec
 
   private val identities = IdentitiesDummy(Map(AuthToken(token.token) -> caller))
 
-  val routes = AclsRoutes(identities, acls).routes
+  val routes = Route.seal(AclsRoutes(identities, acls).routes)
 
   val paths = Seq(
     "/"             -> AclAddress.Root,
@@ -115,7 +115,8 @@ class AclsRoutesSpec
       forAll(paths) { case (path, address) =>
         val json = aclJson(userAcl(address)).removeKeys("_path")
         Put(s"/v1/acls$path", json.toEntity) ~> addCredentials(token) ~> routes ~> check {
-          rejection shouldEqual AuthorizationFailedRejection
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
       }
 
@@ -347,10 +348,8 @@ class AclsRoutesSpec
 
     "return error when getting ACL with rev and ancestors = true" in {
       Get(s"/v1/acls/myorg/myproj?rev=2&ancestors=true") ~> addCredentials(token) ~> routes ~> check {
-        rejection shouldEqual MalformedQueryParamRejection(
-          "rev",
-          "rev and ancestors query parameters cannot be present simultaneously"
-        )
+        response.asJson shouldEqual jsonContentOf("errors/acls-malformed-query-params.json")
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 

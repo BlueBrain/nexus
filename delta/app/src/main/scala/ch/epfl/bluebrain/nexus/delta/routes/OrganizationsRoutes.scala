@@ -27,7 +27,6 @@ import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn

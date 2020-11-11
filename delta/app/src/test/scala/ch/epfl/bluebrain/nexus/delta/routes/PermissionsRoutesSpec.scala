@@ -42,7 +42,7 @@ class PermissionsRoutesSpec
     "fail to fetch permissions without permissions/read permission" in {
       Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -81,7 +81,7 @@ class PermissionsRoutesSpec
       val replace = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -89,7 +89,7 @@ class PermissionsRoutesSpec
       val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
       Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -97,14 +97,14 @@ class PermissionsRoutesSpec
       val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
       Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "fail to delete permissions without permissions/write permission" in {
       Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
@@ -213,7 +213,7 @@ class PermissionsRoutesSpec
 
     "fail to get the events stream without events/read permission" in {
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
-        response.asJson shouldEqual jsonContentOf("authorization-failed.json")
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
