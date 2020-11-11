@@ -38,7 +38,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project                  <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project                  <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       jsonld                   <- sourceAsJsonLD(project, source)
       (id, compacted, expanded) = jsonld
       res                      <- eval(CreateResource(id, projectRef, schema, source, compacted, expanded, caller), project.apiMappings)
@@ -53,7 +53,7 @@ final class ResourcesImpl private (
     (for {
       jsonld               <- sourceAsJsonLD(id, source)
       (compacted, expanded) = jsonld
-      project              <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project              <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       res                  <- eval(CreateResource(id, projectRef, schema, source, compacted, expanded, caller), project.apiMappings)
     } yield res).named("createResource", moduleType)
 
@@ -67,7 +67,7 @@ final class ResourcesImpl private (
     (for {
       jsonld               <- sourceAsJsonLD(id, source)
       (compacted, expanded) = jsonld
-      project              <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project              <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       mapping               = project.apiMappings
       res                  <- eval(UpdateResource(id, projectRef, schemaOpt, source, compacted, expanded, rev, caller), mapping)
     } yield res)
@@ -82,7 +82,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       res     <- eval(TagResource(id, projectRef, schemaOpt, tagRev, tag, rev, caller), project.apiMappings)
     } yield res).named("tagResource", moduleType)
 
@@ -93,7 +93,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       res     <- eval(DeprecateResource(id, projectRef, schemaOpt, rev, caller), project.apiMappings)
     } yield res).named("deprecateResource", moduleType)
 
@@ -103,7 +103,7 @@ final class ResourcesImpl private (
       schemaOpt: Option[ResourceRef]
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
-      project <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project <- projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
       state   <- agg.state(identifier(projectRef, id))
       resource = state.toResource(project.apiMappings)
     } yield validateSameSchema(resource, schemaOpt)).named("fetchResource", moduleType)
@@ -115,7 +115,7 @@ final class ResourcesImpl private (
       rev: Long
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
-      project <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project <- projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
       persId   = persistenceId(moduleType, identifier(projectRef, id))
       state   <- eventLog.fetchStateAt(persId, rev, Initial, Resources.next).leftMap(RevisionNotFound(rev, _))
       resource = state.toResource(project.apiMappings)

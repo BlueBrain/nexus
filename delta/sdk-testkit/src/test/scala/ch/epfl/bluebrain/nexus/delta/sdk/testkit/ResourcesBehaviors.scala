@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{PermissionsGen, ProjectGen, ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -75,12 +75,11 @@ trait ResourcesBehaviors {
 
   lazy val projects: UIO[ProjectsDummy] = {
     val projects = for {
-      o    <- organizations
-      acls <- AclsDummy(PermissionsDummy(PermissionsGen.minimum))
-      p    <- ProjectsDummy(o, ApplyOwnerPermissionsDummy(acls, PermissionsGen.minimum, Identity.Anonymous))
-      _    <- p.create(project.value.ref, ProjectGen.projectFields(project.value))
-      _    <- p.create(projectDeprecated.value.ref, ProjectGen.projectFields(projectDeprecated.value))
-      _    <- p.deprecate(projectDeprecated.value.ref, 1L)
+      o <- organizations
+      p <- ProjectsDummy(o)
+      _ <- p.create(project.value.ref, ProjectGen.projectFields(project.value))
+      _ <- p.create(projectDeprecated.value.ref, ProjectGen.projectFields(projectDeprecated.value))
+      _ <- p.deprecate(projectDeprecated.value.ref, 1L)
     } yield p
     projects.hideErrorsWith(r => new IllegalStateException(r.reason))
   }
@@ -397,9 +396,8 @@ trait ResourcesBehaviors {
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
-      "reject if project is deprecated" in {
-        resources.fetch(myId, projectDeprecated.value.ref, None).rejected shouldEqual
-          WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.value.ref))
+      "return none if resource does not exist on deprecated project" in {
+        resources.fetch(myId, projectDeprecated.value.ref, None).accepted shouldEqual None
       }
     }
 

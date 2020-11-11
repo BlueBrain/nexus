@@ -42,7 +42,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project                  <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project                  <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       jsonld                   <- sourceAsJsonLD(project, source)
       (id, compacted, expanded) = jsonld
       res                      <- eval(CreateResource(id, projectRef, schema, source, compacted, expanded, caller), project.apiMappings)
@@ -57,7 +57,7 @@ final class ResourcesDummy private (
     for {
       jsonld               <- sourceAsJsonLD(id, source)
       (compacted, expanded) = jsonld
-      project              <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project              <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       res                  <- eval(CreateResource(id, projectRef, schema, source, compacted, expanded, caller), project.apiMappings)
     } yield res
 
@@ -71,7 +71,7 @@ final class ResourcesDummy private (
     for {
       jsonld               <- sourceAsJsonLD(id, source)
       (compacted, expanded) = jsonld
-      project              <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project              <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       mapping               = project.apiMappings
       res                  <- eval(UpdateResource(id, projectRef, schemaOpt, source, compacted, expanded, rev, caller), mapping)
     } yield res
@@ -85,7 +85,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       res     <- eval(TagResource(id, projectRef, schemaOpt, tagRev, tag, rev, caller), project.apiMappings)
     } yield res
 
@@ -96,7 +96,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
       res     <- eval(DeprecateResource(id, projectRef, schemaOpt, rev, caller), project.apiMappings)
     } yield res
 
@@ -106,7 +106,7 @@ final class ResourcesDummy private (
       schemaOpt: Option[ResourceRef]
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
-      project  <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project  <- projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
       stateOpt <- journal.currentState((projectRef, id), Initial, Resources.next)
       resource  = stateOpt.flatMap(_.toResource(project.apiMappings))
     } yield validateSameSchema(resource, schemaOpt)
@@ -118,7 +118,7 @@ final class ResourcesDummy private (
       rev: Long
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
-      project  <- projects.activeProject(projectRef).leftMap(WrappedProjectRejection)
+      project  <- projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
       stateOpt <- journal.stateAt((projectRef, id), rev, Initial, Resources.next, RevisionNotFound.apply)
       resource  = stateOpt.flatMap(_.toResource(project.apiMappings))
     } yield validateSameSchema(resource, schemaOpt)

@@ -480,12 +480,11 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     * @param status the returned HTTP status code
     * @param io     the value to be returned, wrapped in an [[IO]]
     */
-  def completeIOOpt[E: JsonLdEncoder, A: JsonLdEncoder](
+  def completeIOOpt[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       status: => StatusCode,
       io: IO[E, Option[A]]
   )(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
@@ -498,9 +497,8 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     * @param status the returned HTTP status code
     * @param io     the value to be returned, wrapped in an [[IO]]
     */
-  def completeIO[E: JsonLdEncoder, A: JsonLdEncoder](status: => StatusCode, io: IO[E, A])(implicit
+  def completeIO[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](status: => StatusCode, io: IO[E, A])(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
@@ -513,11 +511,10 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     *
     * @param io  the value to be returned, wrapped in an [[IO]]
     */
-  def completeIOOpt[E: JsonLdEncoder, A: JsonLdEncoder](
+  def completeIOOpt[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
       io: IO[E, Option[A]]
   )(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
@@ -529,9 +526,8 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     *
     * @param io  the value to be returned, wrapped in an [[IO]]
     */
-  def completeIO[E: JsonLdEncoder, A: JsonLdEncoder](io: IO[E, A])(implicit
+  def completeIO[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](io: IO[E, A])(implicit
       s: Scheduler,
-      statusFrom: HttpResponseFields[E],
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
