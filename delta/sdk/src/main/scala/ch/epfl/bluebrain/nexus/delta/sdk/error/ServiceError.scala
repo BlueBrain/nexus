@@ -23,6 +23,12 @@ object ServiceError {
     */
   final case object NotFound extends ServiceError("The requested resource could not be found.")
 
+  /**
+    * Signals that the authorization failed
+    */
+  final case object AuthorizationFailed
+      extends ServiceError("The supplied authentication is not authorized to access this resource")
+
   @nowarn("cat=unused")
   implicit val serviceErrorEncoder: Encoder.AsObject[ServiceError] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
