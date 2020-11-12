@@ -26,12 +26,12 @@ sealed trait ProjectState extends Product with Serializable {
   def deprecated: Boolean
 
   /**
-    * @return the schema reference that acls conforms to
+    * @return the schema reference that projects conforms to
     */
   final def schema: ResourceRef = Latest(schemas.projects)
 
   /**
-    * @return the collection of known types of acls resources
+    * @return the collection of known types of projects resources
     */
   final def types: Set[Iri] = Set(nxv.Project)
 
