@@ -26,7 +26,6 @@ val byteBuddyAgentVersion           = "1.10.17"
 val catsEffectVersion               = "2.2.0"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.2.0"
-val chimneyVersion                  = "0.6.1"
 val circeVersion                    = "0.13.0"
 val classgraphVersion               = "4.8.90"
 val declineVersion                  = "1.3.0"
@@ -92,7 +91,6 @@ lazy val catsCore             = "org.typelevel"         %% "cats-core"          
 lazy val catsEffect           = "org.typelevel"         %% "cats-effect"               % catsEffectVersion
 lazy val catsEffectRetry      = "com.github.cb372"      %% "cats-retry-cats-effect"    % catsRetryVersion
 lazy val catsRetry            = "com.github.cb372"      %% "cats-retry-core"           % catsRetryVersion
-lazy val chimney              = "io.scalaland"          %% "chimney"                   % chimneyVersion
 lazy val circeCore            = "io.circe"              %% "circe-core"                % circeVersion
 lazy val circeGeneric         = "io.circe"              %% "circe-generic"             % circeVersion
 lazy val circeGenericExtras   = "io.circe"              %% "circe-generic-extras"      % circeVersion
@@ -383,7 +381,6 @@ lazy val sdk = project
       akkaHttp,
       akkaPersistenceQuery, // To have access to the Offset type
       circeGenericExtras,
-      chimney,
       distageCore,
       fs2,
       monixBio,

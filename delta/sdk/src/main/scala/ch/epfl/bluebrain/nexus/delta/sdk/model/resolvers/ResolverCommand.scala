@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
 /**
@@ -24,80 +23,50 @@ sealed trait ResolverCommand extends Product with Serializable {
 object ResolverCommand {
 
   /**
-    * Command to create a resolver
+    * Command to create a new resolver
+    * @param id                the resolver identifier
+    * @param project           the project the resolver belongs to
+    * @param `type`            type of the resolver (can't be updated)
+    * @param priority          resolution priority when attempting to find a resource
+    * @param crossProjectSetup additional setup for a cross-project resolver
     */
-  sealed trait CreateResolver extends ResolverCommand
+  final case class CreateResolver(
+      id: Iri,
+      project: ProjectRef,
+      `type`: ResolverType,
+      priority: Priority,
+      crossProjectSetup: Option[CrossProjectSetup]
+  ) extends ResolverCommand
 
   /**
-    * Command to update a resolver
+    * Command to update an existing resolver
+    * @param id                the resolver identifier
+    * @param project           the project the resolver belongs to
+    * @param `type`            type of the resolver (can't be updated)
+    * @param priority          resolution priority when attempting to find a resource
+    * @param crossProjectSetup additional setup for a cross-project resolver
+    * @param rev               the last known revision of the resolver
     */
-  sealed trait UpdateResolver extends ResolverCommand {
-
-    /**
-      * @return the last known revision of the resolver
-      */
-    def rev: Long
-  }
+  final case class UpdateResolver(
+      id: Iri,
+      project: ProjectRef,
+      `type`: ResolverType,
+      priority: Priority,
+      crossProjectSetup: Option[CrossProjectSetup],
+      rev: Long
+  ) extends ResolverCommand
 
   /**
-    * Command to create a new InProjectResolver
+    * Command to tag a resolver
+    *
     * @param id        the resolver identifier
     * @param project   the project the resolver belongs to
-    * @param priority  resolution priority when attempting to find a resource
-    */
-  final case class CreateInProjectResolver(id: Iri, project: ProjectRef, priority: Priority) extends CreateResolver
-
-  /**
-    * Command to update an existing InProjectResolver
-    * @param id        the resolver identifier
-    * @param project   the project the resolver belongs to
-    * @param priority  resolution priority when attempting to find a resource
+    * @param targetRev the revision that is being aliased with the provided ''tag''
+    * @param tag       the tag of the alias for the provided ''tagRev''
     * @param rev       the last known revision of the resolver
     */
-  final case class UpdateInProjectResolver(id: Iri, project: ProjectRef, priority: Priority, rev: Long)
-      extends UpdateResolver
-
-  /**
-    * Command to create a new CrossProjectResolver
-    * @param id            the resolver identifier
-    * @param project       the project the resolver belongs to
-    * @param resourceTypes the resource types that will be accessible through this resolver
-    *                      if empty, no restriction on resource type will be applied
-    * @param projects      references to projects where the resolver will attempt to access
-    *                      resources
-    * @param identities    identities allowed to use this resolver
-    * @param priority      resolution priority when attempting to find a resource
-    */
-  final case class CreateCrossProjectResolver(
-      id: Iri,
-      project: ProjectRef,
-      resourceTypes: Set[Iri],
-      projects: NonEmptyList[ProjectRef],
-      identities: Set[Identity],
-      priority: Priority
-  ) extends CreateResolver
-
-  /**
-    * Command to update an existing CrossProjectResolver
-    * @param id            the resolver identifier
-    * @param project       the project the resolver belongs to
-    * @param resourceTypes the resource types that will be accessible through this resolver
-    *                      if empty, no restriction on resource type will be applied
-    * @param projects      references to projects where the resolver will attempt to access
-    *                      resources
-    * @param identities    identities allowed to use this resolver
-    * @param priority      resolution priority when attempting to find a resource
-    * @param rev           the last known revision of the resolver
-    */
-  final case class UpdateCrossProjectResolver(
-      id: Iri,
-      project: ProjectRef,
-      resourceTypes: Set[Iri],
-      projects: NonEmptyList[ProjectRef],
-      identities: Set[Identity],
-      priority: Priority,
-      rev: Long
-  ) extends UpdateResolver
+  final case class TagResolver(id: Iri, project: ProjectRef, targetRev: Long, tag: Label, rev: Long)
+      extends ResolverCommand
 
   /**
     * Command to deprecate a resolver

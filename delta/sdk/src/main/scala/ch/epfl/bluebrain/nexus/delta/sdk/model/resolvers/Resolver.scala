@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
@@ -31,7 +32,8 @@ object Resolver {
   /**
     * A resolver that looks only within its own project.
     */
-  final case class InProjectResolver(id: Iri, project: ProjectRef, priority: Priority) extends Resolver
+  final case class InProjectResolver(id: Iri, project: ProjectRef, priority: Priority, tags: Map[Label, Long])
+      extends Resolver
 
   /**
     * A resolver that can look across several projects.
@@ -39,9 +41,10 @@ object Resolver {
   final case class CrossProjectResolver(
       id: Iri,
       project: ProjectRef,
-      priority: Priority,
       resourceTypes: Set[Iri],
       projects: NonEmptyList[ProjectRef],
-      identities: Set[Identity]
+      identities: Set[Identity],
+      priority: Priority,
+      tags: Map[Label, Long]
   ) extends Resolver
 }

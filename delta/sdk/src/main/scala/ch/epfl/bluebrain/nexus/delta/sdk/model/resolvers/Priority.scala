@@ -16,10 +16,11 @@ object Priority {
     * Attempts to get a priority from an integer
     */
   def apply(value: Int): Either[ResolverPriorityIntervalError, Priority] =
-    if (value >= min && value <= max)
-      Right(new Priority(value))
-    else
-      Left(ResolverPriorityIntervalError(value, min, max))
+    Either.cond(
+      value >= min && value <= max,
+      new Priority(value),
+      ResolverPriorityIntervalError(value, min, max)
+    )
 
   /**
     * Construct a priority from an integer without validation

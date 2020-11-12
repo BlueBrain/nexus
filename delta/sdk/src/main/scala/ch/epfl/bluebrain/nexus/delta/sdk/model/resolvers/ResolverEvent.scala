@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import java.time.Instant
 
-import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, Label}
 
 /**
   * Enumeration of Resolver event types.
@@ -29,90 +27,66 @@ sealed trait ResolverEvent extends Event {
 object ResolverEvent {
 
   /**
-    * Event for the creation of a InProjectResolver
+    * Event for the creation of a resolver
     *
-    * @param id        the resolver identifier
-    * @param project   the project the resolver belongs to
-    * @param priority  resolution priority when attempting to find a resource
-    * @param rev       the resolver revision
-    * @param instant   the instant this event was created
-    * @param subject   the subject which created this event
+    * @param id                the resolver identifier
+    * @param project           the project the resolver belongs to
+    * @param `type`            type of the resolver (can't be updated)
+    * @param priority          resolution priority when attempting to find a resource
+    * @param crossProjectSetup additional setup for a cross-project resolver    * @param rev       the resolver revision
+    * @param instant           the instant this event was created
+    * @param subject           the subject which created this event
     */
-  final case class InProjectResolverCreated(
+  final case class ResolverCreated(
       id: Iri,
       project: ProjectRef,
+      `type`: ResolverType,
       priority: Priority,
+      crossProjectSetup: Option[CrossProjectSetup],
       rev: Long,
       instant: Instant,
       subject: Subject
   ) extends ResolverEvent
 
   /**
-    * Event for the modification of an existing InProjectResolver
+    * Event for the modification of an existing resolver
     *
     * @param id        the resolver identifier
     * @param project   the project the resolver belongs to
-    * @param priority  resolution priority when attempting to find a resource
+    * @param `type`            type of the resolver (can't be updated)
+    * @param priority          resolution priority when attempting to find a resource
+    * @param crossProjectSetup additional setup for a cross-project resolver
     * @param rev       the last known revision of the resolver
     * @param instant   the instant this event was created
     * @param subject   the subject which created this event
     */
-  final case class InProjectResolverUpdated(
+  final case class ResolverUpdated(
       id: Iri,
       project: ProjectRef,
+      `type`: ResolverType,
       priority: Priority,
+      crossProjectSetup: Option[CrossProjectSetup],
       rev: Long,
       instant: Instant,
       subject: Subject
   ) extends ResolverEvent
 
   /**
-    * Event for the creation of a CrossProjectResolver
+    * Event for to tag a resolver
     *
-    * @param id            the resolver identifier
-    * @param project       the project the resolver belongs to
-    * @param resourceTypes the resource types that will be accessible through this resolver
-    *                      if empty, no restriction on resource type will be applied
-    * @param projects      references to projects where the resolver will attempt to access
-    *                      resources
-    * @param identities    identities allowed to use this resolver
-    * @param priority      resolution priority when attempting to find a resource
-    * @param instant       the instant this event was created
-    * @param subject       the subject which created this event
+    * @param id        the resolver identifier
+    * @param project   the project the resolver belongs to
+    * @param targetRev the revision that is being aliased with the provided ''tag''
+    * @param tag       the tag of the alias for the provided ''tagRev''
+    * @param rev       the last known revision of the resolver
+    * @param instant   the instant this event was created
+    * @param subject   the subject creating this event
     */
-  final case class CrossProjectResolverCreated(
+  final case class ResolverTagAdded(
       id: Iri,
       project: ProjectRef,
-      resourceTypes: Set[Iri],
-      projects: NonEmptyList[ProjectRef],
-      identities: Set[Identity],
-      priority: Priority,
-      rev: Long,
-      instant: Instant,
-      subject: Subject
-  ) extends ResolverEvent
-
-  /**
-    * Event for the modification of an existing CrossProjectResolver
-    * @param id            the resolver identifier
-    * @param project       the project the resolver belongs to
-    * @param resourceTypes the resource types that will be accessible through this resolver
-    *                      if empty, no restriction on resource type will be applied
-    * @param projects      references to projects where the resolver will attempt to access
-    *                      resources
-    * @param identities    identities allowed to use this resolver
-    * @param priority      resolution priority when attempting to find a resource
-    * @param rev           the last known revision of the resolver
-    * @param instant       the instant this event was created
-    * @param subject       the subject creating this event
-    */
-  final case class CrossProjectResolverUpdated(
-      id: Iri,
-      project: ProjectRef,
-      resourceTypes: Set[Iri],
-      projects: NonEmptyList[ProjectRef],
-      identities: Set[Identity],
-      priority: Priority,
+      targetRev: Long,
+      tag: Label,
       rev: Long,
       instant: Instant,
       subject: Subject

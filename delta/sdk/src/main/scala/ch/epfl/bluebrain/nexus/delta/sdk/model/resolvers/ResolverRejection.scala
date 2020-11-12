@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 
 /**
   * Enumeration of Resolver rejection types.
@@ -46,8 +46,14 @@ object ResolverRejection {
     *
     * @param id the resolver identifier
     */
-  final case class DifferentResolverType(id: Iri, found: String, expected: String)
+  final case class DifferentResolverType(id: Iri, found: ResolverType, expected: ResolverType)
       extends ResolverRejection(s"Resolver '$id' is of type ''$found'' and can't be updated to be a ''$expected'' .")
+
+  /**
+    * Rejection returned when no setup for cross project has been provided
+    */
+  final case object NoCrossProjectSetup
+      extends ResolverRejection(s"The fields to set up the cross project controller are missing")
 
   /**
     * Rejection returned when no identities has been provided
@@ -82,11 +88,10 @@ object ResolverRejection {
   final case class ResolverIsDeprecated(id: Iri) extends ResolverRejection(s"Resolver '$id' is deprecated.")
 
   /**
-    * Rejection returned when the project or the organization the resolver belongs to has been deprecated
+    * Rejection returned when the associated project is invalid
+    *
+    * @param rejection the rejection which occured with the project
     */
-  final case class ReadOnlyProject(project: ProjectRef)
-      extends ResolverRejection(
-        s"The project with label '$project' is read-only as its organization or itself have been deprecated."
-      )
+  final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResolverRejection(rejection.reason)
 
 }
