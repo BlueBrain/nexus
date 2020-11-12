@@ -205,7 +205,15 @@ class OrganizationsRoutesSpec
 
     "fail fetch an organization without organizations/read permission" in {
       acls.delete(AclAddress.Organization(Label.unsafe("org1")), 1L).accepted
-      forAll(Seq("/v1/orgs/org2", s"/v1/orgs/$fixedUuid", s"/v1/orgs/$fixedUuid?rev=1")) { path =>
+      forAll(
+        Seq(
+          "/v1/orgs/org2",
+          s"/v1/orgs/$fixedUuid",
+          s"/v1/orgs/$fixedUuid?rev=1",
+          s"/v1/orgs/${UUID.randomUUID()}",
+          s"/v1/orgs/${UUID.randomUUID()}?rev=1"
+        )
+      ) { path =>
         Get(path) ~> routes ~> check {
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
           response.status shouldEqual StatusCodes.Forbidden

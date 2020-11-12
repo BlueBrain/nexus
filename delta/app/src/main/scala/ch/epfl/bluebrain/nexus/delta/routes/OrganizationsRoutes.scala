@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -61,8 +62,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
   ): Directive1[OrganizationResource] =
     onSuccess(organizations.fetch(uuid).runToFuture).flatMap {
       case Some(org) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
-      case None      =>
-        Directive(_ => discardEntityAndComplete[OrganizationRejection](OrganizationNotFound(uuid)))
+      case None      => failWith(AuthorizationFailed)
     }
 
   private def fetchByUUIDAndRev(uuid: UUID, permission: Permission, rev: Long)(implicit
@@ -70,10 +70,8 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
   ): Directive1[OrganizationResource] =
     onSuccess(organizations.fetchAt(uuid, rev).leftWiden[OrganizationRejection].attempt.runToFuture).flatMap {
       case Right(Some(org)) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
-      case Right(None)      =>
-        Directive(_ => discardEntityAndComplete[OrganizationRejection](OrganizationNotFound(uuid)))
-      case Left(r)          =>
-        Directive(_ => discardEntityAndComplete(r))
+      case Right(None)      => failWith(AuthorizationFailed)
+      case Left(r)          => Directive(_ => discardEntityAndComplete(r))
     }
 
   def routes: Route =

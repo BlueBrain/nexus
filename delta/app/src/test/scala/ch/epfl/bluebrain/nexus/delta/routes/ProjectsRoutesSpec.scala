@@ -260,7 +260,9 @@ class ProjectsRoutesSpec
         Seq(
           "/v1/projects/org1/proj",
           s"/v1/projects/$orgUuid/$projectUuid",
-          s"/v1/projects/$orgUuid/$projectUuid?rev=2"
+          s"/v1/projects/$orgUuid/$projectUuid?rev=2",
+          s"/v1/projects/$orgUuid/${UUID.randomUUID()}",
+          s"/v1/projects/$orgUuid/${UUID.randomUUID()}?rev=2"
         )
       ) { path =>
         Get(path) ~> routes ~> check {
@@ -323,13 +325,15 @@ class ProjectsRoutesSpec
 
     "fetch a project by uuid if orgUuid doesn't match" in {
       val unknown = UUID.randomUUID()
-      Get(s"/v1/projects/$unknown/$projectUuid") ~> routes ~> check {
-        status shouldEqual StatusCodes.NotFound
-        response.asJson shouldEqual jsonContentOf(
-          "/projects/errors/orguuid-no-match.json",
-          "orgUuid"  -> unknown,
-          "projUuid" -> projectUuid
-        )
+      forAll(Seq(s"/v1/projects/$unknown/$projectUuid", s"/v1/projects/$unknown/$projectUuid?rev=1")) { path =>
+        Get(path) ~> routes ~> check {
+          status shouldEqual StatusCodes.NotFound
+          response.asJson shouldEqual jsonContentOf(
+            "/projects/errors/orguuid-no-match.json",
+            "orgUuid"  -> unknown,
+            "projUuid" -> projectUuid
+          )
+        }
       }
     }
 

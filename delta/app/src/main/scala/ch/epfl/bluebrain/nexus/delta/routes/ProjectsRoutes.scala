@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -54,21 +55,29 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
   private def fetchByUUID(orgUuid: UUID, projectUuid: UUID, permission: Permission)(implicit
       caller: Caller
   ): Directive1[ProjectResource] =
-    onSuccess(projects.fetch(orgUuid, projectUuid).runToFuture).flatMap {
+    onSuccess(projects.fetch(projectUuid).runToFuture).flatMap {
       case Some(project) =>
-        authorizeFor(AclAddress.Project(project.value.ref), permission).tmap(_ => project)
-      case None          =>
-        Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+        authorizeFor(AclAddress.Project(project.value.ref), permission).tflatMap { _ =>
+          if (project.value.organizationUuid == orgUuid)
+            provide(project)
+          else
+            Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+        }
+      case None          => failWith(AuthorizationFailed)
     }
 
   private def fetchByUUIDAndRev(orgUuid: UUID, projectUuid: UUID, permission: Permission, rev: Long)(implicit
       caller: Caller
   ): Directive1[ProjectResource] =
-    onSuccess(projects.fetchAt(orgUuid, projectUuid, rev).leftWiden[ProjectRejection].attempt.runToFuture).flatMap {
+    onSuccess(projects.fetchAt(projectUuid, rev).leftWiden[ProjectRejection].attempt.runToFuture).flatMap {
       case Right(Some(project)) =>
-        authorizeFor(AclAddress.Project(project.value.ref), permission).tmap(_ => project)
-      case Right(None)          =>
-        Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+        authorizeFor(AclAddress.Project(project.value.ref), permission).tflatMap { _ =>
+          if (project.value.organizationUuid == orgUuid)
+            provide(project)
+          else
+            Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+        }
+      case Right(None)          => failWith(AuthorizationFailed)
       case Left(r)              => Directive(_ => discardEntityAndComplete(r))
     }
 
