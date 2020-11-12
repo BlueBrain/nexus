@@ -23,6 +23,7 @@ val alpakkaVersion                  = "2.0.2"
 val apacheCompressVersion           = "1.20"
 val awsSdkVersion                   = "2.15.20"
 val byteBuddyAgentVersion           = "1.10.17"
+val betterMonadicForVersion         = "0.3.1"
 val catsEffectVersion               = "2.2.0"
 val catsRetryVersion                = "0.3.2"
 val catsVersion                     = "2.2.0"
@@ -86,6 +87,7 @@ lazy val alpakkaFiles         = "com.lightbend.akka"    %% "akka-stream-alpakka-
 lazy val alpakkaSse           = "com.lightbend.akka"    %% "akka-stream-alpakka-sse"   % alpakkaVersion
 lazy val apacheCompress       = "org.apache.commons"     % "commons-compress"          % apacheCompressVersion
 lazy val awsSdk               = "software.amazon.awssdk" % "s3"                        % awsSdkVersion
+lazy val betterMonadicFor     = "com.olegpy"            %% "better-monadic-for"        % betterMonadicForVersion
 lazy val byteBuddyAgent       = "net.bytebuddy"          % "byte-buddy-agent"          % byteBuddyAgentVersion
 lazy val catsCore             = "org.typelevel"         %% "cats-core"                 % catsVersion
 lazy val catsEffect           = "org.typelevel"         %% "cats-effect"               % catsEffectVersion
@@ -388,7 +390,8 @@ lazy val sdk = project
       scalaTest       % Test,
       mockito         % Test
     ),
-    addCompilerPlugin(kindProjector)
+    addCompilerPlugin(kindProjector),
+    addCompilerPlugin(betterMonadicFor)
   )
 
 lazy val sdkTestkit = project
@@ -402,7 +405,8 @@ lazy val sdkTestkit = project
   .settings(
     libraryDependencies ++= Seq(
       scalaTest % Test
-    )
+    ),
+    addCompilerPlugin(betterMonadicFor)
   )
 
 lazy val service = project
@@ -425,6 +429,7 @@ lazy val service = project
       logback          % Test,
       scalaTest        % Test
     ),
+    addCompilerPlugin(betterMonadicFor),
     Test / fork          := true
   )
 

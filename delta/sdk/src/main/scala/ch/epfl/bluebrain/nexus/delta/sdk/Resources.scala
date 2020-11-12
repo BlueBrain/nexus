@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import akka.persistence.query.{NoOffset, Offset}
+import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
 import fs2.Stream
 import io.circe.Json
@@ -31,44 +31,45 @@ trait Resources {
   /**
     * Creates a new resource where the id is either present on the payload or self generated.
     *
-    * @param project the project where the resource belongs
-    * @param source  the resource payload
-    * @param schema  the schema to validate the resource against
+    * @param projectRef the project reference where the resource belongs
+    * @param source     the resource payload
+    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
     */
   def create(
-      project: ProjectRef,
-      schema: ResourceRef,
+      projectRef: ProjectRef,
+      schema: IdSegment,
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
-    * Creates a new resource with the passed id.
+    * Creates a new resource with the expanded form of the passed id.
     *
-    * @param id      the resource identifier
-    * @param project the project where the resource belongs
-    * @param schema  the schema to validate the resource against
-    * @param source  the resource payload
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
+    * @param source     the resource payload
     */
   def create(
-      id: Iri,
-      project: ProjectRef,
-      schema: ResourceRef,
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schema: IdSegment,
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
     * Updates an existing resource.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
-    * @param rev       the current revision of the resource
-    * @param source    the resource payload
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference to validate the resource.
+    *                   A None value uses the currently available resource schema reference.
+    * @param rev        the current revision of the resource
+    * @param source     the resource payload
     */
   def update(
-      id: Iri,
-      project: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
       rev: Long,
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
@@ -76,17 +77,18 @@ trait Resources {
   /**
     * Adds a tag to an existing resource.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
-    * @param tag       the tag name
-    * @param tagRev    the tag revision
-    * @param rev       the current revision of the resource
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
+    *                   A None value uses the currently available resource schema reference.
+    * @param tag        the tag name
+    * @param tagRev     the tag revision
+    * @param rev        the current revision of the resource
     */
   def tag(
-      id: Iri,
-      project: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
       tag: Label,
       tagRev: Long,
       rev: Long
@@ -95,63 +97,71 @@ trait Resources {
   /**
     * Deprecates an existing resource.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
+    *                   A None value uses the currently available resource schema reference.
     * @param rev       the revision of the resource
     */
   def deprecate(
-      id: Iri,
-      project: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
     * Fetches a resource.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
+    *                   A None value uses the currently available resource schema reference.
     * @return the resource in a Resource representation, None otherwise
     */
-  def fetch(id: Iri, project: ProjectRef, schemaOpt: Option[ResourceRef]): IO[ResourceRejection, Option[DataResource]]
+  def fetch(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment]
+  ): IO[ResourceRejection, Option[DataResource]]
 
   /**
     * Fetches a resource at a specific revision.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
+    *                   A None value uses the currently available resource schema reference.
     * @param rev       the resources revision
     * @return the resource as a resource at the specified revision
     */
   def fetchAt(
-      id: Iri,
-      project: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
       rev: Long
   ): IO[ResourceRejection, Option[DataResource]]
 
   /**
     * Fetches a resource by tag.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
+    *                   A None value uses the currently available resource schema reference.
     * @param tag       the tag revision
     * @return the resource as a resource at the specified revision
     */
   def fetchBy(
-      id: Iri,
-      project: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
       tag: Label
   ): IO[ResourceRejection, Option[DataResource]] =
-    fetch(id, project, schemaOpt).flatMap {
+    fetch(id, projectRef, schemaOpt).flatMap {
       case Some(resource) =>
         resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, schemaOpt, rev).leftMap(_ => TagNotFound(tag))
+          case Some(rev) => fetchAt(id, projectRef, schemaOpt, rev).leftMap(_ => TagNotFound(tag))
           case None      => IO.raiseError(TagNotFound(tag))
         }
       case None           => IO.pure(None)
@@ -161,16 +171,21 @@ trait Resources {
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
     * are recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param projectRef the project reference where the resource belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = NoOffset): Stream[Task, Envelope[ResourceEvent]]
+  def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[WrappedProjectRejection, Stream[Task, Envelope[ResourceEvent]]]
 
   /**
-    * The current resource events. The stream stops after emitting all known events.
+    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
+    * are recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset     the last seen event offset; it will not be emitted by the stream
     */
-  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[ResourceEvent]]
+  def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]]
 
 }
 
@@ -312,41 +327,62 @@ object Resources {
     }
   }
 
-  private[delta] def sourceAsJsonLD(
-      project: Project,
-      source: Json
-  )(implicit
-      uuidF: UUIDF,
-      rcr: RemoteContextResolution
-  ): IO[ResourceRejection, (Iri, CompactedJsonLd, ExpandedJsonLd)] =
-    for {
-      expandedNoId <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(None, err))
-      id           <- expandedNoId.rootId.asIri.fold(uuidF().map(uuid => project.base / uuid.toString))(IO.pure)
-      expanded      = expandedNoId.replaceId(id)
-      compacted    <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
-    } yield (id, compacted, expanded)
+  abstract private[delta] class ResourcesCommons(
+      projects: Projects
+  )(implicit uuidF: UUIDF, rcr: RemoteContextResolution) {
 
-  private[delta] def sourceAsJsonLD(
-      id: Iri,
-      source: Json
-  )(implicit rcr: RemoteContextResolution): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] =
-    for {
-      expandedNoId <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
-      id           <- expandedNoId.rootId.asIri match {
-                        case Some(sourceId) if sourceId != id => IO.raiseError(UnexpectedResourceId(id, sourceId))
-                        case _                                => IO.pure(id)
-                      }
-      expanded      = expandedNoId.replaceId(id)
-      compacted    <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(id), err))
-    } yield (compacted, expanded)
+    protected def sourceAsJsonLD(
+        project: Project,
+        source: Json
+    ): IO[InvalidJsonLdFormat, (Iri, CompactedJsonLd, ExpandedJsonLd)] =
+      for {
+        originalExpanded <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(None, err))
+        iri              <- originalExpanded.rootId.asIri.fold(uuidF().map(uuid => project.base / uuid.toString))(IO.pure)
+        expanded          = originalExpanded.replaceId(iri)
+        compacted        <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
+      } yield (iri, compacted, expanded)
 
-  private[delta] def validateSameSchema(
-      resourceOpt: Option[DataResource],
-      schemaOpt: Option[ResourceRef]
-  ): Option[DataResource] =
-    resourceOpt match {
-      case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
-      case _                                                  => None
-    }
+    protected def sourceAsJsonLD(iri: Iri, source: Json): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] =
+      for {
+        originalExpanded <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
+        _                <- checkSameId(iri, originalExpanded)
+        expanded          = originalExpanded.replaceId(iri)
+        compacted        <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
+      } yield (compacted, expanded)
 
+    protected def fetchActiveProject(projectRef: ProjectRef): IO[WrappedProjectRejection, Project] =
+      projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
+
+    protected def fetchProject(projectRef: ProjectRef): IO[WrappedProjectRejection, Project] =
+      projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
+
+    protected def expandIri(segment: IdSegment)(implicit project: Project): IO[InvalidResourceId, Iri] =
+      IO.fromOption(segment.toIri, InvalidResourceId(segment.asString))
+
+    protected def expandResourceRef(segment: IdSegment)(implicit project: Project): IO[InvalidResourceId, ResourceRef] =
+      IO.fromOption(segment.toResourceRef, InvalidResourceId(segment.asString))
+
+    protected def expandResourceRef(
+        segmentOpt: Option[IdSegment]
+    )(implicit project: Project): IO[InvalidResourceId, Option[ResourceRef]] =
+      segmentOpt match {
+        case None         => IO.pure(None)
+        case Some(schema) => expandResourceRef(schema).map(Some.apply)
+      }
+
+    protected def validateSameSchema(
+        resourceOpt: Option[DataResource],
+        schemaOpt: Option[ResourceRef]
+    ): Option[DataResource] =
+      resourceOpt match {
+        case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
+        case _                                                  => None
+      }
+
+    private def checkSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedResourceId, Unit] =
+      expanded.rootId.asIri match {
+        case Some(sourceId) if sourceId != iri => IO.raiseError(UnexpectedResourceId(iri, sourceId))
+        case _                                 => IO.unit
+      }
+  }
 }

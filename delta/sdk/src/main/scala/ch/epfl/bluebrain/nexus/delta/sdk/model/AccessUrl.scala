@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
@@ -41,7 +40,7 @@ object AccessUrl {
     override val value: Uri = endpoint / id.toString
 
     override def shortForm(mappings: ApiMappings): Uri = {
-      val ctx = context(mappings + defaultMappings)
+      val ctx = context(mappings + ApiMappings.default)
       endpoint / ctx.compact(id, useVocab = false)
     }
   }
@@ -50,7 +49,7 @@ object AccessUrl {
     override val value: Uri = endpoint / schema.toString / id.toString
 
     override def shortForm(mappings: ApiMappings): Uri = {
-      val ctx = context(mappings + defaultMappings)
+      val ctx = context(mappings + ApiMappings.default)
       endpoint / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
     }
   }
@@ -109,9 +108,5 @@ object AccessUrl {
 
   private def context(mappings: ApiMappings): JsonLdContext =
     JsonLdContext(ContextValue.empty, prefixMappings = mappings.prefixMappings, aliases = mappings.aliases)
-
-  private val defaultMappings: ApiMappings = ApiMappings(
-    Map("_" -> schemas.resources, "schema" -> schemas.shacl, "resolver" -> schemas.resolvers)
-  )
 
 }
