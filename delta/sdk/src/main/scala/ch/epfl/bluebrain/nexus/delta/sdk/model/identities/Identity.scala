@@ -54,6 +54,8 @@ object Identity {
         case userRegex(realm, subject) => Right(User(subject, Label.unsafe(realm)))
         case _                         => Left(IllegalSubjectIriFormatError(iri))
       }
+
+    implicit def subjectFromCaller(implicit caller: Caller): Subject = caller.subject
   }
 
   /**

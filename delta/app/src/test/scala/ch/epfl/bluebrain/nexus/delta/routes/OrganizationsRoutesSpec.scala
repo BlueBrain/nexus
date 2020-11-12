@@ -203,25 +203,13 @@ class OrganizationsRoutesSpec
       }
     }
 
-    "fail fetch an organization by label without organizations/read permission" in {
-      Get("/v1/orgs/org2") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-    }
-
-    "fail to fetch an organization by UUID without orgs/read permission" in {
+    "fail fetch an organization without organizations/read permission" in {
       acls.delete(AclAddress.Organization(Label.unsafe("org1")), 1L).accepted
-      Get(s"/v1/orgs/$fixedUuid") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-      }
-    }
-
-    "fail to fetch an organization by UUID and rev without orgs/read permission" in {
-      Get(s"/v1/orgs/$fixedUuid?rev=1") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      forAll(Seq("/v1/orgs/org2", s"/v1/orgs/$fixedUuid", s"/v1/orgs/$fixedUuid?rev=1")) { path =>
+        Get(path) ~> routes ~> check {
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          response.status shouldEqual StatusCodes.Forbidden
+        }
       }
     }
 

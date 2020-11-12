@@ -44,7 +44,6 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       extractCaller { implicit caller =>
-        implicit val subject = caller.subject
         concat(
           (pathPrefix("permissions") & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/permissions") {

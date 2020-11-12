@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.routes.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, NotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -106,6 +108,12 @@ object HttpResponseFields {
       case ProjectRejection.IncorrectRev(_, _)      => StatusCodes.Conflict
       //case ProjectRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
       case _                                        => StatusCodes.BadRequest
+    }
+
+  implicit val ServiceError: HttpResponseFields[ServiceError] =
+    HttpResponseFields {
+      case AuthorizationFailed => StatusCodes.Forbidden
+      case NotFound            => StatusCodes.NotFound
     }
 }
 // $COVERAGE-ON$

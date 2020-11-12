@@ -62,7 +62,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     onSuccess(organizations.fetch(uuid).runToFuture).flatMap {
       case Some(org) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
       case None      =>
-        Directive.apply(_ => discardEntityAndComplete[OrganizationRejection](OrganizationNotFound(uuid)))
+        Directive(_ => discardEntityAndComplete[OrganizationRejection](OrganizationNotFound(uuid)))
     }
 
   private def authorizeForOrgUUIDAndRev(uuid: UUID, permission: Permission, rev: Long)(implicit
@@ -71,15 +71,14 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     onSuccess(organizations.fetchAt(uuid, rev).leftWiden[OrganizationRejection].attempt.runToFuture).flatMap {
       case Right(Some(org)) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
       case Right(None)      =>
-        Directive.apply(_ => discardEntityAndComplete[OrganizationRejection](OrganizationNotFound(uuid)))
+        Directive(_ => discardEntityAndComplete[OrganizationRejection](OrganizationNotFound(uuid)))
       case Left(r)          =>
-        Directive.apply(_ => discardEntityAndComplete(r))
+        Directive(_ => discardEntityAndComplete(r))
     }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       extractCaller { implicit caller =>
-        implicit val subject = caller.subject
         pathPrefix("orgs") {
           concat(
             // List organizations

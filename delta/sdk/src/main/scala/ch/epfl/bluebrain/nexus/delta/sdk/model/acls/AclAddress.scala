@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalAclAddressFormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.{Encoder, Json}
 
 /**
@@ -71,6 +72,14 @@ object AclAddress {
     val string                     = s"/$org/$project"
     val parent: Option[AclAddress] = Some(Organization(org))
 
+  }
+
+  object Project {
+
+    /**
+      * Create project level address from [[ProjectRef]].
+      */
+    def apply(projectRef: ProjectRef): Project = Project(projectRef.organization, projectRef.project)
   }
 
   implicit val aclAddressOrdering: Ordering[AclAddress] = Ordering.by(_.string)

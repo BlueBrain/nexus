@@ -48,7 +48,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       extractCaller { implicit caller =>
-        implicit val subject = caller.subject
         pathPrefix("realms") {
           concat(
             // List realms

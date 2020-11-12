@@ -56,11 +56,9 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
   ): Directive1[ProjectResource] =
     onSuccess(projects.fetch(orgUuid, projectUuid).runToFuture).flatMap {
       case Some(project) =>
-        authorizeFor(AclAddress.Project(project.value.organizationLabel, project.value.label), permission).tmap(_ =>
-          project
-        )
+        authorizeFor(AclAddress.Project(project.value.ref), permission).tmap(_ => project)
       case None          =>
-        Directive.apply(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+        Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
     }
 
   private def authorizeForProjectUUIDAndRev(orgUuid: UUID, projectUuid: UUID, permission: Permission, rev: Long)(
@@ -68,18 +66,15 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
   ): Directive1[ProjectResource] =
     onSuccess(projects.fetchAt(orgUuid, projectUuid, rev).leftWiden[ProjectRejection].attempt.runToFuture).flatMap {
       case Right(Some(project)) =>
-        authorizeFor(AclAddress.Project(project.value.organizationLabel, project.value.label), permission).tmap(_ =>
-          project
-        )
+        authorizeFor(AclAddress.Project(project.value.ref), permission).tmap(_ => project)
       case Right(None)          =>
-        Directive.apply(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
-      case Left(r)              => Directive.apply(_ => discardEntityAndComplete(r))
+        Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+      case Left(r)              => Directive(_ => discardEntityAndComplete(r))
     }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       extractCaller { implicit caller =>
-        implicit val subject = caller.subject
         pathPrefix("projects") {
           concat(
             // List projects
@@ -103,7 +98,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
               operationName(s"$prefixSegment/projects/{ref}") {
                 concat(
                   put {
-                    authorizeFor(AclAddress.Project(ref.organization, ref.project), projectsPermissions.write).apply {
+                    authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) =>
                           // Update project
@@ -119,7 +114,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     }
                   },
                   get {
-                    authorizeFor(AclAddress.Project(ref.organization, ref.project), projectsPermissions.read).apply {
+                    authorizeFor(AclAddress.Project(ref), projectsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch project at specific revision
                           completeIOOpt(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
@@ -130,7 +125,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                   },
                   // Deprecate project
                   delete {
-                    authorizeFor(AclAddress.Project(ref.organization, ref.project), projectsPermissions.write).apply {
+                    authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
                       parameter("rev".as[Long]) { rev => completeIO(projects.deprecate(ref, rev).map(_.void)) }
                     }
                   }

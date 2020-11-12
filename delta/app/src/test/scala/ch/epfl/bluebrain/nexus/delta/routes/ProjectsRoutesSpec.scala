@@ -256,23 +256,17 @@ class ProjectsRoutesSpec
     )
 
     "fail to fetch a project without projects/read permission" in {
-      Get("/v1/projects/org1/proj") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-      }
-    }
-
-    "fail to fetch a project by uuid without projects/read permission" in {
-      Get(s"/v1/projects/$orgUuid/$projectUuid") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-      }
-    }
-
-    "fail to fetch a project by uuid and rev without projects/read permission" in {
-      Get(s"/v1/projects/$orgUuid/$projectUuid?rev=2") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      forAll(
+        Seq(
+          "/v1/projects/org1/proj",
+          s"/v1/projects/$orgUuid/$projectUuid",
+          s"/v1/projects/$orgUuid/$projectUuid?rev=2"
+        )
+      ) { path =>
+        Get(path) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        }
       }
     }
 
