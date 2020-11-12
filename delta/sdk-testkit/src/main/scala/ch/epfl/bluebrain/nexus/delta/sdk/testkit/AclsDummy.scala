@@ -57,22 +57,16 @@ final class AclsDummy private (
     eval(ReplaceAcl(acl, rev, caller)).flatMap(setToCache)
 
   override def append(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
-    eval(AppendAcl(acl, rev, caller)).flatMap(appendToCache)
+    eval(AppendAcl(acl, rev, caller)).flatMap(setToCache)
 
   override def subtract(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
-    eval(SubtractAcl(acl, rev, caller)).flatMap(subtractFromCache)
+    eval(SubtractAcl(acl, rev, caller)).flatMap(setToCache)
 
   override def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
     eval(DeleteAcl(address, rev, caller)).flatMap(deleteFromCache)
 
   private def setToCache(resource: AclResource): UIO[AclResource]    =
     cache.update(c => c.copy(c.value + (resource.value.address -> resource))).as(resource)
-
-  private def appendToCache(resource: AclResource): UIO[AclResource] =
-    cache.update(_ + resource).as(resource)
-
-  private def subtractFromCache(resource: AclResource): UIO[AclResource] =
-    cache.update(_ - resource).as(resource)
 
   private def deleteFromCache(resource: AclResource): UIO[AclResource] =
     cache.update(_ - resource.value.address).as(resource)
