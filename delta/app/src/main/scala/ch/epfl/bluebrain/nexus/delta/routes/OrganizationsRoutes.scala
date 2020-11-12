@@ -56,7 +56,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
       OrganizationSearchParams(deprecated, rev, createdBy, updatedBy)
     }
 
-  private def authorizeForOrgUUID(uuid: UUID, permission: Permission)(implicit
+  private def fetchByUUID(uuid: UUID, permission: Permission)(implicit
       caller: Caller
   ): Directive1[OrganizationResource] =
     onSuccess(organizations.fetch(uuid).runToFuture).flatMap {
@@ -65,7 +65,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
         Directive(_ => discardEntityAndComplete[OrganizationRejection](OrganizationNotFound(uuid)))
     }
 
-  private def authorizeForOrgUUIDAndRev(uuid: UUID, permission: Permission, rev: Long)(implicit
+  private def fetchByUUIDAndRev(uuid: UUID, permission: Permission, rev: Long)(implicit
       caller: Caller
   ): Directive1[OrganizationResource] =
     onSuccess(organizations.fetchAt(uuid, rev).leftWiden[OrganizationRejection].attempt.runToFuture).flatMap {
@@ -142,11 +142,11 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                 get {
                   parameter("rev".as[Long].?) {
                     case Some(rev) => // Fetch organization from UUID at specific revision
-                      authorizeForOrgUUIDAndRev(uuid, orgs.read, rev).apply { org =>
+                      fetchByUUIDAndRev(uuid, orgs.read, rev).apply { org =>
                         completePure(org)
                       }
                     case None      => // Fetch organization from UUID
-                      authorizeForOrgUUID(uuid, orgs.read).apply { org =>
+                      fetchByUUID(uuid, orgs.read).apply { org =>
                         completePure(org)
                       }
                   }

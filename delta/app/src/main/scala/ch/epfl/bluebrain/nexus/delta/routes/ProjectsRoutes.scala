@@ -51,7 +51,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
       }
     }
 
-  private def authorizeForProjectUUID(orgUuid: UUID, projectUuid: UUID, permission: Permission)(implicit
+  private def fetchByUUID(orgUuid: UUID, projectUuid: UUID, permission: Permission)(implicit
       caller: Caller
   ): Directive1[ProjectResource] =
     onSuccess(projects.fetch(orgUuid, projectUuid).runToFuture).flatMap {
@@ -61,8 +61,8 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
         Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
     }
 
-  private def authorizeForProjectUUIDAndRev(orgUuid: UUID, projectUuid: UUID, permission: Permission, rev: Long)(
-      implicit caller: Caller
+  private def fetchByUUIDAndRev(orgUuid: UUID, projectUuid: UUID, permission: Permission, rev: Long)(implicit
+      caller: Caller
   ): Directive1[ProjectResource] =
     onSuccess(projects.fetchAt(orgUuid, projectUuid, rev).leftWiden[ProjectRejection].attempt.runToFuture).flatMap {
       case Right(Some(project)) =>
@@ -137,12 +137,11 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                 get {
                   parameter("rev".as[Long].?) {
                     case Some(rev) => // Fetch project from UUID at specific revision
-                      authorizeForProjectUUIDAndRev(orgUuid, projectUuid, projectsPermissions.read, rev).apply {
-                        project =>
-                          completePure(project)
+                      fetchByUUIDAndRev(orgUuid, projectUuid, projectsPermissions.read, rev).apply { project =>
+                        completePure(project)
                       }
                     case None      => // Fetch project from UUID
-                      authorizeForProjectUUID(orgUuid, projectUuid, projectsPermissions.read).apply { project =>
+                      fetchByUUID(orgUuid, projectUuid, projectsPermissions.read).apply { project =>
                         completePure(project)
                       }
                   }
