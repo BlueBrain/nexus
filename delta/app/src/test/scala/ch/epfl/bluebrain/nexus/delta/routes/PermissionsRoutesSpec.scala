@@ -40,6 +40,7 @@ class PermissionsRoutesSpec
   "The permissions routes" should {
 
     "fail to fetch permissions without permissions/read permission" in {
+      aclsDummy.replace(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 0L).accepted
       Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -47,7 +48,7 @@ class PermissionsRoutesSpec
     }
 
     "fetch permissions" in {
-      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.read)), 0L).accepted
+      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.read)), 1L).accepted
       val expected = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
         "rev"         -> "0",
@@ -78,6 +79,7 @@ class PermissionsRoutesSpec
     }
 
     "fail to replace permissions without permissions/write permission" in {
+      aclsDummy.subtract(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 2L).accepted
       val replace = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -110,7 +112,7 @@ class PermissionsRoutesSpec
 
     "replace permissions" in {
 
-      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 1L).accepted
+      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 3L).accepted
       val expected = permissionsResourceUnit(rev = 2L)
       val replace  = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -219,7 +221,7 @@ class PermissionsRoutesSpec
     }
 
     "return the event stream when no offset is provided" in {
-      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 2L).accepted
+      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 4L).accepted
       val dummy = PermissionsDummy(Set.empty, 5L).accepted
       val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
       dummy.append(Set(acls.read), 0L).accepted

@@ -52,6 +52,7 @@ class AclsRoutesSpec
   val manage           = Set(managePermission)
 
   def userAcl(address: AclAddress)   = Acl(address, user -> readWrite)
+  def userAclRead(address: AclAddress)   = Acl(address, user -> Set(aclsPermissions.read ))
   def groupAcl(address: AclAddress)  = Acl(address, group -> manage)
   def group2Acl(address: AclAddress) = Acl(address, group2 -> manage)
   val token                          = OAuth2BearerToken("valid")
@@ -327,7 +328,7 @@ class AclsRoutesSpec
     }
 
     "subtract ACL" in {
-      val patch = aclJson(userAcl(Root)).removeKeys("_path") deepMerge
+      val patch = aclJson(userAclRead(Root)).removeKeys("_path") deepMerge
         Json.obj("@type" -> Json.fromString("Subtract"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=3", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {

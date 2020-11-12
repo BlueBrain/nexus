@@ -82,6 +82,7 @@ class OrganizationsRoutesSpec
   "An OrganizationsRoute" should {
 
     "fail to create an organization without organizations/write permission" in {
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
       val input = json"""{"description": "${org1.description.value}"}"""
 
       Put("/v1/orgs/org1", input.toEntity) ~> routes ~> check {
@@ -94,7 +95,7 @@ class OrganizationsRoutesSpec
       acls
         .append(
           Acl(AclAddress.Root, Anonymous -> Set(orgsPermissions.write), caller.subject -> Set(orgsPermissions.write)),
-          0L
+          1L
         )
         .accepted
       val input = json"""{"description": "${org1.description.value}"}"""
@@ -203,7 +204,6 @@ class OrganizationsRoutesSpec
     }
 
     "fail fetch an organization by label without organizations/read permission" in {
-      acls.delete(AclAddress.Root, 1L).accepted
       Get("/v1/orgs/org2") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
@@ -226,6 +226,7 @@ class OrganizationsRoutesSpec
     }
 
     "fail to get the events stream without events/read permission" in {
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 2L).accepted
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
@@ -233,7 +234,7 @@ class OrganizationsRoutesSpec
     }
 
     "get the events stream with an offset" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 2L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 3L).accepted
       Get("/v1/orgs/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString shouldEqual contentOf("/organizations/eventstream-2-4.txt", "uuid" -> fixedUuid.toString)

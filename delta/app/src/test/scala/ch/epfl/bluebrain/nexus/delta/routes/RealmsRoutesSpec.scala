@@ -103,6 +103,7 @@ class RealmsRoutesSpec
   "A RealmsRoute" should {
 
     "fail to create a realm  without realms/write permission" in {
+      acls.replace(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 0L).accepted
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
@@ -112,7 +113,7 @@ class RealmsRoutesSpec
     }
 
     "create a new realm" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.write)), 0L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.write)), 1L).accepted
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
@@ -154,6 +155,7 @@ class RealmsRoutesSpec
     }
 
     "fail to fetch a realm  without realms/read permission" in {
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 2L).accepted
       Get("/v1/realms/github") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -168,7 +170,7 @@ class RealmsRoutesSpec
     }
 
     "fetch a realm by id" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 1L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 3L).accepted
       Get("/v1/realms/github") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual githubUpdated
@@ -243,13 +245,13 @@ class RealmsRoutesSpec
 
     "fail to get the events stream without events/read permission" in {
       Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "get the events stream with an offset" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 2L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 4L).accepted
       Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString shouldEqual contentOf("/realms/eventstream-2-4.txt")
