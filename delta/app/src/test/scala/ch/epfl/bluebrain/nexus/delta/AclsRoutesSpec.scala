@@ -51,13 +51,13 @@ class AclsRoutesSpec
   val managePermission = Permission.unsafe("acls/manage")
   val manage           = Set(managePermission)
 
-  def userAcl(address: AclAddress)   = Acl(address, user -> readWrite)
-  def userAclRead(address: AclAddress)   = Acl(address, user -> Set(aclsPermissions.read ))
-  def groupAcl(address: AclAddress)  = Acl(address, group -> manage)
-  def group2Acl(address: AclAddress) = Acl(address, group2 -> manage)
-  val token                          = OAuth2BearerToken("valid")
-  def selfAcls(address: AclAddress)  = userAcl(address) ++ groupAcl(address)
-  def allAcls(address: AclAddress)   = userAcl(address) ++ groupAcl(address) ++ group2Acl(address)
+  def userAcl(address: AclAddress)     = Acl(address, user -> readWrite)
+  def userAclRead(address: AclAddress) = Acl(address, user -> Set(aclsPermissions.read))
+  def groupAcl(address: AclAddress)    = Acl(address, group -> manage)
+  def group2Acl(address: AclAddress)   = Acl(address, group2 -> manage)
+  val token                            = OAuth2BearerToken("valid")
+  def selfAcls(address: AclAddress)    = userAcl(address) ++ groupAcl(address)
+  def allAcls(address: AclAddress)     = userAcl(address) ++ groupAcl(address) ++ group2Acl(address)
 
   implicit val caller: Caller   = Caller(user, Set(user, group))
   implicit val subject: Subject = caller.subject

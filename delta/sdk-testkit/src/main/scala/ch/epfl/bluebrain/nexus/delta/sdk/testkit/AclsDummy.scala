@@ -65,7 +65,7 @@ final class AclsDummy private (
   override def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource] =
     eval(DeleteAcl(address, rev, caller)).flatMap(deleteFromCache)
 
-  private def setToCache(resource: AclResource): UIO[AclResource]    =
+  private def setToCache(resource: AclResource): UIO[AclResource]      =
     cache.update(c => c.copy(c.value + (resource.value.address -> resource))).as(resource)
 
   private def deleteFromCache(resource: AclResource): UIO[AclResource] =
