@@ -417,22 +417,6 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     discardEntityAndCompleteUIOOpt(StatusCodes.OK, Seq.empty, io)
 
   /**
-    * Completes a passed [[A]] with the desired output format using the implicitly available [[JsonLdEncoder]].
-    * Before returning the response, the request data bytes will be discarded.
-    * If the normal channel doesn't hold any value, a not found output is produced
-    *
-    * @param value  the value to be returned
-    */
-  def discardEntityAndComplete[A: JsonLdEncoder](
-      value: A
-  )(implicit fields: HttpResponseFields[A], s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =
-    discardEntityAndCompleteUIO(
-      status = fields.statusFrom(value),
-      headers = fields.headersFrom(value),
-      io = UIO.pure(value)
-    )
-
-  /**
     * Completes a passed [[IO]] of ''E'' and ''A'' with the desired output format using the implicitly available [[JsonLdEncoder]].
     * Both error channel and normal channel are converted to the desired output format.
     * If the normal channel doesn't hold any value, a not found output is produced
