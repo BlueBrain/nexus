@@ -101,7 +101,7 @@ object ResolverState {
       Some(
         ResourceF(
           id = AccessUrl.resolver(project, id)(_).iri,
-          accessUrl = AccessUrl.resolver(project, id)(_),
+          accessUrl = AccessUrl.resolver(project, id)(_).value,
           rev = rev,
           types = types,
           deprecated = deprecated,
@@ -162,7 +162,7 @@ object ResolverState {
       Some(
         ResourceF(
           id = AccessUrl.resolver(project, id)(_).iri,
-          accessUrl = AccessUrl.resolver(project, id)(_),
+          accessUrl = AccessUrl.resolver(project, id)(_).value,
           rev = rev,
           types = types,
           deprecated = deprecated,
