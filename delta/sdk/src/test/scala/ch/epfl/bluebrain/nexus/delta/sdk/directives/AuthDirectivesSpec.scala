@@ -1,21 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
@@ -83,8 +83,12 @@ class AuthDirectivesSpec
       }
     }
 
+  private val authExceptionHandler: ExceptionHandler = ExceptionHandler { case AuthorizationFailed =>
+    complete(StatusCodes.Forbidden)
+  }
+
   private val authorizationRoute: Route =
-    handleExceptions(IdentityError.exceptionHandler) {
+    handleExceptions(authExceptionHandler) {
       path("user") {
         directives.extractCaller { implicit caller =>
           directives.authorizeFor(AclAddress.Root, permission).apply {
@@ -137,13 +141,13 @@ class AuthDirectivesSpec
 
     "correctly reject Anonymous " in {
       Get("/user") ~> authorizationRoute ~> check {
-        rejection shouldEqual AuthorizationFailedRejection
+        response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
     "correctly reject user without permission " in {
       Get("/user") ~> addCredentials(OAuth2BearerToken("bob")) ~> authorizationRoute ~> check {
-        rejection shouldEqual AuthorizationFailedRejection
+        response.status shouldEqual StatusCodes.Forbidden
       }
     }
   }

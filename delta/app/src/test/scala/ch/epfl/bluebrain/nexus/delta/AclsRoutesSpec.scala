@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
-import akka.http.scaladsl.server.{AuthorizationFailedRejection, MalformedQueryParamRejection}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, DeltaDirectives}
@@ -51,12 +51,13 @@ class AclsRoutesSpec
   val managePermission = Permission.unsafe("acls/manage")
   val manage           = Set(managePermission)
 
-  def userAcl(address: AclAddress)   = Acl(address, user -> readWrite)
-  def groupAcl(address: AclAddress)  = Acl(address, group -> manage)
-  def group2Acl(address: AclAddress) = Acl(address, group2 -> manage)
-  val token                          = OAuth2BearerToken("valid")
-  def selfAcls(address: AclAddress)  = userAcl(address) ++ groupAcl(address)
-  def allAcls(address: AclAddress)   = userAcl(address) ++ groupAcl(address) ++ group2Acl(address)
+  def userAcl(address: AclAddress)     = Acl(address, user -> readWrite)
+  def userAclRead(address: AclAddress) = Acl(address, user -> Set(aclsPermissions.read))
+  def groupAcl(address: AclAddress)    = Acl(address, group -> manage)
+  def group2Acl(address: AclAddress)   = Acl(address, group2 -> manage)
+  val token                            = OAuth2BearerToken("valid")
+  def selfAcls(address: AclAddress)    = userAcl(address) ++ groupAcl(address)
+  def allAcls(address: AclAddress)     = userAcl(address) ++ groupAcl(address) ++ group2Acl(address)
 
   implicit val caller: Caller   = Caller(user, Set(user, group))
   implicit val subject: Subject = caller.subject
@@ -101,7 +102,7 @@ class AclsRoutesSpec
 
   private val identities = IdentitiesDummy(Map(AuthToken(token.token) -> caller))
 
-  val routes = AclsRoutes(identities, acls).routes
+  val routes = Route.seal(AclsRoutes(identities, acls).routes)
 
   val paths = Seq(
     "/"             -> AclAddress.Root,
@@ -115,7 +116,8 @@ class AclsRoutesSpec
       forAll(paths) { case (path, address) =>
         val json = aclJson(userAcl(address)).removeKeys("_path")
         Put(s"/v1/acls$path", json.toEntity) ~> addCredentials(token) ~> routes ~> check {
-          rejection shouldEqual AuthorizationFailedRejection
+          response.status shouldEqual StatusCodes.Forbidden
+          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
       }
 
@@ -326,7 +328,7 @@ class AclsRoutesSpec
     }
 
     "subtract ACL" in {
-      val patch = aclJson(userAcl(Root)).removeKeys("_path") deepMerge
+      val patch = aclJson(userAclRead(Root)).removeKeys("_path") deepMerge
         Json.obj("@type" -> Json.fromString("Subtract"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=3", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {
@@ -347,10 +349,8 @@ class AclsRoutesSpec
 
     "return error when getting ACL with rev and ancestors = true" in {
       Get(s"/v1/acls/myorg/myproj?rev=2&ancestors=true") ~> addCredentials(token) ~> routes ~> check {
-        rejection shouldEqual MalformedQueryParamRejection(
-          "rev",
-          "rev and ancestors query parameters cannot be present simultaneously"
-        )
+        response.asJson shouldEqual jsonContentOf("errors/acls-malformed-query-params.json")
+        status shouldEqual StatusCodes.BadRequest
       }
     }
 

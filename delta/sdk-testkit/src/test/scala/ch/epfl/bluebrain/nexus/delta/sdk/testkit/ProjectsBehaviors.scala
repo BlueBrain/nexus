@@ -218,7 +218,7 @@ trait ProjectsBehaviors {
 
     "fetch a project by uuid with the wrong orgUuid" in {
       val unknownUuid = UUID.randomUUID()
-      projects.fetch(unknownUuid, uuid).rejectedWith[ProjectNotFound] shouldEqual ProjectNotFound(unknownUuid, uuid)
+      projects.fetch(unknownUuid, uuid).accepted shouldEqual None
     }
 
     "fetch an unknown project at a given revision" in {

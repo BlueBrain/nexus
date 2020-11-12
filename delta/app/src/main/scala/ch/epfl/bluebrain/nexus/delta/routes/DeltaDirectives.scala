@@ -291,6 +291,16 @@ trait DeltaDirectives extends RdfMarshalling with QueryParamsUnmarshalling {
     completeUIOOpt(io.map(Some(_)))
 
   /**
+    * Completes a passed [[A]] with the desired output format using the implicitly available [[JsonLdEncoder]].
+    *
+    * @param value  the value to be returned
+    */
+  def completePure[A: JsonLdEncoder](
+      value: A
+  )(implicit s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering): Route =
+    completeUIO(IO.pure(value))
+
+  /**
     * Completes a passed [[UIO]] of search results of ''A'' with the desired output format
     * @param io the search result to be returned, wrapped in an [[UIO]]
     * @param additionalContext a context related to ''A''

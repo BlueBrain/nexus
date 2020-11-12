@@ -338,6 +338,12 @@ trait AclsBehaviors {
       val aclWithInvalidPerms = Acl(orgTarget, user -> Set(r), group -> Set(Permission.unsafe("invalid")))
       acls.subtract(aclWithInvalidPerms, 2L).rejectedWith[UnknownPermissions]
     }
+
+    "subtract an ACL correctly" in {
+      acls.replace(userRW(AclAddress.Root), 5L).accepted
+      acls.subtract(userW(AclAddress.Root), 6L).accepted
+      acls.fetch(AclAddress.Root).accepted shouldEqual Some(resourceFor(userR(AclAddress.Root), 7L, subject))
+    }
   }
 
 }

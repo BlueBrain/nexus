@@ -88,7 +88,6 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
   def routes: Route = baseUriPrefix(baseUri.prefix) {
     pathPrefix("acls") {
       extractCaller { implicit caller =>
-        implicit val subject = caller.subject
         concat(
           // SSE acls
           (pathPrefix("events") & pathEndOrSingleSlash) {

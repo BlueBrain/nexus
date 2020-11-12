@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.utils
 
+import akka.http.scaladsl.server.ExceptionHandler
 import akka.http.scaladsl.server.RejectionHandler
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
@@ -34,6 +35,7 @@ trait RouteFixtures extends TestHelpers {
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
   implicit val s: Scheduler                       = Scheduler.global
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
+  implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
   val realm: Label = Label.unsafe("wonderland")
   val alice: User  = User("alice", realm)

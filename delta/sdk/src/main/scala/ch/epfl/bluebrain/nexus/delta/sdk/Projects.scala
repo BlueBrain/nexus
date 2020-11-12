@@ -105,9 +105,9 @@ trait Projects {
     * @param orgUuid     the unique organization identifier
     * @param projectUuid the unique project identifier
     */
-  def fetch(orgUuid: UUID, projectUuid: UUID): IO[ProjectNotFound, Option[ProjectResource]] =
+  def fetch(orgUuid: UUID, projectUuid: UUID): UIO[Option[ProjectResource]] =
     fetch(projectUuid).flatMap {
-      case Some(res) if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
+      case Some(res) if res.value.organizationUuid != orgUuid => IO.pure(None)
       case other                                              => IO.pure(other)
     }
 

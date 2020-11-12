@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.directives.Credentials
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.server.directives.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
@@ -52,6 +53,6 @@ abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s
     */
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 = authorizeAsync {
     acls.fetchWithAncestors(path).map(_.exists(caller.identities, permission, path)).runToFuture
-  }
+  }.or(failWith(AuthorizationFailed))
 
 }
