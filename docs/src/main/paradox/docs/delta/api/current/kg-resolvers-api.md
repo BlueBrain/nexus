@@ -56,7 +56,7 @@ This resolver gets automatically created when the project is created and it cann
 }
 ```
 
-where `{priority}` is a numeric value (from 1 - 100) which defines the resolution priority when attempting to find the 
+where `{priority}` is a numeric value (from 0 - 1000) which defines the resolution priority when attempting to find the 
 resource with a particular @id.
 
 ### CrossProject resolver
@@ -86,7 +86,7 @@ defines a collection of identities `I` to enforce ACLs. In other words:
 where...
 
 - `{resourceType}`: Iri - resolves only the resources with `@type` containing `{resourceType}`. This field is optional.
-- `{priority}`: Number - value (from 1 - 100) which defines the resolution priority when attempting to find the resource 
+- `{priority}`: Number - value (from 0 - 1000) which defines the resolution priority when attempting to find the resource 
   with a particular @id.
 - `{project}`: String - the user friendly reference to the project from where the resolution process will attempt to 
   find the @id's. It follows the format `{organization}/{project}`.

@@ -158,6 +158,9 @@ object Vocabulary {
     val Permissions       = nxv + "Permissions"
     val Project           = nxv + "Project"
     val Realm             = nxv + "Realm"
+    val Resolver          = nxv + "Resolver"
+    val InProject         = nxv + "InProject"
+    val CrossProject      = nxv + "CrossProject"
     val Schema            = nxv + "Schema"
   }
 
