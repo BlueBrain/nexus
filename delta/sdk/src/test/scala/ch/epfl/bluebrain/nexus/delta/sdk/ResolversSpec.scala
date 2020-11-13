@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
 
-import cats.implicits._
 import cats.data.NonEmptyList
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
@@ -17,13 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current,
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection}
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOValues with IOFixedClock with Inspectors {
+class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixedClock with Inspectors {
 
   private val epoch   = Instant.EPOCH
   private val instant = Instant.ofEpochMilli(1000L)
