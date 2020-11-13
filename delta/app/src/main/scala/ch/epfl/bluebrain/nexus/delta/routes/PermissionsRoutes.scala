@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
+import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -36,7 +37,6 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
-    with DeltaDirectives
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -51,15 +51,15 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                 get { // Fetch permissions
                   authorizeFor(AclAddress.Root, permissionsPerms.read).apply {
                     parameter("rev".as[Long].?) {
-                      case Some(rev) => completeIO(permissions.fetchAt(rev).leftWiden[PermissionsRejection])
-                      case None      => completeUIO(permissions.fetch)
+                      case Some(rev) => emit(permissions.fetchAt(rev).leftWiden[PermissionsRejection])
+                      case None      => emit(permissions.fetch)
                     }
                   }
                 },
                 (put & parameter("rev" ? 0L)) { rev => // Replace permissions
                   authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                     entity(as[PatchPermissions]) {
-                      case Replace(set) => completeIO(permissions.replace(set, rev).map(_.void))
+                      case Replace(set) => emit(permissions.replace(set, rev).map(_.void))
                       case _            =>
                         reject(
                           malformedContent(s"Value for field '${keywords.tpe}' must be 'Replace' when using 'PUT'.")
@@ -70,8 +70,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                 (patch & parameter("rev" ? 0L)) { rev => // Append or Subtract permissions
                   authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                     entity(as[PatchPermissions]) {
-                      case Append(set)   => completeIO(permissions.append(set, rev).map(_.void))
-                      case Subtract(set) => completeIO(permissions.subtract(set, rev).map(_.void))
+                      case Append(set)   => emit(permissions.append(set, rev).map(_.void))
+                      case Subtract(set) => emit(permissions.subtract(set, rev).map(_.void))
                       case _             =>
                         reject(
                           malformedContent(
@@ -84,7 +84,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                 delete { // Delete permissions
                   authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                     parameter("rev".as[Long]) { rev =>
-                      completeIO(permissions.delete(rev).map(_.void))
+                      emit(permissions.delete(rev).map(_.void))
                     }
                   }
                 }
@@ -95,7 +95,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
             operationName(s"$prefixSegment/permissions/events") {
               authorizeFor(AclAddress.Root, events.read).apply {
                 lastEventId { offset =>
-                  completeStream(permissions.events(offset))
+                  emit(permissions.events(offset))
                 }
               }
             }

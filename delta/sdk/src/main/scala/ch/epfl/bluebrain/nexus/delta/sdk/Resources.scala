@@ -290,17 +290,17 @@ object Resources {
 
     def tag(c: TagResource) =
       state match {
-        case Initial                                         =>
+        case Initial                                              =>
           IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
-        case s: Current if s.rev != c.rev                    =>
+        case s: Current if s.rev != c.rev                         =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if c.schemaOpt.exists(_ != s.schema) =>
+        case s: Current if c.schemaOpt.exists(_ != s.schema)      =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case s: Current if s.deprecated                      =>
+        case s: Current if s.deprecated                           =>
           IO.raiseError(ResourceIsDeprecated(c.id))
-        case s: Current if c.targetRev > s.rev               =>
+        case s: Current if c.targetRev < 0 || c.targetRev > s.rev =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-        case s: Current                                      =>
+        case s: Current                                           =>
           IOUtils.instant.map(ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, _, c.subject))
 
       }

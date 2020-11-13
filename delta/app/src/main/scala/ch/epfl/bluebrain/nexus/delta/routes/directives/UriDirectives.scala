@@ -1,0 +1,117 @@
+package ch.epfl.bluebrain.nexus.delta.routes.directives
+
+import java.util.UUID
+
+import akka.http.javadsl.server.Rejections.validationRejection
+import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
+import akka.http.scaladsl.server.{Directive, Directive0, Directive1, InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{from, size, FromPagination}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+
+import scala.util.{Failure, Success, Try}
+
+trait UriDirectives extends QueryParamsUnmarshalling {
+
+  /**
+    * Extract the common searchParameters (deprecated, rev, createdBy, updatedBy) from query parameters
+    */
+  def searchParams(implicit
+      base: BaseUri
+  ): Directive[(Option[Boolean], Option[Long], Option[Subject], Option[Subject])] =
+    parameter("deprecated".as[Boolean].?) &
+      parameter("rev".as[Long].?) &
+      parameter("createdBy".as[Subject].?) &
+      parameter("updatedBy".as[Subject].?)
+
+  /**
+    * When ''prefix'' exists, consumes the leading slash and the following ''prefix'' value.
+    */
+  def baseUriPrefix(prefix: Option[Label]): Directive[Unit] =
+    prefix match {
+      case Some(Label(prefixSegment)) => pathPrefix(prefixSegment)
+      case None                       => tprovide(())
+    }
+
+  /**
+    * Consumes a Path segment parsing them into a [[Label]]
+    */
+  def label: Directive1[Label] =
+    pathPrefix(Segment).flatMap { str =>
+      Label(str) match {
+        case Left(err)    => reject(validationRejection(err.getMessage))
+        case Right(label) => provide(label)
+      }
+    }
+
+  /**
+    * Consumes two consecutive Path segments parsing them into two [[Label]]
+    */
+  def projectRef: Directive1[ProjectRef] =
+    (label & label).tmap { case (org, proj) =>
+      ProjectRef(org, proj)
+    }
+
+  /**
+    * Consumes a path Segment parsing it in a UUID
+    */
+  def uuid: Directive1[UUID] =
+    pathPrefix(Segment).flatMap { str =>
+      Try(UUID.fromString(str)) match {
+        case Failure(_)    => reject(validationRejection(s"Path segment '$str' is not a UUIDv4"))
+        case Success(uuid) => provide(uuid)
+      }
+    }
+
+  /**
+    * This directive passes when the query parameter specified is not present
+    *
+    * @param name the parameter name
+    */
+  def noParameter(name: String): Directive0 =
+    extractRequestContext flatMap { ctx =>
+      Try(ctx.request.uri.query()) match {
+        case Success(query) if query.toMap.contains(name) =>
+          reject(MalformedQueryParamRejection(name, "the provided query parameter should not be present"))
+        case _                                            => pass
+      }
+    }
+
+  /**
+    * Consumes a path Segment an parse it into an [[IdSegment]]
+    */
+  def idSegment: Directive1[IdSegment] =
+    pathPrefix(Segment).map { str =>
+      Iri.absolute(str).fold[IdSegment](_ => StringSegment(str), IriSegment)
+    }
+
+  /**
+    * Extracts pagination specific query params from the request or defaults to the preconfigured values.
+    *
+    * @param qs the preconfigured query settings
+    */
+  def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
+    (parameter(from.as[Int] ? 0) & parameter(size.as[Int] ? qs.defaultSize)).tmap { case (from, size) =>
+      FromPagination(from.max(0).min(qs.fromLimit), size.max(1).min(qs.sizeLimit))
+    }
+
+  /**
+    * Extracts the ''format'' query parameter and converts it into a [[JsonLdFormat]]
+    * @return
+    */
+  def jsonLdFormat: Directive1[JsonLdFormat] =
+    parameter("format".?).flatMap {
+      case Some("compacted") => provide(JsonLdFormat.Compacted)
+      case Some("expanded")  => provide(JsonLdFormat.Expanded)
+      case Some(other)       => reject(InvalidRequiredValueForQueryParamRejection("format", "compacted|expanded", other))
+      case None              => provide(JsonLdFormat.Compacted)
+    }
+}
+
+object UriDirectives extends UriDirectives
