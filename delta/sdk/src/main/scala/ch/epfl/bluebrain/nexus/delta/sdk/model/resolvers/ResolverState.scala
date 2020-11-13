@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
@@ -26,7 +26,7 @@ sealed trait ResolverState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource(mappings: ApiMappings): Option[ResolverResource]
+  def toResource(mappings: ApiMappings, base: ProjectBase): Option[ResolverResource]
 
 }
 
@@ -36,7 +36,7 @@ object ResolverState {
     * Initial resolver state.
     */
   final case object Initial extends ResolverState {
-    override def toResource(mappings: ApiMappings): Option[ResolverResource] = None
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ResolverResource] = None
   }
 
   /**
@@ -87,11 +87,11 @@ object ResolverState {
       }
     }
 
-    override def toResource(mappings: ApiMappings): Option[ResolverResource] =
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ResolverResource] =
       Some(
         ResourceF(
           id = AccessUrl.resolver(project, id)(_).iri,
-          accessUrl = AccessUrl.resolver(project, id)(_).shortForm(mappings),
+          accessUrl = AccessUrl.resolver(project, id)(_).shortForm(mappings, base),
           rev = rev,
           types = value.tpe match {
             case InProject    => Set(nxv.Resolver, nxv.InProject)
