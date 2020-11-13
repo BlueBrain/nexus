@@ -5,18 +5,19 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{moduleType, sourceAsJsonLD}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy.ResourcesJournal
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
+import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -38,111 +39,154 @@ final class ResourcesDummy private (
 
   override def create(
       projectRef: ProjectRef,
-      schema: ResourceRef,
+      schema: IdSegment,
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project                  <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-      jsonld                   <- sourceAsJsonLD(project, source)
-      (id, compacted, expanded) = jsonld
-      res                      <- eval(CreateResource(id, projectRef, schema, source, compacted, expanded, caller), project.apiMappings)
+      project                    <- fetchActiveProject(projectRef)
+      schemeRef                  <- expandResourceRef(schema, project)
+      (iri, compacted, expanded) <- ResourceSourceParser.asJsonLd(project, source)
+      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
   override def create(
-      id: Iri,
+      id: IdSegment,
       projectRef: ProjectRef,
-      schema: ResourceRef,
+      schema: IdSegment,
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      jsonld               <- sourceAsJsonLD(id, source)
-      (compacted, expanded) = jsonld
-      project              <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-      res                  <- eval(CreateResource(id, projectRef, schema, source, compacted, expanded, caller), project.apiMappings)
+      project               <- fetchActiveProject(projectRef)
+      iri                   <- expandIri(id, project)
+      schemeRef             <- expandResourceRef(schema, project)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
+      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
   override def update(
-      id: Iri,
+      id: IdSegment,
       projectRef: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      schemaOpt: Option[IdSegment],
       rev: Long,
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      jsonld               <- sourceAsJsonLD(id, source)
-      (compacted, expanded) = jsonld
-      project              <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-      mapping               = project.apiMappings
-      res                  <- eval(UpdateResource(id, projectRef, schemaOpt, source, compacted, expanded, rev, caller), mapping)
+      project               <- fetchActiveProject(projectRef)
+      iri                   <- expandIri(id, project)
+      schemeRefOpt          <- expandResourceRef(schemaOpt, project)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
+      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
 
   override def tag(
-      id: Iri,
+      id: IdSegment,
       projectRef: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      schemaOpt: Option[IdSegment],
       tag: Label,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-      res     <- eval(TagResource(id, projectRef, schemaOpt, tagRev, tag, rev, caller), project.apiMappings)
+      project      <- fetchActiveProject(projectRef)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
+      res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
     } yield res
 
   override def deprecate(
-      id: Iri,
+      id: IdSegment,
       projectRef: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      schemaOpt: Option[IdSegment],
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project <- projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-      res     <- eval(DeprecateResource(id, projectRef, schemaOpt, rev, caller), project.apiMappings)
+      project      <- fetchActiveProject(projectRef)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
+      res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
     } yield res
 
   override def fetch(
-      id: Iri,
+      id: IdSegment,
       projectRef: ProjectRef,
-      schemaOpt: Option[ResourceRef]
+      schemaOpt: Option[IdSegment]
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
-      project  <- projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
-      stateOpt <- journal.currentState((projectRef, id), Initial, Resources.next)
-      resource  = stateOpt.flatMap(_.toResource(project.apiMappings))
-    } yield validateSameSchema(resource, schemaOpt)
+      project      <- fetchProject(projectRef)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
+      stateOpt     <- currentState(projectRef, iri)
+      resource      = stateOpt.flatMap(_.toResource(project.apiMappings, project.base))
+    } yield validateSameSchema(resource, schemeRefOpt)
 
   override def fetchAt(
-      id: Iri,
+      id: IdSegment,
       projectRef: ProjectRef,
-      schemaOpt: Option[ResourceRef],
+      schemaOpt: Option[IdSegment],
       rev: Long
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
-      project  <- projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
-      stateOpt <- journal.stateAt((projectRef, id), rev, Initial, Resources.next, RevisionNotFound.apply)
-      resource  = stateOpt.flatMap(_.toResource(project.apiMappings))
-    } yield validateSameSchema(resource, schemaOpt)
+      project      <- fetchProject(projectRef)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
+      stateOpt     <- stateAt(projectRef, iri, rev)
+      resource      = stateOpt.flatMap(_.toResource(project.apiMappings, project.base))
+    } yield validateSameSchema(resource, schemeRefOpt)
 
-  private def eval(cmd: ResourceCommand, am: ApiMappings): IO[ResourceRejection, DataResource] =
+  override def events(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[WrappedProjectRejection, Stream[Task, Envelope[ResourceEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .leftMap(WrappedProjectRejection)
+      .as(journal.events(offset).filter(e => e.event.project == projectRef))
+
+  override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
+    journal.events(offset)
+
+  private def currentState(projectRef: ProjectRef, iri: Iri) =
+    journal.currentState((projectRef, iri), Initial, Resources.next)
+
+  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
+    journal.stateAt((projectRef, iri), rev, Initial, Resources.next, RevisionNotFound.apply)
+
+  private def eval(cmd: ResourceCommand, project: Project): IO[ResourceRejection, DataResource] =
     semaphore.withPermit {
       for {
-        state <- journal.currentState((cmd.project, cmd.id), Initial, Resources.next).map(_.getOrElse(Initial))
-        event <- Resources.evaluate(fetchSchema)(state, cmd)
-        _     <- journal.add(event)
-        res   <- IO.fromEither(Resources.next(state, event).toResource(am).toRight(UnexpectedInitialState(cmd.id)))
+        state     <- journal.currentState((cmd.project, cmd.id), Initial, Resources.next).map(_.getOrElse(Initial))
+        event     <- Resources.evaluate(fetchSchema)(state, cmd)
+        _         <- journal.add(event)
+        (am, base) = project.apiMappings -> project.base
+        res       <- IO.fromEither(Resources.next(state, event).toResource(am, base).toRight(UnexpectedInitialState(cmd.id)))
       } yield res
     }
 
-  override def events(offset: Offset): fs2.Stream[Task, Envelope[ResourceEvent]] =
-    journal.events(offset)
+  private def fetchActiveProject(projectRef: ProjectRef) =
+    projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
 
-  override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ResourceEvent]] =
-    journal.currentEvents(offset)
+  private def fetchProject(projectRef: ProjectRef) =
+    projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
 
-  private def validateSameSchema(
-      resourceOpt: Option[DataResource],
-      schemaOpt: Option[ResourceRef]
-  ): Option[DataResource] =
+  private def expandIri(segment: IdSegment, project: Project) =
+    IO.fromOption(segment.toIri(project.apiMappings, project.base), InvalidResourceId(segment.asString))
+
+  private def expandResourceRef(segment: IdSegment, project: Project): IO[InvalidResourceId, ResourceRef] =
+    IO.fromOption(
+      segment.toIri(project.apiMappings, project.base).map(ResourceRef(_)),
+      InvalidResourceId(segment.asString)
+    )
+
+  private def expandResourceRef(
+      segmentOpt: Option[IdSegment],
+      project: Project
+  ): IO[InvalidResourceId, Option[ResourceRef]] =
+    segmentOpt match {
+      case None         => IO.pure(None)
+      case Some(schema) => expandResourceRef(schema, project).map(Some.apply)
+    }
+
+  private def validateSameSchema(resourceOpt: Option[DataResource], schemaOpt: Option[ResourceRef]) =
     resourceOpt match {
       case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
       case _                                                  => None

@@ -78,6 +78,36 @@ final case class JsonLdContext(
   }
 
   /**
+    * Expands the passed value if it is in the form of a CURIE existing on the current context.
+    * E.g.: schema:Person will expand to http://schema.org/Person if in the ''prefixMappings'' exists the key values
+    * (schema -> http://schema.org/)
+    */
+  def expandCurie(value: String): Option[Iri] =
+    value.split(":").toList match {
+      case prefix :: suffix :: Nil if prefix.nonEmpty && suffix.nonEmpty && prefixMappings.contains(prefix) =>
+        expandWith(prefixMappings(prefix), suffix)
+      case _                                                                                                =>
+        None
+    }
+
+  private def expandWith(iri: Iri, suffix: String): Option[Iri] =
+    Iri.absolute(s"$iri$suffix").toOption
+
+  /**
+    * Expand the ''passed'' string:
+    * 1. Attempt expanding using the aliases
+    * 2. Attempt expanding using the prefix mappings to create a CURIE
+    * 3. Attempt expanding to absolute Iri
+    * 4. Attempt expanding using the vocab or base
+    */
+  def expand(value: String, useVocab: Boolean): Option[Iri] = {
+    def expandedVocabOrBase =
+      if (useVocab) vocab.flatMap(expandWith(_, value)) else base.flatMap(expandWith(_, value))
+
+    aliases.get(value) orElse expandCurie(value) orElse Iri.absolute(value).toOption orElse expandedVocabOrBase
+  }
+
+  /**
     * @return true if the current context value is empty, false otherwise
     */
   def isEmpty: Boolean = value.isEmpty

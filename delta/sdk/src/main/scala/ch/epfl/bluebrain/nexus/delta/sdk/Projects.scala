@@ -174,10 +174,10 @@ object Projects {
     (state, event) match {
       // format: off
       case (Initial, ProjectCreated(label, uuid, orgLabel, orgUuid, _, desc, am, base, vocab, instant, subject))  =>
-        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, am, base.value, vocab.value, instant, subject, instant, subject)
+        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject)
 
       case (c: Current, ProjectUpdated(_, _, _, _, rev, desc, am, base, vocab, instant, subject))                 =>
-        c.copy(description = desc, apiMappings = am, base = base.value, vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject)
+        c.copy(description = desc, apiMappings = am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject)
 
       case (c: Current, ProjectDeprecated(_, _, _, _, rev, instant, subject))                                     =>
         c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)

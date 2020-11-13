@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import org.scalatest.Inspectors
@@ -14,8 +14,9 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
 
-  implicit private val base: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val mappings               = ApiMappings(Map("nxv" -> nxv.base, "resolvers" -> schemas.resolvers))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  private val mapping                   = ApiMappings(Map("nxv" -> nxv.base, "resolvers" -> schemas.resolvers))
+  private val base                      = ProjectBase.unsafe(schemas.base)
 
   "An AccessUrl" should {
     val projectRef = ProjectRef(Label.unsafe("myorg"), Label.unsafe("myproject"))
@@ -25,22 +26,22 @@ class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with E
       val accessUrl = AccessUrl.permissions
       accessUrl.value shouldEqual expected
       accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expected
+      accessUrl.shortForm(mapping, base) shouldEqual expected
     }
 
     "be constructed for acls" in {
-      val org     = Label.unsafe("org")
-      val project = Label.unsafe("project")
-      val list    =
+      val org  = Label.unsafe("org")
+      val proj = Label.unsafe("project")
+      val list =
         List(
-          AccessUrl.acl(AclAddress.Root)                  -> Uri("http://localhost/v1/acls"),
-          AccessUrl.acl(AclAddress.Organization(org))     -> Uri("http://localhost/v1/acls/org"),
-          AccessUrl.acl(AclAddress.Project(org, project)) -> Uri("http://localhost/v1/acls/org/project")
+          AccessUrl.acl(AclAddress.Root)               -> Uri("http://localhost/v1/acls"),
+          AccessUrl.acl(AclAddress.Organization(org))  -> Uri("http://localhost/v1/acls/org"),
+          AccessUrl.acl(AclAddress.Project(org, proj)) -> Uri("http://localhost/v1/acls/org/project")
         )
       forAll(list) { case (accessUrl, expected) =>
         accessUrl.value shouldEqual expected
         accessUrl.iri shouldEqual expected.toIri
-        accessUrl.shortForm(mappings) shouldEqual expected
+        accessUrl.shortForm(mapping, base) shouldEqual expected
       }
     }
 
@@ -50,7 +51,7 @@ class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with E
       val accessUrl = AccessUrl.realm(myrealm)
       accessUrl.value shouldEqual expected
       accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expected
+      accessUrl.shortForm(mapping, base) shouldEqual expected
     }
 
     "be constructed for organizations" in {
@@ -58,7 +59,7 @@ class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with E
       val accessUrl = AccessUrl.organization(projectRef.organization)
       accessUrl.value shouldEqual expected
       accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expected
+      accessUrl.shortForm(mapping, base) shouldEqual expected
     }
 
     "be constructed for projects" in {
@@ -66,7 +67,7 @@ class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with E
       val accessUrl = AccessUrl.project(projectRef)
       accessUrl.value shouldEqual expected
       accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expected
+      accessUrl.shortForm(mapping, base) shouldEqual expected
     }
 
     "be constructed for resources" in {
@@ -79,18 +80,18 @@ class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with E
         val accessUrl     = AccessUrl.resource(projectRef, id, Latest(schema))
         accessUrl.value shouldEqual expected
         accessUrl.iri shouldEqual expected.toIri
-        accessUrl.shortForm(mappings) shouldEqual expectedShort
+        accessUrl.shortForm(mapping, base) shouldEqual expectedShort
       }
     }
 
     "be constructed for schemas" in {
-      val id            = nxv + "myid"
+      val id            = schemas + "myid"
       val expected      = Uri(s"http://localhost/v1/schemas/myorg/myproject/${UrlUtils.encode(id.toString)}")
-      val expectedShort = Uri("http://localhost/v1/schemas/myorg/myproject/nxv:myid")
+      val expectedShort = Uri("http://localhost/v1/schemas/myorg/myproject/myid")
       val accessUrl     = AccessUrl.schema(projectRef, id)
       accessUrl.value shouldEqual expected
       accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expectedShort
+      accessUrl.shortForm(mapping, base) shouldEqual expectedShort
     }
 
     "be constructed for resolvers" in {
@@ -100,7 +101,7 @@ class AccessUrlSpec extends AnyWordSpecLike with Matchers with Inspectors with E
       val accessUrl     = AccessUrl.resolver(projectRef, id)
       accessUrl.value shouldEqual expected
       accessUrl.iri shouldEqual expected.toIri
-      accessUrl.shortForm(mappings) shouldEqual expectedShort
+      accessUrl.shortForm(mapping, base) shouldEqual expectedShort
     }
 
   }
