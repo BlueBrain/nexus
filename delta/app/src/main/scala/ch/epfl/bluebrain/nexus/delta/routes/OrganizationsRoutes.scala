@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
@@ -52,9 +53,17 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
   import baseUri.prefixSegment
   implicit val orgContext: ContextValue = Organization.context
 
-  private def orgsSearchParams: Directive1[OrganizationSearchParams] =
-    searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>
-      OrganizationSearchParams(deprecated, rev, createdBy, updatedBy)
+  private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
+    searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
+      onSuccess(acls.listSelf(AnyOrganization(true)).runToFuture).map { aclsCol =>
+        OrganizationSearchParams(
+          deprecated,
+          rev,
+          createdBy,
+          updatedBy,
+          org => aclsCol.exists(caller.identities, orgs.read, AclAddress.Organization(org.label))
+        )
+      }
     }
 
   private def fetchByUUID(uuid: UUID, permission: Permission)(implicit

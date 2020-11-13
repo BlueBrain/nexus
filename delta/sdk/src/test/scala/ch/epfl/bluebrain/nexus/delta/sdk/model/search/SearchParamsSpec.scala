@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.search
 
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen, RealmGen, WellKnownGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.{OrganizationSearchParams, ProjectSearchParams, RealmSearchParams}
@@ -22,7 +22,8 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       deprecated = Some(false),
       rev = Some(1L),
       createdBy = Some(subject),
-      updatedBy = Some(subject)
+      updatedBy = Some(subject),
+      r => r.name == resource.value.name
     )
 
     "match a realm resource" in {
@@ -32,9 +33,15 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
     }
 
     "not match a realm resource" in {
-      forAll(List(resource.copy(deprecated = true), resource.copy(rev = 2L), resource.map(_.copy(issuer = "other")))) {
-        resource =>
-          searchWithAllParams.matches(resource) shouldEqual false
+      forAll(
+        List(
+          resource.copy(deprecated = true),
+          resource.copy(rev = 2L),
+          resource.map(_.copy(issuer = "other")),
+          resource.map(_.copy(name = Name.unsafe("other")))
+        )
+      ) { resource =>
+        searchWithAllParams.matches(resource) shouldEqual false
       }
     }
   }
