@@ -26,12 +26,11 @@ class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with O
     "be converted to an Iri" in {
       forAll(list) { case (string, iri) =>
         StringSegment(string).toIri(am, base).value shouldEqual iri
-        StringSegment(string).toIri shouldEqual None
       }
     }
 
     "failed to be converted to an Iri" in {
-      StringSegment("a:*#").toIri shouldEqual None
+      StringSegment("#a?!*#").toIri(am, base) shouldEqual None
     }
 
   }
@@ -42,7 +41,6 @@ class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with O
 
     "be converted to an Iri" in {
       forAll(list) { iri =>
-        IriSegment(iri).toIri.value shouldEqual iri
         IriSegment(iri).toIri(am, base).value shouldEqual iri
       }
     }

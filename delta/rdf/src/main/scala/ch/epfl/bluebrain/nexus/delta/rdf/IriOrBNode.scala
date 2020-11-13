@@ -188,7 +188,7 @@ object IriOrBNode {
       */
     def apply(string: String): Either[String, Iri] = {
       val iri = unsafe(string)
-      Option.when(!iri.isValid(includeWarnings = false))(iri).toRight(s"'$string' is not an IRI")
+      Option.when(!iri.isValid(includeWarnings = true))(iri).toRight(s"'$string' is not an IRI")
     }
 
     /**
