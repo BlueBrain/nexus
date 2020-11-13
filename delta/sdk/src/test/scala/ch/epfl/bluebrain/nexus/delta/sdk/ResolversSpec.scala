@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
@@ -59,7 +60,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       NonEmptyList.of(
         ProjectRef.unsafe("org2", "proj")
       ),
-      bob.identities
+      ProvidedIdentities(bob.identities)
     ),
     Map(Label.unsafe("tag1") -> 5L),
     2L,
@@ -82,7 +83,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         ProjectRef.unsafe("org2", "proj"),
         ProjectRef.unsafe("org2", "proj2")
       ),
-      bob.identities
+      ProvidedIdentities(bob.identities)
     )
 
     val createCrossProject = CreateResolver(
@@ -102,7 +103,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
           ProjectRef.unsafe("org2", "proj"),
           ProjectRef.unsafe("org2", "proj2")
         ),
-        alice.identities
+        ProvidedIdentities(alice.identities)
       ),
       2L
     )
@@ -131,26 +132,31 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
 
       "fail if no identities are provided for a cross-project resolver" in {
-        val invalidValue = crossProjectValue.copy(identities = Set.empty)
+        val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
         evaluate(Initial, createCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual NoIdentities
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
-        val invalidValue = crossProjectValue.copy(identities = Set(bob.subject, alice.subject))
+        val invalidValue =
+          crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
         evaluate(Initial, createCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual InvalidIdentities(Set(alice.subject))
       }
 
       "create a cross-project creation event" in {
-        evaluate(Initial, createCrossProject).accepted shouldEqual ResolverCreated(
-          cpId,
-          project,
-          createCrossProject.value,
-          1L,
-          epoch,
-          bob.subject
-        )
+        val userCallerResolution = crossProjectValue.copy(identityResolution = UseCurrentCaller)
+
+        forAll(List(createCrossProject, createCrossProject.copy(value = userCallerResolution))) { command =>
+          evaluate(Initial, command).accepted shouldEqual ResolverCreated(
+            cpId,
+            project,
+            command.value,
+            1L,
+            epoch,
+            bob.subject
+          )
+        }
       }
     }
 
@@ -210,13 +216,14 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
 
       "fail if no identities are provided for a cross-project resolver" in {
-        val invalidValue = crossProjectValue.copy(identities = Set.empty)
+        val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
         evaluate(crossProjectCurrent, updateCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual NoIdentities
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
-        val invalidValue = crossProjectValue.copy(identities = Set(bob.subject, alice.subject))
+        val invalidValue =
+          crossProjectValue.copy(identityResolution = ProvidedIdentities(Set(bob.subject, alice.subject)))
         evaluate(
           crossProjectCurrent,
           updateCrossProject.copy(value = invalidValue)
@@ -234,17 +241,21 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
 
       "create an cross-project update event" in {
-        evaluate(
-          crossProjectCurrent,
-          updateCrossProject
-        ).accepted shouldEqual ResolverUpdated(
-          cpId,
-          project,
-          updateCrossProject.value,
-          3L,
-          epoch,
-          alice.subject
-        )
+        val userCallerResolution = crossProjectValue.copy(identityResolution = UseCurrentCaller)
+
+        forAll(List(updateCrossProject, updateCrossProject.copy(value = userCallerResolution))) { command =>
+          evaluate(
+            crossProjectCurrent,
+            command
+          ).accepted shouldEqual ResolverUpdated(
+            cpId,
+            project,
+            command.value,
+            3L,
+            epoch,
+            alice.subject
+          )
+        }
       }
 
     }
@@ -352,7 +363,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
             ProjectRef.unsafe("org2", "proj"),
             ProjectRef.unsafe("org2", "proj2")
           ),
-          bob.identities
+          ProvidedIdentities(bob.identities)
         ),
         1L,
         epoch,
@@ -414,7 +425,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
             ProjectRef.unsafe("org2", "proj"),
             ProjectRef.unsafe("org3", "proj2")
           ),
-          alice.identities
+          ProvidedIdentities(alice.identities)
         ),
         3L,
         epoch,

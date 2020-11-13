@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
@@ -166,18 +167,23 @@ object Resolvers {
 
     def validateResolverValue(value: ResolverValue): IO[ResolverRejection, Unit] =
       value match {
-        case CrossProjectValue(_, _, _, identities) =>
-          if (identities.isEmpty)
-            IO.raiseError(NoIdentities)
-          else {
-            val missing = identities.diff(caller.identities)
-            if (missing.isEmpty) {
-              IO.unit
-            } else {
-              IO.raiseError(InvalidIdentities(missing))
-            }
+        case CrossProjectValue(_, _, _, identityResolution) =>
+          identityResolution match {
+            case UseCurrentCaller          => IO.unit
+            case ProvidedIdentities(value) =>
+              if (value.isEmpty)
+                IO.raiseError(NoIdentities)
+              else {
+                val missing = value.diff(caller.identities)
+                if (missing.isEmpty) {
+                  IO.unit
+                } else {
+                  IO.raiseError(InvalidIdentities(missing))
+                }
+              }
           }
-        case _                                      => IO.unit
+
+        case _ => IO.unit
       }
 
     (state, command) match {

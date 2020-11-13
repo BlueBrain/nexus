@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 
 /**
@@ -43,7 +42,7 @@ object Resolver {
       project: ProjectRef,
       resourceTypes: Set[Iri],
       projects: NonEmptyList[ProjectRef],
-      identities: Set[Identity],
+      identityResolution: IdentityResolution,
       priority: Priority,
       tags: Map[Label, Long]
   ) extends Resolver
