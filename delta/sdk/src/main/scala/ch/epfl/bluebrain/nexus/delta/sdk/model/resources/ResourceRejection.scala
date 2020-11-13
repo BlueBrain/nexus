@@ -65,6 +65,14 @@ object ResourceRejection {
       extends ResourceRejection(s"Resource '$id' does not match resource id on payload '$payloadId'.")
 
   /**
+    * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
+    *
+    * @param id        the resource identifier
+    */
+  final case class InvalidResourceId(id: String)
+      extends ResourceRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
+
+  /**
     * Rejection returned when attempting to create/update a resource where the payload does not satisfy the SHACL schema constrains.
     *
     * @param id      the resource identifier

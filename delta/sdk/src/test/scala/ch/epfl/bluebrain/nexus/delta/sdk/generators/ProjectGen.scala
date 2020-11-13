@@ -36,7 +36,7 @@ object ProjectGen extends OptionValues {
       deprecated,
       description,
       mappings,
-      base,
+      ProjectBase.unsafe(base),
       vocab,
       Instant.EPOCH,
       subject,
@@ -57,7 +57,7 @@ object ProjectGen extends OptionValues {
       orgUuid,
       projectFields.description,
       projectFields.apiMappings,
-      projectFields.baseOrGenerated(ref).value,
+      ProjectBase.unsafe(projectFields.baseOrGenerated(ref).value),
       projectFields.vocabOrGenerated(ref).value
     )
 
@@ -71,13 +71,22 @@ object ProjectGen extends OptionValues {
       base: Iri = nxv.base,
       vocab: Iri = nxv.base
   ): Project =
-    Project(Label.unsafe(label), uuid, Label.unsafe(orgLabel), orgUuid, description, mappings, base, vocab)
+    Project(
+      Label.unsafe(label),
+      uuid,
+      Label.unsafe(orgLabel),
+      orgUuid,
+      description,
+      mappings,
+      ProjectBase.unsafe(base),
+      vocab
+    )
 
   def projectFields(project: Project): ProjectFields =
     ProjectFields(
       project.description,
       project.apiMappings,
-      Some(PrefixIri.unsafe(project.base)),
+      Some(PrefixIri.unsafe(project.base.iri)),
       Some(PrefixIri.unsafe(project.vocab))
     )
 
@@ -95,7 +104,7 @@ object ProjectGen extends OptionValues {
       project.organizationUuid,
       project.description,
       project.apiMappings,
-      project.base,
+      project.base.iri,
       project.vocab,
       deprecated = deprecated,
       subject = subject

@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.utils
 
-import akka.http.scaladsl.server.ExceptionHandler
-import akka.http.scaladsl.server.RejectionHandler
+import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
@@ -45,8 +44,7 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      mappings: ApiMappings = ApiMappings.empty
+      updatedBy: Subject = Anonymous
   ): Json = {
     val accessUrl = AccessUrl.project(ref)
     resourceUnit(
@@ -57,8 +55,7 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy,
-      mappings
+      updatedBy
     )
   }
 
@@ -67,8 +64,7 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      mappings: ApiMappings = ApiMappings.empty
+      updatedBy: Subject = Anonymous
   ): Json = {
     val accessUrl = AccessUrl.organization(label)
     resourceUnit(
@@ -79,8 +75,7 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy,
-      mappings
+      updatedBy
     )
   }
 
@@ -88,8 +83,7 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      mappings: ApiMappings = ApiMappings.empty
+      updatedBy: Subject = Anonymous
   ): Json = {
     val accessUrl = AccessUrl.permissions
     resourceUnit(
@@ -100,8 +94,7 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy,
-      mappings
+      updatedBy
     )
   }
 
@@ -110,8 +103,7 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      mappings: ApiMappings = ApiMappings.empty
+      updatedBy: Subject = Anonymous
   ): Json = {
     val accessUrl = AccessUrl.acl(address)
     resourceUnit(
@@ -122,8 +114,7 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy,
-      mappings
+      updatedBy
     )
   }
 
@@ -132,8 +123,7 @@ trait RouteFixtures extends TestHelpers {
       rev: Long = 1L,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
-      updatedBy: Subject = Anonymous,
-      mappings: ApiMappings = ApiMappings.empty
+      updatedBy: Subject = Anonymous
   ): Json = {
     val accessUrl = AccessUrl.realm(label)
     resourceUnit(
@@ -144,8 +134,7 @@ trait RouteFixtures extends TestHelpers {
       rev,
       deprecated,
       createdBy,
-      updatedBy,
-      mappings
+      updatedBy
     )
   }
 
@@ -158,7 +147,8 @@ trait RouteFixtures extends TestHelpers {
       deprecated: Boolean,
       createdBy: Subject,
       updatedBy: Subject,
-      mappings: ApiMappings
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = nxv.base
   ): Json =
     jsonContentOf(
       "resource-unit.json",
@@ -169,7 +159,7 @@ trait RouteFixtures extends TestHelpers {
       "rev"        -> rev,
       "createdBy"  -> createdBy.id,
       "updatedBy"  -> updatedBy.id,
-      "self"       -> accessUrl.shortForm(mappings)
+      "self"       -> accessUrl.shortForm(am, ProjectBase.unsafe(base))
     )
 
 }

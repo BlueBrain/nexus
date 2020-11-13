@@ -30,7 +30,7 @@ final case class Project(
     organizationUuid: UUID,
     description: Option[String],
     apiMappings: ApiMappings,
-    base: Iri,
+    base: ProjectBase,
     vocab: Iri
 ) {
 
@@ -43,6 +43,8 @@ final case class Project(
 
 object Project {
 
+  val context: ContextValue = ContextValue(contexts.projects)
+
   implicit private[Project] val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "label"             => nxv.label.prefix
     case "uuid"              => nxv.uuid.prefix
@@ -52,7 +54,6 @@ object Project {
   })
 
   implicit val projectEncoder: Encoder.AsObject[Project]    = deriveConfiguredEncoder[Project]
-  val context: ContextValue                                 = ContextValue(contexts.projects)
   implicit val projectJsonLdEncoder: JsonLdEncoder[Project] =
     JsonLdEncoder.compactFromCirce(context)
 
