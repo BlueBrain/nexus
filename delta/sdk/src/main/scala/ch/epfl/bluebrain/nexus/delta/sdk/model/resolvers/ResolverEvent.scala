@@ -29,20 +29,16 @@ object ResolverEvent {
   /**
     * Event for the creation of a resolver
     *
-    * @param id                the resolver identifier
-    * @param project           the project the resolver belongs to
-    * @param `type`            type of the resolver (can't be updated)
-    * @param priority          resolution priority when attempting to find a resource
-    * @param crossProjectSetup additional setup for a cross-project resolver    * @param rev       the resolver revision
-    * @param instant           the instant this event was created
-    * @param subject           the subject which created this event
+    * @param id      the resolver identifier
+    * @param project the project the resolver belongs to
+    * @param value   additional fields to configure the resolver
+    * @param instant the instant this event was created
+    * @param subject the subject which created this event
     */
   final case class ResolverCreated(
       id: Iri,
       project: ProjectRef,
-      `type`: ResolverType,
-      priority: Priority,
-      crossProjectSetup: Option[CrossProjectSetup],
+      value: ResolverValue,
       rev: Long,
       instant: Instant,
       subject: Subject
@@ -53,9 +49,7 @@ object ResolverEvent {
     *
     * @param id        the resolver identifier
     * @param project   the project the resolver belongs to
-    * @param `type`            type of the resolver (can't be updated)
-    * @param priority          resolution priority when attempting to find a resource
-    * @param crossProjectSetup additional setup for a cross-project resolver
+    * @param value     additional fields to configure the resolver
     * @param rev       the last known revision of the resolver
     * @param instant   the instant this event was created
     * @param subject   the subject which created this event
@@ -63,9 +57,7 @@ object ResolverEvent {
   final case class ResolverUpdated(
       id: Iri,
       project: ProjectRef,
-      `type`: ResolverType,
-      priority: Priority,
-      crossProjectSetup: Option[CrossProjectSetup],
+      value: ResolverValue,
       rev: Long,
       instant: Instant,
       subject: Subject

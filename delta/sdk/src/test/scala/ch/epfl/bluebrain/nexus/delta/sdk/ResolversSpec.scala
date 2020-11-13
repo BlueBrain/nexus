@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import java.time.Instant
 
+import cats.implicits._
 import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
@@ -14,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{CrossProjectSetup, Priority, ResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -38,9 +40,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
   private val inProjectCurrent = Current(
     ipId,
     project,
-    InProject,
-    priority,
-    None,
+    InProjectValue(priority),
     Map.empty,
     2L,
     deprecated = false,
@@ -53,16 +53,13 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
   private val crossProjectCurrent = Current(
     cpId,
     project,
-    CrossProject,
-    priority,
-    Some(
-      CrossProjectSetup(
-        Set.empty,
-        NonEmptyList.of(
-          ProjectRef.unsafe("org2", "proj")
-        ),
-        bob.identities
-      )
+    CrossProjectValue(
+      priority,
+      Set.empty,
+      NonEmptyList.of(
+        ProjectRef.unsafe("org2", "proj")
+      ),
+      bob.identities
     ),
     Map(Label.unsafe("tag1") -> 5L),
     2L,
@@ -76,9 +73,10 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
   "The Resolvers evaluation" when {
     implicit val sc: Scheduler = Scheduler.global
 
-    val createInProject = CreateResolver(ipId, project, InProject, priority, None)
+    val createInProject = CreateResolver(ipId, project, InProjectValue(priority))
 
-    val crossProjectSetup = CrossProjectSetup(
+    val crossProjectValue = CrossProjectValue(
+      priority,
       Set(nxv + "resource"),
       NonEmptyList.of(
         ProjectRef.unsafe("org2", "proj"),
@@ -90,26 +88,21 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
     val createCrossProject = CreateResolver(
       cpId,
       project,
-      CrossProject,
-      priority,
-      Some(crossProjectSetup)
+      crossProjectValue
     )
 
-    val updateInProject    = UpdateResolver(ipId, project, InProject, Priority.unsafe(99), None, 2L)
+    val updateInProject    = UpdateResolver(ipId, project, InProjectValue(Priority.unsafe(99)), 2L)
     val updateCrossProject = UpdateResolver(
       cpId,
       project,
-      CrossProject,
-      Priority.unsafe(99),
-      Some(
-        CrossProjectSetup(
-          Set(nxv + "resource"),
-          NonEmptyList.of(
-            ProjectRef.unsafe("org2", "proj"),
-            ProjectRef.unsafe("org2", "proj2")
-          ),
-          alice.identities
-        )
+      CrossProjectValue(
+        Priority.unsafe(99),
+        Set(nxv + "resource"),
+        NonEmptyList.of(
+          ProjectRef.unsafe("org2", "proj"),
+          ProjectRef.unsafe("org2", "proj2")
+        ),
+        alice.identities
       ),
       2L
     )
@@ -119,10 +112,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
       "fail if the resolver already exists" in {
         forAll(
-          crossProduct(
-            List(inProjectCurrent, crossProjectCurrent),
-            List(createInProject, createCrossProject)
-          )
+          (List(inProjectCurrent, crossProjectCurrent), List(createInProject, createCrossProject)).tupled
         ) { case (state, command) =>
           evaluate(state, command)
             .rejectedWith[ResolverRejection] shouldEqual ResolverAlreadyExists(command.id, command.project)
@@ -133,29 +123,22 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
         evaluate(Initial, createInProject).accepted shouldEqual ResolverCreated(
           ipId,
           project,
-          InProject,
-          priority,
-          None,
+          createInProject.value,
           1L,
           epoch,
           bob.subject
         )
       }
 
-      "fail if no setup are provided for a cross-project resolver" in {
-        evaluate(Initial, createCrossProject.copy(crossProjectSetup = None))
-          .rejectedWith[ResolverRejection] shouldEqual NoCrossProjectSetup
-      }
-
       "fail if no identities are provided for a cross-project resolver" in {
-        val invalidSetup = crossProjectSetup.copy(identities = Set.empty)
-        evaluate(Initial, createCrossProject.copy(crossProjectSetup = Some(invalidSetup)))
+        val invalidValue = crossProjectValue.copy(identities = Set.empty)
+        evaluate(Initial, createCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual NoIdentities
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
-        val invalidSetup = crossProjectSetup.copy(identities = Set(bob.subject, alice.subject))
-        evaluate(Initial, createCrossProject.copy(crossProjectSetup = Some(invalidSetup)))
+        val invalidValue = crossProjectValue.copy(identities = Set(bob.subject, alice.subject))
+        evaluate(Initial, createCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual InvalidIdentities(Set(alice.subject))
       }
 
@@ -163,9 +146,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
         evaluate(Initial, createCrossProject).accepted shouldEqual ResolverCreated(
           cpId,
           project,
-          CrossProject,
-          createCrossProject.priority,
-          createCrossProject.crossProjectSetup,
+          createCrossProject.value,
           1L,
           epoch,
           bob.subject
@@ -186,10 +167,10 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
       "fail if the provided revision is incorrect" in {
         forAll(
-          crossProduct(
+          (
             List(inProjectCurrent, crossProjectCurrent),
             List(updateInProject.copy(rev = 4L), updateCrossProject.copy(rev = 1L))
-          )
+          ).tupled
         ) { case (state, command) =>
           evaluate(state, command)
             .rejectedWith[ResolverRejection] shouldEqual IncorrectRev(command.rev, state.rev)
@@ -198,10 +179,10 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
       "fail if the current state is deprecated" in {
         forAll(
-          crossProduct(
+          (
             List(inProjectCurrent.copy(deprecated = true), crossProjectCurrent.copy(deprecated = true)),
             List(updateInProject, updateCrossProject)
-          )
+          ).tupled
         ) { case (state, command) =>
           evaluate(state, command)
             .rejectedWith[ResolverRejection] shouldEqual ResolverIsDeprecated(state.id)
@@ -221,31 +202,24 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
         evaluate(inProjectCurrent, updateInProject).accepted shouldEqual ResolverUpdated(
           ipId,
           project,
-          InProject,
-          updateInProject.priority,
-          None,
+          updateInProject.value,
           3L,
           epoch,
           alice.subject
         )
       }
 
-      "fail if no setup is provided for a cross-project resolver" in {
-        evaluate(crossProjectCurrent, updateCrossProject.copy(crossProjectSetup = None))
-          .rejectedWith[ResolverRejection] shouldEqual NoCrossProjectSetup
-      }
-
       "fail if no identities are provided for a cross-project resolver" in {
-        val invalidSetup = crossProjectSetup.copy(identities = Set.empty)
-        evaluate(crossProjectCurrent, updateCrossProject.copy(crossProjectSetup = Some(invalidSetup)))
+        val invalidValue = crossProjectValue.copy(identities = Set.empty)
+        evaluate(crossProjectCurrent, updateCrossProject.copy(value = invalidValue))
           .rejectedWith[ResolverRejection] shouldEqual NoIdentities
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
-        val invalidSetup = crossProjectSetup.copy(identities = Set(bob.subject, alice.subject))
+        val invalidValue = crossProjectValue.copy(identities = Set(bob.subject, alice.subject))
         evaluate(
           crossProjectCurrent,
-          updateCrossProject.copy(crossProjectSetup = Some(invalidSetup))
+          updateCrossProject.copy(value = invalidValue)
         )
           .rejectedWith[ResolverRejection] shouldEqual InvalidIdentities(Set(bob.subject))
       }
@@ -266,9 +240,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
         ).accepted shouldEqual ResolverUpdated(
           cpId,
           project,
-          CrossProject,
-          updateCrossProject.priority,
-          updateCrossProject.crossProjectSetup,
+          updateCrossProject.value,
           3L,
           epoch,
           alice.subject
@@ -368,23 +340,19 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
     "applying a create event" should {
 
-      val inProjectCreated =
-        ResolverCreated(ipId, project, InProject, Priority.unsafe(22), None, 1L, epoch, bob.subject)
+      val inProjectCreated = ResolverCreated(ipId, project, InProjectValue(Priority.unsafe(22)), 1L, epoch, bob.subject)
 
       val crossProjectCreated = ResolverCreated(
         cpId,
         project,
-        CrossProject,
-        Priority.unsafe(55),
-        Some(
-          CrossProjectSetup(
-            Set(nxv + "resource"),
-            NonEmptyList.of(
-              ProjectRef.unsafe("org2", "proj"),
-              ProjectRef.unsafe("org2", "proj2")
-            ),
-            bob.identities
-          )
+        CrossProjectValue(
+          Priority.unsafe(55),
+          Set(nxv + "resource"),
+          NonEmptyList.of(
+            ProjectRef.unsafe("org2", "proj"),
+            ProjectRef.unsafe("org2", "proj2")
+          ),
+          bob.identities
         ),
         1L,
         epoch,
@@ -395,9 +363,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
         next(Initial, inProjectCreated) shouldEqual Current(
           ipId,
           project,
-          InProject,
-          inProjectCreated.priority,
-          None,
+          inProjectCreated.value,
           Map.empty,
           1L,
           deprecated = false,
@@ -412,9 +378,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
         next(Initial, crossProjectCreated) shouldEqual Current(
           cpId,
           project,
-          CrossProject,
-          crossProjectCreated.priority,
-          crossProjectCreated.crossProjectSetup,
+          crossProjectCreated.value,
           Map.empty,
           1L,
           deprecated = false,
@@ -427,10 +391,10 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
       "doesn't result in any change on a current state" in {
         forAll(
-          crossProduct(
+          (
             List(inProjectCurrent, crossProjectCurrent),
             List(inProjectCreated, crossProjectCreated)
-          )
+          ).tupled
         ) { case (state, event) =>
           next(state, event) shouldEqual state
         }
@@ -439,21 +403,18 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
     "applying an update event" should {
       val inProjectUpdated    =
-        ResolverUpdated(ipId, project, InProject, Priority.unsafe(40), None, 3L, instant, bob.subject)
+        ResolverUpdated(ipId, project, InProjectValue(Priority.unsafe(40)), 3L, instant, bob.subject)
       val crossCrojectUpdated = ResolverUpdated(
         cpId,
         project,
-        CrossProject,
-        Priority.unsafe(999),
-        Some(
-          CrossProjectSetup(
-            Set(nxv + "r", nxv + "r2"),
-            NonEmptyList.of(
-              ProjectRef.unsafe("org2", "proj"),
-              ProjectRef.unsafe("org3", "proj2")
-            ),
-            alice.identities
-          )
+        CrossProjectValue(
+          Priority.unsafe(999),
+          Set(nxv + "r", nxv + "r2"),
+          NonEmptyList.of(
+            ProjectRef.unsafe("org2", "proj"),
+            ProjectRef.unsafe("org3", "proj2")
+          ),
+          alice.identities
         ),
         3L,
         epoch,
@@ -462,7 +423,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
       "give a new revision of the in-project resolver state from an existing in-project state" in {
         next(inProjectCurrent, inProjectUpdated) shouldEqual inProjectCurrent.copy(
-          priority = inProjectUpdated.priority,
+          value = inProjectUpdated.value,
           rev = inProjectUpdated.rev,
           updatedAt = inProjectUpdated.instant,
           updatedBy = inProjectUpdated.subject
@@ -471,8 +432,7 @@ class ResolversSpec extends AnyWordSpec with TestHelpers with Matchers with IOVa
 
       "give a new revision of the cross-project resolver state from an existing cross-project state" in {
         next(crossProjectCurrent, crossCrojectUpdated) shouldEqual crossProjectCurrent.copy(
-          crossProjectSetup = crossCrojectUpdated.crossProjectSetup,
-          priority = crossCrojectUpdated.priority,
+          value = crossCrojectUpdated.value,
           rev = crossCrojectUpdated.rev,
           updatedAt = crossCrojectUpdated.instant,
           updatedBy = crossCrojectUpdated.subject

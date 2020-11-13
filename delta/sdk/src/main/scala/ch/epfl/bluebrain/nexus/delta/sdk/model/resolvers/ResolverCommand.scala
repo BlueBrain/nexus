@@ -26,33 +26,25 @@ object ResolverCommand {
     * Command to create a new resolver
     * @param id                the resolver identifier
     * @param project           the project the resolver belongs to
-    * @param `type`            type of the resolver (can't be updated)
-    * @param priority          resolution priority when attempting to find a resource
-    * @param crossProjectSetup additional setup for a cross-project resolver
+    * @param value             additional fields to configure the resolver
     */
   final case class CreateResolver(
       id: Iri,
       project: ProjectRef,
-      `type`: ResolverType,
-      priority: Priority,
-      crossProjectSetup: Option[CrossProjectSetup]
+      value: ResolverValue
   ) extends ResolverCommand
 
   /**
     * Command to update an existing resolver
     * @param id                the resolver identifier
     * @param project           the project the resolver belongs to
-    * @param `type`            type of the resolver (can't be updated)
-    * @param priority          resolution priority when attempting to find a resource
-    * @param crossProjectSetup additional setup for a cross-project resolver
+    * @param value             additional fields to configure the resolver
     * @param rev               the last known revision of the resolver
     */
   final case class UpdateResolver(
       id: Iri,
       project: ProjectRef,
-      `type`: ResolverType,
-      priority: Priority,
-      crossProjectSetup: Option[CrossProjectSetup],
+      value: ResolverValue,
       rev: Long
   ) extends ResolverCommand
 

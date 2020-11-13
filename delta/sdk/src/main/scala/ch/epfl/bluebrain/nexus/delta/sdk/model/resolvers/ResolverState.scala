@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectResolver, InProjectResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
 
 /**
@@ -42,9 +43,7 @@ object ResolverState {
     * State for an existing in project resolver
     * @param id                the id of the resolver
     * @param project           the project it belongs to
-    * @param `type`            type of the resolver (can't be updated)
-    * @param priority          resolution priority when attempting to find a resource
-    * @param crossProjectSetup additional setup for a cross-project resolver
+    * @param value             additional fields to configure the resolver
     * @param tags              the collection of tag aliases
     * @param rev               the current state revision
     * @param deprecated        the current state deprecation status
@@ -56,9 +55,7 @@ object ResolverState {
   final case class Current(
       id: Iri,
       project: ProjectRef,
-      `type`: ResolverType,
-      priority: Priority,
-      crossProjectSetup: Option[CrossProjectSetup],
+      value: ResolverValue,
       tags: Map[Label, Long],
       rev: Long,
       deprecated: Boolean,
@@ -68,28 +65,27 @@ object ResolverState {
       updatedBy: Subject
   ) extends ResolverState {
 
-    @SuppressWarnings(Array("OptionGet"))
-    def resolver: Resolver =
-      `type` match {
-        case InProject    =>
+    def resolver: Resolver = {
+      value match {
+        case InProjectValue(priority)                                         =>
           InProjectResolver(
             id = id,
             project = project,
             priority = priority,
             tags = tags
           )
-        case CrossProject =>
-          val setup = crossProjectSetup.get
+        case CrossProjectValue(priority, resourceTypes, projects, identities) =>
           CrossProjectResolver(
             id = id,
             project = project,
-            resourceTypes = setup.resourceTypes,
-            projects = setup.projects,
-            identities = setup.identities,
+            resourceTypes = resourceTypes,
+            projects = projects,
+            identities = identities,
             priority = priority,
             tags = tags
           )
       }
+    }
 
     override def toResource(mappings: ApiMappings): Option[ResolverResource] =
       Some(
@@ -97,7 +93,7 @@ object ResolverState {
           id = AccessUrl.resolver(project, id)(_).iri,
           accessUrl = AccessUrl.resolver(project, id)(_).shortForm(mappings),
           rev = rev,
-          types = `type` match {
+          types = value.tpe match {
             case InProject    => Set(nxv.Resolver, nxv.InProject)
             case CrossProject => Set(nxv.Resolver, nxv.CrossProject)
           },

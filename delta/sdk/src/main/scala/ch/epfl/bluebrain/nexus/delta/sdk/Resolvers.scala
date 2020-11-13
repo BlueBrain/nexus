@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType.{CrossProject, InProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
 import fs2.Stream
@@ -124,13 +124,11 @@ object Resolvers {
   private[delta] def next(state: ResolverState, event: ResolverEvent): ResolverState = {
     (state, event) match {
       // Creating a resolver
-      case (Initial, e: ResolverCreated)                            =>
+      case (Initial, e: ResolverCreated)                                  =>
         Current(
           id = e.id,
           project = e.project,
-          `type` = e.`type`,
-          priority = e.priority,
-          crossProjectSetup = e.crossProjectSetup,
+          value = e.value,
           tags = Map.empty,
           rev = e.rev,
           deprecated = false,
@@ -140,25 +138,24 @@ object Resolvers {
           updatedBy = e.subject
         )
       // Updating a resolver
-      case (c: Current, e: ResolverUpdated) if c.`type` == e.`type` =>
+      case (c: Current, e: ResolverUpdated) if c.value.tpe == e.value.tpe =>
         c.copy(
-          priority = e.priority,
-          crossProjectSetup = e.crossProjectSetup,
+          value = e.value,
           rev = e.rev,
           updatedAt = e.instant,
           updatedBy = e.subject
         )
 
       // Tagging a resolver
-      case (c: Current, e: ResolverTagAdded)                        =>
+      case (c: Current, e: ResolverTagAdded)                              =>
         c.copy(rev = e.rev, tags = c.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
 
       // Deprecating a resolver
-      case (c: Current, e: ResolverDeprecated)                      =>
+      case (c: Current, e: ResolverDeprecated)                            =>
         c.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
 
       // Cases that should happen and that should have been filtered out by the evaluation
-      case _                                                        => state
+      case _                                                              => state
     }
   }
 
@@ -167,30 +164,21 @@ object Resolvers {
       clock: Clock[UIO]
   ): IO[ResolverRejection, ResolverEvent] = {
 
-    def validateCrossProjectSetup(
-        resolverType: ResolverType,
-        crossProjectSetup: Option[CrossProjectSetup]
-    ): IO[ResolverRejection, Unit] = {
-      resolverType match {
-        case InProject    => IO.unit
-        case CrossProject =>
-          crossProjectSetup
-            .map { setup =>
-              if (setup.identities.isEmpty)
-                IO.raiseError(NoIdentities)
-              else {
-                val missing = setup.identities.diff(caller.identities)
-                if (missing.isEmpty) {
-                  IO.unit
-                } else {
-                  IO.raiseError(InvalidIdentities(missing))
-                }
-              }
+    def validateResolverValue(value: ResolverValue): IO[ResolverRejection, Unit] =
+      value match {
+        case CrossProjectValue(_, _, _, identities) =>
+          if (identities.isEmpty)
+            IO.raiseError(NoIdentities)
+          else {
+            val missing = identities.diff(caller.identities)
+            if (missing.isEmpty) {
+              IO.unit
+            } else {
+              IO.raiseError(InvalidIdentities(missing))
             }
-            .getOrElse(IO.raiseError(NoCrossProjectSetup))
+          }
+        case _                                      => IO.unit
       }
-
-    }
 
     (state, command) match {
       /**
@@ -202,14 +190,12 @@ object Resolvers {
       // Create a resolver
       case (Initial, c: CreateResolver)                                           =>
         for {
-          _   <- validateCrossProjectSetup(c.`type`, c.crossProjectSetup)
+          _   <- validateResolverValue(c.value)
           now <- instant
         } yield ResolverCreated(
           id = c.id,
           project = c.project,
-          `type` = c.`type`,
-          crossProjectSetup = c.crossProjectSetup,
-          priority = c.priority,
+          value = c.value,
           rev = 1L,
           instant = now,
           subject = caller.subject
@@ -231,15 +217,14 @@ object Resolvers {
       // Update a resolver
       case (s: Current, c: UpdateResolver)                                        =>
         for {
-          _   <- if (s.`type` == c.`type`) IO.unit else IO.raiseError(DifferentResolverType(c.id, c.`type`, s.`type`))
-          _   <- validateCrossProjectSetup(c.`type`, c.crossProjectSetup)
+          _   <- if (s.value.tpe == c.value.tpe) IO.unit
+                 else IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe))
+          _   <- validateResolverValue(c.value)
           now <- instant
         } yield ResolverUpdated(
           id = c.id,
           project = c.project,
-          `type` = c.`type`,
-          crossProjectSetup = c.crossProjectSetup,
-          priority = c.priority,
+          value = c.value,
           rev = s.rev + 1,
           instant = now,
           subject = caller.subject

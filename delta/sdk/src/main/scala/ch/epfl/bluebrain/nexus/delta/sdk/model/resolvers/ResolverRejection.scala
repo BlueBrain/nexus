@@ -50,12 +50,6 @@ object ResolverRejection {
       extends ResolverRejection(s"Resolver '$id' is of type ''$found'' and can't be updated to be a ''$expected'' .")
 
   /**
-    * Rejection returned when no setup for cross project has been provided
-    */
-  final case object NoCrossProjectSetup
-      extends ResolverRejection(s"The fields to set up the cross project controller are missing")
-
-  /**
     * Rejection returned when no identities has been provided
     */
   final case object NoIdentities extends ResolverRejection(s"At least one identity of the caller must be provided")

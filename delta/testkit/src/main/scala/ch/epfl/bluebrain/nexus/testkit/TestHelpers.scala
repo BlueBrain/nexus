@@ -29,15 +29,6 @@ trait TestHelpers extends ClasspathResourceUtils {
   }
 
   /**
-    * Generate the cross product of the two given sequences
-    */
-  def crossProduct[A, B](first: Seq[A], second: Seq[B]): Seq[(A, B)] =
-    for {
-      f <- first
-      s <- second
-    } yield (f, s)
-
-  /**
     * Convert a map to an function returning an IO
     * @param values (key/value) giving the expected result for the given parameter
     */
