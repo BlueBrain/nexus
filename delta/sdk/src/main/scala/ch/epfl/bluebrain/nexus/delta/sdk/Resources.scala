@@ -6,11 +6,11 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{IOUtils, UUIDF}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -325,64 +325,5 @@ object Resources {
       case c: TagResource       => tag(c)
       case c: DeprecateResource => deprecate(c)
     }
-  }
-
-  abstract private[delta] class ResourcesCommons(
-      projects: Projects
-  )(implicit uuidF: UUIDF, rcr: RemoteContextResolution) {
-
-    protected def sourceAsJsonLD(
-        project: Project,
-        source: Json
-    ): IO[InvalidJsonLdFormat, (Iri, CompactedJsonLd, ExpandedJsonLd)] =
-      for {
-        originalExpanded <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(None, err))
-        iri              <- originalExpanded.rootId.asIri.fold(uuidF().map(uuid => project.base / uuid.toString))(IO.pure)
-        expanded          = originalExpanded.replaceId(iri)
-        compacted        <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
-      } yield (iri, compacted, expanded)
-
-    protected def sourceAsJsonLD(iri: Iri, source: Json): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] =
-      for {
-        originalExpanded <- JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
-        _                <- checkSameId(iri, originalExpanded)
-        expanded          = originalExpanded.replaceId(iri)
-        compacted        <- expanded.toCompacted(source).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
-      } yield (compacted, expanded)
-
-    protected def fetchActiveProject(projectRef: ProjectRef): IO[WrappedProjectRejection, Project] =
-      projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-
-    protected def fetchProject(projectRef: ProjectRef): IO[WrappedProjectRejection, Project] =
-      projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
-
-    protected def expandIri(segment: IdSegment)(implicit project: Project): IO[InvalidResourceId, Iri] =
-      IO.fromOption(segment.toIri, InvalidResourceId(segment.asString))
-
-    protected def expandResourceRef(segment: IdSegment)(implicit project: Project): IO[InvalidResourceId, ResourceRef] =
-      IO.fromOption(segment.toResourceRef, InvalidResourceId(segment.asString))
-
-    protected def expandResourceRef(
-        segmentOpt: Option[IdSegment]
-    )(implicit project: Project): IO[InvalidResourceId, Option[ResourceRef]] =
-      segmentOpt match {
-        case None         => IO.pure(None)
-        case Some(schema) => expandResourceRef(schema).map(Some.apply)
-      }
-
-    protected def validateSameSchema(
-        resourceOpt: Option[DataResource],
-        schemaOpt: Option[ResourceRef]
-    ): Option[DataResource] =
-      resourceOpt match {
-        case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
-        case _                                                  => None
-      }
-
-    private def checkSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedResourceId, Unit] =
-      expanded.rootId.asIri match {
-        case Some(sourceId) if sourceId != iri => IO.raiseError(UnexpectedResourceId(iri, sourceId))
-        case _                                 => IO.unit
-      }
   }
 }

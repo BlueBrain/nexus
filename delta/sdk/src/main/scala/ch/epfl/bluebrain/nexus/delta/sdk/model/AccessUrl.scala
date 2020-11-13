@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
 /**
@@ -25,7 +25,7 @@ sealed trait AccessUrl extends Product with Serializable {
   /**
     * @return the short form url to access the resource
     */
-  def shortForm(mappings: ApiMappings): Uri
+  def shortForm(mappings: ApiMappings, base: ProjectBase): Uri
 
   override def toString: String = value.toString
 }
@@ -33,14 +33,14 @@ sealed trait AccessUrl extends Product with Serializable {
 object AccessUrl {
 
   final private case class Fixed(value: Uri) extends AccessUrl {
-    override def shortForm(mappings: ApiMappings): Uri = value
+    override def shortForm(mappings: ApiMappings, base: ProjectBase): Uri = value
   }
 
   final private case class CompactableId(endpoint: Uri, id: Iri) extends AccessUrl {
     override val value: Uri = endpoint / id.toString
 
-    override def shortForm(mappings: ApiMappings): Uri = {
-      val ctx = context(mappings + ApiMappings.default)
+    override def shortForm(mappings: ApiMappings, base: ProjectBase): Uri = {
+      val ctx = context(base, mappings + ApiMappings.default)
       endpoint / ctx.compact(id, useVocab = false)
     }
   }
@@ -48,8 +48,8 @@ object AccessUrl {
   final private case class CompactableSchemaAndId(endpoint: Uri, schema: ResourceRef, id: Iri) extends AccessUrl {
     override val value: Uri = endpoint / schema.toString / id.toString
 
-    override def shortForm(mappings: ApiMappings): Uri = {
-      val ctx = context(mappings + ApiMappings.default)
+    override def shortForm(mappings: ApiMappings, base: ProjectBase): Uri = {
+      val ctx = context(base, mappings + ApiMappings.default)
       endpoint / ctx.compact(schema.iri, useVocab = false) / ctx.compact(id, useVocab = false)
     }
   }
@@ -106,7 +106,12 @@ object AccessUrl {
   def resolver(ref: ProjectRef, id: Iri)(implicit base: BaseUri): AccessUrl =
     CompactableId(base.endpoint / "resolvers" / ref.organization.value / ref.project.value, id)
 
-  private def context(mappings: ApiMappings): JsonLdContext =
-    JsonLdContext(ContextValue.empty, prefixMappings = mappings.prefixMappings, aliases = mappings.aliases)
+  private def context(base: ProjectBase, mappings: ApiMappings): JsonLdContext =
+    JsonLdContext(
+      ContextValue.empty,
+      base = Some(base.iri),
+      prefixMappings = mappings.prefixMappings,
+      aliases = mappings.aliases
+    )
 
 }

@@ -96,7 +96,7 @@ object ProjectState {
       deprecated: Boolean,
       description: Option[String],
       apiMappings: ApiMappings,
-      base: Iri,
+      base: ProjectBase,
       vocab: Iri,
       createdAt: Instant,
       createdBy: Subject,

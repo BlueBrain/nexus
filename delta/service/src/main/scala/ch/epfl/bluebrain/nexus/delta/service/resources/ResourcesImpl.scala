@@ -6,7 +6,7 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{moduleType, ResourcesCommons}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -31,8 +31,7 @@ final class ResourcesImpl private (
     projects: Projects,
     eventLog: EventLog[Envelope[ResourceEvent]]
 )(implicit rcr: RemoteContextResolution, uuidF: UUIDF)
-    extends ResourcesCommons(projects)
-    with Resources {
+    extends Resources {
 
   override def create(
       projectRef: ProjectRef,
@@ -41,8 +40,8 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       project                    <- fetchActiveProject(projectRef)
-      schemeRef                  <- expandResourceRef(schema)(project)
-      (iri, compacted, expanded) <- sourceAsJsonLD(project, source)
+      schemeRef                  <- expandResourceRef(schema, project)
+      (iri, compacted, expanded) <- ResourceSourceParser.asJsonLd(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res).named("createResource", moduleType)
 
@@ -54,9 +53,9 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       project               <- fetchActiveProject(projectRef)
-      iri                   <- expandIri(id)(project)
-      schemeRef             <- expandResourceRef(schema)(project)
-      (compacted, expanded) <- sourceAsJsonLD(iri, source)
+      iri                   <- expandIri(id, project)
+      schemeRef             <- expandResourceRef(schema, project)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res).named("createResource", moduleType)
 
@@ -69,9 +68,9 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       project               <- fetchActiveProject(projectRef)
-      iri                   <- expandIri(id)(project)
-      schemeRefOpt          <- expandResourceRef(schemaOpt)(project)
-      (compacted, expanded) <- sourceAsJsonLD(iri, source)
+      iri                   <- expandIri(id, project)
+      schemeRefOpt          <- expandResourceRef(schemaOpt, project)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res).named("updateResource", moduleType)
 
@@ -85,8 +84,8 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       project      <- fetchActiveProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
     } yield res).named("tagResource", moduleType)
 
@@ -98,8 +97,8 @@ final class ResourcesImpl private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       project      <- fetchActiveProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
     } yield res).named("deprecateResource", moduleType)
 
@@ -110,10 +109,10 @@ final class ResourcesImpl private (
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
       project      <- fetchProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       state        <- currentState(projectRef, iri)
-      resource      = state.toResource(project.apiMappings)
+      resource      = state.toResource(project.apiMappings, project.base)
     } yield validateSameSchema(resource, schemeRefOpt)).named("fetchResource", moduleType)
 
   override def fetchAt(
@@ -124,10 +123,10 @@ final class ResourcesImpl private (
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
       project      <- fetchProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       state        <- stateAt(projectRef, iri, rev)
-      resource      = state.toResource(project.apiMappings)
+      resource      = state.toResource(project.apiMappings, project.base)
     } yield validateSameSchema(resource, schemeRefOpt)).named("fetchResourceAt", moduleType)
 
   override def fetchBy(
@@ -161,12 +160,42 @@ final class ResourcesImpl private (
   private def eval(cmd: ResourceCommand, project: Project): IO[ResourceRejection, DataResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      am                = project.apiMappings
-      resource         <- IO.fromOption(evaluationResult.state.toResource(am), UnexpectedInitialState(cmd.id))
+      (am, base)        = project.apiMappings -> project.base
+      resource         <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id))
     } yield resource
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
+
+  private def fetchActiveProject(projectRef: ProjectRef) =
+    projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
+
+  private def fetchProject(projectRef: ProjectRef) =
+    projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
+
+  private def expandIri(segment: IdSegment, project: Project) =
+    IO.fromOption(segment.toIri(project.apiMappings, project.base), InvalidResourceId(segment.asString))
+
+  private def expandResourceRef(segment: IdSegment, project: Project): IO[InvalidResourceId, ResourceRef] =
+    IO.fromOption(
+      segment.toIri(project.apiMappings, project.base).map(ResourceRef(_)),
+      InvalidResourceId(segment.asString)
+    )
+
+  private def expandResourceRef(
+      segmentOpt: Option[IdSegment],
+      project: Project
+  ): IO[InvalidResourceId, Option[ResourceRef]] =
+    segmentOpt match {
+      case None         => IO.pure(None)
+      case Some(schema) => expandResourceRef(schema, project).map(Some.apply)
+    }
+
+  private def validateSameSchema(resourceOpt: Option[DataResource], schemaOpt: Option[ResourceRef]) =
+    resourceOpt match {
+      case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
+      case _                                                  => None
+    }
 }
 
 object ResourcesImpl {

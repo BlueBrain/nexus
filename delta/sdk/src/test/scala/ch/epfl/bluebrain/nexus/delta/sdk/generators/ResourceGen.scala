@@ -3,16 +3,16 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Current
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import org.scalatest.OptionValues
@@ -69,7 +69,8 @@ object ResourceGen extends OptionValues with IOValues {
       rev: Long = 1L,
       subject: Subject = Anonymous,
       deprecated: Boolean = false,
-      mappings: ApiMappings = ApiMappings.empty
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = nxv.base
   )(implicit resolution: RemoteContextResolution): DataResource =
     currentState(
       resource.id,
@@ -81,6 +82,6 @@ object ResourceGen extends OptionValues with IOValues {
       rev,
       deprecated,
       subject
-    ).toResource(mappings).value
+    ).toResource(am, ProjectBase.unsafe(base)).value
 
 }

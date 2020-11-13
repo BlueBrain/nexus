@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, ResourceRefSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase}
 
 /**
   * A segment from the positional API that should be an Id
@@ -16,20 +15,14 @@ sealed trait IdSegment extends Product with Serializable { self =>
   def asString: String
 
   /**
-    * Attempts to convert the current IdSegment into an [[Iri]] using the available [[IdSegmentExtractor]]
-    *
     * @return Some(iri) when conversion was successful, None otherwise
     */
-  def toIri(implicit extractor: IdSegmentExtractor[IdSegment]): Option[Iri] =
-    extractor.toIri(self)
+  def toIri: Option[Iri]
 
   /**
-    * Attempts to convert the current IdSegment into a [[ResourceRef]] using the available [[IdSegmentExtractor]]
-    *
-    * @return Some(resourceRef) when conversion was successful, None otherwise
+    * @return Some(iri) when conversion was successful using the api mappings and project base if needed, None otherwise
     */
-  def toResourceRef(implicit extractor: IdSegmentExtractor[IdSegment]): Option[ResourceRef] =
-    extractor.toResourceRef(self)
+  def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri]
 
 }
 
@@ -39,50 +32,28 @@ object IdSegment {
     * A segment that holds a free form string (which can expand into an Iri)
     */
   final case class StringSegment(value: String) extends IdSegment {
-    override def asString: String = value
+    override val asString: String = value
+
+    override def toIri: Option[Iri] = None
+
+    override def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri] = {
+      val am  = mappings + ApiMappings.default
+      val ctx = JsonLdContext(
+        ContextValue.empty,
+        base = Some(base.iri),
+        prefixMappings = am.prefixMappings,
+        aliases = am.aliases
+      )
+      ctx.expand(value, useVocab = false)
+    }
   }
 
   /**
     * A segment that holds an [[Iri]]
     */
   final case class IriSegment(value: Iri) extends IdSegment {
-    override def asString: String = value.toString
-  }
-
-  /**
-    * A segment that holds a [[ResourceRef]]
-    */
-  final case class ResourceRefSegment(value: ResourceRef) extends IdSegment {
-    override def asString: String = value.iri.toString
-  }
-}
-
-sealed trait IdSegmentExtractor[A <: IdSegment] {
-  private[model] def toIri(segment: A): Option[Iri]
-  private[model] def toResourceRef(segment: A): Option[ResourceRef]
-}
-
-object IdSegmentExtractor {
-
-  implicit def idSegmentExtractor(implicit project: Project): IdSegmentExtractor[IdSegment] =
-    new IdSegmentExtractor[IdSegment] {
-      override private[model] def toIri(segment: IdSegment): Option[Iri]                 =
-        segment match {
-          case StringSegment(value)    => expandId(value)
-          case IriSegment(iri)         => Some(iri)
-          case ResourceRefSegment(ref) => Some(ref.original)
-        }
-      override private[model] def toResourceRef(segment: IdSegment): Option[ResourceRef] =
-        segment match {
-          case StringSegment(value)    => expandId(value).map(ResourceRef.apply)
-          case IriSegment(iri)         => Some(ResourceRef(iri))
-          case ResourceRefSegment(ref) => Some(ref)
-        }
-    }
-
-  private def expandId(id: String)(implicit project: Project): Option[Iri] = {
-    val mappings = project.apiMappings + ApiMappings.default
-    val ctx      = JsonLdContext(ContextValue.empty, prefixMappings = mappings.prefixMappings, aliases = mappings.aliases)
-    ctx.expand(id, useVocab = false)
+    override def asString: String                                             = value.toString
+    override def toIri: Option[Iri]                                           = Some(value)
+    override def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri] = Some(value)
   }
 }

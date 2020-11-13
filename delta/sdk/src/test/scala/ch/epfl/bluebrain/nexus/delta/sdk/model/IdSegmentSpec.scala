@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, ResourceRefSegment, StringSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -12,8 +10,8 @@ import org.scalatest.{Inspectors, OptionValues}
 
 class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with OptionValues {
 
-  private val am               = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
-  implicit private val project = ProjectGen.project("org", "proj", mappings = am)
+  private val am   = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
+  private val base = ProjectBase.unsafe(nxv.base)
 
   "An string segment" should {
     val list =
@@ -21,12 +19,14 @@ class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with O
         "nxv:other"          -> (nxv + "other"),
         "Person"             -> schema.Person,
         "_"                  -> schemas.resources,
+        "other"              -> (nxv + "other"),
         "http://example.com" -> iri"http://example.com"
       )
 
     "be converted to an Iri" in {
       forAll(list) { case (string, iri) =>
-        StringSegment(string).toIri.value shouldEqual iri
+        StringSegment(string).toIri(am, base).value shouldEqual iri
+        StringSegment(string).toIri shouldEqual None
       }
     }
 
@@ -34,11 +34,6 @@ class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with O
       StringSegment("a:*#").toIri shouldEqual None
     }
 
-    "be converted to a ResourceRef" in {
-      forAll(list) { case (string, iri) =>
-        StringSegment(string).toResourceRef.value shouldEqual Latest(iri)
-      }
-    }
   }
 
   "An Iri segment" should {
@@ -48,35 +43,8 @@ class IdSegmentSpec extends AnyWordSpecLike with Matchers with Inspectors with O
     "be converted to an Iri" in {
       forAll(list) { iri =>
         IriSegment(iri).toIri.value shouldEqual iri
-      }
-    }
-
-    "be converted to a ResourceRef" in {
-      forAll(list) { iri =>
-        IriSegment(iri).toResourceRef.value shouldEqual Latest(iri)
+        IriSegment(iri).toIri(am, base).value shouldEqual iri
       }
     }
   }
-
-  "A ResourceRef segment" should {
-    val list =
-      List(
-        Latest(nxv + "other"),
-        Tag(iri"http://example.com?tag=mytag", iri"http://example.com", Label.unsafe("mytag")),
-        Revision(iri"http://example.com?rev=2", iri"http://example.com", 2L)
-      )
-
-    "be converted to an Iri" in {
-      forAll(list) { resourceRef =>
-        ResourceRefSegment(resourceRef).toIri.value shouldEqual resourceRef.original
-      }
-    }
-
-    "be converted to a ResourceRef" in {
-      forAll(list) { resourceRef =>
-        ResourceRefSegment(resourceRef).toResourceRef.value shouldEqual resourceRef
-      }
-    }
-  }
-
 }

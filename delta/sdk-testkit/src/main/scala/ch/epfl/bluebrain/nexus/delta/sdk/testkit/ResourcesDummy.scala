@@ -5,7 +5,7 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{moduleType, ResourcesCommons}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -35,8 +35,7 @@ final class ResourcesDummy private (
     fetchSchema: ResourceRef => UIO[Option[SchemaResource]],
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
-    extends ResourcesCommons(projects)
-    with Resources {
+    extends Resources {
 
   override def create(
       projectRef: ProjectRef,
@@ -45,8 +44,8 @@ final class ResourcesDummy private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project                    <- fetchActiveProject(projectRef)
-      schemeRef                  <- expandResourceRef(schema)(project)
-      (iri, compacted, expanded) <- sourceAsJsonLD(project, source)
+      schemeRef                  <- expandResourceRef(schema, project)
+      (iri, compacted, expanded) <- ResourceSourceParser.asJsonLd(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
@@ -58,9 +57,9 @@ final class ResourcesDummy private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project               <- fetchActiveProject(projectRef)
-      iri                   <- expandIri(id)(project)
-      schemeRef             <- expandResourceRef(schema)(project)
-      (compacted, expanded) <- sourceAsJsonLD(iri, source)
+      iri                   <- expandIri(id, project)
+      schemeRef             <- expandResourceRef(schema, project)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
@@ -73,9 +72,9 @@ final class ResourcesDummy private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project               <- fetchActiveProject(projectRef)
-      iri                   <- expandIri(id)(project)
-      schemeRefOpt          <- expandResourceRef(schemaOpt)(project)
-      (compacted, expanded) <- sourceAsJsonLD(iri, source)
+      iri                   <- expandIri(id, project)
+      schemeRefOpt          <- expandResourceRef(schemaOpt, project)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
 
@@ -89,8 +88,8 @@ final class ResourcesDummy private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project      <- fetchActiveProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
     } yield res
 
@@ -102,8 +101,8 @@ final class ResourcesDummy private (
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project      <- fetchActiveProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
     } yield res
 
@@ -114,10 +113,10 @@ final class ResourcesDummy private (
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
       project      <- fetchProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       stateOpt     <- currentState(projectRef, iri)
-      resource      = stateOpt.flatMap(_.toResource(project.apiMappings))
+      resource      = stateOpt.flatMap(_.toResource(project.apiMappings, project.base))
     } yield validateSameSchema(resource, schemeRefOpt)
 
   override def fetchAt(
@@ -128,10 +127,10 @@ final class ResourcesDummy private (
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
       project      <- fetchProject(projectRef)
-      iri          <- expandIri(id)(project)
-      schemeRefOpt <- expandResourceRef(schemaOpt)(project)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
       stateOpt     <- stateAt(projectRef, iri, rev)
-      resource      = stateOpt.flatMap(_.toResource(project.apiMappings))
+      resource      = stateOpt.flatMap(_.toResource(project.apiMappings, project.base))
     } yield validateSameSchema(resource, schemeRefOpt)
 
   override def events(
@@ -155,12 +154,42 @@ final class ResourcesDummy private (
   private def eval(cmd: ResourceCommand, project: Project): IO[ResourceRejection, DataResource] =
     semaphore.withPermit {
       for {
-        state <- journal.currentState((cmd.project, cmd.id), Initial, Resources.next).map(_.getOrElse(Initial))
-        event <- Resources.evaluate(fetchSchema)(state, cmd)
-        _     <- journal.add(event)
-        am     = project.apiMappings
-        res   <- IO.fromEither(Resources.next(state, event).toResource(am).toRight(UnexpectedInitialState(cmd.id)))
+        state     <- journal.currentState((cmd.project, cmd.id), Initial, Resources.next).map(_.getOrElse(Initial))
+        event     <- Resources.evaluate(fetchSchema)(state, cmd)
+        _         <- journal.add(event)
+        (am, base) = project.apiMappings -> project.base
+        res       <- IO.fromEither(Resources.next(state, event).toResource(am, base).toRight(UnexpectedInitialState(cmd.id)))
       } yield res
+    }
+
+  private def fetchActiveProject(projectRef: ProjectRef) =
+    projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
+
+  private def fetchProject(projectRef: ProjectRef) =
+    projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
+
+  private def expandIri(segment: IdSegment, project: Project) =
+    IO.fromOption(segment.toIri(project.apiMappings, project.base), InvalidResourceId(segment.asString))
+
+  private def expandResourceRef(segment: IdSegment, project: Project): IO[InvalidResourceId, ResourceRef] =
+    IO.fromOption(
+      segment.toIri(project.apiMappings, project.base).map(ResourceRef(_)),
+      InvalidResourceId(segment.asString)
+    )
+
+  private def expandResourceRef(
+      segmentOpt: Option[IdSegment],
+      project: Project
+  ): IO[InvalidResourceId, Option[ResourceRef]] =
+    segmentOpt match {
+      case None         => IO.pure(None)
+      case Some(schema) => expandResourceRef(schema, project).map(Some.apply)
+    }
+
+  private def validateSameSchema(resourceOpt: Option[DataResource], schemaOpt: Option[ResourceRef]) =
+    resourceOpt match {
+      case Some(value) if schemaOpt.forall(_ == value.schema) => Some(value)
+      case _                                                  => None
     }
 }
 
