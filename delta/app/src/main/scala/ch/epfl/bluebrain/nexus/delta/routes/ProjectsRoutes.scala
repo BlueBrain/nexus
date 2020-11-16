@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projec
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
@@ -45,10 +46,19 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
   import baseUri.prefixSegment
   implicit val projectContext: ContextValue = Project.context
 
-  private def projectsSearchParams: Directive1[ProjectSearchParams] =
+  private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
     parameter("label".as[Label].?).flatMap { organization =>
-      searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>
-        ProjectSearchParams(organization, deprecated, rev, createdBy, updatedBy)
+      searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
+        onSuccess(acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture).map { aclsCol =>
+          ProjectSearchParams(
+            organization,
+            deprecated,
+            rev,
+            createdBy,
+            updatedBy,
+            proj => aclsCol.exists(caller.identities, projectsPermissions.read, AclAddress.Project(proj.ref))
+          )
+        }
       }
     }
 

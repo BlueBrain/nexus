@@ -105,7 +105,7 @@ trait Organizations {
     */
   def list(
       pagination: FromPagination,
-      params: OrganizationSearchParams = OrganizationSearchParams.none
+      params: OrganizationSearchParams
   ): UIO[UnscoredSearchResults[OrganizationResource]]
 
   /**
