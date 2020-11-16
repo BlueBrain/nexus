@@ -1,0 +1,5 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type" : "TagNotFound",
+  "reason" : "Tag requested '{{tag}}' not found."
+}

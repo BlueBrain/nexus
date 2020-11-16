@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import monix.execution.Scheduler
@@ -25,7 +25,8 @@ trait RouteFixtures extends TestHelpers {
       contexts.identities    -> jsonContentOf("contexts/identities.json"),
       contexts.permissions   -> jsonContentOf("contexts/permissions.json"),
       contexts.projects      -> jsonContentOf("contexts/projects.json"),
-      contexts.realms        -> jsonContentOf("contexts/realms.json")
+      contexts.realms        -> jsonContentOf("contexts/realms.json"),
+      contexts.shacl         -> jsonContentOf("contexts/shacl.json")
     )
 
   implicit val ordering: JsonKeyOrdering = JsonKeyOrdering.alphabetical
@@ -38,6 +39,34 @@ trait RouteFixtures extends TestHelpers {
 
   val realm: Label = Label.unsafe("wonderland")
   val alice: User  = User("alice", realm)
+
+  def dataResourceUnit(
+      ref: ProjectRef,
+      id: Iri,
+      schema: Iri,
+      tpe: String,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = nxv.base
+  ): Json = {
+    val accessUrl = AccessUrl.resource(ref, id, ResourceRef(schema))
+    resourceUnit(
+      id,
+      accessUrl,
+      tpe,
+      schema,
+      rev,
+      deprecated,
+      createdBy,
+      updatedBy,
+      am,
+      base
+    )
+
+  }
 
   def projectResourceUnit(
       ref: ProjectRef,

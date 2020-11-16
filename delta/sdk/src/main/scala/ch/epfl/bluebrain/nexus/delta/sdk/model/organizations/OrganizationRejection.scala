@@ -90,6 +90,6 @@ object OrganizationRejection {
     }
 
   implicit final val orgRejectionJsonLdEncoder: JsonLdEncoder[OrganizationRejection] =
-    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 
 }

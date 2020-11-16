@@ -148,6 +148,6 @@ object SearchResults {
       S: SearchEncoder[A],
       additionalContext: ContextValue
   ): JsonLdEncoder[SearchResults[A]] =
-    JsonLdEncoder.compactFromCirce(context.merge(additionalContext))
+    JsonLdEncoder.fromCirce(context.merge(additionalContext))
 
 }

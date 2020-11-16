@@ -9,8 +9,8 @@ import akka.stream.scaladsl.Source
 import akka.testkit.TestDuration
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import io.circe.{Json, Printer}
 import io.circe.parser.parse
+import io.circe.{Json, Printer}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -31,8 +31,13 @@ trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFut
   def asString(source: Source[ByteString, Any]): String =
     consume(source)
 
-  def asJson(source: Source[ByteString, Any]): Json =
-    parse(consume(source)).rightValue
+  def asJson(source: Source[ByteString, Any]): Json = {
+    val consumed = consume(source)
+    parse(consumed) match {
+      case Left(err)    => fail(s"Error converting '$consumed' to Json. Details: '${err.getMessage()}'")
+      case Right(value) => value
+    }
+  }
 
 }
 

@@ -109,5 +109,5 @@ object ProjectRejection {
     }
 
   implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
-    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 }

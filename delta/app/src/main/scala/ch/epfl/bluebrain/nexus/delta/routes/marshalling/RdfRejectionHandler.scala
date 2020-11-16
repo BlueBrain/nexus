@@ -317,8 +317,11 @@ object RdfRejectionHandler {
   implicit private[routes] val validationResponseFields: HttpResponseFields[ValidationRejection] =
     HttpResponseFields(_ => StatusCodes.BadRequest)
 
-  implicit private[routes] def compactFromCirce[A: Encoder.AsObject]: JsonLdEncoder[A] =
-    JsonLdEncoder.compactFromCirce(id = bnode, iriContext = contexts.error)
+  implicit private[routes] def compactFromCirceRejection[A <: Rejection: Encoder.AsObject]: JsonLdEncoder[A] =
+    JsonLdEncoder.fromCirce(id = bnode, iriContext = contexts.error)
+
+  implicit private[routes] def compactFromCirceRejectionSeq[A <: Seq[Rejection]: Encoder.AsObject]: JsonLdEncoder[A] =
+    JsonLdEncoder.fromCirce(id = bnode, iriContext = contexts.error)
 
   private def jsonObj[A <: Rejection](value: A, reason: String, details: Option[String] = None): JsonObject =
     JsonObject.fromIterable(
@@ -342,7 +345,7 @@ object RdfRejectionHandler {
       }
 
     implicit val notFoundResourceRejectionJsonLdEncoder: JsonLdEncoder[ResourceNotFound] =
-      JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
+      JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
   }
 
 }

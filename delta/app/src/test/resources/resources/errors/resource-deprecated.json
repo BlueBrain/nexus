@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "ResourceIsDeprecated",
+  "reason": "Resource '{{id}}' is deprecated."
+}

@@ -93,5 +93,5 @@ object PermissionsRejection {
     }
 
   implicit final val permissionsRejectionJsonLdEncoder: JsonLdEncoder[PermissionsRejection] =
-    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 }

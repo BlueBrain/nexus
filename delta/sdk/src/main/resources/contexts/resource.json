@@ -1,32 +1,31 @@
 {
   "@context": {
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "_rev": "nxv:rev",
-    "_deprecated": "nxv:deprecated",
-    "_createdAt": "nxv:createdAt",
-    "_updatedAt": "nxv:updatedAt",
+    "_rev": "https://bluebrain.github.io/nexus/vocabulary/rev",
+    "_deprecated": "https://bluebrain.github.io/nexus/vocabulary/deprecated",
+    "_createdAt": "https://bluebrain.github.io/nexus/vocabulary/createdAt",
+    "_updatedAt": "https://bluebrain.github.io/nexus/vocabulary/updatedAt",
     "_createdBy": {
-      "@id": "nxv:createdBy",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/createdBy",
       "@type": "@id"
     },
     "_updatedBy": {
-      "@id": "nxv:updatedBy",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/updatedBy",
       "@type": "@id"
     },
     "_constrainedBy": {
-      "@id": "nxv:constrainedBy",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/constrainedBy",
       "@type": "@id"
     },
-    "_instant": "nxv:instant",
-    "_subject": "nxv:subject",
+    "_instant": "https://bluebrain.github.io/nexus/vocabulary/instant",
+    "_subject": "https://bluebrain.github.io/nexus/vocabulary/subject",
     "_self": {
-      "@id": "nxv:self",
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/self",
       "@type": "@id"
     },
-    "AccessControlList": "nxv:AccessControlList",
-    "Organization": "nxv:Organization",
-    "Permissions": "nxv:Permissions",
-    "Project": "nxv:Project",
-    "Realm": "nxv:Realm"
+    "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList",
+    "Organization": "https://bluebrain.github.io/nexus/vocabulary/Organization",
+    "Permissions": "https://bluebrain.github.io/nexus/vocabulary/Permissions",
+    "Project": "https://bluebrain.github.io/nexus/vocabulary/Project",
+    "Realm": "https://bluebrain.github.io/nexus/vocabulary/Realm"
   }
 }

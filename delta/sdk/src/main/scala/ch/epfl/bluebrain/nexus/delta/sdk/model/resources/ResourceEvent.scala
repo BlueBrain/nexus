@@ -164,6 +164,6 @@ object ResourceEvent {
     implicit val encoder: Encoder.AsObject[ResourceEvent] =
       Encoder.AsObject.instance(deriveConfiguredEncoder[ResourceEvent].encodeObject)
 
-    JsonLdEncoder.compactFromCirce[ResourceEvent](context)
+    JsonLdEncoder.fromCirce[ResourceEvent](context)
   }
 }

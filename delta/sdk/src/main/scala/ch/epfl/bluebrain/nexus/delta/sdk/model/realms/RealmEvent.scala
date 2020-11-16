@@ -150,7 +150,7 @@ object RealmEvent {
         .encodeObject(ev)
     }
 
-    JsonLdEncoder.compactFromCirce[RealmEvent](context)
+    JsonLdEncoder.fromCirce[RealmEvent](context)
   }
 
 }

@@ -55,6 +55,6 @@ object Project {
 
   implicit val projectEncoder: Encoder.AsObject[Project]    = deriveConfiguredEncoder[Project]
   implicit val projectJsonLdEncoder: JsonLdEncoder[Project] =
-    JsonLdEncoder.compactFromCirce(context)
+    JsonLdEncoder.fromCirce(context)
 
 }

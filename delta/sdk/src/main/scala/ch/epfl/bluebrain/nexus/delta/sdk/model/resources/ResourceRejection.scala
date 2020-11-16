@@ -169,6 +169,6 @@ object ResourceRejection {
     }
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResourceRejection] =
-    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 
 }
