@@ -68,11 +68,17 @@ class ResourcesRoutesSpec
     case _                            => UIO.pure(None)
   }
 
-  private def projects: ProjectsDummy = {
-    val projs = for {
+  private val orgs: OrganizationsDummy = {
+    val orgs = for {
       o <- OrganizationsDummy()(uuidF = UUIDF.fixed(uuidOrg), clock = ioClock)
-      _ <- o.create(org, None).hideErrorsWith(r => new IllegalStateException(r.reason))
-      p <- ProjectsDummy(o)
+      _ <- o.create(org, None)
+    } yield o
+    orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
+  }.accepted
+
+  private val projects: ProjectsDummy = {
+    val projs = for {
+      p <- ProjectsDummy(orgs)
       _ <- p.create(project.value.ref, ProjectGen.projectFields(project.value))
     } yield p
     projs.hideErrorsWith(r => new IllegalStateException(r.reason))
@@ -80,8 +86,9 @@ class ResourcesRoutesSpec
 
   private val acls = AclsDummy(PermissionsDummy(Set(resources.write, resources.read, events.read))).accepted
 
-  private val routes =
-    Route.seal(ResourcesRoutes(identities, acls, projects, ResourcesDummy(projects, fetchSchema).accepted))
+  private val resourcesDummy = ResourcesDummy(orgs, projects, fetchSchema).accepted
+
+  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projects, resourcesDummy))
 
   private val myId        = nxv + "myid"  // Resource created against no schema with id present on the payload
   private val myId2       = nxv + "myid2" // Resource created against schema1 with id present on the payload
@@ -284,17 +291,26 @@ class ResourcesRoutesSpec
 
     "fail to get the events stream without events/read permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
-      forAll(List("/v1/resources/events", "/v1/resources/myorg/myproject/events")) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        }
+      forAll(List("/v1/resources/events", "/v1/resources/myorg/events", "/v1/resources/myorg/myproject/events")) {
+        endpoint =>
+          Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
+            response.status shouldEqual StatusCodes.Forbidden
+            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+          }
       }
     }
 
     "get the events stream with an offset" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
-      forAll(List("/v1/resources/events", "/v1/resources/myorg/myproject/events")) { endpoint =>
+      forAll(
+        List(
+          "/v1/resources/events",
+          "/v1/resources/myorg/events",
+          s"/v1/resources/$uuidOrg/events",
+          "/v1/resources/myorg/myproject/events",
+          s"/v1/resources/$uuidOrg/$uuidProj/events"
+        )
+      ) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
           mediaType shouldBe `text/event-stream`
           response.asString.strip shouldEqual contentOf("/resources/eventstream-2-10.txt").strip

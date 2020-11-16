@@ -28,6 +28,7 @@ import monix.bio.{IO, Task, UIO}
 
 final class ResourcesImpl private (
     agg: ResourcesAggregate,
+    orgs: Organizations,
     projects: Projects,
     eventLog: EventLog[Envelope[ResourceEvent]]
 )(implicit rcr: RemoteContextResolution, uuidF: UUIDF)
@@ -146,6 +147,15 @@ final class ResourcesImpl private (
       .leftMap(WrappedProjectRejection)
       .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
 
+  override def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .leftMap(WrappedOrganizationRejection)
+      .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
+
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
@@ -242,6 +252,7 @@ object ResourcesImpl {
     * @param eventLog    the event log for [[ResourceEvent]]
     */
   final def apply(
+      orgs: Organizations,
       projects: Projects,
       fetchSchema: ResourceRef => UIO[Option[SchemaResource]],
       config: AggregateConfig,
@@ -252,6 +263,6 @@ object ResourcesImpl {
       as: ActorSystem[Nothing],
       clock: Clock[UIO]
   ): UIO[Resources] =
-    aggregate(config, fetchSchema).map(agg => new ResourcesImpl(agg, projects, eventLog))
+    aggregate(config, fetchSchema).map(agg => new ResourcesImpl(agg, orgs, projects, eventLog))
 
 }

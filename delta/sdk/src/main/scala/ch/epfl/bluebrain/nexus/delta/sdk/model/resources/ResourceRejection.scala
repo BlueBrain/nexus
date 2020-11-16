@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import io.circe.syntax._
@@ -129,6 +130,12 @@ object ResourceRejection {
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResourceRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused when interacting with the organizations API
+    */
+  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
+      extends ResourceRejection(rejection.reason)
+
+  /**
     * Rejection returned when attempting to validate a resource against a schema that is deprecated.
     *
     * @param ref     the schema reference
@@ -160,6 +167,7 @@ object ResourceRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
+        case WrappedOrganizationRejection(rejection)     => rejection.asJsonObject
         case WrappedProjectRejection(rejection)          => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)

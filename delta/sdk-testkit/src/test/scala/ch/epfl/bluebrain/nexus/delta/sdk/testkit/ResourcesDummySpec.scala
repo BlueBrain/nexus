@@ -19,6 +19,10 @@ class ResourcesDummySpec
     with ResourcesBehaviors {
 
   override def create: UIO[Resources] =
-    projects.flatMap(ResourcesDummy(_, fetchSchema))
+    for {
+      orgs  <- organizations
+      projs <- projects(orgs)
+      r     <- ResourcesDummy(orgs, projs, fetchSchema)
+    } yield r
 
 }

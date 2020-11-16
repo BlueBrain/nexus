@@ -83,7 +83,7 @@ object OrganizationRejection {
         s"The organization has been successfully created but applying owner permissions on org '$label' failed with the following error: ${aclRejection.reason}"
       )
 
-  implicit private val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
+  implicit private[model] val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)

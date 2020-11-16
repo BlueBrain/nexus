@@ -12,8 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{IncorrectRev, OrganizationIsDeprecated, ProjectAlreadyExists, ProjectIsDeprecated, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
@@ -125,9 +126,8 @@ trait ProjectsBehaviors {
     "not create a project if its organization is deprecated" in {
       val ref = ProjectRef.unsafe("orgDeprecated", "proj")
 
-      projects.create(ref, payload).rejectedWith[ProjectRejection] shouldEqual OrganizationIsDeprecated(
-        ref.organization
-      )
+      projects.create(ref, payload).rejectedWith[ProjectRejection] shouldEqual
+        WrappedOrganizationRejection(OrganizationIsDeprecated(ref.organization))
     }
 
     "not update a project if it doesn't exists" in {
