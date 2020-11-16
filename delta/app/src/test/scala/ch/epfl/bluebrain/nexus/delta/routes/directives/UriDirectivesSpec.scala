@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes.direcives
+package ch.epfl.bluebrain.nexus.delta.routes.directives
 
 import java.util.UUID
 
