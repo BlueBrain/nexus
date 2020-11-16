@@ -395,8 +395,24 @@ class ProjectsRoutesSpec
         )
       }
     }
+
+    "list all projects user has access to" in {
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)), 7L).accepted
+      acls
+        .append(Acl(AclAddress.fromString("/org1/proj").rightValue, Anonymous -> Set(projectsPermissions.read)), 2L)
+        .accepted
+      Get("/v1/projects") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(
+          expectedResults(
+            fetchProjRev3.removeKeys("@context")
+          )
+        )
+      }
+    }
+
     "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
@@ -404,7 +420,7 @@ class ProjectsRoutesSpec
     }
 
     "get the events stream with an offset" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 9L).accepted
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString shouldEqual contentOf(

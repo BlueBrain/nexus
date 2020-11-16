@@ -19,6 +19,7 @@ sealed trait SearchParams[A] {
   def updatedBy: Option[Subject]
   def types: Set[Iri]
   def schema: Option[ResourceRef]
+  def filter: A => Boolean
 
   /**
     * Checks whether a ''resource'' matches the current [[SearchParams]].
@@ -31,7 +32,8 @@ sealed trait SearchParams[A] {
       createdBy.forall(_ == resource.createdBy) &&
       updatedBy.forall(_ == resource.updatedBy) &&
       schema.forall(_ == resource.schema) &&
-      types.subsetOf(resource.types)
+      types.subsetOf(resource.types) &&
+      filter(resource.value)
 
 }
 
@@ -45,13 +47,15 @@ object SearchParams {
     * @param rev        the optional revision of the realm resources
     * @param createdBy  the optional subject who created the realm resource
     * @param updatedBy  the optional subject who updated the realm resource
+    * @param filter     the additional filter to select realms
     */
   final case class RealmSearchParams(
       issuer: Option[String] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
-      updatedBy: Option[Subject] = None
+      updatedBy: Option[Subject] = None,
+      filter: Realm => Boolean = _ => true
   ) extends SearchParams[Realm] {
     override val types: Set[Iri]             = Set(nxv.Realm)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.realms))
@@ -76,23 +80,17 @@ object SearchParams {
     * @param rev        the optional revision of the organization resources
     * @param createdBy  the optional subject who created the organization resource
     * @param updatedBy  the optional subject who updated the resource
+    * @param filter     the additional filter to select organizations
     */
   final case class OrganizationSearchParams(
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
-      updatedBy: Option[Subject] = None
+      updatedBy: Option[Subject] = None,
+      filter: Organization => Boolean
   ) extends SearchParams[Organization] {
     override val types: Set[Iri]             = Set(nxv.Organization)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.organizations))
-  }
-
-  object OrganizationSearchParams {
-
-    /**
-      * An OrganizationSearchParams without any filters.
-      */
-    final val none: OrganizationSearchParams = OrganizationSearchParams()
   }
 
   /**
@@ -103,13 +101,15 @@ object SearchParams {
     * @param rev          the optional revision of the project resources
     * @param createdBy    the optional subject who created the project resource
     * @param updatedBy    the optional subject who updated the resource
+    * @param filter       the additional filter to select projects
     */
   final case class ProjectSearchParams(
       organization: Option[Label] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
-      updatedBy: Option[Subject] = None
+      updatedBy: Option[Subject] = None,
+      filter: Project => Boolean
   ) extends SearchParams[Project] {
     override val types: Set[Iri]             = Set(nxv.Project)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.projects))
@@ -119,11 +119,4 @@ object SearchParams {
         organization.forall(_ == resource.value.organizationLabel)
   }
 
-  object ProjectSearchParams {
-
-    /**
-      * A ProjectSearchParams without any filters.
-      */
-    final val none: ProjectSearchParams = ProjectSearchParams()
-  }
 }

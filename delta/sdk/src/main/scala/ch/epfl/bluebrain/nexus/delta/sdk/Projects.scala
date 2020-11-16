@@ -144,7 +144,7 @@ trait Projects {
     */
   def list(
       pagination: FromPagination,
-      params: ProjectSearchParams = ProjectSearchParams.none
+      params: ProjectSearchParams
   ): UIO[UnscoredSearchResults[ProjectResource]]
 
   /**

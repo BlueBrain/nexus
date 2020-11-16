@@ -129,11 +129,11 @@ trait OrganizationsBehaviors {
     "list organizations" in {
       val result1 = orgs.fetch(label).accepted.value
       val result2 = orgs.fetch(label2).accepted.value
-      val filter  = OrganizationSearchParams(deprecated = Some(true), rev = Some(3))
+      val filter  = OrganizationSearchParams(deprecated = Some(true), rev = Some(3), filter = _ => true)
 
-      orgs.list(FromPagination(0, 1)).accepted shouldEqual
+      orgs.list(FromPagination(0, 1), OrganizationSearchParams(filter = _ => true)).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1)))
-      orgs.list(FromPagination(0, 10)).accepted shouldEqual
+      orgs.list(FromPagination(0, 10), OrganizationSearchParams(filter = _ => true)).accepted shouldEqual
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1), UnscoredResultEntry(result2)))
       orgs.list(FromPagination(0, 10), filter).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(result1)))
