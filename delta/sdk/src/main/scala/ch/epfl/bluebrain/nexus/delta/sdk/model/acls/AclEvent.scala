@@ -95,7 +95,7 @@ object AclEvent {
       subject: Subject
   ) extends AclEvent
 
-  private val context = ContextValue(contexts.resource, contexts.acls)
+  private val context = ContextValue(contexts.metadata, contexts.acls)
 
   @nowarn("cat=unused")
   implicit def aclEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[AclEvent] = {

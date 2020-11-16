@@ -246,7 +246,7 @@ class ResourcesRoutesSpec
       }
     }
 
-    val resourceCtx = json"""{"@context": [{"@vocab": "${nxv.base}"}, "${contexts.resource}"]}"""
+    val resourceCtx = json"""{"@context": [{"@vocab": "${nxv.base}"}, "${contexts.metadata}"]}"""
 
     "fetch a resource" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted

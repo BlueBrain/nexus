@@ -1,7 +1,7 @@
 {
   "@context": [
     "https://bluebrain.github.io/nexus/contexts/realms.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "name": "{{name}}",
   "openIdConfig": "{{openIdConfig}}",

@@ -166,7 +166,7 @@ class OrganizationsRoutesSpec
     }
 
     def expectedResults(results: Json*): Json =
-      json"""{"@context": ["${contexts.resource}", "${contexts.organizations}", "${contexts.search}"], "_total": ${results.size}}""" deepMerge
+      json"""{"@context": ["${contexts.metadata}", "${contexts.organizations}", "${contexts.search}"], "_total": ${results.size}}""" deepMerge
         Json.obj("_results" -> Json.arr(results: _*))
 
     "list organizations" in {

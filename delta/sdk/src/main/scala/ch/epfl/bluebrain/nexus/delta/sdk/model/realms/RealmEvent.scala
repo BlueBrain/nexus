@@ -122,7 +122,7 @@ object RealmEvent {
   import GrantType.Camel._
   import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 
-  private val context = ContextValue(contexts.resource, contexts.realms)
+  private val context = ContextValue(contexts.metadata, contexts.realms)
 
   implicit private[realms] val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)

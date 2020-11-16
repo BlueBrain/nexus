@@ -353,7 +353,7 @@ class ProjectsRoutesSpec
     def expectedResults(results: Json*): Json =
       Json.obj(
         "@context" -> Json.arr(
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/resource.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/metadata.json"),
           Json.fromString("https://bluebrain.github.io/nexus/contexts/projects.json"),
           Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json")
         ),

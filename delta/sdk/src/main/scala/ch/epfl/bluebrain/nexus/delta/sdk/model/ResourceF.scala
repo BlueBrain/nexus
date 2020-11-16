@@ -107,7 +107,7 @@ object ResourceF {
     }
 
   implicit final def resourceFUnitJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceF[Unit]] =
-    JsonLdEncoder.fromCirce((v: ResourceF[Unit]) => v.id(base), iriContext = contexts.resource)
+    JsonLdEncoder.fromCirce((v: ResourceF[Unit]) => v.id(base), iriContext = contexts.metadata)
 
   implicit def resourceFAJsonLdEncoder[A: JsonLdEncoder](implicit base: BaseUri): JsonLdEncoder[ResourceF[A]] =
     JsonLdEncoder.compose(rf => (rf.value, rf.void, rf.id(base)))

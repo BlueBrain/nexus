@@ -135,7 +135,7 @@ object ResourceEvent {
       subject: Subject
   ) extends ResourceEvent
 
-  private val context = ContextValue(contexts.resource)
+  private val context = ContextValue(contexts.metadata)
 
   implicit private[resources] val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)

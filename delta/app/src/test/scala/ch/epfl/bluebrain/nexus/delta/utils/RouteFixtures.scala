@@ -19,7 +19,7 @@ trait RouteFixtures extends TestHelpers {
 
   implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
-      contexts.resource      -> jsonContentOf("contexts/resource.json"),
+      contexts.metadata      -> jsonContentOf("contexts/metadata.json"),
       contexts.error         -> jsonContentOf("contexts/error.json"),
       contexts.organizations -> jsonContentOf("contexts/organizations.json"),
       contexts.identities    -> jsonContentOf("contexts/identities.json"),

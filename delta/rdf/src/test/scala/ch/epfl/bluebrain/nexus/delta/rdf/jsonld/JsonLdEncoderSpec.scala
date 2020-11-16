@@ -70,7 +70,7 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
       val ntriples                      = contentOf("encoder/ntriples.nt")
 
       implicit val remoteResolution: RemoteContextResolution =
-        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext, contexts.resource -> resourceContext)
+        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext, contexts.metadata -> resourceContext)
 
       "return a compacted Json-LD format" in {
         value.toCompactedJsonLd.accepted.json shouldEqual compacted
@@ -119,7 +119,7 @@ object JsonLdEncoderSpec {
       }
 
     implicit final val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
-      JsonLdEncoder.fromCirce(_.id, iriContext = contexts.resource)
+      JsonLdEncoder.fromCirce(_.id, iriContext = contexts.metadata)
 
     implicit def encoderResourceF[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
       JsonLdEncoder.compose(resource => (resource.unit, resource.value, resource.id))

@@ -129,7 +129,7 @@ object ProjectEvent {
       subject: Subject
   ) extends ProjectEvent
 
-  private val context = ContextValue(contexts.resource, contexts.projects)
+  private val context = ContextValue(contexts.metadata, contexts.projects)
 
   @nowarn("cat=unused")
   implicit private val config: Configuration = Configuration.default
