@@ -51,14 +51,20 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       deprecated = Some(false),
       rev = Some(1L),
       createdBy = Some(subject),
-      updatedBy = Some(subject)
+      updatedBy = Some(subject),
+      _ => true
     )
     val resource            = OrganizationGen.resourceFor(OrganizationGen.organization("myorg"), 1L, subject)
 
     "match an organization resource" in {
-      forAll(List(searchWithAllParams, OrganizationSearchParams(), OrganizationSearchParams(rev = Some(1L)))) {
-        search =>
-          search.matches(resource) shouldEqual true
+      forAll(
+        List(
+          searchWithAllParams,
+          OrganizationSearchParams(filter = _ => true),
+          OrganizationSearchParams(rev = Some(1L), filter = _ => true)
+        )
+      ) { search =>
+        search.matches(resource) shouldEqual true
       }
     }
 
@@ -76,12 +82,19 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       deprecated = Some(false),
       rev = Some(1L),
       createdBy = Some(subject),
-      updatedBy = Some(subject)
+      updatedBy = Some(subject),
+      _ => true
     )
     val resource            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproj"), 1L, subject)
 
     "match a project resource" in {
-      forAll(List(searchWithAllParams, ProjectSearchParams(), ProjectSearchParams(rev = Some(1L)))) { search =>
+      forAll(
+        List(
+          searchWithAllParams,
+          ProjectSearchParams(filter = _ => true),
+          ProjectSearchParams(rev = Some(1L), filter = _ => true)
+        )
+      ) { search =>
         search.matches(resource) shouldEqual true
       }
     }

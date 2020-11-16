@@ -87,18 +87,10 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
-      filter: Organization => Boolean = _ => true
+      filter: Organization => Boolean
   ) extends SearchParams[Organization] {
     override val types: Set[Iri]             = Set(nxv.Organization)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.organizations))
-  }
-
-  object OrganizationSearchParams {
-
-    /**
-      * An OrganizationSearchParams without any filters.
-      */
-    final val none: OrganizationSearchParams = OrganizationSearchParams()
   }
 
   /**
@@ -117,7 +109,7 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
-      filter: Project => Boolean = _ => true
+      filter: Project => Boolean
   ) extends SearchParams[Project] {
     override val types: Set[Iri]             = Set(nxv.Project)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.projects))
@@ -127,11 +119,4 @@ object SearchParams {
         organization.forall(_ == resource.value.organizationLabel)
   }
 
-  object ProjectSearchParams {
-
-    /**
-      * A ProjectSearchParams without any filters.
-      */
-    final val none: ProjectSearchParams = ProjectSearchParams()
-  }
 }
