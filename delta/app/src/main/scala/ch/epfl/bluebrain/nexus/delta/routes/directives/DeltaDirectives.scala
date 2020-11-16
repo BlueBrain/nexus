@@ -317,7 +317,7 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
       }
   }
 
-  trait LowPrioToResponseJsonLd {
+  sealed trait LowPrioToResponseJsonLd {
     implicit def valueNoStatusCodeSupport[A: JsonLdEncoder](
         value: A
     )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ToResponseJsonLd =
@@ -362,7 +362,7 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
       apply(value.status, value.headers, UIO.pure(Some(value)))
   }
 
-  trait LowPrioDiscardEntityToResponseJsonLd {
+  sealed trait LowPrioDiscardEntityToResponseJsonLd {
     implicit def valueNoStatusCodeDiscardSupport[A: JsonLdEncoder](
         value: A
     )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): DiscardEntityToResponseJsonLd =
