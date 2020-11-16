@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionSet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 
@@ -45,5 +46,10 @@ package object sdk {
     * Type alias for a schema specific resource.
     */
   type SchemaResource = ResourceF[Schema]
+
+  /**
+    * Type alias for a resolver specific resource.
+    */
+  type ResolverResource = ResourceF[Resolver]
 
 }
