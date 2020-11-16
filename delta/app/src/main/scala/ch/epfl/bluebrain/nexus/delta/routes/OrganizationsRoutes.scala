@@ -9,6 +9,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
+import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
@@ -47,7 +48,6 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
-    with DeltaDirectives
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -80,7 +80,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     onSuccess(organizations.fetchAt(uuid, rev).leftWiden[OrganizationRejection].attempt.runToFuture).flatMap {
       case Right(Some(org)) => authorizeFor(AclAddress.Organization(org.value.label), permission).tmap(_ => org)
       case Right(None)      => failWith(AuthorizationFailed)
-      case Left(r)          => Directive(_ => discardEntityAndComplete(r))
+      case Left(r)          => Directive(_ => discardEntityAndEmit(r))
     }
 
   def routes: Route =
@@ -92,7 +92,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
             (get & extractUri & paginated & orgsSearchParams & pathEndOrSingleSlash) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/orgs") {
                 implicit val searchEncoder: SearchEncoder[OrganizationResource] = searchResultsEncoder(pagination, uri)
-                completeSearch(organizations.list(pagination, params))
+                emit(organizations.list(pagination, params))
               }
             },
             // SSE organizations
@@ -100,7 +100,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
               operationName(s"$prefixSegment/orgs/events") {
                 authorizeFor(AclAddress.Root, events.read).apply {
                   lastEventId { offset =>
-                    completeStream(organizations.events(offset))
+                    emit(organizations.events(offset))
                   }
                 }
               }
@@ -114,12 +114,12 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                         case Some(rev) =>
                           // Update organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            completeIO(organizations.update(id, description, rev).map(_.void))
+                            emit(organizations.update(id, description, rev).map(_.void))
                           }
                         case None      =>
                           // Create organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
-                            completeIO(StatusCodes.Created, organizations.create(id, description).map(_.void))
+                            emit(StatusCodes.Created, organizations.create(id, description).map(_.void))
                           }
                       }
                     }
@@ -128,9 +128,9 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                     authorizeFor(AclAddress.Organization(id), orgs.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch organization at specific revision
-                          completeIOOpt(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
+                          emit(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
                         case None      => // Fetch organization
-                          completeUIOOpt(organizations.fetch(id))
+                          emit(organizations.fetch(id))
 
                       }
                     }
@@ -138,7 +138,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   // Deprecate organization
                   delete {
                     authorizeFor(AclAddress.Organization(id), orgs.write).apply {
-                      parameter("rev".as[Long]) { rev => completeIO(organizations.deprecate(id, rev).map(_.void)) }
+                      parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).map(_.void)) }
                     }
                   }
                 )
@@ -150,11 +150,11 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   parameter("rev".as[Long].?) {
                     case Some(rev) => // Fetch organization from UUID at specific revision
                       fetchByUUIDAndRev(uuid, orgs.read, rev).apply { org =>
-                        completePure(org)
+                        emit(org)
                       }
                     case None      => // Fetch organization from UUID
                       fetchByUUID(uuid, orgs.read).apply { org =>
-                        completePure(org)
+                        emit(org)
                       }
                   }
                 }

@@ -28,7 +28,6 @@ class ProjectsRoutesSpec
     with Matchers
     with CirceLiteral
     with CirceEq
-    with DeltaDirectives
     with IOFixedClock
     with IOValues
     with OptionValues

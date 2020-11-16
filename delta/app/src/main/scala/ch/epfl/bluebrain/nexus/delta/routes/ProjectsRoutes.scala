@@ -8,6 +8,7 @@ import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions}
@@ -40,7 +41,6 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls)
-    with DeltaDirectives
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -71,7 +71,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
           if (project.value.organizationUuid == orgUuid)
             provide(project)
           else
-            Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+            Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
         }
       case None          => failWith(AuthorizationFailed)
     }
@@ -85,10 +85,10 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
           if (project.value.organizationUuid == orgUuid)
             provide(project)
           else
-            Directive(_ => discardEntityAndComplete[ProjectRejection](ProjectNotFound(orgUuid, projectUuid)))
+            Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
         }
       case Right(None)          => failWith(AuthorizationFailed)
-      case Left(r)              => Directive(_ => discardEntityAndComplete(r))
+      case Left(r)              => Directive(_ => discardEntityAndEmit(r))
     }
 
   def routes: Route =
@@ -100,7 +100,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
             (get & pathEndOrSingleSlash & extractUri & paginated & projectsSearchParams) { (uri, pagination, params) =>
               operationName(s"$prefixSegment/projects") {
                 implicit val searchEncoder: SearchEncoder[ProjectResource] = searchResultsEncoder(pagination, uri)
-                completeSearch(projects.list(pagination, params))
+                emit(projects.list(pagination, params))
               }
             },
             // SSE projects
@@ -108,13 +108,13 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
               operationName(s"$prefixSegment/projects/events") {
                 authorizeFor(AclAddress.Root, events.read).apply {
                   lastEventId { offset =>
-                    completeStream(projects.events(offset))
+                    emit(projects.events(offset))
                   }
                 }
               }
             },
             (projectRef & pathEndOrSingleSlash) { ref =>
-              operationName(s"$prefixSegment/projects/{ref}") {
+              operationName(s"$prefixSegment/projects/{org}/{project}") {
                 concat(
                   put {
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
@@ -122,12 +122,12 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                         case Some(rev) =>
                           // Update project
                           entity(as[ProjectFields]) { fields =>
-                            completeIO(projects.update(ref, rev, fields).map(_.void))
+                            emit(projects.update(ref, rev, fields).map(_.void))
                           }
                         case None      =>
                           // Create project
                           entity(as[ProjectFields]) { fields =>
-                            completeIO(StatusCodes.Created, projects.create(ref, fields).map(_.void))
+                            emit(StatusCodes.Created, projects.create(ref, fields).map(_.void))
                           }
                       }
                     }
@@ -136,16 +136,16 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.read).apply {
                       parameter("rev".as[Long].?) {
                         case Some(rev) => // Fetch project at specific revision
-                          completeIOOpt(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
+                          emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
                         case None      => // Fetch project
-                          completeUIOOpt(projects.fetch(ref))
+                          emit(projects.fetch(ref))
                       }
                     }
                   },
                   // Deprecate project
                   delete {
                     authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
-                      parameter("rev".as[Long]) { rev => completeIO(projects.deprecate(ref, rev).map(_.void)) }
+                      parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).map(_.void)) }
                     }
                   }
                 )
@@ -157,11 +157,11 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
                   parameter("rev".as[Long].?) {
                     case Some(rev) => // Fetch project from UUID at specific revision
                       fetchByUUIDAndRev(orgUuid, projectUuid, projectsPermissions.read, rev).apply { project =>
-                        completePure(project)
+                        emit(project)
                       }
                     case None      => // Fetch project from UUID
                       fetchByUUID(orgUuid, projectUuid, projectsPermissions.read).apply { project =>
-                        completePure(project)
+                        emit(project)
                       }
                   }
                 }
