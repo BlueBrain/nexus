@@ -60,7 +60,6 @@ object ResourceGen extends OptionValues with IOValues {
   )(implicit resolution: RemoteContextResolution): Resource = {
     val expanded  = JsonLd.expand(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
-    println(compacted)
     Resource(id, project, tags, schema, source, compacted, expanded)
   }
 
