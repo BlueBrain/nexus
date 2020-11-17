@@ -17,9 +17,13 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
   override def create: UIO[Projects] =
     for {
       eventLog <- EventLog.postgresEventLog[Envelope[ProjectEvent]](EventLogUtils.toEnvelope).hideErrors
-      orgs     <- organizations
       projects <-
-        ProjectsImpl(projectsConfig, eventLog, orgs, ApplyOwnerPermissions(acls, ownerPermissions, serviceAccount))
+        ProjectsImpl(
+          projectsConfig,
+          eventLog,
+          organizations,
+          ApplyOwnerPermissions(acls, ownerPermissions, serviceAccount)
+        )
     } yield projects
 
 }

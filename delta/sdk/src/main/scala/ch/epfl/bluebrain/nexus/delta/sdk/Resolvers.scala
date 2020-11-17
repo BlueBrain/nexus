@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand._
@@ -23,31 +23,31 @@ trait Resolvers {
 
   /**
     * Create a new resolver where the id is either present on the payload or self generated
-    * @param project        the project where the resolver will belong
+    * @param projectRef        the project where the resolver will belong
     * @param resolverFields the payload to create the resolver
     */
-  def create(project: ProjectRef, resolverFields: ResolverFields)(implicit
+  def create(projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Create a new resolver with the provided id
     * @param id             the resolver identifier to expand as the id of the resolver
-    * @param project        the project where the resolver will belong
+    * @param projectRef        the project where the resolver will belong
     * @param resolverFields the payload to create the resolver
     */
-  def create(id: IdSegment, project: ProjectRef, resolverFields: ResolverFields)(implicit
+  def create(id: IdSegment, projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Update an existing resolver
     * @param id             the resolver identifier to expand as the id of the resolver
-    * @param project        the project where the resolver will belong
+    * @param projectRef        the project where the resolver will belong
     * @param rev            the current revision of the resolver
     * @param resolverFields the payload to update the resolver
     */
-  def update(id: IdSegment, project: ProjectRef, rev: Long, resolverFields: ResolverFields)(implicit
+  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -55,52 +55,60 @@ trait Resolvers {
     * Add a tag to an existing resolver
     *
     * @param id        the resolver identifier to expand as the id of the resolver
-    * @param project   the project where the resolver belongs
+    * @param projectRef   the project where the resolver belongs
     * @param tag       the tag name
     * @param tagRev    the tag revision
     * @param rev       the current revision of the resolver
     */
-  def tag(id: IdSegment, project: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
-      caller: Subject
+  def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
+      caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Deprecate an existing resolver
     * @param id      the resolver identifier to expand as the id of the resolver
-    * @param project the project where the resolver belongs
+    * @param projectRef the project where the resolver belongs
     * @param rev     the current revision of the resolver
     */
-  def deprecate(id: IdSegment, project: ProjectRef, rev: Long)(implicit
+  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Fetch the last version of a resolver
     * @param id      the resolver identifier to expand as the id of the resolver
-    * @param project the project where the resolver belongs
+    * @param projectRef the project where the resolver belongs
     */
-  def fetch(id: IdSegment, project: ProjectRef): UIO[Option[ResolverResource]]
+  def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, Option[ResolverResource]]
 
   /**
     * Fetches the resolver at a given revision
     * @param id      the resolver identifier to expand as the id of the resolver
-    * @param project the project where the resolver belongs
+    * @param projectRef the project where the resolver belongs
     * @param rev     the current revision of the resolver
     */
-  def fetchAt(id: IdSegment, project: ProjectRef, rev: Long): IO[RevisionNotFound, Option[ResolverResource]]
+  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, Option[ResolverResource]]
 
   /**
     * Fetches a resolver by tag.
     *
     * @param id        the resolver identifier to expand as the id of the resolver
-    * @param project   the project where the resolver belongs
+    * @param projectRef   the project where the resolver belongs
     * @param tag       the tag revision
     */
   def fetchBy(
       id: IdSegment,
-      project: ProjectRef,
+      projectRef: ProjectRef,
       tag: Label
-  ): IO[ResolverRejection, Option[ResolverResource]]
+  ): IO[ResolverRejection, Option[ResolverResource]] =
+    fetch(id, projectRef).flatMap {
+      case Some(resource) =>
+        resource.value.tags.get(tag) match {
+          case Some(rev) => fetchAt(id, projectRef, rev).leftMap(_ => TagNotFound(tag))
+          case None      => IO.raiseError(TagNotFound(tag))
+        }
+      case None           => IO.pure(None)
+    }
 
   /**
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events

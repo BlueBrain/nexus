@@ -1,8 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.Handler
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 
 /**
   * Enumeration of Resolver rejection types.
@@ -22,6 +25,14 @@ object ResolverRejection {
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends ResolverRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
+
+  /**
+    * Rejection returned when a subject intends to retrieve a resolver at a specific tag, but the provided tag
+    * does not exist.
+    *
+    * @param tag the provided tag
+    */
+  final case class TagNotFound(tag: Label) extends ResolverRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a resolver with an id that already exists.
@@ -87,5 +98,25 @@ object ResolverRejection {
     * @param rejection the rejection which occured with the project
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResolverRejection(rejection.reason)
+
+  /**
+    * Rejection returned when an error occurs at the resource level like when computing ids
+    *
+    * @param rejection the rejection which occured with the resource
+    */
+  final case class WrappedResourceRejection(rejection: ResourceRejection) extends ResolverRejection(rejection.reason)
+
+  /**
+    * Rejection returned when the returned state is the initial state after a Resolvers.evaluation plus a Project.next
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    */
+  final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
+      extends ResolverRejection(s"Unexpected initial state for resolver '$id' of project '$project'.")
+
+  implicit val resourceRejectionWrapper: Handler[ResourceRejection, WrappedResourceRejection] =
+    (value: ResourceRejection) => WrappedResourceRejection(value)
+
+  implicit val projectRejectionWrapper: Handler[ProjectRejection, WrappedProjectRejection] =
+    (value: ProjectRejection) => WrappedProjectRejection(value)
 
 }

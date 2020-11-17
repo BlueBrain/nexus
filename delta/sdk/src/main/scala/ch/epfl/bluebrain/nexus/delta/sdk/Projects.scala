@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -68,18 +68,19 @@ trait Projects {
   def fetch(ref: ProjectRef): UIO[Option[ProjectResource]]
 
   /**
-    * Fetches the current active project, rejecting if the project does not exists or if the project is deprecated
+    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated
+    * @param ref                   the project reference
+    * @param rejectionHandler  allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project]
+  def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project]
 
   /**
-    * Fetches the current project, rejecting if the project does not exists
+    * Fetches the current project from cache, rejecting if the project does not exists
+    *
+    * @param ref the project reference
+    * @param rejectionHandler  allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchProject(ref: ProjectRef): IO[ProjectRejection, Project] =
-    fetch(ref).flatMap {
-      case Some(resource) => IO.pure(resource.value)
-      case None           => IO.raiseError(ProjectNotFound(ref))
-    }
+  def fetchFromCache[R](ref: ProjectRef)(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.
@@ -183,24 +184,17 @@ object Projects {
     }
 
   private[delta] def evaluate(
-      fetchOrg: Label => UIO[Option[OrganizationResource]]
+      fetchOrg: Label => IO[ProjectRejection, Organization]
   )(state: ProjectState, command: ProjectCommand)(implicit
       clock: Clock[UIO] = IO.clock,
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
 
-    def validateOrg(label: Label) =
-      fetchOrg(label).flatMap {
-        case Some(org) if org.deprecated => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(label)))
-        case Some(org)                   => IO.pure(org)
-        case None                        => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
-      }
-
     def create(c: CreateProject) =
       state match {
         case Initial =>
           for {
-            org  <- validateOrg(c.ref.organization)
+            org  <- fetchOrg(c.ref.organization)
             uuid <- uuidF()
             now  <- instant
           } yield {
@@ -208,7 +202,7 @@ object Projects {
               c.ref.project,
               uuid,
               c.ref.organization,
-              org.value.uuid,
+              org.uuid,
               1L,
               c.description,
               c.apiMappings,
@@ -232,7 +226,7 @@ object Projects {
           IO.raiseError(ProjectIsDeprecated(c.ref))
         case s: Current                   =>
           // format: off
-          validateOrg(c.ref.organization) >>
+          fetchOrg(c.ref.organization) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
           // format: on
       }
@@ -247,7 +241,7 @@ object Projects {
           IO.raiseError(ProjectIsDeprecated(c.ref))
         case s: Current                   =>
           // format: off
-          validateOrg(c.ref.organization) >>
+          fetchOrg(c.ref.organization) >>
               instant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }

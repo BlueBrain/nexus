@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Resources, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Resources, SchemaResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -68,23 +68,12 @@ trait ResourcesBehaviors {
     case ref if ref.iri == schema2.id => UIO.pure(Some(SchemaGen.resourceFor(schema2, deprecated = true)))
     case _                            => UIO.pure(None)
   }
-  lazy val organizations: UIO[OrganizationsDummy] = {
-    val orgs = for {
-      o <- OrganizationsDummy()
-      _ <- o.create(org, None)
-    } yield o
-    orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }
 
-  def projects(orgs: Organizations): UIO[ProjectsDummy] = {
-    val projects = for {
-      p <- ProjectsDummy(orgs)
-      _ <- p.create(project.value.ref, ProjectGen.projectFields(project.value))
-      _ <- p.create(projectDeprecated.value.ref, ProjectGen.projectFields(projectDeprecated.value))
-      _ <- p.deprecate(projectDeprecated.value.ref, 1L)
-    } yield p
-    projects.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }
+  lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
+    orgsToCreate = org :: Nil,
+    projectsToCreate = project.value :: projectDeprecated.value :: Nil,
+    projectsToDeprecate = projectDeprecated.value.ref :: Nil
+  )
 
   def create: UIO[Resources]
 

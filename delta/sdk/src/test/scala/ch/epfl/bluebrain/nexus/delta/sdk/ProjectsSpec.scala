@@ -40,7 +40,6 @@ class ProjectsSpec
     val base                   = PrefixIri.unsafe(iri"http://example.com/base/")
     val vocab                  = PrefixIri.unsafe(iri"http://example.com/vocab/")
     val org1                   = OrganizationGen.currentState("org", 1L)
-    val org2                   = OrganizationGen.currentState("org2", 1L, deprecated = true)
     val current                = ProjectGen.currentState(
       "org",
       "proj",
@@ -57,9 +56,16 @@ class ProjectsSpec
     val orgUuid                = current.organizationUuid
     val desc                   = current.description
     val desc2                  = Some("desc2")
-    val org2Label              = org2.label
+    val org2Label              = Label.unsafe("org2")
     val subject                = User("myuser", label)
-    val orgs                   = ioFromMap(orgLabel -> org1.toResource.value, org2Label -> org2.toResource.value)
+    val orgs                   = ioFromMap(
+      Map(orgLabel -> org1.toResource.value.value),
+      (label: Label) =>
+        label match {
+          case l if l == org2Label => WrappedOrganizationRejection(OrganizationIsDeprecated(org2Label))
+          case _                   => WrappedOrganizationRejection(OrganizationNotFound(label))
+        }
+    )
 
     val ref  = ProjectRef(orgLabel, label)
     val ref2 = ProjectRef(org2Label, label)

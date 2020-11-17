@@ -20,9 +20,8 @@ class ResourcesDummySpec
 
   override def create: UIO[Resources] =
     for {
-      orgs  <- organizations
-      projs <- projects(orgs)
-      r     <- ResourcesDummy(orgs, projs, fetchSchema)
+      (orgs, projs) <- projectSetup
+      r             <- ResourcesDummy(orgs, projs, fetchSchema)
     } yield r
 
 }

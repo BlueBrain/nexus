@@ -40,7 +40,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project                    <- fetchActiveProject(projectRef)
+      project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- ResourceSourceParser.asJsonLd(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
@@ -53,7 +53,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project               <- fetchActiveProject(projectRef)
+      project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
@@ -68,7 +68,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project               <- fetchActiveProject(projectRef)
+      project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
@@ -84,7 +84,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- fetchActiveProject(projectRef)
+      project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
@@ -97,7 +97,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- fetchActiveProject(projectRef)
+      project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
@@ -109,7 +109,7 @@ final class ResourcesImpl private (
       schemaOpt: Option[IdSegment]
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
-      project      <- fetchProject(projectRef)
+      project      <- projects.fetchFromCache(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       state        <- currentState(projectRef, iri)
@@ -123,7 +123,7 @@ final class ResourcesImpl private (
       rev: Long
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
-      project      <- fetchProject(projectRef)
+      project      <- projects.fetchFromCache(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       state        <- stateAt(projectRef, iri, rev)
@@ -143,8 +143,7 @@ final class ResourcesImpl private (
       offset: Offset
   ): IO[WrappedProjectRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
-      .fetchProject(projectRef)
-      .leftMap(WrappedProjectRejection)
+      .fetchFromCache(projectRef)
       .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
 
   override def events(
@@ -153,7 +152,6 @@ final class ResourcesImpl private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .leftMap(WrappedOrganizationRejection)
       .as(eventLog.eventsByTag(s"${Organizations.moduleType}=$organization", offset))
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
@@ -176,12 +174,6 @@ final class ResourcesImpl private (
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
-
-  private def fetchActiveProject(projectRef: ProjectRef) =
-    projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-
-  private def fetchProject(projectRef: ProjectRef) =
-    projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
 
   private def expandIri(segment: IdSegment, project: Project) =
     IO.fromOption(segment.toIri(project.apiMappings, project.base), InvalidResourceId(segment.asString))

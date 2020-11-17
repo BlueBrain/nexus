@@ -71,13 +71,26 @@ final class ProjectsDummy private (
 
   override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] = cache.fetch(ref)
 
-  override def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project] =
-    organizations.fetchActiveOrganization(ref.organization).leftMap(WrappedOrganizationRejection) >>
+  override def fetchActiveProject[R](
+      ref: ProjectRef
+  )(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project] =
+    (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case None                                  => IO.raiseError(ProjectNotFound(ref))
         case Some(resource)                        => IO.pure(resource.value)
+      }).leftMap(rejectionHandler.to)
+
+  override def fetchFromCache[R](
+      ref: ProjectRef
+  )(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project] =
+    cache
+      .fetch(ref)
+      .flatMap {
+        case Some(resource) => IO.pure(resource.value)
+        case None           => IO.raiseError(ProjectNotFound(ref))
       }
+      .leftMap(rejectionHandler.to)
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     journal
@@ -96,7 +109,7 @@ final class ProjectsDummy private (
     semaphore.withPermit {
       for {
         state <- journal.currentState(cmd.ref, Initial, Projects.next).map(_.getOrElse(Initial))
-        event <- Projects.evaluate(organizations.fetch)(state, cmd)
+        event <- Projects.evaluate(organizations.fetchActiveOrganization[ProjectRejection])(state, cmd)
         _     <- journal.add(event)
         res   <- IO.fromEither(Projects.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
         _     <- cache.setToCache(res)
