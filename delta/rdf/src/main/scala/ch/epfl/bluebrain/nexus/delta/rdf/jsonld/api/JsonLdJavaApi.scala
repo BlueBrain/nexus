@@ -25,14 +25,14 @@ object JsonLdJavaApi extends JsonLdApi {
 
   System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
-  override private[rdf] def compact(input: Json, ctx: Json)(implicit
+  override private[rdf] def compact(input: Json, ctx: ContextValue)(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonObject] =
     for {
       obj          <- tryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
-      ctxObj       <- tryOrConversionErr(JsonUtils.fromString(ctx.noSpaces), "building context")
-      options      <- documentLoader(input, ctx).map(toOpts)
+      ctxObj       <- tryOrConversionErr(JsonUtils.fromString(ctx.toString), "building context")
+      options      <- documentLoader(input, ctx.contextObj).map(toOpts)
       compacted    <- tryOrConversionErr(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
       compactedObj <- IO.fromEither(toJsonObjectOrErr(compacted))
     } yield compactedObj
@@ -79,19 +79,18 @@ object JsonLdJavaApi extends JsonLdApi {
     } yield expandedSeqObj
   }
 
-  override private[rdf] def context(value: Json)(implicit
+  override private[rdf] def context(value: ContextValue)(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonLdContext] =
     for {
-      dl      <- documentLoader(value)
-      jOpts    = toOpts(dl)
-      cxtValue = value.topContextValueOrEmpty
-      ctx     <- IO.fromTry(Try(new Context(jOpts).parse(JsonUtils.fromString(cxtValue.toString))))
-                   .leftMap(err => UnexpectedJsonLdContext(err.getMessage))
-      pm       = ctx.getPrefixes(true).asScala.toMap.map { case (k, v) => k -> iri"$v" }
-      aliases  = (ctx.getPrefixes(false).asScala.toMap -- pm.keySet).map { case (k, v) => k -> iri"$v" }
-    } yield JsonLdContext(cxtValue, getIri(ctx, keywords.base), getIri(ctx, keywords.vocab), aliases, pm)
+      dl     <- documentLoader(value.contextObj)
+      jOpts   = toOpts(dl)
+      ctx    <- IO.fromTry(Try(new Context(jOpts).parse(JsonUtils.fromString(value.toString))))
+                  .leftMap(err => UnexpectedJsonLdContext(err.getMessage))
+      pm      = ctx.getPrefixes(true).asScala.toMap.map { case (k, v) => k -> iri"$v" }
+      aliases = (ctx.getPrefixes(false).asScala.toMap -- pm.keySet).map { case (k, v) => k -> iri"$v" }
+    } yield JsonLdContext(value, getIri(ctx, keywords.base), getIri(ctx, keywords.vocab), aliases, pm)
 
   private def documentLoader(jsons: Json*)(implicit resolution: RemoteContextResolution): IO[RdfError, DocumentLoader] =
     IO.parTraverseUnordered(jsons)(resolution(_))

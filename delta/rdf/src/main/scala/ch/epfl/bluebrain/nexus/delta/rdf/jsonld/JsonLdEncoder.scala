@@ -51,7 +51,7 @@ trait JsonLdEncoder[A] {
     for {
       expanded <- expand(value)
       graph    <- expanded.toGraph
-      dot      <- graph.toDot(context(value).contextObj)
+      dot      <- graph.toDot(context(value))
     } yield dot
 
   /**

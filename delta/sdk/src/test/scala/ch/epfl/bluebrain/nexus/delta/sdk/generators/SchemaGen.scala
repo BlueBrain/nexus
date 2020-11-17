@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, S
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import org.scalatest.OptionValues
@@ -25,7 +26,7 @@ object SchemaGen extends OptionValues with IOValues {
   )(implicit resolution: RemoteContextResolution): Schema = {
     val expanded  = JsonLd.expand(source).accepted.replaceId(id)
     val graph     = expanded.toGraph.accepted
-    val compacted = expanded.toCompacted(source).accepted
+    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Schema(id, project, source, compacted, graph)
   }
 

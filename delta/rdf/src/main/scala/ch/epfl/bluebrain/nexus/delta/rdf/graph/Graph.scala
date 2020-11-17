@@ -129,33 +129,33 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       .map(NTriples(_, rootNode))
 
   /**
-    * Attempts to convert the current Graph with the passed ''context''
-    * as Json to the DOT format: https://graphviz.org/doc/info/lang.html
+    * Attempts to convert the current Graph with the passed ''context'' value
+    * to the DOT format: https://graphviz.org/doc/info/lang.html
     *
     * The context will be inspected to populate its fields and then the conversion will be performed.
     */
   def toDot(
-      context: Json = Json.obj()
+      contextValue: ContextValue = ContextValue.empty
   )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, Dot] =
     for {
-      resolvedCtx <- JsonLdContext(context)
+      resolvedCtx <- JsonLdContext(contextValue)
       ctx          = dotContext(rootResource, resolvedCtx)
       string      <- tryOrConversionErr(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
     } yield Dot(string, rootNode)
 
   /**
-    * Attempts to convert the current Graph with the passed ''context'' as Json
+    * Attempts to convert the current Graph with the passed ''context'' value
     * to the JSON-LD compacted format:  https://www.w3.org/TR/json-ld11-api/#compaction-algorithms
     *
     * Note: This is done in two steps, first transforming the graph to JSON-LD expanded format and then compacting it.
     */
-  def toCompactedJsonLd(context: Json)(implicit
+  def toCompactedJsonLd(contextValue: ContextValue)(implicit
       api: JsonLdApi,
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd] =
     if (rootNode.isIri) {
-      api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, context, rootNode))
+      api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, contextValue, rootNode))
     } else {
       // A new model is created where the rootNode is a fake Iri.
       // This is done in order to be able to perform the framing, since framing won't work on blank nodes.
@@ -164,7 +164,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       val newModel = replace(rootNode, fakeId).model
       for {
         expanded  <- api.fromRdf(newModel)
-        framed    <- JsonLd.frame(expanded.asJson, context, fakeId)
+        framed    <- JsonLd.frame(expanded.asJson, contextValue, fakeId)
         fakeIdJson = fakeId.asJson
       } yield framed.copy(obj = framed.obj.filter { case (_, v) => v != fakeIdJson }, rootId = self.rootNode)
     }
@@ -179,7 +179,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       resolution: RemoteContextResolution,
       opts: JsonLdOptions
   ): IO[RdfError, ExpandedJsonLd] =
-    toCompactedJsonLd(Json.obj()).flatMap(_.toExpanded)
+    toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded)
 
   /**
     * Replaces the root node

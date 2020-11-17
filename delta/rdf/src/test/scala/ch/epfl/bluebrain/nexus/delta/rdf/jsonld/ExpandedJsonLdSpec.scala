@@ -14,7 +14,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
   "An expanded Json-LD" should {
     val compacted        = jsonContentOf("compacted.json")
-    val context          = compacted.topContextValueOrEmpty.contextObj
+    val context          = compacted.topContextValueOrEmpty
     val expectedExpanded = jsonContentOf("expanded.json")
 
     "be constructed successfully" in {
@@ -24,7 +24,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     "be constructed successfully without @id" in {
       val name             = vocab + "name"
       val expectedExpanded = json"""[{"@type": ["${schema.Person}"], "$name": [{"@value": "Me"} ] } ]"""
-      val compacted        = json"""{"@type": "Person", "name": "Me"}""".addContext(context)
+      val compacted        = json"""{"@type": "Person", "name": "Me"}""".addContext(context.contextObj)
       val expanded         = JsonLd.expand(compacted).accepted
       expanded shouldEqual JsonLd.expandedUnsafe(expectedExpanded, expanded.rootId)
       expanded.rootId shouldBe a[BNode]
@@ -60,31 +60,32 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "fetch root @type" in {
-      val compacted = json"""{"@id": "$iri", "@type": "Person"}""".addContext(context)
+      val compacted = json"""{"@id": "$iri", "@type": "Person"}""".addContext(context.contextObj)
       val expanded  = JsonLd.expand(compacted).accepted
       expanded.types shouldEqual List(schema.Person)
 
-      val compactedMultipleTypes = json"""{"@id": "$iri", "@type": ["Person", "Hero"]}""".addContext(context)
+      val compactedMultipleTypes = json"""{"@id": "$iri", "@type": ["Person", "Hero"]}""".addContext(context.contextObj)
       val resultMultiple         = JsonLd.expand(compactedMultipleTypes).accepted
       resultMultiple.types shouldEqual List(schema.Person, vocab + "Hero")
     }
 
     "fetch @id values" in {
-      val compacted = json"""{"@id": "$iri", "customid": "Person"}""".addContext(context)
+      val compacted = json"""{"@id": "$iri", "customid": "Person"}""".addContext(context.contextObj)
       val expanded  = JsonLd.expand(compacted).accepted
       expanded.ids(vocab + "customid") shouldEqual List(base + "Person")
 
-      val compactedMultipleCustomId = json"""{"@id": "$iri", "customid": ["Person", "Hero"]}""".addContext(context)
+      val compactedMultipleCustomId =
+        json"""{"@id": "$iri", "customid": ["Person", "Hero"]}""".addContext(context.contextObj)
       val resultMultiple            = JsonLd.expand(compactedMultipleCustomId).accepted
       resultMultiple.ids(vocab + "customid") shouldEqual List(base + "Person", base + "Hero")
     }
 
     "fetch @value values" in {
-      val compacted = json"""{"@id": "$iri", "tags": "a"}""".addContext(context)
+      val compacted = json"""{"@id": "$iri", "tags": "a"}""".addContext(context.contextObj)
       val expanded  = JsonLd.expand(compacted).accepted
       expanded.literals[String](vocab + "tags") shouldEqual List("a")
 
-      val compactedMultipleTags = json"""{"@id": "$iri", "tags": ["a", "b", "c"]}""".addContext(context)
+      val compactedMultipleTags = json"""{"@id": "$iri", "tags": ["a", "b", "c"]}""".addContext(context.contextObj)
       val resultMultiple        = JsonLd.expand(compactedMultipleTags).accepted
       resultMultiple.literals[String](vocab + "tags") shouldEqual List("a", "b", "c")
     }
@@ -137,7 +138,7 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
     }
 
     "be converted to compacted form without @id" in {
-      val compacted = json"""{"@type": "Person", "name": "Me"}""".addContext(context)
+      val compacted = json"""{"@type": "Person", "name": "Me"}""".addContext(context.contextObj)
 
       val expanded = JsonLd.expand(compacted).accepted
       val result   = expanded.toCompacted(context).accepted

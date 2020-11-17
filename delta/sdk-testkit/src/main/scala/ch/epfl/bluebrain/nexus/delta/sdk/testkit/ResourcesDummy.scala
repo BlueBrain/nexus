@@ -61,7 +61,7 @@ final class ResourcesDummy private (
       project               <- fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
@@ -76,7 +76,7 @@ final class ResourcesDummy private (
       project               <- fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
 
