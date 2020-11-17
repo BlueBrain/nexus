@@ -1,7 +1,7 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/organizations.json"
+    "https://bluebrain.github.io/nexus/contexts/organizations.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "description": "{{description}}",
   "_uuid": "{{uuid}}",

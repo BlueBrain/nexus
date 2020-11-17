@@ -48,7 +48,7 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
       contexts.permissions   -> ioJsonContentOf("/contexts/permissions.json").memoizeOnSuccess,
       contexts.projects      -> ioJsonContentOf("/contexts/projects.json").memoizeOnSuccess,
       contexts.realms        -> ioJsonContentOf("/contexts/realms.json").memoizeOnSuccess,
-      contexts.resource      -> ioJsonContentOf("/contexts/resource.json").memoizeOnSuccess,
+      contexts.metadata      -> ioJsonContentOf("/contexts/metadata.json").memoizeOnSuccess,
       contexts.search        -> ioJsonContentOf("/contexts/search.json").memoizeOnSuccess,
       contexts.shacl         -> ioJsonContentOf("/contexts/shacl.json").memoizeOnSuccess
     )

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{OwnerPermissionsFailed, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
@@ -70,6 +70,14 @@ final class ProjectsDummy private (
     eval(DeprecateProject(ref, rev, caller))
 
   override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] = cache.fetch(ref)
+
+  override def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project] =
+    organizations.fetchActiveOrganization(ref.organization).leftMap(WrappedOrganizationRejection) >>
+      fetch(ref).flatMap {
+        case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
+        case None                                  => IO.raiseError(ProjectNotFound(ref))
+        case Some(resource)                        => IO.pure(resource.value)
+      }
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     journal

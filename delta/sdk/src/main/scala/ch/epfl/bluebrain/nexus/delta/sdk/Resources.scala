@@ -183,6 +183,18 @@ trait Resources {
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
     * are recorded.
     *
+    * @param organization the organization label reference where the resource belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]]
+
+  /**
+    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
+    * are recorded.
+    *
     * @param offset     the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]]

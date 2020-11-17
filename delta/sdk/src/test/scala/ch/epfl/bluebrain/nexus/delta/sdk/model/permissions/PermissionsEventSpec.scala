@@ -15,13 +15,13 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelpers with IOValues with CirceLiteral {
 
-  private val resourceContext    = jsonContentOf("contexts/resource.json")
+  private val resourceContext    = jsonContentOf("contexts/metadata.json")
   private val permissionsContext = jsonContentOf("contexts/permissions.json")
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost")
 
   implicit private val res: RemoteContextResolution =
-    RemoteContextResolution.fixed(contexts.resource -> resourceContext, contexts.permissions -> permissionsContext)
+    RemoteContextResolution.fixed(contexts.metadata -> resourceContext, contexts.permissions -> permissionsContext)
 
   "A PermissionsAppended" should {
     val event: PermissionsEvent = PermissionsAppended(
@@ -34,7 +34,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
       event.toCompactedJsonLd.accepted.json shouldEqual
         json"""{
           "@context": [
-            "https://bluebrain.github.io/nexus/contexts/resource.json",
+            "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
           "@type": "PermissionsAppended",
@@ -89,7 +89,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
       event.toCompactedJsonLd.accepted.json shouldEqual
         json"""{
           "@context": [
-            "https://bluebrain.github.io/nexus/contexts/resource.json",
+            "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
           "@type": "PermissionsSubtracted",
@@ -115,7 +115,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
       event.toCompactedJsonLd.accepted.json shouldEqual
         json"""{
           "@context": [
-            "https://bluebrain.github.io/nexus/contexts/resource.json",
+            "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
           "@type": "PermissionsReplaced",
@@ -140,7 +140,7 @@ class PermissionsEventSpec extends AnyWordSpecLike with Matchers with TestHelper
       event.toCompactedJsonLd.accepted.json shouldEqual
         json"""{
           "@context": [
-            "https://bluebrain.github.io/nexus/contexts/resource.json",
+            "https://bluebrain.github.io/nexus/contexts/metadata.json",
             "https://bluebrain.github.io/nexus/contexts/permissions.json"
           ],
           "@type": "PermissionsDeleted",

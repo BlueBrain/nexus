@@ -39,5 +39,5 @@ object ServiceError {
   }
 
   implicit val serviceErrorJsonLdEncoder: JsonLdEncoder[ServiceError] =
-    JsonLdEncoder.compactFromCirce(contexts.error)
+    JsonLdEncoder.fromCirce(contexts.error)
 }

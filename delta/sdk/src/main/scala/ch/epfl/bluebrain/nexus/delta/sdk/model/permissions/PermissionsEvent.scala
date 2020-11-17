@@ -80,7 +80,7 @@ object PermissionsEvent {
       subject: Subject
   ) extends PermissionsEvent
 
-  private val context = ContextValue(contexts.resource, contexts.permissions)
+  private val context = ContextValue(contexts.metadata, contexts.permissions)
 
   @nowarn("cat=unused")
   implicit final def permissionsEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[PermissionsEvent] = {
@@ -103,6 +103,6 @@ object PermissionsEvent {
     implicit val encoder: Encoder.AsObject[PermissionsEvent] =
       deriveConfiguredEncoder[PermissionsEvent]
 
-    JsonLdEncoder.compactFromCirce[PermissionsEvent](context)
+    JsonLdEncoder.fromCirce[PermissionsEvent](context)
   }
 }

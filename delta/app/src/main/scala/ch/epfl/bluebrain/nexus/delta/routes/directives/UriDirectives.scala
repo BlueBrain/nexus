@@ -7,13 +7,20 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
 import akka.http.scaladsl.server.{Directive, Directive0, Directive1, InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives.discardEntityAndEmit
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{from, size, FromPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import monix.execution.Scheduler
 
 import scala.util.{Failure, Success, Try}
 
@@ -70,6 +77,27 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
+    * Consumes two path Segments parsing them as UUIDs
+    */
+  def projectRefFromUuids: Directive[(UUID, UUID)] =
+    uuid & uuid
+
+  /**
+    * Consumes two path Segments parsing them as UUIDs and fetch the [[ProjectRef]] looking up on the ''projects'' bundle.
+    * It fails fast if the project with the passed UUIDs is not found.
+    */
+  def projectRefFromUuidsLookup(
+      projects: Projects
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive1[ProjectRef] =
+    projectRefFromUuids.tflatMap { case (orgUuid, projectUuid) =>
+      onSuccess(projects.fetch(projectUuid).runToFuture).flatMap {
+        case Some(project) if project.value.organizationUuid == orgUuid => provide(project.value.ref)
+        case Some(_)                                                    => Directive(_ => discardEntityAndEmit(ProjectNotFound(orgUuid, projectUuid): ProjectRejection))
+        case None                                                       => failWith(AuthorizationFailed)
+      }
+    }
+
+  /**
     * This directive passes when the query parameter specified is not present
     *
     * @param name the parameter name
@@ -112,6 +140,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       case Some(other)       => reject(InvalidRequiredValueForQueryParamRejection("format", "compacted|expanded", other))
       case None              => provide(JsonLdFormat.Compacted)
     }
+
 }
 
 object UriDirectives extends UriDirectives

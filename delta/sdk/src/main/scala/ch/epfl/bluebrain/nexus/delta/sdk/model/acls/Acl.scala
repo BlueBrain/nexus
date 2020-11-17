@@ -112,5 +112,5 @@ object Acl {
   val context: ContextValue = ContextValue(contexts.acls)
 
   implicit def aclJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Acl] =
-    JsonLdEncoder.compactFromCirce(context)
+    JsonLdEncoder.fromCirce(context)
 }

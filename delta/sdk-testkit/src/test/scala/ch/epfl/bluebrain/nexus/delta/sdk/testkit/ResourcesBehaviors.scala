@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
@@ -20,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Resources, SchemaResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Resources, SchemaResource}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -75,10 +76,9 @@ trait ResourcesBehaviors {
     orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
   }
 
-  lazy val projects: UIO[ProjectsDummy] = {
+  def projects(orgs: Organizations): UIO[ProjectsDummy] = {
     val projects = for {
-      o <- organizations
-      p <- ProjectsDummy(o)
+      p <- ProjectsDummy(orgs)
       _ <- p.create(project.value.ref, ProjectGen.projectFields(project.value))
       _ <- p.create(projectDeprecated.value.ref, ProjectGen.projectFields(projectDeprecated.value))
       _ <- p.deprecate(projectDeprecated.value.ref, 1L)
@@ -481,7 +481,12 @@ trait ResourcesBehaviors {
       )
 
       "get the different events from start" in {
-        forAll(List(resources.events(NoOffset), resources.events(projectRef, NoOffset).accepted)) { stream =>
+        val streams = List(
+          resources.events(NoOffset),
+          resources.events(org, NoOffset).accepted,
+          resources.events(projectRef, NoOffset).accepted
+        )
+        forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
             .take(11L)
@@ -493,7 +498,12 @@ trait ResourcesBehaviors {
       }
 
       "get the different events from offset 2" in {
-        forAll(List(resources.events(Sequence(2L)), resources.events(projectRef, Sequence(2L)).accepted)) { stream =>
+        val streams = List(
+          resources.events(Sequence(2L)),
+//          resources.events(org, Sequence(2L)).accepted,
+          resources.events(projectRef, Sequence(2L)).accepted
+        )
+        forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
             .take(9L)
@@ -507,6 +517,11 @@ trait ResourcesBehaviors {
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
         resources.events(projectRef, NoOffset).rejected shouldEqual WrappedProjectRejection(ProjectNotFound(projectRef))
+      }
+
+      "reject if organization does not exist" in {
+        val org = Label.unsafe("other")
+        resources.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
       }
     }
   }

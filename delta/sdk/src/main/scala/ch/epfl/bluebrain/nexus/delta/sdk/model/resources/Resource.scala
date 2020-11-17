@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Dot
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd, JsonLdEncoder}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLdEncoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -38,14 +37,7 @@ object Resource {
   implicit val resourceJsonLdEncoder: JsonLdEncoder[Resource] =
     new JsonLdEncoder[Resource] {
 
-      override def apply(value: Resource): IO[RdfError, JsonLd] =
-        IO.pure(value.expanded)
-
-      override def compact(value: Resource, context: ContextValue)(implicit
-          options: JsonLdOptions,
-          api: JsonLdApi,
-          resolution: RemoteContextResolution
-      ): IO[RdfError, CompactedJsonLd] =
+      override def compact(value: Resource): IO[RdfError, CompactedJsonLd] =
         IO.pure(value.compacted)
 
       override def expand(value: Resource)(implicit
@@ -55,13 +47,7 @@ object Resource {
       ): IO[RdfError, ExpandedJsonLd] =
         IO.pure(value.expanded)
 
-      override def dot(value: Resource, context: ContextValue)(implicit
-          options: JsonLdOptions,
-          api: JsonLdApi,
-          resolution: RemoteContextResolution
-      ): IO[RdfError, Dot] =
-        super.dot(value, value.source.topContextValueOrEmpty)
-
-      override val defaultContext: ContextValue = ContextValue.empty
+      override def context(value: Resource): ContextValue =
+        value.source.topContextValueOrEmpty
     }
 }

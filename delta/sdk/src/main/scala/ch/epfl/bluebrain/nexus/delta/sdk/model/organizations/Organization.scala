@@ -34,5 +34,5 @@ object Organization {
 
   val context: ContextValue                                           = ContextValue(contexts.organizations)
   implicit val organizationJsonLdEncoder: JsonLdEncoder[Organization] =
-    JsonLdEncoder.compactFromCirce(context)
+    JsonLdEncoder.fromCirce(context)
 }

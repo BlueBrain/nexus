@@ -220,12 +220,12 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
   private def toResponseJsonLd[A <: Event: JsonLdEncoder](
       status: => StatusCode,
       stream: Stream[Task, Envelope[A]]
-  )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): Route =
+  )(implicit s: Scheduler, jo: JsonKeyOrdering): Route =
     complete(status, Source.fromGraph[ServerSentEvent, Any](stream.evalMap(sseEncode[A](_)).toSource))
 
   private def sseEncode[A <: Event: JsonLdEncoder](
       envelope: Envelope[A]
-  )(implicit jo: JsonKeyOrdering, cr: RemoteContextResolution): IO[RdfError, ServerSentEvent] =
+  )(implicit jo: JsonKeyOrdering): IO[RdfError, ServerSentEvent] =
     envelope.event.toCompactedJsonLd.map { jsonLd =>
       val id: String = envelope.offset match {
         case TimeBasedUUID(value) => value.toString
@@ -302,7 +302,7 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
 
     implicit def streamSupport[E <: Event: JsonLdEncoder](
         stream: Stream[Task, Envelope[E]]
-    )(implicit s: Scheduler, jo: JsonKeyOrdering, cr: RemoteContextResolution): ToResponseJsonLd =
+    )(implicit s: Scheduler, jo: JsonKeyOrdering): ToResponseJsonLd =
       new ToResponseJsonLd {
         override def apply(statusOverride: Option[StatusCode]): Route =
           toResponseJsonLd(statusOverride.getOrElse(OK), stream)
@@ -378,8 +378,10 @@ object DeltaDirectives extends UriDirectives with RdfMarshalling {
     /**
       * Constructs a result encoding the value as a [[CompactedJsonLd]]
       */
-    def compactedJsonLd[A: JsonLdEncoder](value: Option[A], successStatus: StatusCode, successHeaders: Seq[HttpHeader])(
-        implicit cr: RemoteContextResolution
+    def compactedJsonLd[A: JsonLdEncoder](
+        value: Option[A],
+        successStatus: StatusCode,
+        successHeaders: Seq[HttpHeader]
     ): IO[RdfError, Result[JsonLd]] =
       value.fold(notFound.toCompactedJsonLd.map(v => Result(StatusCodes.NotFound, Nil, v: JsonLd))) { r: A =>
         r.toCompactedJsonLd.map { v => Result(successStatus, successHeaders, v) }

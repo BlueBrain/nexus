@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -101,7 +102,8 @@ class ProjectsSpec
           current -> DeprecateProject(ref2, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(orgs)(state, cmd).rejectedWith[OrganizationIsDeprecated]
+          evaluate(orgs)(state, cmd).rejected shouldEqual
+            WrappedOrganizationRejection(OrganizationIsDeprecated(ref2.organization))
         }
       }
 
@@ -113,7 +115,8 @@ class ProjectsSpec
           current -> DeprecateProject(orgNotFound, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
-          evaluate(orgs)(state, cmd).rejectedWith[OrganizationNotFound]
+          evaluate(orgs)(state, cmd).rejected shouldEqual
+            WrappedOrganizationRejection(OrganizationNotFound(label))
         }
       }
 

@@ -25,7 +25,7 @@ class ResourceFSpec
 
     implicit val remoteResolution: RemoteContextResolution = RemoteContextResolution.fixed(
       contexts.permissions -> jsonContentOf("contexts/permissions.json"),
-      contexts.resource    -> jsonContentOf("contexts/resource.json")
+      contexts.metadata    -> jsonContentOf("contexts/metadata.json")
     )
 
     "be converted to Json-LD compacted" in {
