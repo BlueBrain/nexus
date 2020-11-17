@@ -4,9 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, sh}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import io.circe.{Encoder, Json}
 import monix.bio.IO
 import org.apache.jena.rdf.model.Resource
@@ -31,7 +29,7 @@ final case class ValidationReport private (conforms: Boolean, targetedNodes: Int
 
 object ValidationReport {
 
-  private val shaclCtx: Json = Json.obj(keywords.context -> contexts.shacl.asJson)
+  private val shaclCtx: ContextValue = ContextValue(contexts.shacl)
 
   final def apply(report: Resource)(implicit rcr: RemoteContextResolution): IO[String, ValidationReport] = {
     val tmpGraph = Graph.unsafe(report.getModel)

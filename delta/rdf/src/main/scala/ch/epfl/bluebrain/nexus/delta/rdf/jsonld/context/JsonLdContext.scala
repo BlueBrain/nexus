@@ -206,12 +206,12 @@ object JsonLdContext {
   }
 
   /**
-    * Construct a [[JsonLdContext]] from the passed ''context'' using the JsonLd api
+    * Construct a [[JsonLdContext]] from the passed ''context'' value using the JsonLd api
     */
   def apply(
-      context: Json
+      contextValue: ContextValue
   )(implicit api: JsonLdApi, resolution: RemoteContextResolution, opts: JsonLdOptions): IO[RdfError, JsonLdContext] =
-    api.context(context)
+    api.context(contextValue)
 
   /**
     * @return the value of the top @context key when found, an empty Json otherwise

@@ -17,6 +17,6 @@ object PermissionSet {
   implicit final val permissionSetDecoder: Decoder[PermissionSet]          = deriveDecoder
 
   implicit final val permissionSetJsonLdEncoder: JsonLdEncoder[PermissionSet] =
-    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.permissions)
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.permissions)
 
 }

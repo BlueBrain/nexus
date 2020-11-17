@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -53,17 +53,10 @@ object ProjectRejection {
   }
 
   /**
-    * Signals that an operation on a project cannot be performed due to the fact that the referenced parent organization
-    * does not exist.
+    * Signals a rejection caused when interacting with the organizations API
     */
-  final case class OrganizationNotFound(label: Label) extends ProjectRejection(s"Organization '$label' not found.")
-
-  /**
-    * Signals that an operation on a project cannot be performed due to the fact that the referenced parent organization
-    * is deprecated.
-    */
-  final case class OrganizationIsDeprecated(label: Label)
-      extends ProjectRejection(s"Organization '$label' is deprecated.")
+  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
+      extends ProjectRejection(rejection.reason)
 
   /**
     * Signals and attempt to update/deprecate a project that is already deprecated.
@@ -105,9 +98,13 @@ object ProjectRejection {
   implicit private[model] val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
-      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      r match {
+        case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
+        case _                                       => JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+
+      }
     }
 
   implicit final val projectRejectionJsonLdEncoder: JsonLdEncoder[ProjectRejection] =
-    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 }

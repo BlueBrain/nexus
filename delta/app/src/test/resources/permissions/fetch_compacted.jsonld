@@ -1,7 +1,7 @@
 {
   "@context" : [
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
-    "https://bluebrain.github.io/nexus/contexts/permissions.json"
+    "https://bluebrain.github.io/nexus/contexts/permissions.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
   "@id" : "http://localhost/v1/permissions",
   "@type" : "Permissions",

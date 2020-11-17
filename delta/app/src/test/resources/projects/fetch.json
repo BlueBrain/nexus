@@ -1,6 +1,6 @@
 {
   "@context" : [
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
     "https://bluebrain.github.io/nexus/contexts/projects.json"
   ],
   "@id" : "http://localhost/v1/projects/{{org}}/{{proj}}",

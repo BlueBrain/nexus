@@ -41,7 +41,7 @@ object SimpleRejection extends CirceLiteral {
     deriveConfiguredEncoder[SimpleRejection]
 
   implicit val jsonLdEncoderSimpleRejection: JsonLdEncoder[SimpleRejection] =
-    JsonLdEncoder.compactFromCirce(BNode.random, contextIri)
+    JsonLdEncoder.fromCirce(BNode.random, contextIri)
 
   implicit val statusFromSimpleRejection: HttpResponseFields[SimpleRejection] =
     HttpResponseFields.fromStatusAndHeaders {

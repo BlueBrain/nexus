@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta
+package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.routes.{AclsRoutes, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project, Root}
@@ -31,7 +30,6 @@ class AclsRoutesSpec
     with Matchers
     with CirceLiteral
     with CirceEq
-    with DeltaDirectives
     with IOFixedClock
     with IOValues
     with OptionValues

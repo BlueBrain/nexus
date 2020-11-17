@@ -31,6 +31,6 @@ object SimpleResource extends CirceLiteral {
     }
 
   implicit val simpleResourceJsonLdEncoder: JsonLdEncoder[SimpleResource] =
-    JsonLdEncoder.compactFromCirce((v: SimpleResource) => v.id, contextIri)
+    JsonLdEncoder.fromCirce((v: SimpleResource) => v.id, contextIri)
 
 }

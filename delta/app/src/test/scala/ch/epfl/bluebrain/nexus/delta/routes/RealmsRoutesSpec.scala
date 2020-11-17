@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{realms => realmsPermissions, events}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy}
 import ch.epfl.bluebrain.nexus.delta.utils.{RouteFixtures, RouteHelpers}
@@ -27,7 +27,6 @@ class RealmsRoutesSpec
     with Matchers
     with CirceLiteral
     with CirceEq
-    with DeltaDirectives
     with IOFixedClock
     with IOValues
     with OptionValues
@@ -194,7 +193,7 @@ class RealmsRoutesSpec
     def expectedResults(results: Json*): Json =
       Json.obj(
         "@context" -> Json.arr(
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/resource.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/metadata.json"),
           Json.fromString("https://bluebrain.github.io/nexus/contexts/realms.json"),
           Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json")
         ),

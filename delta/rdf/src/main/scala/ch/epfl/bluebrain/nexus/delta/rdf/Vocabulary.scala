@@ -191,11 +191,11 @@ object Vocabulary {
     val acls          = contexts + "acls.json"
     val error         = contexts + "error.json"
     val identities    = contexts + "identities.json"
+    val metadata      = contexts + "metadata.json"
     val organizations = contexts + "organizations.json"
     val permissions   = contexts + "permissions.json"
     val projects      = contexts + "projects.json"
     val realms        = contexts + "realms.json"
-    val resource      = contexts + "resource.json"
     val search        = contexts + "search.json"
     val shacl         = iri"https://bluebrain.github.io/nexus/contexts/shacl-20170720.json"
   }

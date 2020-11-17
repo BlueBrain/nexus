@@ -25,12 +25,14 @@ import monix.bio.{IO, Task, UIO}
   * A dummy Resources implementation
   *
   * @param journal     the journal to store events
+  * @param orgs        the organizations operations bundle
   * @param projects    the projects operations bundle
   * @param fetchSchema a function to retrieve the schema based on the schema iri
   * @param semaphore   a semaphore for serializing write operations on the journal
   */
 final class ResourcesDummy private (
     journal: ResourcesJournal,
+    orgs: Organizations,
     projects: Projects,
     fetchSchema: ResourceRef => UIO[Option[SchemaResource]],
     semaphore: IOSemaphore
@@ -59,7 +61,7 @@ final class ResourcesDummy private (
       project               <- fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
@@ -74,7 +76,7 @@ final class ResourcesDummy private (
       project               <- fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(iri, source)
+      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
 
@@ -142,6 +144,15 @@ final class ResourcesDummy private (
       .leftMap(WrappedProjectRejection)
       .as(journal.events(offset).filter(e => e.event.project == projectRef))
 
+  override def events(
+      organization: Label,
+      offset: Offset
+  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
+    orgs
+      .fetchOrganization(organization)
+      .leftMap(WrappedOrganizationRejection)
+      .as(journal.events(offset).filter(e => e.event.project.organization == organization))
+
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     journal.events(offset)
 
@@ -205,16 +216,18 @@ object ResourcesDummy {
   /**
     * Creates a resources dummy instance
     *
+    * @param orgs        the organizations operations bundle
     * @param projects    the projects operations bundle
     * @param fetchSchema a function to retrieve the schema based on the schema iri
     */
   def apply(
+      orgs: Organizations,
       projects: Projects,
       fetchSchema: ResourceRef => UIO[Option[SchemaResource]]
   )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[ResourcesDummy] =
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)
-    } yield new ResourcesDummy(journal, projects, fetchSchema, sem)
+    } yield new ResourcesDummy(journal, orgs, projects, fetchSchema, sem)
 
 }

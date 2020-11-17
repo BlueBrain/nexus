@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoderSpec.{Permissions, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -26,12 +25,11 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
       implicit val remoteResolution: RemoteContextResolution =
         RemoteContextResolution.fixed(contexts.permissions -> permissionsContext)
-      val mergedCtx                                          = permissionsContext.topContextValueOrEmpty
 
-      val compacted         = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
-      val expanded          =
+      val compacted                                          = json"""{ "@context": "${contexts.permissions}", "permissions": [ "read", "write", "execute" ] }"""
+      val expanded                                           =
         json"""[{"${nxv + "permissions"}": [{"@value": "read"}, {"@value": "write"}, {"@value": "execute"} ] } ]"""
-      def dot(bnode: BNode) = s"""digraph "${bnode.rdfFormat}" {
+      def dot(bnode: BNode)                                  = s"""digraph "${bnode.rdfFormat}" {
            |  "${bnode.rdfFormat}" -> "execute" [label = "permissions"]
            |  "${bnode.rdfFormat}" -> "write" [label = "permissions"]
            |  "${bnode.rdfFormat}" -> "read" [label = "permissions"]
@@ -47,22 +45,12 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
         permissions.toCompactedJsonLd.accepted.json shouldEqual compacted
       }
 
-      "return a compacted Json-LD format using a custom @context" in {
-        permissions.toCompactedJsonLd(mergedCtx).accepted.json.removeKeys(keywords.context) shouldEqual
-          compacted.removeKeys(keywords.context)
-      }
-
       "return an expanded Json-LD format" in {
         permissions.toExpandedJsonLd.accepted.json shouldEqual expanded
       }
 
       "return a DOT format" in {
         val result = permissions.toDot.accepted
-        result.toString should equalLinesUnordered(dot(result.rootNode.asBNode.value))
-      }
-
-      "return a DOT format using a custom @context" in {
-        val result = permissions.toDot(mergedCtx).accepted
         result.toString should equalLinesUnordered(dot(result.rootNode.asBNode.value))
       }
 
@@ -75,7 +63,6 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
     "dealing with a ResourceF of Permissions" should {
 
       val resourceContext               = json"""{ "@context": {"@vocab": "${nxv.base}"} }"""
-      val mergedCtx                     = permissionsContext.addContext(resourceContext).topContextValueOrEmpty
       val value: ResourceF[Permissions] = ResourceF(iri, 1L, deprecated = false, Instant.EPOCH, permissions)
       val compacted                     = jsonContentOf("encoder/compacted.json")
       val expanded                      = jsonContentOf("encoder/expanded.json")
@@ -83,16 +70,10 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
       val ntriples                      = contentOf("encoder/ntriples.nt")
 
       implicit val remoteResolution: RemoteContextResolution =
-        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext, contexts.resource -> resourceContext)
+        RemoteContextResolution.fixed(contexts.permissions -> permissionsContext, contexts.metadata -> resourceContext)
 
       "return a compacted Json-LD format" in {
-
         value.toCompactedJsonLd.accepted.json shouldEqual compacted
-      }
-
-      "return a compacted Json-LD format using a custom @context" in {
-        value.toCompactedJsonLd(mergedCtx).accepted.json.removeKeys(keywords.context) shouldEqual
-          compacted.removeKeys(keywords.context)
       }
 
       "return an expanded Json-LD format" in {
@@ -101,10 +82,6 @@ class JsonLdEncoderSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
       "return a DOT format" in {
         value.toDot.accepted.toString should equalLinesUnordered(dot)
-      }
-
-      "return a DOT format using a custom @context" in {
-        value.toDot(mergedCtx).accepted.toString should equalLinesUnordered(dot)
       }
 
       "return a NTriples format" in {
@@ -123,7 +100,7 @@ object JsonLdEncoderSpec {
       Encoder.AsObject.instance(p => JsonObject.empty.add("permissions", p.permissions.asJson))
 
     implicit final val permissionsJsonLdEncoder: JsonLdEncoder[Permissions] =
-      JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.permissions)
+      JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.permissions)
   }
 
   final case class ResourceF[A](id: Iri, rev: Long, deprecated: Boolean, createdAt: Instant, value: A) {
@@ -142,7 +119,7 @@ object JsonLdEncoderSpec {
       }
 
     implicit final val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
-      JsonLdEncoder.compactFromCirce(_.id, iriContext = contexts.resource)
+      JsonLdEncoder.fromCirce(_.id, iriContext = contexts.metadata)
 
     implicit def encoderResourceF[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
       JsonLdEncoder.compose(resource => (resource.unit, resource.value, resource.id))

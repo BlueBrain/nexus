@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import org.scalatest.OptionValues
@@ -31,7 +32,7 @@ object ResourceGen extends OptionValues with IOValues {
       subject: Subject = Anonymous
   )(implicit resolution: RemoteContextResolution): Current = {
     val expanded  = JsonLd.expand(source).accepted.replaceId(id)
-    val compacted = expanded.toCompacted(source).accepted
+    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Current(
       id,
       project,
@@ -58,7 +59,7 @@ object ResourceGen extends OptionValues with IOValues {
       tags: Map[Label, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Resource = {
     val expanded  = JsonLd.expand(source).accepted.replaceId(id)
-    val compacted = expanded.toCompacted(source).accepted
+    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Resource(id, project, tags, schema, source, compacted, expanded)
   }
 
@@ -71,16 +72,21 @@ object ResourceGen extends OptionValues with IOValues {
       deprecated: Boolean = false,
       am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
-  )(implicit resolution: RemoteContextResolution): DataResource =
-    currentState(
+  ): DataResource =
+    Current(
       resource.id,
       resource.project,
       resource.source,
+      resource.compacted,
+      resource.expanded,
+      rev,
+      deprecated,
       resource.schema,
       types,
       tags,
-      rev,
-      deprecated,
+      Instant.EPOCH,
+      subject,
+      Instant.EPOCH,
       subject
     ).toResource(am, ProjectBase.unsafe(base)).value
 

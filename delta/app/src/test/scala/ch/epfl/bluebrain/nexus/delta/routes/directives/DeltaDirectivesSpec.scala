@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes
+package ch.epfl.bluebrain.nexus.delta.routes.directives
 
 import java.time.Instant
 
@@ -8,19 +8,16 @@ import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, 
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/plain`}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Cookie}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, MalformedQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
+import akka.http.scaladsl.server.{InvalidRequiredValueForQueryParamRejection, Route, UnacceptedResponseContentTypeRejection}
 import ch.epfl.bluebrain.nexus.delta.SimpleRejection.{badRequestRejection, conflictRejection}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.{SimpleRejection, SimpleResource}
@@ -35,7 +32,6 @@ class DeltaDirectivesSpec
     with Matchers
     with OptionValues
     with CirceLiteral
-    with DeltaDirectives
     with IOValues
     with TestMatchers
     with TestHelpers
@@ -47,42 +43,34 @@ class DeltaDirectivesSpec
   private val id                                       = nxv + "myresource"
   private val resource                                 = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
   private val resourceNotFound: Option[SimpleResource] = None
-  implicit private val baseUri: BaseUri                = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
       SimpleResource.contextIri  -> SimpleResource.context,
       SimpleRejection.contextIri -> SimpleRejection.context,
-      Vocabulary.contexts.error  -> ioJsonContentOf("/contexts/error.json").accepted
+      contexts.error             -> jsonContentOf("/contexts/error.json")
     )
 
   private val route: Route =
     get {
       concat(
         path("uio") {
-          completeUIO(Accepted, UIO.pure(resource))
+          emit(Accepted, UIO.pure(resource))
         },
         path("uio-opt") {
-          completeUIOOpt(Accepted, Seq(Cookie("k", "v")), UIO.pure(resourceNotFound))
+          emit(Accepted, UIO.pure(resourceNotFound))
         },
         path("io") {
-          completeIO(Accepted, Seq(Cookie("k", "v")), IO.fromEither[SimpleRejection, SimpleResource](Right(resource)))
+          emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Right(resource)))
         },
         path("io-opt") {
-          completeIOOpt(
-            Accepted,
-            Seq(Cookie("k", "v")),
-            IO.fromEither[SimpleRejection, Option[SimpleResource]](Right(resourceNotFound))
-          )
+          emit(Accepted, IO.fromEither[SimpleRejection, Option[SimpleResource]](Right(resourceNotFound)))
         },
         path("bad-request") {
-          completeIO(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(badRequestRejection)))
+          emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(badRequestRejection)))
         },
         path("conflict") {
-          completeIO(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(conflictRejection)))
-        },
-        (path("search") & searchParams) { case (deprecated, rev, createdBy, updatedBy) =>
-          complete(s"'${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}'")
+          emit(Accepted, IO.fromEither[SimpleRejection, SimpleResource](Left(conflictRejection)))
         }
       )
     }
@@ -144,7 +132,6 @@ class DeltaDirectivesSpec
           Get(endpoint) ~> accept ~> route ~> check {
             response.asJson shouldEqual notFoundCompacted.json
             response.status shouldEqual NotFound
-            response.headers shouldEqual Seq.empty[HttpHeader]
           }
         }
       }
@@ -158,7 +145,6 @@ class DeltaDirectivesSpec
           Get(endpoint) ~> accept ~> route ~> check {
             response.asJson shouldEqual compacted.json
             response.status shouldEqual Accepted
-            response.headers shouldEqual Seq.empty[HttpHeader]
           }
         }
       }
@@ -168,7 +154,6 @@ class DeltaDirectivesSpec
           Get(endpoint) ~> accept ~> route ~> check {
             response.asJson shouldEqual compacted.json
             response.status shouldEqual Accepted
-            response.headers shouldEqual Seq(Cookie("k", "v"))
           }
         }
       }
@@ -181,7 +166,6 @@ class DeltaDirectivesSpec
         Get("/uio?format=expanded") ~> accept ~> route ~> check {
           response.asJson shouldEqual expanded.json
           response.status shouldEqual Accepted
-          response.headers shouldEqual Seq.empty[HttpHeader]
         }
       }
 
@@ -189,7 +173,6 @@ class DeltaDirectivesSpec
         Get("/io?format=expanded") ~> accept ~> route ~> check {
           response.asJson shouldEqual expanded.json
           response.status shouldEqual Accepted
-          response.headers shouldEqual Seq(Cookie("k", "v"))
         }
       }
     }
@@ -200,13 +183,11 @@ class DeltaDirectivesSpec
       Get("/uio") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         response.asString should equalLinesUnordered(dot.value)
         response.status shouldEqual Accepted
-        response.headers shouldEqual Seq.empty[HttpHeader]
       }
 
       Get("/io") ~> Accept(`text/vnd.graphviz`) ~> route ~> check {
         response.asString should equalLinesUnordered(dot.value)
         response.status shouldEqual Accepted
-        response.headers shouldEqual Seq(Cookie("k", "v"))
       }
     }
 
@@ -216,13 +197,11 @@ class DeltaDirectivesSpec
       Get("/uio") ~> Accept(`application/n-triples`) ~> route ~> check {
         response.asString should equalLinesUnordered(ntriples.value)
         response.status shouldEqual Accepted
-        response.headers shouldEqual Seq.empty[HttpHeader]
       }
 
       Get("/io") ~> Accept(`application/n-triples`) ~> route ~> check {
         response.asString should equalLinesUnordered(ntriples.value)
         response.status shouldEqual Accepted
-        response.headers shouldEqual Seq(Cookie("k", "v"))
       }
     }
 
@@ -309,36 +288,6 @@ class DeltaDirectivesSpec
         response.asString should equalLinesUnordered(ntriples.value)
         response.status shouldEqual Conflict
         response.headers shouldEqual Seq.empty[HttpHeader]
-      }
-    }
-
-    "return search parameters" in {
-      val alicia   = User("alicia", Label.unsafe("myrealm"))
-      val aliciaId = UrlUtils.encode(alicia.id.toString)
-      val bob      = User("bob", Label.unsafe("myrealm"))
-      val bobId    = UrlUtils.encode(bob.id.toString)
-
-      Get(s"/search?deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId") ~> Accept(`*/*`) ~> route ~> check {
-        response.asString shouldEqual s"'false','2','$alicia','$bob'"
-      }
-
-      Get(s"/search?deprecated=false&rev=2") ~> Accept(`*/*`) ~> route ~> check {
-        response.asString shouldEqual "'false','2','',''"
-      }
-    }
-
-    "reject when invalid search parameters" in {
-      val group     = UrlUtils.encode(Group("mygroup", Label.unsafe("myrealm")).id.toString)
-      val endpoints = List(
-        "/search?deprecated=3",
-        "/search?rev=false",
-        "/search?createdBy=http%3A%2F%2Fexample.com%2Fwrong",
-        s"/search?updatedBy=$group"
-      )
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
-          rejection shouldBe a[MalformedQueryParamRejection]
-        }
       }
     }
 

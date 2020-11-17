@@ -9,7 +9,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{OwnerPermissionsFailed, RevisionNotFound, UnexpectedInitialState}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{OwnerPermissionsFailed, ProjectIsDeprecated, ProjectNotFound, RevisionNotFound, UnexpectedInitialState, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
@@ -30,6 +30,7 @@ import monix.execution.Scheduler
 
 final class ProjectsImpl private (
     agg: ProjectsAggregate,
+    organizations: Organizations,
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
     applyOwnerPermissions: ApplyOwnerPermissions
@@ -77,6 +78,14 @@ final class ProjectsImpl private (
 
   override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] =
     agg.state(ref.toString).map(_.toResource).named("fetchProject", moduleType)
+
+  override def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project] =
+    organizations.fetchActiveOrganization(ref.organization).leftMap(WrappedOrganizationRejection) >>
+      fetch(ref).flatMap {
+        case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
+        case None                                  => IO.raiseError(ProjectNotFound(ref))
+        case Some(resource)                        => IO.pure(resource.value)
+      }
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     eventLog
@@ -201,9 +210,10 @@ object ProjectsImpl {
       agg: ProjectsAggregate,
       eventLog: EventLog[Envelope[ProjectEvent]],
       cache: ProjectsCache,
+      organizations: Organizations,
       applyOwnerPermissions: ApplyOwnerPermissions
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, eventLog, cache, applyOwnerPermissions)
+    new ProjectsImpl(agg, organizations, eventLog, cache, applyOwnerPermissions)
 
   /**
     * Constructs a [[Projects]] instance.
@@ -228,7 +238,7 @@ object ProjectsImpl {
     for {
       agg     <- aggregate(config, organizations)
       index    = cache(config)
-      projects = apply(agg, eventLog, index, applyOwnerPermissions)
+      projects = apply(agg, eventLog, index, organizations, applyOwnerPermissions)
       _       <- UIO.delay(startIndexing(config, eventLog, index, projects))
     } yield projects
 

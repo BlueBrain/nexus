@@ -5,9 +5,10 @@ import java.util.UUID
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{RevisionNotFound, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -69,12 +70,7 @@ trait Projects {
   /**
     * Fetches the current active project, rejecting if the project does not exists or if the project is deprecated
     */
-  def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project] =
-    fetch(ref).flatMap {
-      case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-      case None                                  => IO.raiseError(ProjectNotFound(ref))
-      case Some(resource)                        => IO.pure(resource.value)
-    }
+  def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project]
 
   /**
     * Fetches the current project, rejecting if the project does not exists
@@ -144,7 +140,7 @@ trait Projects {
     */
   def list(
       pagination: FromPagination,
-      params: ProjectSearchParams = ProjectSearchParams.none
+      params: ProjectSearchParams
   ): UIO[UnscoredSearchResults[ProjectResource]]
 
   /**
@@ -193,11 +189,11 @@ object Projects {
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
 
-    def validateOrg(orgLabel: Label) =
-      fetchOrg(orgLabel).flatMap {
-        case Some(org) if org.deprecated => IO.raiseError(OrganizationIsDeprecated(orgLabel))
+    def validateOrg(label: Label) =
+      fetchOrg(label).flatMap {
+        case Some(org) if org.deprecated => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(label)))
         case Some(org)                   => IO.pure(org)
-        case None                        => IO.raiseError(OrganizationNotFound(orgLabel))
+        case None                        => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
       }
 
     def create(c: CreateProject) =

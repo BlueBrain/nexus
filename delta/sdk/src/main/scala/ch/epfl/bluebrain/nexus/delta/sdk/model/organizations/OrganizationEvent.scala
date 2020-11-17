@@ -90,7 +90,7 @@ object OrganizationEvent {
       subject: Subject
   ) extends OrganizationEvent
 
-  private val context = ContextValue(contexts.resource, contexts.organizations)
+  private val context = ContextValue(contexts.metadata, contexts.organizations)
 
   implicit private[organizations] val config: Configuration = Configuration.default
     .withDiscriminator(keywords.tpe)
@@ -112,6 +112,6 @@ object OrganizationEvent {
         .encodeObject(ev)
     }
 
-    JsonLdEncoder.compactFromCirce[OrganizationEvent](context)
+    JsonLdEncoder.fromCirce[OrganizationEvent](context)
   }
 }

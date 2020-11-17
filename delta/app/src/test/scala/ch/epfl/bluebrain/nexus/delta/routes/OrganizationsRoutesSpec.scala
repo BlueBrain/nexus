@@ -29,7 +29,6 @@ class OrganizationsRoutesSpec
     with Matchers
     with CirceLiteral
     with CirceEq
-    with DeltaDirectives
     with IOFixedClock
     with IOValues
     with OptionValues
@@ -167,10 +166,13 @@ class OrganizationsRoutesSpec
     }
 
     def expectedResults(results: Json*): Json =
-      json"""{"@context": ["${contexts.resource}", "${contexts.organizations}", "${contexts.search}"], "_total": ${results.size}}""" deepMerge
+      json"""{"@context": ["${contexts.metadata}", "${contexts.organizations}", "${contexts.search}"], "_total": ${results.size}}""" deepMerge
         Json.obj("_results" -> Json.arr(results: _*))
 
     "list organizations" in {
+      acls
+        .append(Acl(AclAddress.Organization(Label.unsafe("org2")), Anonymous -> Set(orgsPermissions.read)), 1L)
+        .accepted
       Get("/v1/orgs") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
@@ -193,6 +195,18 @@ class OrganizationsRoutesSpec
       Get(s"/v1/orgs?createdBy=${UrlUtils.encode(alice.id.toString)}") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expectedResults(org2Created.removeKeys("@context")))
+      }
+    }
+
+    "list only organizations for which the user has access" in {
+      acls.delete(AclAddress.Organization(Label.unsafe("org2")), 2L).accepted
+      Get("/v1/orgs") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(
+          expectedResults(
+            org1Updated.removeKeys("@context")
+          )
+        )
       }
     }
 

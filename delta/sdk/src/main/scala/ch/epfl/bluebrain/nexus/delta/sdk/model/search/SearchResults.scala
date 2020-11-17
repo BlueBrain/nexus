@@ -143,11 +143,11 @@ object SearchResults {
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)
 
-  private val context                = ContextValue(contexts.resource, contexts.search)
+  private val context                = ContextValue(contexts.metadata, contexts.search)
   implicit def searchResultsJsonLdEncoder[A](implicit
       S: SearchEncoder[A],
       additionalContext: ContextValue
   ): JsonLdEncoder[SearchResults[A]] =
-    JsonLdEncoder.compactFromCirce(context.merge(additionalContext))
+    JsonLdEncoder.fromCirce(context.merge(additionalContext))
 
 }

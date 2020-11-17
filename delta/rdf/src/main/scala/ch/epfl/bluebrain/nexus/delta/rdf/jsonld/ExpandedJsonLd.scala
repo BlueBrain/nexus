@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
@@ -91,12 +91,12 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
       case bNode: IriOrBNode.BNode                                           => new ExpandedJsonLd(obj.remove(keywords.id), bNode)
     }
 
-  def toCompacted(context: Json)(implicit
+  def toCompacted(contextValue: ContextValue)(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, CompactedJsonLd] =
-    JsonLd.compact(json, context, rootId)
+    JsonLd.compact(json, contextValue, rootId)
 
   override def toExpanded(implicit
       opts: JsonLdOptions,
@@ -110,6 +110,8 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, Graph] = Graph(this)
+
+  override def isEmpty: Boolean = obj.isEmpty
 
   private def add(key: String, value: Json): This =
     obj(key).flatMap(v => v.asArray) match {

@@ -73,6 +73,6 @@ object TokenRejection {
     }
 
   implicit final val tokenRejectionJsonLdEncoder: JsonLdEncoder[TokenRejection] =
-    JsonLdEncoder.compactFromCirce(id = BNode.random, iriContext = contexts.error)
+    JsonLdEncoder.fromCirce(id = BNode.random, iriContext = contexts.error)
 
 }

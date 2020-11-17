@@ -95,7 +95,7 @@ object AclEvent {
       subject: Subject
   ) extends AclEvent
 
-  private val context = ContextValue(contexts.resource, contexts.acls)
+  private val context = ContextValue(contexts.metadata, contexts.acls)
 
   @nowarn("cat=unused")
   implicit def aclEventJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[AclEvent] = {
@@ -125,6 +125,6 @@ object AclEvent {
         .mapJsonObject(json => json.add("@id", AccessUrl.acl(ev.address).iri.asJson).add("_path", ev.address.asJson))
         .encodeObject(ev)
     }
-    JsonLdEncoder.compactFromCirce[AclEvent](context)
+    JsonLdEncoder.fromCirce[AclEvent](context)
   }
 }

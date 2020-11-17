@@ -21,7 +21,6 @@ class PermissionsRoutesSpec
     extends RouteHelpers
     with Matchers
     with CirceLiteral
-    with DeltaDirectives
     with IOFixedClock
     with IOValues
     with TestMatchers

@@ -64,5 +64,5 @@ object Realm {
 
   val context: ContextValue                             = ContextValue(contexts.realms)
   implicit val realmJsonLdEncoder: JsonLdEncoder[Realm] =
-    JsonLdEncoder.compactFromCirce(context)
+    JsonLdEncoder.fromCirce(context)
 }

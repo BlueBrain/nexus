@@ -71,6 +71,25 @@ trait Organizations {
   def fetch(label: Label): UIO[Option[OrganizationResource]]
 
   /**
+    * Fetches the current active organization, rejecting if the organization does not exists or if it is deprecated
+    */
+  def fetchActiveOrganization(label: Label): IO[OrganizationRejection, Organization] =
+    fetch(label).flatMap {
+      case Some(resource) if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
+      case None                                  => IO.raiseError(OrganizationNotFound(label))
+      case Some(resource)                        => IO.pure(resource.value)
+    }
+
+  /**
+    * Fetches the current organization, rejecting if the organization does not exists
+    */
+  def fetchOrganization(label: Label): IO[OrganizationRejection, Organization] =
+    fetch(label).flatMap {
+      case Some(resource) => IO.pure(resource.value)
+      case None           => IO.raiseError(OrganizationNotFound(label))
+    }
+
+  /**
     * Fetch an organization at the passed revision by label.
     *
     * @param label the organization label
@@ -105,7 +124,7 @@ trait Organizations {
     */
   def list(
       pagination: FromPagination,
-      params: OrganizationSearchParams = OrganizationSearchParams.none
+      params: OrganizationSearchParams
   ): UIO[UnscoredSearchResults[OrganizationResource]]
 
   /**

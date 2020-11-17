@@ -28,12 +28,19 @@ object ApiMappings {
     * The default API mappings
     */
   val default: ApiMappings =
-    ApiMappings(Map("_" -> schemas.resources, "schema" -> schemas.shacl, "resolver" -> schemas.resolvers))
+    ApiMappings(
+      Map(
+        "_"        -> schemas.resources,
+        "schema"   -> schemas.shacl,
+        "resolver" -> schemas.resolvers,
+        "resource" -> schemas.resources
+      )
+    )
 
   /**
     * An empty [[ApiMappings]]
     */
-  val empty: ApiMappings   = ApiMappings(Map.empty[String, Iri])
+  val empty: ApiMappings = ApiMappings(Map.empty[String, Iri])
 
   final private case class Mapping(prefix: String, namespace: Iri)
 
