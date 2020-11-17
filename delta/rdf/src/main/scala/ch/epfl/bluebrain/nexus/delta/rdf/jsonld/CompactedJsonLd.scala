@@ -73,6 +73,8 @@ final case class CompactedJsonLd private[jsonld] (
   ): IO[RdfError, Graph] =
     toExpanded.flatMap(_.toGraph)
 
+  override def isEmpty: Boolean = obj.isEmpty
+
   private def add(key: String, value: Json): This = {
     val newObj = obj(key) match {
       case Some(curr) =>

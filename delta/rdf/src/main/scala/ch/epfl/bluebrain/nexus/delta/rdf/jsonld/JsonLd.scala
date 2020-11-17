@@ -92,6 +92,11 @@ trait JsonLd extends Product with Serializable {
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, Graph]
+
+  /**
+    * Checks if the current [[JsonLd]] is empty
+    */
+  def isEmpty: Boolean
 }
 object JsonLd {
 

@@ -111,6 +111,8 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
       resolution: RemoteContextResolution
   ): IO[RdfError, Graph] = Graph(this)
 
+  override def isEmpty: Boolean = obj.isEmpty
+
   private def add(key: String, value: Json): This =
     obj(key).flatMap(v => v.asArray) match {
       case None      => copy(obj = obj.add(key, Json.arr(value)))

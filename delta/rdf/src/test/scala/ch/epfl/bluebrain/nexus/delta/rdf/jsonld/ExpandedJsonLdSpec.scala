@@ -151,6 +151,14 @@ class ExpandedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures {
       expanded.toExpanded.accepted should be theSameInstanceAs expanded
     }
 
+    "be empty" in {
+      JsonLd.expand(json"""[{"@id": "http://example.com/id", "a": "b"}]""").accepted.isEmpty shouldEqual true
+    }
+
+    "not be empty" in {
+      JsonLd.expand(compacted).accepted.isEmpty shouldEqual false
+    }
+
     "be converted to graph" in {
       val expanded = JsonLd.expand(compacted).accepted
       val graph    = expanded.toGraph.accepted

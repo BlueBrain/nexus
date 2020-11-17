@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 trait ResourceSourceParser {
 
@@ -31,16 +31,14 @@ trait ResourceSourceParser {
   )(implicit
       uuidF: UUIDF,
       rcr: RemoteContextResolution
-  ): IO[InvalidJsonLdFormat, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
-    val (ctx, sourceWithCtx) = ctxOrProjectDefaults(source, project)
+  ): IO[InvalidJsonLdFormat, (Iri, CompactedJsonLd, ExpandedJsonLd)] =
     for {
-      originalExpanded <- JsonLd.expand(sourceWithCtx).leftMap(err => InvalidJsonLdFormat(None, err))
-      base              = project.base.iri
-      iri              <- originalExpanded.rootId.asIri.fold(uuidF().map(uuid => base / uuid.toString))(IO.pure)
-      expanded          = originalExpanded.replaceId(iri)
-      compacted        <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
+      (ctx, originalExpanded) <- expandSource(project, source)
+      base                     = project.base.iri
+      iri                     <- originalExpanded.rootId.asIri.fold(uuidF().map(uuid => base / uuid.toString))(IO.pure)
+      expanded                 = originalExpanded.replaceId(iri)
+      compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
     } yield (iri, compacted, expanded)
-  }
 
   /**
     * Converts the passed ''source'' to JsonLD compacted and expanded.
@@ -55,29 +53,29 @@ trait ResourceSourceParser {
       project: Project,
       iri: Iri,
       source: Json
-  )(implicit rcr: RemoteContextResolution): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] = {
-    val (ctx, sourceWithCtx) = ctxOrProjectDefaults(source, project)
+  )(implicit rcr: RemoteContextResolution): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] =
     for {
-      originalExpanded <- JsonLd.expand(sourceWithCtx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
-      _                <- checkSameId(iri, originalExpanded)
-      expanded          = originalExpanded.replaceId(iri)
-      compacted        <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
+      (ctx, originalExpanded) <- expandSource(project, source)
+      _                       <- checkSameId(iri, originalExpanded)
+      expanded                 = originalExpanded.replaceId(iri)
+      compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
     } yield (compacted, expanded)
-  }
+
+  private def expandSource(project: Project, source: Json)(implicit
+      rcr: RemoteContextResolution
+  ): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] =
+    JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(None, err)).flatMap {
+      case expanded if expanded.isEmpty =>
+        val ctx = defaultCtx(project)
+        JsonLd.expand(source.addContext(ctx.contextObj)).leftMap(err => InvalidJsonLdFormat(None, err)).map(ctx -> _)
+      case expanded                     =>
+        UIO.pure(source.topContextValueOrEmpty -> expanded)
+    }
 
   private def checkSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedResourceId, Unit] =
     expanded.rootId.asIri match {
       case Some(sourceId) if sourceId != iri => IO.raiseError(UnexpectedResourceId(iri, sourceId))
       case _                                 => IO.unit
-    }
-
-  private def ctxOrProjectDefaults(source: Json, project: Project): (ContextValue, Json) =
-    source.topContextValueOrEmpty match {
-      case v if v == ContextValue.empty =>
-        val newCtxValue = defaultCtx(project)
-        (newCtxValue, source.addContext(newCtxValue.contextObj))
-      case v                            =>
-        (v, source)
     }
 
   private def defaultCtx(project: Project): ContextValue =
