@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api
 
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{JsonLdContext, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
 import org.apache.jena.rdf.model.Model
@@ -12,7 +12,7 @@ import org.apache.jena.rdf.model.Model
   * Interface definition for frame: https://www.w3.org/TR/json-ld11-framing/#jsonldprocessor
   */
 trait JsonLdApi {
-  private[rdf] def compact(input: Json, ctx: Json)(implicit
+  private[rdf] def compact(input: Json, ctx: ContextValue)(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonObject]
@@ -36,7 +36,7 @@ trait JsonLdApi {
       opts: JsonLdOptions
   ): IO[RdfError, Seq[JsonObject]]
 
-  private[rdf] def context(value: Json)(implicit
+  private[rdf] def context(value: ContextValue)(implicit
       opts: JsonLdOptions,
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonLdContext]

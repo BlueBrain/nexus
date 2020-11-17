@@ -191,6 +191,9 @@ trait ConfigReaderInstances {
   implicit final val projectConfigReader: ConfigReader[ProjectsConfig] =
     deriveReader[ProjectsConfig]
 
+  implicit final val resourcesConfigReader: ConfigReader[ResourcesConfig] =
+    deriveReader[ResourcesConfig]
+
 }
 
 object ConfigReaderInstances extends ConfigReaderInstances

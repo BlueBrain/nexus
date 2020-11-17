@@ -98,6 +98,7 @@ trait ResourcesBehaviors {
     val myId4 = nxv + "myid4" // Resource created against schema1 with id present on the payload and passed explicitly
     val myId5 = nxv + "myid5" // Resource created against the resource schema with id passed explicitly but not present on the payload
     val myId6 = nxv + "myid6" // Resource created against schema1 with id passed explicitly but not present on the payload
+    val myId7 = nxv + "myid7" // Resource created against the resource schema with id passed explicitly and with payload without @context
     // format: on
     val resourceSchema = Latest(schemas.resources)
     val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
@@ -160,6 +161,17 @@ trait ResourcesBehaviors {
             base = projBase
           )
         }
+      }
+
+      "succeed with payload without @context" in {
+        val payload        = json"""{"name": "Alice"}"""
+        val payloadWithCtx =
+          payload.addContext(json"""{"@context": {"@vocab": "${nxv.base}","@base": "${nxv.base}"}}""")
+        val expectedData   =
+          ResourceGen.resource(myId7, projectRef, payloadWithCtx, resourceSchema).copy(source = payload)
+
+        resources.create(IriSegment(myId7), projectRef, IriSegment(schemas.resources), payload).accepted shouldEqual
+          ResourceGen.resourceFor(expectedData, subject = subject, am = am, base = projBase)
       }
 
       "reject with different ids on the payload and passed" in {
@@ -239,25 +251,29 @@ trait ResourcesBehaviors {
       }
 
       "reject if it doesn't exists" in {
-        resources.update(IriSegment(nxv + "other"), projectRef, None, 1L, json"""{}""").rejectedWith[ResourceNotFound]
+        resources
+          .update(IriSegment(nxv + "other"), projectRef, None, 1L, json"""{"a": "b"}""")
+          .rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.update(IriSegment(myId), projectRef, None, 3L, json"""{}""").rejected shouldEqual
+        resources.update(IriSegment(myId), projectRef, None, 3L, json"""{"a": "b"}""").rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 1L)
       }
 
       "reject if deprecated" in {
         resources.deprecate(IriSegment(myId3), projectRef, None, 1L).accepted
-        resources.update(IriSegment(myId3), projectRef, None, 2L, json"""{}""").rejectedWith[ResourceIsDeprecated]
         resources
-          .update(StringSegment("nxv:myid3"), projectRef, None, 2L, json"""{}""")
+          .update(IriSegment(myId3), projectRef, None, 2L, json"""{"a": "b"}""")
+          .rejectedWith[ResourceIsDeprecated]
+        resources
+          .update(StringSegment("nxv:myid3"), projectRef, None, 2L, json"""{"a": "b"}""")
           .rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if schemas do not match" in {
         resources
-          .update(IriSegment(myId2), projectRef, Some(IriSegment(schemas.resources)), 3L, json"""{}""")
+          .update(IriSegment(myId2), projectRef, Some(IriSegment(schemas.resources)), 3L, json"""{"a": "b"}""")
           .rejectedWith[UnexpectedResourceSchema]
       }
 
@@ -473,11 +489,12 @@ trait ResourcesBehaviors {
         (myId4, ClassUtils.simpleName(ResourceCreated), Sequence(4L)),
         (myId5, ClassUtils.simpleName(ResourceCreated), Sequence(5L)),
         (myId6, ClassUtils.simpleName(ResourceCreated), Sequence(6L)),
-        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(7L)),
+        (myId7, ClassUtils.simpleName(ResourceCreated), Sequence(7L)),
         (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(8L)),
-        (myId3, ClassUtils.simpleName(ResourceDeprecated), Sequence(9L)),
-        (myId, ClassUtils.simpleName(ResourceTagAdded), Sequence(10L)),
-        (myId4, ClassUtils.simpleName(ResourceDeprecated), Sequence(11L))
+        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(9L)),
+        (myId3, ClassUtils.simpleName(ResourceDeprecated), Sequence(10L)),
+        (myId, ClassUtils.simpleName(ResourceTagAdded), Sequence(11L)),
+        (myId4, ClassUtils.simpleName(ResourceDeprecated), Sequence(12L))
       )
 
       "get the different events from start" in {
@@ -489,7 +506,7 @@ trait ResourcesBehaviors {
         forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
-            .take(11L)
+            .take(12L)
             .compile
             .toList
 
@@ -500,13 +517,13 @@ trait ResourcesBehaviors {
       "get the different events from offset 2" in {
         val streams = List(
           resources.events(Sequence(2L)),
-//          resources.events(org, Sequence(2L)).accepted,
+          resources.events(org, Sequence(2L)).accepted,
           resources.events(projectRef, Sequence(2L)).accepted
         )
         forAll(streams) { stream =>
           val events = stream
             .map { e => (e.event.id, e.eventType, e.offset) }
-            .take(9L)
+            .take(10L)
             .compile
             .toList
 

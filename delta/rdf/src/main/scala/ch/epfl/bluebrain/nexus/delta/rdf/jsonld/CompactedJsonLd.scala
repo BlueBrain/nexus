@@ -51,13 +51,13 @@ final case class CompactedJsonLd private[jsonld] (
   def add(key: String, literal: Double): This =
     add(key, literal.asJson)
 
-  def toCompacted(context: Json)(implicit
+  def toCompacted(contextValue: ContextValue)(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, CompactedJsonLd] =
-    if (context.topContextValueOrEmpty == ctx) IO.pure(self)
-    else JsonLd.compact(json, context, rootId)
+    if (contextValue == ctx) IO.pure(self)
+    else JsonLd.compact(json, contextValue, rootId)
 
   override def toExpanded(implicit
       opts: JsonLdOptions,
@@ -72,6 +72,8 @@ final case class CompactedJsonLd private[jsonld] (
       resolution: RemoteContextResolution
   ): IO[RdfError, Graph] =
     toExpanded.flatMap(_.toGraph)
+
+  override def isEmpty: Boolean = obj.isEmpty
 
   private def add(key: String, value: Json): This = {
     val newObj = obj(key) match {

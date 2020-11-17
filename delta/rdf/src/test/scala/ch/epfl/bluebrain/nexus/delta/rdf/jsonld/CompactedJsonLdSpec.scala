@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.JsonObject
 import io.circe.syntax._
@@ -17,7 +16,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
 
   "A compacted Json-LD" should {
     val expanded              = jsonContentOf("expanded.json")
-    val context               = jsonContentOf("context.json")
+    val context               = jsonContentOf("context.json").topContextValueOrEmpty
     val expectedCompacted     = jsonContentOf("compacted.json")
     val expandedNoId          = expanded.removeAll(keywords.id -> iri)
     val expectedCompactedNoId = expectedCompacted.removeAll("id" -> "john-doé")
@@ -26,7 +25,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     "be constructed successfully" in {
       val compacted = JsonLd.compact(expanded, context, iri).accepted
       compacted.json.removeKeys(keywords.context) shouldEqual expectedCompacted.removeKeys(keywords.context)
-      compacted.ctx shouldEqual context.topContextValueOrEmpty
+      compacted.ctx shouldEqual context
       compacted.rootId shouldEqual iri
     }
 
@@ -49,7 +48,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
 
     "add literals" in {
       val compacted =
-        CompactedJsonLd(JsonObject("@id" -> iri.asJson), ContextValue(context), iri)
+        CompactedJsonLd(JsonObject("@id" -> iri.asJson), context, iri)
       val result    = compacted.add("tags", "first").add("tags", 2).add("tags", 30L).add("tags", false)
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "tags": [ "first", 2, 30, false ]}"""
     }
@@ -57,14 +56,14 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
     "add @type Iri to existing @type" in {
       val (person, hero) = (schema.Person, schema + "Hero")
       val obj            = json"""{"@id": "$iri", "@type": "$person"}""".asObject.value
-      val compacted      = CompactedJsonLd(obj, ContextValue(context), iri)
+      val compacted      = CompactedJsonLd(obj, context, iri)
       val result         = compacted.addType(hero)
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": ["$person", "$hero"]}"""
     }
 
     "add @type Iri" in {
       val obj       = json"""{"@id": "$iri"}""".asObject.value
-      val compacted = CompactedJsonLd(obj, ContextValue(context), iri)
+      val compacted = CompactedJsonLd(obj, context, iri)
       val result    = compacted.addType(schema.Person)
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": "${schema.Person}"}"""
     }
@@ -76,8 +75,8 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
 
     "recompute compacted form when attempted to convert again to compacted form with different @context" in {
       val compacted = JsonLd.compact(expanded, context, iri).accepted
-      val context2  = context deepMerge json"""{"@context": {"other-something": {"@type": "@id"}}}"""
-      val result    = compacted.toCompacted(context2).accepted
+      val context2  = context.contextObj deepMerge json"""{"@context": {"other-something": {"@type": "@id"}}}"""
+      val result    = compacted.toCompacted(context2.topContextValueOrEmpty).accepted
       result.json.removeKeys(keywords.context) shouldEqual compacted.json.removeKeys(keywords.context)
     }
 

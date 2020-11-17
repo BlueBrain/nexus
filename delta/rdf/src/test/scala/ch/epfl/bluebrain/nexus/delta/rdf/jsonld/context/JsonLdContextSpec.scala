@@ -11,7 +11,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with Inspectors {
 
   "A Json-LD context" should {
-    val context = jsonContentOf("context.json")
+    val context = jsonContentOf("context.json").topContextValueOrEmpty
     val api     = implicitly[JsonLdApi]
 
     "be constructed successfully" in {
@@ -20,7 +20,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
     "get fields" in {
       val result = api.context(context).accepted
-      result.value shouldEqual context.topContextValueOrEmpty
+      result.value shouldEqual context
       result.base.value shouldEqual base.value
       result.vocab.value shouldEqual vocab.value
       result.aliases shouldEqual
@@ -93,7 +93,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
     }
 
     "add simple alias" in {
-      val context = json"""{"@context": {"@base": "${base.value}"} }"""
+      val context = json"""{"@context": {"@base": "${base.value}"} }""".topContextValueOrEmpty
       val result  = api.context(context).accepted
       result.addAlias("age", schema.age) shouldEqual JsonLdContext(
         value = ContextValue(json"""{"@base": "${base.value}", "age": "${schema.age}"}"""),
@@ -103,7 +103,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
     }
 
     "add alias with dataType" in {
-      val context = json"""{"@context": {"@base": "${base.value}"} }"""
+      val context = json"""{"@context": {"@base": "${base.value}"} }""".topContextValueOrEmpty
       val result  = api.context(context).accepted
       result.addAlias("age", schema.age, xsd.integer) shouldEqual JsonLdContext(
         value = ContextValue(
@@ -115,7 +115,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
     }
 
     "add alias with @type @id" in {
-      val context = json"""{"@context": {"@base": "${base.value}"} }"""
+      val context = json"""{"@context": {"@base": "${base.value}"} }""".topContextValueOrEmpty
       val result  = api.context(context).accepted
       result.addAliasIdType("unit", schema.unitText) shouldEqual JsonLdContext(
         value =
@@ -126,7 +126,7 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
     }
 
     "add prefixMapping" in {
-      val context = json"""{"@context": [{"@base": "${base.value}"}] }"""
+      val context = json"""{"@context": [{"@base": "${base.value}"}] }""".topContextValueOrEmpty
       val result  = api.context(context).accepted
       result.addPrefix("xsd", xsd.base) shouldEqual JsonLdContext(
         value = ContextValue(json"""[{"@base": "${base.value}"}, {"xsd": "${xsd.base}"}]"""),

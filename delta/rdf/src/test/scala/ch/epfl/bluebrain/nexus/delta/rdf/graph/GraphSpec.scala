@@ -92,14 +92,14 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be converted to dot with context" in {
       val expected = contentOf("graph/dot-compacted.dot", "bnode" -> bnode.rdfFormat, "rootNode" -> "john-doé")
-      val context  = jsonContentOf("context.json")
+      val context  = jsonContentOf("context.json").topContextValueOrEmpty
       graph.toDot(context).accepted.toString should equalLinesUnordered(expected)
     }
 
     "be converted to dot with context with a root blank node" in {
       val expected =
         contentOf("graph/dot-compacted.dot", "bnode" -> bnodeNoId.rdfFormat, "rootNode" -> rootBNode.rdfFormat)
-      val context  = jsonContentOf("context.json")
+      val context  = jsonContentOf("context.json").topContextValueOrEmpty
       graphNoId.toDot(context).accepted.toString should equalLinesUnordered(expected)
     }
 
@@ -120,7 +120,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.
     // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
     "be converted to compacted JSON-LD" in {
-      val context   = jsonContentOf("context.json")
+      val context   = jsonContentOf("context.json").topContextValueOrEmpty
       val compacted = jsonContentOf("graph/compacted.json")
       graph.toCompactedJsonLd(context).accepted.json shouldEqual compacted
     }
@@ -128,7 +128,7 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     // The returned json is not exactly the same as the original compacted json from where the Graph was created.
     // This is expected due to the useNativeTypes field on JsonLdOptions and to the @context we have set in place
     "be converted to compacted JSON-LD with a root blank node" in {
-      val context   = jsonContentOf("context.json")
+      val context   = jsonContentOf("context.json").topContextValueOrEmpty
       val compacted = jsonContentOf("graph/compacted.json").removeAll("id" -> "john-doé")
       graphNoId.toCompactedJsonLd(context).accepted.json shouldEqual compacted
     }

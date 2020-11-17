@@ -73,10 +73,9 @@ trait JsonLd extends Product with Serializable {
   /**
     * Converts the current JsonLd into a [[CompactedJsonLd]]
     *
-    * @param context the context to use in order to compact the current JsonLd.
-    *                E.g.: {"@context": {...}}
+    * @param contextValue the context value to use in order to compact the current JsonLd.
     */
-  def toCompacted(context: Json)(implicit
+  def toCompacted(contextValue: ContextValue)(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       resolution: RemoteContextResolution
@@ -93,6 +92,11 @@ trait JsonLd extends Product with Serializable {
       api: JsonLdApi,
       resolution: RemoteContextResolution
   ): IO[RdfError, Graph]
+
+  /**
+    * Checks if the current [[JsonLd]] is empty
+    */
+  def isEmpty: Boolean
 }
 object JsonLd {
 
@@ -156,16 +160,14 @@ object JsonLd {
     } yield ExpandedJsonLd(obj, idOpt.getOrElse(BNode.random))
 
   /**
-    * Create compacted JSON-LD document using the passed ''input'' and ''context''.
-    *
-    * If ContextFields.Include is passed it inspects the Context to include context fields like @base, @vocab, etc.
+    * Create compacted JSON-LD document using the passed ''input'' and ''context'' value.
     *
     * This method does NOT verify the passed ''rootId'' is present in the compacted form. It just verifies the compacted
     * form has the expected format (a Json Object without a top @graph only key)
     */
   final def compact(
       input: Json,
-      context: Json,
+      contextValue: ContextValue,
       rootId: IriOrBNode
   )(implicit
       api: JsonLdApi,
@@ -173,18 +175,18 @@ object JsonLd {
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd] =
     for {
-      compacted <- api.compact(input, context)
+      compacted <- api.compact(input, contextValue)
       _         <- topGraphErr(compacted)
-    } yield CompactedJsonLd(compacted.remove(keywords.context), context.topContextValueOrEmpty, rootId)
+    } yield CompactedJsonLd(compacted.remove(keywords.context), contextValue, rootId)
 
   /**
-    * Create compacted JSON-LD document using the passed ''input'' and ''context''.
+    * Create compacted JSON-LD document using the passed ''input'' and ''context'' value.
     *
     * The ''rootId'' is enforced using a framing on it.
     */
   final def frame(
       input: Json,
-      context: Json,
+      contextValue: ContextValue,
       rootId: IriOrBNode
   )(implicit
       api: JsonLdApi,
@@ -192,11 +194,11 @@ object JsonLd {
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd] = {
     val jsonId = rootId.asIri.fold(Json.obj())(rootIri => Json.obj(keywords.id -> rootIri.asJson))
-    val frame  = context.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
+    val frame  = contextValue.contextObj.arrayOrObject(jsonId, arr => (arr :+ jsonId).asJson, _.asJson.deepMerge(jsonId))
     for {
       compacted <- api.frame(input, frame)
       _         <- topGraphErr(compacted)
-    } yield CompactedJsonLd(compacted.remove(keywords.context), context.topContextValueOrEmpty, rootId)
+    } yield CompactedJsonLd(compacted.remove(keywords.context), contextValue, rootId)
   }
 
   private def topGraphErr(obj: JsonObject): IO[RdfError, Unit] =

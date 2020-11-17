@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.routes.models.{JsonSource, TagFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources => resourcePermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -96,60 +97,75 @@ final class ResourcesRoutes(
                     }
                   }
                 },
-                idSegment { schemaSegment =>
-                  val schemaSegmentOpt = underscoreToOption(schemaSegment)
+                idSegment { schema =>
+                  val schemaOpt = underscoreToOption(schema)
                   concat(
                     // Create a resource with schema but without id segment
                     (post & noParameter("rev") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/resources/{org}/{project}/{schema}") {
                         authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
                           entity(as[Json]) { source =>
-                            emit(Created, resources.create(ref, schemaSegment, source).map(_.void))
+                            emit(Created, resources.create(ref, schema, source).map(_.void))
                           }
                         }
                       }
                     },
-                    idSegment { idSegment =>
+                    idSegment { id =>
                       concat(
-                        operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}") {
-                          concat(
-                            (put & pathEndOrSingleSlash) {
-                              authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
-                                (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                                  case (None, source)      =>
-                                    // Create a resource with schema and id segments
-                                    emit(Created, resources.create(idSegment, ref, schemaSegment, source).map(_.void))
-                                  case (Some(rev), source) =>
-                                    // Update a resource
-                                    emit(resources.update(idSegment, ref, schemaSegmentOpt, rev, source).map(_.void))
+                        pathEndOrSingleSlash {
+                          operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}") {
+                            concat(
+                              put {
+                                authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                                  (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                                    case (None, source)      =>
+                                      // Create a resource with schema and id segments
+                                      emit(Created, resources.create(id, ref, schema, source).map(_.void))
+                                    case (Some(rev), source) =>
+                                      // Update a resource
+                                      emit(resources.update(id, ref, schemaOpt, rev, source).map(_.void))
+                                  }
+                                }
+                              },
+                              (delete & parameter("rev".as[Long])) { rev =>
+                                authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
+                                  // Deprecate a resource
+                                  emit(resources.deprecate(id, ref, schemaOpt, rev).map(_.void))
+                                }
+                              },
+                              // Fetches a resource
+                              get {
+                                authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
+                                  (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+                                    case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
+                                    case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev))
+                                    case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag))
+                                    case _                  => emit(resources.fetch(id, ref, schemaOpt))
+                                  }
                                 }
                               }
-                            },
-                            (delete & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
-                              authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
-                                // Deprecate a resource
-                                emit(resources.deprecate(idSegment, ref, schemaSegmentOpt, rev).map(_.void))
-                              }
-                            },
-                            // Fetches a resource
-                            (get & pathEndOrSingleSlash) {
-                              authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
-                                (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
-                                  case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-                                  case (Some(rev), _)     => emit(resources.fetchAt(idSegment, ref, schemaSegmentOpt, rev))
-                                  case (_, Some(tag))     => emit(resources.fetchBy(idSegment, ref, schemaSegmentOpt, tag))
-                                  case _                  => emit(resources.fetch(idSegment, ref, schemaSegmentOpt))
-                                }
+                            )
+                          }
+                        },
+                        // Fetches a resource original source
+                        (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                          operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
+                            authorizeFor(AclAddress.Project(ref), resourcePermissions.read).apply {
+                              (parameter("rev".as[Long].?) & parameter("tag".as[Label].?)) {
+                                case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
+                                case (Some(rev), _)     => emit(resources.fetchAt(id, ref, schemaOpt, rev).map(asSource))
+                                case (_, Some(tag))     => emit(resources.fetchBy(id, ref, schemaOpt, tag).map(asSource))
+                                case _                  => emit(resources.fetch(id, ref, schemaOpt).map(asSource))
                               }
                             }
-                          )
+                          }
                         },
                         (pathPrefix("tags") & post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
                           authorizeFor(AclAddress.Project(ref), resourcePermissions.write).apply {
                             entity(as[TagFields]) { case TagFields(tagRev, tag) =>
                               operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
                                 // Tag a resource
-                                emit(resources.tag(idSegment, ref, schemaSegmentOpt, tag, tagRev, rev).map(_.void))
+                                emit(resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void))
                               }
                             }
                           }
@@ -178,6 +194,9 @@ final class ResourcesRoutes(
       case StringSegment("_") => None
       case other              => Some(other)
     }
+
+  private def asSource(resourceOpt: Option[DataResource]): Option[JsonSource] =
+    resourceOpt.map(resource => JsonSource(resource.value.source, resource.value.id))
 
   private val simultaneousTagAndRevRejection =
     MalformedQueryParamRejection("tag", "tag and rev query parameters cannot be present simultaneously")
