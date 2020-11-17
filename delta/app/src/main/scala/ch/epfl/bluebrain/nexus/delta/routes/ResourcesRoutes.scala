@@ -66,7 +66,7 @@ final class ResourcesRoutes(
             ((label | orgLabelFromUuidLookup) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/resources/{org}/events") {
-                  authorizeFor(AclAddress.Root, events.read).apply {
+                  authorizeFor(AclAddress.Organization(org), events.read).apply {
                     lastEventId { offset =>
                       emit(resources.events(org, offset).leftWiden[ResourceRejection])
                     }
