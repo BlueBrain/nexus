@@ -236,7 +236,11 @@ class ResourcesRoutesSpec
         "/v1/resources/myorg/myproject/_/myid",
         s"/v1/resources/myorg/myproject/resource/$myIdEncoded",
         "/v1/resources/myorg/myproject/_/myid?rev=3",
-        "/v1/resources/myorg/myproject/_/myid2?tag=mytag"
+        "/v1/resources/myorg/myproject/_/myid2?tag=mytag",
+        "/v1/resources/myorg/myproject/_/myid",
+        s"/v1/resources/myorg/myproject/resource/$myIdEncoded/source",
+        "/v1/resources/myorg/myproject/_/myid/source?rev=3",
+        "/v1/resources/myorg/myproject/_/myid2/source?tag=mytag"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
@@ -271,6 +275,30 @@ class ResourcesRoutesSpec
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual meta.deepMerge(payload).deepMerge(resourceCtx)
+        }
+      }
+    }
+
+    "fetch a resource original payload" in {
+      Get("/v1/resources/myorg/myproject/_/myid/source") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual payloadUpdated
+      }
+    }
+
+    "fetch a resource original payload by rev and tag" in {
+      val endpoints = List(
+        "/v1/resources/myorg/myproject/myschema/myid2/source?rev=1",
+        "/v1/resources/myorg/myproject/_/myid2/source?rev=1",
+        s"/v1/resources/$uuidOrg/$uuidProj/_/myid2/source?rev=1",
+        "/v1/resources/myorg/myproject/myschema/myid2/source?tag=mytag",
+        s"/v1/resources/$uuidOrg/$uuidProj/_/myid2/source?tag=mytag"
+      )
+      val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          response.asJson shouldEqual payload
         }
       }
     }

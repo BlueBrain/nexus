@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.routes
+package ch.epfl.bluebrain.nexus.delta.routes.models
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import io.circe.Decoder
