@@ -1,11 +1,10 @@
 {
-  "@context": [
-    "https://bluebrain.github.io/nexus/contexts/iam.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
-  ],
+  "@context" : "https://bluebrain.github.io/nexus/contexts/resource.json",
   "@id": "{{deltaUri}}/realms/{{label}}",
   "@type": "Realm",
   "_label": "{{label}}",
   "_rev": {{rev}},
-  "_deprecated": {{deprecated}}
+  "_deprecated": {{deprecated}},
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/realms.json",
+  "_self" : "{{deltaUri}}/realms/{{label}}"
 }

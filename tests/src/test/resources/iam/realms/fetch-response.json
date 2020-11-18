@@ -1,7 +1,7 @@
 {
-  "@context": [
-    "https://bluebrain.github.io/nexus/contexts/iam.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/realms.json"
   ],
   "@id": "{{deltaUri}}/realms/{{label}}",
   "@type": "Realm",
@@ -22,5 +22,7 @@
   "_userInfoEndpoint": "{{realm}}/protocol/openid-connect/userinfo",
   "_endSessionEndpoint": "{{realm}}/protocol/openid-connect/logout",
   "_rev": {{rev}},
-  "_deprecated": false
+  "_deprecated": false,
+"_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/realms.json",
+"_self" : "{{deltaUri}}/realms/{{label}}"
 }

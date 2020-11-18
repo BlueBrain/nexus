@@ -75,7 +75,7 @@ object RdfRejectionHandler {
   implicit private[routes] val methodsRejectionEncoder: Encoder.AsObject[Seq[MethodRejection]] =
     Encoder.AsObject.instance { rejections =>
       val names = rejections.map(_.supported.name)
-      jsonObj(rejections.head, s"HTTP method not allowed, supported methods: ${names.mkString(", ")}")
+      jsonObj(rejections.head, s"HTTP method not allowed, supported methods: ${names.mkString(", ")}.", tpe = Some("HttpMethodNotAllowed"))
     }
 
   implicit private[routes] val methodsRejectionResponseFields: HttpResponseFields[Seq[MethodRejection]]         =
@@ -84,8 +84,8 @@ object RdfRejectionHandler {
   implicit private[routes] val authFailedRejectionEncoder: Encoder.AsObject[Seq[AuthenticationFailedRejection]] =
     Encoder.AsObject.instance { rejections =>
       val rejectionMessage = rejections.head.cause match {
-        case CredentialsMissing  => "The resource requires authentication, which was not supplied with the request"
-        case CredentialsRejected => "The supplied authentication is invalid"
+        case CredentialsMissing  => "The resource requires authentication, which was not supplied with the request."
+        case CredentialsRejected => "The supplied authentication is invalid."
       }
       jsonObj(rejections.head, rejectionMessage)
     }
@@ -101,7 +101,7 @@ object RdfRejectionHandler {
     Encoder.AsObject.instance { rejections =>
       val supported = rejections.flatMap(_.supported)
       val msg       =
-        s"Resource representation is only available with these Content-Encodings: ${supported.map(_.value).mkString(", ")}"
+        s"Resource representation is only available with these Content-Encodings: ${supported.map(_.value).mkString(", ")}."
       jsonObj(rejections.head, msg)
     }
 
@@ -160,7 +160,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val authFailedEncoder: Encoder.AsObject[AuthorizationFailedRejection.type] =
     Encoder.AsObject.instance { rejection =>
-      jsonObj(rejection, "The supplied authentication is not authorized to access this resource")
+      jsonObj(rejection, "The supplied authentication is not authorized to access this resource.")
     }
 
   implicit private[routes] val authFailedEncoderResponseFields: HttpResponseFields[AuthorizationFailedRejection.type] =
@@ -168,7 +168,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val malformedFormFieldEncoder: Encoder.AsObject[MalformedFormFieldRejection] =
     Encoder.AsObject.instance { case r @ MalformedFormFieldRejection(name, msg, _) =>
-      jsonObj(r, s"The form field '$name' was malformed", Some(msg))
+      jsonObj(r, s"The form field '$name' was malformed.", Some(msg))
     }
 
   implicit private[routes] val malformedFormFieldResponseFields: HttpResponseFields[MalformedFormFieldRejection] =
@@ -176,7 +176,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val malformedHeaderEncoder: Encoder.AsObject[MalformedHeaderRejection] =
     Encoder.AsObject.instance { case r @ MalformedHeaderRejection(headerName, msg, _) =>
-      jsonObj(r, s"The value of HTTP header '$headerName' was malformed", Some(msg))
+      jsonObj(r, s"The value of HTTP header '$headerName' was malformed.", Some(msg))
     }
 
   implicit private[routes] val malformedHeaderEncoderResponseFields: HttpResponseFields[MalformedHeaderRejection] =
@@ -184,7 +184,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val malformedQueryParamEncoder: Encoder.AsObject[MalformedQueryParamRejection] =
     Encoder.AsObject.instance { case r @ MalformedQueryParamRejection(name, msg, _) =>
-      jsonObj(r, s"The query parameter '$name' was malformed", Some(msg))
+      jsonObj(r, s"The query parameter '$name' was malformed.", Some(msg))
     }
 
   implicit private[routes] val malformedQueryParamResponseFields: HttpResponseFields[MalformedQueryParamRejection] =
@@ -196,9 +196,9 @@ object RdfRejectionHandler {
         jsonObj(r, s"The request payload exceed the maximum configured limit '$limit'.")
       case r @ MalformedRequestContentRejection(_, f: DecodingFailure)                  =>
         val details = Option.when(f.getMessage() != "CNil")(f.getMessage())
-        jsonObj(r, "The request content was malformed", details)
+        jsonObj(r, "The request content was malformed.", details)
       case r @ MalformedRequestContentRejection(msg, _)                                 =>
-        jsonObj(r, "The request content was malformed", Some(msg))
+        jsonObj(r, "The request content was malformed.", Some(msg))
     }
 
   implicit private[routes] val malformedRequestContentResponseFields
@@ -210,7 +210,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val missingCookieEncoder: Encoder.AsObject[MissingCookieRejection] =
     Encoder.AsObject.instance { case r @ MissingCookieRejection(cookieName) =>
-      jsonObj(r, s"Request is missing required cookie '$cookieName'")
+      jsonObj(r, s"Request is missing required cookie '$cookieName'.")
     }
 
   implicit private[routes] val missingCookieResponseFields: HttpResponseFields[MissingCookieRejection] =
@@ -218,7 +218,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val missingFormFieldEncoder: Encoder.AsObject[MissingFormFieldRejection] =
     Encoder.AsObject.instance { case r @ MissingFormFieldRejection(fieldName) =>
-      jsonObj(r, s"Request is missing required form field '$fieldName'")
+      jsonObj(r, s"Request is missing required form field '$fieldName'.")
     }
 
   implicit private[routes] val missingFormFieldResponseFields: HttpResponseFields[MissingFormFieldRejection] =
@@ -226,7 +226,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val missingHeaderEncoder: Encoder.AsObject[MissingHeaderRejection] =
     Encoder.AsObject.instance { case r @ MissingHeaderRejection(headerName) =>
-      jsonObj(r, s"Request is missing required HTTP header '$headerName'")
+      jsonObj(r, s"Request is missing required HTTP header '$headerName'.")
     }
 
   implicit private[routes] val missingHeaderResponseFields: HttpResponseFields[MissingHeaderRejection] =
@@ -242,7 +242,7 @@ object RdfRejectionHandler {
 
   implicit private[routes] val missingQueryParamEncoder: Encoder.AsObject[MissingQueryParamRejection] =
     Encoder.AsObject.instance { case r @ MissingQueryParamRejection(paramName) =>
-      jsonObj(r, s"Request is missing required query parameter '$paramName'")
+      jsonObj(r, s"Request is missing required query parameter '$paramName'.", tpe = Some("MissingQueryParam"))
     }
 
   implicit private[routes] val missingQueryParamResponseFields: HttpResponseFields[MissingQueryParamRejection] =
@@ -323,9 +323,14 @@ object RdfRejectionHandler {
   implicit private[routes] def compactFromCirceRejectionSeq[A <: Seq[Rejection]: Encoder.AsObject]: JsonLdEncoder[A] =
     JsonLdEncoder.fromCirce(id = bnode, iriContext = contexts.error)
 
-  private def jsonObj[A <: Rejection](value: A, reason: String, details: Option[String] = None): JsonObject =
+  private def jsonObj[A <: Rejection](
+      value: A,
+      reason: String,
+      details: Option[String] = None,
+      tpe: Option[String] = None
+  ): JsonObject =
     JsonObject.fromIterable(
-      List(keywords.tpe                            -> ClassUtils.simpleName(value).asJson) ++
+      List(keywords.tpe                            -> tpe.getOrElse(ClassUtils.simpleName(value)).asJson) ++
         Option.when(reason.trim.nonEmpty)("reason" -> reason.asJson) ++
         details.collect { case d if d.trim.nonEmpty => "details" -> d.asJson }
     )

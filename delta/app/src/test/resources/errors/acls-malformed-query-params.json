@@ -1,6 +1,6 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "MalformedQueryParamRejection",
-  "details": "rev and ancestors query parameters cannot be present simultaneously",
-  "reason": "The query parameter 'rev' was malformed"
+  "details": "rev and ancestors query parameters cannot be present simultaneously.",
+  "reason": "The query parameter 'rev' was malformed."
 }
