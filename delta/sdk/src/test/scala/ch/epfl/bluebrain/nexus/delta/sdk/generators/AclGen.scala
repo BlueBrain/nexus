@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import org.scalatest.OptionValues
 
 object AclGen extends OptionValues {
@@ -22,8 +23,9 @@ object AclGen extends OptionValues {
   def resourceFor(
       acl: Acl,
       rev: Long = 1L,
-      subject: Subject = Identity.Anonymous
+      subject: Subject = Identity.Anonymous,
+      perms: Set[Permission] = Set.empty
   ): AclResource =
-    currentState(acl, rev, subject, subject).toResource.value
+    currentState(acl, rev, subject, subject).toResource(acl.address, perms).value
 
 }

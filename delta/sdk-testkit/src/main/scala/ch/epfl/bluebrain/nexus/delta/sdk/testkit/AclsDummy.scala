@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AclsDummy.AclsJournal
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Lens, Permissions}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
@@ -32,19 +33,33 @@ final class AclsDummy private (
 )(implicit clock: Clock[UIO])
     extends Acls {
 
+  private val minimum: Set[Permission] = permissions.minimum
+
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
-    cache.get.map(_.value.get(address))
+    cache.get.map(_.value.get(address).orElse(Initial.toResource(address, minimum)))
 
   override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
-    Acls.fetchWithAncestors(address, this, permissions)
+    fetch(address).flatMap { resourceOpt =>
+      val collection = toCollection(resourceOpt)
+      address.parent match {
+        case Some(parent) => fetchWithAncestors(parent).map(collection ++ _)
+        case None         => UIO.pure(collection)
+      }
+    }
 
   override def fetchAt(address: AclAddress, rev: Long): IO[RevisionNotFound, Option[AclResource]] =
     journal
       .stateAt(address, rev, Initial, Acls.next, RevisionNotFound.apply)
-      .map(_.flatMap(_.toResource))
+      .map(stateOpt => stateOpt.getOrElse(Initial).toResource(address, minimum))
 
   override def list(filter: AclAddressFilter): UIO[AclCollection] =
-    cache.get.map(_.fetch(filter))
+    cache.get.map(_.fetch(filter)).map { col =>
+      val rootResourceOpt = col.value.get(AclAddress.Root) match {
+        case None if filter.withAncestors => Initial.toResource(AclAddress.Root, minimum)
+        case resourceOpt                  => resourceOpt
+      }
+      rootResourceOpt.fold(col)(rootResource => col + rootResource)
+    }
 
   override def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection] =
     list(filter).map(_.filter(caller.identities))
@@ -74,12 +89,16 @@ final class AclsDummy private (
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
     semaphore.withPermit {
       for {
-        state <- journal.currentState(cmd.address, Initial, Acls.next).map(_.getOrElse(Initial))
-        event <- Acls.evaluate(UIO.pure(permissions))(state, cmd)
-        _     <- journal.add(event)
-        res   <- IO.fromEither(Acls.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.address)))
+        state      <- journal.currentState(cmd.address, Initial, Acls.next).map(_.getOrElse(Initial))
+        event      <- Acls.evaluate(permissions)(state, cmd)
+        _          <- journal.add(event)
+        resourceOpt = Acls.next(state, event).toResource(cmd.address, minimum)
+        res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.address))
       } yield res
     }
+
+  private def toCollection(resourceOpt: Option[AclResource]): AclCollection =
+    resourceOpt.fold(AclCollection.empty)(AclCollection(_))
 }
 
 object AclsDummy {
