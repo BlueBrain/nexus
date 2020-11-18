@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsState}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -31,7 +30,7 @@ class AclsSpec
   "The ACL state machine" when {
     implicit val sc: Scheduler = Scheduler.global
     val currentPerms           = PermissionsState.Current(1L, rwx, epoch, subject, epoch, subject).toResource(Set.empty)
-    val perms                  = IO.pure(new PermissionsMock(currentPerms))
+    val perms                  = new PermissionsMock(currentPerms)
     val current                = Current(userR_groupX(Root), 1L, epoch, Anonymous, epoch, Anonymous)
     val time2                  = Instant.ofEpochMilli(10L)
 

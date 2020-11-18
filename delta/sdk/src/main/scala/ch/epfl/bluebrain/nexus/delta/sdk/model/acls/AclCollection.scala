@@ -15,6 +15,11 @@ import scala.collection.immutable.SortedMap
 final case class AclCollection private (value: SortedMap[AclAddress, AclResource]) { self =>
 
   /**
+    * @return true if collection of ACLs is empty, false otherwise
+    */
+  def isEmpty: Boolean = value.isEmpty
+
+  /**
     * Fetch the [[AclCollection]] for all [[AclAddress]] that match the passed ''filter''.
     *
     * @param filter the ACL address filter

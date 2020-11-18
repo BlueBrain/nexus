@@ -5,7 +5,9 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Lens}
 
@@ -37,7 +39,7 @@ sealed trait AclState extends Product with Serializable {
   /**
     * Converts the state into a resource representation.
     */
-  def toResource: Option[AclResource]
+  def toResource(address: AclAddress, permissions: => Set[Permission]): Option[AclResource]
 }
 
 object AclState {
@@ -53,7 +55,23 @@ object AclState {
   final case object Initial extends AclState {
     override val rev: Long = 0L
 
-    override val toResource: Option[AclResource] = None
+    override def toResource(address: AclAddress, permissions: => Set[Permission]): Option[AclResource] = {
+      Option.when(address == AclAddress.Root)(
+        ResourceF(
+          id = AccessUrl.acl(address)(_).iri,
+          accessUrl = AccessUrl.acl(address)(_).value,
+          rev = rev,
+          types = types,
+          deprecated = deprecated,
+          createdAt = Instant.EPOCH,
+          createdBy = Identity.Anonymous,
+          updatedAt = Instant.EPOCH,
+          updatedBy = Identity.Anonymous,
+          schema = schema,
+          value = Acl(AclAddress.Root, Identity.Anonymous -> permissions)
+        )
+      )
+    }
   }
 
   /**
@@ -74,22 +92,21 @@ object AclState {
       updatedAt: Instant,
       updatedBy: Subject
   ) extends AclState {
-    override def toResource: Option[AclResource] =
-      Some(asResource)
-
-    def asResource: AclResource =
-      ResourceF(
-        id = AccessUrl.acl(acl.address)(_).iri,
-        accessUrl = AccessUrl.acl(acl.address)(_).value,
-        rev = rev,
-        types = types,
-        deprecated = deprecated,
-        createdAt = createdAt,
-        createdBy = createdBy,
-        updatedAt = updatedAt,
-        updatedBy = updatedBy,
-        schema = schema,
-        value = acl
+    override def toResource(address: AclAddress, permissions: => Set[Permission]): Option[AclResource] =
+      Some(
+        ResourceF(
+          id = AccessUrl.acl(acl.address)(_).iri,
+          accessUrl = AccessUrl.acl(acl.address)(_).value,
+          rev = rev,
+          types = types,
+          deprecated = deprecated,
+          createdAt = createdAt,
+          createdBy = createdBy,
+          updatedAt = updatedAt,
+          updatedBy = updatedBy,
+          schema = schema,
+          value = acl
+        )
       )
   }
 

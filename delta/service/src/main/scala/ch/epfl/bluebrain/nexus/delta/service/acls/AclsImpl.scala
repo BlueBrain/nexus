@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -31,11 +32,19 @@ final class AclsImpl private (
     index: AclsCache
 ) extends Acls {
 
+  private val minimum: Set[Permission] = permissions.minimum
+
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
-    agg.state(address.string).map(_.toResource).named("fetchAcl", moduleType)
+    agg.state(address.string).map(_.toResource(address, minimum)).named("fetchAcl", moduleType)
 
   override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
-    Acls.fetchWithAncestors(address, this, permissions)
+    fetch(address).flatMap { resourceOpt =>
+      val collection = toCollection(resourceOpt)
+      address.parent match {
+        case Some(parent) => fetchWithAncestors(parent).map(collection ++ _)
+        case None         => UIO.pure(collection)
+      }
+    }
 
   override def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.RevisionNotFound, Option[AclResource]] =
     eventLog
@@ -45,12 +54,19 @@ final class AclsImpl private (
         Initial,
         Acls.next
       )
-      .bimap(RevisionNotFound(rev, _), _.toResource)
+      .bimap(RevisionNotFound(rev, _), _.toResource(address, minimum))
       .named("fetchAclAt", moduleType)
 
   override def list(filter: AclAddressFilter): UIO[AclCollection]                              =
     index.values
-      .map(as => AclCollection(as.toSeq: _*).fetch(filter))
+      .map { as =>
+        val col             = AclCollection(as.toSeq: _*)
+        val rootResourceOpt = col.value.get(AclAddress.Root) match {
+          case None if filter.withAncestors => Initial.toResource(AclAddress.Root, minimum)
+          case resourceOpt                  => resourceOpt
+        }
+        rootResourceOpt.fold(col)(rootResource => col + rootResource).fetch(filter)
+      }
       .named("listAcls", moduleType, Map("withAncestors" -> filter.withAncestors))
 
   override def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection] =
@@ -79,12 +95,13 @@ final class AclsImpl private (
   private def eval(cmd: AclCommand): IO[AclRejection, AclResource] =
     for {
       evaluationResult <- agg.evaluate(cmd.address.string, cmd).mapError(_.value)
-      resource         <- IO.fromOption(
-                            evaluationResult.state.toResource,
-                            UnexpectedInitialState(cmd.address)
-                          )
+      resourceOpt       = evaluationResult.state.toResource(cmd.address, minimum)
+      resource         <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.address))
       _                <- index.put(cmd.address, resource)
     } yield resource
+
+  private def toCollection(resourceOpt: Option[AclResource]): AclCollection =
+    resourceOpt.fold(AclCollection.empty)(AclCollection(_))
 
 }
 
@@ -97,7 +114,7 @@ object AclsImpl {
   private val logger: Logger = Logger[AclsImpl]
 
   private def aggregate(
-      permissions: UIO[Permissions],
+      permissions: Permissions,
       aggregateConfig: AggregateConfig
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[AclsAggregate] = {
     val definition = PersistentEventDefinition(
@@ -174,9 +191,9 @@ object AclsImpl {
       clock: Clock[UIO]
   ): UIO[AclsImpl] =
     for {
-      agg  <- aggregate(UIO.delay(permissions), config.aggregate)
+      agg  <- aggregate(permissions, config.aggregate)
       index = cache(config)
-      acls  = AclsImpl.apply(agg, permissions, eventLog, index)
+      acls  = AclsImpl(agg, permissions, eventLog, index)
       _    <- UIO.delay(startIndexing(config, eventLog, index, acls))
     } yield acls
 }

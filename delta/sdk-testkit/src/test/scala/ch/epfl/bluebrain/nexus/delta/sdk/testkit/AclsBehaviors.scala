@@ -9,8 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{AclCannotContainEmptyPermissionCollection, AclIsEmpty, AclNotFound, NothingToBeUpdated, RevisionNotFound, UnknownPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection, AclState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -83,18 +82,7 @@ trait AclsBehaviors {
     "return the full permissions for Anonymous if no permissions are defined" in {
       val expected: AclCollection =
         permissions.fetchPermissionSet
-          .map(ps =>
-            AclCollection(
-              Current(
-                acl = Acl(AclAddress.Root, Identity.Anonymous -> ps),
-                rev = 0L,
-                createdAt = Instant.EPOCH,
-                createdBy = Identity.Anonymous,
-                updatedAt = Instant.EPOCH,
-                updatedBy = Identity.Anonymous
-              ).asResource
-            )
-          )
+          .map(ps => AclCollection(AclState.Initial.toResource(AclAddress.Root, ps).value))
           .accepted
       acls.fetchWithAncestors(projectTarget).accepted shouldEqual expected
       acls.fetchWithAncestors(orgTarget).accepted shouldEqual expected
