@@ -51,11 +51,11 @@ trait ResolversBehaviors {
   val org               = Label.unsafe("org")
   val apiMappings       = ApiMappings(Map("nxv" -> nxv.base, "Person" -> schema.Person))
   val base              = nxv.base
-  val project           = ProjectGen.resourceFor(ProjectGen.project("org", "proj", base = base, mappings = apiMappings))
-  val deprecatedProject = ProjectGen.resourceFor(ProjectGen.project("org", "proj-deprecated"))
+  val project           = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
+  val deprecatedProject = ProjectGen.project("org", "proj-deprecated")
 
-  val projectRef           = project.value.ref
-  val deprecatedProjectRef = deprecatedProject.value.ref
+  val projectRef           = project.ref
+  val deprecatedProjectRef = deprecatedProject.ref
   val unknownProjectRef    = ProjectRef(org, Label.unsafe("xxx"))
 
   private val priority = Priority.unsafe(42)
@@ -63,8 +63,8 @@ trait ResolversBehaviors {
   lazy val projects: ProjectsDummy = ProjectSetup
     .init(
       orgsToCreate = org :: Nil,
-      projectsToCreate = project.value :: deprecatedProject.value :: Nil,
-      projectsToDeprecate = deprecatedProject.value.ref :: Nil
+      projectsToCreate = project :: deprecatedProject :: Nil,
+      projectsToDeprecate = deprecatedProject.ref :: Nil
     )
     .map(_._2)
     .accepted
@@ -100,7 +100,7 @@ trait ResolversBehaviors {
           )
         ) { case (id, value) =>
           resolvers.create(IriSegment(id), projectRef, ResolverFields(None, value)).accepted shouldEqual ResolverGen
-            .resourceFor(id, project.value, value, subject = bob.subject)
+            .resourceFor(id, project, value, subject = bob.subject)
         }
       }
 
@@ -113,7 +113,7 @@ trait ResolversBehaviors {
         ) { case (id, value) =>
           resolvers.create(projectRef, ResolverFields(Some(id), value)).accepted shouldEqual ResolverGen.resourceFor(
             id,
-            project.value,
+            project,
             value,
             subject = bob.subject
           )
@@ -128,14 +128,14 @@ trait ResolversBehaviors {
           )
         ) { case (id, value) =>
           resolvers.create(IriSegment(id), projectRef, ResolverFields(Some(id), value)).accepted shouldEqual ResolverGen
-            .resourceFor(id, project.value, value, subject = bob.subject)
+            .resourceFor(id, project, value, subject = bob.subject)
         }
       }
 
       "succeed with a generated id" in {
         val expectedId = nxv.base / uuid.toString
         resolvers.create(projectRef, ResolverFields(None, crossProjectValue)).accepted shouldEqual ResolverGen
-          .resourceFor(expectedId, project.value, crossProjectValue, subject = bob.subject)
+          .resourceFor(expectedId, project, crossProjectValue, subject = bob.subject)
       }
 
       "fail with different ids defined in segment and payload" in {
@@ -243,7 +243,7 @@ trait ResolversBehaviors {
           )
         ) { case (id, value) =>
           resolvers.update(IriSegment(id), projectRef, 1L, ResolverFields(None, value)).accepted shouldEqual ResolverGen
-            .resourceFor(id, project.value, value, rev = 2L, subject = bob.subject)
+            .resourceFor(id, project, value, rev = 2L, subject = bob.subject)
         }
       }
 
@@ -343,7 +343,7 @@ trait ResolversBehaviors {
         ) { case (id, value) =>
           resolvers.tag(IriSegment(id), projectRef, tag, 1L, 2L).accepted shouldEqual ResolverGen.resourceFor(
             id,
-            project.value,
+            project,
             value,
             tags = Map(tag -> 1L),
             rev = 3L,
@@ -422,7 +422,7 @@ trait ResolversBehaviors {
         ) { case (id, value) =>
           resolvers.deprecate(IriSegment(id), projectRef, 3L).accepted shouldEqual ResolverGen.resourceFor(
             id,
-            project.value,
+            project,
             value,
             tags = Map(tag -> 1L),
             rev = 4L,
@@ -519,7 +519,7 @@ trait ResolversBehaviors {
     "fetching a resolver" should {
       val inProjectExpected    = ResolverGen.resourceFor(
         nxv + "in-project",
-        project.value,
+        project,
         updatedInProjectValue,
         tags = Map(tag -> 1L),
         rev = 4L,
@@ -528,7 +528,7 @@ trait ResolversBehaviors {
       )
       val crossProjectExpected = ResolverGen.resourceFor(
         nxv + "cross-project",
-        project.value,
+        project,
         updatedCrossProjectValue,
         tags = Map(tag -> 1L),
         rev = 4L,
@@ -560,7 +560,7 @@ trait ResolversBehaviors {
         ) { case (id, value) =>
           resolvers.fetchBy(IriSegment(id), projectRef, tag).accepted.value shouldEqual ResolverGen.resourceFor(
             id,
-            project.value,
+            project,
             value,
             subject = bob.subject
           )
