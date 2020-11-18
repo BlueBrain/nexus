@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Handler, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Projects}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -423,6 +423,6 @@ trait ProjectsBehaviors {
 object ProjectsBehaviors {
   final case class RejectionWrapper(projectRejection: ProjectRejection)
 
-  implicit val rejectionWrapper: Handler[ProjectRejection, RejectionWrapper] =
+  implicit val rejectionMapper: Mapper[ProjectRejection, RejectionWrapper] =
     (value: ProjectRejection) => RejectionWrapper(value)
 }

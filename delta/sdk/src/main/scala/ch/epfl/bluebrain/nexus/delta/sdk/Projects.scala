@@ -70,17 +70,17 @@ trait Projects {
   /**
     * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated
     * @param ref                   the project reference
-    * @param rejectionHandler  allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project]
+  def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
     * Fetches the current project from cache, rejecting if the project does not exists
     *
     * @param ref the project reference
-    * @param rejectionHandler  allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchFromCache[R](ref: ProjectRef)(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project]
+  def fetchFromCache[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.

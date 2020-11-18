@@ -76,27 +76,27 @@ trait Organizations {
     */
   def fetchActiveOrganization[R](
       label: Label
-  )(implicit rejectionHandler: Handler[OrganizationRejection, R]): IO[R, Organization] =
+  )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
     fetch(label)
       .flatMap {
         case Some(resource) if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
         case None                                  => IO.raiseError(OrganizationNotFound(label))
         case Some(resource)                        => IO.pure(resource.value)
       }
-      .leftMap(rejectionHandler.to)
+      .leftMap(rejectionMapper.to)
 
   /**
     * Fetches the current organization, rejecting if the organization does not exists
     */
   def fetchOrganization[R](
       label: Label
-  )(implicit rejectionHandler: Handler[OrganizationRejection, R]): IO[R, Organization] =
+  )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
     fetch(label)
       .flatMap {
         case Some(resource) => IO.pure(resource.value)
         case None           => IO.raiseError(OrganizationNotFound(label))
       }
-      .leftMap(rejectionHandler.to)
+      .leftMap(rejectionMapper.to)
 
   /**
     * Fetch an organization at the passed revision by label.

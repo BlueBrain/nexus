@@ -27,7 +27,7 @@ trait ResourceSourceParser {
     */
   def computeId[R](idSegment: Option[IdSegment], project: Project, idPayload: Option[Iri])(implicit
       uuidF: UUIDF,
-      rejectionHandler: Handler[ResourceRejection, R]
+      rejectionMapper: Mapper[ResourceRejection, R]
   ): IO[R, Iri] = {
     val result = idSegment match {
       case None          => getOrGenerateId(idPayload, project)
@@ -45,15 +45,15 @@ trait ResourceSourceParser {
         }
     }
 
-    result.leftMap(rejectionHandler.to)
+    result.leftMap(rejectionMapper.to)
   }
 
   def expandIri[R](segment: IdSegment, project: Project)(implicit
-      rejectionHandler: Handler[ResourceRejection, R]
+      rejectionMapper: Mapper[ResourceRejection, R]
   ): IO[R, Iri] =
     IO.fromOption(
       segment.toIri(project.apiMappings, project.base),
-      rejectionHandler.to(InvalidResourceId(segment.asString))
+      rejectionMapper.to(InvalidResourceId(segment.asString))
     )
 
   /**

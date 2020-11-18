@@ -73,24 +73,24 @@ final class ProjectsDummy private (
 
   override def fetchActiveProject[R](
       ref: ProjectRef
-  )(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project] =
+  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case None                                  => IO.raiseError(ProjectNotFound(ref))
         case Some(resource)                        => IO.pure(resource.value)
-      }).leftMap(rejectionHandler.to)
+      }).leftMap(rejectionMapper.to)
 
   override def fetchFromCache[R](
       ref: ProjectRef
-  )(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project] =
+  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     cache
       .fetch(ref)
       .flatMap {
         case Some(resource) => IO.pure(resource.value)
         case None           => IO.raiseError(ProjectNotFound(ref))
       }
-      .leftMap(rejectionHandler.to)
+      .leftMap(rejectionMapper.to)
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     journal

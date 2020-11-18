@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.Handler
+import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
@@ -113,10 +113,10 @@ object ResolverRejection {
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends ResolverRejection(s"Unexpected initial state for resolver '$id' of project '$project'.")
 
-  implicit val resourceRejectionWrapper: Handler[ResourceRejection, WrappedResourceRejection] =
+  implicit val resourceRejectionMapper: Mapper[ResourceRejection, WrappedResourceRejection] =
     (value: ResourceRejection) => WrappedResourceRejection(value)
 
-  implicit val projectRejectionWrapper: Handler[ProjectRejection, WrappedProjectRejection] =
+  implicit val projectRejectionMapper: Mapper[ProjectRejection, WrappedProjectRejection] =
     (value: ProjectRejection) => WrappedProjectRejection(value)
 
 }

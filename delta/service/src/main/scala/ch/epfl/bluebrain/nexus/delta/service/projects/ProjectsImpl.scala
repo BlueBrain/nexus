@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Handler, Organizations, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -81,24 +81,24 @@ final class ProjectsImpl private (
 
   override def fetchActiveProject[R](
       ref: ProjectRef
-  )(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project] =
+  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case None                                  => IO.raiseError(ProjectNotFound(ref))
         case Some(resource)                        => IO.pure(resource.value)
-      }).leftMap(rejectionHandler.to)
+      }).leftMap(rejectionMapper.to)
 
   override def fetchFromCache[R](
       ref: ProjectRef
-  )(implicit rejectionHandler: Handler[ProjectRejection, R]): IO[R, Project] =
+  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     index
       .get(ref)
       .flatMap {
         case Some(resource) => IO.pure(resource.value)
         case None           => IO.raiseError(ProjectNotFound(ref))
       }
-      .leftMap(rejectionHandler.to)
+      .leftMap(rejectionMapper.to)
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     eventLog
