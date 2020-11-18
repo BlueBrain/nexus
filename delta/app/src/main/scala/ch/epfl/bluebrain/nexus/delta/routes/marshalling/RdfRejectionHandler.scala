@@ -75,7 +75,11 @@ object RdfRejectionHandler {
   implicit private[routes] val methodsRejectionEncoder: Encoder.AsObject[Seq[MethodRejection]] =
     Encoder.AsObject.instance { rejections =>
       val names = rejections.map(_.supported.name)
-      jsonObj(rejections.head, s"HTTP method not allowed, supported methods: ${names.mkString(", ")}.", tpe = Some("HttpMethodNotAllowed"))
+      jsonObj(
+        rejections.head,
+        s"HTTP method not allowed, supported methods: ${names.mkString(", ")}.",
+        tpe = Some("HttpMethodNotAllowed")
+      )
     }
 
   implicit private[routes] val methodsRejectionResponseFields: HttpResponseFields[Seq[MethodRejection]]         =
