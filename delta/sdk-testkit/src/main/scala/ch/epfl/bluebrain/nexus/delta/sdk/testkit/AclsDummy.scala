@@ -36,10 +36,7 @@ final class AclsDummy private (
   private val minimum: Set[Permission] = permissions.minimum
 
   override def fetch(address: AclAddress): UIO[Option[AclResource]] =
-    cache.get.map(_.value.get(address)).map {
-      case Some(value) => Some(value)
-      case None        => Initial.toResource(address, minimum)
-    }
+    cache.get.map(_.value.get(address).orElse(Initial.toResource(address, minimum)))
 
   override def fetchWithAncestors(address: AclAddress): UIO[AclCollection] =
     fetch(address).flatMap { resourceOpt =>
@@ -53,10 +50,7 @@ final class AclsDummy private (
   override def fetchAt(address: AclAddress, rev: Long): IO[RevisionNotFound, Option[AclResource]] =
     journal
       .stateAt(address, rev, Initial, Acls.next, RevisionNotFound.apply)
-      .map {
-        case None     => Initial.toResource(address, minimum)
-        case stateOpt => stateOpt.flatMap(_.toResource(address, minimum))
-      }
+      .map(stateOpt => stateOpt.getOrElse(Initial).toResource(address, minimum))
 
   override def list(filter: AclAddressFilter): UIO[AclCollection] =
     cache.get.map(_.fetch(filter)).map { col =>
