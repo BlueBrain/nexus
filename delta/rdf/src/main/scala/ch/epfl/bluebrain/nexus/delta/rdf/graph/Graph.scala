@@ -162,7 +162,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       // A new model is created where the rootNode is a fake Iri.
       // This is done in order to be able to perform the framing, since framing won't work on blank nodes.
       // After the framing is done, the @id value is removed from the json and the blank node reverted as rootId
-      val fakeId   = iri"http://fake.com/${UUID.randomUUID()}"
+      val fakeId   = iri"http://localhost/${UUID.randomUUID()}"
       val newModel = replace(rootNode, fakeId).model
       for {
         expanded  <- IO.fromEither(api.fromRdf(newModel))
@@ -238,7 +238,7 @@ object Graph {
     } else {
       // A fake @id is injected in the Json and then replaced in the model.
       // This is required in order preserve the original blank node since jena will create its own otherwise
-      val fakeId = iri"http://fake.com/${UUID.randomUUID()}"
+      val fakeId = iri"http://localhost/${UUID.randomUUID()}"
       val json   = Json.arr(expanded.obj.add(keywords.id, fakeId.asJson).asJson)
       api.toRdf(json).map(model => Graph(expanded.rootId, model).replace(fakeId, expanded.rootId))
     }

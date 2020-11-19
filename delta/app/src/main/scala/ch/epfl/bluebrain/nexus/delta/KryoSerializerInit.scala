@@ -38,7 +38,7 @@ object KryoSerializerInit {
   private val iriFactory = IRIFactory.iriImplementation()
 
   class GraphSerializer extends Serializer[Graph] {
-    private val fakeIRI = iriFactory.create("http://fake.com/6ff2c90a-2bc3-4fd5-bf0b-bf2d563f28a7")
+    private val fakeIRI = iriFactory.create("http://localhost/6ff2c90a-2bc3-4fd5-bf0b-bf2d563f28a7")
     private val fakeIri = Iri.unsafe(fakeIRI.toString)
 
     override def write(kryo: Kryo, output: Output, graph: Graph): Unit =
