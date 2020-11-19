@@ -4,6 +4,7 @@ import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand._
@@ -61,7 +62,7 @@ trait Resolvers {
     * @param rev       the current revision of the resolver
     */
   def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
-      caller: Caller
+      subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
   /**
@@ -71,7 +72,7 @@ trait Resolvers {
     * @param rev     the current revision of the resolver
     */
   def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
-      caller: Caller
+      subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
   /**
@@ -180,11 +181,10 @@ object Resolvers {
   }
 
   private[delta] def evaluate(state: ResolverState, command: ResolverCommand)(implicit
-      caller: Caller,
       clock: Clock[UIO]
   ): IO[ResolverRejection, ResolverEvent] = {
 
-    def validateResolverValue(value: ResolverValue): IO[ResolverRejection, Unit] =
+    def validateResolverValue(value: ResolverValue, caller: Caller): IO[ResolverRejection, Unit] =
       value match {
         case CrossProjectValue(_, _, _, identityResolution) =>
           identityResolution match {
@@ -209,7 +209,7 @@ object Resolvers {
       // Create a resolver
       case Initial    =>
         for {
-          _   <- validateResolverValue(c.value)
+          _   <- validateResolverValue(c.value, c.caller)
           now <- instant
         } yield ResolverCreated(
           id = c.id,
@@ -217,7 +217,7 @@ object Resolvers {
           value = c.value,
           rev = 1L,
           instant = now,
-          subject = caller.subject
+          subject = c.subject
         )
     }
 
@@ -237,7 +237,7 @@ object Resolvers {
         for {
           _   <- if (s.value.tpe == c.value.tpe) IO.unit
                  else IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe))
-          _   <- validateResolverValue(c.value)
+          _   <- validateResolverValue(c.value, c.caller)
           now <- instant
         } yield ResolverUpdated(
           id = c.id,
@@ -245,7 +245,7 @@ object Resolvers {
           value = c.value,
           rev = s.rev + 1,
           instant = now,
-          subject = caller.subject
+          subject = c.subject
         )
     }
 
@@ -271,7 +271,7 @@ object Resolvers {
             tag = c.tag,
             rev = s.rev + 1,
             instant = now,
-            subject = caller.subject
+            subject = c.subject
           )
         }
     }
@@ -292,7 +292,7 @@ object Resolvers {
             project = c.project,
             rev = s.rev + 1,
             instant = now,
-            subject = caller.subject
+            subject = c.subject
           )
         }
     }

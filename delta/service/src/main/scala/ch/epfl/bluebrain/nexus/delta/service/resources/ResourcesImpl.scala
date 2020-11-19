@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -42,7 +43,7 @@ final class ResourcesImpl private (
     (for {
       project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
-      (iri, compacted, expanded) <- ResourceSourceParser.asJsonLd(project, source)
+      (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res).named("createResource", moduleType)
 
@@ -56,7 +57,7 @@ final class ResourcesImpl private (
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
+      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res).named("createResource", moduleType)
 
@@ -71,7 +72,7 @@ final class ResourcesImpl private (
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
+      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res).named("updateResource", moduleType)
 
@@ -109,7 +110,7 @@ final class ResourcesImpl private (
       schemaOpt: Option[IdSegment]
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
-      project      <- projects.fetchFromCache(projectRef)
+      project      <- projects.fetchProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       state        <- currentState(projectRef, iri)
@@ -123,7 +124,7 @@ final class ResourcesImpl private (
       rev: Long
   ): IO[ResourceRejection, Option[DataResource]] =
     (for {
-      project      <- projects.fetchFromCache(projectRef)
+      project      <- projects.fetchProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       state        <- stateAt(projectRef, iri, rev)
@@ -141,9 +142,9 @@ final class ResourcesImpl private (
   override def events(
       projectRef: ProjectRef,
       offset: Offset
-  ): IO[WrappedProjectRejection, Stream[Task, Envelope[ResourceEvent]]] =
+  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
-      .fetchFromCache(projectRef)
+      .fetchProject(projectRef)
       .as(eventLog.eventsByTag(s"${Projects.moduleType}=$projectRef", offset))
 
   override def events(

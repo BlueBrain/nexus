@@ -188,8 +188,8 @@ trait ProjectsBehaviors {
       projects.fetch(ref).accepted.value shouldEqual deprecatedResource
     }
 
-    "fetch a project from cache" in {
-      projects.fetchFromCache(ref).accepted shouldEqual deprecatedResource.value
+    "fetch a deprecated project with fetchProject" in {
+      projects.fetchProject(ref).accepted shouldEqual deprecatedResource.value
     }
 
     "fetch a project by uuid" in {
@@ -214,10 +214,10 @@ trait ProjectsBehaviors {
       projects.fetch(ref).accepted shouldEqual None
     }
 
-    "fetch an unknown project from cache" in {
+    "fail fetching an unknown project with fetchProject" in {
       val ref = ProjectRef.unsafe("org", "unknown")
 
-      projects.fetchFromCache(ref).rejectedWith[RejectionWrapper] shouldEqual
+      projects.fetchProject(ref).rejectedWith[RejectionWrapper] shouldEqual
         RejectionWrapper(ProjectNotFound(ref))
     }
 

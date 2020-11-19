@@ -75,12 +75,12 @@ trait Projects {
   def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
-    * Fetches the current project from cache, rejecting if the project does not exists
+    * Fetches the current project, rejecting if the project does not exists
     *
     * @param ref the project reference
     * @param rejectionMapper  allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchFromCache[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
+  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.

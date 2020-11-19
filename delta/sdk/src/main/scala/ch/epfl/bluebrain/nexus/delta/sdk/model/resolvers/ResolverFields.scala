@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import io.circe.Json
 
 /**
   * Fields for a resolver
-  * @param id                id of the resolver
+  * @param source            the original source of the resolver
   * @param value             additional fields to configure the resolver
   */
-final case class ResolverFields(id: Option[Iri], value: ResolverValue)
+final case class ResolverFields(source: Json, value: ResolverValue)

@@ -89,14 +89,13 @@ final class ProjectsImpl private (
         case Some(resource)                        => IO.pure(resource.value)
       }).leftMap(rejectionMapper.to)
 
-  override def fetchFromCache[R](
+  override def fetchProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    index
-      .get(ref)
+    fetch(ref)
       .flatMap {
-        case Some(resource) => IO.pure(resource.value)
         case None           => IO.raiseError(ProjectNotFound(ref))
+        case Some(resource) => IO.pure(resource.value)
       }
       .leftMap(rejectionMapper.to)
 

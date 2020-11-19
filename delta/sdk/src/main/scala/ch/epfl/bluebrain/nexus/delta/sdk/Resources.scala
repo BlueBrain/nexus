@@ -177,7 +177,7 @@ trait Resources {
   def events(
       projectRef: ProjectRef,
       offset: Offset
-  ): IO[WrappedProjectRejection, Stream[Task, Envelope[ResourceEvent]]]
+  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]]
 
   /**
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events

@@ -3,11 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceSourceParser._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.Initial
@@ -27,47 +29,58 @@ import monix.bio.{IO, Task, UIO}
   */
 class ResolversDummy private (journal: ResolverJournal, projects: Projects, semaphore: IOSemaphore)(implicit
     clock: Clock[UIO],
-    uuidF: UUIDF
+    uuidF: UUIDF,
+    rcr: RemoteContextResolution
 ) extends Resolvers {
 
   override def create(projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
-    eval(None, projectRef, resolverFields.id) { iri =>
-      CreateResolver(iri, projectRef, resolverFields.value)
-    }
+    for {
+      p   <- projects.fetchActiveProject(projectRef)
+      iri <- computeId(p, resolverFields.source)
+      res <- eval(CreateResolver(iri, projectRef, resolverFields.value, caller), p)
+    } yield res
 
   override def create(id: IdSegment, projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
-    eval(Some(id), projectRef, resolverFields.id) { iri =>
-      CreateResolver(iri, projectRef, resolverFields.value)
-    }
+    for {
+      p   <- projects.fetchActiveProject(projectRef)
+      iri <- computeId(id, p, resolverFields.source)
+      res <- eval(CreateResolver(iri, projectRef, resolverFields.value, caller), p)
+    } yield res
 
   override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverFields: ResolverFields)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
-    eval(Some(id), projectRef, resolverFields.id) { iri =>
-      UpdateResolver(iri, projectRef, resolverFields.value, rev)
-    }
+    for {
+      p   <- projects.fetchActiveProject(projectRef)
+      iri <- computeId(id, p, resolverFields.source)
+      res <- eval(UpdateResolver(iri, projectRef, resolverFields.value, rev, caller), p)
+    } yield res
 
   override def tag(id: IdSegment, projectRef: ProjectRef, tag: Label, tagRev: Long, rev: Long)(implicit
-      caller: Caller
+      subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
-    eval(Some(id), projectRef) { iri =>
-      TagResolver(iri, projectRef, tagRev, tag, rev)
-    }
+    for {
+      p   <- projects.fetchActiveProject(projectRef)
+      iri <- expandIri(id, p)
+      res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
+    } yield res
 
   override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
-      caller: Caller
+      subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
-    eval(Some(id), projectRef) { iri =>
-      DeprecateResolver(iri, projectRef, rev)
-    }
+    for {
+      p   <- projects.fetchActiveProject(projectRef)
+      iri <- expandIri(id, p)
+      res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
+    } yield res
 
   override def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, Option[ResolverResource]] =
     for {
-      p   <- projects.fetchFromCache(projectRef)
+      p   <- projects.fetchProject(projectRef)
       iri <- expandIri(id, p)
       res <- currentState(projectRef, iri)
     } yield res.flatMap(_.toResource(p.apiMappings, p.base))
@@ -78,7 +91,7 @@ class ResolversDummy private (journal: ResolverJournal, projects: Projects, sema
       rev: Long
   ): IO[ResolverRejection, Option[ResolverResource]] =
     for {
-      p   <- projects.fetchFromCache(projectRef)
+      p   <- projects.fetchProject(projectRef)
       iri <- expandIri(id, p)
       res <- stateAt(projectRef, iri, rev)
     } yield res.flatMap(_.toResource(p.apiMappings, p.base))
@@ -91,18 +104,7 @@ class ResolversDummy private (journal: ResolverJournal, projects: Projects, sema
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, Option[ResolverState]] =
     journal.stateAt((projectRef, iri), rev, Initial, Resolvers.next, RevisionNotFound.apply)
 
-  private def eval(id: Option[IdSegment], projectRef: ProjectRef, idPayload: Option[Iri] = None)(
-      f: Iri => ResolverCommand
-  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
-    for {
-      p   <- projects.fetchActiveProject(projectRef)
-      iri <- computeId(id, p, idPayload)
-      res <- eval(f(iri), p)
-    } yield res
-
-  private def eval(command: ResolverCommand, project: Project)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  private def eval(command: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
     semaphore.withPermit {
       for {
         state     <- currentState(command.project, command.id).map(_.getOrElse(Initial))
@@ -128,7 +130,9 @@ object ResolversDummy {
     * Creates a resolvers dummy instance
     * @param projects the projects operations bundle
     */
-  def apply(projects: Projects)(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
+  def apply(
+      projects: Projects
+  )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[ResolversDummy] =
     for {
       journal <- Journal(moduleType)
       sem     <- IOSemaphore(1L)

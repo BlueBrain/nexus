@@ -81,7 +81,7 @@ final class ProjectsDummy private (
         case Some(resource)                        => IO.pure(resource.value)
       }).leftMap(rejectionMapper.to)
 
-  override def fetchFromCache[R](
+  override def fetchProject[R](
       ref: ProjectRef
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     cache

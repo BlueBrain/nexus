@@ -1,59 +1,67 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, InvalidJsonLdFormat, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.{InvalidJsonLdFormat, InvalidResourceId, UnexpectedResourceId}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
 
-trait ResourceSourceParser {
+trait JsonLdSourceParser {
 
   /**
-    * Computes the id from the segment or the payloadId
+    * Computes the id from the source or generate one from the project if none is provided
     * If both are provided, we make sure, they don't clash
+    *
+    * @param project the project
+    * @param source  the Json payload
+    */
+  def computeId[R](project: Project, source: Json)(implicit
+      uuidF: UUIDF,
+      rcr: RemoteContextResolution,
+      rejectionMapper: Mapper[JsonLdRejection, R]
+  ): IO[R, Iri] =
+    for {
+      (_, expanded) <- expandSource(project, source).leftMap(rejectionMapper.to)
+      iri           <- getOrGenerateId(expanded.rootId.asIri, project)
+    } yield iri
+
+  /**
+    * Computes the id from the segment and validate it against the one in the source
     *
     * @param idSegment        the id provided in the segment
     * @param project          the project
-    * @param idPayload        the id provided by the payload
+    * @param source           the Json payload
     */
-  def computeId[R](idSegment: Option[IdSegment], project: Project, idPayload: Option[Iri])(implicit
-      uuidF: UUIDF,
-      rejectionMapper: Mapper[ResourceRejection, R]
-  ): IO[R, Iri] = {
-    val result = idSegment match {
-      case None          => getOrGenerateId(idPayload, project)
-      case Some(segment) =>
-        IO.fromOption(
-          segment.toIri(project.apiMappings, project.base),
-          InvalidResourceId(segment.asString)
-        ).flatMap { iri =>
-          idPayload match {
-            case Some(p) if iri != p =>
-              IO.raiseError(UnexpectedResourceId(iri, p))
-            case _                   =>
-              IO.pure(iri)
-          }
-        }
-    }
+  def computeId[R](idSegment: IdSegment, project: Project, source: Json)(implicit
+      rcr: RemoteContextResolution,
+      rejectionMapper: Mapper[JsonLdRejection, R]
+  ): IO[R, Iri] =
+    for {
+      (_, expanded) <- expandSource(project, source).leftMap(rejectionMapper.to)
+      iri           <- expandIri(idSegment, project)
+      _             <- checkSameId(iri, expanded).leftMap(rejectionMapper.to)
+    } yield iri
 
-    result.leftMap(rejectionMapper.to)
-  }
-
+  /**
+    * Expand the given segment to an Iri using the provided project if necessary
+    * @param segment the to translate to an Iri
+    * @param project the project
+    */
   def expandIri[R](segment: IdSegment, project: Project)(implicit
-      rejectionMapper: Mapper[ResourceRejection, R]
+      rejectionMapper: Mapper[JsonLdRejection, R]
   ): IO[R, Iri] =
     IO.fromOption(
       segment.toIri(project.apiMappings, project.base),
-      rejectionMapper.to(InvalidResourceId(segment.asString))
+      rejectionMapper.to(InvalidId(segment.asString))
     )
 
   /**
@@ -73,55 +81,64 @@ trait ResourceSourceParser {
     * @param source  the Json payload
     * @return a tuple with the resulting @id iri, the compacted Json-LD and the expanded Json-LD
     */
-  def asJsonLd(
+  def asJsonLd[R](
       project: Project,
       source: Json
   )(implicit
       uuidF: UUIDF,
-      rcr: RemoteContextResolution
-  ): IO[InvalidJsonLdFormat, (Iri, CompactedJsonLd, ExpandedJsonLd)] =
+      rcr: RemoteContextResolution,
+      rejectionMapper: Mapper[JsonLdRejection, R]
+  ): IO[R, (Iri, CompactedJsonLd, ExpandedJsonLd)] = {
     for {
       (ctx, originalExpanded) <- expandSource(project, source)
       iri                     <- getOrGenerateId(originalExpanded.rootId.asIri, project)
       expanded                 = originalExpanded.replaceId(iri)
       compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
     } yield (iri, compacted, expanded)
+  }.leftMap(rejectionMapper.to)
 
   /**
     * Converts the passed ''source'' to JsonLD compacted and expanded.
     * The @id value is extracted from the payload if exists and compared to the passed ''iri''.
-    * If they aren't equal an [[UnexpectedResourceId]] rejection is issued.
+    * If they aren't equal an [[UnexpectedId]] rejection is issued.
     *
     * @param project the project used to generate the @context when no @context is provided on the source
     * @param source the Json payload
     * @return a tuple with the compacted Json-LD and the expanded Json-LD
     */
-  def asJsonLd(
+  def asJsonLd[R](
       project: Project,
       iri: Iri,
       source: Json
-  )(implicit rcr: RemoteContextResolution): IO[ResourceRejection, (CompactedJsonLd, ExpandedJsonLd)] =
+  )(implicit
+      rcr: RemoteContextResolution,
+      rejectionMapper: Mapper[JsonLdRejection, R]
+  ): IO[R, (CompactedJsonLd, ExpandedJsonLd)] = {
     for {
       (ctx, originalExpanded) <- expandSource(project, source)
       _                       <- checkSameId(iri, originalExpanded)
       expanded                 = originalExpanded.replaceId(iri)
       compacted               <- expanded.toCompacted(ctx).leftMap(err => InvalidJsonLdFormat(Some(iri), err))
     } yield (compacted, expanded)
+  }.leftMap(rejectionMapper.to)
 
   private def expandSource(project: Project, source: Json)(implicit
       rcr: RemoteContextResolution
   ): IO[InvalidJsonLdFormat, (ContextValue, ExpandedJsonLd)] =
-    JsonLd.expand(source).leftMap(err => InvalidJsonLdFormat(None, err)).flatMap {
-      case expanded if expanded.isEmpty =>
-        val ctx = defaultCtx(project)
-        JsonLd.expand(source.addContext(ctx.contextObj)).leftMap(err => InvalidJsonLdFormat(None, err)).map(ctx -> _)
-      case expanded                     =>
-        UIO.pure(source.topContextValueOrEmpty -> expanded)
-    }
+    JsonLd
+      .expand(source)
+      .flatMap {
+        case expanded if expanded.isEmpty =>
+          val ctx = defaultCtx(project)
+          JsonLd.expand(source.addContext(ctx.contextObj)).map(ctx -> _)
+        case expanded                     =>
+          UIO.pure(source.topContextValueOrEmpty -> expanded)
+      }
+      .leftMap(err => InvalidJsonLdFormat(None, err))
 
-  private def checkSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedResourceId, Unit] =
+  private def checkSameId(iri: Iri, expanded: ExpandedJsonLd): IO[UnexpectedId, Unit] =
     expanded.rootId.asIri match {
-      case Some(sourceId) if sourceId != iri => IO.raiseError(UnexpectedResourceId(iri, sourceId))
+      case Some(sourceId) if sourceId != iri => IO.raiseError(UnexpectedId(iri, sourceId))
       case _                                 => IO.unit
     }
 
@@ -130,4 +147,4 @@ trait ResourceSourceParser {
 
 }
 
-object ResourceSourceParser extends ResourceSourceParser
+object JsonLdSourceParser extends JsonLdSourceParser

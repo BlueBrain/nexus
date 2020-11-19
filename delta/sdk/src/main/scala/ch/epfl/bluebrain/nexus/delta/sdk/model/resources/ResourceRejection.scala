@@ -8,6 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
@@ -163,11 +165,19 @@ object ResourceRejection {
   final case class UnexpectedInitialState(id: Iri)
       extends ResourceRejection(s"Unexpected initial state for resource '$id'.")
 
+  implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, ResourceRejection] = {
+    case InvalidId(id)                                     => InvalidResourceId(id)
+    case UnexpectedId(id, payloadIri)                      => UnexpectedResourceId(id, payloadIri)
+    case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
+  }
+
   implicit val orgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val projectRejectionMapper: Mapper[ProjectRejection, WrappedProjectRejection] =
-    (value: ProjectRejection) => WrappedProjectRejection(value)
+  implicit val projectRejectionMapper: Mapper[ProjectRejection, ResourceRejection] = {
+    case ProjectRejection.WrappedOrganizationRejection(r) => orgRejectionMapper.to(r)
+    case value                                            => WrappedProjectRejection(value)
+  }
 
   implicit private val resourceRejectionEncoder: Encoder.AsObject[ResourceRejection] =
     Encoder.AsObject.instance { r =>
