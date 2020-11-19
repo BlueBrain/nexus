@@ -15,16 +15,19 @@
       "targetClass": "nxv:Custom",
       "property": [
         {
+          "@id": "nxv:NameProperty",
           "path": "nxv:name",
           "datatype": "xsd:string",
           "minCount": 1
         },
         {
+          "@id": "nxv:NumberProperty",
           "path": "nxv:number",
           "datatype": "xsd:integer",
           "minCount": 1
         },
         {
+          "@id": "nxv:PathProperty",
           "path": "nxv:bool",
           "datatype": "xsd:boolean",
           "minCount": 1

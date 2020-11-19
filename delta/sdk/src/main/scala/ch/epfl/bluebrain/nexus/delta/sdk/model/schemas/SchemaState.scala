@@ -1,20 +1,23 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
+package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, Lens}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, SchemaResource}
 import io.circe.Json
 
 /**
-  * Enumeration of resource states.
+  * Enumeration of schema states.
   */
 
-sealed trait ResourceState extends Product with Serializable {
+sealed trait SchemaState extends Product with Serializable {
 
   /**
     * @return the current state revision
@@ -27,15 +30,25 @@ sealed trait ResourceState extends Product with Serializable {
   def deprecated: Boolean
 
   /**
-    * Converts the state into a resource representation.
+    * @return the schema reference that schemas conforms to
+    */
+  final def schema: ResourceRef = Latest(schemas.shacl)
+
+  /**
+    * @return the collection of known types of schema resources
+    */
+  final def types: Set[Iri] = Set(nxv.Schema)
+
+  /**
+    * Converts the state into a schema representation.
     *
     * @param mappings the Api mappings to be applied in order to shorten segment ids
     * @param base     the project base to be applied in order to shorten segment ids
     */
-  def toResource(mappings: ApiMappings, base: ProjectBase): Option[DataResource]
+  def toResource(mappings: ApiMappings, base: ProjectBase): Option[SchemaResource]
 }
 
-object ResourceState {
+object SchemaState {
 
   /**
     * Initial state type.
@@ -43,29 +56,28 @@ object ResourceState {
   type Initial = Initial.type
 
   /**
-    * Initial resource state.
+    * Initial schema state.
     */
-  final case object Initial extends ResourceState {
+  final case object Initial extends SchemaState {
 
     override val deprecated: Boolean = false
 
     override def rev: Long = 0L
 
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[DataResource] = None
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[SchemaResource] = None
   }
 
   /**
-    * A resource active state.
+    * A schema active state.
     *
-    * @param id         the resource identifier
-    * @param project    the project where the resource belongs
-    * @param source     the representation of the resource as posted by the subject
-    * @param compacted  the compacted JSON-LD representation of the resource
-    * @param expanded   the expanded JSON-LD representation of the resource
+    * @param id         the schema identifier
+    * @param project    the project where the schema belongs
+    * @param source     the representation of the schema as posted by the subject
+    * @param compacted  the compacted JSON-LD representation of the schema
+    * @param expanded   the expanded JSON-LD representation of the schema
+    * @param graph      the RDF Graph representation of the schema
     * @param rev        the organization revision
     * @param deprecated the deprecation status of the organization
-    * @param schema     the optional schema used to constrain the resource
-    * @param types      the collection of known resource types
     * @param tags       the collection of tag aliases
     * @param createdAt  the instant when the organization was created
     * @param createdBy  the identity that created the organization
@@ -78,22 +90,21 @@ object ResourceState {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
+      graph: Graph,
       rev: Long,
       deprecated: Boolean,
-      schema: ResourceRef,
-      types: Set[Iri],
       tags: Map[Label, Long],
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,
       updatedBy: Subject
-  ) extends ResourceState {
+  ) extends SchemaState {
 
-    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[DataResource] =
+    override def toResource(mappings: ApiMappings, base: ProjectBase): Option[SchemaResource] =
       Some(
         ResourceF(
           id = _ => id,
-          accessUrl = AccessUrl.resource(project, id, schema)(_).shortForm(mappings, base),
+          accessUrl = AccessUrl.schema(project, id)(_).shortForm(mappings, base),
           rev = rev,
           types = types,
           schema = schema,
@@ -102,11 +113,11 @@ object ResourceState {
           createdBy = createdBy,
           updatedAt = updatedAt,
           updatedBy = updatedBy,
-          value = Resource(id, project, tags, schema, source, compacted, expanded)
+          value = Schema(id, project, tags, source, compacted, expanded, graph)
         )
       )
   }
 
-  implicit val resourceStateRevisionLens: Lens[ResourceState, Long] = (s: ResourceState) => s.rev
+  implicit val schemaStateRevisionLens: Lens[SchemaState, Long] = (s: SchemaState) => s.rev
 
 }

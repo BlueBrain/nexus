@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, UnexpectedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -69,29 +68,6 @@ trait JsonLd extends Product with Serializable {
     * Adds a ''key'' with its ''literal'' boolean.
     */
   def add(key: Predicate, literal: Boolean): This
-
-  /**
-    * Converts the current JsonLd into a [[CompactedJsonLd]]
-    *
-    * @param contextValue the context value to use in order to compact the current JsonLd.
-    */
-  def toCompacted(contextValue: ContextValue)(implicit
-      opts: JsonLdOptions,
-      api: JsonLdApi,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, CompactedJsonLd]
-
-  def toExpanded(implicit
-      opts: JsonLdOptions,
-      api: JsonLdApi,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, ExpandedJsonLd]
-
-  def toGraph(implicit
-      opts: JsonLdOptions,
-      api: JsonLdApi,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, Graph]
 
   /**
     * Checks if the current [[JsonLd]] is empty

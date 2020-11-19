@@ -7,27 +7,51 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
 import org.scalatest.OptionValues
 
-object SchemaGen extends OptionValues with IOValues {
+object SchemaGen extends OptionValues with IOValues with EitherValuable {
+
+  def currentState(
+      schema: Schema,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      subject: Subject = Anonymous
+  ): Current = {
+    Current(
+      schema.id,
+      schema.project,
+      schema.source,
+      schema.compacted,
+      schema.expanded,
+      schema.graph,
+      rev,
+      deprecated,
+      schema.tags,
+      Instant.EPOCH,
+      subject,
+      Instant.EPOCH,
+      subject
+    )
+  }
 
   def schema(
       id: Iri,
       project: ProjectRef,
-      source: Json
+      source: Json,
+      tags: Map[Label, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Schema = {
     val expanded  = JsonLd.expand(source).accepted.replaceId(id)
-    val graph     = expanded.toGraph.accepted
+    val graph     = expanded.toGraph.rightValue
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
-    Schema(id, project, source, compacted, graph)
+    Schema(id, project, tags, source, compacted, expanded, graph)
   }
 
   def resourceFor(
@@ -38,18 +62,20 @@ object SchemaGen extends OptionValues with IOValues {
       am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): SchemaResource =
-    ResourceF(
-      id = AccessUrl.schema(schema.project, schema.id)(_).iri,
-      accessUrl = AccessUrl.schema(schema.project, schema.id)(_).shortForm(am, ProjectBase(base)),
-      rev = rev,
-      types = Set(nxv.Schema),
-      deprecated = deprecated,
-      createdAt = Instant.EPOCH,
-      createdBy = subject,
-      updatedAt = Instant.EPOCH,
-      updatedBy = subject,
-      schema = Latest(schema.id),
-      schema
-    )
+    Current(
+      schema.id,
+      schema.project,
+      schema.source,
+      schema.compacted,
+      schema.expanded,
+      schema.graph,
+      rev,
+      deprecated,
+      schema.tags,
+      Instant.EPOCH,
+      subject,
+      Instant.EPOCH,
+      subject
+    ).toResource(am, ProjectBase.unsafe(base)).value
 
 }

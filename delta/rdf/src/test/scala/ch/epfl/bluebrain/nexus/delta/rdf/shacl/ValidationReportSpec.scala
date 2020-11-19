@@ -26,7 +26,7 @@ class ValidationReportSpec
     RemoteContextResolution.fixed(contexts.shacl -> shaclResolvedCtx)
 
   private def resource(json: Json): Resource        =
-    Graph(JsonLd.expand(json).accepted).accepted.model.createResource()
+    Graph(JsonLd.expand(json).accepted).rightValue.model.createResource()
 
   "A ValidationReport" should {
     val conforms = jsonContentOf("/shacl/conforms.json")

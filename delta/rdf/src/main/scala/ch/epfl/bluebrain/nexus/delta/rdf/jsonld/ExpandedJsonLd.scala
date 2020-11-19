@@ -98,18 +98,10 @@ final case class ExpandedJsonLd private[jsonld] (obj: JsonObject, rootId: IriOrB
   ): IO[RdfError, CompactedJsonLd] =
     JsonLd.compact(json, contextValue, rootId)
 
-  override def toExpanded(implicit
+  def toGraph(implicit
       opts: JsonLdOptions,
-      api: JsonLdApi,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, ExpandedJsonLd] =
-    IO.pure(self)
-
-  override def toGraph(implicit
-      opts: JsonLdOptions,
-      api: JsonLdApi,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, Graph] = Graph(this)
+      api: JsonLdApi
+  ): Either[RdfError, Graph] = Graph(this)
 
   override def isEmpty: Boolean = obj.isEmpty
 

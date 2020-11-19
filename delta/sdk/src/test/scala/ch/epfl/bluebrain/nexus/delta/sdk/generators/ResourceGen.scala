@@ -66,7 +66,6 @@ object ResourceGen extends OptionValues with IOValues {
   def resourceFor(
       resource: Resource,
       types: Set[Iri] = Set.empty,
-      tags: Map[Label, Long] = Map.empty,
       rev: Long = 1L,
       subject: Subject = Anonymous,
       deprecated: Boolean = false,
@@ -83,7 +82,7 @@ object ResourceGen extends OptionValues with IOValues {
       deprecated,
       resource.schema,
       types,
-      tags,
+      resource.tags,
       Instant.EPOCH,
       subject,
       Instant.EPOCH,

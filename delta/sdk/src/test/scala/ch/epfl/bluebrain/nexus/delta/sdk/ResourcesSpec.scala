@@ -258,7 +258,7 @@ class ResourcesSpec
         ) shouldEqual current
       }
 
-      "create a new ProjectUpdated state" in {
+      "create a new ResourceUpdated state" in {
         val newTypes  = types + (nxv + "Other")
         val newSource = source deepMerge json"""{"key": "value"}"""
         next(

@@ -50,7 +50,7 @@ trait JsonLdEncoder[A] {
   ): IO[RdfError, Dot] =
     for {
       expanded <- expand(value)
-      graph    <- expanded.toGraph
+      graph    <- IO.fromEither(expanded.toGraph)
       dot      <- graph.toDot(context(value))
     } yield dot
 
@@ -66,8 +66,8 @@ trait JsonLdEncoder[A] {
   ): IO[RdfError, NTriples] =
     for {
       expanded <- expand(value)
-      graph    <- expanded.toGraph
-      ntriples <- graph.toNTriples
+      graph    <- IO.fromEither(expanded.toGraph)
+      ntriples <- IO.fromEither(graph.toNTriples)
     } yield ntriples
 
 }

@@ -68,18 +68,6 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       result.json.removeKeys(keywords.context) shouldEqual json"""{"@id": "$iri", "@type": "${schema.Person}"}"""
     }
 
-    "return self when attempted to convert again to compacted form with same values" in {
-      val compacted = JsonLd.compact(expanded, context, iri).accepted
-      compacted.toCompacted(context).accepted should be theSameInstanceAs compacted
-    }
-
-    "recompute compacted form when attempted to convert again to compacted form with different @context" in {
-      val compacted = JsonLd.compact(expanded, context, iri).accepted
-      val context2  = context.contextObj deepMerge json"""{"@context": {"other-something": {"@type": "@id"}}}"""
-      val result    = compacted.toCompacted(context2.topContextValueOrEmpty).accepted
-      result.json.removeKeys(keywords.context) shouldEqual compacted.json.removeKeys(keywords.context)
-    }
-
     "be converted to expanded form" in {
       val compacted = JsonLd.compact(expanded, context, iri).accepted
       compacted.toExpanded.accepted shouldEqual JsonLd.expandedUnsafe(expanded, iri)
@@ -95,7 +83,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> iri.rdfFormat)
       graph.rootNode shouldEqual iri
-      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
+      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
 
     "be converted to graph with a root blank node" in {
@@ -103,7 +91,7 @@ class CompactedJsonLdSpec extends AnyWordSpecLike with Matchers with Fixtures wi
       val graph     = compacted.toGraph.accepted
       val expected  = contentOf("ntriples.nt", "bnode" -> bNode(graph).rdfFormat, "rootNode" -> rootBNode.rdfFormat)
       graph.rootNode shouldEqual rootBNode
-      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
+      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
   }
 }
