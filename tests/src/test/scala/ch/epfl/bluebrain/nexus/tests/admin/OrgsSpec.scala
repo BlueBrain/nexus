@@ -282,6 +282,13 @@ class OrgsSpec extends BaseSpec with EitherValuable {
       )
     }
 
+    "fail when wrong revision is provided" taggedAs OrgsTag in {
+      deltaClient.delete[Json](s"/orgs/$id?rev=4", Leela) { (json, response) =>
+        response.status shouldEqual StatusCodes.Conflict
+        json shouldEqual jsonContentOf("/admin/errors/org-incorrect-revision.json")
+      }
+    }
+
     "fail when revision is not provided" taggedAs OrgsTag in {
       deltaClient.delete[Json](s"/orgs/$id", Leela) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
