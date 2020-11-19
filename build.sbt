@@ -328,20 +328,6 @@ lazy val sourcing = project
     Test / fork          := true
   )
 
-lazy val testPlugin = project
-  .in(file("delta/test-plugin"))
-  .disablePlugins(ScapegoatSbtPlugin)
-  .dependsOn(sdk % "provided", testkit % "provided")
-  .settings(shared, compilation, noPublish)
-  .settings(
-    name       := "delta-test-plugin",
-    moduleName := "delta-test-plugin"
-  )
-  .settings(
-    assemblyOutputPath in assembly := target.value / "delta-test-plugin.jar",
-    Test / fork                    := true
-  )
-
 lazy val rdf = project
   .in(file("delta/rdf"))
   .dependsOn(kernel, testkit % "test->compile")
@@ -459,10 +445,36 @@ lazy val app = project
     Docker / packageName := "nexus-delta"
   )
 
+lazy val testPlugin = project
+  .in(file("delta/plugins/test-plugin"))
+  .disablePlugins(ScapegoatSbtPlugin)
+  .dependsOn(sdk % "provided", testkit % "provided")
+  .settings(shared, compilation, noPublish)
+  .settings(
+    name                           := "delta-test-plugin",
+    moduleName                     := "delta-test-plugin",
+    assemblyOutputPath in assembly := target.value / "delta-test-plugin.jar",
+    Test / fork                    := true
+  )
+
+lazy val elasticsearch = project
+  .in(file("delta/plugins/elasticsearch"))
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .dependsOn(sdk % "provided", sourcing % "provided", sdkTestkit % "test")
+  .settings(
+    name       := "delta-elasticsearch-plugin",
+    moduleName := "delta-elasticsearch-plugin"
+  )
+
+lazy val plugins = project
+  .in(file("delta/plugins"))
+  .settings(noPublish)
+  .aggregate(elasticsearch, testPlugin)
+
 lazy val delta = project
   .in(file("delta"))
   .settings(noPublish)
-  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, service, app)
+  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, service, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 

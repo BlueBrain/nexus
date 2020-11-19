@@ -1,26 +1,27 @@
-name: Continuous Integration Delta Service
+name: Continuous Integration Delta ElasticSearch Plugin
 on:
   push:
     branches:
       - master
     paths:
       - 'delta/kernel/**'
-      - 'delta/sourcing/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
+      - 'delta/sourcing/**'
       - 'delta/sdk-testkit/**'
-      - 'delta/service/**'
+      - 'delta/testkit/**'
+      - 'delta/plugins/elasticsearch/**'
       - 'build.sbt'
       - 'project/**'
   pull_request:
     paths:
       - 'delta/kernel/**'
-      - 'delta/sourcing/**'
       - 'delta/rdf/**'
       - 'delta/sdk/**'
+      - 'delta/sourcing/**'
       - 'delta/sdk-testkit/**'
-      - 'delta/plugins/test-plugin/**'
-      - 'delta/service/**'
+      - 'delta/testkit/**'
+      - 'delta/plugins/elasticsearch/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
@@ -39,9 +40,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project service" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project service" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" clean coverage test coverageReport coverageAggregate
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -61,9 +62,9 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Publish To Bintray
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project service" releaseEarly
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" releaseEarly
       - name: Record Coverage
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project service" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project elasticsearch" clean coverage test coverageReport coverageAggregate
       - name: Report Coverage
         uses: codecov/codecov-action@v1
         with:

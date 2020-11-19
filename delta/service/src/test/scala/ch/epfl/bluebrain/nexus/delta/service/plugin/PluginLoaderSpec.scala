@@ -14,7 +14,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers {
 
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  val plConfig                  = PluginLoaderConfig(Some("../test-plugin/target"))
+  val plConfig                  = PluginLoaderConfig(Some("../plugins/test-plugin/target"))
   val pl                        = PluginLoader(plConfig)
   val perms                     = PermissionsDummy(Set(Permission.unsafe("test"), Permission.unsafe("test2")))
   val module                    = new ModuleDef {
