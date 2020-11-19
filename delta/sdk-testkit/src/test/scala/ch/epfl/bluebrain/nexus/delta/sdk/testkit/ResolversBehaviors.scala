@@ -165,7 +165,7 @@ trait ResolversBehaviors {
           .resourceFor(expectedId, project, crossProjectValue, subject = bob.subject)
       }
 
-      "fail with different ids defined in segment and payload" in {
+      "fail if ids defined in segment and payload are different" in {
         forAll(
           List(
             nxv + "in-project"    -> inProjectValue,
@@ -179,7 +179,7 @@ trait ResolversBehaviors {
         }
       }
 
-      "fail with ids are not valid" in {
+      "fail if ids are not valid" in {
         forAll(
           List(
             "{a@*"  -> inProjectValue,
@@ -321,7 +321,7 @@ trait ResolversBehaviors {
         }
       }
 
-      "fail with different ids defined in segment and payload" in {
+      "fail if ids defined in segment and payload are different" in {
         forAll(
           List(
             nxv + "in-project"    -> inProjectValue,
