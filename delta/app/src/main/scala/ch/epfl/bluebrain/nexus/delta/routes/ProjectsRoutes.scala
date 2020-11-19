@@ -117,19 +117,22 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
               operationName(s"$prefixSegment/projects/{org}/{project}") {
                 concat(
                   put {
-                    authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
-                      parameter("rev".as[Long].?) {
-                        case Some(rev) =>
+
+                    parameter("rev".as[Long].?) {
+                      case Some(rev) =>
+                        authorizeFor(AclAddress.Project(ref), projectsPermissions.write).apply {
                           // Update project
                           entity(as[ProjectFields]) { fields =>
                             emit(projects.update(ref, rev, fields).map(_.void))
                           }
-                        case None      =>
+                        }
+                      case None      =>
+                        authorizeFor(AclAddress.Project(ref), projectsPermissions.create).apply {
                           // Create project
                           entity(as[ProjectFields]) { fields =>
                             emit(StatusCodes.Created, projects.create(ref, fields).map(_.void))
                           }
-                      }
+                        }
                     }
                   },
                   get {

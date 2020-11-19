@@ -48,7 +48,7 @@ class ProjectsRoutesSpec
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
   private val acls = AclsDummy(
-    PermissionsDummy(Set(projectsPermissions.write, projectsPermissions.read, events.read))
+    PermissionsDummy(Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read))
   ).accepted
 
   private val aopd = ApplyOwnerPermissionsDummy(acls, Set(projectsPermissions.write, projectsPermissions.read), subject)
@@ -80,7 +80,7 @@ class ProjectsRoutesSpec
 
   "A project route" should {
 
-    "fail to create a project without projects/write permission" in {
+    "fail to create a project without projects/create permission" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -93,8 +93,8 @@ class ProjectsRoutesSpec
         .append(
           Acl(
             AclAddress.Root,
-            Anonymous      -> Set(projectsPermissions.write),
-            caller.subject -> Set(projectsPermissions.write)
+            Anonymous      -> Set(projectsPermissions.create),
+            caller.subject -> Set(projectsPermissions.create)
           ),
           1L
         )
@@ -141,7 +141,6 @@ class ProjectsRoutesSpec
 
     "fail to update a project without projects/write permission" in {
       acls.delete(AclAddress.Project(Label.unsafe("org1"), Label.unsafe("proj")), 1L).accepted
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 2L).accepted
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -149,7 +148,7 @@ class ProjectsRoutesSpec
     }
 
     "update a project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 3L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 2L).accepted
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
 
         status shouldEqual StatusCodes.OK
@@ -180,14 +179,14 @@ class ProjectsRoutesSpec
     }
 
     "fail to deprecate a project without projects/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 4L).accepted
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 3L).accepted
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
     "deprecate a project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 5L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 4L).accepted
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
@@ -272,7 +271,7 @@ class ProjectsRoutesSpec
     }
 
     "fetch a project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)), 6L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)), 5L).accepted
       Get("/v1/projects/org1/proj") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(fetchProjRev3)
@@ -396,7 +395,7 @@ class ProjectsRoutesSpec
     }
 
     "list all projects user has access to" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)), 7L).accepted
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)), 6L).accepted
       acls
         .append(Acl(AclAddress.fromString("/org1/proj").rightValue, Anonymous -> Set(projectsPermissions.read)), 2L)
         .accepted
@@ -411,7 +410,7 @@ class ProjectsRoutesSpec
     }
 
     "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
@@ -419,7 +418,7 @@ class ProjectsRoutesSpec
     }
 
     "get the events stream with an offset" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 9L).accepted
+      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString shouldEqual contentOf(
