@@ -1,5 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "HttpMethodNotAllowed",
-  "reason": "HTTP method not allowed, supported methods: 'GET', 'DELETE', 'PUT'."
+  "reason": "HTTP method not allowed, supported methods: GET, PUT, DELETE."
 }

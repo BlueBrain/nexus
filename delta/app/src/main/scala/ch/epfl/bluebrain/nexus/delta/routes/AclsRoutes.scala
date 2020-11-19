@@ -47,7 +47,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
   private val any = "*"
 
   private val simultaneousRevAndAncestorsRejection =
-    MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously")
+    MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously.")
 
   import baseUri.prefixSegment
   implicit val aclContext: ContextValue = Acl.context

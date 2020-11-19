@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.IOUtils.instant
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -222,11 +222,11 @@ object Acls {
   }
 
   private[delta] def evaluate(
-      perms: UIO[Permissions]
+      perms: Permissions
   )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO] = IO.clock): IO[AclRejection, AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
-      perms.flatMap(_.fetchPermissionSet).flatMap {
+      perms.fetchPermissionSet.flatMap {
         case permissions if acl.permissions.subsetOf(permissions) => instant.map(f)
         case permissions                                          => IO.raiseError(UnknownPermissions(acl.permissions -- permissions))
       }
@@ -293,42 +293,6 @@ object Acls {
       case c: AppendAcl   => append(c)
       case c: SubtractAcl => subtract(c)
       case c: DeleteAcl   => delete(c)
-    }
-  }
-
-  private[delta] def fetchWithAncestors(address: AclAddress, acls: Acls, perms: Permissions): UIO[AclCollection] = {
-    def collectionFor(addr: AclAddress): UIO[AclCollection] =
-      acls.fetch(addr).map {
-        case Some(value) => AclCollection(value)
-        case None        => AclCollection()
-      }
-
-    def rootCollection: UIO[AclCollection] =
-      acls.fetch(AclAddress.Root).flatMap {
-        case Some(value) => UIO.pure(AclCollection(value))
-        case None        =>
-          perms.fetchPermissionSet.map(ps =>
-            AclCollection(
-              Current(
-                acl = Acl(AclAddress.Root, Identity.Anonymous -> ps),
-                rev = 0L,
-                createdAt = Instant.EPOCH,
-                createdBy = Identity.Anonymous,
-                updatedAt = Instant.EPOCH,
-                updatedBy = Identity.Anonymous
-              ).asResource
-            )
-          )
-      }
-
-    def combine(elems: UIO[AclCollection]*): UIO[AclCollection] =
-      UIO.parSequenceUnordered(elems).map(_.fold(AclCollection.empty)(_ ++ _))
-
-    address match {
-      case AclAddress.Root                   => rootCollection
-      case addr: AclAddress.Organization     => combine(rootCollection, collectionFor(addr))
-      case addr @ AclAddress.Project(org, _) =>
-        combine(rootCollection, collectionFor(addr), collectionFor(AclAddress.Organization(org)))
     }
   }
 }

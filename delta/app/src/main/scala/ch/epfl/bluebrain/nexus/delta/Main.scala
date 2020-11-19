@@ -123,7 +123,12 @@ object Main extends BIOApp {
         failures.toList
           .flatMap { f =>
             f.origin match {
-              case Some(o) => f.description :: s"  file: ${o.url.toString}" :: s"  line: ${o.lineNumber}" :: Nil
+              case Some(o) =>
+                val file = Option(o.filename()) orElse Option(o.url()).map(_.toString) orElse Option(o.resource())
+                file match {
+                  case Some(path) => f.description :: s"  file: $path" :: s"  line: ${o.lineNumber}" :: Nil
+                  case None       => f.description :: Nil
+                }
               case None    => f.description :: Nil
             }
           }

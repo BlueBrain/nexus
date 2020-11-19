@@ -29,6 +29,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       tpe: String = "projects",
       `@type`: String = "Project",
       authenticated: Authenticated,
+      schema: String,
       deprecated: Boolean = false
   ): Json = {
     val resp = Seq(prefixesConfig.coreContextRepl) ++ Seq(
@@ -40,7 +41,8 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
       "realm"      -> authenticated.realm.name,
       "user"       -> authenticated.name,
       "orgId"      -> id,
-      "deprecated" -> deprecated.toString
+      "deprecated" -> deprecated.toString,
+      "schema"     -> schema
     )
     jsonContentOf("/admin/response.json", resp: _*)
   }
@@ -83,7 +85,8 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
             revision + 1L,
             "orgs",
             "Organization",
-            authenticated
+            authenticated,
+            "organizations"
           )
       }
     }
@@ -101,6 +104,7 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
           "orgs",
           "Organization",
           authenticated,
+          "organizations",
           deprecated = true
         )
       }.runSyncUnsafe()
@@ -159,7 +163,8 @@ class AdminDsl(cl: HttpClient, prefixesConfig: PrefixesConfig, config: TestsConf
           filterMetadataKeys(json) shouldEqual createRespJson(
             s"$orgId/$projectId",
             revision + 1L,
-            authenticated = authenticated
+            authenticated = authenticated,
+            schema = "projects"
           )
       }
 
