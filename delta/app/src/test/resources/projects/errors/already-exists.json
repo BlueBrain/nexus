@@ -1,5 +1,7 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
   "@type": "ProjectAlreadyExists",
+  "label": "{{proj}}",
+  "orgLabel": "{{org}}",
   "reason": "Project '{{org}}/{{proj}}' already exists."
 }

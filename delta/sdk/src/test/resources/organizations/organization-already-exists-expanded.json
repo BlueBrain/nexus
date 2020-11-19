@@ -1,0 +1,17 @@
+[
+  {
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/OrganizationAlreadyExists"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/reason": [
+      {
+        "@value": "Organization 'org' already exists."
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/label": [
+      {
+        "@value": "org"
+      }
+    ]
+  }
+]

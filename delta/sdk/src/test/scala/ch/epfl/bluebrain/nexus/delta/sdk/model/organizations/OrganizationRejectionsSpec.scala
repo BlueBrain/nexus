@@ -28,7 +28,7 @@ class OrganizationRejectionsSpec
 
     "be converted to compacted JSON-LD" in {
       val list = List(
-        alreadyExists -> json"""{"@type": "OrganizationAlreadyExists", "reason": "${alreadyExists.reason}"}""",
+        alreadyExists -> jsonContentOf("/organizations/organization-already-exists-compacted.json"),
         incorrectRev  -> json"""{"@type": "IncorrectRev", "reason": "${incorrectRev.reason}"}"""
       )
       forAll(list) { case (rejection, json) =>
@@ -38,7 +38,7 @@ class OrganizationRejectionsSpec
 
     "be converted to expanded JSON-LD" in {
       val list = List(
-        alreadyExists -> json"""[{"@type": ["${nxv + "OrganizationAlreadyExists"}"], "${nxv + "reason"}": [{"@value": "${alreadyExists.reason}"} ] } ]""",
+        alreadyExists -> jsonContentOf("/organizations/organization-already-exists-expanded.json"),
         incorrectRev  -> json"""[{"@type": ["${nxv + "IncorrectRev"}"], "${nxv + "reason"}": [{"@value": "${incorrectRev.reason}"} ] } ]"""
       )
       forAll(list) { case (rejection, json) =>

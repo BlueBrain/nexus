@@ -1,0 +1,5 @@
+{
+  "@type": "OrganizationAlreadyExists",
+  "reason": "Organization 'org' already exists.",
+  "label": "org"
+}
