@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -45,9 +46,9 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project                    <- fetchActiveProject(projectRef)
+      project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
-      (iri, compacted, expanded) <- ResourceSourceParser.asJsonLd(project, source)
+      (iri, compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
@@ -58,10 +59,10 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project               <- fetchActiveProject(projectRef)
+      project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
+      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
     } yield res
 
@@ -73,10 +74,10 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project               <- fetchActiveProject(projectRef)
+      project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
-      (compacted, expanded) <- ResourceSourceParser.asJsonLd(project, iri, source)
+      (compacted, expanded) <- JsonLdSourceParser.asJsonLd(project, iri, source)
       res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
 
@@ -89,7 +90,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- fetchActiveProject(projectRef)
+      project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
@@ -102,7 +103,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- fetchActiveProject(projectRef)
+      project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
@@ -114,7 +115,7 @@ final class ResourcesDummy private (
       schemaOpt: Option[IdSegment]
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
-      project      <- fetchProject(projectRef)
+      project      <- projects.fetchProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       stateOpt     <- currentState(projectRef, iri)
@@ -128,7 +129,7 @@ final class ResourcesDummy private (
       rev: Long
   ): IO[ResourceRejection, Option[DataResource]] =
     for {
-      project      <- fetchProject(projectRef)
+      project      <- projects.fetchProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       stateOpt     <- stateAt(projectRef, iri, rev)
@@ -138,10 +139,9 @@ final class ResourcesDummy private (
   override def events(
       projectRef: ProjectRef,
       offset: Offset
-  ): IO[WrappedProjectRejection, Stream[Task, Envelope[ResourceEvent]]] =
+  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     projects
       .fetchProject(projectRef)
-      .leftMap(WrappedProjectRejection)
       .as(journal.events(offset).filter(e => e.event.project == projectRef))
 
   override def events(
@@ -150,7 +150,6 @@ final class ResourcesDummy private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .leftMap(WrappedOrganizationRejection)
       .as(journal.events(offset).filter(e => e.event.project.organization == organization))
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
@@ -165,19 +164,13 @@ final class ResourcesDummy private (
   private def eval(cmd: ResourceCommand, project: Project): IO[ResourceRejection, DataResource] =
     semaphore.withPermit {
       for {
-        state     <- journal.currentState((cmd.project, cmd.id), Initial, Resources.next).map(_.getOrElse(Initial))
+        state     <- currentState(cmd.project, cmd.id).map(_.getOrElse(Initial))
         event     <- Resources.evaluate(fetchSchema)(state, cmd)
         _         <- journal.add(event)
         (am, base) = project.apiMappings -> project.base
-        res       <- IO.fromEither(Resources.next(state, event).toResource(am, base).toRight(UnexpectedInitialState(cmd.id)))
+        res       <- IO.fromOption(Resources.next(state, event).toResource(am, base), UnexpectedInitialState(cmd.id))
       } yield res
     }
-
-  private def fetchActiveProject(projectRef: ProjectRef) =
-    projects.fetchActiveProject(projectRef).leftMap(WrappedProjectRejection)
-
-  private def fetchProject(projectRef: ProjectRef) =
-    projects.fetchProject(projectRef).leftMap(WrappedProjectRejection)
 
   private def expandIri(segment: IdSegment, project: Project) =
     IO.fromOption(segment.toIri(project.apiMappings, project.base), InvalidResourceId(segment.asString))

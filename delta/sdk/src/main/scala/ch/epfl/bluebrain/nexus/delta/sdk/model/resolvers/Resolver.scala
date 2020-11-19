@@ -24,6 +24,11 @@ sealed trait Resolver extends Product with Serializable {
     * @return the resolver priority
     */
   def priority: Priority
+
+  /**
+    * @return the collection of tag aliases
+    */
+  def tags: Map[Label, Long]
 }
 
 object Resolver {

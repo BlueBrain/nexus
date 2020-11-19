@@ -74,7 +74,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
   "The Resolvers evaluation" when {
     implicit val sc: Scheduler = Scheduler.global
 
-    val createInProject = CreateResolver(ipId, project, InProjectValue(priority))
+    val createInProject = CreateResolver(ipId, project, InProjectValue(priority), bob)
 
     val crossProjectValue = CrossProjectValue(
       priority,
@@ -89,10 +89,11 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     val createCrossProject = CreateResolver(
       cpId,
       project,
-      crossProjectValue
+      crossProjectValue,
+      bob
     )
 
-    val updateInProject    = UpdateResolver(ipId, project, InProjectValue(Priority.unsafe(99)), 2L)
+    val updateInProject    = UpdateResolver(ipId, project, InProjectValue(Priority.unsafe(99)), 2L, alice)
     val updateCrossProject = UpdateResolver(
       cpId,
       project,
@@ -105,11 +106,11 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         ),
         ProvidedIdentities(alice.identities)
       ),
-      2L
+      2L,
+      alice
     )
 
     "evaluating a create command" should {
-      implicit val caller: Caller = bob
 
       "fail if the resolver already exists" in {
         forAll(
@@ -161,8 +162,6 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     }
 
     "evaluate an update command" should {
-
-      implicit val caller: Caller = alice
 
       "fail if the resolver doesn't exist" in {
         forAll(List(updateInProject, updateCrossProject)) { command =>
@@ -261,9 +260,8 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     }
 
     "evaluate a tag command" should {
-      implicit val caller: Caller = bob
 
-      val tagResolver = TagResolver(ipId, project, 1L, Label.unsafe("tag1"), 2L)
+      val tagResolver = TagResolver(ipId, project, 1L, Label.unsafe("tag1"), 2L, bob.subject)
 
       "fail if the resolver doesn't exist" in {
         evaluate(Initial, tagResolver)
@@ -309,9 +307,8 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
     }
 
     "evaluate a deprecate command" should {
-      implicit val caller: Caller = bob
 
-      val deprecateResolver = DeprecateResolver(ipId, project, 2L)
+      val deprecateResolver = DeprecateResolver(ipId, project, 2L, bob.subject)
 
       "fail if the resolver doesn't exist" in {
         evaluate(Initial, deprecateResolver)

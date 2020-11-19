@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import java.util.UUID
 
 import akka.persistence.query.{NoOffset, Offset}
+import cats.implicits._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
@@ -73,21 +74,29 @@ trait Organizations {
   /**
     * Fetches the current active organization, rejecting if the organization does not exists or if it is deprecated
     */
-  def fetchActiveOrganization(label: Label): IO[OrganizationRejection, Organization] =
-    fetch(label).flatMap {
-      case Some(resource) if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
-      case None                                  => IO.raiseError(OrganizationNotFound(label))
-      case Some(resource)                        => IO.pure(resource.value)
-    }
+  def fetchActiveOrganization[R](
+      label: Label
+  )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
+    fetch(label)
+      .flatMap {
+        case Some(resource) if resource.deprecated => IO.raiseError(OrganizationIsDeprecated(label))
+        case None                                  => IO.raiseError(OrganizationNotFound(label))
+        case Some(resource)                        => IO.pure(resource.value)
+      }
+      .leftMap(rejectionMapper.to)
 
   /**
     * Fetches the current organization, rejecting if the organization does not exists
     */
-  def fetchOrganization(label: Label): IO[OrganizationRejection, Organization] =
-    fetch(label).flatMap {
-      case Some(resource) => IO.pure(resource.value)
-      case None           => IO.raiseError(OrganizationNotFound(label))
-    }
+  def fetchOrganization[R](
+      label: Label
+  )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
+    fetch(label)
+      .flatMap {
+        case Some(resource) => IO.pure(resource.value)
+        case None           => IO.raiseError(OrganizationNotFound(label))
+      }
+      .leftMap(rejectionMapper.to)
 
   /**
     * Fetch an organization at the passed revision by label.

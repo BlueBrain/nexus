@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
-class ResourcesDummySpec
+class ResolversDummySpec
     extends AnyWordSpecLike
     with Matchers
     with IOValues
@@ -16,12 +16,8 @@ class ResourcesDummySpec
     with OptionValues
     with Inspectors
     with CirceLiteral
-    with ResourcesBehaviors {
+    with ResolversBehaviors {
 
-  override def create: UIO[Resources] =
-    for {
-      (orgs, projs) <- projectSetup
-      r             <- ResourcesDummy(orgs, projs, fetchSchema)
-    } yield r
-
+  override def create: UIO[Resolvers] =
+    ResolversDummy(projects)
 }

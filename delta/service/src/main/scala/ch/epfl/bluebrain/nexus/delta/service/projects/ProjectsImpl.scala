@@ -9,13 +9,13 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{OwnerPermissionsFailed, ProjectIsDeprecated, ProjectNotFound, RevisionNotFound, UnexpectedInitialState, WrappedOrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Organizations, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.syntax._
@@ -30,9 +30,9 @@ import monix.execution.Scheduler
 
 final class ProjectsImpl private (
     agg: ProjectsAggregate,
-    organizations: Organizations,
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
+    organizations: Organizations,
     applyOwnerPermissions: ApplyOwnerPermissions
 )(implicit base: BaseUri)
     extends Projects {
@@ -79,13 +79,25 @@ final class ProjectsImpl private (
   override def fetch(ref: ProjectRef): UIO[Option[ProjectResource]] =
     agg.state(ref.toString).map(_.toResource).named("fetchProject", moduleType)
 
-  override def fetchActiveProject(ref: ProjectRef): IO[ProjectRejection, Project] =
-    organizations.fetchActiveOrganization(ref.organization).leftMap(WrappedOrganizationRejection) >>
+  override def fetchActiveProject[R](
+      ref: ProjectRef
+  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
+    (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
         case Some(resource) if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
         case None                                  => IO.raiseError(ProjectNotFound(ref))
         case Some(resource)                        => IO.pure(resource.value)
+      }).leftMap(rejectionMapper.to)
+
+  override def fetchProject[R](
+      ref: ProjectRef
+  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
+    fetch(ref)
+      .flatMap {
+        case None           => IO.raiseError(ProjectNotFound(ref))
+        case Some(resource) => IO.pure(resource.value)
       }
+      .leftMap(rejectionMapper.to)
 
   override def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.RevisionNotFound, Option[ProjectResource]] =
     eventLog
@@ -190,7 +202,7 @@ object ProjectsImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Projects.next,
-      evaluate = Projects.evaluate(organizations.fetch),
+      evaluate = Projects.evaluate(organizations.fetchActiveOrganization[ProjectRejection]),
       tagger = (_: ProjectEvent) => Set(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: ProjectState, _: ProjectEvent, _: Long) => state.deprecated)
@@ -213,7 +225,7 @@ object ProjectsImpl {
       organizations: Organizations,
       applyOwnerPermissions: ApplyOwnerPermissions
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, organizations, eventLog, cache, applyOwnerPermissions)
+    new ProjectsImpl(agg, eventLog, cache, organizations, applyOwnerPermissions)
 
   /**
     * Constructs a [[Projects]] instance.
