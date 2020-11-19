@@ -1,5 +1,5 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
-  "@type": "MissingQueryParamRejection",
-  "reason": "Request is missing required query parameter '{{field}}'"
+  "@type": "MissingQueryParam",
+  "reason": "Request is missing required query parameter '{{field}}'."
 }

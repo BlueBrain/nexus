@@ -134,7 +134,7 @@ class ProjectsSpec extends BaseSpec {
       adminDsl.createProject(
         orgId,
         projId,
-        Json.obj(),
+        createJson,
         Bojack,
         Some(conflict)
       )
@@ -239,7 +239,7 @@ class ProjectsSpec extends BaseSpec {
     }
 
     "reject update  when wrong revision is provided" taggedAs ProjectsTag in {
-      deltaClient.put[Json](s"/projects/$id?rev=4", Json.obj(), Bojack) { (json, response) =>
+      deltaClient.put[Json](s"/projects/$id?rev=1", createJson, Bojack) { (json, response) =>
         response.status shouldEqual ProjectConflict.statusCode
         json shouldEqual ProjectConflict.json
       }
@@ -253,6 +253,7 @@ class ProjectsSpec extends BaseSpec {
                  id,
                  4L,
                  authenticated = Bojack,
+                 schema = "projects",
                  deprecated = true
                )
              }
@@ -340,8 +341,8 @@ class ProjectsSpec extends BaseSpec {
                    nxv = s"nxv-$projId",
                    person = s"person-$projId",
                    description = projId,
-                   base = s"http:example.com/$projId/",
-                   vocab = s"http:example.com/$projId/vocab/"
+                   base = s"http://example.com/$projId/",
+                   vocab = s"http://example.com/$projId/vocab/"
                  ),
                  Bojack
                )

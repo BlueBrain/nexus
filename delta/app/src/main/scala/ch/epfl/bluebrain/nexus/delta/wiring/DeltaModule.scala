@@ -11,8 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.routes.marshalling.RdfRejectionHandler
-import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError
+import ch.epfl.bluebrain.nexus.delta.routes.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.service.http.HttpClient
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -59,7 +58,9 @@ class DeltaModule(appCfg: AppConfig, config: Config) extends ModuleDef with Clas
   make[RejectionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
     RdfRejectionHandler(s, cr, ordering)
   }
-  make[ExceptionHandler].from(IdentityError.exceptionHandler)
+  make[ExceptionHandler].from { (s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering) =>
+    RdfExceptionHandler(s, cr, ordering)
+  }
   make[CorsSettings].from(
     CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
