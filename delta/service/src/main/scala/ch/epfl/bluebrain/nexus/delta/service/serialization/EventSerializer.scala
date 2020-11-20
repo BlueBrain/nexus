@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, Permissi
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType.Camel._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{IdentityResolution, ResolverEvent, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.service.serialization.EventSerializer._
@@ -42,6 +43,7 @@ class EventSerializer extends SerializerWithStringManifest {
     case _: RealmEvent        => realmEventManifest
     case _: OrganizationEvent => organizationEventManifest
     case _: ProjectEvent      => projectEventManifest
+    case _: ResolverEvent     => resolverEventManifest
     case _: ResourceEvent     => resourceEventManifest
     case _: SchemaEvent       => schemaEventManifest
     case _                    => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
@@ -53,6 +55,7 @@ class EventSerializer extends SerializerWithStringManifest {
     case e: RealmEvent        => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: OrganizationEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ProjectEvent      => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+    case e: ResolverEvent     => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResourceEvent     => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: SchemaEvent       => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case _                    => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
@@ -64,6 +67,7 @@ class EventSerializer extends SerializerWithStringManifest {
     case `realmEventManifest`        => parseAndDecode[RealmEvent](bytes, manifest)
     case `organizationEventManifest` => parseAndDecode[OrganizationEvent](bytes, manifest)
     case `projectEventManifest`      => parseAndDecode[ProjectEvent](bytes, manifest)
+    case `resolverEventManifest`     => parseAndDecode[ResolverEvent](bytes, manifest)
     case `resourceEventManifest`     => parseAndDecode[ResourceEvent](bytes, manifest)
     case `schemaEventManifest`       => parseAndDecode[SchemaEvent](bytes, manifest)
     case _                           => throw new IllegalArgumentException(s"Unknown manifest '$manifest'")
@@ -84,6 +88,7 @@ object EventSerializer {
   final val realmEventManifest: String        = Realms.moduleType
   final val organizationEventManifest: String = Organizations.moduleType
   final val projectEventManifest: String      = Projects.moduleType
+  final val resolverEventManifest: String     = Resolvers.moduleType
   final val resourceEventManifest: String     = Resources.moduleType
   final val schemaEventManifest: String       = Schemas.moduleType
 
@@ -125,14 +130,19 @@ object EventSerializer {
       } yield JsonLd.compactedUnsafe(obj.remove(keywords.context), hc.value.topContextValueOrEmpty, id)
     }
 
-  implicit final private val expandedEncoder: Encoder[ExpandedJsonLd]        = Encoder.instance(_.json)
-  implicit final private val expandedDecoder: Decoder[ExpandedJsonLd]        =
+  implicit final private val expandedEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
+  implicit final private val expandedDecoder: Decoder[ExpandedJsonLd] =
     Decoder.instance { hc =>
       for {
         id       <- hc.up.get[Iri]("id")
         expanded <- JsonLd.expanded(hc.value, id).leftMap(err => DecodingFailure(err, hc.history))
       } yield expanded
     }
+
+  implicit final private val identityResolutionCodec: Codec.AsObject[IdentityResolution] =
+    deriveConfiguredCodec[IdentityResolution]
+  implicit final private val resolverValueCodec: Codec.AsObject[ResolverValue]           = deriveConfiguredCodec[ResolverValue]
+
   implicit final val permissionsEventCodec: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
 
   implicit final val aclEventDecoder: Decoder[AclEvent]                        = deriveConfiguredDecoder[AclEvent]
@@ -144,6 +154,7 @@ object EventSerializer {
   implicit final val organizationEventCodec: Codec.AsObject[OrganizationEvent] =
     deriveConfiguredCodec[OrganizationEvent]
   implicit final val projectEventCodec: Codec.AsObject[ProjectEvent]           = deriveConfiguredCodec[ProjectEvent]
+  implicit final val resolverEvent: Codec.AsObject[ResolverEvent]              = deriveConfiguredCodec[ResolverEvent]
   implicit final val resourceEventCodec: Codec.AsObject[ResourceEvent]         = deriveConfiguredCodec[ResourceEvent]
   implicit final val schemaEventCodec: Codec.AsObject[SchemaEvent]             = deriveConfiguredCodec[SchemaEvent]
 

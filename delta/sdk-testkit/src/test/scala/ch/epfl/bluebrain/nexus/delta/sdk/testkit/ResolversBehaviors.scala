@@ -21,6 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, ResolverAlreadyExists, ResolverIsDeprecated, ResolverNotFound, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverFields}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
@@ -144,17 +146,17 @@ trait ResolversBehaviors {
         }
       }
 
-      "succeed with the same id only defined in both segment and payload" in {
+      "succeed with the same id when defined in both segment and payload" in {
         forAll(
           List(
             nxv + "in-project-both"    -> inProjectValue,
-            nxv + "cross-project-both" -> crossProjectValue
+            nxv + "cross-project-both" -> crossProjectValue.copy(identityResolution = UseCurrentCaller)
           )
         ) { case (id, value) =>
           resolvers
-            .create(IriSegment(id), projectRef, ResolverFields(sourceWithId(id), value))
+            .create(IriSegment(id), projectRef, ResolverFields(sourceWithId(id), value))(alice)
             .accepted shouldEqual ResolverGen
-            .resourceFor(id, project, value, subject = bob.subject)
+            .resourceFor(id, project, value, subject = alice.subject)
         }
       }
 
@@ -593,25 +595,26 @@ trait ResolversBehaviors {
       }
     }
 
+    val inProjectExpected    = ResolverGen.resourceFor(
+      nxv + "in-project",
+      project,
+      updatedInProjectValue,
+      tags = Map(tag -> 1L),
+      rev = 4L,
+      subject = bob.subject,
+      deprecated = true
+    )
+    val crossProjectExpected = ResolverGen.resourceFor(
+      nxv + "cross-project",
+      project,
+      updatedCrossProjectValue,
+      tags = Map(tag -> 1L),
+      rev = 4L,
+      subject = bob.subject,
+      deprecated = true
+    )
+
     "fetching a resolver" should {
-      val inProjectExpected    = ResolverGen.resourceFor(
-        nxv + "in-project",
-        project,
-        updatedInProjectValue,
-        tags = Map(tag -> 1L),
-        rev = 4L,
-        subject = bob.subject,
-        deprecated = true
-      )
-      val crossProjectExpected = ResolverGen.resourceFor(
-        nxv + "cross-project",
-        project,
-        updatedCrossProjectValue,
-        tags = Map(tag -> 1L),
-        rev = 4L,
-        subject = bob.subject,
-        deprecated = true
-      )
 
       "succeed" in {
         forAll(List(inProjectExpected, crossProjectExpected)) { resource =>
@@ -661,6 +664,41 @@ trait ResolversBehaviors {
           unknownTag
         )
       }
+    }
+
+    "list resolvers" should {
+
+      "return deprecated resolvers" in {
+        val results = resolvers
+          .list(FromPagination(0, 10), ResolverSearchParams(deprecated = Some(true), filter = _ => true))
+          .accepted
+
+        results.total shouldEqual 2L
+        results.results.map(_.source) should contain theSameElementsAs Vector(inProjectExpected, crossProjectExpected)
+      }
+
+      "return resolvers created by alice" in {
+        val results = resolvers
+          .list(FromPagination(0, 10), ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => true))
+          .accepted
+
+        results.total shouldEqual 2L
+        results.results.map(_.source) should contain theSameElementsAs Vector(
+          ResolverGen.resourceFor(
+            nxv + "in-project-both",
+            project,
+            inProjectValue,
+            subject = alice.subject
+          ),
+          ResolverGen.resourceFor(
+            nxv + "cross-project-both",
+            project,
+            crossProjectValue.copy(identityResolution = UseCurrentCaller),
+            subject = alice.subject
+          )
+        )
+      }
+
     }
 
     "getting events" should {

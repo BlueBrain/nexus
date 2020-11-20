@@ -14,8 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{Create
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResolversDummy.ResolverJournal
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResolversDummy.{ResolverCache, ResolverJournal}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
@@ -24,14 +27,17 @@ import monix.bio.{IO, Task, UIO}
   * A dummy Resolvers implementation
   *
   * @param journal     the journal to store events
+  * @param cache       the cache to store resolvers
   * @param projects    the projects operations bundle
   * @param semaphore   a semaphore for serializing write operations on the journal
   */
-class ResolversDummy private (journal: ResolverJournal, projects: Projects, semaphore: IOSemaphore)(implicit
-    clock: Clock[UIO],
-    uuidF: UUIDF,
-    rcr: RemoteContextResolution
-) extends Resolvers {
+class ResolversDummy private (
+    journal: ResolverJournal,
+    cache: ResolverCache,
+    projects: Projects,
+    semaphore: IOSemaphore
+)(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution)
+    extends Resolvers {
 
   override def create(projectRef: ProjectRef, resolverFields: ResolverFields)(implicit
       caller: Caller
@@ -96,6 +102,9 @@ class ResolversDummy private (journal: ResolverJournal, projects: Projects, sema
       state <- stateAt(projectRef, iri, rev)
     } yield state.toResource(p.apiMappings, p.base)
 
+  def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]] =
+    cache.list(pagination, params)
+
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] = journal.events(offset)
 
   private def currentState(projectRef: ProjectRef, iri: Iri) =
@@ -107,14 +116,14 @@ class ResolversDummy private (journal: ResolverJournal, projects: Projects, sema
   private def eval(command: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
     semaphore.withPermit {
       for {
-        state     <- currentState(command.project, command.id)
-        event     <- Resolvers.evaluate(state, command)
-        _         <- journal.add(event)
-        (am, base) = project.apiMappings -> project.base
-        res       <- IO.fromOption(
-                       Resolvers.next(state, event).toResource(am, base),
-                       UnexpectedInitialState(command.id, project.ref)
-                     )
+        state <- currentState(command.project, command.id)
+        event <- Resolvers.evaluate(state, command)
+        _     <- journal.add(event)
+        res   <- IO.fromOption(
+                   Resolvers.next(state, event).toResource(project.apiMappings, project.base),
+                   UnexpectedInitialState(command.id, project.ref)
+                 )
+        _     <- cache.setToCache(res)
       } yield res
     }
 }
@@ -122,9 +131,13 @@ class ResolversDummy private (journal: ResolverJournal, projects: Projects, sema
 object ResolversDummy {
   type ResolverIdentifier = (ProjectRef, Iri)
   type ResolverJournal    = Journal[ResolverIdentifier, ResolverEvent]
+  type ResolverCache      = ResourceCache[ResolverIdentifier, Resolver]
 
   implicit private val eventLens: Lens[ResolverEvent, ResolverIdentifier] =
     (event: ResolverEvent) => (event.project, event.id)
+
+  implicit private val lens: Lens[Resolver, ResolverIdentifier]                                  =
+    (resolver: Resolver) => resolver.project -> resolver.id
 
   /**
     * Creates a resolvers dummy instance
@@ -135,6 +148,7 @@ object ResolversDummy {
   )(implicit clock: Clock[UIO], uuidF: UUIDF, rcr: RemoteContextResolution): UIO[ResolversDummy] =
     for {
       journal <- Journal(moduleType)
+      cache   <- ResourceCache[ResolverIdentifier, Resolver]
       sem     <- IOSemaphore(1L)
-    } yield new ResolversDummy(journal, projects, sem)
+    } yield new ResolversDummy(journal, cache, projects, sem)
 }

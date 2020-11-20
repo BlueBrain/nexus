@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
 
 /**
@@ -117,6 +118,17 @@ object SearchParams {
     override def matches(resource: ResourceF[Project]): Boolean =
       super.matches(resource) &&
         organization.forall(_ == resource.value.organizationLabel)
+  }
+
+  final case class ResolverSearchParams(
+      deprecated: Option[Boolean] = None,
+      rev: Option[Long] = None,
+      createdBy: Option[Subject] = None,
+      updatedBy: Option[Subject] = None,
+      filter: Resolver => Boolean
+  ) extends SearchParams[Resolver] {
+    override val types: Set[Iri]             = Set(nxv.Resolver)
+    override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.resolvers))
   }
 
 }

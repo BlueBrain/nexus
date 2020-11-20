@@ -1,0 +1,16 @@
+{
+  "@type": "ResolverCreated",
+  "id": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "instant": "1970-01-01T00:00:00Z",
+  "project": "myorg/myproj",
+  "rev": 1,
+  "subject": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "username"
+  },
+  "value": {
+    "@type": "InProjectValue",
+    "priority": 42
+  }
+}
