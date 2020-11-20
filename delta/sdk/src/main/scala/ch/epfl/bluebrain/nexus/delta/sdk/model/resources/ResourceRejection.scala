@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidId, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection.IncorrectRev
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import io.circe.syntax._
@@ -189,6 +190,7 @@ object ResourceRejection {
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
         case InvalidResource(_, _, report)               => obj.add("details", report.json)
+        case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                           => obj
       }
     }
