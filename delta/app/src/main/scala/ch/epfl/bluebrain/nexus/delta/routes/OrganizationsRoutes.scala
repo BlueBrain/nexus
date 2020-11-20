@@ -109,19 +109,21 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
               operationName(s"$prefixSegment/orgs/{label}") {
                 concat(
                   put {
-                    authorizeFor(AclAddress.Organization(id), orgs.write).apply {
-                      parameter("rev".as[Long].?) {
-                        case Some(rev) =>
+                    parameter("rev".as[Long].?) {
+                      case Some(rev) =>
+                        authorizeFor(AclAddress.Organization(id), orgs.write).apply {
                           // Update organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
                             emit(organizations.update(id, description, rev).map(_.void))
                           }
-                        case None      =>
+                        }
+                      case None      =>
+                        authorizeFor(AclAddress.Organization(id), orgs.create).apply {
                           // Create organization
                           entity(as[OrganizationInput]) { case OrganizationInput(description) =>
                             emit(StatusCodes.Created, organizations.create(id, description).map(_.void))
                           }
-                      }
+                        }
                     }
                   },
                   get {

@@ -44,7 +44,9 @@ class OrganizationsRoutesSpec
 
   implicit private val subject: Subject = Identity.Anonymous
 
-  private val acls = AclsDummy(PermissionsDummy(Set(orgsPermissions.write, orgsPermissions.read, events.read))).accepted
+  private val acls = AclsDummy(
+    PermissionsDummy(Set(orgsPermissions.write, orgsPermissions.read, orgsPermissions.create, events.read))
+  ).accepted
   private val aopd = ApplyOwnerPermissionsDummy(acls, Set(orgsPermissions.write, orgsPermissions.read), subject)
   private val orgs = OrganizationsDummy(aopd).accepted
 
@@ -80,7 +82,7 @@ class OrganizationsRoutesSpec
 
   "An OrganizationsRoute" should {
 
-    "fail to create an organization without organizations/write permission" in {
+    "fail to create an organization without organizations/create permission" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
       val input = json"""{"description": "${org1.description.value}"}"""
 
@@ -93,7 +95,7 @@ class OrganizationsRoutesSpec
     "create a new organization" in {
       acls
         .append(
-          Acl(AclAddress.Root, Anonymous -> Set(orgsPermissions.write), caller.subject -> Set(orgsPermissions.write)),
+          Acl(AclAddress.Root, Anonymous -> Set(orgsPermissions.create), caller.subject -> Set(orgsPermissions.write)),
           1L
         )
         .accepted

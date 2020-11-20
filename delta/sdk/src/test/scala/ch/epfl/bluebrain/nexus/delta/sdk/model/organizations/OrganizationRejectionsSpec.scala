@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
@@ -28,8 +28,8 @@ class OrganizationRejectionsSpec
 
     "be converted to compacted JSON-LD" in {
       val list = List(
-        alreadyExists -> json"""{"@type": "OrganizationAlreadyExists", "reason": "${alreadyExists.reason}"}""",
-        incorrectRev  -> json"""{"@type": "IncorrectRev", "reason": "${incorrectRev.reason}"}"""
+        alreadyExists -> jsonContentOf("/organizations/organization-already-exists-compacted.json"),
+        incorrectRev  -> jsonContentOf("/organizations/incorrect-revision-compacted.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toCompactedJsonLd.accepted.json shouldEqual json.addContext(contexts.error)
@@ -38,8 +38,8 @@ class OrganizationRejectionsSpec
 
     "be converted to expanded JSON-LD" in {
       val list = List(
-        alreadyExists -> json"""[{"@type": ["${nxv + "OrganizationAlreadyExists"}"], "${nxv + "reason"}": [{"@value": "${alreadyExists.reason}"} ] } ]""",
-        incorrectRev  -> json"""[{"@type": ["${nxv + "IncorrectRev"}"], "${nxv + "reason"}": [{"@value": "${incorrectRev.reason}"} ] } ]"""
+        alreadyExists -> jsonContentOf("/organizations/organization-already-exists-expanded.json"),
+        incorrectRev  -> jsonContentOf("/organizations/incorrect-revision-expanded.json")
       )
       forAll(list) { case (rejection, json) =>
         rejection.toExpandedJsonLd.accepted.json shouldEqual json

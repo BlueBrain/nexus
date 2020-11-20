@@ -1,0 +1,22 @@
+[
+  {
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/ProjectAlreadyExists"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/reason": [
+      {
+        "@value": "Project 'org/proj' already exists."
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/label": [
+      {
+        "@value": "proj"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/orgLabel": [
+      {
+        "@value": "org"
+      }
+    ]
+  }
+]

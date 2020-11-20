@@ -1,5 +1,5 @@
 {
-  "@context" : "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@context" : "https://bluebrain.github.io/nexus/contexts/metadata.json",
   "@id" : "{{deltaUri}}/{{path}}/{{orgId}}",
   "_self" : "{{deltaUri}}/{{path}}/{{orgId}}",
   "@type" : "{{type}}",

@@ -101,10 +101,15 @@ object ProjectRejection {
 
   implicit private[model] val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = ClassUtils.simpleName(r)
+      val tpe     = ClassUtils.simpleName(r)
+      val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
-        case _                                       => JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+        case IncorrectRev(provided, expected)        =>
+          default.add("provided", provided.asJson).add("expected", expected.asJson)
+        case ProjectAlreadyExists(projectRef)        =>
+          default.add("label", projectRef.project.asJson).add("orgLabel", projectRef.organization.asJson)
+        case _                                       => default
 
       }
     }

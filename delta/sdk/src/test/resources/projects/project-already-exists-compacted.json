@@ -1,0 +1,6 @@
+{
+  "@type": "ProjectAlreadyExists",
+  "reason": "Project 'org/proj' already exists.",
+  "orgLabel": "org",
+  "label": "proj"
+}

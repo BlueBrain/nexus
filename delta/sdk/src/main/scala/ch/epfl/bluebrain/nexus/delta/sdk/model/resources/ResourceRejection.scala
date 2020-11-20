@@ -189,6 +189,7 @@ object ResourceRejection {
         case ResourceShaclEngineRejection(_, _, details) => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, details)             => obj.add("details", details.reason.asJson)
         case InvalidResource(_, _, report)               => obj.add("details", report.json)
+        case IncorrectRev(provided, expected)            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _                                           => obj
       }
     }
