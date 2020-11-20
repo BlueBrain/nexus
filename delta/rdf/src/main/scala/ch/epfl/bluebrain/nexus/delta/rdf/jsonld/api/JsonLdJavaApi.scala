@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{RemoteContextError, Unexpecte
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
-import ch.epfl.bluebrain.nexus.delta.rdf.{tryOrConversionErr, RdfError}
+import ch.epfl.bluebrain.nexus.delta.rdf.{ioTryOrConversionErr, tryOrConversionErr, RdfError}
 import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdProcessor, JsonLdOptions => JsonLdJavaOptions}
 import com.github.jsonldjava.utils.JsonUtils
 import io.circe.{parser, Json, JsonObject}
@@ -30,10 +30,10 @@ object JsonLdJavaApi extends JsonLdApi {
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonObject] =
     for {
-      obj          <- tryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
-      ctxObj       <- tryOrConversionErr(JsonUtils.fromString(ctx.toString), "building context")
+      obj          <- ioTryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
+      ctxObj       <- ioTryOrConversionErr(JsonUtils.fromString(ctx.toString), "building context")
       options      <- documentLoader(input, ctx.contextObj).map(toOpts)
-      compacted    <- tryOrConversionErr(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
+      compacted    <- ioTryOrConversionErr(JsonUtils.toString(JsonLdProcessor.compact(obj, ctxObj, options)), "compacting")
       compactedObj <- IO.fromEither(toJsonObjectOrErr(compacted))
     } yield compactedObj
 
@@ -41,9 +41,9 @@ object JsonLdJavaApi extends JsonLdApi {
       input: Json
   )(implicit opts: JsonLdOptions, resolution: RemoteContextResolution): IO[RdfError, Seq[JsonObject]] =
     for {
-      obj            <- tryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
+      obj            <- ioTryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
       options        <- documentLoader(input).map(toOpts)
-      expanded       <- tryOrConversionErr(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
+      expanded       <- ioTryOrConversionErr(JsonUtils.toString(JsonLdProcessor.expand(obj, options)), "expanding")
       expandedSeqObj <- IO.fromEither(toSeqJsonObjectOrErr(expanded))
     } yield expandedSeqObj
 
@@ -52,30 +52,28 @@ object JsonLdJavaApi extends JsonLdApi {
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonObject] =
     for {
-      obj       <- tryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
-      ff        <- tryOrConversionErr(JsonUtils.fromString(frame.noSpaces), "building frame")
+      obj       <- ioTryOrConversionErr(JsonUtils.fromString(input.noSpaces), "building input")
+      ff        <- ioTryOrConversionErr(JsonUtils.fromString(frame.noSpaces), "building frame")
       options   <- documentLoader(input, frame).map(toOpts)
-      framed    <- tryOrConversionErr(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
+      framed    <- ioTryOrConversionErr(JsonUtils.toString(JsonLdProcessor.frame(obj, ff, options)), "framing")
       framedObj <- IO.fromEither(toJsonObjectOrErr(framed))
     } yield framedObj
 
   // TODO: Right now this step has to be done from a JSON-LD expanded document,
   // since the DocumentLoader cannot be passed to Jena yet: https://issues.apache.org/jira/browse/JENA-1959
-  override private[rdf] def toRdf(
-      input: Json
-  )(implicit opts: JsonLdOptions, resolution: RemoteContextResolution): IO[RdfError, Model] = {
+  override private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, Model] = {
     val model       = ModelFactory.createDefaultModel()
     val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD)
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
     tryOrConversionErr(builder.parse(StreamRDFLib.graph(model.getGraph)), "toRdf").as(model)
   }
 
-  override private[rdf] def fromRdf(input: Model)(implicit opts: JsonLdOptions): IO[RdfError, Seq[JsonObject]] = {
+  override private[rdf] def fromRdf(input: Model)(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]] = {
     val c = new JsonLDWriteContext()
     c.setOptions(toOpts())
     for {
       expanded       <- tryOrConversionErr(RDFWriter.create.format(EXPAND).source(input).context(c).asString(), "fromRdf")
-      expandedSeqObj <- IO.fromEither(toSeqJsonObjectOrErr(expanded))
+      expandedSeqObj <- toSeqJsonObjectOrErr(expanded)
     } yield expandedSeqObj
   }
 

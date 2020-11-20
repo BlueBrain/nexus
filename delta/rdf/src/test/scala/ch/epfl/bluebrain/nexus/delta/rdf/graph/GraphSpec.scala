@@ -15,21 +15,21 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
   "A Graph" should {
     val expandedJson     = jsonContentOf("expanded.json")
     val expanded         = JsonLd.expand(expandedJson).accepted
-    val graph            = Graph(expanded).accepted
+    val graph            = Graph(expanded).rightValue
     val bnode            = bNode(graph)
     val iriSubject       = subject(iri)
     val rootBNode        = BNode.random
     val expandedNoIdJson = expandedJson.removeAll(keywords.id -> iri)
     val expandedNoId     = JsonLd.expand(expandedNoIdJson).accepted.replaceId(rootBNode)
-    val graphNoId        = Graph(expandedNoId).accepted
+    val graphNoId        = Graph(expandedNoId).rightValue
     val bnodeNoId        = bNode(graphNoId)
 
     "be created from expanded jsonld" in {
-      Graph(expanded).accepted.triples.size shouldEqual 16
+      Graph(expanded).rightValue.triples.size shouldEqual 16
     }
 
     "be created from expanded jsonld with a root blank node" in {
-      Graph(expandedNoId).accepted.triples.size shouldEqual 16
+      Graph(expandedNoId).rightValue.triples.size shouldEqual 16
     }
 
     "return a filtered graph" in {
@@ -71,12 +71,12 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "be converted to NTriples" in {
       val expected = contentOf("ntriples.nt", "bnode" -> bnode.rdfFormat, "rootNode" -> iri.rdfFormat)
-      graph.toNTriples.accepted.toString should equalLinesUnordered(expected)
+      graph.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
 
     "be converted to NTriples with a root blank node" in {
       val expected = contentOf("ntriples.nt", "bnode" -> bnodeNoId.rdfFormat, "rootNode" -> rootBNode.rdfFormat)
-      graphNoId.toNTriples.accepted.toString should equalLinesUnordered(expected)
+      graphNoId.toNTriples.rightValue.toString should equalLinesUnordered(expected)
     }
 
     "be converted to dot without context" in {

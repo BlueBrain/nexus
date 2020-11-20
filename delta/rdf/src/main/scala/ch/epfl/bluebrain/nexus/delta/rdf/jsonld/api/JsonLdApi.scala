@@ -27,14 +27,9 @@ trait JsonLdApi {
       resolution: RemoteContextResolution
   ): IO[RdfError, JsonObject]
 
-  private[rdf] def toRdf(input: Json)(implicit
-      opts: JsonLdOptions,
-      resolution: RemoteContextResolution
-  ): IO[RdfError, Model]
+  private[rdf] def toRdf(input: Json)(implicit opts: JsonLdOptions): Either[RdfError, Model]
 
-  private[rdf] def fromRdf(input: Model)(implicit
-      opts: JsonLdOptions
-  ): IO[RdfError, Seq[JsonObject]]
+  private[rdf] def fromRdf(input: Model)(implicit opts: JsonLdOptions): Either[RdfError, Seq[JsonObject]]
 
   private[rdf] def context(value: ContextValue)(implicit
       opts: JsonLdOptions,

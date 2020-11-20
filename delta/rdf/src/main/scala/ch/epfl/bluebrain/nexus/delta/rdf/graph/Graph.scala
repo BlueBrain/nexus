@@ -5,16 +5,18 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.emptyModel
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd, JsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.{tryOrConversionErr, IriOrBNode, RdfError, Triple}
+import ch.epfl.bluebrain.nexus.delta.rdf.{ioTryOrConversionErr, tryOrConversionErr, IriOrBNode, RdfError, Triple}
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
+import org.apache.jena.graph.Factory.createDefaultGraph
 import org.apache.jena.rdf.model.ResourceFactory.createStatement
 import org.apache.jena.rdf.model._
 import org.apache.jena.riot.{Lang, RDFWriter}
@@ -37,7 +39,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
     */
   def filter(evalTriple: Triple => Boolean): Graph = {
     val iter     = model.listStatements()
-    val newModel = ModelFactory.createDefaultModel()
+    val newModel = emptyModel()
     while (iter.hasNext) {
       val stmt = iter.nextStatement
       if (evalTriple(Triple(stmt))) newModel.add(stmt)
@@ -72,7 +74,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
     val currentResource = subject(current)
     val replaceResource = subject(replace)
     val iter            = model.listStatements()
-    val newModel        = ModelFactory.createDefaultModel()
+    val newModel        = emptyModel()
     while (iter.hasNext) {
       val stmt      = iter.nextStatement
       val (s, p, o) = Triple(stmt)
@@ -86,7 +88,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
   /**
     * Returns all the triples of the current graph
     */
-  def triples: Set[Triple] =
+  lazy val triples: Set[Triple] =
     model.listStatements().asScala.map(Triple(_)).toSet
 
   /**
@@ -124,7 +126,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
   /**
     * Attempts to convert the current Graph to the N-Triples format: https://www.w3.org/TR/n-triples/
     */
-  def toNTriples: IO[RdfError, NTriples] =
+  def toNTriples: Either[RdfError, NTriples] =
     tryOrConversionErr(RDFWriter.create().lang(Lang.NTRIPLES).source(model).asString(), Lang.NTRIPLES.getName)
       .map(NTriples(_, rootNode))
 
@@ -140,7 +142,7 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
     for {
       resolvedCtx <- JsonLdContext(contextValue)
       ctx          = dotContext(rootResource, resolvedCtx)
-      string      <- tryOrConversionErr(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
+      string      <- ioTryOrConversionErr(RDFWriter.create().lang(DOT).source(model).context(ctx).asString(), DOT.getName)
     } yield Dot(string, rootNode)
 
   /**
@@ -155,15 +157,15 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
       opts: JsonLdOptions
   ): IO[RdfError, CompactedJsonLd] =
     if (rootNode.isIri) {
-      api.fromRdf(model).flatMap(expanded => JsonLd.frame(expanded.asJson, contextValue, rootNode))
+      IO.fromEither(api.fromRdf(model)).flatMap(expanded => JsonLd.frame(expanded.asJson, contextValue, rootNode))
     } else {
       // A new model is created where the rootNode is a fake Iri.
       // This is done in order to be able to perform the framing, since framing won't work on blank nodes.
       // After the framing is done, the @id value is removed from the json and the blank node reverted as rootId
-      val fakeId   = iri"http://fake.com/${UUID.randomUUID()}"
+      val fakeId   = iri"http://localhost/${UUID.randomUUID()}"
       val newModel = replace(rootNode, fakeId).model
       for {
-        expanded  <- api.fromRdf(newModel)
+        expanded  <- IO.fromEither(api.fromRdf(newModel))
         framed    <- JsonLd.frame(expanded.asJson, contextValue, fakeId)
         fakeIdJson = fakeId.asJson
       } yield framed.copy(obj = framed.obj.filter { case (_, v) => v != fakeIdJson }, rootId = self.rootNode)
@@ -181,6 +183,17 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
   ): IO[RdfError, ExpandedJsonLd] =
     toCompactedJsonLd(ContextValue.empty).flatMap(_.toExpanded)
 
+  override def hashCode(): Int = (rootNode, triples).##
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case that: Graph => rootNode == that.rootNode && triples == that.triples
+      case _           => false
+    }
+
+  override def toString: String =
+    s"rootNode = '$rootNode', triples = '$triples'"
+
   /**
     * Replaces the root node
     *
@@ -192,31 +205,44 @@ final case class Graph private (rootNode: IriOrBNode, model: Model) { self =>
     else self
 
   private def copy(model: Model): Model =
-    ModelFactory.createDefaultModel().add(model)
+    emptyModel().add(model)
 }
 
 object Graph {
 
+  /**
+    * An empty graph with a auto generated [[BNode]] as a root node
+    */
+  final val empty: Graph = Graph(BNode.random, emptyModel())
+
+  /**
+    * Unsafely builds a graph from an already passed [[Model]] and an auto generated [[BNode]] as a root node
+    */
   final def unsafe(model: Model): Graph =
     Graph(BNode.random, model)
+
+  /**
+    * Unsafely builds a graph from an already passed [[Model]] and the passed [[IriOrBNode]]
+    */
+  final def unsafe(rootNode: IriOrBNode, model: Model): Graph =
+    Graph(rootNode, model)
 
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.
     *
     * @param expanded the expanded JSON-LD input to transform into a Graph
     */
-  final def apply(expanded: ExpandedJsonLd)(implicit
-      api: JsonLdApi,
-      resolution: RemoteContextResolution,
-      options: JsonLdOptions
-  ): IO[RdfError, Graph] =
+  final def apply(expanded: ExpandedJsonLd)(implicit api: JsonLdApi, options: JsonLdOptions): Either[RdfError, Graph] =
     if (expanded.rootId.isIri) {
       api.toRdf(expanded.json).map(model => Graph(expanded.rootId, model))
     } else {
       // A fake @id is injected in the Json and then replaced in the model.
       // This is required in order preserve the original blank node since jena will create its own otherwise
-      val fakeId = iri"http://fake.com/${UUID.randomUUID()}"
+      val fakeId = iri"http://localhost/${UUID.randomUUID()}"
       val json   = Json.arr(expanded.obj.add(keywords.id, fakeId.asJson).asJson)
       api.toRdf(json).map(model => Graph(expanded.rootId, model).replace(fakeId, expanded.rootId))
     }
+
+  private[rdf] def emptyModel(): Model = ModelFactory.createModelForGraph(createDefaultGraph())
+
 }

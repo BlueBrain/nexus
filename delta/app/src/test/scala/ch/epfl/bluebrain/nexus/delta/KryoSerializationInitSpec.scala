@@ -5,10 +5,13 @@ import java.nio.file.Paths
 import akka.actor.ActorSystem
 import akka.serialization.SerializationExtension
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
+import ch.epfl.bluebrain.nexus.delta.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.altoo.akka.serialization.kryo.KryoSerializer
 import org.apache.jena.iri.{IRI, IRIFactory}
 import org.scalatest.TryValues
@@ -21,9 +24,15 @@ class KryoSerializerInitSpec
     with Matchers
     with TryValues
     with TestHelpers
-    with IOValues {
+    with IOValues
+    with EitherValuable {
 
-  private val serialization = SerializationExtension(system)
+  private val serialization                         = SerializationExtension(system)
+  implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed()
+
+  private val expanded = JsonLd.expand(jsonContentOf("/kryo/expanded.json")).accepted
+  private val graph    = Graph(expanded).rightValue
+  private val iri      = iri"http://nexus.example.com/john-doé"
 
   "A Path Kryo serialization" should {
     "succeed" in {
@@ -43,10 +52,45 @@ class KryoSerializerInitSpec
     }
   }
 
+  "An Anonymous Graph Kryo serialization" should {
+    val expandedJson = jsonContentOf("/kryo/expanded.json").removeAll(keywords.id -> iri)
+    val graphNoId    = Graph(JsonLd.expand(expandedJson).accepted).rightValue
+
+    "succeed" in {
+      // Find the Serializer for it
+      val serializer = serialization.findSerializerFor(graphNoId)
+      serializer.getClass.equals(classOf[KryoSerializer]) shouldEqual true
+
+      // Check serialization/deserialization
+      val serialized = serialization.serialize(graphNoId)
+      serialized.isSuccess shouldEqual true
+
+      val deserialized            = serialization.deserialize(serialized.get, graphNoId.getClass)
+      deserialized.isSuccess shouldEqual true
+      val deserializedGraph       = deserialized.success.value
+      deserializedGraph.rootNode shouldBe a[BNode]
+      val deserializedGraphWithId = deserializedGraph.replace(deserializedGraph.rootNode, iri)
+      deserializedGraphWithId.triples shouldEqual graph.triples
+    }
+  }
+
+  "An Iri Graph Kryo serialization" should {
+    "succeed" in {
+      // Find the Serializer for it
+      val serializer = serialization.findSerializerFor(graph)
+      serializer.getClass.equals(classOf[KryoSerializer]) shouldEqual true
+
+      // Check serialization/deserialization
+      val serialized = serialization.serialize(graph)
+      serialized.isSuccess shouldEqual true
+
+      val deserialized = serialization.deserialize(serialized.get, graph.getClass)
+      deserialized.isSuccess shouldEqual true
+      deserialized.success.value shouldEqual graph
+    }
+  }
+
   "An Jena Model Kryo serialization" should {
-    implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed()
-    val expanded                              = JsonLd.expand(jsonContentOf("/kryo/expanded.json")).accepted
-    val graph                                 = Graph(expanded).accepted
 
     "succeed" in {
 

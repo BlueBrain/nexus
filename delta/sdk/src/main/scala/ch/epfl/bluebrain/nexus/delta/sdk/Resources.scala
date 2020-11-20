@@ -246,15 +246,15 @@ object Resources {
       rcr: RemoteContextResolution
   ): IO[ResourceRejection, ResourceEvent] = {
 
-    def asGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
-      expanded.toGraph.leftMap(err => InvalidJsonLdFormat(Some(id), err))
+    def toGraph(id: Iri, expanded: ExpandedJsonLd): IO[ResourceRejection, Graph] =
+      IO.fromEither(expanded.toGraph.leftMap(err => InvalidJsonLdFormat(Some(id), err)))
 
     def validate(schemaRef: ResourceRef, id: Iri, graph: Graph): IO[ResourceRejection, Unit] = {
       if (schemaRef.iri == schemas.resources) IO.unit
       else
         for {
           schema <- extractSchema(schemaRef)
-          report <- ShaclEngine(graph.model, schema.graph.model, validateShapes = false, reportDetails = true)
+          report <- ShaclEngine(graph.model, schema.graph.model, reportDetails = true)
                       .leftMap(ResourceShaclEngineRejection(id, schemaRef, _))
           result <- if (report.isValid()) IO.unit else IO.raiseError(InvalidResource(id, schemaRef, report))
         } yield result
@@ -271,7 +271,7 @@ object Resources {
       state match {
         case Initial =>
           for {
-            graph <- asGraph(c.id, c.expanded)
+            graph <- toGraph(c.id, c.expanded)
             _     <- validate(c.schema, c.id, graph)
             types  = c.expanded.types.toSet
             t     <- IOUtils.instant
@@ -292,7 +292,7 @@ object Resources {
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
         case s: Current                                      =>
           for {
-            graph <- asGraph(c.id, c.expanded)
+            graph <- toGraph(c.id, c.expanded)
             _     <- validate(s.schema, c.id, graph)
             types  = c.expanded.types.toSet
             time  <- IOUtils.instant
@@ -302,17 +302,17 @@ object Resources {
 
     def tag(c: TagResource) =
       state match {
-        case Initial                                              =>
+        case Initial                                               =>
           IO.raiseError(ResourceNotFound(c.id, c.schemaOpt))
-        case s: Current if s.rev != c.rev                         =>
+        case s: Current if s.rev != c.rev                          =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if c.schemaOpt.exists(_ != s.schema)      =>
+        case s: Current if c.schemaOpt.exists(_ != s.schema)       =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case s: Current if s.deprecated                           =>
+        case s: Current if s.deprecated                            =>
           IO.raiseError(ResourceIsDeprecated(c.id))
-        case s: Current if c.targetRev < 0 || c.targetRev > s.rev =>
+        case s: Current if c.targetRev <= 0 || c.targetRev > s.rev =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-        case s: Current                                           =>
+        case s: Current                                            =>
           IOUtils.instant.map(ResourceTagAdded(c.id, c.project, s.types, c.targetRev, c.tag, s.rev + 1, _, c.subject))
 
       }

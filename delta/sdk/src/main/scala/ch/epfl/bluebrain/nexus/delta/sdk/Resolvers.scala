@@ -251,18 +251,18 @@ object Resolvers {
 
     def addTag(c: TagResolver): IO[ResolverRejection, ResolverTagAdded] = state match {
       // Resolver can't be found
-      case Initial                                              =>
+      case Initial                                               =>
         IO.raiseError(ResolverNotFound(c.id, c.project))
       // Invalid revision
-      case s: Current if c.rev != s.rev                         =>
+      case s: Current if c.rev != s.rev                          =>
         IO.raiseError(IncorrectRev(c.rev, s.rev))
       // Revision to tag is invalid
-      case s: Current if c.targetRev < 0 || c.targetRev > s.rev =>
+      case s: Current if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       // State is deprecated
-      case s: Current if s.deprecated                           =>
+      case s: Current if s.deprecated                            =>
         IO.raiseError(ResolverIsDeprecated(s.id))
-      case s: Current                                           =>
+      case s: Current                                            =>
         instant.map { now =>
           ResolverTagAdded(
             id = c.id,

@@ -290,13 +290,12 @@ trait ResourcesBehaviors {
     "tagging a resource" should {
 
       "succeed" in {
-        val expectedData = ResourceGen.resource(myId, projectRef, source, resourceSchema)
+        val expectedData = ResourceGen.resource(myId, projectRef, source, resourceSchema, tags = Map(tag -> 1L))
         val resource     =
           resources.tag(IriSegment(myId), projectRef, Some(IriSegment(schemas.resources)), tag, 1L, 1L).accepted
         resource shouldEqual
           ResourceGen.resourceFor(
             expectedData,
-            tags = Map(tag -> 1L),
             types = types,
             subject = subject,
             rev = 2L,
@@ -399,14 +398,14 @@ trait ResourcesBehaviors {
     }
 
     "fetching a resource" should {
-      val expectedData = ResourceGen.resource(myId, projectRef, source, resourceSchema)
+      val expectedData       = ResourceGen.resource(myId, projectRef, source, resourceSchema)
+      val expectedDataLatest = expectedData.copy(tags = Map(tag -> 1L))
 
       "succeed" in {
         forAll(List(None, Some(IriSegment(schemas.resources)))) { schema =>
           resources.fetch(IriSegment(myId), projectRef, schema).accepted.value shouldEqual
             ResourceGen.resourceFor(
-              expectedData,
-              tags = Map(tag -> 1L),
+              expectedDataLatest,
               types = types,
               subject = subject,
               rev = 2L,
