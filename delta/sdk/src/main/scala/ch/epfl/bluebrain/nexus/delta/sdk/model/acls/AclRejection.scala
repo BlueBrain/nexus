@@ -88,8 +88,13 @@ object AclRejection {
 
   implicit private val aclRejectionEncoder: Encoder.AsObject[AclRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = ClassUtils.simpleName(r)
-      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      val tpe     = ClassUtils.simpleName(r)
+      val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      r match {
+        case IncorrectRev(_, provided, expected) =>
+          default.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                   => default
+      }
     }
 
   implicit final val aclRejectionJsonLdEncoder: JsonLdEncoder[AclRejection] =

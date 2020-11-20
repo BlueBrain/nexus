@@ -154,8 +154,13 @@ object RealmRejection {
 
   implicit private val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
     Encoder.AsObject.instance { r =>
-      val tpe = ClassUtils.simpleName(r)
-      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      val tpe     = ClassUtils.simpleName(r)
+      val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+      r match {
+        case IncorrectRev(provided, expected) =>
+          default.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _                                => default
+      }
     }
 
   implicit final val realmRejectionJsonLdEncoder: JsonLdEncoder[RealmRejection] =

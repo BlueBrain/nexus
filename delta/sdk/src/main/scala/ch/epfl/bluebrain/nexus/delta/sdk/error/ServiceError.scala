@@ -27,7 +27,7 @@ object ServiceError {
     * Signals that the authorization failed
     */
   final case object AuthorizationFailed
-      extends ServiceError("The supplied authentication is not authorized to access this resource")
+      extends ServiceError("The supplied authentication is not authorized to access this resource.")
 
   @nowarn("cat=unused")
   implicit val serviceErrorEncoder: Encoder.AsObject[ServiceError] = {
