@@ -271,9 +271,10 @@ class ProjectsSpec extends BaseSpec {
 
   "listing projects" should {
 
-    "return forbidden if no acl is set" taggedAs ProjectsTag in {
-      deltaClient.get[Json]("/projects", PrincessCarolyn) { (_, response) =>
-        response.status shouldEqual StatusCodes.Forbidden
+    "return empty list if no acl is set" taggedAs ProjectsTag in {
+      deltaClient.get[Json]("/projects", PrincessCarolyn) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        json shouldEqual jsonContentOf("/admin/projects/empty-project-list.json")
       }
     }
 
@@ -353,9 +354,9 @@ class ProjectsSpec extends BaseSpec {
     "list projects" taggedAs ProjectsTag in {
       val expectedResults = Json.obj(
         "@context" -> Json.arr(
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/admin.json"),
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/resource.json"),
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json")
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/metadata.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/projects.json")
         ),
         "_total"   -> Json.fromInt(projectIds.size),
         "_results" -> projectListingResults(projectIds, Bojack)
@@ -371,9 +372,9 @@ class ProjectsSpec extends BaseSpec {
       val projectsToList  = projectIds.slice(0, 2)
       val expectedResults = Json.obj(
         "@context" -> Json.arr(
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/admin.json"),
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/resource.json"),
-          Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json")
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/metadata.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/search.json"),
+          Json.fromString("https://bluebrain.github.io/nexus/contexts/projects.json")
         ),
         "_total"   -> Json.fromInt(projectsToList.size),
         "_results" -> projectListingResults(projectsToList, Bojack)

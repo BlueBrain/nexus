@@ -372,6 +372,18 @@ class ProjectsRoutesSpec
       }
     }
 
+    "list all projects for organization" in {
+      Get("/v1/projects/org1") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(
+          expectedResults(
+            fetchProjRev3.removeKeys("@context"),
+            fetchProj2.removeKeys("@context")
+          )
+        )
+      }
+    }
+
     "list all deprecated projects " in {
       Get("/v1/projects?deprecated=true") ~> routes ~> check {
         status shouldEqual StatusCodes.OK

@@ -2,8 +2,8 @@
   "@id": "{{deltaUri}}/projects/{{id}}",
   "@type": "Project",
   "description": "{{projId}}",
-  "base": "http:example.com/{{projId}}/",
-  "vocab": "http:example.com/{{projId}}/vocab/",
+  "base": "http://example.com/{{projId}}/",
+  "vocab": "http://example.com/{{projId}}/vocab/",
   "apiMappings": [
     {
       "prefix": "nxv-{{projId}}",
@@ -19,5 +19,7 @@
   "_rev": 1,
   "_deprecated": false,
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
-  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+  "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/projects.json",
+  "_self": "{{deltaUri}}/projects/{{id}}"
 }
