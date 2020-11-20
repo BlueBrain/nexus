@@ -239,7 +239,7 @@ class ProjectsSpec extends BaseSpec {
     }
 
     "reject update  when wrong revision is provided" taggedAs ProjectsTag in {
-      deltaClient.put[Json](s"/projects/$id?rev=1", createJson, Bojack) { (json, response) =>
+      deltaClient.put[Json](s"/projects/$id?rev=4", createJson, Bojack) { (json, response) =>
         response.status shouldEqual ProjectConflict.statusCode
         json shouldEqual ProjectConflict.json
       }

@@ -1,0 +1,22 @@
+[
+  {
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/IncorrectRev"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/expected": [
+      {
+        "@value": 3
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/provided": [
+      {
+        "@value": 2
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/reason": [
+      {
+        "@value": "Incorrect revision '2' provided, expected '3', the project may have been updated since last seen."
+      }
+    ]
+  }
+]

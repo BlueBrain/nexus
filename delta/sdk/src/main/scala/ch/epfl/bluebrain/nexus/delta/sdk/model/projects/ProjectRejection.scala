@@ -105,6 +105,8 @@ object ProjectRejection {
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
+        case IncorrectRev(provided, expected)        =>
+          default.add("provided", provided.asJson).add("expected", expected.asJson)
         case ProjectAlreadyExists(projectRef)        =>
           default.add("label", projectRef.project.asJson).add("orgLabel", projectRef.organization.asJson)
         case _                                       => default
