@@ -4,7 +4,6 @@ import java.time.Instant
 
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.Sequence
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
@@ -20,12 +19,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
-import org.scalatest.OptionValues
+import org.scalatest.{CancelAfterFailure, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 trait RealmsBehaviors {
-  this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock with TestHelpers with OptionValues =>
+  this: AnyWordSpecLike
+    with Matchers
+    with IOValues
+    with IOFixedClock
+    with TestHelpers
+    with CancelAfterFailure
+    with OptionValues =>
 
   val epoch: Instant                = Instant.EPOCH
   implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
@@ -192,11 +197,11 @@ trait RealmsBehaviors {
       realms.deprecate(github, 3L).rejectedWith[RealmAlreadyDeprecated]
     }
 
-    val allEvents = List(
-      (github, ClassUtils.simpleName(RealmCreated), Sequence(1L)),
-      (github, ClassUtils.simpleName(RealmUpdated), Sequence(2L)),
-      (github, ClassUtils.simpleName(RealmDeprecated), Sequence(3L)),
-      (gitlab, ClassUtils.simpleName(RealmCreated), Sequence(4L))
+    val allEvents = SSEUtils.list(
+      (github -> RealmCreated),
+      (github -> RealmUpdated),
+      (github -> RealmDeprecated),
+      (gitlab -> RealmCreated)
     )
 
     "get the different events from start" in {

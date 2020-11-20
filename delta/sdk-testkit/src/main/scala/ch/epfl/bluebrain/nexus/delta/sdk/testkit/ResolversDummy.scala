@@ -80,10 +80,10 @@ class ResolversDummy private (journal: ResolverJournal, projects: Projects, sema
 
   override def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, Option[ResolverResource]] =
     for {
-      p   <- projects.fetchProject(projectRef)
-      iri <- expandIri(id, p)
-      res <- currentState(projectRef, iri)
-    } yield res.flatMap(_.toResource(p.apiMappings, p.base))
+      p     <- projects.fetchProject(projectRef)
+      iri   <- expandIri(id, p)
+      state <- currentState(projectRef, iri)
+    } yield state.toResource(p.apiMappings, p.base)
 
   override def fetchAt(
       id: IdSegment,
@@ -91,23 +91,23 @@ class ResolversDummy private (journal: ResolverJournal, projects: Projects, sema
       rev: Long
   ): IO[ResolverRejection, Option[ResolverResource]] =
     for {
-      p   <- projects.fetchProject(projectRef)
-      iri <- expandIri(id, p)
-      res <- stateAt(projectRef, iri, rev)
-    } yield res.flatMap(_.toResource(p.apiMappings, p.base))
+      p     <- projects.fetchProject(projectRef)
+      iri   <- expandIri(id, p)
+      state <- stateAt(projectRef, iri, rev)
+    } yield state.toResource(p.apiMappings, p.base)
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ResolverEvent]] = journal.events(offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri): UIO[Option[ResolverState]] =
-    journal.currentState((projectRef, iri), Initial, Resolvers.next)
+  private def currentState(projectRef: ProjectRef, iri: Iri) =
+    journal.currentState((projectRef, iri), Initial, Resolvers.next).map(_.getOrElse(Initial))
 
-  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long): IO[RevisionNotFound, Option[ResolverState]] =
-    journal.stateAt((projectRef, iri), rev, Initial, Resolvers.next, RevisionNotFound.apply)
+  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
+    journal.stateAt((projectRef, iri), rev, Initial, Resolvers.next, RevisionNotFound.apply).map(_.getOrElse(Initial))
 
   private def eval(command: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
     semaphore.withPermit {
       for {
-        state     <- currentState(command.project, command.id).map(_.getOrElse(Initial))
+        state     <- currentState(command.project, command.id)
         event     <- Resolvers.evaluate(state, command)
         _         <- journal.add(event)
         (am, base) = project.apiMappings -> project.base

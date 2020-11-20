@@ -29,7 +29,7 @@ import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 trait ResolversBehaviors {
   this: AnyWordSpecLike
@@ -39,6 +39,7 @@ trait ResolversBehaviors {
     with TestHelpers
     with OptionValues
     with Inspectors
+    with CancelAfterFailure
     with CirceLiteral =>
 
   private val realm                = Label.unsafe("myrealm")

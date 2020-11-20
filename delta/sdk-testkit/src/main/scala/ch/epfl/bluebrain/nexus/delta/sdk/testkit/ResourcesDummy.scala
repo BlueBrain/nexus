@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceParser.expandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -118,8 +119,8 @@ final class ResourcesDummy private (
       project      <- projects.fetchProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      stateOpt     <- currentState(projectRef, iri)
-      resource      = stateOpt.flatMap(_.toResource(project.apiMappings, project.base))
+      state        <- currentState(projectRef, iri)
+      resource      = state.toResource(project.apiMappings, project.base)
     } yield validateSameSchema(resource, schemeRefOpt)
 
   override def fetchAt(
@@ -132,8 +133,8 @@ final class ResourcesDummy private (
       project      <- projects.fetchProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      stateOpt     <- stateAt(projectRef, iri, rev)
-      resource      = stateOpt.flatMap(_.toResource(project.apiMappings, project.base))
+      state        <- stateAt(projectRef, iri, rev)
+      resource      = state.toResource(project.apiMappings, project.base)
     } yield validateSameSchema(resource, schemeRefOpt)
 
   override def events(
@@ -156,24 +157,21 @@ final class ResourcesDummy private (
     journal.events(offset)
 
   private def currentState(projectRef: ProjectRef, iri: Iri) =
-    journal.currentState((projectRef, iri), Initial, Resources.next)
+    journal.currentState((projectRef, iri), Initial, Resources.next).map(_.getOrElse(Initial))
 
   private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
-    journal.stateAt((projectRef, iri), rev, Initial, Resources.next, RevisionNotFound.apply)
+    journal.stateAt((projectRef, iri), rev, Initial, Resources.next, RevisionNotFound.apply).map(_.getOrElse(Initial))
 
   private def eval(cmd: ResourceCommand, project: Project): IO[ResourceRejection, DataResource] =
     semaphore.withPermit {
       for {
-        state     <- currentState(cmd.project, cmd.id).map(_.getOrElse(Initial))
+        state     <- currentState(cmd.project, cmd.id)
         event     <- Resources.evaluate(fetchSchema)(state, cmd)
         _         <- journal.add(event)
         (am, base) = project.apiMappings -> project.base
         res       <- IO.fromOption(Resources.next(state, event).toResource(am, base), UnexpectedInitialState(cmd.id))
       } yield res
     }
-
-  private def expandIri(segment: IdSegment, project: Project) =
-    IO.fromOption(segment.toIri(project.apiMappings, project.base), InvalidResourceId(segment.asString))
 
   private def expandResourceRef(segment: IdSegment, project: Project): IO[InvalidResourceId, ResourceRef] =
     IO.fromOption(

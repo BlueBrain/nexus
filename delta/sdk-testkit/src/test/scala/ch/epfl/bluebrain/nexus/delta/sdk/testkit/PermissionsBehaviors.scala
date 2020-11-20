@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.testkit.TestHelpers.genString
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
+import org.scalatest.CancelAfterFailure
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -26,7 +27,8 @@ import scala.concurrent.duration._
 /**
   * The collection of behaviours for permissions.
   */
-trait PermissionsBehaviors { this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock =>
+trait PermissionsBehaviors {
+  this: AnyWordSpecLike with Matchers with IOValues with CancelAfterFailure with IOFixedClock =>
 
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 

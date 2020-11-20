@@ -4,7 +4,6 @@ import java.time.Instant
 import java.util.UUID
 
 import akka.persistence.query.{NoOffset, Sequence}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -27,7 +26,7 @@ import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 trait ResourcesBehaviors {
   this: AnyWordSpecLike
@@ -37,6 +36,7 @@ trait ResourcesBehaviors {
     with TestHelpers
     with OptionValues
     with Inspectors
+    with CancelAfterFailure
     with CirceLiteral =>
 
   val epoch: Instant            = Instant.EPOCH
@@ -470,19 +470,19 @@ trait ResourcesBehaviors {
     }
 
     "fetching SSE" should {
-      val allEvents = List(
-        (myId, ClassUtils.simpleName(ResourceCreated), Sequence(1L)),
-        (myId2, ClassUtils.simpleName(ResourceCreated), Sequence(2L)),
-        (myId3, ClassUtils.simpleName(ResourceCreated), Sequence(3L)),
-        (myId4, ClassUtils.simpleName(ResourceCreated), Sequence(4L)),
-        (myId5, ClassUtils.simpleName(ResourceCreated), Sequence(5L)),
-        (myId6, ClassUtils.simpleName(ResourceCreated), Sequence(6L)),
-        (myId7, ClassUtils.simpleName(ResourceCreated), Sequence(7L)),
-        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(8L)),
-        (myId2, ClassUtils.simpleName(ResourceUpdated), Sequence(9L)),
-        (myId3, ClassUtils.simpleName(ResourceDeprecated), Sequence(10L)),
-        (myId, ClassUtils.simpleName(ResourceTagAdded), Sequence(11L)),
-        (myId4, ClassUtils.simpleName(ResourceDeprecated), Sequence(12L))
+      val allEvents = SSEUtils.list(
+        myId  -> ResourceCreated,
+        myId2 -> ResourceCreated,
+        myId3 -> ResourceCreated,
+        myId4 -> ResourceCreated,
+        myId5 -> ResourceCreated,
+        myId6 -> ResourceCreated,
+        myId7 -> ResourceCreated,
+        myId2 -> ResourceUpdated,
+        myId2 -> ResourceUpdated,
+        myId3 -> ResourceDeprecated,
+        myId  -> ResourceTagAdded,
+        myId4 -> ResourceDeprecated
       )
 
       "get the different events from start" in {

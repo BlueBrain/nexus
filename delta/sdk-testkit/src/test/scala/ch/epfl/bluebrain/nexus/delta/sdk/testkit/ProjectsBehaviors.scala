@@ -25,12 +25,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{Mapper, Projects}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
-import org.scalatest.OptionValues
+import org.scalatest.{CancelAfterFailure, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 trait ProjectsBehaviors {
-  this: AnyWordSpecLike with Matchers with IOValues with IOFixedClock with TestHelpers with OptionValues =>
+  this: AnyWordSpecLike
+    with Matchers
+    with IOValues
+    with IOFixedClock
+    with TestHelpers
+    with CancelAfterFailure
+    with OptionValues =>
 
   val epoch: Instant            = Instant.EPOCH
   implicit val subject: Subject = Identity.User("user", Label.unsafe("realm"))

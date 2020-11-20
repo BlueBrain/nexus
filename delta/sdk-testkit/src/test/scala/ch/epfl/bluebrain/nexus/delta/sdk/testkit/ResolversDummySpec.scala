@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, Te
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 class ResolversDummySpec
     extends AnyWordSpecLike
@@ -15,6 +15,7 @@ class ResolversDummySpec
     with TestHelpers
     with OptionValues
     with Inspectors
+    with CancelAfterFailure
     with CirceLiteral
     with ResolversBehaviors {
 
