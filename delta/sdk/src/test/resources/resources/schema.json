@@ -6,7 +6,7 @@
     }
   ],
   "@type": "nxv:Schema",
-  "id": "nxv:myschema",
+  "@id": "nxv:myschema",
   "shapes": [
     {
       "@id": "nxv:MyShape",

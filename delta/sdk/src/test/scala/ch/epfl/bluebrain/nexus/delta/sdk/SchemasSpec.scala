@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.testkit._
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+import org.scalatest.{Inspectors, OptionValues}
 
 class SchemasSpec
     extends AnyWordSpecLike
@@ -25,7 +25,6 @@ class SchemasSpec
     with EitherValuable
     with Inspectors
     with IOFixedClock
-    with CancelAfterFailure
     with IOValues
     with TestHelpers
     with CirceLiteral

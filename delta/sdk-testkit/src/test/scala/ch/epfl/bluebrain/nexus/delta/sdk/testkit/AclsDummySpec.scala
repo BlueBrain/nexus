@@ -6,18 +6,19 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, Te
 import monix.bio.{Task, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 class AclsDummySpec
     extends AnyWordSpecLike
-    with AclsBehaviors
     with Matchers
     with IOValues
     with TestHelpers
     with IOFixedClock
     with CirceLiteral
     with OptionValues
-    with Inspectors {
+    with CancelAfterFailure
+    with Inspectors
+    with AclsBehaviors {
 
   override def create: Task[(Acls, Permissions)] =
     for {

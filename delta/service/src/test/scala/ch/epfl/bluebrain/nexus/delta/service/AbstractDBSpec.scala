@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import com.typesafe.config.ConfigFactory
 import monix.bio.Task
 import monix.execution.Scheduler
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import slick.jdbc.H2Profile.api._
@@ -40,7 +40,8 @@ abstract class AbstractDBSpec
     with Matchers
     with IOValues
     with IOFixedClock
-    with TestHelpers {
+    with TestHelpers
+    with CancelAfterFailure {
 
   implicit private val scheduler: Scheduler = Scheduler.global
 
