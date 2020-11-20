@@ -23,7 +23,7 @@ trait ConfigFixtures extends OptionValues {
 
   def processor: EventSourceProcessorConfig = EventSourceProcessorConfig(
     askTimeout = Timeout(5.seconds),
-    evaluationMaxDuration = 1.second,
+    evaluationMaxDuration = 3.second,
     evaluationExecutionContext = system.executionContext,
     stashSize = 100
   )
