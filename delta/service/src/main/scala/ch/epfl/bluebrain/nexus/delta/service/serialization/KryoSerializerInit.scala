@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.delta
+package ch.epfl.bluebrain.nexus.delta.service.serialization
 
 import java.nio.file.Path
 
-import ch.epfl.bluebrain.nexus.delta.KryoSerializerInit._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.service.serialization.KryoSerializerInit._
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import io.altoo.akka.serialization.kryo.DefaultKryoInitializer
@@ -37,7 +37,7 @@ object KryoSerializerInit {
 
   private val iriFactory = IRIFactory.iriImplementation()
 
-  class GraphSerializer extends Serializer[Graph] {
+  private[serialization] class GraphSerializer extends Serializer[Graph] {
     private val fakeIRI = iriFactory.create("http://localhost/6ff2c90a-2bc3-4fd5-bf0b-bf2d563f28a7")
     private val fakeIri = Iri.unsafe(fakeIRI.toString)
 
@@ -64,7 +64,7 @@ object KryoSerializerInit {
     }
   }
 
-  class ModelSerializer extends Serializer[Model] {
+  private[serialization] class ModelSerializer extends Serializer[Model] {
 
     override def write(kryo: Kryo, output: Output, model: Model): Unit =
       output.writeString(RDFWriter.create.lang(Lang.NTRIPLES).source(model).asString())
@@ -76,7 +76,7 @@ object KryoSerializerInit {
     }
   }
 
-  class IRISerializer extends Serializer[IRI] {
+  private[serialization] class IRISerializer extends Serializer[IRI] {
 
     override def write(kryo: Kryo, output: Output, iri: IRI): Unit =
       output.writeString(iri.toString)
@@ -85,7 +85,7 @@ object KryoSerializerInit {
       iriFactory.create(input.readString())
   }
 
-  class PathSerializer extends Serializer[Path] {
+  private[serialization] class PathSerializer extends Serializer[Path] {
 
     override def write(kryo: Kryo, output: Output, path: Path): Unit =
       output.writeString(path.toString)

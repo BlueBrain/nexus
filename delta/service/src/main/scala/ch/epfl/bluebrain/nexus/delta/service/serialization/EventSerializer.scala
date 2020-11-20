@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEve
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType.Camel._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.service.serialization.EventSerializer._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
@@ -42,6 +43,7 @@ class EventSerializer extends SerializerWithStringManifest {
     case _: OrganizationEvent => organizationEventManifest
     case _: ProjectEvent      => projectEventManifest
     case _: ResourceEvent     => resourceEventManifest
+    case _: SchemaEvent       => schemaEventManifest
     case _                    => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
   }
 
@@ -52,6 +54,7 @@ class EventSerializer extends SerializerWithStringManifest {
     case e: OrganizationEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ProjectEvent      => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResourceEvent     => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+    case e: SchemaEvent       => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case _                    => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
   }
 
@@ -62,6 +65,7 @@ class EventSerializer extends SerializerWithStringManifest {
     case `organizationEventManifest` => parseAndDecode[OrganizationEvent](bytes, manifest)
     case `projectEventManifest`      => parseAndDecode[ProjectEvent](bytes, manifest)
     case `resourceEventManifest`     => parseAndDecode[ResourceEvent](bytes, manifest)
+    case `schemaEventManifest`       => parseAndDecode[SchemaEvent](bytes, manifest)
     case _                           => throw new IllegalArgumentException(s"Unknown manifest '$manifest'")
   }
 
@@ -81,6 +85,7 @@ object EventSerializer {
   final val organizationEventManifest: String = Organizations.moduleType
   final val projectEventManifest: String      = Projects.moduleType
   final val resourceEventManifest: String     = Resources.moduleType
+  final val schemaEventManifest: String       = Schemas.moduleType
 
   implicit final private val configuration: Configuration =
     Configuration.default.withDiscriminator(keywords.tpe)
@@ -130,14 +135,16 @@ object EventSerializer {
     }
   implicit final val permissionsEventCodec: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
 
-  implicit final val aclEventDecoder: Decoder[AclEvent]                   = deriveConfiguredDecoder[AclEvent]
-  implicit final val aclEventEncoder: Encoder.AsObject[AclEvent]          =
+  implicit final val aclEventDecoder: Decoder[AclEvent]                        = deriveConfiguredDecoder[AclEvent]
+  implicit final val aclEventEncoder: Encoder.AsObject[AclEvent]               =
     Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[AclEvent].mapJsonObject(_.add("address", ev.address.asJson)).encodeObject(ev)
     }
-  implicit final val realmEventCodec: Codec.AsObject[RealmEvent]          = deriveConfiguredCodec[RealmEvent]
-  implicit final val organizationEvent: Codec.AsObject[OrganizationEvent] = deriveConfiguredCodec[OrganizationEvent]
-  implicit final val projectEvent: Codec.AsObject[ProjectEvent]           = deriveConfiguredCodec[ProjectEvent]
-  implicit final val resourceEvent: Codec.AsObject[ResourceEvent]         = deriveConfiguredCodec[ResourceEvent]
+  implicit final val realmEventCodec: Codec.AsObject[RealmEvent]               = deriveConfiguredCodec[RealmEvent]
+  implicit final val organizationEventCodec: Codec.AsObject[OrganizationEvent] =
+    deriveConfiguredCodec[OrganizationEvent]
+  implicit final val projectEventCodec: Codec.AsObject[ProjectEvent]           = deriveConfiguredCodec[ProjectEvent]
+  implicit final val resourceEventCodec: Codec.AsObject[ResourceEvent]         = deriveConfiguredCodec[ResourceEvent]
+  implicit final val schemaEventCodec: Codec.AsObject[SchemaEvent]             = deriveConfiguredCodec[SchemaEvent]
 
 }
