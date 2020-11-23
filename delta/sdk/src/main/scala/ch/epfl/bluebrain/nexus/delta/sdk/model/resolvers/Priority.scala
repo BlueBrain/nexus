@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.ResolverPriorityIntervalError
+import io.circe.{Decoder, Encoder}
 
 /**
   * A safe representation of a resolver priority
@@ -26,5 +28,8 @@ object Priority {
     * Construct a priority from an integer without validation
     */
   def unsafe(value: Int) = new Priority(value)
+
+  implicit val projectRefEncoder: Encoder[Priority] = Encoder.encodeInt.contramap(_.value)
+  implicit val projectRefDecoder: Decoder[Priority] = Decoder.decodeInt.emap(Priority(_).leftMap(_.getMessage))
 
 }

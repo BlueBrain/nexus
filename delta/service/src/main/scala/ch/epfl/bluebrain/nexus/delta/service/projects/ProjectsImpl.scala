@@ -202,7 +202,7 @@ object ProjectsImpl {
       entityType = moduleType,
       initialState = Initial,
       next = Projects.next,
-      evaluate = Projects.evaluate(organizations.fetchActiveOrganization[ProjectRejection]),
+      evaluate = Projects.evaluate(organizations.fetch),
       tagger = (_: ProjectEvent) => Set(moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: ProjectState, _: ProjectEvent, _: Long) => state.deprecated)

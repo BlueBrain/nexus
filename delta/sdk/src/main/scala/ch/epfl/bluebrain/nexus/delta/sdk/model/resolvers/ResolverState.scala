@@ -4,7 +4,6 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
@@ -12,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectR
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{AccessUrl, Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Lens, ResolverResource}
 
 /**
   * Enumeration of Resolver state types
@@ -28,6 +28,16 @@ sealed trait ResolverState extends Product with Serializable {
     */
   def toResource(mappings: ApiMappings, base: ProjectBase): Option[ResolverResource]
 
+  /**
+    * @return the current state revision
+    */
+  def rev: Long
+
+  /**
+    * @return the state deprecation status
+    */
+  def deprecated: Boolean
+
 }
 
 object ResolverState {
@@ -37,6 +47,10 @@ object ResolverState {
     */
   final case object Initial extends ResolverState {
     override def toResource(mappings: ApiMappings, base: ProjectBase): Option[ResolverResource] = None
+
+    override def rev: Long = 0L
+
+    override def deprecated: Boolean = false
   }
 
   /**
@@ -107,5 +121,7 @@ object ResolverState {
         )
       )
   }
+
+  implicit val revisionLens: Lens[ResolverState, Long] = (s: ResolverState) => s.rev
 
 }

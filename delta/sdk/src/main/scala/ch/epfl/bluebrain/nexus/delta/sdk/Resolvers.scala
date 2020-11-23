@@ -13,6 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -110,6 +113,28 @@ trait Resolvers {
         }
       case None           => IO.pure(None)
     }
+
+  /**
+    * Lists all resolvers.
+    *
+    * @param pagination the pagination settings
+    * @param params     filter parameters for the listing
+    * @return a paginated results list
+    */
+  def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]]
+
+  /**
+    * List resolvers within a project
+    * @param projectRef the project the resolvers belong to
+    * @param pagination the pagination settings
+    * @param params filter parameters
+    */
+  def list(
+      projectRef: ProjectRef,
+      pagination: FromPagination,
+      params: ResolverSearchParams
+  ): UIO[UnscoredSearchResults[ResolverResource]] =
+    list(pagination, params.copy(project = Some(projectRef)))
 
   /**
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events

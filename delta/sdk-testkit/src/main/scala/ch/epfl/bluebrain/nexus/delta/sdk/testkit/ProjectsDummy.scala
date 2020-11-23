@@ -109,7 +109,7 @@ final class ProjectsDummy private (
     semaphore.withPermit {
       for {
         state <- journal.currentState(cmd.ref, Initial, Projects.next).map(_.getOrElse(Initial))
-        event <- Projects.evaluate(organizations.fetchActiveOrganization[ProjectRejection])(state, cmd)
+        event <- Projects.evaluate(organizations.fetch)(state, cmd)
         _     <- journal.add(event)
         res   <- IO.fromEither(Projects.next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
         _     <- cache.setToCache(res)
