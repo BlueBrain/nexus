@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResource, Resolvers, _}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.service.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
@@ -200,7 +200,12 @@ object ResolversImpl {
       initialState = Initial,
       next = Resolvers.next,
       evaluate = Resolvers.evaluate,
-      tagger = (_: ResolverEvent) => Set(moduleType),
+      tagger = (event: ResolverEvent) =>
+        Set(
+          moduleType,
+          s"${Projects.moduleType}=${event.project}",
+          s"${Organizations.moduleType}=${event.project.organization}"
+        ),
       snapshotStrategy = config.snapshotStrategy.combinedStrategy(
         SnapshotStrategy.SnapshotPredicate((state: ResolverState, _: ResolverEvent, _: Long) => state.deprecated)
       ),

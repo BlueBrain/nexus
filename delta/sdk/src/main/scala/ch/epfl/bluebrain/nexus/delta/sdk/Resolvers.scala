@@ -124,6 +124,19 @@ trait Resolvers {
   def list(pagination: FromPagination, params: ResolverSearchParams): UIO[UnscoredSearchResults[ResolverResource]]
 
   /**
+    * List resolvers within a project
+    * @param projectRef the project the resolvers belong to
+    * @param pagination the pagination settings
+    * @param params filter parameters
+    */
+  def list(
+      projectRef: ProjectRef,
+      pagination: FromPagination,
+      params: ResolverSearchParams
+  ): UIO[UnscoredSearchResults[ResolverResource]] =
+    list(pagination, params.copy(project = Some(projectRef)))
+
+  /**
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
     * are recorded.
     *

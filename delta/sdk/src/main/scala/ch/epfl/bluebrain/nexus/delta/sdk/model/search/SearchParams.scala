@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas => nxvschemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
@@ -120,7 +120,18 @@ object SearchParams {
         organization.forall(_ == resource.value.organizationLabel)
   }
 
+  /**
+    * *
+    * Search parameters for resolvers
+    * @param project    the option project of the resolver resources
+    * @param deprecated   the optional deprecation status of resolver project resources
+    * @param rev          the optional revision of the resolver resources
+    * @param createdBy    the optional subject who created the resolver resource
+    * @param updatedBy    the optional subject who updated the resolver
+    * @param filter       the additional filter to select resolvers
+    */
   final case class ResolverSearchParams(
+      project: Option[ProjectRef] = None,
       deprecated: Option[Boolean] = None,
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
@@ -129,6 +140,10 @@ object SearchParams {
   ) extends SearchParams[Resolver] {
     override val types: Set[Iri]             = Set(nxv.Resolver)
     override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.resolvers))
+
+    override def matches(resource: ResourceF[Resolver]): Boolean =
+      super.matches(resource) &&
+        project.forall(_ == resource.value.project)
   }
 
 }
